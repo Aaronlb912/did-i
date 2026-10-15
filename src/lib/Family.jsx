@@ -115,6 +115,11 @@ export function Family({ book, onChange, now, familyId }) {
         setCheckOns(askRows)
       }
       if (typeof serverCheers === 'number') setStock(serverCheers)
+      if (tonightRows.miss) {
+        setMiss(tonightRows.miss)
+        setReady(true)
+        return
+      }
       setLamps(tonightRows.lamps)
       setAnswers(tonightRows.answers)
       setLastDids(tonightRows.last || new Map())

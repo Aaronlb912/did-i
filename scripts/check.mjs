@@ -79,7 +79,7 @@ const CHEERS_FOR_SIGN_IN = () => SHOP_CHEERS.find((item) => item.gems > 0).id
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
-import { forgetAccountCaches } from '../src/lib/account-cache.js'
+import { forgetAccountCaches, forgetPendingLinks } from '../src/lib/account-cache.js'
 import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
@@ -4833,8 +4833,6 @@ test('signing out clears the per-account lists kept for a fast first paint', () 
   const was = globalThis.localStorage
   const keys = [
     'did-i-kept:people.links:u1', 'did-i-kept:inbox.rows:u1', 'did-i-we-cards:u1', 'did-i-shelf', 'did-i-prefs',
-    // Links opened under one account must not land on the next one.
-    'did-i-pending-invite', 'did-i-pending-did-you', 'did-i-did-you-claims', 'did-i-link-friends', 'did-i-we-link-web',
   ]
   try {
     // A browser: length and key().
@@ -4868,9 +4866,21 @@ test('signing out clears the per-account lists kept for a fast first paint', () 
   const sync = readFileSync(path.join(root, 'src/lib/cloud-sync.js'), 'utf8')
   const boot = readFileSync(path.join(root, 'native/bootstrap.js'), 'utf8')
   assert.equal((account.match(/forgetAccountCaches\(\)/g) || []).length, 3, 'sign out here, everywhere, and delete clear them')
-  // Only a sign out clears: a link opened signed out survives the first sign in.
-  assert.match(sync, /event === 'SIGNED_OUT'\) \{\s*forgetAccountCaches\(\)/)
-  assert.equal((sync.match(/forgetAccountCaches\(\)/g) || []).length, 1)
+  // Pending links: only a real sign out or delete clears them, never the
+  // SIGNED_OUT event a stale session fires at startup before sign up.
+  assert.equal((account.match(/forgetPendingLinks\(\)/g) || []).length, 3)
+  assert.ok(!sync.includes('forgetPendingLinks'))
+  const links = new Map(['did-i-pending-invite', 'did-i-pending-did-you', 'did-i-did-you-claims', 'did-i-link-friends', 'did-i-we-link-web', 'did-i-shelf'].map((k) => [k, '1']))
+  const before = globalThis.localStorage
+  globalThis.localStorage = { allKeys: () => [...links.keys()], getItem: (k) => links.get(k) ?? null, setItem: (k, v) => links.set(k, v), removeItem: (k) => links.delete(k) }
+  try {
+    forgetAccountCaches()
+    assert.equal(links.size, 6, 'the SIGNED_OUT clear keeps pending links')
+    forgetPendingLinks()
+    assert.deepEqual([...links.keys()], ['did-i-shelf'])
+  } finally {
+    globalThis.localStorage = before
+  }
   assert.ok(sync.includes('forgetAccountCaches()'), 'a session that ends on its own clears them')
   assert.ok(boot.includes('allKeys:'), 'the phone storage shim can list keys')
 })
