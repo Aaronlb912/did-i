@@ -4870,7 +4870,7 @@ test('sign out: Did we reminders and widget line go with the account', () => {
 test('sign out: unsent answers are sent first, and a failed send asks', () => {
   const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
   const sync = read('src/lib/cloud-sync.js')
-  const save = sync.slice(sync.indexOf('export async function saveBeforeSignOut()'))
+  const save = sync.slice(sync.indexOf('export async function saveBeforeSignOut('))
   assert.ok(save.indexOf('await flushPushSoon()') < save.indexOf("if (state.how === 'miss') await pushNow("), 'flush, then one retry')
   assert.match(save, /return state\.how !== 'miss'/)
   const leave = read('native/lib/leave-account.js')
@@ -4886,6 +4886,25 @@ test('sign out: unsent answers are sent first, and a failed send asks', () => {
   assert.equal(en['account.unsavedYes'], 'Sign out anyway')
 })
 
+test('sign out: no session asks, a stalled send gives up after 8s and asks', () => {
+  const sync = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
+  const save = sync.slice(sync.indexOf('export async function saveBeforeSignOut(ms = 8000)'))
+  assert.ok(save.indexOf('if (!(await me())) return false') < save.indexOf('flushPushSoon()'), 'no user: ask before any push can wipe')
+  assert.match(save, /setTimeout\(\(\) => resolve\(false\), ms\)/)
+  assert.match(save, /return await Promise\.race\(\[sent, late\]\)/)
+})
+
+test('sync: the shelf is not sent for an account until a pull landed for it on this phone', () => {
+  const sync = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
+  const push = sync.slice(sync.indexOf('export async function pushNow('), sync.indexOf('let weMark'))
+  const gate = push.indexOf("if (readLastUser() !== user.id) throw new Error('account.syncMiss')")
+  assert.ok(gate > push.indexOf('await pushAnswers(doc)'), 'answers still go')
+  assert.ok(gate < push.indexOf('putShelf('), 'the shelf waits for a pull')
+  const pull = sync.slice(sync.indexOf('async function pullAndMergeOnce()'))
+  assert.ok(pull.indexOf('writeLastUser(user.id)') > pull.indexOf('await putShelf('), 'set only after a pull succeeds')
+  const out = sync.slice(sync.indexOf('export function signedOutSync()'))
+  assert.ok(out.slice(0, 800).includes("writeLastUser('')"), 'cleared on sign out')
+})
 test('sign in: a pull that throws still leaves the sign-in screen', () => {
   const src = readFileSync(path.join(checkRoot, 'src/lib/useAuthSignIn.js'), 'utf8')
   assert.match(src, /try \{\s*await pullAndMerge\(\)\s*\} catch \{\s*setMiss\(t\('tonight\.syncMiss'\)\)\s*\}\s*signedIn\.current\?\.\(\)/)

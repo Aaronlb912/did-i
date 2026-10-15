@@ -510,6 +510,10 @@ export async function pushNow(shelf) {
     // question changed, and those are small.
     const sent = await pushAnswers(doc)
     if (sent.miss) throw new Error(sent.miss)
+    // No pull has landed for this account on this phone yet (the last user id
+    // is written only after one does), so the local shelf may be the empty one
+    // sign out left. Sending it would overwrite the account's questions.
+    if (readLastUser() !== user.id) throw new Error('account.syncMiss')
     const uploadAt = new Date().toISOString()
     stampSavedAt(uploadAt)
     const bad = (await putShelf(db, user, doc, uploadAt)) || (await putPrefs(db, user, doc))
@@ -555,15 +559,25 @@ export function flushPushSoon() {
 // Before signing out: send anything still waiting, then try once more if the
 // last send missed. False means some answers never reached the account, so
 // the caller asks before signedOutSync wipes them.
-export async function saveBeforeSignOut() {
+export async function saveBeforeSignOut(ms = 8000) {
   if (!cloudSetUp() || state.how === 'off' || state.how === 'out') return true
+  let timer
   try {
-    await flushPushSoon()
-    if (state.how === 'miss') await pushNow(readShelf())
+    // No session: pushNow would wipe the shelf without asking. Ask instead.
+    if (!(await me())) return false
+    const sent = (async () => {
+      await flushPushSoon()
+      if (state.how === 'miss') await pushNow(readShelf())
+      return state.how !== 'miss'
+    })()
+    // A stalled network asks too, instead of spinning the button.
+    const late = new Promise((resolve) => { timer = setTimeout(() => resolve(false), ms) })
+    return await Promise.race([sent, late])
   } catch {
     return false
+  } finally {
+    clearTimeout(timer)
   }
-  return state.how !== 'miss'
 }
 
 export async function touchDevice() {
