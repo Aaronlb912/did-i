@@ -4,7 +4,8 @@
 // question that shares the most words with them.
 
 import { readShelf } from './board-shelf.js'
-import { dueTonight } from './recurrence.js'
+import { graceRowsFor } from './grace.js'
+import { dueTonight, graceFirst, graceNightIso, rowDoneTonight } from './recurrence.js'
 
 const SMALL = new Set(['did', 'i', 'a', 'an', 'the', 'my', 'to', 'tonight', 'today', 'it', 'do', 'in', 'of', 'and', 'yes', 'no', 'not', 'didnt'])
 
@@ -49,11 +50,14 @@ export function matchSpoken(said, rows) {
 }
 
 // Every question tonight not answered yet, across all tags, including ones
-// whose ask time has not come: saying "I did" early counts.
-export function openTonight(now = new Date()) {
-  const shelf = readShelf()
-  return (shelf.boards || [])
-    .filter((book) => !book.archived)
-    .flatMap((book) => dueTonight(book, now))
-    .filter((row) => !row.answer)
+// whose ask time has not come: saying "I did" early counts. A Not yet is
+// still open. In last night's grace period its open questions are in too,
+// first while graceFirst (ties go to the earlier row).
+export function openTonight(now = new Date(), shelf = readShelf()) {
+  const books = (shelf.boards || []).filter((book) => !book.archived)
+  const tonight = books.flatMap((book) => dueTonight(book, now)).filter((row) => !rowDoneTonight(row))
+  const night = graceNightIso(now)
+  if (!night) return tonight
+  const last = graceRowsFor(books, night)
+  return graceFirst(now) ? [...last, ...tonight] : [...tonight, ...last]
 }

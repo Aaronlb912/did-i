@@ -310,31 +310,37 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
     // A message wakes the iPhone app in the background, so the answer lands at
     // once. transferUserInfo only arrives when the phone app next opens, so it
     // is the fallback when the phone is out of reach or the message fails.
-    // sentAt: sent by message, so later cards from the phone may undo it.
-    // transferUserInfo has no sentAt and keeps the 24h hold.
+    // sentAt: the phone replied that it has the tap, so later cards from the
+    // phone may undo it. Without a reply the tap has no sentAt and keeps the
+    // 24h hold. An older phone build that cannot reply makes the send fail,
+    // which falls back to transferUserInfo like an unreachable phone.
     let session = WCSession.default
     if session.activationState == .activated && session.isReachable {
-      var held = tap
-      held["sentAt"] = now
-      defaults.set(recentTaps(now: now) + [held], forKey: CardStore.tapsKey)
-      session.sendMessage(tap, replyHandler: nil) { _ in
-        DispatchQueue.main.async { self.clearSentAt(tap) }
+      defaults.set(recentTaps(now: now) + [tap], forKey: CardStore.tapsKey)
+      session.sendMessage(tap, replyHandler: { _ in
+        // The reply time, not the tap time: cards the phone built before it
+        // had the tap must not undo it.
+        let landed = Date().timeIntervalSince1970 * 1000
+        DispatchQueue.main.async { self.setSentAt(tap, landed) }
+      }, errorHandler: { _ in
+        DispatchQueue.main.async { self.setSentAt(tap, nil) }
         WCSession.default.transferUserInfo(tap)
-      }
+      })
     } else {
       defaults.set(recentTaps(now: now) + [tap], forKey: CardStore.tapsKey)
       session.transferUserInfo(tap)
     }
   }
 
-  // The message failed: hold the tap until the phone's cards show it.
-  private func clearSentAt(_ tap: [String: Any]) {
+  // Set sentAt when the phone confirms; clear it (hold the tap until the
+  // phone's cards show it) when the message failed.
+  private func setSentAt(_ tap: [String: Any], _ sentAt: Double?) {
     let all = defaults.array(forKey: CardStore.tapsKey) as? [[String: Any]] ?? []
     let next = all.map { item -> [String: Any] in
       guard item["id"] as? String == tap["id"] as? String, item["night"] as? String == tap["night"] as? String,
             item["at"] as? Double == tap["at"] as? Double else { return item }
       var item = item
-      item.removeValue(forKey: "sentAt")
+      if let sentAt { item["sentAt"] = sentAt } else { item.removeValue(forKey: "sentAt") }
       return item
     }
     defaults.set(next, forKey: CardStore.tapsKey)

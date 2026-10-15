@@ -77,7 +77,7 @@ import { weCardShort } from '../../src/lib/did-we.js'
 import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
-import { readMine } from '../../src/lib/people.js'
+import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
@@ -455,6 +455,9 @@ export function IdeasScreen() {
 export function RecentScreen() {
   const colors = useHallColors()
   const { list } = useNotices()
+  // The menu row counts inbox asks too, so the page shows them first.
+  const account = useAccount()
+  const { inbox } = usePeoplePulse(account.user)
   useEffect(() => {
     markNoticesSeen()
   }, [list.length])
@@ -469,6 +472,16 @@ export function RecentScreen() {
   }
   return (
     <ScreenShell title={t('recent.title')} colors={colors}>
+      {account.user && inbox > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => goHash('/inbox')}
+          style={({ pressed }) => [styles.idea, { borderColor: colors.on, backgroundColor: pressed ? colors.panel2 : colors.panel }]}
+        >
+          <Kicker colors={colors}>{t('people.waiting', { n: inbox })}</Kicker>
+          <Text style={[styles.recentText, { color: colors.ink }]}>{t('people.waitingSub')}</Text>
+        </Pressable>
+      ) : null}
       {list.length ? <KeyButton colors={colors} label={t('recent.clear')} onPress={clearAll} /> : null}
       {list.length ? (
         list.map((item) => (
@@ -486,7 +499,7 @@ export function RecentScreen() {
             </Meta>
           </Pressable>
         ))
-      ) : (
+      ) : account.user && inbox > 0 ? null : (
         <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors} />
       )}
     </ScreenShell>
@@ -1836,25 +1849,30 @@ function PingTest({ colors }) {
   )
 }
 
-export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
+export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const labelKey = pingLabel || 'pings.state.on'
   const on = labelKey === 'pings.state.on'
+  // Every folder pings (armLampPings gets the whole shelf), so list them all.
+  const books = boards?.length ? boards : book ? [book] : []
   // One row per question. Rows you switch off stay here until you leave, so
   // you can switch them back on.
   const [seen, setSeen] = useState(() => new Map())
   const rows = new Map(seen)
-  for (const fire of upcomingPings(book, clock)) if (!rows.has(fire.id)) rows.set(fire.id, fire)
+  for (const one of books) {
+    for (const fire of upcomingPings(one, clock)) if (!rows.has(fire.id)) rows.set(fire.id, fire)
+  }
   const fires = [...rows.values()].sort((a, b) => a.at - b.at)
-  const lampOf = (id) => (book?.lamps || []).find((lamp) => lamp.id === id)
+  const bookOf = (id) => books.find((one) => (one.lamps || []).some((lamp) => lamp.id === id))
 
   function flipOne(fire) {
-    const lamp = lampOf(fire.id)
+    const home = bookOf(fire.id)
+    const lamp = home?.lamps.find((item) => item.id === fire.id)
     if (!lamp || !onChange) return confirmMiss(t('confirm.miss'))
     const next = !lampNotifyOn(lamp)
     setSeen((was) => new Map(was).set(fire.id, fire))
-    onChange(commitBook({ ...book, lamps: book.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next } : item)) }, clock))
+    onChange(commitBook({ ...home, lamps: home.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next } : item)) }, clock))
     return confirmDone(next ? t('pings.oneOn') : t('pings.oneOff'))
   }
 
@@ -1901,7 +1919,7 @@ export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
               icon="bell"
               label={shortFromQuestion(fire.question) || t('lamp.unnamed')}
               sub={foldClock(fire.at)}
-              on={lampNotifyOn(lampOf(fire.id))}
+              on={lampNotifyOn(bookOf(fire.id)?.lamps.find((lamp) => lamp.id === fire.id))}
               last={at === fires.length - 1}
               onPress={() => flipOne(fire)}
             />

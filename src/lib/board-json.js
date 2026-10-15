@@ -260,6 +260,9 @@ export function normalizeLamp(raw) {
     // Put on one night's tonight by Did I itself: answer it if you like, it
     // never counts for or against a streak.
     ...(asBool(lamp.fromDidI) ? { fromDidI: true } : {}),
+    // The starter idea it was added from (starters.js), so the idea stays
+    // taken in any language.
+    ...(/^[a-z]{1,20}$/.test(asString(lamp.idea)) ? { idea: asString(lamp.idea) } : {}),
     // Track an amount: the note sheet asks for a number too. Only set when on.
     ...(asBool(lamp.trackAmount)
       ? { trackAmount: true, ...(amountUnitOf(lamp) ? { amountUnit: amountUnitOf(lamp) } : {}) }

@@ -3583,6 +3583,7 @@ export const en = {
   'checkOn.save': 'Save',
   'checkOn.pickFirst': 'Pick someone first.',
   'checkOn.cap': 'That is the most check-ins for now. Turn one off first.',
+  'checkOn.capToday': 'That is the most new check-ins for today. Try again tomorrow.',
   'checkOn.notFriend': 'You can only pick a friend or someone in your family.',
   'checkOn.fromTitle': '{name} asked you to check on',
   'checkOn.fromAt': 'If not answered by {time}, their time.',

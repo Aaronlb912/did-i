@@ -3589,6 +3589,7 @@ export const pt = {
   'checkOn.save': 'Salvar',
   'checkOn.pickFirst': 'Escolha alguém primeiro.',
   'checkOn.cap': 'Esse é o máximo por agora. Desligue um primeiro.',
+  'checkOn.capToday': 'Esse é o máximo de novos por hoje. Tente de novo amanhã.',
   'checkOn.notFriend': 'Você só pode escolher um amigo ou alguém da sua família.',
   'checkOn.fromTitle': '{name} pediu para você conferir',
   'checkOn.fromAt': 'Se não responder até {time}, no horário dela.',

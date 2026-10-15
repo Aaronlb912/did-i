@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { stampSavedAt } from './saved-at.js'
+import { savePrefsForSw } from './board-store.js'
+import { quietEnd } from './quiet.js'
 
 const KEY = 'did-i-prefs'
 const THEMES = new Set(['dark', 'light', 'phone'])
@@ -160,6 +162,7 @@ export function readPrefs() {
 export function writePrefs(patch, fromCloud = false) {
   const next = cleanPrefs({ ...readPrefs(), ...patch })
   localStorage.setItem(KEY, JSON.stringify(next))
+  savePrefsForSw(next)
   if (!fromCloud) stampSavedAt()
   clockCache = null
   listeners.forEach((fn) => fn(next))
@@ -199,23 +202,9 @@ export function pingOn(kind) {
   return !readPrefs().pingsOff.includes(kind)
 }
 
-function minutesOf(hhmm) {
-  const [h, m] = hhmm.split(':').map(Number)
-  return h * 60 + m
-}
-
 // A reminder that would land in quiet hours moves to when they end.
 export function afterQuiet(at, prefs = readPrefs()) {
-  if (!prefs.quietOn) return at
-  const from = minutesOf(prefs.quietFrom)
-  const to = minutesOf(prefs.quietTo)
-  if (from === to) return at
-  const now = at.getHours() * 60 + at.getMinutes()
-  const quiet = from < to ? now >= from && now < to : now >= from || now < to
-  if (!quiet) return at
-  const end = new Date(at.getFullYear(), at.getMonth(), at.getDate(), Math.floor(to / 60), to % 60, 0, 0)
-  if (end.getTime() <= at.getTime()) end.setDate(end.getDate() + 1)
-  return end
+  return quietEnd(at, prefs)
 }
 
 // Re-render prefs readers without saving, e.g. after a language file loads.

@@ -654,16 +654,18 @@ function keepProfileName(name) {
   }
 }
 
-export async function loadProfile() {
+// strict: throw on a failed read instead of returning null (export).
+export async function loadProfile({ strict = false } = {}) {
   const db = cloud()
   if (!db) return null
   const user = await me()
   if (!user) return null
-  const { data } = await db
+  const { data, error } = await db
     .from('profiles')
     .select('display_name, look_on, badge_cheer, prefs, gem_balance, avatar_url')
     .eq('user_id', user.id)
     .maybeSingle()
+  if (error && strict) throw error
   if (data) {
     noteAvatar(data.avatar_url)
     keepProfileName(data.display_name || '')
@@ -686,9 +688,12 @@ export async function saveProfile(patch) {
 
 export async function exportAll() {
   const shelf = readShelf()
-  const profile = await loadProfile()
-  const devices = (await listDevices()) || []
-  const social = await exportSocial().catch(() => ({}))
+  // A failed read throws, so the caller says the export missed instead of
+  // handing over a file with parts quietly left out.
+  const profile = await loadProfile({ strict: true })
+  const devices = await listDevices()
+  if (!devices) throw new Error('devices')
+  const social = await exportSocial()
   return {
     kind: 'did-i-account',
     pulledAt: new Date().toISOString(),
@@ -718,15 +723,18 @@ async function exportSocial() {
       .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
       .limit(5000),
   ])
+  const failed = [mine, answers, sends].find((res) => res.error)
+  if (failed) throw failed.error
   const ids = (mine.data || []).map((row) => row.card_id)
-  const cards = ids.length
-    ? (
-        await db
-          .from('we_cards')
-          .select('id, question, mode, shows, cadence, weekdays, goal_nights, starts_on, archived, made_at')
-          .in('id', ids)
-      ).data || []
-    : []
+  let cards = []
+  if (ids.length) {
+    const res = await db
+      .from('we_cards')
+      .select('id, question, mode, shows, cadence, weekdays, goal_nights, starts_on, archived, made_at')
+      .in('id', ids)
+    if (res.error) throw res.error
+    cards = res.data || []
+  }
   return {
     didWe: { cards, memberships: mine.data || [], answers: answers.data || [] },
     didYou: sends.data || [],

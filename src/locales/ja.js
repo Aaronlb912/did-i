@@ -3547,6 +3547,7 @@ export const ja = {
   'checkOn.save': '保存',
   'checkOn.pickFirst': '先に誰かを選んでください。',
   'checkOn.cap': '今はこれが上限です。先に1つオフにしてください。',
+  'checkOn.capToday': '今日新しく追加できるのはここまでです。また明日お試しください。',
   'checkOn.notFriend': '選べるのは友だちか家族だけです。',
   'checkOn.fromTitle': '{name} さんから見守りを頼まれています',
   'checkOn.fromAt': '相手の時間で {time} までに答えていなければ。',

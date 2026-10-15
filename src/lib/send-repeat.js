@@ -39,6 +39,12 @@ export function repeatLabel(repeat) {
   return ''
 }
 
+// True when a question kept from this send is already on one of the boards.
+export function sendOnShelf(boards, id) {
+  const want = String(id || '').toLowerCase()
+  return Boolean(want) && (boards || []).some((board) => (board?.lamps || []).some((lamp) => lamp?.sendId === want))
+}
+
 // What keeping a Did you puts on your Tonight. Takes the question text, or
 // { question, repeat } from a send. Dated by your night (boardDate, in the
 // account's time zone, as Tonight counts), not the phone's calendar, so a

@@ -3604,6 +3604,7 @@ export const de = {
   'checkOn.save': 'Speichern',
   'checkOn.pickFirst': 'Wähle zuerst jemanden.',
   'checkOn.cap': 'Mehr Nachfragen gehen gerade nicht. Schalte zuerst eine aus.',
+  'checkOn.capToday': 'Mehr neue Nachfragen gehen heute nicht. Versuch es morgen wieder.',
   'checkOn.notFriend': 'Du kannst nur Freunde oder Familie wählen.',
   'checkOn.fromTitle': '{name} hat dich gebeten, nachzusehen bei',
   'checkOn.fromAt': 'Wenn bis {time} nicht beantwortet, ihre Uhrzeit.',

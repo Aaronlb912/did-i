@@ -37,6 +37,7 @@ function openStore() {
 // Asks the store row on open and when the app comes back, at most hourly.
 function useUpdateState() {
   const [state, setState] = useState('')
+  const [, setWoke] = useState(0)
   useEffect(() => {
     if (Platform.OS !== 'ios' && Platform.OS !== 'android') return undefined
     const current = Application.nativeApplicationVersion || ''
@@ -54,7 +55,9 @@ function useUpdateState() {
     }
     check()
     const sub = AppState.addEventListener('change', (next) => {
-      if (next === 'active') check()
+      if (next !== 'active') return
+      if (alive) setWoke((n) => n + 1)
+      check()
     })
     return () => {
       alive = false
@@ -69,7 +72,10 @@ function useUpdateState() {
 export function UpdatePrompt({ path, colors }) {
   const state = useUpdateState()
   const top = useHeaderBottom() + 8
-  const [hidden, setHidden] = useState(() => snoozedUntil() > Date.now())
+  // Read at every render (the hook re-renders on each return to the app), so
+  // Not now runs out after a day without a restart.
+  const [, setTick] = useState(0)
+  const hidden = snoozedUntil() > Date.now()
 
   if (state === 'must') {
     return (
@@ -110,7 +116,7 @@ export function UpdatePrompt({ path, colors }) {
           hitSlop={8}
           onPress={() => {
             snooze()
-            setHidden(true)
+            setTick((n) => n + 1)
           }}
           style={({ pressed }) => [
             styles.x,

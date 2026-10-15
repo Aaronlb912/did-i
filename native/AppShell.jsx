@@ -34,6 +34,7 @@ import { SheetHost } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
 import { lazyScreen } from './lib/lazy-screen.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
+import { resumeCheckOnStops } from './components/LampManage.jsx'
 import { FlyHost } from './components/FlyHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
 import { showToast, undoUp, useToastQueue } from './lib/toast-queue.js'
@@ -187,7 +188,7 @@ function HallScreen() {
 const HALL_OPTIONS = { headerShown: false }
 
 export function AppShell() {
-  usePrefs()
+  const prefs = usePrefs()
   const route = useNativeRoute()
   const app = useAppShelf()
   const marksHeld = useMarksHeld()
@@ -285,6 +286,22 @@ export function AppShell() {
       alive = false
     }
   }, [app.book, app.shelf])
+
+  // Ping text follows gentle, language and the 12/24h clock: set them again.
+  const pingWords = `${prefs.gentle}|${prefs.locale}|${prefs.clock}`
+  const [armedWords, setArmedWords] = useState(pingWords)
+  useEffect(() => {
+    if (pingWords === armedWords) return
+    setArmedWords(pingWords)
+    const shelf = readShelf()
+    if (shelf?.boards?.length) armLampPings(shelf.boards).catch(reportRejection('arm-pings'))
+  }, [armedWords, pingWords])
+
+  // Check-ons still waiting to stop when the app closed during an undo.
+  const signedIn = Boolean(account.user)
+  useEffect(() => {
+    if (signedIn && shelfReady) resumeCheckOnStops()
+  }, [signedIn, shelfReady])
 
   const pingLabel = pingButtonLabel(pingState)
 
