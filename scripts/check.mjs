@@ -4692,7 +4692,8 @@ await testAsync('the widget redraws at midnight and when last night\'s grace end
   const now = new Date('2026-09-23T19:00:00')
   const times = widgetRedrawTimes([book], now)
   assert.ok(times.length >= 2, `got ${times.length}`)
-  // Night turns come first, so the native cap of 12 never drops midnight.
+  // Night turns come first, so Android's alarm cap of 12 (WidgetAlarms) never
+  // drops midnight. The iPhone timeline uses widgetTimelineTimes (cap 30).
   const turn = times[0]
   assert.notEqual(boardDate(turn), boardDate(now), 'the first redraw is on the new night')
   assert.equal(boardDate(new Date(turn.getTime() - 70 * 1000)), boardDate(now), 'and within a minute of the turn')
@@ -4745,7 +4746,15 @@ await testAsync('iOS reads widget taps out of the timeline before writing it aga
   assert.ok(/readTimeline\(\)\.catch\(/.test(body), 'a failed read does not block the write')
   assert.ok(bridge.includes('setWidgetTimelineReader(() => beginWidgetRefresh())'))
   assert.ok(bridge.includes("if (state !== 'active') markWidgetTimelineRead(false)"), 'leaving the app marks it unread')
-  assert.ok(/reconcileShelfFromWidgetNow\(\{ pullTimeline: true \}\)\r?\n\s+markWidgetTimelineRead\(\)/.test(bridge))
+  // Only a getTimeline that worked marks it read; a failed one leaves it unread.
+  const pull = sync.slice(sync.indexOf('export async function pullWidgetTimelineIntoShelf'))
+  const pullTry = pull.slice(0, pull.indexOf('} catch'))
+  assert.ok(pullTry.indexOf('timelineRead = true') > pullTry.indexOf('await api.getTimeline()'), 'read marked after getTimeline')
+  assert.ok(!pull.slice(pull.indexOf('} catch'), pull.indexOf('} catch') + 60).includes('timelineRead'), 'a failed read stays unread')
+  assert.ok(!bridge.includes('markWidgetTimelineRead()'), 'the bridge does not mark it read on its own')
+  // After the read, the newest stored shelf is drawn, not the read's copy.
+  const afterRead = body.slice(body.indexOf('await readTimeline()'), body.indexOf('const built'))
+  assert.ok(afterRead.includes('shelf = readShelf()') && !afterRead.includes('shelf = (await'), 'sync redraws from readShelf()')
   assert.ok(shelfHook.includes('beginWidgetRefresh()') && !shelfHook.includes('refreshWidgetTimelineFromKit()'), 'cold start shares the one read')
 })
 

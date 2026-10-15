@@ -111,7 +111,10 @@ export async function syncTonightWidget(shelf) {
   }
   if (Platform.OS === 'ios' && !timelineRead && readTimeline) {
     // A failed read must not hold the widget back for good.
-    shelf = (await readTimeline().catch(() => null)) || shelf
+    await readTimeline().catch(() => {})
+    // The read merged the taps into the stored shelf; read it again so an
+    // answer made in the app meanwhile is not drawn over.
+    shelf = readShelf()
   }
   const built = buildTonightWidgetProps(shelf)
   const props = enrichTonightWidgetProps(shelf, built)
@@ -247,6 +250,8 @@ export async function pullWidgetTimelineIntoShelf(shelf) {
     // that has come round, not only the last one.
     const now = Date.now()
     const shown = (await api.getTimeline()).filter((entry) => entry?.props && entry.date.getTime() <= now)
+    // Only a read that worked lets the next updateTimeline replace the taps.
+    timelineRead = true
     if (!shown.length) return shelf
     writeWidgetTonightProps(shown[shown.length - 1].props)
     return shown.reduce((next, entry) => mergeWidgetPropsIntoShelf(next, entry.props), shelf)

@@ -47,8 +47,8 @@ export async function initWidgetsOnLaunch(shelf = readShelf()) {
 /** Merge the latest WidgetKit timeline into the shelf (after taps while app was backgrounded). */
 export async function refreshWidgetTimelineFromKit() {
   if (!nativeWidgetsEnabled() || !nativeBridgeReady()) return readShelf()
+  // Marks the timeline read only when getTimeline worked (widget-sync.js).
   const merged = await reconcileShelfFromWidgetNow({ pullTimeline: true })
-  markWidgetTimelineRead()
   publishShelf(merged)
   syncTonightWidget(merged).catch(() => {})
   return merged
