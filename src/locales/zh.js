@@ -1836,9 +1836,9 @@ export const zh = {
     '在法律允许的最大范围内，Did I 不对间接、附带、特殊、后果性或惩罚性损害负责，也不对数据丢失、错过提醒或因依赖本应用造成的伤害负责。\n\n我们对任何索赔的总责任，以五十美元与你在索赔前十二个月内向我们支付的金额中较高者为限。',
   'legal.terms.indemnify.title': '赔偿',
   'legal.terms.indemnify.body': '对于因你使用本应用、你的内容，或你违反本条款或他人权利而产生的索赔，你同意使 Did I 免受损害。',
-  'legal.copyright': "© 2026 Did I???. 保留所有权利。 Did I???™ 是 Did I??? 的商标。",
-  'legal.terms.brand.title': "名称与美术",
-  'legal.terms.brand.body': "Did I??? 的名称、标志、伙伴、外观和其他美术作品归 Did I??? 所有。未经许可，你不得重复使用。",
+  'legal.copyright': '© 2026 Did I???. 保留所有权利。 Did I???™ 是 Did I??? 的商标。',
+  'legal.terms.brand.title': '名称与美术',
+  'legal.terms.brand.body': 'Did I??? 的名称、标志、伙伴、外观和其他美术作品归 Did I??? 所有。未经许可，你不得重复使用。',
   'legal.terms.law.title': '争议',
   'legal.terms.law.body':
     '本条款受美国法律管辖，不考虑法律冲突规则。\n\n争议请先发邮件到 {email}。如果无法解决，除非你当地的消费者法律另有规定，由美国法院专属管辖。',

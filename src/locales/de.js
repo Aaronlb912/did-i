@@ -1883,9 +1883,9 @@ export const de = {
   'legal.terms.indemnify.title': 'Freistellung',
   'legal.terms.indemnify.body':
     'Du stimmst zu, Did I von Ansprüchen freizuhalten, die aus deiner Nutzung der App, deinem Inhalt oder deinem Verstoß gegen diese Bedingungen oder Rechte anderer entstehen.',
-  'legal.copyright': "© 2026 Did I???. Alle Rechte vorbehalten. Did I???™ ist eine Marke von Did I???.",
-  'legal.terms.brand.title': "Name und Grafik",
-  'legal.terms.brand.body': "Der Name Did I???, das Logo, die Buddies, die Looks und andere Grafiken gehören Did I???. Du darfst sie ohne Erlaubnis nicht weiterverwenden.",
+  'legal.copyright': '© 2026 Did I???. Alle Rechte vorbehalten. Did I???™ ist eine Marke von Did I???.',
+  'legal.terms.brand.title': 'Name und Grafik',
+  'legal.terms.brand.body': 'Der Name Did I???, das Logo, die Buddies, die Looks und andere Grafiken gehören Did I???. Du darfst sie ohne Erlaubnis nicht weiterverwenden.',
   'legal.terms.law.title': 'Streitigkeiten',
   'legal.terms.law.body':
     'Diese Bedingungen unterliegen den Gesetzen der Vereinigten Staaten, ohne Kollisionsnormen.\n\nStreitigkeiten sollten zuerst an {email} geschickt werden. Wenn wir sie nicht lösen können, haben Gerichte in den Vereinigten Staaten ausschließliche Zuständigkeit, es sei denn, dein lokales Verbraucherrecht verlangt etwas anderes.',
