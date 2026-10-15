@@ -1,4 +1,5 @@
 import ExpoModulesCore
+import UIKit
 import WatchConnectivity
 
 // Sends tonight's cards to the Apple Watch and hands taps from the watch to JS.
@@ -109,15 +110,34 @@ final class WatchBridge: NSObject, WCSessionDelegate {
       if self.recentTapKeys.contains(key) { return }
       self.recentTapKeys.append(key)
       if self.recentTapKeys.count > 50 { self.recentTapKeys.removeFirst() }
-      if self.listening, let onTap = self.onTap {
-        onTap(tap)
-        return
-      }
+      // Saved first, so a tap survives JS being suspended or the app being
+      // killed before it runs. JS takes the queue when told (takePendingTaps).
       self.lock.lock()
       self.pending.append(tap)
       if self.pending.count > 50 { self.pending.removeFirst(self.pending.count - 50) }
       self.lock.unlock()
+      self.holdAwake()
+      // No tap in the event: JS reads the queue, so nothing is applied twice.
+      if self.listening, let onTap = self.onTap { onTap([:]) }
     }
+  }
+
+  // A watch tap wakes the app in the background only for a moment. Ask for a
+  // little longer so JS can save it and redraw the home screen widget.
+  // Main queue only.
+  private var awakeTask: UIBackgroundTaskIdentifier = .invalid
+  private func holdAwake() {
+    guard awakeTask == .invalid else { return }
+    awakeTask = UIApplication.shared.beginBackgroundTask(withName: "didi.watch.tap") { [weak self] in
+      self?.endAwake()
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in self?.endAwake() }
+  }
+
+  private func endAwake() {
+    guard awakeTask != .invalid else { return }
+    UIApplication.shared.endBackgroundTask(awakeTask)
+    awakeTask = .invalid
   }
 
   func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {

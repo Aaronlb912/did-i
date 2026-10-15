@@ -245,11 +245,17 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
     // When the phone sent these. A tap it already had is older: its word wins (an undo).
     let raw = (try? JSONSerialization.jsonObject(with: Data(json.utf8))) as? [String: Any]
     let builtAt = (raw?["at"] as? Double) ?? 0
+    // Newer phones list the taps (by at) they have saved or turned down. Then
+    // only that list, or an answer on the card, lets a tap go, so cards built
+    // before the phone saved the tap cannot flip it back to open.
+    let taken = (raw?["taken"] as? [Any])?.compactMap { ($0 as? NSNumber)?.doubleValue }
     var keep: [[String: Any]] = []
     for tap in taps {
       guard let id = tap["id"] as? String, let night = tap["night"] as? String,
             let answer = tap["answer"] as? String else { continue }
-      if let sentAt = tap["sentAt"] as? Double, sentAt > 0, builtAt > sentAt { continue }
+      if let taken {
+        if let at = tap["at"] as? Double, taken.contains(where: { abs($0 - at) < 1 }) { continue }
+      } else if let sentAt = tap["sentAt"] as? Double, sentAt > 0, builtAt > sentAt { continue }
       var stillOpen = false
       for i in next.items.indices where next.items[i].id == id && next.items[i].night == night && next.items[i].status == "open" {
         next.items[i].status = answer
