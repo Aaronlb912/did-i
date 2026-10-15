@@ -2298,6 +2298,58 @@ test('the tonight widget can draw a question without the app', () => {
   assert.ok(catTree.includes('#5c4a3a') && catTree.includes('#ffd4a8'), 'cat whiskers and inner ears')
 })
 
+await testAsync('a widget or reminder Did pays one purse, not one per folder', async () => {
+  const { mergePurses } = await import('../src/lib/purse.js')
+  const folder = (id, lamp) => ({
+    id,
+    title: id,
+    coins: 16,
+    lamps: [{ id: lamp, question: `${lamp}?`, cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+    answers: [],
+  })
+  const fresh = () => writeShelf({ currentId: 'f1', boards: [folder('f1', 'a'), folder('f2', 'b'), folder('f3', 'c')] })
+  const at = new Date(2026, 8, 23, 21, 0)
+  fresh()
+  const tapped = applyWidgetTapOnce('b', 'did', '2026-09-23', at, at.getTime())
+  const coins = tapped.boards.map((book) => book.coins)
+  assert.ok(coins.every((n) => n === coins[0]), `every folder holds the same coins: ${coins}`)
+  assert.ok(coins[0] > 16 && coins[0] <= 20, `one Did adds a few coins, got ${coins[0]}`)
+  assert.equal(mergePurses(readShelf().boards).coins, coins[0])
+  assert.equal(applyWidgetTapOnce('b', 'did', '2026-09-23', at, at.getTime()), null, 'a second tap the same night does nothing')
+  assert.equal(mergePurses(readShelf().boards).coins, coins[0], 'and pays nothing')
+
+  // The iOS widget path: answers merged from the widget's saved props.
+  const shelf = fresh()
+  const merged = mergeWidgetPropsIntoShelf(shelf, { items: [{ lampId: 'b', periodKey: '2026-09-23', status: 'yes' }] }, at)
+  assert.deepEqual(merged.boards.map((book) => book.coins), [coins[0], coins[0], coins[0]])
+  assert.equal(mergePurses(merged.boards).coins, coins[0])
+
+  // Answers queued in two folders: both pays count, once each.
+  const both = mergeWidgetPropsIntoShelf(
+    fresh(),
+    {
+      items: [
+        { lampId: 'a', periodKey: '2026-09-23', status: 'yes' },
+        { lampId: 'b', periodKey: '2026-09-23', status: 'yes' },
+      ],
+    },
+    at,
+  )
+  const pay = coins[0] - 16
+  assert.deepEqual(both.boards.map((book) => book.coins), [16 + 2 * pay, 16 + 2 * pay, 16 + 2 * pay])
+
+  // Folders already out of step (A 100, B 50): a tap on B starts from 100.
+  writeShelf({ currentId: 'f1', boards: [{ ...folder('f1', 'a'), coins: 100 }, { ...folder('f2', 'b'), coins: 50 }] })
+  const fixed = applyWidgetTapOnce('b', 'did', '2026-09-23', at, at.getTime())
+  assert.deepEqual(fixed.boards.map((book) => book.coins), [100 + pay, 100 + pay])
+  writeShelf({ currentId: 'f1', boards: [{ ...folder('f1', 'a'), coins: 100 }, { ...folder('f2', 'b'), coins: 50 }] })
+  const props = mergeWidgetPropsIntoShelf(readShelf(), { items: [{ lampId: 'b', periodKey: '2026-09-23', status: 'yes' }] }, at)
+  assert.deepEqual(props.boards.map((book) => book.coins), [100 + pay, 100 + pay])
+
+  // A phone already out of step shows the largest folder, not the sum.
+  assert.equal(mergePurses([{ coins: 16 }, { coins: 18 }, { coins: 16 }]).coins, 18)
+})
+
 test('a widget tap made after its night turned is dropped, one made on the night lands', () => {
   const book = {
     id: 'tap-late',

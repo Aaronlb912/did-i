@@ -443,8 +443,10 @@ export function mergePurses(boards) {
   const coinsSame = purses.every((item) => item.coins === purses[0].coins)
   const gemsSame = purses.every((item) => item.gems === purses[0].gems)
   return {
-    coins: coinsSame ? purses[0].coins : purses.reduce((n, item) => n + item.coins, 0),
-    gems: gemsSame ? purses[0].gems : purses.reduce((n, item) => n + item.gems, 0),
+    // Folders share one purse. Folders that disagree come from a write that
+    // paid one folder only, so take the largest; a sum grew on every save.
+    coins: coinsSame ? purses[0].coins : Math.max(...purses.map((item) => item.coins)),
+    gems: gemsSame ? purses[0].gems : Math.max(...purses.map((item) => item.gems)),
     cheers: [...new Set(purses.flatMap((item) => item.cheers))],
     cheerOn: purses.find((item) => item.cheerOn !== 'lime')?.cheerOn || purses[0].cheerOn,
     looks: [...new Set(purses.flatMap((item) => item.looks))],
