@@ -7,15 +7,26 @@ import { deviceZone, wallClock } from './zone.js'
 // a night before the question existed. Only a change of zone can mark one;
 // a clock set ahead or a DST change (same zone) never does.
 
-// The last zone and night this phone saw. Kept on the phone, not synced: two
-// phones in two places must not read each other's zone as a trip.
+// The last zone and night this phone saw, the nights it skipped, and when it
+// last skipped one. Kept on the phone, not synced: two phones in two places
+// must not read each other's zone as a trip. Its skips are folded into every
+// folder on each close, so a folder that lost them (an older app's sync)
+// gets them back.
 const SEEN_KEY = 'did-i-zone-seen'
-export const TRAVEL_SKIP_MAX = 30
-// Smaller jumps cannot lose a whole night.
-const JUMP_HOURS = 12
+// At most one skip a week, so 60 is over a year: dropping the oldest never
+// lands inside a streak anyone still has.
+export const TRAVEL_SKIP_MAX = 60
+const WEEK_MS = 7 * 24 * 3600000
+// Only a west-bound date-line crossing: from a zone behind UTC to one at
+// least this far ahead of it. LA to Tokyo is 16 hours, Hawaii to Auckland 23.
+const JUMP_HOURS = 14
 
 function nightIn(now, zone) {
   return isoDate(wallClock(now, zone))
+}
+
+function utcOffset(now, zone) {
+  return (wallClock(now, zone) - wallClock(now, 'UTC')) / 3600000
 }
 
 export function capSkips(list) {
@@ -23,26 +34,24 @@ export function capSkips(list) {
   return [...new Set(clean)].sort().slice(-TRAVEL_SKIP_MAX)
 }
 
-// seen: { zone, night, skips } from the last look. Returns the next one.
-// Skipped: nights after the last one seen and before tonight in the new zone,
-// and only when the new zone is at least half a day ahead.
+// seen: { zone, night, skips, skipAt } from the last look. Returns the next.
+// One night is skipped when the zone moved from behind UTC to far ahead of
+// it, the last night seen is the one just before the skipped night (days at
+// home without opening the app stay real nights), and no skip in a week.
 export function travelStep(seen, zone, now = new Date()) {
   const skips = capSkips(seen?.skips)
-  if (!zone) return { zone: seen?.zone || '', night: seen?.night || '', skips }
+  const skipAt = Number(seen?.skipAt) || 0
+  if (!zone) return { zone: seen?.zone || '', night: seen?.night || '', skips, skipAt }
   const night = nightIn(now, zone)
   const from = seen?.zone && seen.zone !== zone && seen.night ? seen.zone : ''
-  if (!from) return { zone, night: seen?.zone === zone && seen.night > night ? seen.night : night, skips }
-  const ahead = (wallClock(now, zone) - wallClock(now, from)) / 3600000
-  const added = []
-  if (ahead >= JUMP_HOURS) {
-    // A jump under a day loses at most the night before tonight; older
-    // nights were lived in the old zone and close as usual.
-    for (let back = ahead >= 24 ? 2 : 1; back >= 1; back -= 1) {
-      const day = addDaysIso(night, -back)
-      if (day > seen.night) added.push(day)
-    }
+  if (!from) return { zone, night: seen?.zone === zone && seen.night > night ? seen.night : night, skips, skipAt }
+  const lost = addDaysIso(night, -1)
+  const westOverDateLine =
+    utcOffset(now, from) < 0 && utcOffset(now, zone) > 0 && utcOffset(now, zone) - utcOffset(now, from) >= JUMP_HOURS
+  if (westOverDateLine && seen.night === addDaysIso(lost, -1) && now.getTime() - skipAt >= WEEK_MS) {
+    return { zone, night, skips: capSkips([...skips, lost]), skipAt: now.getTime() }
   }
-  return { zone, night, skips: added.length ? capSkips([...skips, ...added]) : skips }
+  return { zone, night, skips, skipAt }
 }
 
 function readSeen() {
@@ -57,7 +66,7 @@ function readSeen() {
 export function noteZone(now = new Date(), zone = deviceZone()) {
   const seen = readSeen()
   const next = travelStep(seen, zone, now)
-  if (next.zone !== seen?.zone || next.night !== seen?.night || next.skips.length !== (seen?.skips || []).length) {
+  if (next.zone !== seen?.zone || next.night !== seen?.night || next.skipAt !== (Number(seen?.skipAt) || 0)) {
     try {
       localStorage.setItem(SEEN_KEY, JSON.stringify(next))
     } catch {
@@ -67,13 +76,28 @@ export function noteZone(now = new Date(), zone = deviceZone()) {
   return next.skips
 }
 
+// Nights this folder has any answer on (any phone): never skipped.
+function answeredNights(book) {
+  const out = new Set()
+  for (const answer of book?.answers || []) out.add(String(answer?.periodKey || '').slice(0, 10))
+  return out
+}
+
+// The skips that still hold for a folder: capped, none on an answered night.
+export function folderSkips(book, list) {
+  const clean = capSkips(list)
+  if (!clean.length) return clean
+  const answered = answeredNights(book)
+  return clean.filter((day) => !answered.has(day))
+}
+
 // The folder with the phone's skipped nights folded in. Same object when
 // nothing is new, so memoized walks keep their cache.
 export function withTravelSkips(book, skips) {
-  if (!skips.length) return book
   const have = Array.isArray(book.travelSkips) ? book.travelSkips : []
-  if (skips.every((day) => have.includes(day))) return book
-  return { ...book, travelSkips: capSkips([...have, ...skips]) }
+  const next = folderSkips(book, [...have, ...skips])
+  if (next.length === have.length && next.every((day, i) => day === have[i])) return book
+  return { ...book, travelSkips: next }
 }
 
 export function travelSkipped(book, iso) {

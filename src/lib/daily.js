@@ -69,7 +69,8 @@ export function closePastNights(book, now = new Date(), skips = noteZone(now)) {
   let changed = next !== book
   for (let step = 0; step < CLOSE_CAP; step += 1) {
     const grace = graceNightIso(now)
-    const rows = catchUpRows(next, now).filter((row) => row.dateIso !== grace && !travelSkipped(next, row.dateIso))
+    const book = next
+    const rows = catchUpRows(book, now, (iso) => travelSkipped(book, iso)).filter((row) => row.dateIso !== grace)
     if (!rows.length) break
     for (const row of rows) {
       next = putAnswer(next, row, 'skip', nightStart(row.dateIso))

@@ -279,6 +279,8 @@ test('the night turns over at midnight, not at four', () => {
 
 const travel = await import('../src/lib/travel.js')
 const { shelfStreak: travelShelfStreak } = await import('../src/lib/hall-feel.js')
+const { graceRowsFor } = await import('../src/lib/grace.js')
+const { unlockAchievements } = await import('../src/lib/achievements.js')
 const LA = 'America/Los_Angeles'
 const TOKYO = 'Asia/Tokyo'
 
@@ -332,20 +334,63 @@ test('a real missed night before the flight still ends the streak', () => {
   const book = travelBook(['2026-10-13', '2026-10-15'], ['2026-10-15'])
   assert.equal(questionStreak(book, book.lamps[0], '2026-10-16'), 2)
   assert.equal(travelShelfStreak([book], new Date(2026, 9, 16, 12)), 2)
-  // Not opened for days before the trip: only the date-line night is skipped.
+  // Not opened for days before the trip: no night is skipped at all.
   const next = travel.travelStep({ zone: LA, night: '2026-10-10', skips: [] }, TOKYO, new Date('2026-10-16T06:00:00Z'))
-  assert.deepEqual(next.skips, ['2026-10-15'])
+  assert.deepEqual(next.skips, [])
+})
+
+test('only a real west-bound date-line trip skips, at most once a week', () => {
+  const step = (from, to, at, extra = {}) => travel.travelStep({ zone: from, night: '2026-10-14', skips: [], ...extra }, to, new Date(at))
+  assert.deepEqual(step('Pacific/Honolulu', 'Pacific/Auckland', '2026-10-16T03:00:00Z').skips, ['2026-10-15'])
+  assert.deepEqual(step(LA, 'Australia/Sydney', '2026-10-16T05:00:00Z').skips, ['2026-10-15'])
+  // Not a date-line crossing: London to Tokyo, New York to London, east-bound.
+  assert.deepEqual(step('Europe/London', TOKYO, '2026-10-16T06:00:00Z').skips, [])
+  assert.deepEqual(step(TOKYO, LA, '2026-10-16T22:00:00Z').skips, [])
+  // Flipping the zone in Settings every day: the second flip within a week gets nothing.
+  const first = step(LA, TOKYO, '2026-10-16T06:00:00Z')
+  const back = travel.travelStep(first, LA, new Date('2026-10-16T20:00:00Z'))
+  const again = travel.travelStep({ ...back, night: '2026-10-16' }, TOKYO, new Date('2026-10-18T06:00:00Z'))
+  assert.deepEqual(again.skips, ['2026-10-15'])
+  // A week later a real trip counts again.
+  const later = travel.travelStep({ ...back, zone: LA, night: '2026-10-23' }, TOKYO, new Date('2026-10-25T06:00:00Z'))
+  assert.deepEqual(later.skips, ['2026-10-15', '2026-10-24'])
+})
+
+test('a night answered on any phone is never travel-skipped', () => {
+  const answered = travelBook([], [])
+  assert.deepEqual(travel.withTravelSkips(answered, ['2026-10-15']).travelSkips, [])
+  // The other phone answered the 15th: merging drops the skip.
+  const skipped = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-10-15'])] }
+  const other = { currentId: 'trip', boards: [travelBook([])] }
+  const merged = mergeShelves(skipped, other, '2026-10-16', '2026-10-15')
+  assert.deepEqual(merged.boards[0].travelSkips, [])
+  assert.equal(answerFor(merged.boards[0], 'walk', '2026-10-15')?.status, 'yes')
+})
+
+test('the other walks step over a travel-skipped night', () => {
+  // Last night lost to travel is not offered in the grace period.
+  const book = travelBook(['2026-10-15', '2026-10-16'], ['2026-10-15'])
+  assert.deepEqual(graceRowsFor([book], '2026-10-15'), [])
+  assert.equal(graceRowsFor([travelBook(['2026-10-15', '2026-10-16'])], '2026-10-15').length, 1)
+  // A quiet week holds with the skipped night in it.
+  const week = unlockAchievements(travelBook(['2026-10-15'], ['2026-10-15']), new Date(2026, 9, 16, 22))
+  assert.ok(week.unlocked.includes('quiet-week'))
+  // The close looks past the skipped night to the real previous one.
+  const open = travelBook(['2026-10-14', '2026-10-15', '2026-10-16'], ['2026-10-15'])
+  const closed = closePastNights(open, new Date(2026, 9, 16, 10), [])
+  assert.equal(answerFor(closed, 'walk', '2026-10-14')?.status, 'skip')
+  assert.equal(answerFor(closed, 'walk', '2026-10-15'), undefined)
 })
 
 test('travel-skipped nights union across phones and stay capped', () => {
-  const left = { currentId: 'trip', boards: [travelBook([], ['2026-10-15'])] }
-  const right = { currentId: 'trip', boards: [travelBook([], ['2026-09-02'])] }
+  const left = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-10-15'])] }
+  const right = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-09-02'])] }
   const merged = mergeShelves(left, right, '2026-10-16', '2026-10-15')
   assert.deepEqual(merged.boards[0].travelSkips, ['2026-09-02', '2026-10-15'])
-  const many = Array.from({ length: 40 }, (_, i) => addDaysIso('2026-01-01', i))
+  const many = Array.from({ length: 80 }, (_, i) => addDaysIso('2025-01-01', i * 7))
   const capped = travel.capSkips(many)
   assert.equal(capped.length, travel.TRAVEL_SKIP_MAX)
-  assert.equal(capped[capped.length - 1], many[39])
+  assert.equal(capped[capped.length - 1], many[79])
 })
 
 test('an unanswered night closes as nope when the day turns', () => {

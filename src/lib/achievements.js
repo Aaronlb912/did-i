@@ -2,6 +2,7 @@ import { hallHeat, shelfStreak } from './hall-feel.js'
 import { readShelf } from './board-shelf.js'
 import { hasLocaleKey, t } from './i18n.js'
 import { questionStreak } from './lamp-record.js'
+import { travelSkipped } from './travel.js'
 import { shopBuddies, liveCheers, FREE_BUDDY, liveLooks, mergePurses } from './purse.js'
 import {
   addDaysIso,
@@ -175,6 +176,7 @@ export function streakLength(book, lamp, now) {
 function cameBackAfterHole(book, now = new Date()) {
   const today = boardDate(now, book.dayFoldHour)
   const yesterday = addDaysIso(today, -1)
+  if (travelSkipped(book, yesterday)) return false
   const at = parseIsoDate(yesterday)
   if (!at) return false
   at.setHours(12, 0, 0, 0)
@@ -191,6 +193,7 @@ function quietWeek(book, now) {
   let anyDue = false
   for (let i = 0; i < 7; i += 1) {
     const iso = addDaysIso(today, -i)
+    if (travelSkipped(book, iso)) continue
     const date = parseIsoDate(iso)
     if (!date) return false
     date.setHours(12, 0, 0, 0)

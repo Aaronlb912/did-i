@@ -359,12 +359,16 @@ export function previousDueDate(lamp, dateIso) {
   return ''
 }
 
-export function catchUpRows(book, now = new Date()) {
+// skipped(iso): a night to look past (one lost to travel), so the real
+// previous due night still closes.
+export function catchUpRows(book, now = new Date(), skipped = null) {
   const dateIso = boardDate(now, book.dayFoldHour)
   const rows = []
   for (const lamp of book.lamps || []) {
     if (lamp.archived || lamp.cadence === 'once' || isEvery(lamp)) continue
-    const prevIso = previousDueDate(lamp, dateIso)
+    let prevIso = previousDueDate(lamp, dateIso)
+    for (let step = 0; skipped && prevIso && skipped(prevIso) && step < 3; step += 1) prevIso = previousDueDate(lamp, prevIso)
+    if (prevIso && skipped && skipped(prevIso)) continue
     if (!prevIso) continue
     if (lamp.createdOn && prevIso < lamp.createdOn) continue
     const periodKey = periodKeyFor(lamp, prevIso)
