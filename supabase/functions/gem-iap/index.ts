@@ -154,7 +154,8 @@ async function verifyPlay(productId: string, purchaseToken: string): Promise<Ver
   if (!res.ok) return { ok: false, miss: 'store' }
   const info = await res.json()
   // 0 purchased, 1 cancelled, 2 pending.
-  if (info.purchaseState !== 0) return { ok: false, miss: info.purchaseState === 2 ? 'pending' : 'receipt' }
+  // 1 is a refunded or voided buy: it never credits, and 'refunded' lets the app close it.
+  if (info.purchaseState !== 0) return { ok: false, miss: info.purchaseState === 2 ? 'pending' : 'refunded' }
   // purchaseType 0 is a license tester's test buy (1 promo, 2 rewarded; absent when paid).
   return { ok: true, ref: String(info.orderId || purchaseToken), test: info.purchaseType === 0, owner: String(info.obfuscatedExternalAccountId || '') }
 }

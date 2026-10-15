@@ -88,7 +88,7 @@ export function renderDidITogetherAndroidWidget(props, widgetInfo) {
   const p = props || {}
   const C = p.colors ? { ...FALLBACK, ...p.colors } : FALLBACK
   const { compact, large, narrow } = widgetSize(widgetInfo)
-  const people = Array.isArray(p.people) ? p.people : []
+  const people = Array.isArray(p.people) ? p.people.filter((item) => item && typeof item === 'object') : []
   const grid = compact || narrow
   const shown = people.slice(0, large && !narrow ? 14 : 6)
   const half = Math.ceil(shown.length / 2)
