@@ -239,12 +239,24 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
   }
 
   // Cards from the phone. Taps the phone has not taken yet stay answered.
+  // The same cards can come as a message and as the context, on WCSession's
+  // own queue: one at a time, and never an older set over a newer one.
+  private let saveLock = NSLock()
+  static let cardsAtKey = "didi.watch.cardsAt"
+
   private func save(_ json: String) {
+    saveLock.lock()
+    defer { saveLock.unlock() }
     guard var next = CardStore.decode(json) else { return }
     let taps = recentTaps(now: Date().timeIntervalSince1970 * 1000)
     // When the phone sent these. A tap it already had is older: its word wins (an undo).
     let raw = (try? JSONSerialization.jsonObject(with: Data(json.utf8))) as? [String: Any]
     let builtAt = (raw?["at"] as? Double) ?? 0
+    // A stamp far in the future (the phone's clock was wrong) does not block.
+    let lastAt = defaults.double(forKey: CardStore.cardsAtKey)
+    let nowMs = Date().timeIntervalSince1970 * 1000
+    if builtAt > 0 && builtAt < lastAt && lastAt < nowMs + 3_600_000 { return }
+    if builtAt > 0 { defaults.set(builtAt, forKey: CardStore.cardsAtKey) }
     // Newer phones list the taps (by at) they have saved or turned down. Then
     // only that list, or an answer on the card, lets a tap go, so cards built
     // before the phone saved the tap cannot flip it back to open.
@@ -358,6 +370,13 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
     }
   }
 
+  // Cards sent as a message while the watch app is open (newer phone builds).
+  func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+    if let json = message["cards"] as? String {
+      save(json)
+    }
+  }
+
   func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
     if let json = applicationContext["cards"] as? String {
       save(json)
@@ -467,10 +486,16 @@ struct CardView: View {
     let caption = card.tag.isEmpty ? count : "\(card.tag) · \(count)"
     ZStack {
       ProgressRing(progress: total > 0 ? Double(answered) / Double(total) : 0, palette: palette)
-      ScrollView {
-        VStack(spacing: 6) {
-          if let buddy = store.cards?.buddy {
-            BuddyView(buddy: buddy, width: 40)
+      // One screen, no scrolling, 41mm to Ultra: the buttons keep their size
+      // at the bottom and the question shrinks into what is left.
+      GeometryReader { geo in
+        let h = geo.size.height
+        let didSize = min(max(h * 0.27, 48), 58)
+        let nopeSize = max(44, didSize - 12)
+        VStack(spacing: 4) {
+          // The buddy only where there is room for it and a long question.
+          if h >= 190, let buddy = store.cards?.buddy {
+            BuddyView(buddy: buddy, width: 34)
           }
           Text(caption)
             .font(.system(size: 11, weight: .semibold, design: .monospaced))
@@ -479,18 +504,18 @@ struct CardView: View {
             .lineLimit(1)
             .minimumScaleFactor(0.7)
           Text(card.question)
-            .font(.headline)
-            .bold()
+            .font(.system(size: 17, weight: .bold))
             .foregroundStyle(palette.ink)
             .multilineTextAlignment(.center)
-            .lineLimit(4)
-            .minimumScaleFactor(0.6)
-            .fixedSize(horizontal: false, vertical: true)
+            .lineLimit(5)
+            .minimumScaleFactor(0.55)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .layoutPriority(-1)
           HStack(alignment: .top, spacing: 18) {
             RoundAnswer(
               symbol: "clock",
               label: nonEmpty(store.cards?.nopeLabel) ?? String(localized: "Not yet"),
-              size: 46,
+              size: nopeSize,
               fill: palette.card2,
               stroke: palette.line,
               iconColor: palette.soft,
@@ -501,7 +526,7 @@ struct CardView: View {
             RoundAnswer(
               symbol: "checkmark",
               label: nonEmpty(store.cards?.didLabel) ?? String(localized: "Did"),
-              size: 58,
+              size: didSize,
               fill: palette.accent,
               stroke: nil,
               iconColor: palette.bg,
@@ -510,11 +535,13 @@ struct CardView: View {
               store.answer(card, did: true)
             }
           }
-          .padding(.top, 4)
+          .fixedSize()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 8)
+        .frame(width: geo.size.width, height: h)
       }
+      // Inside the safe area, kept clear of the ring and the rounded corners.
+      .padding(.horizontal, 10)
+      .padding(.vertical, 4)
     }
   }
 }

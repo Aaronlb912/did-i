@@ -22,6 +22,11 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 - **Built:** `android/wear` (Compose for Wear OS) shows tonight's cards with the ring, buddy, Not yet and Did, the done screen and a tile; taps save on the phone like a widget tap (`WatchTapService`, `WatchModule`). See docs/watch.md, Wear OS app. CI: wear-check.yml; android-apk.yml builds `did-i-wear-aab` with the release key.
 - **Not done:** never run on a Wear emulator or real watch; Play Console Wear OS form factor opt-in and Wear screenshots; no complication (tile only). A tap the phone refuses shows open again on the watch only when cards arrive more than 24 hours later. English-only fallback words before the first cards.
 
+## Live answers across devices (branch `worktree-agent-a1ad3f1da0c5fa3e3`)
+
+- **Built:** your own answers reach your other open devices through Realtime on `answer_log` (`startLiveAnswers` in `src/lib/cloud-sync.js`, `supabase/realtime.sql`, not applied yet). Watch taps are saved natively on the phone before JS runs and stay on the watch until the phone lists them as taken.
+- **Not done:** Did we and Did you answers from other people are still read on focus, not live. Their rows are read through functions, so a live feed needs a broadcast or a new select policy, and that changes what others can see. A device in the background only catches up when it opens (the push function can send `content-available`, but nothing sends it for answers). An undo on one device reaches the others on their next pull. iOS home screen widget taps join the shelf when the app next opens.
+
 ## Apple Watch (branches `watch-1`, `watch-2`)
 
 - **Built:** steps 1 to 3. Watch app in `targets/watch` shows tonight's cards one at a time with Did and Not yet, a done state and "Open Did I on your iPhone" when it has no cards; taps go back to the phone and save like a widget tap (`modules/didi-watch`, `native/watch-sync.js`). Complication "1 of 3" in `targets/watch-widget`. Opt-in with `DIDI_WATCH=1`, built unsigned in CI by ios-watch-check.yml.

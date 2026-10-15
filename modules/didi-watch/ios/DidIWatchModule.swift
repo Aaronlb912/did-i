@@ -87,6 +87,11 @@ final class WatchBridge: NSObject, WCSessionDelegate {
     lock.unlock()
     guard let json else { return }
     try? session.updateApplicationContext(["cards": json])
+    // The context can take a while to land; a message reaches an open watch
+    // app at once. Older watch builds ignore it and still get the context.
+    if session.isReachable {
+      session.sendMessage(["cards": json], replyHandler: nil, errorHandler: nil)
+    }
   }
 
   // done runs once the tap is handed to JS, queued, or dropped as a repeat.

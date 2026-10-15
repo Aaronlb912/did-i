@@ -11,6 +11,7 @@ import { readPrefs, writePrefs } from './prefs.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'
 import { mergeShelves } from './shelf-merge.js'
 import {
+  applyAnswers,
   forgetAnswerMarks,
   pruneAnswers,
   pullAnswers,
@@ -289,9 +290,11 @@ export function bindAuthSync() {
     if (session?.user) {
       armSyncForUser()
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') pullAndMerge()
+      if (foregroundBound && isAppForeground()) startLiveAnswers()
       return
     }
     if (event === 'SIGNED_OUT') {
+      stopLiveAnswers()
       forgetAccountCaches()
       sessionMissing()
     }
@@ -308,12 +311,14 @@ export function bindForegroundSync() {
   if (db) {
     db.auth.getSession().then(({ data }) => {
       if (data?.session) armSyncForUser()
+      if (data?.session && isAppForeground()) startLiveAnswers()
     })
   }
 
   function onWake() {
     if (!isAppForeground()) return
     pullAndMerge()
+    startLiveAnswers()
   }
 
   // A gift arrived while the app is open: sync opens it. At most once a minute.
@@ -325,6 +330,7 @@ export function bindForegroundSync() {
   })
 
   function onSleep() {
+    stopLiveAnswers()
     reconcileLocalShelfFromWidget()
     flushPushSoon()
   }
@@ -340,6 +346,67 @@ export function bindForegroundSync() {
     if (on) onWake()
     else onSleep()
   })
+}
+
+// Answers made on another device of this account, while this one is open
+// (supabase/realtime.sql). Each row goes through applyAnswers, the same merge
+// a pull uses: a later answeredAt wins, so our own sends coming back and a
+// row seen twice change nothing. Nothing is sent back and no coins are paid.
+// A missed row (asleep, offline, a dropped socket) still comes with the next
+// pull on focus or launch.
+let live = null
+let liveRows = []
+let liveTimer = 0
+
+function applyLiveRows() {
+  liveTimer = 0
+  const rows = liveRows
+  liveRows = []
+  // A pull in flight lands the shelf it started from; fold these in after it.
+  if (pulling) {
+    pulling.finally(() => {
+      if (!live) return
+      liveRows.push(...rows)
+      if (!liveTimer) liveTimer = setTimeout(applyLiveRows, 0)
+    })
+    return
+  }
+  const { shelf, changed } = applyAnswers(readShelf(), rows)
+  if (!changed) return
+  // Same saved stamp: only answers changed, and they travel on their own.
+  const written = writeShelf(shelf, readSavedAt())
+  window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
+}
+
+export async function startLiveAnswers() {
+  const db = cloud()
+  if (!db?.channel || live) return
+  live = { channel: null }
+  const mine = live
+  const user = await me().catch(() => null)
+  if (live !== mine) return
+  if (!user) {
+    live = null
+    return
+  }
+  mine.channel = db
+    .channel(`answers:${user.id}:${Date.now()}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'answer_log', filter: `user_id=eq.${user.id}` }, (change) => {
+      const row = change?.new
+      // A delete (an undo) carries no row; the next pull settles it.
+      if (!row?.lamp_id || row.user_id !== user.id || readLastUser() !== user.id) return
+      liveRows.push(row)
+      // One redraw for a batch sent in one go.
+      if (!liveTimer) liveTimer = setTimeout(applyLiveRows, 50)
+    })
+    .subscribe()
+}
+
+export function stopLiveAnswers() {
+  const old = live
+  live = null
+  liveRows = []
+  if (old?.channel) cloud()?.removeChannel(old.channel).catch(() => {})
 }
 
 // Pull what the account has, fold it into what this phone has, then send
@@ -558,7 +625,7 @@ export function pushSoon(shelf) {
   }
   window.clearTimeout(timer)
   const doc = shelf
-  timer = window.setTimeout(() => pushNow(doc), 1500)
+  timer = window.setTimeout(() => pushNow(doc), 300)
 }
 
 export function flushPushSoon() {
