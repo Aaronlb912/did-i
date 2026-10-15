@@ -5298,7 +5298,7 @@ test('shop rows hide owned items and drops before their day', () => {
 
 // r10-answer: earned streak freezes and Did / Nope from a reminder.
 const { FREEZE_MAX, freezeState, nightsToNextFreeze, walkFreezes } = await import('../src/lib/hall-feel.js')
-const { askActions, askNoteData, notificationAnswer } = await import('../src/lib/notify-answer.js')
+const { askActions, askNoteData, firstResponse, notificationAnswer } = await import('../src/lib/notify-answer.js')
 
 test('a freeze is earned every 14 nights in a row, capped at two, and spent on the next miss', () => {
   const clears = (n) => Array(n).fill('clear')
@@ -5376,6 +5376,46 @@ test('reminder Did / Nope buttons map to the question and its period', () => {
   assert.equal(notificationAnswer(press('did', { go: '/tonight' })), null)
   assert.equal(notificationAnswer(press('did', { weId: 'c1', night: '2026-10-05' })).kind, 'we')
   assert.ok(askActions((k) => k).every((a) => a.options.opensAppToForeground === true), 'the buttons open the app so a closed app never drops the answer')
+})
+
+test('a reminder tap at 23:59:58 handled after midnight files to its night, once', async () => {
+  const { firstResponse } = await import('../src/lib/notify-answer.js')
+  const night = '2026-08-10'
+  const book = { id: 'b1', title: 'General', dayFoldHour: 0, lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-08-01' }], answers: [] }
+  writeShelf({ currentId: 'b1', boards: [book] })
+  const response = { actionIdentifier: 'did', notification: { request: { identifier: '9', content: { data: askNoteData({ lamp: { id: 'door' }, periodKey: night }) } } } }
+  const handled = new Date(2026, 7, 11, 0, 0, 2)
+  const answer = notificationAnswer(response, handled.getTime())
+  assert.ok(answer.at < new Date(2026, 7, 11).getTime(), 'stamped inside its night')
+  const saved = applyWidgetTapOnce(answer.id, answer.action, answer.night, handled, answer.at)
+  assert.equal(answerFor(saved.boards[0], 'door', night)?.status, 'yes')
+  // A night that has truly closed keeps the handled time and is dropped.
+  const late = new Date(2026, 7, 12, 12, 0)
+  assert.equal(notificationAnswer(response, late.getTime()).at, late.getTime())
+  // The listener and getLastNotificationResponseAsync both see the launch tap.
+  const seen = new Set()
+  assert.equal(firstResponse(seen, response), true)
+  assert.equal(firstResponse(seen, response), false, 'the repeat is skipped')
+  assert.equal(firstResponse(seen, { ...response, actionIdentifier: 'nope' }), true)
+})
+
+await testAsync('coins earned for the server survive a reload, for that account only', async () => {
+  // Three loads of the module stand in for three app starts. Imported first:
+  // other tests may touch storage while an import is awaited.
+  const first = await import('../src/lib/purse.js?earned=1')
+  const reload = await import('../src/lib/purse.js?earned=2')
+  const other = await import('../src/lib/purse.js?earned=3')
+  writeAccountUserId('user-a')
+  try {
+    first.returnEarnedCoins('2026-10-02', 3, new Date(2026, 9, 2, 20))
+    assert.deepEqual({ ...reload.takeEarnedCoins() }, { '2026-10-02': 3 })
+    first.returnEarnedCoins('2026-10-02', 2, new Date(2026, 9, 2, 20))
+    writeAccountUserId('user-b')
+    assert.deepEqual({ ...other.takeEarnedCoins() }, {}, 'another account never gets them')
+  } finally {
+    localStorage.removeItem('did-i-earned-coins')
+    writeAccountUserId('')
+  }
 })
 
 test('a reminder answer for a night that has turned is dropped', () => {

@@ -1,4 +1,4 @@
-import { accountSessionOn } from './session-id.js'
+import { accountSessionOn, readAccountUserId } from './session-id.js'
 import { addDaysIso, allClearTonight, boardDate, periodNight, stampDay } from './recurrence.js'
 import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
 import { FRAMES, FRAME_IDS, frameById, frameLive, frameText, normalizeFrames, normalizeWornFrame, seasonOpen } from './frames.js'
@@ -592,7 +592,37 @@ export function weeklyGemBump(shelf, prevShelf, clock = new Date(), opts = {}) {
 // leaves them for the save to credit (credit_night_coins). Without this the
 // save never saw the count go up and no account earned night coins.
 // Kept per answered night, so a late answer for last night pays last night.
-let earnedForServer = {}
+// Saved on every change so a killed app still credits them on the next start,
+// and only for the account that earned them.
+let earnedForServer = null
+const EARNED_KEY = 'did-i-earned-coins'
+
+function earnedQueue() {
+  if (earnedForServer) return earnedForServer
+  earnedForServer = {}
+  try {
+    const saved = JSON.parse(localStorage.getItem(EARNED_KEY) || 'null')
+    const user = readAccountUserId()
+    if (saved && user && saved.user === user && saved.nights && typeof saved.nights === 'object') {
+      for (const [night, n] of Object.entries(saved.nights)) if (Number(n) > 0) earnedForServer[night] = Number(n)
+    }
+  } catch {
+    // ok
+  }
+  return earnedForServer
+}
+
+function saveEarned() {
+  try {
+    const user = readAccountUserId()
+    if (user && Object.keys(earnedForServer || {}).length) {
+      localStorage.setItem(EARNED_KEY, JSON.stringify({ user, nights: earnedForServer }))
+    } else localStorage.removeItem(EARNED_KEY)
+  } catch {
+    // ok
+  }
+}
+
 // Bumped on sign out. A credit that fails after it hands back coins taken
 // for the old account; returnEarnedCoins drops them by this stamp.
 let earnedGen = 0
@@ -601,8 +631,9 @@ let earnedGen = 0
 // returnEarnedCoins; the server caps each night, so a retry cannot double pay.
 // out.gen (not enumerable) goes back with returnEarnedCoins.
 export function takeEarnedCoins() {
-  const out = earnedForServer
+  const out = earnedQueue()
   earnedForServer = {}
+  saveEarned()
   Object.defineProperty(out, 'gen', { value: earnedGen })
   return out
 }
@@ -611,6 +642,7 @@ export function takeEarnedCoins() {
 export function dropEarnedCoins() {
   earnedGen += 1
   earnedForServer = {}
+  saveEarned()
 }
 
 export function returnEarnedCoins(night, n, clock = new Date(), gen) {
@@ -619,7 +651,9 @@ export function returnEarnedCoins(night, n, clock = new Date(), gen) {
   // The server takes yesterday or today (payTap); an older night would be refused forever.
   const today = boardDate(clock)
   if (night < addDaysIso(today, -1) || night > today) night = today
-  earnedForServer[night] = (earnedForServer[night] || 0) + n
+  const queue = earnedQueue()
+  queue[night] = (queue[night] || 0) + n
+  saveEarned()
 }
 
 export function payTap(before, after, row, status, clock = new Date()) {

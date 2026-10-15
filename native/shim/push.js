@@ -2,7 +2,7 @@ import { Platform } from 'react-native'
 import { cloud } from '../../src/lib/cloud.js'
 import { deviceKey } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
-import { notificationAnswer } from '../../src/lib/notify-answer.js'
+import { firstResponse, notificationAnswer } from '../../src/lib/notify-answer.js'
 import {
   askNotificationPermission,
   notificationPermissionGranted,
@@ -105,14 +105,17 @@ async function bindResponseListener(handlers = {}) {
     // Keep and Pass on a friend's did you (supabase/functions/push sets the
     // category). Both open the app; the inbox answers it.
     try {
-      await Notifications.setNotificationCategoryAsync(SEND_CATEGORY, [
+      // Not awaited, so a slow call never holds up the listener below.
+      Notifications.setNotificationCategoryAsync(SEND_CATEGORY, [
         { identifier: 'keep', buttonTitle: t('inbox.keep'), options: { opensAppToForeground: true } },
         { identifier: 'pass', buttonTitle: t('inbox.pass'), options: { opensAppToForeground: true } },
-      ])
+      ])?.catch?.(() => {})
     } catch {
       // No buttons; a tap still opens the inbox.
     }
+    const seen = new Set()
     const handle = (response) => {
+      if (!firstResponse(seen, response)) return
       const data = response?.notification?.request?.content?.data || {}
       const lampId = data.lampId ? String(data.lampId) : ''
       const go = data.go ? String(data.go) : ''
@@ -178,11 +181,13 @@ export async function syncPushTokenIfAllowed() {
 export async function preparePush(handlers = {}) {
   if (!pushPossible()) return 'not native'
 
+  // First and apart from the permission check: a hang or throw there must
+  // not drop the reminder tap that launched the app.
+  await bindResponseListener(handlers)
   const check = await verifyNotificationPermission()
   if (!check.ok) return 'notifications-unavailable'
 
   await ensureNotificationHandler()
-  await bindResponseListener(handlers)
 
   try {
     await ensureAndroidChannel()
@@ -197,11 +202,13 @@ export async function preparePush(handlers = {}) {
 export async function startPush(handlers = {}) {
   if (!pushPossible()) return 'not native'
 
+  // First and apart from the permission check: a hang or throw there must
+  // not drop the reminder tap that launched the app.
+  await bindResponseListener(handlers)
   const check = await verifyNotificationPermission()
   if (!check.ok) return 'notifications-unavailable'
 
   await ensureNotificationHandler()
-  await bindResponseListener(handlers)
 
   try {
     await ensureAndroidChannel()
