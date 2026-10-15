@@ -60,6 +60,7 @@ export const ja = {
   'title.into': 'React に渡す · Did I',
   'settings.kicker': '設定',
   'boot.fail': 'Did I を開けませんでした。',
+  'boot.retry': 'もう一度試す',
   'settings.title': '名前とメモ',
   'settings.phoneBody': 'この端末だけの設定です。アカウント名はアカウントにあります。',
   'settings.save': '保存',

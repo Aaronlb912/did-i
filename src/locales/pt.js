@@ -60,6 +60,7 @@ export const pt = {
   'title.into': 'Passar para o React · Did I',
   'settings.kicker': 'Ajustes',
   'boot.fail': 'Did I não conseguiu abrir.',
+  'boot.retry': 'Tentar de novo',
   'settings.title': 'Nome e nota',
   'settings.phoneBody': 'Só neste celular. O nome da sua conta fica em Conta.',
   'settings.save': 'Salvar',

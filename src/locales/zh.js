@@ -60,6 +60,7 @@ export const zh = {
   'title.into': '接到 React · Did I',
   'settings.kicker': '设置',
   'boot.fail': 'Did I 打不开。',
+  'boot.retry': '重试',
   'settings.title': '名字和备注',
   'settings.phoneBody': '仅限这部手机。账户名称在“账户”里。',
   'settings.save': '保存',

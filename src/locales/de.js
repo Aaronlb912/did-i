@@ -60,6 +60,7 @@ export const de = {
   'title.into': 'Nach React bringen · Did I',
   'settings.kicker': 'Einstellungen',
   'boot.fail': 'Did I konnte nicht öffnen.',
+  'boot.retry': 'Erneut versuchen',
   'settings.title': 'Name und Notiz',
   'settings.phoneBody': 'Nur auf diesem Handy. Dein Kontoname steht unter Konto.',
   'settings.save': 'Speichern',
