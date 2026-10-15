@@ -262,6 +262,9 @@ export const pt = {
   'account.outAllTitle': 'Sair em todo o lado?',
   'account.outAllBody': 'Todos os telefones com esta conta saem. Nada é apagado.',
   'account.outAllYes': 'Sair em todo o lado',
+  'account.unsavedTitle': 'Algumas respostas ainda não foram guardadas. Sair mesmo assim?',
+  'account.unsavedBody': 'Estão só neste dispositivo. Sair agora apaga-as.',
+  'account.unsavedYes': 'Sair mesmo assim',
   'account.delete': 'Apagar a minha conta',
   'account.deleteTitle': 'Apagar a conta?',
   'account.deleteBody':

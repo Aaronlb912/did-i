@@ -139,6 +139,8 @@ let syncRun = 0
 
 export function signedOutSync() {
   syncRun += 1
+  // Every way out (here, everywhere, deleted, signed out elsewhere) lands here.
+  forgetAccountCaches()
   clearGifts()
   dropEarnedCoins()
   // The next person to sign in on this phone starts from nothing.
@@ -548,6 +550,20 @@ export function flushPushSoon() {
   window.clearTimeout(timer)
   timer = 0
   return pushNow(readShelf())
+}
+
+// Before signing out: send anything still waiting, then try once more if the
+// last send missed. False means some answers never reached the account, so
+// the caller asks before signedOutSync wipes them.
+export async function saveBeforeSignOut() {
+  if (!cloudSetUp() || state.how === 'off' || state.how === 'out') return true
+  try {
+    await flushPushSoon()
+    if (state.how === 'miss') await pushNow(readShelf())
+  } catch {
+    return false
+  }
+  return state.how !== 'miss'
 }
 
 export async function touchDevice() {

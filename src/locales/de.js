@@ -263,6 +263,9 @@ export const de = {
   'account.outAllTitle': 'Überall abmelden?',
   'account.outAllBody': 'Jedes Handy mit diesem Konto wird abgemeldet. Nichts wird gelöscht.',
   'account.outAllYes': 'Überall abmelden',
+  'account.unsavedTitle': 'Einige Antworten sind noch nicht gespeichert. Trotzdem abmelden?',
+  'account.unsavedBody': 'Sie sind nur auf diesem Gerät. Beim Abmelden gehen sie verloren.',
+  'account.unsavedYes': 'Trotzdem abmelden',
   'account.delete': 'Mein Konto löschen',
   'account.deleteTitle': 'Konto löschen?',
   'account.deleteBody':

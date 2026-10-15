@@ -264,6 +264,9 @@ export const es = {
   'account.outAllTitle': '¿Salir en todos lados?',
   'account.outAllBody': 'Todos los teléfonos con esta cuenta salen. No se borra nada.',
   'account.outAllYes': 'Salir en todos lados',
+  'account.unsavedTitle': 'Algunas respuestas aún no se guardaron. ¿Salir de todos modos?',
+  'account.unsavedBody': 'Solo están en este dispositivo. Si sales ahora, se borran.',
+  'account.unsavedYes': 'Salir de todos modos',
   'account.delete': 'Borrar mi cuenta',
   'account.deleteTitle': '¿Borrar la cuenta?',
   'account.deleteBody':

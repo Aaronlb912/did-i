@@ -261,6 +261,9 @@ export const it = {
   'account.outAllTitle': 'Uscire ovunque?',
   'account.outAllBody': 'Ogni telefono con questo account esce. Niente viene cancellato.',
   'account.outAllYes': 'Esci ovunque',
+  'account.unsavedTitle': 'Alcune risposte non sono ancora salvate. Uscire comunque?',
+  'account.unsavedBody': 'Sono solo su questo dispositivo. Uscendo ora vengono cancellate.',
+  'account.unsavedYes': 'Esci comunque',
   'account.delete': 'Elimina il mio account',
   'account.deleteTitle': 'Eliminare l’account?',
   'account.deleteBody':

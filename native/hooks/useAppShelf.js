@@ -332,8 +332,11 @@ export function useAppShelf() {
       setShelf(event.detail)
       // Answers from another phone (sync): the widget shows them too. After a
       // sign-in or sign-out it always redraws (new look, buddy, or nothing).
-      const redraw = takeAccountChanged() ? syncTonightWidget : syncTonightWidgetIfChanged
+      const changed = takeAccountChanged()
+      const redraw = changed ? syncTonightWidget : syncTonightWidgetIfChanged
       redraw(event.detail).catch(() => {})
+      // Reminders are rebuilt for the new account, so the last one's Did we pings go.
+      if (changed) scheduleNativePings(event.detail.boards || []).catch(reportRejection('schedule-pings'))
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {
