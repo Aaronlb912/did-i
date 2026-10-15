@@ -1338,6 +1338,7 @@ export const fr = {
   'mark.month-bill.how': 'Dis did à une question mensuelle.',
   'mark.quiet-week.how': "Réponds à tout pendant 7 jours.",
   'auth.reviewer': 'Connexion réviseur',
+  'auth.reviewerHint': 'Ouvre la connexion réviseur.',
   'auth.password': 'Mot de passe',
   'auth.reviewerBad': 'L’e-mail et le mot de passe ne correspondent pas.',
   'mark.first-open.name': 'Présent',

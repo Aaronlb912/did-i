@@ -11,6 +11,12 @@ begin
   update public.app_flags set on_now = true where name = 'reviewer_signin';
   if not public.reviewer_signin_on() then raise exception 'FAIL: on reads as off'; end if;
 
+  -- Re-applying the file's insert keeps a switch that is on.
+  insert into public.app_flags (name, on_now)
+  values ('reviewer_signin', false)
+  on conflict (name) do nothing;
+  if not public.reviewer_signin_on() then raise exception 'FAIL: re-applying the insert turned the switch off'; end if;
+
   delete from public.app_flags where name = 'reviewer_signin';
   if public.reviewer_signin_on() then raise exception 'FAIL: a missing row reads as on'; end if;
 

@@ -6,7 +6,7 @@ import { clearAuthSkip } from './auth-gate.js'
 import { cloud } from './cloud.js'
 import { armSyncForUser, pullAndMerge } from './cloud-sync.js'
 import { t } from './i18n.js'
-import { readReviewerFlag } from './reviewer-flag.js'
+import { watchReviewerFlag } from './reviewer-flag.js'
 
 export function useAuthSignIn({ onSignedIn }) {
   const [email, setEmail] = useState('')
@@ -95,15 +95,7 @@ export function useAuthSignIn({ onSignedIn }) {
     await finish()
   }
 
-  useEffect(() => {
-    let live = true
-    readReviewerFlag().then((on) => {
-      if (live) setReviewerOn(on)
-    })
-    return () => {
-      live = false
-    }
-  }, [])
+  useEffect(() => watchReviewerFlag(setReviewerOn), [])
 
   function showReviewer() {
     if (!reviewerOn) return

@@ -16,7 +16,8 @@ export function AuthMark({ colors, onMarkLongPress }) {
         onLongPress={onMarkLongPress}
         delayLongPress={REVIEWER_HOLD_MS}
         disabled={!on}
-        accessibilityRole="text"
+        accessibilityRole={on ? 'button' : 'text'}
+        accessibilityHint={on ? t('auth.reviewerHint') : undefined}
         accessibilityActions={on ? [{ name: 'reviewer', label: t('auth.reviewer') }] : undefined}
         onAccessibilityAction={on ? (event) => event.nativeEvent.actionName === 'reviewer' && onMarkLongPress() : undefined}
       >

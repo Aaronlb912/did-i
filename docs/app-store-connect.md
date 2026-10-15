@@ -161,7 +161,7 @@ Screenshot captions, in order. Big line on top, small line under it, then the sc
 1. **App Information** — category Lifestyle, age ratings questionnaire, content rights if prompted.
 2. **App Privacy** — types above, publish labels.
 3. **iOS 1.0** — fields above, screenshots, build from EAS/Xcode.
-4. **App Review** — demo sign-in and notes for reviewers. Reviewer sign-in shows only while the server switch is on (`supabase/reviewer-flag.sql`; flip it with the launch checklist's "App Review switch" step). Review notes text:
+4. **App Review** — demo sign-in and notes for reviewers. Reviewer sign-in shows only while the server switch is on (`supabase/reviewer-flag.sql`; flip it with the launch checklist's "App Review switch" step). The switch only hides the UI, with no server gate; the review account's password works through the reviewer form only. Review notes text:
 
    > Tap Reviewer sign-in at the bottom of the sign-in screen (or press and hold the "Did I???" title for 3 seconds). Use the email and password above.
 

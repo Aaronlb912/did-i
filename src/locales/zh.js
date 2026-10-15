@@ -1312,6 +1312,7 @@ export const zh = {
   'mark.month-bill.how': '对每月问题说 did。',
   'mark.quiet-week.how': "连续 7 天全部回答。",
   'auth.reviewer': '审核人员登录',
+  'auth.reviewerHint': '打开审核人员登录。',
   'auth.password': '密码',
   'auth.reviewerBad': '邮箱和密码不匹配。',
   'mark.first-open.name': '来了',

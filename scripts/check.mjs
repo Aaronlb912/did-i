@@ -3189,7 +3189,7 @@ await testAsync('reviewer sign-in: off by default, a 3 second hold opens it only
   const sign = read('native/screens/SignInScreen.jsx')
   const mark = read('native/components/AuthMark.jsx')
   const web = read('src/lib/Account.jsx')
-  assert.ok(hook.includes('useState(false)') && hook.includes('readReviewerFlag().then'), 'the switch starts off and is read from the server')
+  assert.ok(hook.includes('const [reviewerOn, setReviewerOn] = useState(false)'), 'the switch starts off and is read from the server')
   assert.ok(/function showReviewer\(\) \{\s*if \(!reviewerOn\) return/.test(hook), 'flag off: opening reviewer sign-in does nothing')
   assert.ok(
     sign.includes("onMarkLongPress={auth.step === 'start' && auth.reviewerOn ? auth.showReviewer : undefined}"),
@@ -3197,7 +3197,70 @@ await testAsync('reviewer sign-in: off by default, a 3 second hold opens it only
   )
   assert.ok(mark.includes('delayLongPress={REVIEWER_HOLD_MS}') && mark.includes('disabled={!on}'), 'the hold is 3 seconds and off without a handler')
   assert.ok(mark.includes("accessibilityActions={on ? [{ name: 'reviewer'"), 'VoiceOver gets the action only while on')
-  assert.ok(!/accessibilityHint/.test(mark), 'no visible or spoken hint on the title')
+  assert.ok(
+    mark.includes("accessibilityRole={on ? 'button' : 'text'}") && mark.includes("accessibilityHint={on ? t('auth.reviewerHint') : undefined}"),
+    'on: the title is a button with a spoken hint; off: plain text',
+  )
+  const card = read('native/components/AuthEmailCard.jsx')
+  assert.ok(
+    card.includes("auth.step === 'start' && auth.reviewerOn ? (") && card.includes("label={t('auth.reviewer')} onPress={auth.showReviewer}") && card.includes("auth.step === 'reviewer' ?"),
+    'More and People sign-in cards show the switch-gated reviewer button and its password field',
+  )
+  assert.ok(read('native/screens/more.jsx').includes('<AuthEmailCard') && read('native/screens/social.jsx').includes('<AuthEmailCard'), 'every native sign-in surface uses the card')
+  assert.ok(hook.includes('watchReviewerFlag(setReviewerOn)'), 'the screen keeps watching the switch')
+
+  // Retry: 1s, 3s, 10s, then every 30s while off; stops once on and on unmount.
+  const { watchReviewerFlag, reviewerRetryMs } = await import('../src/lib/reviewer-flag.js')
+  const { setAppForeground } = await import('../src/lib/app-foreground.js')
+  assert.deepEqual([0, 1, 2, 3, 9].map(reviewerRetryMs), [1000, 3000, 10000, 30000, 30000])
+  const waits = []
+  let pending = null
+  let answers = [false, false, false, false, true]
+  let reads = 0
+  const seen = []
+  const tick = () => new Promise((r) => setTimeout(r, 0))
+  const stop = watchReviewerFlag((on) => seen.push(on), {
+    read: async () => {
+      reads += 1
+      return answers.shift() ?? false
+    },
+    setTimer: (fn, ms) => {
+      waits.push(ms)
+      pending = fn
+      return ms
+    },
+    clearTimer: () => {
+      pending = null
+    },
+  })
+  for (let i = 0; i < 5; i++) {
+    await tick()
+    const fn = pending
+    if (fn) fn()
+  }
+  await tick()
+  assert.deepEqual(waits, [1000, 3000, 10000, 30000], 'backs off 1s, 3s, 10s, 30s while off')
+  assert.deepEqual(seen, [true], 'reports on once')
+  assert.equal(pending, null, 'no retry after on')
+  setAppForeground(false)
+  setAppForeground(true)
+  await tick()
+  assert.equal(reads, 5, 'coming back to the front does not re-read once on')
+  stop()
+
+  answers = []
+  reads = 0
+  const stop2 = watchReviewerFlag(() => {}, { read: async () => { reads += 1; return false }, setTimer: () => 1, clearTimer: () => {} })
+  await tick()
+  setAppForeground(false)
+  setAppForeground(true)
+  await tick()
+  assert.equal(reads, 2, 'off: the app coming back to the front re-reads')
+  stop2()
+  setAppForeground(false)
+  setAppForeground(true)
+  await tick()
+  assert.equal(reads, 2, 'unmounted: no more reads')
   assert.ok(web.includes("auth.step === 'start' && auth.reviewerOn ? ("), 'web hides reviewer sign-in while off')
   const sql = read('supabase/reviewer-flag.sql')
   assert.ok(sql.includes("values ('reviewer_signin', false)") && sql.includes("set search_path = ''") && sql.includes('enable row level security'), 'the switch ships off, RLS on, pinned search_path')

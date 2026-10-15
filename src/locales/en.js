@@ -1329,6 +1329,7 @@ export const en = {
   'mark.month-bill.how': 'Answer Did to a monthly question.',
   'mark.quiet-week.how': "Answer everything for 7 days.",
   'auth.reviewer': 'Reviewer sign-in',
+  'auth.reviewerHint': 'Opens reviewer sign-in.',
   'auth.password': 'Password',
   'auth.reviewerBad': 'That email and password did not match.',
   'mark.first-open.name': 'Showed up',

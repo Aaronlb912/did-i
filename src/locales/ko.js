@@ -1313,6 +1313,7 @@ export const ko = {
   'mark.month-bill.how': '매달 질문에 did라고 답하기.',
   'mark.quiet-week.how': "7일 동안 모두 답하기.",
   'auth.reviewer': '심사자 로그인',
+  'auth.reviewerHint': '심사자 로그인을 엽니다.',
   'auth.password': '비밀번호',
   'auth.reviewerBad': '이메일과 비밀번호가 일치하지 않습니다.',
   'mark.first-open.name': '왔음',

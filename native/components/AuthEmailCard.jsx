@@ -42,6 +42,17 @@ export function AuthEmailCard({
         <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.sent', { email: auth.email })}</Text>
       ) : null}
 
+      {auth.step === 'reviewer' ? (
+        <Field
+          colors={colors}
+          label={t('auth.password')}
+          value={auth.password}
+          onChangeText={auth.setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+      ) : null}
+
       {auth.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text> : null}
 
       {auth.step === 'start' ? (
@@ -51,6 +62,13 @@ export function AuthEmailCard({
       )}
 
       {footer ? <View style={styles.footer}>{footer}</View> : null}
+
+      {/* Only while the App Review switch is on (supabase/reviewer-flag.sql). */}
+      {auth.step === 'start' && auth.reviewerOn ? (
+        <View style={styles.footer}>
+          <KeyButton colors={colors} label={t('auth.reviewer')} onPress={auth.showReviewer} />
+        </View>
+      ) : null}
 
       {showLegal ? <AuthLegalNote colors={colors} /> : null}
     </View>

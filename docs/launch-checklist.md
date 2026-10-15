@@ -19,8 +19,14 @@ Run in the Supabase SQL editor (service role):
 - [ ] After approval: turn it OFF.
   `update public.app_flags set on_now = false, updated_at = now() where name = 'reviewer_signin';`
 
-Check with `select public.reviewer_signin_on();`. The app reads it when the
-sign-in screen opens; offline or an error reads as off.
+Check with `select public.reviewer_signin_on();`. The app reads it when a
+sign-in screen opens, retries while it reads off (1s, 3s, 10s, then every
+30s), and re-reads when the app comes back to the front. Offline or an error
+reads as off.
+
+The switch only hides the UI; there is no server gate. The review account's
+password works only through the reviewer form (email and password), and it
+works whether the switch is on or off.
 
 ## After launch: Did we
 
