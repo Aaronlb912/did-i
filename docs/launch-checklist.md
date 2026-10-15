@@ -8,6 +8,20 @@ Over-the-air updates (`expo-updates`) start with build 56. After that, JS-only
 fixes go out with `npm run update:prod`; native changes still need a build
 (`docs/native-rebuild.md`).
 
+## App Review switch (every submission)
+
+Reviewer sign-in shows on the sign-in screen only while
+`public.app_flags.reviewer_signin` is on (`supabase/reviewer-flag.sql`).
+Run in the Supabase SQL editor (service role):
+
+- [ ] Before **Submit for Review**: turn it ON.
+  `update public.app_flags set on_now = true, updated_at = now() where name = 'reviewer_signin';`
+- [ ] After approval: turn it OFF.
+  `update public.app_flags set on_now = false, updated_at = now() where name = 'reviewer_signin';`
+
+Check with `select public.reviewer_signin_on();`. The app reads it when the
+sign-in screen opens; offline or an error reads as off.
+
 ## After launch: Did we
 
 Not part of 1.1.0. Merge the `did-we` branch only after 1.1.0 is live in both

@@ -6,6 +6,7 @@ import { clearAuthSkip } from './auth-gate.js'
 import { cloud } from './cloud.js'
 import { armSyncForUser, pullAndMerge } from './cloud-sync.js'
 import { t } from './i18n.js'
+import { readReviewerFlag } from './reviewer-flag.js'
 
 export function useAuthSignIn({ onSignedIn }) {
   const [email, setEmail] = useState('')
@@ -17,6 +18,8 @@ export function useAuthSignIn({ onSignedIn }) {
   // Which control the last error belongs to, so it prints next to that
   // button instead of always reading as the email field's problem.
   const [missSource, setMissSource] = useState('')
+  // Reviewer sign-in exists only while the server switch is on.
+  const [reviewerOn, setReviewerOn] = useState(false)
   const signedIn = useRef(onSignedIn)
   signedIn.current = onSignedIn
 
@@ -92,7 +95,18 @@ export function useAuthSignIn({ onSignedIn }) {
     await finish()
   }
 
+  useEffect(() => {
+    let live = true
+    readReviewerFlag().then((on) => {
+      if (live) setReviewerOn(on)
+    })
+    return () => {
+      live = false
+    }
+  }, [])
+
   function showReviewer() {
+    if (!reviewerOn) return
     setStep('reviewer')
     setCode('')
     setMiss('')
@@ -151,6 +165,7 @@ export function useAuthSignIn({ onSignedIn }) {
     setPassword,
     openReviewer,
     showReviewer,
+    reviewerOn,
     step,
     setStep,
     busy,

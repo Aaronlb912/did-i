@@ -3172,6 +3172,39 @@ test('native look ids match did-i.css', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout || 'theme:sync failed')
 })
 
+await testAsync('reviewer sign-in: off by default, a 3 second hold opens it only while the server switch is on', async () => {
+  const { readReviewerFlag, REVIEWER_HOLD_MS } = await import('../src/lib/reviewer-flag.js')
+  const db = (result) => ({ rpc: async (name) => (name === 'reviewer_signin_on' ? result() : { data: null, error: 'no' }) })
+  assert.equal(await readReviewerFlag(db(() => ({ data: true, error: null }))), true, 'on reads as on')
+  assert.equal(await readReviewerFlag(db(() => ({ data: false, error: null }))), false, 'off reads as off')
+  assert.equal(await readReviewerFlag(db(() => ({ data: null, error: { message: 'x' } }))), false, 'an error reads as off')
+  assert.equal(await readReviewerFlag(db(() => { throw new Error('offline') })), false, 'offline reads as off')
+  assert.equal(await readReviewerFlag(db(() => ({ data: 'true', error: null }))), false, 'only a plain true is on')
+  assert.equal(await readReviewerFlag(null), false, 'no cloud reads as off')
+  assert.equal(REVIEWER_HOLD_MS, 3000)
+
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (p) => readFileSync(path.join(root, p), 'utf8')
+  const hook = read('src/lib/useAuthSignIn.js')
+  const sign = read('native/screens/SignInScreen.jsx')
+  const mark = read('native/components/AuthMark.jsx')
+  const web = read('src/lib/Account.jsx')
+  assert.ok(hook.includes('useState(false)') && hook.includes('readReviewerFlag().then'), 'the switch starts off and is read from the server')
+  assert.ok(/function showReviewer\(\) \{\s*if \(!reviewerOn\) return/.test(hook), 'flag off: opening reviewer sign-in does nothing')
+  assert.ok(
+    sign.includes("onMarkLongPress={auth.step === 'start' && auth.reviewerOn ? auth.showReviewer : undefined}"),
+    'flag off: the title hold has no handler; flag on: it opens reviewer sign-in',
+  )
+  assert.ok(mark.includes('delayLongPress={REVIEWER_HOLD_MS}') && mark.includes('disabled={!on}'), 'the hold is 3 seconds and off without a handler')
+  assert.ok(mark.includes("accessibilityActions={on ? [{ name: 'reviewer'"), 'VoiceOver gets the action only while on')
+  assert.ok(!/accessibilityHint/.test(mark), 'no visible or spoken hint on the title')
+  assert.ok(web.includes("auth.step === 'start' && auth.reviewerOn ? ("), 'web hides reviewer sign-in while off')
+  const sql = read('supabase/reviewer-flag.sql')
+  assert.ok(sql.includes("values ('reviewer_signin', false)") && sql.includes("set search_path = ''") && sql.includes('enable row level security'), 'the switch ships off, RLS on, pinned search_path')
+  const order = read('scripts/apply-all-sql.mjs')
+  assert.ok(order.indexOf('reviewer-flag.sql') > 0 && order.indexOf('reviewer-flag.sql') < order.indexOf('drop-tonight.sql'), 'applied before drop-tonight.sql')
+})
+
 test('a fresh phone opens on welcome, a phone already in use does not, a lost session shows sign-in', () => {
   const prev = globalThis.__didIPlatform
   globalThis.__didIPlatform = 'ios'
@@ -3205,7 +3238,10 @@ test('a fresh phone opens on welcome, a phone already in use does not, a lost se
     assert.ok(sign.includes('<AuthSignInActions'), 'the sign-in screen has the sign-in actions')
     assert.ok(actions.includes("t('account.signIn')"), 'a code can be confirmed')
     assert.ok(sign.includes("t('auth.tryLocal')"), 'the sign-in screen can stay on this phone')
-    assert.ok(sign.includes('onPress={auth.showReviewer}'), 'App Review sign-in is a visible link, not only a long-press')
+    assert.ok(
+      sign.includes("auth.step === 'start' && auth.reviewerOn ? (") && sign.includes('<KeyButton colors={colors} label={t(\'auth.reviewer\')} onPress={auth.showReviewer}'),
+      'App Review sign-in is a full-width button, shown only while the switch is on',
+    )
     assert.ok(
       sign.indexOf("t('auth.getStarted')") > -1 && sign.indexOf("t('auth.getStarted')") < sign.indexOf('<AuthSignInActions'),
       'Get started is the first button on Welcome, sign-in options sit under it',
