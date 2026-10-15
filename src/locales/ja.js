@@ -61,6 +61,7 @@ export const ja = {
   'settings.kicker': '設定',
   'boot.fail': 'Did I を開けませんでした。',
   'boot.retry': 'もう一度試す',
+  'boot.retryFail': 'うまくいきませんでした。Did I を閉じてもう一度開いてください。',
   'settings.title': '名前とメモ',
   'settings.phoneBody': 'この端末だけの設定です。アカウント名はアカウントにあります。',
   'settings.save': '保存',

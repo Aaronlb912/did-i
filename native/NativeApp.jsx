@@ -56,7 +56,6 @@ export function NativeApp() {
 
   useEffect(() => {
     if (!launchReady) return undefined
-    global.__didIReady = true
     SplashScreen.hideAsync().catch(() => {})
     bootNative()
     const stop = listenNativeShell({

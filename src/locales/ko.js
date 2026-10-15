@@ -61,6 +61,7 @@ export const ko = {
   'settings.kicker': '설정',
   'boot.fail': 'Did I를 열지 못했습니다.',
   'boot.retry': '다시 시도',
+  'boot.retryFail': '되지 않았습니다. Did I를 닫고 다시 여세요.',
   'settings.title': '이름과 메모',
   'settings.phoneBody': '이 폰에서만 적용돼요. 계정 이름은 계정에 있어요.',
   'settings.save': '저장',

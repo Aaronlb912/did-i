@@ -61,6 +61,7 @@ export const zh = {
   'settings.kicker': '设置',
   'boot.fail': 'Did I 打不开。',
   'boot.retry': '重试',
+  'boot.retryFail': '没有成功。请关闭 Did I 再重新打开。',
   'settings.title': '名字和备注',
   'settings.phoneBody': '仅限这部手机。账户名称在“账户”里。',
   'settings.save': '保存',

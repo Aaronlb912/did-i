@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { DevSettings, Pressable, ScrollView, Text, View } from 'react-native'
 import * as SplashScreen from 'expo-splash-screen'
 import { t } from '../src/lib/i18n.js'
 
@@ -7,22 +7,49 @@ import { t } from '../src/lib/i18n.js'
 // the first real screen renders; before this, a blank view showed instead.
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
-function retry() {
+function updates() {
   try {
-    require('expo-updates').reloadAsync().catch(() => {})
-  } catch {}
+    return require('expo-updates')
+  } catch {
+    return null
+  }
 }
 
 export function Boot() {
   const [App, setApp] = useState(null)
   const [fail, setFail] = useState('')
+  const [retryFailed, setRetryFailed] = useState(false)
+
+  function retry() {
+    setRetryFailed(false)
+    if (__DEV__) {
+      DevSettings.reload()
+      return
+    }
+    const mod = updates()
+    if (!mod) {
+      setRetryFailed(true)
+      return
+    }
+    mod.reloadAsync().catch(() => setRetryFailed(true))
+  }
 
   useEffect(() => {
     // Not import(): bootstrap.js defines a global location without an origin,
     // so Metro's async chunk loader builds its URL from undefined and throws.
     try {
-      setApp(() => require('../ExpoApp.jsx').ExpoApp)
+      const ExpoApp = require('../ExpoApp.jsx').ExpoApp
+      // From here a drawn view tells expo-updates this launch worked.
+      global.__didIReady = true
+      setApp(() => ExpoApp)
     } catch (error) {
+      // A downloaded update that cannot load: crash natively so expo-updates
+      // rolls back. The fail screen would mark the bad update good.
+      const mod = updates()
+      if (!__DEV__ && mod && !mod.isEmbeddedLaunch && global.ErrorUtils) {
+        global.ErrorUtils.getGlobalHandler()(error, true)
+        return
+      }
       const detail = global.__didIFatal?.message || error?.message || String(error)
       const stack = __DEV__ ? global.__didIFatal?.stack || error?.stack || '' : ''
       setFail(stack ? `${detail}\n\n${stack}` : detail)
@@ -44,6 +71,9 @@ export function Boot() {
         >
           <Text style={{ color: '#0e1014', fontSize: 17 }}>{t('boot.retry')}</Text>
         </Pressable>
+        {retryFailed ? (
+          <Text style={{ color: '#99a1b0', fontSize: 15, marginTop: 12 }}>{t('boot.retryFail')}</Text>
+        ) : null}
       </View>
     )
   }

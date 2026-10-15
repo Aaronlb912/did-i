@@ -61,6 +61,7 @@ export const de = {
   'settings.kicker': 'Einstellungen',
   'boot.fail': 'Did I konnte nicht öffnen.',
   'boot.retry': 'Erneut versuchen',
+  'boot.retryFail': 'Das hat nicht geklappt. Schließe Did I und öffne es neu.',
   'settings.title': 'Name und Notiz',
   'settings.phoneBody': 'Nur auf diesem Handy. Dein Kontoname steht unter Konto.',
   'settings.save': 'Speichern',

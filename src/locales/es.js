@@ -61,6 +61,7 @@ export const es = {
   'settings.kicker': 'Ajustes',
   'boot.fail': 'Did I no pudo abrirse.',
   'boot.retry': 'Reintentar',
+  'boot.retryFail': 'No funcionó. Cierra Did I y vuelve a abrirlo.',
   'settings.title': 'Nombre y nota',
   'settings.phoneBody': 'Solo en este teléfono. Tu nombre de cuenta está en Cuenta.',
   'settings.save': 'Guardar',
