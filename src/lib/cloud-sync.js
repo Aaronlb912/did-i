@@ -292,6 +292,8 @@ export function bindAuthSync() {
     if (session?.user) {
       armSyncForUser()
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') pullAndMerge()
+      // Another account signed in: drop the old one's topics first.
+      if (live?.userId && live.userId !== session.user.id) stopLiveAnswers()
       if (foregroundBound && isAppForeground()) startLiveAnswers()
       return
     }
@@ -398,6 +400,7 @@ export async function startLiveAnswers() {
     live = null
     return
   }
+  mine.userId = user.id
   const take = (row) => {
     if (live !== mine || readLastUser() !== user.id) return
     liveRows.push(row)

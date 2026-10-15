@@ -26,4 +26,6 @@ begin
 end;
 $$;
 
+-- This applies to the whole publication: any table added to it later also
+-- sends inserts and updates only.
 alter publication supabase_realtime set (publish = 'insert, update');

@@ -133,15 +133,18 @@ final class WatchBridge: NSObject, WCSessionDelegate {
   private var awakeTask: UIBackgroundTaskIdentifier = .invalid
   private func holdAwake() {
     guard awakeTask == .invalid else { return }
-    awakeTask = UIApplication.shared.beginBackgroundTask(withName: "didi.watch.tap") { [weak self] in
-      self?.endAwake()
+    var id: UIBackgroundTaskIdentifier = .invalid
+    id = UIApplication.shared.beginBackgroundTask(withName: "didi.watch.tap") { [weak self] in
+      self?.endAwake(id)
     }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in self?.endAwake() }
+    awakeTask = id
+    // Ends only this task, never a later one started after it ended.
+    DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in self?.endAwake(id) }
   }
 
-  private func endAwake() {
-    guard awakeTask != .invalid else { return }
-    UIApplication.shared.endBackgroundTask(awakeTask)
+  private func endAwake(_ id: UIBackgroundTaskIdentifier) {
+    guard id != .invalid, awakeTask == id else { return }
+    UIApplication.shared.endBackgroundTask(id)
     awakeTask = .invalid
   }
 

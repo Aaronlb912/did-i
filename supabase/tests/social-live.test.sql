@@ -61,9 +61,15 @@ begin
   select count(*) into n from realtime.messages where topic = 'didi:' || a;
   if n <> before then raise exception 'FAIL: A still gets family broadcasts after leaving'; end if;
 
-  -- Did you: A sent B one, friends, B shares answers.
+  -- Did you: A sent C one, friends, C shares answers.
   insert into public.friend_links (from_id, to_id, state) values (a, c, 'ok');
+  select count(*) into before from realtime.messages where topic = 'didi:' || b;
   insert into public.sends (from_id, to_id, question, state) values (a, c, 'Did you read?', 'kept') returning id into send;
+  -- The new ask reaches C only.
+  select count(*) into n from realtime.messages where topic = 'didi:' || c and payload->>'kind' = 'ask' and payload->>'id' = send::text;
+  if n <> 1 then raise exception 'FAIL: C got % ask broadcasts, want 1', n; end if;
+  select count(*) into n from realtime.messages where topic = 'didi:' || b;
+  if n <> before then raise exception 'FAIL: someone else got the ask broadcast'; end if;
   insert into public.send_answers (send_id, night, answer) values (send, current_date, 'did');
   select count(*) into n from realtime.messages where topic = 'didi:' || a and payload->>'kind' = 'send';
   if n <> 1 then raise exception 'FAIL: the sender got % Did you broadcasts, want 1', n; end if;

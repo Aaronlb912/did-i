@@ -1446,9 +1446,13 @@ export async function familyTonight() {
 
 // The phone shell hands over an app-state hook. Check it first: the phone
 // also has a stand-in document whose listeners never fire.
-// Also when someone else's answer this account can see changes (social-live.js).
-function onVisible(fn) {
-  const stopLive = onSocialLive(() => fn())
+// kinds: also run when one of these live kinds comes in (social-live.js).
+function onVisible(fn, kinds = []) {
+  const stopLive = kinds.length
+    ? onSocialLive((seen) => {
+      if (kinds.some((kind) => seen.has(kind))) fn()
+    })
+    : () => {}
   const hook = globalThis.__didIOnVisible
   if (typeof hook === 'function') {
     const stop = hook(fn)
@@ -1685,7 +1689,8 @@ function pulseWatch(user, fn) {
   fn(pulse.state)
   if (!pulse.stop) {
     const timer = setInterval(pulseLook, PULSE_MS)
-    const stopVisible = onVisible(pulseLook)
+    // A new Did you ask for you: the badge counts it now.
+    const stopVisible = onVisible(pulseLook, ['ask'])
     pulse.stop = () => {
       clearInterval(timer)
       stopVisible()
@@ -1809,7 +1814,7 @@ export function useFamilyTonight(user) {
 
   useEffect(() => {
     look()
-    return onVisible(look)
+    return onVisible(look, ['family'])
   }, [look])
 
   return { rows, reload: look }

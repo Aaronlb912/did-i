@@ -217,3 +217,36 @@ revoke all on function public.live_answer_gone() from public, anon, authenticate
 drop trigger if exists live_answer_gone on public.answer_log;
 create trigger live_answer_gone after delete on public.answer_log
   referencing old table as changed for each statement execute function public.live_answer_gone();
+
+-- A new Did you for you: your inbox count reads again. You can already read
+-- sends made to you; the broadcast carries only its id.
+create or replace function public.live_new_sends()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  r record;
+begin
+  for r in
+    select c.to_id, (array_agg(c.id))[1] as id
+    from changed c
+    where not exists (
+      select 1 from public.blocks b
+      where (b.blocker = c.from_id and b.blocked = c.to_id)
+         or (b.blocker = c.to_id and b.blocked = c.from_id)
+    )
+    group by c.to_id
+  loop
+    perform public.live_ping(array[r.to_id], 'ask', r.id);
+  end loop;
+  return null;
+end;
+$$;
+
+revoke all on function public.live_new_sends() from public, anon, authenticated;
+
+drop trigger if exists live_new_sends on public.sends;
+create trigger live_new_sends after insert on public.sends
+  referencing new table as changed for each statement execute function public.live_new_sends();
