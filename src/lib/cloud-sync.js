@@ -170,6 +170,9 @@ export function sessionMissing() {
     signedOutSync()
     return
   }
+  // No last user can still mean a sign in whose id never landed: coins it
+  // queued must not reach the next account.
+  dropEarnedCoins()
   if (state.how !== 'out' || state.firstPull) setState({ how: 'out', miss: '', firstPull: false })
 }
 

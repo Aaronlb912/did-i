@@ -7323,6 +7323,27 @@ test('review 13: a tap right after sign in, before the user id lands, keeps its 
   })
 })
 
+test('review 13: a sign out with no last user drops queued coins; the id landing loads the saved queue', async () => {
+  const { returnEarnedCoins, takeEarnedCoins } = await import('../src/lib/purse.js')
+  const clock = new Date(2026, 9, 2, 20)
+  takeEarnedCoins()
+  // Queued while the id was '', then signed out before it landed.
+  localStorage.removeItem('did-i-last-user')
+  returnEarnedCoins('2026-10-02', 2, clock)
+  sessionMissing()
+  localStorage.setItem('did-i-last-user', 'user-b')
+  assert.deepEqual({ ...takeEarnedCoins() }, {}, "A's coins do not reach B")
+
+  // Cache built while the id was '', then the id lands: the saved queue loads and merges.
+  localStorage.setItem('did-i-earned-coins', JSON.stringify({ user: 'user-c', nights: { '2026-10-01': 3 } }))
+  localStorage.removeItem('did-i-last-user')
+  takeEarnedCoins()
+  returnEarnedCoins('2026-10-02', 2, clock)
+  localStorage.setItem('did-i-last-user', 'user-c')
+  assert.deepEqual({ ...takeEarnedCoins() }, { '2026-10-01': 3, '2026-10-02': 2 })
+  localStorage.removeItem('did-i-last-user')
+})
+
 test('review 13: an early fatal error on a store launch stays in the app; on an OTA launch it reaches native', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const guardFile = path.join(root, 'native/fatal-guard.cjs')
