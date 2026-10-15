@@ -15,7 +15,7 @@ import {
 import { t } from './i18n.js'
 import { lastTimeLine } from './every-copy.js'
 import { gentleOn } from './prefs.js'
-import { normalizePurse } from './purse.js'
+import { normalizePurse, spreadPurseFrom } from './purse.js'
 import { readWeLine, readWeOpen } from './we-widget.js'
 import {
   answerFor,
@@ -391,6 +391,7 @@ export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
   if (!props?.items?.length) return shelf
   let boards = shelf.boards
   let changed = false
+  let paid = null
   for (const item of props.items) {
     if (item.status === 'open') continue
     if (String(item.lampId || '').startsWith(WE_ITEM)) {
@@ -410,10 +411,12 @@ export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
     const nextBook = applyItemStatus(book, item, item.status, clock)
     if (nextBook === book) continue
     boards = boards.map((b) => (b.id === nextBook.id ? nextBook : b))
+    paid = nextBook
     changed = true
   }
   if (!changed) return shelf
-  return { ...shelf, boards }
+  // Each answer paid only its own folder; spread the last one's purse.
+  return spreadPurseFrom({ ...shelf, boards }, paid)
 }
 
 function widgetStatus(kind) {
@@ -493,7 +496,13 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   if (nextBook === book) return null
   noteMilestone('widget_used')
   const boards = shelf.boards.map((item) => (item.id === nextBook.id ? nextBook : item))
-  const nextShelf = settleTapEarnings(shelf, writeShelf({ ...shelf, boards }), clock, publishShelf)
+  const nextShelf = settleTapEarnings(
+    shelf,
+    // The tap paid only its own folder; copy that purse to every folder.
+    writeShelf(spreadPurseFrom({ ...shelf, boards }, nextBook)),
+    clock,
+    publishShelf,
+  )
   const previous = readWidgetTonightProps()
   const props = buildTonightWidgetProps(nextShelf, clock)
   const items = props.items.map((item) =>
@@ -578,7 +587,13 @@ export function recordWidgetAnswer(lampId, kind, clock = new Date(), night = '')
   const nextBook = putAnswer(book, row, finalStatus, clock)
   if (nextBook === book) return null
   const boards = shelf.boards.map((b) => (b.id === nextBook.id ? nextBook : b))
-  const nextShelf = settleTapEarnings(shelf, writeShelf({ ...shelf, boards }), clock, publishShelf)
+  const nextShelf = settleTapEarnings(
+    shelf,
+    // The tap paid only its own folder; copy that purse to every folder.
+    writeShelf(spreadPurseFrom({ ...shelf, boards }, nextBook)),
+    clock,
+    publishShelf,
+  )
   const props = buildTonightWidgetProps(nextShelf, clock)
   const items = props.items.map((item) =>
     item.lampId === lampId && String(item.periodKey || '') === String(row.periodKey || '')
