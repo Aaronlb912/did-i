@@ -402,9 +402,30 @@ test('the other walks step over a travel-skipped night', () => {
   assert.equal(travel.autoClosed({ status: 'skip', answeredAt: '2026-10-12T07:00:00.000Z' }, '2026-10-15'), true)
   assert.equal(travel.autoClosed({ status: 'skip', answeredAt: '2026-10-15T21:03:11.250Z' }, '2026-10-15'), false)
   // Did we on a skipped night: done counts, open steps aside, other nights as usual.
-  assert.deepEqual(travel.travelWe(true, { due: 1, clear: true }), { due: 1, clear: true })
-  assert.deepEqual(travel.travelWe(true, { due: 1, clear: false }), { due: 0, clear: true })
-  assert.deepEqual(travel.travelWe(false, { due: 1, clear: false }), { due: 1, clear: false })
+  assert.deepEqual(travel.travelWe(true, { due: 2, done: 1, clear: false }), { due: 1, clear: true })
+  assert.deepEqual(travel.travelWe(false, { due: 1, done: 0, clear: false }), { due: 1, done: 0, clear: false })
+})
+
+test('a skipped night with one Did we done and one open: the walk and the calendar agree', () => {
+  const noon = new Date(2026, 9, 16, 12)
+  // The folder's question was made on the 15th and left open; one Did we done, one open.
+  const book = { ...travelBook(['2026-10-15'], ['2026-10-15']), lamps: [lamp('walk', { createdOn: '2026-10-15' })] }
+  try {
+    setWeNightRows([
+      { card: 'w1', folder: '', night: '2026-10-15', status: 'did' },
+      { card: 'w2', folder: '', night: '2026-10-15', status: '' },
+    ])
+    assert.equal(travelShelfStreak([book], noon), 2)
+    const night = weekStripNights([book], noon).find((item) => item.iso === '2026-10-15')
+    assert.deepEqual([night.due, night.on, night.miss], [1, true, false])
+    const october = yearMonths([book], 2026, noon).find((month) => month.nights.some((item) => item.iso === '2026-10-15'))
+    const yearNight = october.nights.find((item) => item.iso === '2026-10-15')
+    assert.deepEqual([yearNight.due, yearNight.on, yearNight.miss], [1, true, false])
+    // Without the skip the open one is a miss.
+    assert.equal(travelShelfStreak([{ ...book, travelSkips: [] }], noon), 1)
+  } finally {
+    setWeNightRows([])
+  }
   // The close looks past the skipped night to the real previous one.
   const open = travelBook(['2026-10-14', '2026-10-15', '2026-10-16'], ['2026-10-15'])
   const closed = closePastNights(open, new Date(2026, 9, 16, 10), [])

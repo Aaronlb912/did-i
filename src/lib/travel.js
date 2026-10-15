@@ -140,9 +140,10 @@ export function travelRows(book, iso, rows) {
   return travelSkipped(book, iso) ? rows.filter((row) => travelNightState(row.answer, iso) !== 'none') : rows
 }
 
-// Did we on a skipped night: a done one counts like a Did, an open one is stepped over.
+// Did wes on a skipped night, each on its own: done ones count like a Did,
+// open ones are stepped over.
 export function travelWe(skipped, we) {
-  return skipped && !(we.due && we.clear) ? { due: 0, clear: true } : we
+  return skipped ? { due: Number(we.done) || 0, clear: true } : we
 }
 
 // How one question's answer reads on a travel-skipped night: 'did' counts
