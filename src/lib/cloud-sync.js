@@ -42,6 +42,7 @@ import {
 import { closeShelfPastNights } from './daily.js'
 import { isAppForeground, onAppForegroundChange } from './app-foreground.js'
 import { readAccountUserId, writeAccountUserId } from './session-id.js'
+import { forgetTravelSkips } from './travel.js'
 import { flushPendingWidgetCloud, widgetCloudPending } from './widget-cloud-sync.js'
 import { awaitWidgetTimeline, reconcileShelfFromWidget, reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
@@ -146,6 +147,7 @@ export function signedOutSync() {
   // The next person to sign in on this phone starts from nothing.
   forgetAnswerMarks()
   clearWeNights()
+  forgetTravelSkips()
   // Recent notices and your photo belong to the account that left.
   clearNotices()
   markNoticesSeen(0)

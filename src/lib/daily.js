@@ -10,6 +10,7 @@ import {
   graceNightIso,
   openFloorIso,
 } from './recurrence.js'
+import { noteZone, travelSkipped, withTravelSkips } from './travel.js'
 
 const CLOSE_CAP = 400
 
@@ -62,12 +63,14 @@ function closeOnceRows(book, now) {
 }
 
 // Unanswered due nights before today become nope when the day turns.
-export function closePastNights(book, now = new Date()) {
-  let next = book
-  let changed = false
+// A night skipped by flying over the date line is left alone.
+export function closePastNights(book, now = new Date(), skips = noteZone(now, undefined, undefined, book?.travelSkips)) {
+  let next = withTravelSkips(book, skips)
+  let changed = next !== book
   for (let step = 0; step < CLOSE_CAP; step += 1) {
     const grace = graceNightIso(now)
-    const rows = catchUpRows(next, now).filter((row) => row.dateIso !== grace)
+    const book = next
+    const rows = catchUpRows(book, now, (iso) => travelSkipped(book, iso)).filter((row) => row.dateIso !== grace)
     if (!rows.length) break
     for (const row of rows) {
       next = putAnswer(next, row, 'skip', nightStart(row.dateIso))
@@ -75,7 +78,7 @@ export function closePastNights(book, now = new Date()) {
     }
   }
   for (const row of closeOnceRows(next, now)) {
-    if (row.dateIso === graceNightIso(now)) continue
+    if (row.dateIso === graceNightIso(now) || travelSkipped(next, row.dateIso)) continue
     if (answerFor(next, row.lamp.id, row.periodKey)) continue
     // A 'by' question spans created..due. Stamped at the window's start, a
     // Did tapped on any earlier day in it still wins a merge.
@@ -100,9 +103,11 @@ export function closePastNights(book, now = new Date()) {
 }
 
 export function closeShelfPastNights(shelf, now = new Date()) {
+  // Skips any phone already made count toward the one-a-week limit.
+  const skips = noteZone(now, undefined, undefined, (shelf.boards || []).flatMap((book) => book.travelSkips || []))
   return {
     ...shelf,
-    boards: (shelf.boards || []).map((book) => closePastNights(book, now)),
+    boards: (shelf.boards || []).map((book) => closePastNights(book, now, skips)),
   }
 }
 

@@ -2,6 +2,7 @@ import { t } from './i18n.js'
 import { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
 import { addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
+import { capSkips } from './travel.js'
 
 export { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
 
@@ -344,6 +345,7 @@ export function normalizeBook(raw) {
     opens: Array.isArray(book.opens)
       ? book.opens.map((day) => asString(day).trim()).filter((day) => /^\d{4}-\d{2}-\d{2}$/.test(day))
       : [],
+    travelSkips: capSkips(book.travelSkips),
     coins: purse.coins,
     gems: purse.gems,
     cheers: purse.cheers,

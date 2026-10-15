@@ -12,6 +12,7 @@ function noonOn(iso) {
 export function graceRowsFor(books, nightIso) {
   const at = noonOn(nightIso)
   if (!at) return []
+  // A night lost to travel is offered too: a Did tapped before 9am counts.
   return (books || []).flatMap((book) =>
     countedTonightRows(dueTonight(book, at))
       .filter((row) => !rowDoneTonight(row) && (!row.lamp.createdOn || row.lamp.createdOn <= nightIso))

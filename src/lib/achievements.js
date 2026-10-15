@@ -2,6 +2,7 @@ import { hallHeat, shelfStreak } from './hall-feel.js'
 import { readShelf } from './board-shelf.js'
 import { hasLocaleKey, t } from './i18n.js'
 import { questionStreak } from './lamp-record.js'
+import { travelRows } from './travel.js'
 import { shopBuddies, liveCheers, FREE_BUDDY, liveLooks, mergePurses } from './purse.js'
 import {
   addDaysIso,
@@ -178,7 +179,7 @@ function cameBackAfterHole(book, now = new Date()) {
   const at = parseIsoDate(yesterday)
   if (!at) return false
   at.setHours(12, 0, 0, 0)
-  const due = dueTonight(book, at).filter(
+  const due = travelRows(book, yesterday, dueTonight(book, at)).filter(
     (row) => !row.lamp.createdOn || row.lamp.createdOn <= yesterday,
   )
   if (!due.length) return false
@@ -194,7 +195,7 @@ function quietWeek(book, now) {
     const date = parseIsoDate(iso)
     if (!date) return false
     date.setHours(12, 0, 0, 0)
-    const due = dueTonight(book, date)
+    const due = travelRows(book, iso, dueTonight(book, date))
     if (due.length) anyDue = true
     if (due.some((row) => !row.answer)) return false
   }

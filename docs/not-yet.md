@@ -5,6 +5,11 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Nights lost flying west over the date line (branch `travel-skipped-nights`)
+
+- **Built:** flying west over the date line (LA to Tokyo) skips the night that was never tonight. Questions left open that night, or closed by the app on its own, are stepped over; a Did counts and a tapped Not yet stays a Not yet. At most one skip a week (`src/lib/travel.js`).
+- **Not done:** no skip when the app was not opened the night before the flight, or when the phone changes zone mid-flight in steps under 14 hours. A phone on an older build drops the skipped nights on sync until a newer phone closes again. On a skipped night the widget's last-night rows still take a tapped Not yet, and it counts as a real Not yet. Nights skipped while signed out go to the next account that signs in on that phone, the same as signed-out answers. Not tried on a phone.
+
 ## Did you answers for the sender (branch `did-you-answers`)
 
 - **Built:** a kept Did you remembers its send (`sendId` on the question). Each sync copies the last 7 nights of Did / Not yet for those questions to `send_answers` (`supabase/send-answers.sql`, `src/lib/send-answers.js`); taking an answer back drops it on the next sync. The sender's Sent list (web and phone) and the friend page show "Did today 10:41 PM", "Not yet today", "Did yesterday" or "Did {day}" in place of "kept it". The keeper sees "{name} sees your answers to this" with a Share my answers switch on the question's page; off deletes what the sender could see. Blocking, unfriending or leaving the family deletes what was shared, and so does deleting the question. Gentle mode does not hide it (it is not a streak).

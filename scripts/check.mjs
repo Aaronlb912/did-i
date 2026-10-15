@@ -277,6 +277,197 @@ test('the night turns over at midnight, not at four', () => {
   assert.equal(boardDate(justAfter), isoDate(justAfter))
 })
 
+const travel = await import('../src/lib/travel.js')
+const { shelfStreak: travelShelfStreak } = await import('../src/lib/hall-feel.js')
+const { graceRowsFor } = await import('../src/lib/grace.js')
+const { unlockAchievements } = await import('../src/lib/achievements.js')
+const LA = 'America/Los_Angeles'
+const TOKYO = 'Asia/Tokyo'
+
+// Did answers for a daily question from Oct 1 to Oct 16, leaving out some.
+function travelBook(leaveOut, skips = []) {
+  const answers = []
+  for (let day = 1; day <= 16; day += 1) {
+    const iso = `2026-10-${String(day).padStart(2, '0')}`
+    if (leaveOut.includes(iso)) continue
+    answers.push({ id: `t${day}`, lampId: 'walk', periodKey: iso, status: 'yes', answeredAt: `${iso}T20:00:00.000Z`, note: '' })
+  }
+  return { id: 'trip', dayFoldHour: 0, lamps: [lamp('walk', { createdOn: '2026-10-01' })], answers, travelSkips: skips }
+}
+
+test('flying LA to Tokyo skips the 15th and the streak goes on', () => {
+  const seen = { zone: LA, night: '2026-10-14', skips: [] }
+  // Lands 15:00 Tokyo on the 16th (23:00 the 15th in LA), or opens at 18:00.
+  for (const at of ['2026-10-16T06:00:00Z', '2026-10-16T09:00:00Z']) {
+    assert.deepEqual(travel.travelStep(seen, TOKYO, new Date(at)).skips, ['2026-10-15'])
+  }
+  const book = travelBook(['2026-10-15'], ['2026-10-15'])
+  const noon = new Date(2026, 9, 16, 12)
+  assert.equal(questionStreak(book, book.lamps[0], '2026-10-16'), 15)
+  assert.equal(travelShelfStreak([book], noon), 15)
+  // The skipped night is not closed as Not yet, and reads blank on the calendar.
+  const open = travelBook(['2026-10-15', '2026-10-16'], ['2026-10-15'])
+  const closed = closePastNights(open, new Date(2026, 9, 16, 10), [])
+  assert.equal(answerFor(closed, 'walk', '2026-10-15'), undefined)
+  assert.equal(travelShelfStreak([closed], noon), 14)
+})
+
+test('flying Tokyo to LA repeats a day and marks nothing', () => {
+  const next = travel.travelStep({ zone: TOKYO, night: '2026-10-16', skips: [] }, LA, new Date('2026-10-16T22:00:00Z'))
+  assert.deepEqual(next.skips, [])
+  const book = travelBook([])
+  assert.equal(questionStreak(book, book.lamps[0], '2026-10-16'), 16)
+})
+
+test('a clock set ahead or a DST change is no trip, and the night still closes', () => {
+  // Same zone, clock a day ahead.
+  assert.deepEqual(travel.travelStep({ zone: LA, night: '2026-10-14', skips: [] }, LA, new Date('2026-10-17T03:00:00Z')).skips, [])
+  // DST ends Nov 1 in LA: same zone, nothing marked.
+  assert.deepEqual(travel.travelStep({ zone: LA, night: '2026-10-31', skips: [] }, LA, new Date('2026-11-02T20:00:00Z')).skips, [])
+  // A small jump (New York to London) cannot lose a night.
+  assert.deepEqual(travel.travelStep({ zone: 'America/New_York', night: '2026-10-10', skips: [] }, 'Europe/London', new Date('2026-10-14T09:00:00Z')).skips, [])
+  const closed = closePastNights(travelBook(['2026-10-15', '2026-10-16']), new Date(2026, 9, 16, 10), [])
+  assert.equal(answerFor(closed, 'walk', '2026-10-15')?.status, 'skip')
+})
+
+test('a real missed night before the flight still ends the streak', () => {
+  const book = travelBook(['2026-10-13', '2026-10-15'], ['2026-10-15'])
+  assert.equal(questionStreak(book, book.lamps[0], '2026-10-16'), 2)
+  assert.equal(travelShelfStreak([book], new Date(2026, 9, 16, 12)), 2)
+  // Not opened for days before the trip: no night is skipped at all.
+  const next = travel.travelStep({ zone: LA, night: '2026-10-10', skips: [] }, TOKYO, new Date('2026-10-16T06:00:00Z'))
+  assert.deepEqual(next.skips, [])
+})
+
+test('only a real west-bound date-line trip skips, at most once a week', () => {
+  const step = (from, to, at, extra = {}) => travel.travelStep({ zone: from, night: '2026-10-14', skips: [], ...extra }, to, new Date(at))
+  assert.deepEqual(step('Pacific/Honolulu', 'Pacific/Auckland', '2026-10-16T03:00:00Z').skips, ['2026-10-15'])
+  assert.deepEqual(step(LA, 'Australia/Sydney', '2026-10-16T05:00:00Z').skips, ['2026-10-15'])
+  // Not a date-line crossing: London to Tokyo, New York to London, east-bound.
+  assert.deepEqual(step('Europe/London', TOKYO, '2026-10-16T06:00:00Z').skips, [])
+  assert.deepEqual(step(TOKYO, LA, '2026-10-16T22:00:00Z').skips, [])
+  // Flipping the zone in Settings every day: the second flip within a week gets nothing.
+  const first = step(LA, TOKYO, '2026-10-16T06:00:00Z')
+  const back = travel.travelStep(first, LA, new Date('2026-10-16T20:00:00Z'))
+  const again = travel.travelStep({ ...back, night: '2026-10-16' }, TOKYO, new Date('2026-10-18T06:00:00Z'))
+  assert.deepEqual(again.skips, ['2026-10-15'])
+  // A week later a real trip counts again.
+  const later = travel.travelStep({ ...back, zone: LA, night: '2026-10-23' }, TOKYO, new Date('2026-10-25T06:00:00Z'))
+  assert.deepEqual(later.skips, ['2026-10-15', '2026-10-24'])
+  // The week counts skips another phone synced to the shelf, too.
+  const fresh = { zone: LA, night: '2026-10-23', skips: [] }
+  assert.deepEqual(travel.travelStep(fresh, TOKYO, new Date('2026-10-25T06:00:00Z'), ['2026-10-20']).skips, [])
+  assert.deepEqual(travel.travelStep(fresh, TOKYO, new Date('2026-10-25T06:00:00Z'), ['2026-10-15']).skips, ['2026-10-24'])
+})
+
+test('on a travel-skipped night each question is judged on its own', () => {
+  const noon = new Date(2026, 9, 16, 12)
+  // An older phone closed the 15th on its own (Not yet at its midnight, in LA).
+  const auto = { id: 'auto', lampId: 'walk', periodKey: '2026-10-15', status: 'skip', answeredAt: '2026-10-15T07:00:00.000Z', note: '' }
+  const older = travelBook(['2026-10-15'], ['2026-10-15'])
+  const merged = mergeShelves({ currentId: 'trip', boards: [older] }, { currentId: 'trip', boards: [{ ...older, answers: [...older.answers, auto] }] }, '2026-10-16', '2026-10-15')
+  assert.deepEqual(merged.boards[0].travelSkips, ['2026-10-15'])
+  assert.equal(questionStreak(merged.boards[0], merged.boards[0].lamps[0], '2026-10-16'), 15)
+  assert.equal(travelShelfStreak(merged.boards, noon), 15)
+  // A Not yet tapped that night still counts as one.
+  const tapped = { ...auto, answeredAt: '2026-10-15T07:12:31.402Z' }
+  const real = { ...older, answers: [...older.answers, tapped] }
+  assert.equal(questionStreak(real, real.lamps[0], '2026-10-16'), 1)
+  // It is a miss for the shelf too (the freeze earned at 14 nights covers it).
+  assert.equal(weekStripNights([real], noon).find((night) => night.iso === '2026-10-15').freeze, true)
+  // One Did of three on the skipped night keeps the streak; the other two step aside.
+  const three = travelBook(['2026-10-15'], ['2026-10-15'])
+  three.lamps = [three.lamps[0], lamp('read', { createdOn: '2026-10-15' }), lamp('call', { createdOn: '2026-10-15' })]
+  three.answers = [
+    ...three.answers,
+    { id: 'r', lampId: 'read', periodKey: '2026-10-15', status: 'yes', answeredAt: '2026-10-15T20:00:00.000Z', note: '' },
+    ...['read', 'call'].map((id) => ({ id: `${id}16`, lampId: id, periodKey: '2026-10-16', status: 'yes', answeredAt: '2026-10-16T20:00:00.000Z', note: '' })),
+  ]
+  assert.equal(travelShelfStreak([three], noon), 16)
+  const marks = weekStripNights([three], noon)
+  assert.equal(marks.find((night) => night.iso === '2026-10-15').miss, false)
+})
+
+test('the other walks step over a travel-skipped night', () => {
+  // Last night lost to travel is still offered in grace, so a Did can count.
+  const book = travelBook(['2026-10-15', '2026-10-16'], ['2026-10-15'])
+  assert.equal(graceRowsFor([book], '2026-10-15').length, 1)
+  // A quiet week holds with the skipped night in it, and coming back after it is no come-back.
+  const week = unlockAchievements({ ...travelBook(['2026-10-15'], ['2026-10-15']), opens: ['2026-10-16'] }, new Date(2026, 9, 16, 22))
+  assert.ok(week.unlocked.includes('quiet-week'))
+  assert.ok(!week.unlocked.includes('come-back'))
+  const hole = unlockAchievements({ ...travelBook(['2026-10-15']), opens: ['2026-10-16'] }, new Date(2026, 9, 16, 22))
+  assert.ok(hole.unlocked.includes('come-back'))
+  // A one-time "by" question closed by an older app at the start of the day it was made reads as automatic.
+  assert.equal(travel.autoClosed({ status: 'skip', answeredAt: '2026-10-12T07:00:00.000Z' }, '2026-10-15'), true)
+  assert.equal(travel.autoClosed({ status: 'skip', answeredAt: '2026-10-15T21:03:11.250Z' }, '2026-10-15'), false)
+  // Did we on a skipped night: done counts, open steps aside, other nights as usual.
+  assert.deepEqual(travel.travelWe(true, { due: 2, done: 1, clear: false }), { due: 1, clear: true })
+  assert.deepEqual(travel.travelWe(false, { due: 1, done: 0, clear: false }), { due: 1, done: 0, clear: false })
+})
+
+test('a skipped night with one Did we done and one open: the walk and the calendar agree', () => {
+  const noon = new Date(2026, 9, 16, 12)
+  // The folder's question was made on the 15th and left open; one Did we done, one open.
+  const book = { ...travelBook(['2026-10-15'], ['2026-10-15']), lamps: [lamp('walk', { createdOn: '2026-10-15' })] }
+  try {
+    setWeNightRows([
+      { card: 'w1', folder: '', night: '2026-10-15', status: 'did' },
+      { card: 'w2', folder: '', night: '2026-10-15', status: '' },
+    ])
+    assert.equal(travelShelfStreak([book], noon), 2)
+    const night = weekStripNights([book], noon).find((item) => item.iso === '2026-10-15')
+    assert.deepEqual([night.due, night.on, night.miss], [1, true, false])
+    const october = yearMonths([book], 2026, noon).find((month) => month.nights.some((item) => item.iso === '2026-10-15'))
+    const yearNight = october.nights.find((item) => item.iso === '2026-10-15')
+    assert.deepEqual([yearNight.due, yearNight.on, yearNight.miss], [1, true, false])
+    // Without the skip the open one is a miss.
+    assert.equal(travelShelfStreak([{ ...book, travelSkips: [] }], noon), 1)
+  } finally {
+    setWeNightRows([])
+  }
+  // The close looks past the skipped night to the real previous one.
+  const open = travelBook(['2026-10-14', '2026-10-15', '2026-10-16'], ['2026-10-15'])
+  const closed = closePastNights(open, new Date(2026, 9, 16, 10), [])
+  assert.equal(answerFor(closed, 'walk', '2026-10-14')?.status, 'skip')
+  assert.equal(answerFor(closed, 'walk', '2026-10-15'), undefined)
+})
+
+test('travel skips on this phone belong to one account', () => {
+  const at = new Date('2026-10-16T06:00:00Z')
+  const put = (owner) => localStorage.setItem('did-i-zone-seen', JSON.stringify({ zone: LA, night: '2026-10-14', skips: [], owner }))
+  put('user-a')
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-a'), ['2026-10-15'])
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-a'), ['2026-10-15'])
+  // Another account on the phone gets none of them.
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-b'), [])
+  // Sign out clears them but keeps the zone, so no new trip is read.
+  put('user-a')
+  travel.noteZone(at, TOKYO, 'user-a')
+  travel.forgetTravelSkips()
+  const kept = JSON.parse(localStorage.getItem('did-i-zone-seen'))
+  assert.deepEqual([kept.zone, kept.skips], [TOKYO, []])
+  assert.deepEqual(travel.noteZone(at, TOKYO, ''), [])
+  assert.equal(kept.skipAt, 0)
+  // Skips made signed out go to the account that signs in next, then are its own.
+  put('')
+  assert.deepEqual(travel.noteZone(at, TOKYO, ''), ['2026-10-15'])
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-c'), ['2026-10-15'])
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-d'), [])
+  localStorage.removeItem('did-i-zone-seen')
+})
+
+test('travel-skipped nights union across phones and stay capped', () => {
+  const left = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-10-15'])] }
+  const right = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-09-02'])] }
+  const merged = mergeShelves(left, right, '2026-10-16', '2026-10-15')
+  assert.deepEqual(merged.boards[0].travelSkips, ['2026-09-02', '2026-10-15'])
+  const many = Array.from({ length: 80 }, (_, i) => addDaysIso('2025-01-01', i * 7))
+  const capped = travel.capSkips(many)
+  assert.equal(capped.length, travel.TRAVEL_SKIP_MAX)
+  assert.equal(capped[capped.length - 1], many[79])
+})
+
 test('an unanswered night closes as nope when the day turns', () => {
   const today = boardDate(new Date())
   const book = {
