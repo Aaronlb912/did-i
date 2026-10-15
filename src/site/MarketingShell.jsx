@@ -99,6 +99,7 @@ export function MarketingShell({ children, path, wide = false }) {
           ) : null}{' '}
           <a href="/press">{t('web.nav.press')}</a>
         </p>
+        <p>{t('legal.copyright')}</p>
       </footer>
     </div>
   )
