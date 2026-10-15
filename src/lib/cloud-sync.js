@@ -466,6 +466,8 @@ async function pullAndMergeOnce() {
 
     const bad = (await putShelf(db, user, written, uploadAt)) || (await putPrefs(db, user, written))
     if (bad) throw bad
+    // The shelf landed for this account: later pushes may send it.
+    writeLastUser(user.id)
 
     // Opening the app is the one moment worth reconciling in full: send
     // everything, then clear out answers whose question is gone.
@@ -513,7 +515,12 @@ export async function pushNow(shelf) {
     // No pull has landed for this account on this phone yet (the last user id
     // is written only after one does), so the local shelf may be the empty one
     // sign out left. Sending it would overwrite the account's questions.
-    if (readLastUser() !== user.id) throw new Error('account.syncMiss')
+    // Pull instead (shared with any pull already running); a landed pull opens
+    // the gate, and only a failed one shows as a miss.
+    if (readLastUser() !== user.id) {
+      await pullAndMerge()
+      return
+    }
     const uploadAt = new Date().toISOString()
     stampSavedAt(uploadAt)
     const bad = (await putShelf(db, user, doc, uploadAt)) || (await putPrefs(db, user, doc))
