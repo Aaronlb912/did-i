@@ -648,7 +648,7 @@ function AddFriendPop({ colors, onClose, onAsked }) {
     let alive = true
     myFriendId().then((out) => {
       if (alive) setMyId(out.id || '')
-    })
+    }).catch(() => {})
     return () => {
       alive = false
     }
@@ -1162,8 +1162,8 @@ export function PeopleConnectScreen({ book, route }) {
     if (!account.user) return undefined
     let alive = true
     myFriendId().then((out) => {
-      if (alive) setMyId(out.id)
-    })
+      if (alive) setMyId(out.id || '')
+    }).catch(() => {})
     return () => {
       alive = false
     }
@@ -1949,15 +1949,23 @@ export function FriendScreen({ book, onChange, route }) {
 
   const load = useCallback(async () => {
     if (!account.user || !otherId) return
-    const [who, both, linked, made, serverCheers, nights, shared] = await Promise.all([
-      personById(otherId),
-      sendsWith(otherId),
-      stillLinked(otherId),
-      myDidYouLinks().catch(() => []),
-      readFriendCheers().catch(() => null),
-      friendWeek(otherId, boardDate(new Date())).catch(() => []),
-      sharedNotesFrom(otherId).catch(() => []),
-    ])
+    let got
+    try {
+      got = await Promise.all([
+        personById(otherId),
+        sendsWith(otherId),
+        stillLinked(otherId),
+        myDidYouLinks().catch(() => []),
+        readFriendCheers().catch(() => null),
+        friendWeek(otherId, boardDate(new Date())).catch(() => []),
+        sharedNotesFrom(otherId).catch(() => []),
+      ])
+    } catch {
+      setLoadMiss(t('people.reach'))
+      setReady(true)
+      return
+    }
+    const [who, both, linked, made, serverCheers, nights, shared] = got
     setNotes(shared)
     if (typeof serverCheers === 'number') setStock(serverCheers)
     setWeek(nights)
@@ -2389,9 +2397,15 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     if (answering.current.has(row.id)) return
     answering.current.add(row.id)
     setMiss('')
-    const res = await answerSend(row.id, keep)
+    let res
+    try {
+      res = await answerSend(row.id, keep)
+    } catch {
+      res = { miss: 'confirm.miss' }
+    } finally {
+      answering.current.delete(row.id)
+    }
     const { miss: why, already } = res
-    answering.current.delete(row.id)
     if (why) {
       setMiss(tMiss(why))
       return why === 'sent.gone' ? load() : undefined

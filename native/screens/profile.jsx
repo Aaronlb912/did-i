@@ -20,6 +20,7 @@ import { pinWidget, showWidgetHow } from '../lib/widget-pin.js'
 import { signOutHere, useAccount } from '../../src/lib/account.js'
 import { leaveAccount } from '../lib/leave-account.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
+import { armLampPings } from '../../src/lib/notify.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
 import { legalEmail } from '../../src/lib/legal.js'
 import { shareCsv, shareShelf } from '../../src/lib/native.js'
@@ -322,7 +323,10 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           label={t('settings.gentle')}
           sub={t('settings.gentleSub')}
           on={prefs.gentle}
-          onPress={() => writePrefs({ gentle: !prefs.gentle })}
+          onPress={() => {
+            writePrefs({ gentle: !prefs.gentle })
+            armLampPings(readShelf().boards).catch(() => {})
+          }}
         />
         <SetRow
           colors={colors}

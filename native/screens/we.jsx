@@ -79,7 +79,7 @@ export function usePeople() {
     return () => {
       alive = false
     }
-  }, [])
+  }, [account.user?.id])
   return people
 }
 

@@ -111,6 +111,7 @@ export function accountMissText(bad) {
     googleFail: 'auth.googleFail',
     googleUnavailable: 'auth.googleUnavailable',
     reviewerBad: 'auth.reviewerBad',
+    net: 'confirm.miss',
   }[bad]
   return key ? t(key) : bad
 }

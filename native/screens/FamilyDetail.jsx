@@ -96,6 +96,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
   const load = useCallback(async () => {
+    // Sign in is still loading: wait instead of showing the family as gone.
+    if (!account.ready) return
     if (!familyId || !account.user) {
       setReady(true)
       return
@@ -119,13 +121,18 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         readFriendCheers(),
       ])
       if (typeof serverCheers === 'number') setStock(serverCheers)
+      if (tonightRows.miss) {
+        setMiss(tonightRows.miss)
+        setReady(true)
+        return
+      }
       setLamps(tonightRows.lamps)
       setAnswers(tonightRows.answers)
       setLastDids(tonightRows.last || new Map())
       setPast(pastRows)
     }
     setReady(true)
-  }, [familyId, account.user])
+  }, [familyId, account.ready, account.user])
 
   useEffect(() => {
     load()

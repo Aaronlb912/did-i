@@ -1,6 +1,17 @@
 // Per-account lists kept for a fast first paint (native useKept with KEEP,
 // Did we cards). Signing out removes them so nothing stays on the device.
-export const ACCOUNT_CACHE_PREFIXES = ['did-i-kept:', 'did-i-we-cards:', 'did-i-gifts-']
+// Pending invite and Did you links go too: kept through the first sign in
+// (the invite flow), but never carried over to the next account.
+export const ACCOUNT_CACHE_PREFIXES = [
+  'did-i-kept:',
+  'did-i-we-cards:',
+  'did-i-gifts-',
+  'did-i-pending-invite',
+  'did-i-pending-did-you',
+  'did-i-did-you-claims',
+  'did-i-link-friends',
+  'did-i-we-link-web',
+]
 
 function storedKeys(store) {
   // The phone's storage shim lists keys itself; browsers use length/key().

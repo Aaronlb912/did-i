@@ -1305,7 +1305,7 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
 
   async function sendForgotCode() {
     setBusy(true)
-    const { miss: bad } = await sendCode(email)
+    const { miss: bad } = await sendCode(email).catch(() => ({ miss: 'net' }))
     setBusy(false)
     setMiss(bad ? accountMissText(bad) : '')
   }
@@ -1340,7 +1340,7 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
 
   async function removeWithCode() {
     setBusy(true)
-    const { miss: bad } = await checkCode(email, code)
+    const { miss: bad } = await checkCode(email, code).catch(() => ({ miss: 'net' }))
     setBusy(false)
     if (bad) {
       setMiss(accountMissText(bad))
@@ -2156,10 +2156,12 @@ function AccountSignedIn({ book, email, onChange }) {
       if (!rows) return confirmMiss(t('confirm.miss'))
       setDevices(rows)
       setDevicesIn(true)
+    }).catch(() => {
+      if (alive) confirmMiss(t('confirm.miss'))
     })
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book?.keeperName) setNameDraft(row.display_name)
-    })
+    }).catch(() => {})
     return () => {
       alive = false
     }
