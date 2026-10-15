@@ -11,7 +11,7 @@ import { boardDate } from './recurrence.js'
 // The day Did I went live on the App Store, as 'YYYY-MM-DD'. Leave it empty
 // until then. The Birthday frame opens each year on that date, for a week,
 // starting with the first anniversary.
-export const APP_LAUNCH = ''
+export const APP_LAUNCH = '2026-10-15'
 
 function addDays(md, n) {
   const d = new Date(Date.UTC(2001, Number(md.slice(0, 2)) - 1, Number(md.slice(3, 5)) + n))
