@@ -11,6 +11,10 @@ create table if not exists public.app_flags (
   constraint app_flags_name check (name in ('reviewer_signin'))
 );
 
+-- The audit wants a length cap on text columns; a one-value check prints as "=".
+alter table public.app_flags drop constraint if exists app_flags_name_length;
+alter table public.app_flags add constraint app_flags_name_length check (char_length(name) <= 40);
+
 alter table public.app_flags enable row level security;
 -- No policies and no grants: apps read through the function below only.
 revoke all on public.app_flags from anon, authenticated;

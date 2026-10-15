@@ -5,6 +5,8 @@ do $$
 declare
   ok boolean;
 begin
+  insert into public.app_flags (name, on_now) values ('reviewer_signin', false)
+  on conflict (name) do nothing;
   update public.app_flags set on_now = false where name = 'reviewer_signin';
   if public.reviewer_signin_on() then raise exception 'FAIL: off reads as on'; end if;
 
@@ -30,5 +32,6 @@ begin
   select relrowsecurity into ok from pg_class where oid = 'public.app_flags'::regclass;
   if not ok then raise exception 'FAIL: RLS off on app_flags'; end if;
 
-  raise notice 'reviewer-flag: all checks passed';
+  -- Always raise so nothing above is kept.
+  raise exception 'SQL TESTS PASSED';
 end $$;
