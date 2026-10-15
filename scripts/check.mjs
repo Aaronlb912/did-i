@@ -5386,12 +5386,21 @@ test('a reminder tap at 23:59:58 handled after midnight files to its night, once
   const response = { actionIdentifier: 'did', notification: { request: { identifier: '9', content: { data: askNoteData({ lamp: { id: 'door' }, periodKey: night }) } } } }
   const handled = new Date(2026, 7, 11, 0, 0, 2)
   const answer = notificationAnswer(response, handled.getTime())
-  assert.ok(answer.at < new Date(2026, 7, 11).getTime(), 'stamped inside its night')
   const saved = applyWidgetTapOnce(answer.id, answer.action, answer.night, handled, answer.at)
-  assert.equal(answerFor(saved.boards[0], 'door', night)?.status, 'yes')
-  // A night that has truly closed keeps the handled time and is dropped.
+  assert.equal(answerFor(saved.boards[0], 'door', night)?.status, 'yes', 'files to last night')
+  // A Not yet at 00:30, then the reminder's Did at 01:00: stamped 01:00, and
+  // it wins the later-time merge on another phone.
+  writeShelf({ currentId: 'b1', boards: [book] })
+  const notYetAt = new Date(2026, 7, 11, 0, 30)
+  assert.ok(applyWidgetTapOnce('door', 'nope', night, notYetAt, notYetAt.getTime()))
+  const oneAm = new Date(2026, 7, 11, 1, 0)
+  const did = applyWidgetTapOnce('door', 'did', night, oneAm, notificationAnswer(response, oneAm.getTime()).at)
+  const stamped = answerFor(did.boards[0], 'door', night)
+  assert.ok(['yes', 'late'].includes(stamped.status), 'the Did replaced the Not yet')
+  assert.equal(Date.parse(stamped.answeredAt), oneAm.getTime())
+  // A night that has truly closed is dropped.
   const late = new Date(2026, 7, 12, 12, 0)
-  assert.equal(notificationAnswer(response, late.getTime()).at, late.getTime())
+  assert.equal(applyWidgetTapOnce('door', 'did', night, late, notificationAnswer(response, late.getTime()).at), null)
   // The listener and getLastNotificationResponseAsync both see the launch tap.
   const seen = new Set()
   assert.equal(firstResponse(seen, response), true)
