@@ -3206,6 +3206,10 @@ await testAsync('reviewer sign-in: off by default, a 3 second hold opens it only
     card.includes("auth.step === 'start' && auth.reviewerOn ? (") && card.includes("label={t('auth.reviewer')} onPress={auth.showReviewer}") && card.includes("auth.step === 'reviewer' ?"),
     'More and People sign-in cards show the switch-gated reviewer button and its password field',
   )
+  for (const src of [sign, card]) {
+    assert.ok(src.includes('textContentType="password"') && src.includes('autoComplete="current-password"') && src.includes('textContentType="emailAddress"'), 'reviewer fields name password and email for autofill')
+  }
+  assert.ok(read('native/components/ui.jsx').includes('textContentType={textContentType}'), 'Field passes textContentType through')
   assert.ok(read('native/screens/more.jsx').includes('<AuthEmailCard') && read('native/screens/social.jsx').includes('<AuthEmailCard'), 'every native sign-in surface uses the card')
   assert.ok(hook.includes('watchReviewerFlag(setReviewerOn)'), 'the screen keeps watching the switch')
 
@@ -3276,12 +3280,24 @@ await testAsync('reviewer sign-in: off by default, a 3 second hold opens it only
   a.clock = 2 * REVIEWER_FOCUS_GAP_MS - 1
   await a.focus()
   assert.equal(a.reads, 9, 'web focus waits 5s between reads')
+  for (let i = 0; i < 10; i++) await a.fire()
+  assert.equal(a.pending, null, 'retries ran out again')
+  const ranOut = a.reads
+  const stopA3 = a.watch(() => {})
+  await tick()
+  assert.equal(a.reads, ranOut, 'a new screen within 5s of a read does not read again')
+  stopA3()
+  a.clock += REVIEWER_FOCUS_GAP_MS + 1
+  const stopA4 = a.watch(() => {})
+  await tick()
+  assert.equal(a.reads, ranOut + 1, 'a sign-in screen opened later re-reads once the retries ran out')
+  stopA4()
   stopA()
   stopA2()
   assert.equal(a.frontFns.size + a.focusFns.size, 0, 'last screen gone: listeners removed')
   await a.setFront(true)
   await a.fire()
-  assert.equal(a.reads, 9, 'unmounted: no more reads')
+  assert.equal(a.reads, ranOut + 1, 'unmounted: no more reads')
 
   // Turns on: reports once, stops, and a later screen gets on at once.
   const b = rig([false, false, true])

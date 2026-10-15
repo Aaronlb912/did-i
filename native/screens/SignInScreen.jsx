@@ -67,6 +67,8 @@ export function SignInScreen({ onDone }) {
           value={auth.email}
           onChangeText={auth.setEmail}
           keyboardType="email-address"
+          textContentType="emailAddress"
+          autoComplete="email"
           autoCapitalize="none"
         />
         {auth.step === 'code' ? (
@@ -82,6 +84,8 @@ export function SignInScreen({ onDone }) {
             value={auth.password}
             onChangeText={auth.setPassword}
             secureTextEntry
+            textContentType="password"
+            autoComplete="current-password"
             autoCapitalize="none"
           />
         ) : null}

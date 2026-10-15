@@ -33,6 +33,8 @@ export function AuthEmailCard({
         value={auth.email}
         onChangeText={auth.setEmail}
         keyboardType="email-address"
+        textContentType="emailAddress"
+        autoComplete="email"
         autoCapitalize="none"
       />
       {auth.step === 'code' ? (
@@ -49,6 +51,8 @@ export function AuthEmailCard({
           value={auth.password}
           onChangeText={auth.setPassword}
           secureTextEntry
+          textContentType="password"
+          autoComplete="current-password"
           autoCapitalize="none"
         />
       ) : null}

@@ -112,6 +112,10 @@ export function createReviewerWatch({
       hook()
       attempt = 0
       check()
+    } else if (timer == null && !busy && now() - lastRead > REVIEWER_FOCUS_GAP_MS) {
+      // A screen opened after the retries ran out reads again.
+      attempt = 0
+      check()
     }
     return () => {
       subs.delete(onChange)

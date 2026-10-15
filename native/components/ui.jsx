@@ -167,6 +167,8 @@ export function Field({
   returnKeyType,
   blurOnSubmit,
   autoFocus,
+  textContentType,
+  autoComplete,
 }) {
   return (
     <View style={styles.field}>
@@ -184,6 +186,8 @@ export function Field({
         onSubmitEditing={onSubmitEditing}
         onEndEditing={onEndEditing}
         autoFocus={autoFocus}
+        textContentType={textContentType}
+        autoComplete={autoComplete}
         blurOnSubmit={blurOnSubmit}
         returnKeyType={returnKeyType ?? (onSubmitEditing ? 'done' : undefined)}
         style={[

@@ -26,7 +26,9 @@ reads as off.
 
 The switch only hides the UI; there is no server gate. The review account's
 password works only through the reviewer form (email and password), and it
-works whether the switch is on or off.
+works whether the switch is on or off. Once a phone has seen the switch on,
+the button stays there until the app is relaunched, even after you turn it
+off; only the review account's password works in that form.
 
 ## After launch: Did we
 
