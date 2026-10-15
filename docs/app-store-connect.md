@@ -36,8 +36,11 @@ Description: lead with `about.p1`, then landing bullets `web.landing.b1`–`b4` 
 
 ## 1.2 listing text (App Store and Google Play)
 
-Paste when 1.2 (Did we) ships. Same text for both stores. Keep it plain; no
-em dashes. Do not paste before 1.2 is live: it describes Did we.
+Paste when 1.2 (Did we) ships. Same text for both stores except the widget
+line below. Keep it plain; no em dashes. Do not paste before 1.2 is live: it
+describes Did we. The App Store text must never name Android or Google Play:
+1.3.4 was rejected on 2026-10-15 under 2.3.10 (Accurate Metadata) for "Widgets
+on iPhone and Android".
 
 **Promotional text (App Store, 170 max):**
 For people who forget to open habit trackers. Did I brings the question to you: a widget, your watch, or a reminder at the time you set. Swipe Did or Not yet.
@@ -60,7 +63,7 @@ Ask at any time of day, or check them all at the end of the day.
 
 ONE QUESTION AT A TIME
 - One question, not a whole to-do list.
-- Widgets on iPhone and Android, and a watch app.
+- Home screen widgets and an Apple Watch app. (Google Play: "Home screen widgets and a Wear OS app.")
 - Home shows what's still open today.
 - Streaks stay honest: Not yet means not yet.
 
