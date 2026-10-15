@@ -103,7 +103,7 @@ android {
         targetSdk = rootProject.ext.targetSdkVersion
         // GitHub Actions passes its run number so each Play upload goes up.
         versionCode ((System.getenv("ANDROID_VERSION_CODE") ?: "1").toInteger())
-        versionName "1.3.5"
+        versionName "1.3.6"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -177,6 +177,9 @@ dependencies {
     implementation "com.caverock:androidsvg-aar:1.4"
     // Wear OS watch app (android/wear): cards out, taps back.
     implementation "com.google.android.gms:play-services-wearable:19.0.0"
+    // Already in the app through expo-notifications (same version).
+    // WakeMessagingService extends its Firebase service for silent wakes.
+    implementation "com.google.firebase:firebase-messaging:25.0.1"
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 

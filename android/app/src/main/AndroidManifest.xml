@@ -98,5 +98,13 @@
         <data android:scheme="wear" android:host="*" android:pathPrefix="/didi/tap"/>
       </intent-filter>
     </service>
+    <!-- Firebase messages: silent wakes (supabase/wake-push.sql) are handled
+         here; everything else goes on to expo-notifications as before. -->
+    <service android:name="expo.modules.notifications.service.ExpoFirebaseMessagingService" tools:node="remove"/>
+    <service android:name=".widget.WakeMessagingService" android:exported="false">
+      <intent-filter android:priority="-1">
+        <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+      </intent-filter>
+    </service>
   </application>
 </manifest>

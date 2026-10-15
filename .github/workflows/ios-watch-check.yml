@@ -10,6 +10,7 @@ on:
     paths:
       - 'targets/**'
       - 'modules/didi-watch/**'
+      - 'modules/didi-wake/**'
       - 'app.json'
       - 'app.config.js'
       - 'package.json'

@@ -1,8 +1,13 @@
 diff --git a/node_modules/expo-widgets/ios/Widgets/AppIntent.swift b/node_modules/expo-widgets/ios/Widgets/AppIntent.swift
-index 972fa4f..1abae0c 100644
 --- a/node_modules/expo-widgets/ios/Widgets/AppIntent.swift
 +++ b/node_modules/expo-widgets/ios/Widgets/AppIntent.swift
-@@ -85,6 +85,55 @@ struct WidgetUserInteraction: AppIntent {
+@@ -1,4 +1,5 @@
+ import AppIntents
++import Security
+ import WidgetKit
+ 
+ struct WidgetReload: AppIntent {
+@@ -85,6 +86,55 @@
          return .result()
        }
        newTimeline[entryIndex] = newEntry
@@ -58,11 +63,90 @@ index 972fa4f..1abae0c 100644
        WidgetsStorage.set(newTimeline, forKey: "__expo_widgets_\(source)_timeline")
      }
  
+@@ -96,10 +146,79 @@
+ 
+     WidgetCenter.shared.reloadTimelines(ofKind: source)
+ 
++    // Did I: the tap is saved above for the app. Also send it to the account
++    // now with this phone's answer key, so other devices see it while the app
++    // is closed. A miss is left for the app's own sync.
++    if newProps != nil, let target, let tap = DidIAnswerTap(target: target, props: props) {
++      await tap.send()
++    }
++
+     return .result()
+   }
+ }
+ 
++// Did I: one Did or Not yet from the widget, posted to key_answer
++// (supabase/answer-keys.sql). The key is in the Keychain under the app
++// group (modules/didi-wake, AnswerKeychain); without one this does nothing.
++struct DidIAnswerTap {
++  let lamp: String
++  let night: String
++  let kind: String
++
++  // Targets are did:<lampId>|<periodKey> or nope:<lampId>|<periodKey>; older
++  // cards leave out the night, which then comes from the card's items.
++  init?(target: String, props: [String: Any]) {
++    guard let colon = target.firstIndex(of: ":") else { return nil }
++    let kind = String(target[..<colon])
++    guard kind == "did" || kind == "nope" else { return nil }
++    var lamp = String(target[target.index(after: colon)...])
++    var night = ""
++    if let cut = lamp.lastIndex(of: "|") {
++      night = String(lamp[lamp.index(after: cut)...])
++      lamp = String(lamp[..<cut])
++    }
++    if night.isEmpty, let items = props["items"] as? [[String: Any]] {
++      night = items.first { ($0["lampId"] as? String) == lamp }?["periodKey"] as? String ?? ""
++    }
++    guard !lamp.isEmpty, lamp.count <= 64, !night.isEmpty, night.count <= 24 else { return nil }
++    self.lamp = lamp
++    self.night = night
++    self.kind = kind
++  }
++
++  func send() async {
++    let query: [String: Any] = [
++      kSecClass as String: kSecClassGenericPassword,
++      kSecAttrService as String: "com.aaronbryant.didi.answer-key",
++      kSecAttrAccount as String: "key",
++      kSecAttrAccessGroup as String: "group.com.aaronbryant.didi",
++      kSecReturnData as String: true,
++      kSecMatchLimit as String: kSecMatchLimitOne,
++    ]
++    var found: CFTypeRef?
++    guard SecItemCopyMatching(query as CFDictionary, &found) == errSecSuccess,
++          let data = found as? Data,
++          let saved = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
++          let key = saved["key"] as? String,
++          let base = saved["url"] as? String,
++          let anon = saved["anon"] as? String,
++          base.hasPrefix("https://"),
++          let url = URL(string: base + "/rest/v1/rpc/key_answer") else { return }
++    let stamp = ISO8601DateFormatter()
++    stamp.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
++    // Short: the widget redraws only after this intent returns.
++    var request = URLRequest(url: url, timeoutInterval: 3)
++    request.httpMethod = "POST"
++    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
++    request.setValue(anon, forHTTPHeaderField: "apikey")
++    request.setValue("Bearer \(anon)", forHTTPHeaderField: "Authorization")
++    request.httpBody = try? JSONSerialization.data(withJSONObject: [
++      "key": key, "lamp": lamp, "night": night, "kind": kind, "at": stamp.string(from: Date()),
++    ])
++    _ = try? await URLSession.shared.data(for: request)
++  }
++}
++
+ @available(iOS 16.0, *)
+ struct LiveActivityUserInteraction: LiveActivityIntent {
+   // title is not used for non-discoverable intents, but it is required
 diff --git a/node_modules/expo-widgets/ios/Widgets/TimelineProvider.swift b/node_modules/expo-widgets/ios/Widgets/TimelineProvider.swift
-index da0010a..962978b 100644
 --- a/node_modules/expo-widgets/ios/Widgets/TimelineProvider.swift
 +++ b/node_modules/expo-widgets/ios/Widgets/TimelineProvider.swift
-@@ -31,6 +31,16 @@ public struct WidgetsTimelineProvider: TimelineProvider {
+@@ -31,6 +31,16 @@
  
      let entries = parseTimeline(identifier: groupIdentifier, name: name, family: context.family)
  

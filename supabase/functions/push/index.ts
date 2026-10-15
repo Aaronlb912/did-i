@@ -186,6 +186,83 @@ async function send(token: string, row: Record<string, unknown>, bearer: string)
   return res.ok ? '' : `${res.status} ${(await res.text()).slice(0, 200)}`
 }
 
+// A silent wake (supabase/wake-push.sql): no text, no sound, no badge. The
+// app pulls answers and redraws its widgets and watch. Apple wants
+// background type and priority 5 for these, and throttles them as it likes.
+async function wakeApple(token: string, jwt: string) {
+  let why = ''
+  for (const host of ['api.push.apple.com', 'api.sandbox.push.apple.com']) {
+    const res = await fetch(`https://${host}/3/device/${token}`, {
+      method: 'POST',
+      headers: {
+        authorization: `bearer ${jwt}`,
+        'apns-topic': APP_ID,
+        'apns-push-type': 'background',
+        'apns-priority': '5',
+        'apns-collapse-id': 'didi-wake',
+      },
+      body: JSON.stringify({ aps: { 'content-available': 1 }, wake: 1 }),
+    })
+    if (res.ok) return ''
+    why = `${res.status} ${(await res.text()).slice(0, 200)}`
+    if (!/BadDeviceToken/.test(why)) break
+  }
+  return why
+}
+
+// Android: a high priority data message, so the app may run briefly in the
+// background. No notification block, so nothing is drawn.
+async function wakeAndroid(token: string, bearer: string) {
+  const res = await fetch(`https://fcm.googleapis.com/v1/projects/${project}/messages:send`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: { token, data: { wake: '1' }, android: { priority: 'HIGH', collapse_key: 'didi-wake', ttl: '60s' } },
+    }),
+  })
+  return res.ok ? '' : `${res.status} ${(await res.text()).slice(0, 200)}`
+}
+
+const kept = { bearer: '', bearerAt: 0, apple: '', appleAt: 0 }
+
+const DEAD_TOKEN = /UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|SenderId mismatch|BadDeviceToken|Unregistered/i
+
+// deno-lint-ignore no-explicit-any
+async function drainWakes(db: any, bearer: string, appleJwt: string) {
+  const { data: batch, error } = await db.rpc('take_wake_batch', { how_many: 200 })
+  if (error) return new Response(error.message, { status: 500 })
+  let sent = 0
+  const dead: string[] = []
+  const trouble: Record<string, number> = {}
+  for (const row of batch ?? []) {
+    const token = String(row.token ?? '')
+    if (!token) continue
+    const apple = isAppleToken(token)
+    if (apple && !appleJwt) {
+      trouble.apns_setup = (trouble.apns_setup ?? 0) + 1
+      continue
+    }
+    let why = ''
+    try {
+      why = apple ? await wakeApple(token, appleJwt) : await wakeAndroid(token, bearer)
+    } catch (e) {
+      // Never String(e): a fetch error carries the URL, and the URL has the token.
+      console.error('push: wake threw', apple ? 'ios' : 'android', (e as Error)?.name ?? 'error')
+      trouble.threw = (trouble.threw ?? 0) + 1
+      continue
+    }
+    if (!why) {
+      sent += 1
+      continue
+    }
+    if (DEAD_TOKEN.test(why)) dead.push(token)
+    const kind = why.match(/UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT|QUOTA_EXCEEDED|UNAVAILABLE|BadDeviceToken|InvalidProviderToken|TooManyRequests/i)?.[0] ?? why.slice(0, 40)
+    trouble[kind] = (trouble[kind] ?? 0) + 1
+  }
+  if (dead.length) await db.from('devices').update({ push_token: null }).in('push_token', dead)
+  return Response.json({ woke: sent, dropped: dead.length, trouble })
+}
+
 // verify_jwt checks the signature but lets any valid key through, including
 // the public anon key the app ships with. Only the cron job holds a
 // service_role key, so require that role.
@@ -212,8 +289,20 @@ Deno.serve(async (req) => {
   let bearer = ''
   let appleJwt = ''
   try {
-    bearer = await accessToken()
-    if (apnsKeyId && apnsTeam && apnsPem) appleJwt = await apnsJwt()
+    // Wakes can call this every few seconds. A warm instance reuses both:
+    // Google's token lasts an hour, and Apple refuses a new signing token
+    // more often than every 20 minutes.
+    const now = Date.now()
+    if (!kept.bearer || now - kept.bearerAt > 45 * 60_000) {
+      kept.bearer = await accessToken()
+      kept.bearerAt = now
+    }
+    if (apnsKeyId && apnsTeam && apnsPem && (!kept.apple || now - kept.appleAt > 30 * 60_000)) {
+      kept.apple = await apnsJwt()
+      kept.appleAt = now
+    }
+    bearer = kept.bearer
+    appleJwt = kept.apple
   } catch (e) {
     return new Response(`push credentials failed: ${String(e).slice(0, 200)}`, { status: 503 })
   }
@@ -222,6 +311,10 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
+
+  // {"wake":true} from wake-push.sql (pg_net or its cron): silent wakes only.
+  const asked = await req.json().catch(() => ({}))
+  if (asked?.wake === true) return drainWakes(db, bearer, appleJwt)
 
   const { data: batch, error } = await db.rpc('take_push_batch', { how_many: 50 })
   if (error) return new Response(error.message, { status: 500 })

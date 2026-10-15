@@ -61,6 +61,8 @@ const files = [
   'supabase/reviewer-flag.sql',
   'supabase/realtime.sql',
   'supabase/social-live.sql',
+  'supabase/answer-keys.sql',
+  'supabase/wake-push.sql',
   'supabase/drop-tonight.sql',
 ]
 

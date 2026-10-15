@@ -30,6 +30,9 @@ public class WidgetTapReceiver extends BroadcastReceiver {
         String kind = text(data, "kind");
         String night = text(data, "night");
         if (!WidgetTapStore.commit(context, lampId, kind, night)) return false;
+        // Before the widget task starts JS: with no JS running, the tap goes
+        // to the account now so other devices see it.
+        AnswerKeyPost.sendLater(context, lampId, kind, night, 0L);
         try {
             WidgetCardStore.advance(context, lampId, kind, night);
         } catch (Exception ignored) {

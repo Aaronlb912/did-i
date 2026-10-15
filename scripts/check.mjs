@@ -7766,6 +7766,29 @@ test('live sql: realtime and social-live run before drop-tonight, deletes are no
   assert.ok(existsSync('supabase/tests/social-live.test.sql') && existsSync('supabase/tests/realtime.test.sql'))
 })
 
+test('answer keys and wakes: write-only key, same answer path, wake audience is live_ping', () => {
+  const order = readFileSync('scripts/apply-all-sql.mjs', 'utf8')
+  const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
+  // wake-push.sql redefines live_ping; social-live.sql after it would drop the wakes.
+  assert.ok(files.indexOf('consent-guards.sql') < files.indexOf('answer-keys.sql'))
+  assert.ok(files.indexOf('social-live.sql') < files.indexOf('answer-keys.sql'))
+  assert.ok(files.indexOf('answer-keys.sql') < files.indexOf('wake-push.sql'))
+  assert.ok(files.indexOf('wake-push.sql') < files.indexOf('drop-tonight.sql'))
+  const keys = readFileSync('supabase/answer-keys.sql', 'utf8')
+  // The app and the key write through one function, so the merge rule is one.
+  assert.match(keys, /function public\.put_answers\(rows jsonb\)[\s\S]*?return public\.put_answers_as\(\(select auth\.uid\(\)\), rows\)/)
+  assert.match(keys, /revoke all on function public\.put_answers_as\(uuid, jsonb\) from public, anon, authenticated/)
+  const body = keys.slice(keys.indexOf('function public.key_answer('))
+  assert.ok(!/coins|wallet|purse|gems|sends|insert into public\.(?!answer_keys)/i.test(body.slice(0, body.indexOf('notify pgrst'))), 'a key writes answers only')
+  assert.match(keys, /grant select \(id, device_key, created_at, last_used_at, revoked_at\) on public\.answer_keys to authenticated/)
+  const wake = readFileSync('supabase/wake-push.sql', 'utf8')
+  assert.match(wake, /if kind in \('we', 'family', 'send'\) then\s+perform public\.wake_devices\(who, null\)/)
+  assert.ok(existsSync('supabase/tests/answer-keys.test.sql') && existsSync('supabase/tests/wake-push.test.sql'))
+  // Sign out ends this device's key before the session goes.
+  const account = readFileSync('src/lib/account.js', 'utf8')
+  assert.match(account, /Promise\.all\(\[dropPushToken\(\), endAnswerKeys\(deviceKey\(\)\)\]\)\s+\/\/[^\n]*\n\s+await db\.auth\.signOut\(\{ scope: 'local' \}\)/)
+})
+
 test('the menu badge counts Did I did yous, the same as the inbox lists them', () => {
   const src = readFileSync(fileURLToPath(new URL('../src/lib/people.js', import.meta.url)), 'utf8')
   const look = src.slice(src.indexOf('async function pulseLook'), src.indexOf('function pulseWatch'))

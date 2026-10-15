@@ -5,12 +5,14 @@ import { onPrefs } from '../src/lib/prefs.js'
 import { goHash } from './navigation/hash.js'
 import { syncTogetherWidget, syncTonightWidget } from './widget-sync.js'
 import { onTogetherSaved } from '../src/lib/together-widget.js'
+import { installWake } from './wake.js'
 
 let widgetSetupInstalled = false
 
 export function installWidgetSetup() {
   if (widgetSetupInstalled) return
   widgetSetupInstalled = true
+  installWake()
   addUserInteractionListener((event) => {
     if (event.source !== WIDGET_NAME) return
     const target = String(event.target || '')
