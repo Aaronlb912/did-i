@@ -45,16 +45,22 @@ export function Boot() {
     } catch (error) {
       // A downloaded update that cannot load: crash natively so expo-updates
       // rolls back. The fail screen would mark the bad update good.
+      const showFail = () => {
+        const detail = global.__didIFatal?.message || error?.message || String(error)
+        const stack = __DEV__ ? global.__didIFatal?.stack || error?.stack || '' : ''
+        setFail(stack ? `${detail}\n\n${stack}` : detail)
+        SplashScreen.hideAsync().catch(() => {})
+      }
       const mod = updates()
       if (!__DEV__ && mod && !mod.isEmbeddedLaunch && global.ErrorUtils) {
         global.ErrorUtils.getGlobalHandler()(error, true)
-        return
+        // If the native crash never comes, do not leave the splash up forever.
+        const timer = setTimeout(showFail, 3000)
+        return () => clearTimeout(timer)
       }
-      const detail = global.__didIFatal?.message || error?.message || String(error)
-      const stack = __DEV__ ? global.__didIFatal?.stack || error?.stack || '' : ''
-      setFail(stack ? `${detail}\n\n${stack}` : detail)
-      SplashScreen.hideAsync().catch(() => {})
+      showFail()
     }
+    return undefined
   }, [])
 
   if (fail) {
