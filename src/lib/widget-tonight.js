@@ -1,4 +1,4 @@
-import { answerStamp, putAnswer } from './board-ops.js'
+import { putAnswer } from './board-ops.js'
 import { markWeNight, refreshWeNights, weNight, weNightStatus, weOpenOn } from './we-nights.js'
 import { cloud } from './cloud.js'
 import { graceRowsFor } from './grace.js'
@@ -29,7 +29,6 @@ import {
   openFloorIso,
   graceFirst,
   graceNightIso,
-  stampMs,
 } from './recurrence.js'
 import { nightEnd } from './daily.js'
 import { clockWords } from './hall-pages.js'
@@ -488,12 +487,8 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   if (!row) return null
   // A nope can still turn into a did, same as the Tonight stack. Anything else is already set.
   if (row.answer && !(row.answer.status === 'skip' && status === 'yes')) return null
-  let tappedAt = tapAt > 0 ? new Date(tapAt) : null
+  const tappedAt = tapAt > 0 ? new Date(tapAt) : null
   if (tappedAt && periodPassed(row.lamp, row.periodKey, openFloorIso(tappedAt))) return null
-  // A Did over a Not yet must stamp later than it, or another phone's merge
-  // (later time wins) keeps the Not yet.
-  const prevMs = stampMs(answerStamp(row.answer))
-  if (tappedAt && prevMs && tappedAt.getTime() <= prevMs) tappedAt = new Date(prevMs + 1)
   const nextBook = putAnswer(book, row, status === 'yes' ? didStatusForRow(row) : status, tappedAt || tapClock(row, clock))
   if (nextBook === book) return null
   noteMilestone('widget_used')

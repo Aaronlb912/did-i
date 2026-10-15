@@ -5398,6 +5398,14 @@ test('a reminder tap at 23:59:58 handled after midnight files to its night, once
   const stamped = answerFor(did.boards[0], 'door', night)
   assert.ok(['yes', 'late'].includes(stamped.status), 'the Did replaced the Not yet')
   assert.equal(Date.parse(stamped.answeredAt), oneAm.getTime())
+  // An old queued widget Did (22:00) replayed after an in-app Not yet (22:05):
+  // it keeps its own time, so across phones the newer Not yet wins.
+  writeShelf({ currentId: 'b1', boards: [book] })
+  const notYet = applyWidgetTapOnce('door', 'nope', night, new Date(2026, 7, 10, 22, 5), new Date(2026, 7, 10, 22, 5).getTime())
+  const replay = applyWidgetTapOnce('door', 'did', night, new Date(2026, 7, 10, 22, 6), new Date(2026, 7, 10, 22, 0).getTime())
+  assert.equal(Date.parse(answerFor(replay.boards[0], 'door', night).answeredAt), new Date(2026, 7, 10, 22, 0).getTime())
+  const merged = mergeShelves(replay, notYet)
+  assert.equal(answerFor(merged.boards[0], 'door', night).status, 'skip', 'the newer Not yet wins')
   // A night that has truly closed is dropped.
   const late = new Date(2026, 7, 12, 12, 0)
   assert.equal(applyWidgetTapOnce('door', 'did', night, late, notificationAnswer(response, late.getTime()).at), null)
