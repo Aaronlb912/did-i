@@ -3209,58 +3209,105 @@ await testAsync('reviewer sign-in: off by default, a 3 second hold opens it only
   assert.ok(read('native/screens/more.jsx').includes('<AuthEmailCard') && read('native/screens/social.jsx').includes('<AuthEmailCard'), 'every native sign-in surface uses the card')
   assert.ok(hook.includes('watchReviewerFlag(setReviewerOn)'), 'the screen keeps watching the switch')
 
-  // Retry: 1s, 3s, 10s, then every 30s while off; stops once on and on unmount.
-  const { watchReviewerFlag, reviewerRetryMs } = await import('../src/lib/reviewer-flag.js')
-  const { setAppForeground } = await import('../src/lib/app-foreground.js')
-  assert.deepEqual([0, 1, 2, 3, 9].map(reviewerRetryMs), [1000, 3000, 10000, 30000, 30000])
-  const waits = []
-  let pending = null
-  let answers = [false, false, false, false, true]
-  let reads = 0
-  const seen = []
+  // Retry: 1s, 3s, 10s, three at 30s, then stop; one shared watcher; never in the background.
+  const { createReviewerWatch, reviewerRetryMs, REVIEWER_FOCUS_GAP_MS } = await import('../src/lib/reviewer-flag.js')
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6].map(reviewerRetryMs), [1000, 3000, 10000, 30000, 30000, 30000, null])
   const tick = () => new Promise((r) => setTimeout(r, 0))
-  const stop = watchReviewerFlag((on) => seen.push(on), {
-    read: async () => {
-      reads += 1
-      return answers.shift() ?? false
-    },
-    setTimer: (fn, ms) => {
-      waits.push(ms)
-      pending = fn
-      return ms
-    },
-    clearTimer: () => {
-      pending = null
-    },
-  })
-  for (let i = 0; i < 5; i++) {
-    await tick()
-    const fn = pending
-    if (fn) fn()
+  function rig(answers = []) {
+    const s = { waits: [], pending: null, reads: 0, clock: 0, front: true, frontFns: new Set(), focusFns: new Set() }
+    s.watch = createReviewerWatch({
+      read: async () => {
+        s.reads += 1
+        return answers.shift() ?? false
+      },
+      setTimer: (fn, ms) => {
+        s.waits.push(ms)
+        s.pending = fn
+        return ms
+      },
+      clearTimer: () => {
+        s.pending = null
+      },
+      now: () => s.clock,
+      isFront: () => s.front,
+      onFront: (fn) => {
+        s.frontFns.add(fn)
+        return () => s.frontFns.delete(fn)
+      },
+      win: { addEventListener: (_, fn) => s.focusFns.add(fn), removeEventListener: (_, fn) => s.focusFns.delete(fn) },
+    })
+    s.fire = async () => {
+      await tick()
+      const fn = s.pending
+      s.pending = null
+      if (fn) fn()
+      await tick()
+    }
+    s.setFront = async (on) => {
+      s.front = on
+      s.frontFns.forEach((fn) => fn(on))
+      await tick()
+    }
+    s.focus = async () => {
+      s.focusFns.forEach((fn) => fn())
+      await tick()
+    }
+    return s
   }
-  await tick()
-  assert.deepEqual(waits, [1000, 3000, 10000, 30000], 'backs off 1s, 3s, 10s, 30s while off')
-  assert.deepEqual(seen, [true], 'reports on once')
-  assert.equal(pending, null, 'no retry after on')
-  setAppForeground(false)
-  setAppForeground(true)
-  await tick()
-  assert.equal(reads, 5, 'coming back to the front does not re-read once on')
-  stop()
 
-  answers = []
-  reads = 0
-  const stop2 = watchReviewerFlag(() => {}, { read: async () => { reads += 1; return false }, setTimer: () => 1, clearTimer: () => {} })
+  // Off forever: 7 reads (first + 6 retries), then nothing until the app comes back.
+  const a = rig()
+  const stopA = a.watch(() => {})
+  const stopA2 = a.watch(() => {})
+  for (let i = 0; i < 10; i++) await a.fire()
+  assert.equal(a.reads, 7, 'two screens share one watcher, and it stops after the last 30s read')
+  assert.deepEqual(a.waits, [1000, 3000, 10000, 30000, 30000, 30000], 'backs off 1s, 3s, 10s, then three at 30s')
+  await a.setFront(false)
+  await a.setFront(true)
+  assert.equal(a.reads, 8, 'coming back to the front re-arms')
+  await a.setFront(false)
+  assert.equal(a.pending, null, 'nothing scheduled in the background')
+  await a.fire()
+  assert.equal(a.reads, 8)
+  a.front = true
+  a.clock = REVIEWER_FOCUS_GAP_MS
+  await a.focus()
+  assert.equal(a.reads, 9, 'web focus re-reads')
+  a.clock = 2 * REVIEWER_FOCUS_GAP_MS - 1
+  await a.focus()
+  assert.equal(a.reads, 9, 'web focus waits 5s between reads')
+  stopA()
+  stopA2()
+  assert.equal(a.frontFns.size + a.focusFns.size, 0, 'last screen gone: listeners removed')
+  await a.setFront(true)
+  await a.fire()
+  assert.equal(a.reads, 9, 'unmounted: no more reads')
+
+  // Turns on: reports once, stops, and a later screen gets on at once.
+  const b = rig([false, false, true])
+  const seen = []
+  b.watch((on) => seen.push(on))
+  for (let i = 0; i < 5; i++) await b.fire()
+  assert.deepEqual(seen, [true], 'reports on once')
+  assert.equal(b.reads, 3)
+  assert.equal(b.pending, null, 'no retry after on')
+  await b.setFront(true)
+  assert.equal(b.reads, 3, 'no re-read once on')
+  const late = []
+  b.watch((on) => late.push(on))
+  assert.deepEqual(late, [true], 'a screen mounted later sees on without a read')
+
+  // Starts in the background: no read until the app comes to the front.
+  const c = rig()
+  c.front = false
+  c.watch(() => {})
   await tick()
-  setAppForeground(false)
-  setAppForeground(true)
-  await tick()
-  assert.equal(reads, 2, 'off: the app coming back to the front re-reads')
-  stop2()
-  setAppForeground(false)
-  setAppForeground(true)
-  await tick()
-  assert.equal(reads, 2, 'unmounted: no more reads')
+  assert.equal(c.reads, 0, 'no read while in the background')
+  await c.setFront(true)
+  assert.equal(c.reads, 1)
+
+  const shell = read('native/components/BoardShell.jsx')
+  assert.ok(shell.includes('<KeyboardAvoidingView') && shell.includes('keyboardShouldPersistTaps="handled"'), 'More and People cards sit in BoardShell, which lifts the form over the keyboard')
   assert.ok(web.includes("auth.step === 'start' && auth.reviewerOn ? ("), 'web hides reviewer sign-in while off')
   const sql = read('supabase/reviewer-flag.sql')
   assert.ok(sql.includes("values ('reviewer_signin', false)") && sql.includes("set search_path = ''") && sql.includes('enable row level security'), 'the switch ships off, RLS on, pinned search_path')
