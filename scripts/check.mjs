@@ -4898,7 +4898,7 @@ test('sync: the shelf is not sent for an account until a pull landed for it on t
   const sync = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
   const push = sync.slice(sync.indexOf('export async function pushNow('), sync.indexOf('let weMark'))
   const gate = push.indexOf('if (readLastUser() !== user.id) {')
-  assert.match(push.slice(gate, gate + 120), /^if \(readLastUser\(\) !== user\.id\) \{\s*await pullAndMerge\(\)\s*return\s*\}/, 'a closed gate pulls, no miss')
+  assert.match(push.slice(gate, gate + 260), /^if \(readLastUser\(\) !== user\.id\) \{\s*await pullAndMerge\(\)\s*if \(readLastUser\(\) !== user\.id\) return[\s\S]*?doc = readShelf\(\)\s*\}/, 'a closed gate pulls, no miss, then sends the current shelf')
   assert.ok(gate > push.indexOf('await pushAnswers(doc)'), 'answers still go')
   assert.ok(gate < push.indexOf('putShelf('), 'the shelf waits for a pull')
   const pull = sync.slice(sync.indexOf('async function pullAndMergeOnce()'))

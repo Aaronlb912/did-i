@@ -507,7 +507,7 @@ export async function pushNow(shelf) {
   }
   setState({ how: 'busy', miss: '' })
   try {
-    const doc = shelf || readShelf()
+    let doc = shelf || readShelf()
     // Usually one answer. The document only moves because a tag or a
     // question changed, and those are small.
     const sent = await pushAnswers(doc)
@@ -519,7 +519,9 @@ export async function pushNow(shelf) {
     // the gate, and only a failed one shows as a miss.
     if (readLastUser() !== user.id) {
       await pullAndMerge()
-      return
+      if (readLastUser() !== user.id) return
+      // Landed: send what is on the phone now, edits made during the pull too.
+      doc = readShelf()
     }
     const uploadAt = new Date().toISOString()
     stampSavedAt(uploadAt)
