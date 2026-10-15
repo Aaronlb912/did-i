@@ -14,8 +14,15 @@ if (utils && typeof utils.setGlobalHandler === 'function') {
     }
     // Before the first real screen, let a fatal error reach the native
     // handler: expo-updates (ErrorRecovery) catches it there and rolls a
-    // bad OTA back. After that, keep the app up and show the error.
-    const early = isFatal && !__DEV__ && !global.__didIReady
+    // bad OTA back. After that, keep the app up and show the error. A store
+    // build with no OTA has nothing to roll back to, so it stays up too.
+    let embedded = true
+    try {
+      embedded = Boolean(require('expo-updates').isEmbeddedLaunch)
+    } catch {
+      // No expo-updates: treat it as embedded.
+    }
+    const early = isFatal && !__DEV__ && !global.__didIReady && !embedded
     if ((!isFatal || early) && typeof prev === 'function') prev(error, isFatal)
   })
 }

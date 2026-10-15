@@ -617,9 +617,12 @@ function earnedQueue() {
 function saveEarned() {
   try {
     const user = readAccountUserId()
-    if (user && Object.keys(earnedForServer || {}).length) {
-      localStorage.setItem(EARNED_KEY, JSON.stringify({ user, nights: earnedForServer }))
-    } else localStorage.removeItem(EARNED_KEY)
+    const any = Object.keys(earnedForServer || {}).length > 0
+    if (user && any) localStorage.setItem(EARNED_KEY, JSON.stringify({ user, nights: earnedForServer }))
+    // Id not known yet (sign in, before the first pull): keep the queue in
+    // memory and leave storage alone. The next save stamps the user; sign
+    // out (dropEarnedCoins) empties it first.
+    else if (user || !any) localStorage.removeItem(EARNED_KEY)
   } catch {
     // ok
   }

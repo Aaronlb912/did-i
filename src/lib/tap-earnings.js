@@ -17,7 +17,9 @@ export function settleTapEarnings(before, after, clock = new Date(), onShelf) {
   if (!account) return shelf
   // A reply that lands after a sign out or account switch belongs to the old account.
   const who = readAccountUserId()
-  const sameAccount = () => readAccountUserId() === who
+  // Right after sign in the id is '' until the first pull lands; coins from
+  // before a sign out are still dropped by returnEarnedCoins' gen stamp.
+  const sameAccount = () => !who || readAccountUserId() === who
   const taken = takeEarnedCoins()
   for (const [night, earned] of Object.entries(taken)) {
     creditNightCoins(night, earned)
