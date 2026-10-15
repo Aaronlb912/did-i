@@ -3,7 +3,7 @@ import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { removeAvatar } from './avatar.js'
-import { forgetAccountCaches } from './account-cache.js'
+import { forgetAccountCaches, forgetPendingLinks } from './account-cache.js'
 import { dropEarnedCoins } from './purse.js'
 import { clearGifts } from './gift-inbox.js'
 
@@ -111,6 +111,7 @@ export function accountMissText(bad) {
     googleFail: 'auth.googleFail',
     googleUnavailable: 'auth.googleUnavailable',
     reviewerBad: 'auth.reviewerBad',
+    net: 'confirm.miss',
   }[bad]
   return key ? t(key) : bad
 }
@@ -178,6 +179,7 @@ export async function signOutHere() {
   // The home screen widget must not keep showing this account's people.
   saveTogetherPeople([])
   forgetAccountCaches()
+  forgetPendingLinks()
   clearGifts()
   // Coins queued for this account must not be credited to the next one.
   dropEarnedCoins()
@@ -214,6 +216,7 @@ export async function signOutEverywhere() {
   if (error) throw error
   saveTogetherPeople([])
   forgetAccountCaches()
+  forgetPendingLinks()
   clearGifts()
   // Coins queued for this account must not be credited to the next one.
   dropEarnedCoins()
@@ -229,6 +232,7 @@ export async function deleteAccount() {
   await db.auth.signOut()
   saveTogetherPeople([])
   forgetAccountCaches()
+  forgetPendingLinks()
   clearGifts()
   // Coins queued for this account must not be credited to the next one.
   dropEarnedCoins()

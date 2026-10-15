@@ -1294,6 +1294,9 @@ export async function listFamilyLamps(familyId, periodKey) {
       .eq('family_id', familyId)
       .eq('period_key', periodKey || isoDate(new Date())),
   ])
+  // A failed read must not look like a family with no questions.
+  const error = lampRows.error || answerRows.error
+  if (error) return { miss: error.message || 'confirm.miss', lamps: [], answers: [] }
   const lamps = lampRows.data || []
   return { lamps, answers: answerRows.data || [], last: await familyEveryLast(db, lamps) }
 }

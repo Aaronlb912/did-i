@@ -79,7 +79,7 @@ const CHEERS_FOR_SIGN_IN = () => SHOP_CHEERS.find((item) => item.gems > 0).id
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
-import { forgetAccountCaches } from '../src/lib/account-cache.js'
+import { forgetAccountCaches, forgetPendingLinks } from '../src/lib/account-cache.js'
 import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
@@ -4344,6 +4344,31 @@ await testAsync('a spoken answer finds the right open question, or none', async 
   assert.equal(spokenAnswer('maybe'), '')
 })
 
+await testAsync('a spoken answer about as close to two questions picks neither', async () => {
+  const { matchSpoken } = await import('../src/lib/voice-answer.js')
+  const rows = [
+    { lamp: { id: 'a', question: 'Did I walk the dog?' } },
+    { lamp: { id: 'b', question: 'Did I walk the cat?' } },
+  ]
+  assert.equal(matchSpoken('walk', rows), null, 'a tie must not answer the first row')
+  assert.equal(matchSpoken('walk dog', rows)?.lamp.id, 'a', 'a clear winner still matches')
+  // The same question from last night's grace rows is not a rival.
+  assert.equal(matchSpoken('walk', [rows[0], { ...rows[0], periodKey: 'x' }])?.lamp.id, 'a')
+})
+
+test('didi://answer opens the card but never saves without a tap', () => {
+  const links = readFileSync(path.join(checkRoot, 'native/deep-link.js'), 'utf8')
+  assert.ok(!links.includes('applyWidgetTapOnce'), 'any app or page can open didi://answer')
+  assert.match(links, /goHash\('\/tonight', \{ face: row\.lamp\.id, tag: 'all' \}\)/)
+})
+
+test('a repeat tap on a lit Did we answer does not clear it', () => {
+  const we = readFileSync(path.join(checkRoot, 'native/components/WeTonight.jsx'), 'utf8')
+  assert.ok(we.includes('if (!night && status && mine?.status === status) return'))
+  assert.ok(!/mine\?\.status === status \? null/.test(we), 'no toggle back to no answer')
+  assert.ok(we.includes('if (paid.miss) paid = await claim()'), 'a missed claim is tried once more')
+})
+
 // What the widgets draw. Mirrors leadItem in widgets/DidITonightWidget.tsx
 // and widgets/android/DidITonightAndroidWidget.jsx (the iOS extension can't
 // import app modules). The drift test below keeps the three in step.
@@ -4887,7 +4912,9 @@ test('recent notices keep the newest, cap the list, and count unseen', () => {
 
 test('signing out clears the per-account lists kept for a fast first paint', () => {
   const was = globalThis.localStorage
-  const keys = ['did-i-kept:people.links:u1', 'did-i-kept:inbox.rows:u1', 'did-i-we-cards:u1', 'did-i-shelf', 'did-i-prefs']
+  const keys = [
+    'did-i-kept:people.links:u1', 'did-i-kept:inbox.rows:u1', 'did-i-we-cards:u1', 'did-i-shelf', 'did-i-prefs',
+  ]
   try {
     // A browser: length and key().
     const web = new Map(keys.map((k) => [k, '1']))
@@ -4920,6 +4947,21 @@ test('signing out clears the per-account lists kept for a fast first paint', () 
   const sync = readFileSync(path.join(root, 'src/lib/cloud-sync.js'), 'utf8')
   const boot = readFileSync(path.join(root, 'native/bootstrap.js'), 'utf8')
   assert.equal((account.match(/forgetAccountCaches\(\)/g) || []).length, 3, 'sign out here, everywhere, and delete clear them')
+  // Pending links: only a real sign out or delete clears them, never the
+  // SIGNED_OUT event a stale session fires at startup before sign up.
+  assert.equal((account.match(/forgetPendingLinks\(\)/g) || []).length, 3)
+  assert.ok(!sync.includes('forgetPendingLinks'))
+  const links = new Map(['did-i-pending-invite', 'did-i-pending-did-you', 'did-i-did-you-claims', 'did-i-link-friends', 'did-i-we-link-web', 'did-i-shelf'].map((k) => [k, '1']))
+  const before = globalThis.localStorage
+  globalThis.localStorage = { allKeys: () => [...links.keys()], getItem: (k) => links.get(k) ?? null, setItem: (k, v) => links.set(k, v), removeItem: (k) => links.delete(k) }
+  try {
+    forgetAccountCaches()
+    assert.equal(links.size, 6, 'the SIGNED_OUT clear keeps pending links')
+    forgetPendingLinks()
+    assert.deepEqual([...links.keys()], ['did-i-shelf'])
+  } finally {
+    globalThis.localStorage = before
+  }
   assert.ok(sync.includes('forgetAccountCaches()'), 'a session that ends on its own clears them')
   assert.ok(boot.includes('allKeys:'), 'the phone storage shim can list keys')
 })

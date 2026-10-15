@@ -32,6 +32,7 @@ export function matchSpoken(said, rows) {
   if (!want.length) return rows.length === 1 ? rows[0] : null
   let best = null
   let bestScore = 0
+  let second = 0
   for (const row of rows) {
     const have = new Set(words(row.lamp?.question))
     if (!have.size) continue
@@ -42,10 +43,16 @@ export function matchSpoken(said, rows) {
     // Share of the spoken words found, nudged toward shorter questions.
     const score = hits / want.length + hits / (have.size * 10)
     if (score > bestScore) {
+      // The same question in last night's grace rows is not a rival.
+      if (best && best.lamp?.id !== row.lamp?.id) second = bestScore
       best = row
       bestScore = score
+    } else if (row.lamp?.id !== best?.lamp?.id && score > second) {
+      second = score
     }
   }
+  // Two questions about as close: guessing could save the wrong one.
+  if (bestScore - second < 0.05) return null
   return bestScore >= 0.5 ? best : null
 }
 
