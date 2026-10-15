@@ -60,6 +60,8 @@ export const it = {
   'title.into': 'Passarlo a React · Did I',
   'settings.kicker': 'Impostazioni',
   'boot.fail': 'Did I non si è aperto.',
+  'boot.retry': 'Riprova',
+  'boot.retryFail': 'Non ha funzionato. Chiudi Did I e riaprilo.',
   'settings.title': 'Nome e nota',
   'settings.phoneBody': 'Solo su questo telefono. Il nome dell’account è in Account.',
   'settings.save': 'Salva',
