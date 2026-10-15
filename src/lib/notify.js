@@ -1,7 +1,7 @@
 import { lampBuzzes, lampNudgesLate } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
-import { boardDate, unansweredTonight, waitingTonight } from './recurrence.js'
+import { boardDate, dueTonight, waitingTonight } from './recurrence.js'
 import { checkNativePings, isNativeHall, requestNativePings, scheduleNativePings } from './native.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from './prefs.js'
 import { savePrefsForSw } from './board-store.js'
@@ -46,15 +46,16 @@ export function upcomingPings(book, now = new Date()) {
   const fires = []
   const books = Array.isArray(book) ? book.filter((one) => one && !one.archived) : [book]
   // Every open row, so a re-arm after the ask time still keeps the 21:00
-  // late note. The ask note itself only goes to rows still waiting.
-  const rows = books.flatMap((one) => unansweredTonight(one, now))
+  // late note. The ask note itself only goes to rows still waiting. Not yet
+  // (status skip) is not done, so it keeps the late note too.
+  const rows = books.flatMap((one) => dueTonight(one, now)).filter((row) => !row.answer || row.answer.status === 'skip')
   const waiting = new Set(books.flatMap((one) => waitingTonight(one, now)).map((row) => `${row.lamp.id}:${row.periodKey}`))
   for (const row of rows) {
     if (!lampBuzzes(row.lamp)) continue
+    // No time set: no ask note, but a high one still gets the late note.
     const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
-    if (!match) continue
-    const at = new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0)
-    if (at.getTime() > now.getTime() && waiting.has(`${row.lamp.id}:${row.periodKey}`)) {
+    const at = match ? new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0) : null
+    if (at && !row.answer && at.getTime() > now.getTime() && waiting.has(`${row.lamp.id}:${row.periodKey}`)) {
       fires.push({
         id: row.lamp.id,
         tag: `${row.lamp.id}:${row.periodKey}`,
@@ -64,7 +65,7 @@ export function upcomingPings(book, now = new Date()) {
     }
     if (!lampNudgesLate(row.lamp)) continue
     const late = new Date(year, month - 1, day, LATE_NUDGE_HOUR, 0, 0, 0)
-    if (late.getTime() <= now.getTime() || late.getTime() <= at.getTime()) continue
+    if (late.getTime() <= now.getTime() || (at && late.getTime() <= at.getTime())) continue
     // Quiet hours would push it to morning, which is no last call.
     if (afterQuiet(late).getTime() !== late.getTime()) continue
     fires.push({

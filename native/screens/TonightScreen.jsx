@@ -425,16 +425,23 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   useShakeUndo(Boolean(stack.undo), undoAnswer)
   // An answer saved with no signal says where it is, once per offline stretch.
   const online = useOnline()
+  // It waits for the undo toast to clear so undo stays on screen, and only says so when signed in.
   const offlineNoted = useRef(false)
+  const offlineAnswered = useRef(false)
   useEffect(() => {
     if (online) {
       offlineNoted.current = false
+      offlineAnswered.current = false
       return
     }
-    if (!undoNow || offlineNoted.current) return
+    if (undoNow) {
+      offlineAnswered.current = true
+      return
+    }
+    if (!account.user || !offlineAnswered.current || offlineNoted.current) return
     offlineNoted.current = true
     showToast({ id: 'offline-saved', kind: 'done', text: t('tonight.offlineSaved'), ms: 4200 })
-  }, [online, undoNow])
+  }, [online, undoNow, account.user])
   // A sync that cannot reach the account says so once, in the same line.
   const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
   useEffect(() => {

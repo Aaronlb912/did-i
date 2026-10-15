@@ -23,7 +23,12 @@ export function useAuthSignIn({ onSignedIn }) {
   const finish = useCallback(async () => {
     clearAuthSkip()
     armSyncForUser()
-    await pullAndMerge()
+    // Signed in either way: a pull that throws must not leave them on this screen.
+    try {
+      await pullAndMerge()
+    } catch {
+      setMiss(t('tonight.syncMiss'))
+    }
     signedIn.current?.()
   }, [])
 

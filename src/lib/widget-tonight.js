@@ -273,7 +273,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   // Nothing to answer yet, but a question comes up later tonight.
   const next = waitingRowsForAllBoards(boards, now)[0]
   const nextLine = next ? t('widget.tonight.nextAt', { time: clockWords(next.lamp.askAfter) }) : ''
-  if (nextLine && !openRows.length) footer = nextLine
+  if (nextLine && !openRows.length && !graceOpen.length && !weCard) footer = nextLine
   const colorBook = widgetColorBook(shelf)
   return {
     tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.tagFallback'),

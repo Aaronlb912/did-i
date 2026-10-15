@@ -127,7 +127,7 @@ import { missDot } from '../palette.js'
 const IDEA_IDS = ['pills', 'water', 'text', 'skin', 'bill', 'charge']
 
 // Signing every phone out and deleting an account do not come back.
-function SureModal({ sure, colors, onClose, onGo }) {
+export function SureModal({ sure, colors, onClose, onGo }) {
   if (!sure) return null
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -2194,11 +2194,19 @@ function AccountSignedIn({ book, email, onChange }) {
   }
 
   // Leaving the account: say it worked, or keep them here with what went wrong.
-  async function leave(kind, run) {
+  async function leave(kind, run, force = false) {
     if (busy) return
     setBusy(kind)
-    await leaveAccount(kind, run)
+    const out = await leaveAccount(kind, run, force)
     setBusy('')
+    if (out === 'unsaved') {
+      setSure({
+        title: t('account.unsavedTitle'),
+        body: t('account.unsavedBody'),
+        yes: t('account.unsavedYes'),
+        go: () => leave(kind, run, true),
+      })
+    }
   }
 
   async function pickPhoto(from) {
