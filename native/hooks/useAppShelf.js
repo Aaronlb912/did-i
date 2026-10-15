@@ -130,7 +130,7 @@ export function useAppShelf() {
     // Crediting without a session failed, re-queued, and paid twice on sign-in.
     // A reply that lands after a sign out or account switch belongs to the old account.
     const who = readAccountUserId()
-    const sameAccount = () => readAccountUserId() === who
+    const sameAccount = () => !who || readAccountUserId() === who
     const taken = accountSessionOn() ? takeEarnedCoins() : {}
     for (const [night, earned] of Object.entries(taken)) {
       creditNightCoins(night, earned).then((bal) => {
@@ -141,7 +141,7 @@ export function useAppShelf() {
         setShelf(synced)
         pushSoon(synced)
       }).catch((err) => {
-        returnEarnedCoins(night, earned, new Date(), taken.gen)
+        if (sameAccount()) returnEarnedCoins(night, earned, new Date(), taken.gen)
         reportRejection('night-coins')(err)
       })
     }

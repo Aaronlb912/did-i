@@ -3493,7 +3493,8 @@ test('a bad OTA can roll back: early fatal errors reach the native handler, boot
   const guard = readFileSync(path.join(root, 'native/fatal-guard.cjs'), 'utf8')
   const boot = readFileSync(path.join(root, 'native/Boot.jsx'), 'utf8')
   const app = readFileSync(path.join(root, 'native/NativeApp.jsx'), 'utf8')
-  assert.match(guard, /isFatal && !__DEV__ && !global\.__didIReady/)
+  assert.match(guard, /isFatal && !__DEV__ && !global\.__didIReady && !embedded/)
+  assert.match(guard, /let embedded = true\s+try \{\s+embedded = Boolean\(require\('expo-updates'\)\.isEmbeddedLaunch\)/)
   assert.match(guard, /\(!isFatal \|\| early\) && typeof prev === 'function'\) prev\(error, isFatal\)/)
   assert.doesNotMatch(app, /__didIReady/)
   assert.match(boot, /global\.__didIReady = true\s+setApp\(/)
@@ -7269,6 +7270,111 @@ test('readthrough 10: a widget-tap coin reply after an account switch writes not
   })
   assert.equal(run.status, 0, run.stderr)
   assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { wrote: 0, queued: {} })
+})
+
+test('review 13: a tap right after sign in, before the user id lands, keeps its coins', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const url = (file) => pathToFileURL(path.join(root, file)).href
+  const script = `
+    import { registerHooks } from 'node:module'
+    const fake = 'export function creditNightCoins() { return new Promise((ok) => { (globalThis.pays ||= []).push(ok) }) }; ' +
+      'export function grantWeeklyGem() { return new Promise(() => {}) }; ' +
+      'export const applyCoinBalanceToShelf = (shelf, n) => ({ ...shelf, coinBalance: n }); ' +
+      'export const applyGemBalanceToShelf = (shelf) => shelf'
+    registerHooks({
+      resolve: (specifier, context, next) =>
+        specifier === './wallet.js' && String(context.parentURL).endsWith('tap-earnings.js')
+          ? { url: 'data:text/javascript,' + encodeURIComponent(fake), shortCircuit: true }
+          : next(specifier, context),
+    })
+    const store = new Map([['did-i-last-user', '']])
+    globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) }
+    globalThis.window = { dispatchEvent() {} }
+    const { returnEarnedCoins, takeEarnedCoins } = await import(${JSON.stringify(url('src/lib/purse.js'))})
+    const { settleTapEarnings } = await import(${JSON.stringify(url('src/lib/tap-earnings.js'))})
+    const clock = new Date(2026, 9, 2, 20)
+    const shelf = { currentId: 'b', boards: [{ id: 'b', lamps: [], answers: [] }] }
+    let wrote = 0
+    // Failed credit: handed back, kept while the id is '', saved once it lands.
+    returnEarnedCoins('2026-10-02', 2, clock)
+    const keptBlank = store.has('did-i-earned-coins') === false
+    store.set('did-i-last-user', 'user-a')
+    settleTapEarnings(shelf, shelf, clock, () => { wrote += 1 })
+    globalThis.pays[0](null)
+    await new Promise((ok) => setTimeout(ok, 20))
+    const saved = JSON.parse(store.get('did-i-earned-coins') || 'null')
+    // Paid credit: the balance shows.
+    settleTapEarnings(shelf, shelf, clock, () => { wrote += 1 })
+    globalThis.pays[1](40)
+    await new Promise((ok) => setTimeout(ok, 20))
+    console.log(JSON.stringify({ keptBlank, saved, wrote, queued: takeEarnedCoins() }))
+  `
+  const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'test' },
+  })
+  assert.equal(run.status, 0, run.stderr)
+  assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), {
+    keptBlank: true,
+    saved: { user: 'user-a', nights: { '2026-10-02': 2 } },
+    wrote: 1,
+    queued: {},
+  })
+})
+
+await testAsync('review 13: a sign out with no last user drops queued coins; the id landing loads the saved queue', async () => {
+  const { returnEarnedCoins, takeEarnedCoins } = await import('../src/lib/purse.js')
+  const clock = new Date(2026, 9, 2, 20)
+  localStorage.removeItem('did-i-last-user')
+  localStorage.removeItem('did-i-earned-coins')
+  takeEarnedCoins()
+  // Queued while the id was '', then signed out before it landed.
+  returnEarnedCoins('2026-10-02', 2, clock)
+  sessionMissing()
+  assert.deepEqual({ ...takeEarnedCoins() }, {}, 'no last user, no session: the queue empties')
+  returnEarnedCoins('2026-10-02', 2, clock)
+  sessionMissing()
+  localStorage.setItem('did-i-last-user', 'user-b')
+  assert.deepEqual({ ...takeEarnedCoins() }, {}, "A's coins do not reach B")
+
+  // Cache built while the id was '', then the id lands: the saved queue loads and merges.
+  localStorage.setItem('did-i-earned-coins', JSON.stringify({ user: 'user-c', nights: { '2026-10-01': 3 } }))
+  localStorage.removeItem('did-i-last-user')
+  takeEarnedCoins()
+  returnEarnedCoins('2026-10-02', 2, clock)
+  localStorage.setItem('did-i-last-user', 'user-c')
+  assert.deepEqual({ ...takeEarnedCoins() }, { '2026-10-01': 3, '2026-10-02': 2 })
+  localStorage.removeItem('did-i-last-user')
+})
+
+test('review 13: an early fatal error on a store launch stays in the app; on an OTA launch it reaches native', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const guardFile = path.join(root, 'native/fatal-guard.cjs')
+  const run = (updates) => {
+    const script = `
+      const Module = require('node:module')
+      const load = Module._load
+      Module._load = function (request, ...rest) {
+        if (request === 'expo-updates') { if (${JSON.stringify(updates)} === 'missing') throw new Error('no'); return ${JSON.stringify(updates)} }
+        if (request === 'react-native-gesture-handler') return {}
+        return load.call(this, request, ...rest)
+      }
+      let handler = null
+      let native = 0
+      global.__DEV__ = false
+      global.ErrorUtils = { getGlobalHandler: () => () => { native += 1 }, setGlobalHandler: (h) => { handler = h } }
+      require(${JSON.stringify(guardFile)})
+      handler(new Error('boom'), true)
+      console.log(JSON.stringify(native))
+    `
+    const out = spawnSync(process.execPath, ['-e', script], { cwd: root, encoding: 'utf8' })
+    assert.equal(out.status, 0, out.stderr)
+    return JSON.parse(out.stdout.trim())
+  }
+  assert.equal(run({ isEmbeddedLaunch: true }), 0)
+  assert.equal(run('missing'), 0)
+  assert.equal(run({ isEmbeddedLaunch: false }), 1)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

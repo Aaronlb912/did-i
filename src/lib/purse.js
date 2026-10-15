@@ -599,25 +599,36 @@ export function weeklyGemBump(shelf, prevShelf, clock = new Date(), opts = {}) {
 let earnedForServer = null
 const EARNED_KEY = 'did-i-earned-coins'
 
+// The id the cached queue was loaded for. Built while the id was '' (sign
+// in, before the first pull), it loads the user's saved queue once the id lands.
+let earnedFor = ''
+
 function earnedQueue() {
-  if (earnedForServer) return earnedForServer
+  const user = readAccountUserId()
+  if (earnedForServer && earnedFor === user) return earnedForServer
+  const blank = earnedForServer && !earnedFor ? earnedForServer : {}
   earnedForServer = {}
+  earnedFor = user
   try {
     const saved = JSON.parse(localStorage.getItem(EARNED_KEY) || 'null')
-    const user = readAccountUserId()
     if (saved && user && saved.user === user && saved.nights && typeof saved.nights === 'object') {
       for (const [night, n] of Object.entries(saved.nights)) if (Number(n) > 0) earnedForServer[night] = Number(n)
     }
   } catch {
     // ok
   }
+  for (const [night, n] of Object.entries(blank)) earnedForServer[night] = (earnedForServer[night] || 0) + n
   return earnedForServer
 }
 
 function saveEarned() {
   try {
     const user = readAccountUserId()
-    if (user && Object.keys(earnedForServer || {}).length) {
+    // Id not known yet (sign in, before the first pull): keep the queue in
+    // memory and leave storage alone; it is stamped per user, and the next
+    // save once the id lands writes it. Sign out empties it (dropEarnedCoins).
+    if (!user) return
+    if (Object.keys(earnedForServer || {}).length) {
       localStorage.setItem(EARNED_KEY, JSON.stringify({ user, nights: earnedForServer }))
     } else localStorage.removeItem(EARNED_KEY)
   } catch {
@@ -644,7 +655,12 @@ export function takeEarnedCoins() {
 export function dropEarnedCoins() {
   earnedGen += 1
   earnedForServer = {}
-  saveEarned()
+  // Not saveEarned: it leaves storage alone while the id is ''.
+  try {
+    localStorage.removeItem(EARNED_KEY)
+  } catch {
+    // ok
+  }
 }
 
 export function returnEarnedCoins(night, n, clock = new Date(), gen) {
