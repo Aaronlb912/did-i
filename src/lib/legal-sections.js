@@ -35,6 +35,7 @@ export const TERMS_SECTIONS = [
   'warranty',
   'liability',
   'indemnify',
+  'brand',
   'law',
   'changes',
   'contact',

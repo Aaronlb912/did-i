@@ -201,6 +201,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         <Text style={[styles.version, { color: colors.inkDim }]} accessibilityRole="text">
           {appVersionLines().join(' · ')}
         </Text>
+        <Text style={[styles.copyright, { color: colors.inkDim }]}>{t('legal.copyright')}</Text>
       </BoardShell>
     )
   }
@@ -568,6 +569,7 @@ const styles = StyleSheet.create({
   out: { marginTop: 24, gap: 8 },
   who: { fontFamily: fonts.ui, fontSize: 13, textAlign: 'center' },
   version: { fontFamily: fonts.ui, fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 16, marginBottom: 8 },
+  copyright: { fontFamily: fonts.ui, fontSize: 11, lineHeight: 16, textAlign: 'center', marginBottom: 8 },
   miss: { fontFamily: fonts.ui, fontSize: 14, marginHorizontal: 3, marginTop: 4 },
   syncMiss: { fontFamily: fonts.ui, fontSize: 12, marginHorizontal: 3, marginTop: 4 },
   popKicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },

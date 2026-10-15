@@ -28,7 +28,7 @@ First IAP ships with the **1.0** app version submission. IAP review screenshot c
 | Promotional text | From `web.landing.lead` in `src/locales/en.js` (147 chars). |
 | Support URL | `https://did-i.app/download` |
 | Privacy URL | `https://did-i.app/privacy` |
-| Copyright | © 2026 Aaron Bryant |
+| Copyright | © 2026 Did I??? (Connect still says "© 2026 Aaron Bryant"; set the new value at the next version) |
 | Primary category | Lifestyle |
 | Keywords | habits,chores,reminders,streak,checklist,tonight,pills,door,sync,family,friends |
 

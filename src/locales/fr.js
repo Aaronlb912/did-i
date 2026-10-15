@@ -1879,6 +1879,9 @@ export const fr = {
   'legal.terms.indemnify.title': 'Indemnisation',
   'legal.terms.indemnify.body':
     'Tu acceptes de tenir Did I indemne des réclamations liées à ton usage de l’app, ton contenu, ou ta violation de ces Conditions ou des droits d’autrui.',
+  'legal.copyright': "© 2026 Did I???. Tous droits réservés. Did I???™ est une marque de Did I???.",
+  'legal.terms.brand.title': "Nom et visuels",
+  'legal.terms.brand.body': "Le nom Did I???, le logo, les buddies, les looks et les autres visuels appartiennent à Did I???. Tu ne peux pas les réutiliser sans autorisation.",
   'legal.terms.law.title': 'Litiges',
   'legal.terms.law.body':
     'Ces Conditions sont régies par les lois des États-Unis, sans règles de conflit de lois.\n\nLes litiges doivent d’abord être envoyés à {email}. Si on ne peut pas résoudre, les tribunaux des États-Unis ont juridiction exclusive, sauf si ta loi locale de consommation exige autrement.',

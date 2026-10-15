@@ -1844,6 +1844,9 @@ export const ko = {
   'legal.terms.indemnify.title': '면책',
   'legal.terms.indemnify.body':
     '여러분의 앱 사용, 여러분의 내용, 이 약관이나 다른 사람의 권리 위반에서 생기는 청구로부터 Did I에 피해가 가지 않게 하는 데 동의해요.',
+  'legal.copyright': "© 2026 Did I???. 모든 권리 보유. Did I???™은(는) Did I???의 상표입니다.",
+  'legal.terms.brand.title': "이름과 아트",
+  'legal.terms.brand.body': "Did I??? 이름, 로고, 버디, 룩 및 기타 아트는 Did I???에 속합니다. 허가 없이 다시 사용할 수 없습니다.",
   'legal.terms.law.title': '분쟁',
   'legal.terms.law.body':
     '이 약관은 법 충돌 규칙과 관계없이 미국 법을 따라요.\n\n분쟁은 먼저 {email}로 이메일을 보내 주세요. 해결할 수 없으면, 여러분 지역의 소비자법이 달리 정하지 않는 한 미국 법원이 전속 관할권을 가져요.',
