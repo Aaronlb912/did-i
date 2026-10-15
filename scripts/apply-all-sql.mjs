@@ -58,6 +58,7 @@ const files = [
   'supabase/readthrough-8.sql',
   'supabase/readthrough-9.sql',
   'supabase/readthrough-12.sql',
+  'supabase/reviewer-flag.sql',
   'supabase/drop-tonight.sql',
 ]
 

@@ -1314,6 +1314,7 @@ export const ja = {
   'mark.month-bill.how': '毎月の質問に did と答える。',
   'mark.quiet-week.how': "7日すべてに答える。",
   'auth.reviewer': '審査担当者のサインイン',
+  'auth.reviewerHint': '審査担当者のサインインを開きます。',
   'auth.password': 'パスワード',
   'auth.reviewerBad': 'メールアドレスとパスワードが一致しません。',
   'mark.first-open.name': '来た',

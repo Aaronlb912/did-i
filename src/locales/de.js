@@ -1341,6 +1341,7 @@ export const de = {
   'mark.month-bill.how': 'Sag did zu einer monatlichen Frage.',
   'mark.quiet-week.how': "Beantworte 7 Tage lang alles.",
   'auth.reviewer': 'Anmeldung für Prüfer',
+  'auth.reviewerHint': 'Öffnet die Anmeldung für Prüfer.',
   'auth.password': 'Passwort',
   'auth.reviewerBad': 'E-Mail und Passwort passen nicht zusammen.',
   'mark.first-open.name': 'Da gewesen',

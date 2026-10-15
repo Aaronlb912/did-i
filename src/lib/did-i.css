@@ -13376,17 +13376,11 @@ html[data-reduce-motion] *::after,
   color: var(--di-ink-soft);
 }
 
+/* Shown only while the App Review switch is on: a full-width key button. */
 .di-auth-reviewer {
   display: block;
-  margin: 0.75rem auto 0;
-  padding: 0;
-  background: none;
-  border: 0;
-  color: var(--di-ink-dim);
-  font-family: var(--di-ui);
-  font-size: 0.75rem;
-  text-decoration: underline;
-  cursor: pointer;
+  width: 100%;
+  margin-top: 0.75rem;
 }
 
 /* Not yet card: room between the question, its time, and the buttons. */

@@ -1,15 +1,25 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { REVIEWER_HOLD_MS } from '../../src/lib/reviewer-flag.js'
 import { fonts } from '../theme.js'
 
-/** The sign-in mark and tagline, above the form. Long-press opens reviewer sign-in. */
+/**
+ * The sign-in mark and tagline, above the form. While the reviewer switch is
+ * on, a 3 second hold on the title opens reviewer sign-in (also a VoiceOver
+ * action). Off, the title is plain text.
+ */
 export function AuthMark({ colors, onMarkLongPress }) {
+  const on = Boolean(onMarkLongPress)
   return (
     <View style={styles.mark}>
       <Pressable
         onLongPress={onMarkLongPress}
-        disabled={!onMarkLongPress}
-        accessibilityRole={onMarkLongPress ? 'button' : 'text'}
+        delayLongPress={REVIEWER_HOLD_MS}
+        disabled={!on}
+        accessibilityRole={on ? 'button' : 'text'}
+        accessibilityHint={on ? t('auth.reviewerHint') : undefined}
+        accessibilityActions={on ? [{ name: 'reviewer', label: t('auth.reviewer') }] : undefined}
+        onAccessibilityAction={on ? (event) => event.nativeEvent.actionName === 'reviewer' && onMarkLongPress() : undefined}
       >
         <Text style={[styles.mastTitle, { color: colors.ink }]}>{t('tonight.didI')}</Text>
       </Pressable>

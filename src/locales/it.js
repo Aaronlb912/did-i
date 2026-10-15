@@ -1333,6 +1333,7 @@ export const it = {
   'mark.month-bill.how': 'Di did a una domanda mensile.',
   'mark.quiet-week.how': "Rispondi a tutto per 7 giorni.",
   'auth.reviewer': 'Accesso revisori',
+  'auth.reviewerHint': 'Apre l\'accesso revisori.',
   'auth.password': 'Password',
   'auth.reviewerBad': 'Email e password non corrispondono.',
   'mark.first-open.name': 'Comparso',

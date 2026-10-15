@@ -8,6 +8,28 @@ Over-the-air updates (`expo-updates`) start with build 56. After that, JS-only
 fixes go out with `npm run update:prod`; native changes still need a build
 (`docs/native-rebuild.md`).
 
+## App Review switch (every submission)
+
+Reviewer sign-in shows on the sign-in screen only while
+`public.app_flags.reviewer_signin` is on (`supabase/reviewer-flag.sql`).
+Run in the Supabase SQL editor (service role):
+
+- [ ] Before **Submit for Review**: turn it ON.
+  `update public.app_flags set on_now = true, updated_at = now() where name = 'reviewer_signin';`
+- [ ] After approval: turn it OFF.
+  `update public.app_flags set on_now = false, updated_at = now() where name = 'reviewer_signin';`
+
+Check with `select public.reviewer_signin_on();`. The app reads it when a
+sign-in screen opens, retries while it reads off (1s, 3s, 10s, then every
+30s), and re-reads when the app comes back to the front. Offline or an error
+reads as off.
+
+The switch only hides the UI; there is no server gate. The review account's
+password works only through the reviewer form (email and password), and it
+works whether the switch is on or off. Once a phone has seen the switch on,
+the button stays there until the app is relaunched, even after you turn it
+off; only the review account's password works in that form.
+
 ## After launch: Did we
 
 Not part of 1.1.0. Merge the `did-we` branch only after 1.1.0 is live in both

@@ -14,8 +14,9 @@ import { AuthSignInActions } from '../components/AuthSignInActions.jsx'
 import { DidButton, Field, KeyButton } from '../components/ui.jsx'
 
 // "Get started" (no account) is the main button on Welcome. Once someone is
-// mid email sign-in, staying without an account is a plain button. App Review sign-in is a small link at the bottom (and still a
-// long-press on the mark); it only works with the review account's password.
+// mid email sign-in, staying without an account is a plain button. App Review sign-in (a button at the bottom and a 3 second
+// hold on the mark) shows only while the server switch is on; see
+// supabase/reviewer-flag.sql.
 function LocalButton({ colors, onPress }) {
   return (
     <View style={styles.localWrap}>
@@ -66,6 +67,8 @@ export function SignInScreen({ onDone }) {
           value={auth.email}
           onChangeText={auth.setEmail}
           keyboardType="email-address"
+          textContentType="emailAddress"
+          autoComplete="email"
           autoCapitalize="none"
         />
         {auth.step === 'code' ? (
@@ -81,6 +84,8 @@ export function SignInScreen({ onDone }) {
             value={auth.password}
             onChangeText={auth.setPassword}
             secureTextEntry
+            textContentType="password"
+            autoComplete="current-password"
             autoCapitalize="none"
           />
         ) : null}
@@ -98,10 +103,10 @@ export function SignInScreen({ onDone }) {
 
       {auth.step !== 'start' ? <LocalButton colors={colors} onPress={useLocalOnly} /> : null}
       <AuthLegalNote colors={colors} />
-      {auth.step === 'start' ? (
-        <Pressable onPress={auth.showReviewer} accessibilityRole="button" hitSlop={8} style={styles.reviewerLink}>
-          <Text style={[styles.reviewerText, { color: colors.inkDim }]}>{t('auth.reviewer')}</Text>
-        </Pressable>
+      {auth.step === 'start' && auth.reviewerOn ? (
+        <View style={styles.reviewerWrap}>
+          <KeyButton colors={colors} label={t('auth.reviewer')} onPress={auth.showReviewer} />
+        </View>
       ) : null}
     </View>
   )
@@ -121,7 +126,7 @@ export function SignInScreen({ onDone }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AuthMark colors={colors} onMarkLongPress={auth.step === 'start' ? auth.showReviewer : undefined} />
+          <AuthMark colors={colors} onMarkLongPress={auth.step === 'start' && auth.reviewerOn ? auth.showReviewer : undefined} />
           <AuthSignInStage colors={colors}>{body}</AuthSignInStage>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -183,14 +188,7 @@ const styles = StyleSheet.create({
   localWrap: {
     marginTop: 14,
   },
-  reviewerLink: {
-    alignSelf: 'center',
+  reviewerWrap: {
     marginTop: 18,
-    paddingVertical: 6,
-  },
-  reviewerText: {
-    fontFamily: fonts.ui,
-    fontSize: 13,
-    textDecorationLine: 'underline',
   },
 })

@@ -262,8 +262,8 @@ function SignedOut({ on }) {
         </div>
 
         <LegalLinks leadKey="legal.signInLead" subtle />
-        {auth.step === 'start' ? (
-          <button className="di-auth-reviewer" type="button" onClick={auth.showReviewer}>
+        {auth.step === 'start' && auth.reviewerOn ? (
+          <button className="di-key di-auth-reviewer" type="button" onClick={auth.showReviewer}>
             {t('auth.reviewer')}
           </button>
         ) : null}

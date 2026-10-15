@@ -3172,6 +3172,165 @@ test('native look ids match did-i.css', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout || 'theme:sync failed')
 })
 
+await testAsync('reviewer sign-in: off by default, a 3 second hold opens it only while the server switch is on', async () => {
+  const { readReviewerFlag, REVIEWER_HOLD_MS } = await import('../src/lib/reviewer-flag.js')
+  const db = (result) => ({ rpc: async (name) => (name === 'reviewer_signin_on' ? result() : { data: null, error: 'no' }) })
+  assert.equal(await readReviewerFlag(db(() => ({ data: true, error: null }))), true, 'on reads as on')
+  assert.equal(await readReviewerFlag(db(() => ({ data: false, error: null }))), false, 'off reads as off')
+  assert.equal(await readReviewerFlag(db(() => ({ data: null, error: { message: 'x' } }))), false, 'an error reads as off')
+  assert.equal(await readReviewerFlag(db(() => { throw new Error('offline') })), false, 'offline reads as off')
+  assert.equal(await readReviewerFlag(db(() => ({ data: 'true', error: null }))), false, 'only a plain true is on')
+  assert.equal(await readReviewerFlag(null), false, 'no cloud reads as off')
+  assert.equal(REVIEWER_HOLD_MS, 3000)
+
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (p) => readFileSync(path.join(root, p), 'utf8')
+  const hook = read('src/lib/useAuthSignIn.js')
+  const sign = read('native/screens/SignInScreen.jsx')
+  const mark = read('native/components/AuthMark.jsx')
+  const web = read('src/lib/Account.jsx')
+  assert.ok(hook.includes('const [reviewerOn, setReviewerOn] = useState(false)'), 'the switch starts off and is read from the server')
+  assert.ok(/function showReviewer\(\) \{\s*if \(!reviewerOn\) return/.test(hook), 'flag off: opening reviewer sign-in does nothing')
+  assert.ok(
+    sign.includes("onMarkLongPress={auth.step === 'start' && auth.reviewerOn ? auth.showReviewer : undefined}"),
+    'flag off: the title hold has no handler; flag on: it opens reviewer sign-in',
+  )
+  assert.ok(mark.includes('delayLongPress={REVIEWER_HOLD_MS}') && mark.includes('disabled={!on}'), 'the hold is 3 seconds and off without a handler')
+  assert.ok(mark.includes("accessibilityActions={on ? [{ name: 'reviewer'"), 'VoiceOver gets the action only while on')
+  assert.ok(
+    mark.includes("accessibilityRole={on ? 'button' : 'text'}") && mark.includes("accessibilityHint={on ? t('auth.reviewerHint') : undefined}"),
+    'on: the title is a button with a spoken hint; off: plain text',
+  )
+  const card = read('native/components/AuthEmailCard.jsx')
+  assert.ok(
+    card.includes("auth.step === 'start' && auth.reviewerOn ? (") && card.includes("label={t('auth.reviewer')} onPress={auth.showReviewer}") && card.includes("auth.step === 'reviewer' ?"),
+    'More and People sign-in cards show the switch-gated reviewer button and its password field',
+  )
+  for (const src of [sign, card]) {
+    assert.ok(src.includes('textContentType="password"') && src.includes('autoComplete="current-password"') && src.includes('textContentType="emailAddress"'), 'reviewer fields name password and email for autofill')
+  }
+  assert.ok(read('native/components/ui.jsx').includes('textContentType={textContentType}'), 'Field passes textContentType through')
+  assert.ok(read('native/screens/more.jsx').includes('<AuthEmailCard') && read('native/screens/social.jsx').includes('<AuthEmailCard'), 'every native sign-in surface uses the card')
+  assert.ok(hook.includes('watchReviewerFlag(setReviewerOn)'), 'the screen keeps watching the switch')
+
+  // Retry: 1s, 3s, 10s, three at 30s, then stop; one shared watcher; never in the background.
+  const { createReviewerWatch, reviewerRetryMs, REVIEWER_FOCUS_GAP_MS } = await import('../src/lib/reviewer-flag.js')
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6].map(reviewerRetryMs), [1000, 3000, 10000, 30000, 30000, 30000, null])
+  const tick = () => new Promise((r) => setTimeout(r, 0))
+  function rig(answers = []) {
+    const s = { waits: [], pending: null, reads: 0, clock: 0, front: true, frontFns: new Set(), focusFns: new Set() }
+    s.watch = createReviewerWatch({
+      read: async () => {
+        s.reads += 1
+        return answers.shift() ?? false
+      },
+      setTimer: (fn, ms) => {
+        s.waits.push(ms)
+        s.pending = fn
+        return ms
+      },
+      clearTimer: () => {
+        s.pending = null
+      },
+      now: () => s.clock,
+      isFront: () => s.front,
+      onFront: (fn) => {
+        s.frontFns.add(fn)
+        return () => s.frontFns.delete(fn)
+      },
+      win: { addEventListener: (_, fn) => s.focusFns.add(fn), removeEventListener: (_, fn) => s.focusFns.delete(fn) },
+    })
+    s.fire = async () => {
+      await tick()
+      const fn = s.pending
+      s.pending = null
+      if (fn) fn()
+      await tick()
+    }
+    s.setFront = async (on) => {
+      s.front = on
+      s.frontFns.forEach((fn) => fn(on))
+      await tick()
+    }
+    s.focus = async () => {
+      s.focusFns.forEach((fn) => fn())
+      await tick()
+    }
+    return s
+  }
+
+  // Off forever: 7 reads (first + 6 retries), then nothing until the app comes back.
+  const a = rig()
+  const stopA = a.watch(() => {})
+  const stopA2 = a.watch(() => {})
+  for (let i = 0; i < 10; i++) await a.fire()
+  assert.equal(a.reads, 7, 'two screens share one watcher, and it stops after the last 30s read')
+  assert.deepEqual(a.waits, [1000, 3000, 10000, 30000, 30000, 30000], 'backs off 1s, 3s, 10s, then three at 30s')
+  await a.setFront(false)
+  await a.setFront(true)
+  assert.equal(a.reads, 8, 'coming back to the front re-arms')
+  await a.setFront(false)
+  assert.equal(a.pending, null, 'nothing scheduled in the background')
+  await a.fire()
+  assert.equal(a.reads, 8)
+  a.front = true
+  a.clock = REVIEWER_FOCUS_GAP_MS
+  await a.focus()
+  assert.equal(a.reads, 9, 'web focus re-reads')
+  a.clock = 2 * REVIEWER_FOCUS_GAP_MS - 1
+  await a.focus()
+  assert.equal(a.reads, 9, 'web focus waits 5s between reads')
+  for (let i = 0; i < 10; i++) await a.fire()
+  assert.equal(a.pending, null, 'retries ran out again')
+  const ranOut = a.reads
+  const stopA3 = a.watch(() => {})
+  await tick()
+  assert.equal(a.reads, ranOut, 'a new screen within 5s of a read does not read again')
+  stopA3()
+  a.clock += REVIEWER_FOCUS_GAP_MS + 1
+  const stopA4 = a.watch(() => {})
+  await tick()
+  assert.equal(a.reads, ranOut + 1, 'a sign-in screen opened later re-reads once the retries ran out')
+  stopA4()
+  stopA()
+  stopA2()
+  assert.equal(a.frontFns.size + a.focusFns.size, 0, 'last screen gone: listeners removed')
+  await a.setFront(true)
+  await a.fire()
+  assert.equal(a.reads, ranOut + 1, 'unmounted: no more reads')
+
+  // Turns on: reports once, stops, and a later screen gets on at once.
+  const b = rig([false, false, true])
+  const seen = []
+  b.watch((on) => seen.push(on))
+  for (let i = 0; i < 5; i++) await b.fire()
+  assert.deepEqual(seen, [true], 'reports on once')
+  assert.equal(b.reads, 3)
+  assert.equal(b.pending, null, 'no retry after on')
+  await b.setFront(true)
+  assert.equal(b.reads, 3, 'no re-read once on')
+  const late = []
+  b.watch((on) => late.push(on))
+  assert.deepEqual(late, [true], 'a screen mounted later sees on without a read')
+
+  // Starts in the background: no read until the app comes to the front.
+  const c = rig()
+  c.front = false
+  c.watch(() => {})
+  await tick()
+  assert.equal(c.reads, 0, 'no read while in the background')
+  await c.setFront(true)
+  assert.equal(c.reads, 1)
+
+  const shell = read('native/components/BoardShell.jsx')
+  assert.ok(shell.includes('<KeyboardAvoidingView') && shell.includes('keyboardShouldPersistTaps="handled"'), 'More and People cards sit in BoardShell, which lifts the form over the keyboard')
+  assert.ok(web.includes("auth.step === 'start' && auth.reviewerOn ? ("), 'web hides reviewer sign-in while off')
+  const sql = read('supabase/reviewer-flag.sql')
+  assert.ok(sql.includes("values ('reviewer_signin', false)") && sql.includes("set search_path = ''") && sql.includes('enable row level security'), 'the switch ships off, RLS on, pinned search_path')
+  const order = read('scripts/apply-all-sql.mjs')
+  assert.ok(order.indexOf('reviewer-flag.sql') > 0 && order.indexOf('reviewer-flag.sql') < order.indexOf('drop-tonight.sql'), 'applied before drop-tonight.sql')
+})
+
 test('a fresh phone opens on welcome, a phone already in use does not, a lost session shows sign-in', () => {
   const prev = globalThis.__didIPlatform
   globalThis.__didIPlatform = 'ios'
@@ -3205,7 +3364,10 @@ test('a fresh phone opens on welcome, a phone already in use does not, a lost se
     assert.ok(sign.includes('<AuthSignInActions'), 'the sign-in screen has the sign-in actions')
     assert.ok(actions.includes("t('account.signIn')"), 'a code can be confirmed')
     assert.ok(sign.includes("t('auth.tryLocal')"), 'the sign-in screen can stay on this phone')
-    assert.ok(sign.includes('onPress={auth.showReviewer}'), 'App Review sign-in is a visible link, not only a long-press')
+    assert.ok(
+      sign.includes("auth.step === 'start' && auth.reviewerOn ? (") && sign.includes('<KeyButton colors={colors} label={t(\'auth.reviewer\')} onPress={auth.showReviewer}'),
+      'App Review sign-in is a full-width button, shown only while the switch is on',
+    )
     assert.ok(
       sign.indexOf("t('auth.getStarted')") > -1 && sign.indexOf("t('auth.getStarted')") < sign.indexOf('<AuthSignInActions'),
       'Get started is the first button on Welcome, sign-in options sit under it',
