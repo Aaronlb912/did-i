@@ -5464,7 +5464,7 @@ test('shop rows hide owned items and drops before their day', () => {
 
 // r10-answer: earned streak freezes and Did / Nope from a reminder.
 const { FREEZE_MAX, freezeState, nightsToNextFreeze, walkFreezes } = await import('../src/lib/hall-feel.js')
-const { askActions, askNoteData, notificationAnswer } = await import('../src/lib/notify-answer.js')
+const { askActions, askNoteData, firstResponse, notificationAnswer } = await import('../src/lib/notify-answer.js')
 
 test('a freeze is earned every 14 nights in a row, capped at two, and spent on the next miss', () => {
   const clears = (n) => Array(n).fill('clear')
@@ -5542,6 +5542,63 @@ test('reminder Did / Nope buttons map to the question and its period', () => {
   assert.equal(notificationAnswer(press('did', { go: '/tonight' })), null)
   assert.equal(notificationAnswer(press('did', { weId: 'c1', night: '2026-10-05' })).kind, 'we')
   assert.ok(askActions((k) => k).every((a) => a.options.opensAppToForeground === true), 'the buttons open the app so a closed app never drops the answer')
+})
+
+test('a reminder tap at 23:59:58 handled after midnight files to its night, once', async () => {
+  const { firstResponse } = await import('../src/lib/notify-answer.js')
+  const night = '2026-08-10'
+  const book = { id: 'b1', title: 'General', dayFoldHour: 0, lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-08-01' }], answers: [] }
+  writeShelf({ currentId: 'b1', boards: [book] })
+  const response = { actionIdentifier: 'did', notification: { request: { identifier: '9', content: { data: askNoteData({ lamp: { id: 'door' }, periodKey: night }) } } } }
+  const handled = new Date(2026, 7, 11, 0, 0, 2)
+  const answer = notificationAnswer(response, handled.getTime())
+  const saved = applyWidgetTapOnce(answer.id, answer.action, answer.night, handled, answer.at)
+  assert.equal(answerFor(saved.boards[0], 'door', night)?.status, 'yes', 'files to last night')
+  // A Not yet at 00:30, then the reminder's Did at 01:00: stamped 01:00, and
+  // it wins the later-time merge on another phone.
+  writeShelf({ currentId: 'b1', boards: [book] })
+  const notYetAt = new Date(2026, 7, 11, 0, 30)
+  assert.ok(applyWidgetTapOnce('door', 'nope', night, notYetAt, notYetAt.getTime()))
+  const oneAm = new Date(2026, 7, 11, 1, 0)
+  const did = applyWidgetTapOnce('door', 'did', night, oneAm, notificationAnswer(response, oneAm.getTime()).at)
+  const stamped = answerFor(did.boards[0], 'door', night)
+  assert.ok(['yes', 'late'].includes(stamped.status), 'the Did replaced the Not yet')
+  assert.equal(Date.parse(stamped.answeredAt), oneAm.getTime())
+  // An old queued widget Did (22:00) replayed after an in-app Not yet (22:05):
+  // it keeps its own time, so across phones the newer Not yet wins.
+  writeShelf({ currentId: 'b1', boards: [book] })
+  const notYet = applyWidgetTapOnce('door', 'nope', night, new Date(2026, 7, 10, 22, 5), new Date(2026, 7, 10, 22, 5).getTime())
+  const replay = applyWidgetTapOnce('door', 'did', night, new Date(2026, 7, 10, 22, 6), new Date(2026, 7, 10, 22, 0).getTime())
+  assert.equal(Date.parse(answerFor(replay.boards[0], 'door', night).answeredAt), new Date(2026, 7, 10, 22, 0).getTime())
+  const merged = mergeShelves(replay, notYet)
+  assert.equal(answerFor(merged.boards[0], 'door', night).status, 'skip', 'the newer Not yet wins')
+  // A night that has truly closed is dropped.
+  const late = new Date(2026, 7, 12, 12, 0)
+  assert.equal(applyWidgetTapOnce('door', 'did', night, late, notificationAnswer(response, late.getTime()).at), null)
+  // The listener and getLastNotificationResponseAsync both see the launch tap.
+  const seen = new Set()
+  assert.equal(firstResponse(seen, response), true)
+  assert.equal(firstResponse(seen, response), false, 'the repeat is skipped')
+  assert.equal(firstResponse(seen, { ...response, actionIdentifier: 'nope' }), true)
+})
+
+await testAsync('coins earned for the server survive a reload, for that account only', async () => {
+  // Three loads of the module stand in for three app starts. Imported first:
+  // other tests may touch storage while an import is awaited.
+  const first = await import('../src/lib/purse.js?earned=1')
+  const reload = await import('../src/lib/purse.js?earned=2')
+  const other = await import('../src/lib/purse.js?earned=3')
+  writeAccountUserId('user-a')
+  try {
+    first.returnEarnedCoins('2026-10-02', 3, new Date(2026, 9, 2, 20))
+    assert.deepEqual({ ...reload.takeEarnedCoins() }, { '2026-10-02': 3 })
+    first.returnEarnedCoins('2026-10-02', 2, new Date(2026, 9, 2, 20))
+    writeAccountUserId('user-b')
+    assert.deepEqual({ ...other.takeEarnedCoins() }, {}, 'another account never gets them')
+  } finally {
+    localStorage.removeItem('did-i-earned-coins')
+    writeAccountUserId('')
+  }
 })
 
 test('a reminder answer for a night that has turned is dropped', () => {

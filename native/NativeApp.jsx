@@ -90,12 +90,8 @@ export function NativeApp() {
           syncTonightWidget(shelf || readShelf()).catch(() => {})
         })
       }
-      if (nativeWidgetsEnabled()) {
-        // Who is done tonight, for the Together widget, on open and on return.
-        refreshTogether().catch(() => {})
-        globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
-        await initWidgetsOnLaunch(readShelf()).catch(() => {})
-      }
+      // Before widget init: a slow or failing init must not drop the reminder
+      // tap that launched the app.
       preparePush({
         onGo: (where) => goFromPush(where),
         onLamp: (lampId) => goHash('/tonight', lampId ? { face: lampId, tag: 'all' } : ''),
@@ -121,6 +117,12 @@ export function NativeApp() {
           }
         },
       }).catch(() => {})
+      if (nativeWidgetsEnabled()) {
+        // Who is done tonight, for the Together widget, on open and on return.
+        refreshTogether().catch(() => {})
+        globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
+        await initWidgetsOnLaunch(readShelf()).catch(() => {})
+      }
     })
     return () => {
       alive = false
