@@ -25,6 +25,7 @@ import { localePack, t } from './i18n.js'
 import { weNight, weOpenIds } from './we-nights.js'
 import { readPrefs, uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
+import { travelSkipped } from './travel.js'
 
 export { streakLength } from './achievements.js'
 
@@ -124,7 +125,7 @@ function nightMarks(books, iso, today, tagId = '') {
     if (due.length && !due.every(rowDoneTonight)) clear = false
   }
   // A Did we due for you counts too, as it does for the streak.
-  const we = weNight(iso, tagId)
+  const we = books.some((book) => travelSkipped(book, iso)) ? { due: 0 } : weNight(iso, tagId)
   dueCount += we.due
   if (we.due && !we.clear) clear = false
   return {
@@ -362,7 +363,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
       lamps.push(lamp.archived ? { ...lamp, archived: false } : lamp)
       if (onceKey) doneOn.set(lamp.id, onceDoneNight(lamp, index.onceAnswer.get(lamp.id)))
     }
-    return { start: startNight(book), lamps, index, doneOn }
+    return { start: startNight(book), lamps, index, doneOn, book }
   })
   const out = new Map()
   for (const iso of isos) {
@@ -374,6 +375,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
     let clear = true
     for (const book of prepped) {
       if (book.start ? iso < book.start : iso !== today) continue
+      if (travelSkipped(book.book, iso)) continue
       for (const lamp of book.lamps) {
         if (lamp.createdOn && lamp.createdOn > iso) continue
         const daily = lamp.cadence === 'daily'
@@ -391,7 +393,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
         if (!done) clear = false
       }
     }
-    const we = weNight(iso, tagId)
+    const we = prepped.some((book) => travelSkipped(book.book, iso)) ? { due: 0 } : weNight(iso, tagId)
     dueCount += we.due
     if (we.due && !we.clear) clear = false
     out.set(iso, {

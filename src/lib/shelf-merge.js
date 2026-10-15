@@ -2,6 +2,7 @@ import { normalizeBook, normalizeGone } from './board-json.js'
 import { normalizeShelf } from './board-shelf.js'
 import { answerStamp } from './board-ops.js'
 import { stampMs } from './recurrence.js'
+import { capSkips } from './travel.js'
 import { CHEER_STAGE_MAX, normalizePurse } from './purse.js'
 
 // Two phones can both be right. Questions and answers always combine.
@@ -98,6 +99,7 @@ export function mergeBooks(winner, loser) {
     gone,
     unlocked: unionList(win.unlocked, lose.unlocked),
     opens: unionList(win.opens, lose.opens).sort(),
+    travelSkips: capSkips([...win.travelSkips, ...lose.travelSkips]),
     ...foldPurse(win, lose),
   })
 }

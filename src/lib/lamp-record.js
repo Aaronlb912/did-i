@@ -1,5 +1,6 @@
 import { t } from './i18n.js'
 import { addDaysIso, answerFor, isDueOn, isEvery, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { travelSkipped } from './travel.js'
 
 function didStatus(status) {
   return status === 'yes' || status === 'late'
@@ -17,6 +18,11 @@ export function questionStreak(book, lamp, dateIso, cap = 400) {
   if (cursor === dateIso && !answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))) cursor = previousDueDate(live, dateIso)
   let count = 0
   while (cursor && count < cap) {
+    // A night skipped by travel neither counts nor breaks.
+    if (travelSkipped(book, cursor)) {
+      cursor = previousDueDate(live, cursor)
+      continue
+    }
     if (!didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, cursor))?.status)) break
     count += 1
     cursor = previousDueDate(live, cursor)
@@ -44,6 +50,11 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000) {
   let run = 0
   let steps = 0
   while (cursor && steps < cap && (!first || cursor >= first)) {
+    if (travelSkipped(book, cursor)) {
+      steps += 1
+      cursor = previousDueDate(live, cursor)
+      continue
+    }
     if (didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, cursor))?.status)) {
       run += 1
       if (run > best) best = run
@@ -87,7 +98,7 @@ export function lampWeeks(book, lamp, dateIso, weeks = 8) {
     for (let d = 0; d < 7; d += 1) {
       const iso = d ? addDaysIso(from, d) : from
       if (created && iso < created) continue
-      if (!isDueOn(live, iso)) continue
+      if (!isDueOn(live, iso) || travelSkipped(book, iso)) continue
       const status = answerFor(book, lamp.id, periodKeyFor(lamp, iso))?.status || ''
       if (iso === dateIso && !status) continue
       due += 1
