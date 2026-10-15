@@ -50,7 +50,7 @@ import { reconcileShelfFromWidget } from '../../src/lib/widget-reconcile.js'
 import { afterNativeBridgeReady } from '../lib/defer-native.js'
 import { runAfterLaunchReady } from '../lib/launch-ready.js'
 import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
-import { refreshWidgetTimelineFromKit } from '../widget-bridge.js'
+import { beginWidgetRefresh } from '../widget-bridge.js'
 import { applyPendingAndroidWidgetTap } from '../widget-tap'
 import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
 import { useLocale } from '../../src/lib/i18n.js'
@@ -298,7 +298,8 @@ export function useAppShelf() {
       afterNativeBridgeReady(() => {
         if (cancelled) return
         if (!nativeWidgetsEnabled()) return
-        refreshWidgetTimelineFromKit()
+        // Shared with the queued widget write, so the taps are read once, first.
+        beginWidgetRefresh()
           .then((merged) => {
             if (cancelled) return merged
             const before = readShelf()
