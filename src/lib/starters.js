@@ -45,7 +45,7 @@ export function ideaTaken(hung, idea) {
       .map(plain)
       .filter(Boolean),
   )
-  return hung.some((lamp) => words.has(plain(lamp.short)) || words.has(plain(lamp.question)))
+  return hung.some((lamp) => lamp.idea === idea || words.has(plain(lamp.short)) || words.has(plain(lamp.question)))
 }
 
 // The words that fill "Did I ___": "take my meds".
@@ -68,7 +68,7 @@ export function unusedStarters(book, now = new Date(), dueNow = false) {
 export function hangStarter(book, starter, now = new Date(), readyNow = false) {
   const { idea, ...fields } = starter
   const lamp = readyNow ? { ...fields, askAfter: '' } : fields
-  return hangInto(book, { ...blankLamp(now), ...lamp })
+  return hangInto(book, { ...blankLamp(now), ...lamp, ...(idea ? { idea } : {}) })
 }
 
 // Packs add a few questions at once from Add. Each item works like a starter.
@@ -130,7 +130,7 @@ export function addPack(book, pack, now = new Date()) {
   const ids = []
   for (const item of pack?.items || []) {
     const { idea, ...fields } = item
-    const lamp = { ...blankLamp(now), ...fields }
+    const lamp = { ...blankLamp(now), ...fields, ...(idea ? { idea } : {}) }
     ids.push(lamp.id)
     next = hangInto(next, lamp)
   }

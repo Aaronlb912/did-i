@@ -308,14 +308,21 @@ function SignedIn({ book, email, onChange }) {
   const cheerName = liveCheers().find((item) => item.id === purse.cheerOn)?.name || purse.cheerOn
 
   async function download() {
-    const all = await exportAll()
+    let all
+    try {
+      all = await exportAll()
+    } catch {
+      setNote({ kicker: t('account.kicker'), title: t('confirm.exportMiss'), yes: t('linkGuide.ok'), go: () => {} })
+      return
+    }
     const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.download = 'did-i-account.json'
     link.click()
-    URL.revokeObjectURL(url)
+    // Revoked at once, some browsers drop the download before it starts.
+    setTimeout(() => URL.revokeObjectURL(url), 500)
   }
 
   return (

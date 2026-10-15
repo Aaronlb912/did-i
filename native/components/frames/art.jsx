@@ -8,6 +8,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { StyleSheet, View } from 'react-native'
 import * as Reanimated from 'react-native-reanimated'
 import { t } from '../../../src/lib/i18n.js'
+import { gentleOn } from '../../../src/lib/prefs.js'
 import {
   conicWedges,
   edgePoint,
@@ -361,7 +362,8 @@ function PolaroidUnder({ f }) {
   }
   const n = Number(f.p.streak) || 0
   // Thumbnails show the date only: a sample number would read as your streak.
-  if (n > 0 && !f.still) label += ` · ${n === 1 ? t('tonight.streakOne') : t('tonight.streakMany', { n })}`
+  // Gentle mode hides streak numbers everywhere.
+  if (n > 0 && !f.still && !gentleOn()) label += ` · ${n === 1 ? t('tonight.streakOne') : t('tonight.streakMany', { n })}`
   return (
     <Layer f={f}>
       <S.Rect x={-12} y={-10} width={f.w + 24} height={f.h + 54} rx={f.R + 12} fill="#000000" opacity={0.18} />

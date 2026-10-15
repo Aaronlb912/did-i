@@ -28,6 +28,7 @@ import {
 } from '../../src/lib/hall-pages.js'
 import { passAlong } from '../../src/lib/native.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { keptButMissing } from '../lib/kept-send.js'
 import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -540,14 +541,20 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     }
     const save = (keep) => () => {
       let already = false
+      let lost = false
       const send = async () => {
         const res = await answerSend(row.id, keep)
         already = !!res?.already
+        lost = keptButMissing(res, row.id)
         return res
       }
       return peopleAnswer(item.key, send, () => {
-        // Answered elsewhere already: no second keep or toast.
-        if (already) return loadAsks()
+        // Answered elsewhere already: no second keep or toast, unless the
+        // kept question never landed on this shelf.
+        if (already) {
+          if (keep && lost && row.kind === 'todo' && onKeep) onKeep(row)
+          return loadAsks()
+        }
         // Like Keep in the inbox: a kept ask joins your own questions.
         if (keep && row.kind === 'todo' && onKeep) onKeep(row)
         confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))

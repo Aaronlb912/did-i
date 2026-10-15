@@ -443,11 +443,20 @@ function requiredTonightRows(rows) {
 // question before its day is the same as an optional one: it counts once
 // answered, so adding one never clears the night by itself. An every so
 // often question counts the same way: a Did helps, Not yet never holds the
-// night open.
+// night open. A due by question done on an earlier night is not due on later
+// nights of its window (as in the streak walk, dueThatNight), so it cannot
+// clear them on its own.
+function doneOtherNight(row) {
+  if (row?.lamp?.cadence !== 'once') return false
+  const done = onceDoneNight(row.lamp, row.answer)
+  return Boolean(done) && done !== row.dateIso
+}
+
 export function countedTonightRows(rows) {
   return (rows || []).filter(
     (row) =>
       !row?.lamp?.fromDidI &&
+      !doneOtherNight(row) &&
       ((!row?.lamp?.optional && !isEvery(row?.lamp)) || rowDoneTonight(row)) &&
       (mustSwipeDeadline(row.lamp, row.dateIso) || rowDoneTonight(row)),
   )

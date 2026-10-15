@@ -621,7 +621,7 @@ export default function App() {
   } else if (path === '/family') {
     inner = <Family book={live} onChange={change} familyId={route.id} />
   } else if (path === '/inbox') {
-    inner = <Inbox book={live} onKeep={keepSent} />
+    inner = <Inbox book={live} boards={shelf.boards} onKeep={keepSent} />
   } else if (path === '/sent') {
     inner = <Sent book={live} />
   } else if (path === '/we/new') {

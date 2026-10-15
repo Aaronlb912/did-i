@@ -1027,8 +1027,8 @@ export async function answerSend(id, keep) {
   if (data?.length) return { miss: '' }
   // Nothing changed. Still there: another phone answered it, which is fine.
   // Gone: they took it back.
-  const { data: still } = await db.from('sends').select('id').eq('id', id).maybeSingle()
-  return still ? { miss: '', already: true } : { miss: 'sent.gone' }
+  const { data: still } = await db.from('sends').select('id, state').eq('id', id).maybeSingle()
+  return still ? { miss: '', already: true, state: still.state } : { miss: 'sent.gone' }
 }
 
 // Blocking ---------------------------------------------------------------

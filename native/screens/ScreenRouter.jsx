@@ -183,7 +183,7 @@ export function ScreenRouter({
   if (path === '/stats') return <StatsScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/feed') return <FeedScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/notes') return <NotesScreen book={book} boards={boards} />
-  if (path === '/pings') return <PingScreen book={book} onChange={change} onAskPings={onAskPings} pingLabel={pingLabel} />
+  if (path === '/pings') return <PingScreen book={book} boards={shelf.boards} onChange={change} onAskPings={onAskPings} pingLabel={pingLabel} />
   if (path === '/me') {
     return (
       <BoardsScreen

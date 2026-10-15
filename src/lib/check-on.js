@@ -144,7 +144,7 @@ async function me(db) {
 }
 
 function missOf(error) {
-  if (/check-on cap/i.test(error?.message || '')) return 'checkOn.cap'
+  if (/check-on cap|too many check-ons/i.test(error?.message || '')) return 'checkOn.cap'
   if (/row-level security/i.test(error?.message || '')) return 'checkOn.notFriend'
   return 'people.reach'
 }

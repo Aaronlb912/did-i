@@ -82,7 +82,7 @@ import {
   SIGN_IN_MISS,
 } from '../../src/lib/coin-shop.js'
 import { goHash } from '../navigation/hash.js'
-import { ACCESSORIES, ACCESSORY_SLOTS, accessoriesForSale, accessoryById } from '../../src/lib/accessories.js'
+import { ACCESSORIES, ACCESSORY_SLOTS, accessoriesForSale, accessoryById, accessoryOnSale } from '../../src/lib/accessories.js'
 import { askSignIn, confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { accountSessionOn } from '../../src/lib/session-id.js'
 import { CoinIcon, GemFaceMark, GemIcon } from '../components/PurseIcons.jsx'
@@ -511,7 +511,9 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
 // Owned), so the row always shows what the shop has.
 function KindRow({ type, list, cap, allLabel, onAll, purse, colors, onTile }) {
   const buy = shopRow(type, list, purse)
-  const sorted = [...buy, ...ownedLast(type, list.filter((item) => isLive(item) && !buy.includes(item)), purse)]
+  const today = boardDate(new Date())
+  const onSale = (item) => (type === 'accessory' ? accessoryOnSale(item, today) : isLive(item, today))
+  const sorted = [...buy, ...ownedLast(type, list.filter((item) => onSale(item) && !buy.includes(item)), purse)]
   return (
     <View style={styles.promoShelf}>
       <View style={styles.promoHead}>

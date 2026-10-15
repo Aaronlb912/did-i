@@ -17,20 +17,56 @@ function liveBook(book) {
 // A deleted, paused or stopped question stops its friend check-on too.
 // It waits out the undo toast, and skips a question that came back by then.
 // Most questions have no check-on, so a network miss stays quiet.
+// The ids are kept on disk too, so a kill during the undo still stops them on next start.
+const STOP_KEY = 'did-i-checkon-stops'
+
+function readStops() {
+  try {
+    const list = JSON.parse(globalThis.localStorage?.getItem(STOP_KEY) || '[]')
+    return Array.isArray(list) ? list.map(String) : []
+  } catch {
+    return []
+  }
+}
+
+function writeStops(ids) {
+  try {
+    if (ids.length) globalThis.localStorage?.setItem(STOP_KEY, JSON.stringify(ids))
+    else globalThis.localStorage?.removeItem(STOP_KEY)
+  } catch {
+    // Disk full or gone: the in-memory timer still runs.
+  }
+}
+
+function runStops(ids) {
+  const live = new Map()
+  for (const book of readShelf().boards || []) {
+    for (const lamp of book.lamps || []) live.set(String(lamp.id), lamp)
+  }
+  writeStops(readStops().filter((id) => !ids.includes(id)))
+  const drop = ids.filter((id) => !live.has(id) || live.get(id).archived)
+  // Offline: keep it pending so the next start tries again.
+  const retry = (id) => writeStops([...new Set([...readStops(), id])])
+  for (const id of drop) {
+    dropCheckOn(id)
+      .then((out) => {
+        if (out?.miss === 'people.reach') retry(id)
+        else if (out?.miss) confirmMiss(tMiss(out.miss))
+      })
+      .catch(() => retry(id))
+  }
+}
+
 export function stopCheckOns(lampIds) {
   const ids = [].concat(lampIds).map(String)
-  setTimeout(() => {
-    const live = new Map()
-    for (const book of readShelf().boards || []) {
-      for (const lamp of book.lamps || []) live.set(String(lamp.id), lamp)
-    }
-    const drop = ids.filter((id) => !live.has(id) || live.get(id).archived)
-    for (const id of drop) {
-      dropCheckOn(id)
-        .then((out) => out.miss && out.miss !== 'people.reach' && confirmMiss(tMiss(out.miss)))
-        .catch(() => {})
-    }
-  }, DELETE_UNDO_MS + 500)
+  writeStops([...new Set([...readStops(), ...ids])])
+  setTimeout(() => runStops(ids), DELETE_UNDO_MS + 500)
+}
+
+// On start, after sign in: the undo window is long over.
+export function resumeCheckOnStops() {
+  const ids = readStops()
+  if (ids.length) runStops(ids)
 }
 
 function deleteNote(book, lamp) {

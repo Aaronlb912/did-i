@@ -108,6 +108,7 @@ import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { FRAME_IDS, frameText } from '../../src/lib/frames.js'
 import { goHash, swapHash } from '../navigation/hash.js'
 import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
+import { keptButMissing } from '../lib/kept-send.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { useNoted } from '../hooks/useNoted.js'
 import { inviteLink } from '../../src/lib/invite-link.js'
@@ -2388,13 +2389,18 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     if (answering.current.has(row.id)) return
     answering.current.add(row.id)
     setMiss('')
-    const { miss: why, already } = await answerSend(row.id, keep)
+    const res = await answerSend(row.id, keep)
+    const { miss: why, already } = res
     answering.current.delete(row.id)
     if (why) {
       setMiss(tMiss(why))
       return why === 'sent.gone' ? load() : undefined
     }
-    if (already) return load()
+    if (already) {
+      // Kept elsewhere, but the question never landed on this shelf.
+      if (keep && row.kind === 'todo' && onKeep && keptButMissing(res, row.id)) onKeep(row)
+      return load()
+    }
     if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
     if (keep && row.kind === 'todo' && onKeep) onKeep(row)
     if (row.kind === 'todo') confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))

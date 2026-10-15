@@ -76,7 +76,10 @@ export function mergeBooks(winner, loser) {
 
   const lampsWin = byId(win.lamps)
   const lamps = win.lamps.filter((lamp) => !dead.has(lamp.id))
+  // The same kept Did you saved on two phones under two ids is one question.
+  const sendsWin = new Set(win.lamps.map((lamp) => lamp.sendId).filter(Boolean))
   for (const lamp of lose.lamps) {
+    if (lamp.sendId && sendsWin.has(lamp.sendId)) continue
     if (!lampsWin.has(lamp.id) && !dead.has(lamp.id)) lamps.push(lamp)
   }
 

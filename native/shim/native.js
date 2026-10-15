@@ -4,7 +4,7 @@ import { requireOptionalNativeModule } from 'expo'
 import * as Linking from 'expo-linking'
 import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
-import { lampNotifyOn } from '../../src/lib/board-json.js'
+import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, askActions, askNoteData } from '../../src/lib/notify-answer.js'
 import { afterQuiet, gentleOn, pingOn } from '../../src/lib/prefs.js'
@@ -137,6 +137,8 @@ const PING_DAYS = 7
 // iOS keeps at most 64 pending; leave room for the streak and cheer pings.
 const PING_CAP = 60
 const CHANNEL_ID = 'did-i'
+// Same as LATE_NUDGE_HOUR in src/lib/notify.js.
+const LATE_NUDGE_HOUR = 21
 
 // Calls bunch up (a tap and armLampPings land together). The last call in
 // a 500ms window wins, and runs only after the one before it finishes, so a
@@ -202,23 +204,40 @@ async function schedulePingsNow(books, now = new Date()) {
       for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
         // Midday of that calendar day sits inside the right board night.
         const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
-        const rows = ahead === 0 ? waitingTonight(book, now) : dueTonight(book, day).filter((row) => !row.answer)
+        // Every open row, so a re-arm after the ask time still keeps the 21:00
+        // late note. The ask note itself only goes to rows still waiting.
+        const rows = dueTonight(book, day).filter((row) => !row.answer)
+        const waiting = ahead === 0 ? new Set(waitingTonight(book, now).map((row) => `${row.lamp.id}:${row.periodKey}`)) : null
         const [year, month, date] = boardDate(day).split('-').map(Number)
         for (const row of rows) {
-          if (!reminders || !lampNotifyOn(row.lamp)) continue
+          // Low priority stays quiet, like the web (src/lib/notify.js upcomingPings).
+          if (!reminders || !lampBuzzes(row.lamp)) continue
           const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
           if (!match) continue
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
-          if (at.getTime() <= now.getTime()) continue
+          const content = {
+            title: 'Did I',
+            body: row.lamp.question,
+            data: askNoteData(row),
+            categoryIdentifier: ASK_CATEGORY,
+          }
+          if (at.getTime() > now.getTime() && (!waiting || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
+            notes.push({
+              identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}`)),
+              content,
+              trigger: when(at),
+            })
+          }
+          // A high one still open gets a last call at 21:00.
+          if (!lampNudgesLate(row.lamp)) continue
+          const late = new Date(year, month - 1, date, LATE_NUDGE_HOUR, 0, 0, 0)
+          if (late.getTime() <= now.getTime() || late.getTime() <= at.getTime()) continue
+          // Quiet hours would push it to morning, which is no last call.
+          if (afterQuiet(late).getTime() !== late.getTime()) continue
           notes.push({
-            identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}`)),
-            content: {
-              title: 'Did I',
-              body: row.lamp.question,
-              data: askNoteData(row),
-              categoryIdentifier: ASK_CATEGORY,
-            },
-            trigger: when(at),
+            identifier: String(notifyId(row.lamp.id, `${row.periodKey}:late:${row.dateIso}`)),
+            content,
+            trigger: when(late),
           })
         }
       }

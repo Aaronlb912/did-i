@@ -6652,7 +6652,7 @@ test('readthrough 8: web guards for sign out, inbox, family and Did we hooks', (
   }
   assert.ok(!/^import .*push\.js/m.test(account), 'account.js loads push.js late (static import is a cycle on the phone)')
   assert.ok(account.includes("import('./push.js')"), 'push.js is a dynamic import')
-  assert.ok(src('src/lib/Inbox.jsx').includes('if (already) return load()'), 'inbox does not add twice')
+  assert.match(src('src/lib/Inbox.jsx'), /if \(already\) \{\r?\n\s+if \(keep && state === 'kept' && row\.kind === 'todo' && onKeep && !sendOnShelf\(/, 'inbox does not add twice')
   assert.ok(src('src/lib/Family.jsx').includes('answerFamilyLamp(fam.id, lamp.id, boardDate(new Date(), fam.fold_hour), status)'))
   const we = src('src/lib/DidWe.jsx')
   const home = we.slice(we.indexOf('export function WeHome'))
@@ -6701,6 +6701,178 @@ await testAsync('readthrough 8 review: one-time nights, archived once rules, sea
   assert.deepEqual(shopRow('accessory', [witch], normalizePurse({}), '2027-10-15').map((item) => item.id), ['witch'])
   assert.equal(buyAccessory({ coins: 100 }, 'witch', '2027-10-15').miss || '', '')
   assert.equal(buyAccessory({ coins: 100 }, 'witch', '2027-07-15').miss, 'shop.miss.accessoryGone')
+})
+
+// Runs `body` in its own process with test cloud keys, the client's from(),
+// rpc() and auth calls swapped for fakes. `calls` lists each query's table and
+// chained ops; `answer(table, ops)` gives each query's result. Prints JSON.
+function inFakeCloud(body) {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const url = (file) => pathToFileURL(path.join(root, file)).href
+  const script = `
+    const store = new Map()
+    globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) }
+    globalThis.window = { dispatchEvent() {}, addEventListener() {}, removeEventListener() {} }
+    const { cloud } = await import(${JSON.stringify(url('src/lib/cloud.js'))})
+    const db = cloud()
+    const calls = []
+    let answer = () => ({ data: null, error: null })
+    const query = (table) => {
+      const ops = []
+      calls.push({ table, ops })
+      const chain = new Proxy({}, {
+        get(_, key) {
+          if (key === 'then') return (ok, no) => Promise.resolve(answer(table, ops)).then(ok, no)
+          return (...args) => { ops.push([key, ...args]); return chain }
+        },
+      })
+      return chain
+    }
+    db.from = query
+    db.rpc = (name) => query('rpc:' + name)
+    db.auth.getSession = async () => ({ data: { session: { user: { id: 'user-a' } } } })
+    db.auth.signOut = async (opts) => { calls.push({ table: 'signOut', ops: [opts] }); return { error: null } }
+    const url = (file) => new URL(file, ${JSON.stringify(url('src/lib/'))}).href
+    const out = await (async () => { ${body} })()
+    console.log(JSON.stringify(out))
+  `
+  const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'test' },
+  })
+  assert.equal(run.status, 0, run.stderr)
+  return JSON.parse(run.stdout.trim().split('\n').pop())
+}
+
+await testAsync('readthrough 9: inbox fallback hands back the send state, kept elsewhere adds once', async () => {
+  const out = inFakeCloud(`
+    const { answerSend } = await import(url('people.js'))
+    answer = (table, ops) => ops.some(([k]) => k === 'update') ? { data: [], error: null } : { data: { id: 's1', state: 'kept' }, error: null }
+    return await answerSend('s1', true)
+  `)
+  assert.deepEqual(out, { miss: '', already: true, state: 'kept' })
+  const { sendOnShelf } = await import('../src/lib/send-repeat.js')
+  const id = '11111111-2222-3333-4444-555555555555'
+  assert.equal(sendOnShelf([{ lamps: [] }, { lamps: [{ id: 'a', sendId: id }] }], id.toUpperCase()), true)
+  assert.equal(sendOnShelf([{ lamps: [{ id: 'a' }] }], id), false)
+  assert.equal(sendOnShelf([{ lamps: [{ id: 'a', sendId: '' }] }], ''), false)
+})
+
+await testAsync('readthrough 9: a due by Did clears only its own night, the same as the streak walk', async () => {
+  const { dueThatNight } = await import('../src/lib/hall-feel.js')
+  const { allClearTonight, countedTonightRows, dueTonight, faceReadyTonight } = await import('../src/lib/recurrence.js')
+  const taxes = { id: 't', question: 'Taxes?', cadence: 'once', onceWhen: 'by', dueBy: '2026-10-15', createdOn: '2026-10-10', archived: false, askAfter: '' }
+  const book = { id: 'b', dayFoldHour: 0, lamps: [taxes], answers: [{ lampId: 't', periodKey: 'once:t', status: 'yes', answeredAt: '2026-10-12T21:00:00' }] }
+  const on12 = new Date(2026, 9, 12, 22, 0)
+  const on13 = new Date(2026, 9, 13, 22, 0)
+  assert.equal(allClearTonight(book, on12), true)
+  // Streak credit and all clear agree on 10-13: neither counts.
+  assert.equal(countedTonightRows(dueThatNight(book, '2026-10-13', on13)).length, 0)
+  assert.equal(allClearTonight(book, on13), false)
+  // Tonight still shows it answered, not asked again.
+  assert.ok(dueTonight(book, on13).some((row) => row.lamp.id === 't' && row.answer?.status === 'yes'))
+  assert.equal(faceReadyTonight(book, on13).length, 0)
+})
+
+await testAsync('readthrough 9: sign out everywhere clears every device push token first', async () => {
+  const out = inFakeCloud(`
+    const { signOutEverywhere } = await import(url('account.js'))
+    await signOutEverywhere()
+    return calls
+  `)
+  const all = out.findIndex((call) => call.table === 'devices' && call.ops.length === 2 && call.ops[0][0] === 'update' && call.ops[1][0] === 'eq' && call.ops[1][1] === 'user_id')
+  assert.ok(all >= 0, JSON.stringify(out))
+  assert.deepEqual(out[all].ops[0], ['update', { push_token: null }])
+  assert.ok(all < out.findIndex((call) => call.table === 'signOut'))
+})
+
+await testAsync('readthrough 9: voice answers reach a Not yet and last night in grace', async () => {
+  const { openTonight } = await import('../src/lib/voice-answer.js')
+  const daily = { id: 'd', question: 'Did I stretch?', cadence: 'daily', createdOn: '2026-10-01', archived: false, askAfter: '' }
+  const book = { id: 'b', dayFoldHour: 0, lamps: [daily], answers: [{ lampId: 'd', periodKey: '2026-10-13', status: 'skip', answeredAt: '2026-10-13T21:00:00' }] }
+  const evening = openTonight(new Date(2026, 9, 13, 22, 0), { boards: [book] })
+  assert.deepEqual(evening.map((row) => row.periodKey), ['2026-10-13'])
+  const done = { ...book, answers: [{ lampId: 'd', periodKey: '2026-10-13', status: 'yes', answeredAt: '2026-10-13T21:00:00' }] }
+  assert.equal(openTonight(new Date(2026, 9, 13, 22, 0), { boards: [done] }).length, 0)
+  // 2am: last night's Not yet comes first, ahead of tonight's.
+  const early = openTonight(new Date(2026, 9, 14, 2, 0), { boards: [book] })
+  assert.deepEqual(early.map((row) => row.periodKey), ['2026-10-13', '2026-10-14'])
+  const late = openTonight(new Date(2026, 9, 14, 7, 0), { boards: [book] })
+  assert.deepEqual(late.map((row) => row.periodKey), ['2026-10-14', '2026-10-13'])
+})
+
+await testAsync('readthrough 9: export fails loudly on a query error', async () => {
+  const run = (bad) => inFakeCloud(`
+    const { exportAll } = await import(url('cloud-sync.js'))
+    answer = (table) => (table === ${JSON.stringify(bad)} ? { data: null, error: { message: 'down' } } : { data: table === 'profiles' ? null : [], error: null })
+    try { await exportAll(); return 'ok' } catch { return 'threw' }
+  `)
+  assert.equal(run('none'), 'ok')
+  for (const table of ['profiles', 'devices', 'we_members', 'we_answers', 'sends']) assert.equal(run(table), 'threw', table)
+  const account = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../src/lib/Account.jsx'), 'utf8')
+  assert.match(account, /t\('confirm\.exportMiss'\)/)
+  assert.match(account, /setTimeout\(\(\) => URL\.revokeObjectURL\(url\), 500\)/)
+})
+
+await testAsync('readthrough 9: a starter idea stays taken by its id in any words', async () => {
+  const { hangStarter, ideaTaken } = await import('../src/lib/starters.js')
+  const { normalizeLamp } = await import('../src/lib/board-json.js')
+  const book = { id: 'b', lamps: [], answers: [] }
+  const starter = starterList().find((item) => item.idea === 'pills')
+  const added = hangStarter(book, starter, new Date(2026, 9, 14, 12))
+  const lamp = added.lamps.find((item) => item.idea === 'pills')
+  assert.ok(lamp, 'idea kept on the question')
+  const renamed = { ...lamp, question: 'Did I nehmen Tabletten?', short: 'Tabletten' }
+  assert.equal(ideaTaken([renamed], 'pills'), true)
+  assert.equal(ideaTaken([renamed], 'water'), false)
+  assert.equal(normalizeLamp({ ...lamp }).idea, 'pills')
+  assert.equal(normalizeLamp({ ...lamp, idea: 'Bad idea!' }).idea, undefined)
+})
+
+await testAsync('readthrough 9: re-armed after the ask time, a high one keeps its 21:00 late note', async () => {
+  const { upcomingPings } = await import('../src/lib/notify.js')
+  const q = (id, extra = {}) => ({ id, question: id, cadence: 'daily', createdOn: '2026-10-01', archived: false, askAfter: '18:00', priority: 'high', ...extra })
+  const book = { id: 'b1', dayFoldHour: 0, lamps: [q('a')], answers: [] }
+  const tags = upcomingPings(book, new Date(2026, 9, 14, 19, 0)).map((fire) => fire.tag)
+  assert.deepEqual(tags, ['a:2026-10-14:late'])
+  assert.deepEqual(upcomingPings(book, new Date(2026, 9, 14, 12, 0)).map((fire) => fire.tag), ['a:2026-10-14', 'a:2026-10-14:late'])
+  assert.deepEqual(upcomingPings(book, new Date(2026, 9, 14, 21, 30)), [])
+  const pings = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
+  assert.ok(pings.includes('const rows = dueTonight(book, day).filter((row) => !row.answer)'), 'native keeps the late note after the ask time')
+  assert.ok(pings.includes('if (afterQuiet(late).getTime() !== late.getTime()) continue'))
+})
+
+await testAsync('readthrough 9: a kept Did you saved on two phones merges to one question', async () => {
+  const sendId = '0b6f3c2e-1a2b-4c3d-8e9f-0a1b2c3d4e5f'
+  const kept = (id) => ({ id, question: 'Did you call?', cadence: 'daily', createdOn: '2026-10-01', archived: false, fromDidYou: true, sendId })
+  const win = { currentId: 'b1', boards: [{ id: 'b1', dayFoldHour: 0, lamps: [kept('x1'), lamp('own1')], answers: [] }] }
+  const lose = { currentId: 'b1', boards: [{ id: 'b1', dayFoldHour: 0, lamps: [kept('x2'), lamp('own2')], answers: [] }] }
+  const merged = mergeShelves(win, lose, '2026-10-14T11', '2026-10-14T10')
+  const ids = merged.boards[0].lamps.map((item) => item.id).sort()
+  assert.deepEqual(ids, ['own1', 'own2', 'x1'])
+})
+
+await testAsync('readthrough 9: web reminder tags per question, worker respects off and quiet hours', async () => {
+  const { upcomingPings } = await import('../src/lib/notify.js')
+  const { swMayPing } = await import('../src/lib/quiet.js')
+  const q = (id, extra = {}) => ({ id, question: id, cadence: 'daily', createdOn: '2026-10-01', archived: false, askAfter: '21:00', ...extra })
+  const one = { id: 'b1', dayFoldHour: 0, lamps: [q('a'), q('b')], answers: [] }
+  const two = { id: 'b2', dayFoldHour: 0, lamps: [q('c'), q('d', { priority: 'low' })], answers: [] }
+  const now = new Date(2026, 9, 14, 12, 0)
+  const fires = upcomingPings(one, now)
+  assert.deepEqual(fires.map((fire) => fire.tag), ['a:2026-10-14', 'b:2026-10-14'])
+  // Every board at once; low priority stays quiet.
+  assert.deepEqual(upcomingPings([one, two], now).map((fire) => fire.id), ['a', 'b', 'c'])
+  const sw = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../src/sw.js'), 'utf8')
+  assert.ok(sw.includes('tag: `${row.lamp.id}:${row.periodKey}`'))
+  assert.ok(sw.includes('swMayPing(await loadPrefsForSw(), now)'))
+  assert.ok(sw.includes("new NavigationRoute(createHandlerBoundToURL('index.html')"))
+  const at = new Date(2026, 9, 14, 23, 0)
+  assert.equal(swMayPing(null, at), true)
+  assert.equal(swMayPing({ pingsOff: ['reminders'] }, at), false)
+  assert.equal(swMayPing({ pingsOff: [], quietOn: true, quietFrom: '22:00', quietTo: '07:00' }, at), false)
+  assert.equal(swMayPing({ pingsOff: [], quietOn: true, quietFrom: '22:00', quietTo: '07:00' }, new Date(2026, 9, 14, 20, 0)), true)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
