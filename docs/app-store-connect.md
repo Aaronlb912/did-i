@@ -159,6 +159,54 @@ Screenshot captions, in order. Big line on top, small line under it, then the sc
 | 6 | Did we feed the dog? | Share questions with the people you live with. | Did we or family |
 | 7 | Make it yours. | Frames, looks and a little buddy. | Card wearing Galaxy or Neon Heart |
 
+## Standing out from the other "Did I" apps (checked 2026-10-15)
+
+Apple's search API (itunes.apple.com/search, US) lists about 25 apps whose
+name starts with "Did I", most from 2026 with 0 to 5 ratings. Searching
+"did i" did not show Did I??? in the first 189 results; "did i?" put it at 84.
+New apps with no ratings rank low, and "Did I???" alone tells search nothing.
+
+| Group | Examples | What they are |
+|-------|----------|---------------|
+| Lock and stove checkers | Did I lock?, did I? - Daily Check Reminder, Did I Lock Up? | One tap to log you locked up, some with GPS |
+| Pill checkers | Did I Take It?, Did I Take My Pill?, Did I Take That? (about 10) | A single "taken" log |
+| One-tap task widgets | Did I Do? - ADHD & OCD Help (87 ratings, the strongest), Did I? (Korean), Did I Do It? Habit Tracker | Tap a widget to mark a task done |
+| Journals and logs | Did I? Yes/No Journal, Did I? Memory Log | One question a day, or a timestamped log |
+
+What none of them has, and Did I??? should lead with:
+- Friends and family: Did you (ask someone) and Did we (answer together, shared streak).
+- Apple Watch and reminders at the time you set, not only a widget.
+- One question at a time with a swipe, not a list of tick boxes.
+- Honest streaks: Not yet is not Did.
+
+Next version listing (paste when the next version is created; name, subtitle
+and keywords can only change with a new version). No word repeats across the
+three fields. Never name Android or Google Play.
+
+| Field | Value | Length |
+|-------|-------|--------|
+| Name (30) | Did I??? Habits with Friends | 28 |
+| Subtitle (30) | Reminders on widget and watch | 29 |
+| Keywords (100) | tracker,family,together,streak,routine,checklist,forgetful,meds,pills,chores,adhd,accountability | 96 |
+| Promotional text (170, change any time) | For people who forget to open habit trackers. Ask yourself, ask a friend, or answer together. Did I brings the question to your widget, watch or phone. | 154 |
+
+Screenshots for the next version: same captions as above, new order, so the
+first three (the ones shown in search) are things the other apps don't do.
+
+| # | Big line | Small line | Screen |
+|---|----------|------------|--------|
+| 1 | For people who forget to open habit trackers. | The question comes to you. | Home screen with the widget answering a question |
+| 2 | Did we feed the dog? | Answer together and keep a shared streak. | A Did we card with faces |
+| 3 | On your wrist. | Swipe Did or Not yet on Apple Watch. | Watch next to the phone |
+| 4 | Swipe right for Did. | Left for Not yet. | The card mid-swipe |
+| 5 | Did you call Grandma back? | Ask a friend. It waits in their inbox. | Did you inbox |
+| 6 | Streaks that stay honest. | Every day on one calendar. | Streak and calendar |
+| 7 | Make it yours. | Frames, looks and a little buddy. | Card wearing a frame |
+
+Ratings matter most for rank right now: the rate card already asks after a
+good moment; a few dozen real ratings will move Did I??? above the 0-rating
+apps for "did i".
+
 ## After IAPs
 
 1. **App Information** — category Lifestyle, age ratings questionnaire, content rights if prompted.
