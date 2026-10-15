@@ -26,7 +26,7 @@ import { localePack, t } from './i18n.js'
 import { weNight, weOpenIds } from './we-nights.js'
 import { readPrefs, uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
-import { travelNightState, travelSkipped } from './travel.js'
+import { travelNightState, travelSkipped, travelWe } from './travel.js'
 
 export { streakLength } from './achievements.js'
 
@@ -126,7 +126,7 @@ function nightMarks(books, iso, today, tagId = '') {
     if (due.length && !due.every(rowDoneTonight)) clear = false
   }
   // A Did we due for you counts too, as it does for the streak.
-  const we = books.some((book) => travelSkipped(book, iso)) ? { due: 0 } : weNight(iso, tagId)
+  const we = travelWe(books.some((book) => travelSkipped(book, iso)), weNight(iso, tagId))
   dueCount += we.due
   if (we.due && !we.clear) clear = false
   return {
@@ -395,7 +395,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
         if (!done) clear = false
       }
     }
-    const we = prepped.some((book) => travelSkipped(book.book, iso)) ? { due: 0 } : weNight(iso, tagId)
+    const we = travelWe(prepped.some((book) => travelSkipped(book.book, iso)), weNight(iso, tagId))
     dueCount += we.due
     if (we.due && !we.clear) clear = false
     out.set(iso, {

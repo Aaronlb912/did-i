@@ -2,7 +2,7 @@ import { hallHeat, shelfStreak } from './hall-feel.js'
 import { readShelf } from './board-shelf.js'
 import { hasLocaleKey, t } from './i18n.js'
 import { questionStreak } from './lamp-record.js'
-import { travelSkipped } from './travel.js'
+import { travelRows } from './travel.js'
 import { shopBuddies, liveCheers, FREE_BUDDY, liveLooks, mergePurses } from './purse.js'
 import {
   addDaysIso,
@@ -176,11 +176,10 @@ export function streakLength(book, lamp, now) {
 function cameBackAfterHole(book, now = new Date()) {
   const today = boardDate(now, book.dayFoldHour)
   const yesterday = addDaysIso(today, -1)
-  if (travelSkipped(book, yesterday)) return false
   const at = parseIsoDate(yesterday)
   if (!at) return false
   at.setHours(12, 0, 0, 0)
-  const due = dueTonight(book, at).filter(
+  const due = travelRows(book, yesterday, dueTonight(book, at)).filter(
     (row) => !row.lamp.createdOn || row.lamp.createdOn <= yesterday,
   )
   if (!due.length) return false
@@ -193,11 +192,10 @@ function quietWeek(book, now) {
   let anyDue = false
   for (let i = 0; i < 7; i += 1) {
     const iso = addDaysIso(today, -i)
-    if (travelSkipped(book, iso)) continue
     const date = parseIsoDate(iso)
     if (!date) return false
     date.setHours(12, 0, 0, 0)
-    const due = dueTonight(book, date)
+    const due = travelRows(book, iso, dueTonight(book, date))
     if (due.length) anyDue = true
     if (due.some((row) => !row.answer)) return false
   }

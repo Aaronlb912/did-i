@@ -122,16 +122,27 @@ export function travelSkipped(book, iso) {
   return set.has(iso)
 }
 
-// The app's own close stamps a Not yet at the start of its night (daily.js
+// The app's own close stamps a Not yet at the start of a night (daily.js
 // nightStart), local midnight on whichever phone did it: a quarter-hour mark
-// from 14 hours before to 12 hours after that date's UTC midnight. A tap lands on a whole minute
-// almost never, let alone a quarter hour.
+// no later than 12 hours after that date's UTC midnight. A one-time "by"
+// question is stamped at the start of the day it was made, earlier still. A
+// tap lands on a whole minute almost never, let alone a quarter hour.
 export function autoClosed(answer, iso) {
   if (!answer || answer.status !== 'skip') return false
   const at = stampMs(answer.answeredAt)
   const day = Date.parse(`${iso}T00:00:00Z`)
   if (!at || !day || at % 900000 !== 0) return false
-  return at >= day - 14 * 3600000 && at <= day + 12 * 3600000
+  return at <= day + 12 * 3600000
+}
+
+// A night's rows with the ones a travel skip steps over taken out.
+export function travelRows(book, iso, rows) {
+  return travelSkipped(book, iso) ? rows.filter((row) => travelNightState(row.answer, iso) !== 'none') : rows
+}
+
+// Did we on a skipped night: a done one counts like a Did, an open one is stepped over.
+export function travelWe(skipped, we) {
+  return skipped && !(we.due && we.clear) ? { due: 0, clear: true } : we
 }
 
 // How one question's answer reads on a travel-skipped night: 'did' counts

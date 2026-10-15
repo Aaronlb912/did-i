@@ -389,13 +389,22 @@ test('on a travel-skipped night each question is judged on its own', () => {
 })
 
 test('the other walks step over a travel-skipped night', () => {
-  // Last night lost to travel is not offered in the grace period.
+  // Last night lost to travel is still offered in grace, so a Did can count.
   const book = travelBook(['2026-10-15', '2026-10-16'], ['2026-10-15'])
-  assert.deepEqual(graceRowsFor([book], '2026-10-15'), [])
-  assert.equal(graceRowsFor([travelBook(['2026-10-15', '2026-10-16'])], '2026-10-15').length, 1)
-  // A quiet week holds with the skipped night in it.
-  const week = unlockAchievements(travelBook(['2026-10-15'], ['2026-10-15']), new Date(2026, 9, 16, 22))
+  assert.equal(graceRowsFor([book], '2026-10-15').length, 1)
+  // A quiet week holds with the skipped night in it, and coming back after it is no come-back.
+  const week = unlockAchievements({ ...travelBook(['2026-10-15'], ['2026-10-15']), opens: ['2026-10-16'] }, new Date(2026, 9, 16, 22))
   assert.ok(week.unlocked.includes('quiet-week'))
+  assert.ok(!week.unlocked.includes('come-back'))
+  const hole = unlockAchievements({ ...travelBook(['2026-10-15']), opens: ['2026-10-16'] }, new Date(2026, 9, 16, 22))
+  assert.ok(hole.unlocked.includes('come-back'))
+  // A one-time "by" question closed by an older app at the start of the day it was made reads as automatic.
+  assert.equal(travel.autoClosed({ status: 'skip', answeredAt: '2026-10-12T07:00:00.000Z' }, '2026-10-15'), true)
+  assert.equal(travel.autoClosed({ status: 'skip', answeredAt: '2026-10-15T21:03:11.250Z' }, '2026-10-15'), false)
+  // Did we on a skipped night: done counts, open steps aside, other nights as usual.
+  assert.deepEqual(travel.travelWe(true, { due: 1, clear: true }), { due: 1, clear: true })
+  assert.deepEqual(travel.travelWe(true, { due: 1, clear: false }), { due: 0, clear: true })
+  assert.deepEqual(travel.travelWe(false, { due: 1, clear: false }), { due: 1, clear: false })
   // The close looks past the skipped night to the real previous one.
   const open = travelBook(['2026-10-14', '2026-10-15', '2026-10-16'], ['2026-10-15'])
   const closed = closePastNights(open, new Date(2026, 9, 16, 10), [])
