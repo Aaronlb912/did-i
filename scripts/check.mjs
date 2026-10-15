@@ -6846,7 +6846,7 @@ await testAsync('readthrough 9: re-armed after the ask time, a high one keeps it
   assert.deepEqual(upcomingPings(book, new Date(2026, 9, 14, 12, 0)).map((fire) => fire.tag), ['a:2026-10-14', 'a:2026-10-14:late'])
   assert.deepEqual(upcomingPings(book, new Date(2026, 9, 14, 21, 30)), [])
   const pings = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
-  assert.ok(pings.includes('const rows = dueTonight(book, day).filter((row) => !row.answer)'), 'native keeps the late note after the ask time')
+  assert.ok(pings.includes("const rows = dueTonight(book, day).filter((row) => !row.answer || row.answer.status === 'skip')"), 'native keeps the late note after the ask time')
   assert.ok(pings.includes('if (afterQuiet(late).getTime() !== late.getTime()) continue'))
 })
 
@@ -6880,6 +6880,78 @@ await testAsync('readthrough 9: web reminder tags per question, worker respects 
   assert.equal(swMayPing({ pingsOff: ['reminders'] }, at), false)
   assert.equal(swMayPing({ pingsOff: [], quietOn: true, quietFrom: '22:00', quietTo: '07:00' }, at), false)
   assert.equal(swMayPing({ pingsOff: [], quietOn: true, quietFrom: '22:00', quietTo: '07:00' }, new Date(2026, 9, 14, 20, 0)), true)
+})
+
+await testAsync('readthrough 10: a high one with no time still gets the 21:00 late note, Not yet keeps it, low never', async () => {
+  const { upcomingPings } = await import('../src/lib/notify.js')
+  const q = (id, extra = {}) => ({ id, question: id, cadence: 'daily', createdOn: '2026-10-01', archived: false, priority: 'high', ...extra })
+  const noon = new Date(2026, 9, 14, 12, 0)
+  const book = { id: 'b1', dayFoldHour: 0, lamps: [q('a'), q('low', { priority: 'low' })], answers: [] }
+  const fires = upcomingPings(book, noon)
+  assert.deepEqual(fires.map((fire) => fire.tag), ['a:2026-10-14:late'])
+  assert.equal(new Date(fires[0].at).getHours(), 21)
+  // Not yet is not done: the last call stays. A Did drops it.
+  const notYet = { ...book, answers: [{ lampId: 'a', periodKey: '2026-10-14', status: 'skip', answeredAt: '2026-10-14T11:00:00' }] }
+  assert.deepEqual(upcomingPings(notYet, noon).map((fire) => fire.tag), ['a:2026-10-14:late'])
+  const timed = { ...notYet, lamps: [q('a', { askAfter: '18:00' })] }
+  assert.deepEqual(upcomingPings(timed, noon).map((fire) => fire.tag), ['a:2026-10-14:late'], 'no ask note for a Not yet row')
+  const did = { ...book, answers: [{ lampId: 'a', periodKey: '2026-10-14', status: 'yes', answeredAt: '2026-10-14T11:00:00' }] }
+  assert.deepEqual(upcomingPings(did, noon), [])
+  const pings = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
+  assert.ok(pings.includes("filter((row) => !row.answer || row.answer.status === 'skip')"), 'native keeps Not yet rows')
+  assert.ok(pings.includes('const at = match ? new Date(year, month - 1, date'),'native keeps the late note for no-time questions')
+})
+
+await testAsync('readthrough 10: the widget footer is not "Next at" while last night is still open', async () => {
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'late', question: 'Late one?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' }],
+    answers: [],
+  }
+  const props = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), new Date('2026-09-24T08:00:00'))
+  assert.ok(props.items.length > 0, 'last night shows')
+  assert.notEqual(props.footer, t('widget.tonight.nextAt', { time: clockWords('21:00') }))
+})
+
+test('readthrough 10: a widget-tap coin reply after an account switch writes nothing', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const url = (file) => pathToFileURL(path.join(root, file)).href
+  const script = `
+    import { registerHooks } from 'node:module'
+    const fake = 'export function creditNightCoins() { return new Promise((ok) => { globalThis.payCoins = ok }) }; ' +
+      'export function grantWeeklyGem() { return new Promise(() => {}) }; ' +
+      'export const applyCoinBalanceToShelf = (shelf, n) => ({ ...shelf, coinBalance: n }); ' +
+      'export const applyGemBalanceToShelf = (shelf) => shelf'
+    registerHooks({
+      resolve: (specifier, context, next) =>
+        specifier === './wallet.js' && String(context.parentURL).endsWith('tap-earnings.js')
+          ? { url: 'data:text/javascript,' + encodeURIComponent(fake), shortCircuit: true }
+          : next(specifier, context),
+    })
+    const store = new Map([['did-i-last-user', 'user-a']])
+    globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) }
+    globalThis.window = { dispatchEvent() {} }
+    const { returnEarnedCoins, takeEarnedCoins } = await import(${JSON.stringify(url('src/lib/purse.js'))})
+    const { settleTapEarnings } = await import(${JSON.stringify(url('src/lib/tap-earnings.js'))})
+    const clock = new Date(2026, 9, 2, 20)
+    returnEarnedCoins('2026-10-02', 2, clock)
+    const shelf = { currentId: 'b', boards: [{ id: 'b', lamps: [], answers: [] }] }
+    let wrote = 0
+    settleTapEarnings(shelf, shelf, clock, () => { wrote += 1 })
+    store.set('did-i-last-user', 'user-b')
+    globalThis.payCoins(40)
+    await new Promise((ok) => setTimeout(ok, 20))
+    console.log(JSON.stringify({ wrote, queued: takeEarnedCoins() }))
+  `
+  const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'test' },
+  })
+  assert.equal(run.status, 0, run.stderr)
+  assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { wrote: 0, queued: {} })
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
