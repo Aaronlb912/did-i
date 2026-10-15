@@ -34,7 +34,6 @@ $$;
 revoke all on function public.live_topic_mine(text) from public, anon;
 grant execute on function public.live_topic_mine(text) to authenticated;
 
-alter table realtime.messages enable row level security;
 
 drop policy if exists "didi own topic" on realtime.messages;
 create policy "didi own topic" on realtime.messages
