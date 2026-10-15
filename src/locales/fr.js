@@ -267,6 +267,9 @@ export const fr = {
   'account.outAllBody':
     'Chaque téléphone connecté à ce compte sera déconnecté. Rien n’est supprimé.',
   'account.outAllYes': 'Se déconnecter partout',
+  'account.unsavedTitle': 'Certaines réponses ne sont pas encore enregistrées. Se déconnecter quand même ?',
+  'account.unsavedBody': 'Elles sont seulement sur cet appareil. Se déconnecter maintenant les efface.',
+  'account.unsavedYes': 'Se déconnecter quand même',
   'account.delete': 'Supprimer mon compte',
   'account.deleteTitle': 'Supprimer le compte ?',
   'account.deleteBody':

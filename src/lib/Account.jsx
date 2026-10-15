@@ -15,6 +15,7 @@ import {
   keptProfileName,
   loadProfile,
   pullAndMerge,
+  saveBeforeSignOut,
   saveProfile,
   signedOutSync,
   useSync,
@@ -286,6 +287,9 @@ function SignedIn({ book, email, onChange }) {
   const [note, setNote] = useState(null)
   const [leaving, setLeaving] = useState(false)
   const missNote = () => setNote({ kicker: t('account.kicker'), title: t('confirm.miss'), yes: t('linkGuide.ok'), go: () => {} })
+  // Some answers never reached the account; signing out would drop them.
+  const unsavedNote = (go) =>
+    setNote({ kicker: t('account.kicker'), title: t('account.unsavedTitle'), body: t('account.unsavedBody'), yes: t('account.unsavedYes'), go })
   const here = deviceKey()
 
   useEffect(() => {
@@ -413,11 +417,17 @@ function SignedIn({ book, email, onChange }) {
           onClick={async () => {
             if (leaving) return
             setLeaving(true)
+            const out = async () => {
+              try {
+                await signOutHere()
+                signedOutSync()
+              } catch {
+                missNote()
+              }
+            }
             try {
-              await signOutHere()
-              signedOutSync()
-            } catch {
-              missNote()
+              if (await saveBeforeSignOut()) await out()
+              else unsavedNote(out)
             } finally {
               setLeaving(false)
             }
@@ -433,13 +443,17 @@ function SignedIn({ book, email, onChange }) {
               body: t('account.outAllBody'),
               yes: t('account.outAllYes'),
               go: async () => {
-                try {
-                  await signOutEverywhere()
-                  signedOutSync()
-                } catch {
-                  // Still signed in here; say so instead of looking done.
-                  setNote({ kicker: t('account.kicker'), title: t('confirm.miss'), yes: t('linkGuide.ok'), go: () => {} })
+                const out = async () => {
+                  try {
+                    await signOutEverywhere()
+                    signedOutSync()
+                  } catch {
+                    // Still signed in here; say so instead of looking done.
+                    setNote({ kicker: t('account.kicker'), title: t('confirm.miss'), yes: t('linkGuide.ok'), go: () => {} })
+                  }
                 }
+                if (await saveBeforeSignOut()) await out()
+                else unsavedNote(out)
               },
             })
           }

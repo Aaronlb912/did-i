@@ -339,6 +339,8 @@ export function useAppShelf() {
       if (changed) markWidgetTimelineRead(true)
       const redraw = changed ? syncTonightWidget : syncTonightWidgetIfChanged
       redraw(event.detail).catch(() => {})
+      // Reminders are rebuilt for the new account, so the last one's Did we pings go.
+      if (changed) scheduleNativePings(event.detail.boards || []).catch(reportRejection('schedule-pings'))
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {

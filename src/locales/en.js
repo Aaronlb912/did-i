@@ -262,6 +262,9 @@ export const en = {
   'account.outAllBody':
     'Every phone signed in to this account gets signed out. Nothing is deleted.',
   'account.outAllYes': 'Sign out everywhere',
+  'account.unsavedTitle': 'Some answers aren\'t saved yet. Sign out anyway?',
+  'account.unsavedBody': 'They are only on this device. Signing out now removes them.',
+  'account.unsavedYes': 'Sign out anyway',
   'account.delete': 'Delete my account',
   'account.deleteTitle': 'Delete the account?',
   'account.deleteBody':

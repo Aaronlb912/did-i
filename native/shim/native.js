@@ -171,8 +171,8 @@ function flushNativePings() {
 
 // Takes one board or every board on the shelf; each tag's questions ping.
 async function schedulePingsNow(books, now = new Date()) {
+  // An empty list still runs: it clears what an old account left scheduled.
   const list = (Array.isArray(books) ? books : [books]).filter(Boolean)
-  if (!list.length) return
   try {
     const allowed = await checkNativePings()
     if (allowed !== 'granted') return

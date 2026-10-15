@@ -4924,6 +4924,91 @@ test('signing out clears the per-account lists kept for a fast first paint', () 
   assert.ok(boot.includes('allKeys:'), 'the phone storage shim can list keys')
 })
 
+test('sign out: Did we reminders and widget line go with the account', () => {
+  const was = globalThis.localStorage
+  const store = new Map([['did-i-we-pings', '[]'], ['did-i-we-widget', '{}'], ['did-i-shelf', '1']])
+  globalThis.localStorage = {
+    allKeys: () => [...store.keys()],
+    getItem: (k) => store.get(k) ?? null,
+    setItem: (k, v) => store.set(k, v),
+    removeItem: (k) => store.delete(k),
+  }
+  try {
+    forgetAccountCaches()
+    assert.deepEqual([...store.keys()], ['did-i-shelf'])
+  } finally {
+    globalThis.localStorage = was
+  }
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sync = read('src/lib/cloud-sync.js')
+  const out = sync.slice(sync.indexOf('export function signedOutSync()'))
+  assert.ok(out.indexOf('forgetAccountCaches()') < out.indexOf('clearLocalShelf()'), 'every sign-out path clears them')
+  const shelf = read('native/hooks/useAppShelf.js')
+  assert.match(shelf, /if \(changed\) scheduleNativePings\(event\.detail\.boards \|\| \[\]\)/, 'reminders re-arm after an account change')
+  assert.doesNotMatch(read('native/shim/native.js'), /if \(!list\.length\) return/, 'an empty shelf still clears old reminders')
+})
+
+test('sign out: unsent answers are sent first, and a failed send asks', () => {
+  const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
+  const sync = read('src/lib/cloud-sync.js')
+  const save = sync.slice(sync.indexOf('export async function saveBeforeSignOut('))
+  assert.ok(save.indexOf('await flushPushSoon()') < save.indexOf("if (state.how === 'miss') await pushNow("), 'flush, then one retry')
+  assert.match(save, /return state\.how !== 'miss'/)
+  const leave = read('native/lib/leave-account.js')
+  assert.ok(leave.indexOf('saveBeforeSignOut()') < leave.indexOf('await run()'), 'saved before the sign out runs')
+  assert.ok(leave.indexOf("return 'unsaved'") < leave.indexOf('signedOutSync()'), 'a failed send never wipes')
+  assert.match(leave, /kind !== 'delete' && !force/, 'delete account is unchanged')
+  for (const rel of ['native/screens/more.jsx', 'native/screens/profile.jsx']) {
+    assert.match(read(rel), /out === 'unsaved'[\s\S]{0,80}setSure\(\{[\s\S]{0,40}t\('account\.unsavedTitle'\)/, rel)
+  }
+  const web = read('src/lib/Account.jsx')
+  assert.equal((web.match(/if \(await saveBeforeSignOut\(\)\) await out\(\)\s*else unsavedNote\(out\)/g) || []).length, 2, 'web: here and everywhere')
+  assert.equal(en['account.unsavedTitle'], "Some answers aren't saved yet. Sign out anyway?")
+  assert.equal(en['account.unsavedYes'], 'Sign out anyway')
+})
+
+test('sign out: no session asks, a stalled send gives up after 8s and asks', () => {
+  const sync = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
+  const save = sync.slice(sync.indexOf('export async function saveBeforeSignOut(ms = 8000)'))
+  assert.ok(save.indexOf('if (!(await me())) return false') < save.indexOf('flushPushSoon()'), 'no user: ask before any push can wipe')
+  assert.match(save, /setTimeout\(\(\) => resolve\(false\), ms\)/)
+  const sent = save.slice(save.indexOf('const sent = (async () => {'), save.indexOf('const late ='))
+  assert.ok(sent.indexOf('await awaitWidgetTimeline()') > -1 && sent.indexOf('await awaitWidgetTimeline()') < sent.indexOf('flushPushSoon()'), 'iOS widget taps are read in first, inside the 8s cap')
+  assert.match(sent, /else if \(next !== shelf\) await pushNow\(next\)/, 'widget taps send even with no save waiting')
+  assert.match(readFileSync(path.join(checkRoot, 'native/widget-bridge.js'), 'utf8'), /setWidgetBeforePull\(\(\) => beginWidgetRefresh\(\)\)/)
+  assert.match(save, /return await Promise\.race\(\[sent, late\]\)/)
+})
+
+test('sync: the shelf is not sent for an account until a pull landed for it on this phone', () => {
+  const sync = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
+  const push = sync.slice(sync.indexOf('export async function pushNow('), sync.indexOf('let weMark'))
+  const gate = push.indexOf('if (readLastUser() !== user.id) {')
+  assert.match(push.slice(gate, gate + 260), /^if \(readLastUser\(\) !== user\.id\) \{\s*await pullAndMerge\(\)\s*if \(readLastUser\(\) !== user\.id\) return[\s\S]*?doc = readShelf\(\)\s*\}/, 'a closed gate pulls, no miss, then sends the current shelf')
+  assert.ok(gate > push.indexOf('await pushAnswers(doc)'), 'answers still go')
+  assert.ok(gate < push.indexOf('putShelf('), 'the shelf waits for a pull')
+  const pull = sync.slice(sync.indexOf('async function pullAndMergeOnce()'))
+  const opened = pull.indexOf('writeLastUser(user.id)')
+  assert.ok(opened > pull.indexOf('await putShelf('), 'set only after the shelf landed')
+  assert.ok(opened < pull.indexOf('await pushAnswers('), 'an answer or widget failure after that cannot keep the gate shut')
+  const out = sync.slice(sync.indexOf('export function signedOutSync()'))
+  assert.ok(out.slice(0, 800).includes("writeLastUser('')"), 'cleared on sign out')
+})
+test('sign in: a pull that throws still leaves the sign-in screen', () => {
+  const src = readFileSync(path.join(checkRoot, 'src/lib/useAuthSignIn.js'), 'utf8')
+  assert.match(src, /try \{\s*await pullAndMerge\(\)\s*\} catch \{\s*setMiss\(t\('tonight\.syncMiss'\)\)\s*\}\s*signedIn\.current\?\.\(\)/)
+  // Apple, Google, email and reviewer all end in the same finish().
+  assert.equal((src.match(/await finish\(\)/g) || []).length, 4)
+})
+
+test('gems: refunded buys are finished with the store, retryable ones are not', () => {
+  const store = readFileSync(path.join(checkRoot, 'native/iap/gem-store.js'), 'utf8')
+  const set = store.match(/export const FINISH_UNCREDITED = new Set\((\[[^\]]*\])\)/)
+  assert.ok(set, 'list of misses that finish')
+  const list = JSON.parse(set[1].replace(/'/g, '"'))
+  assert.deepEqual(list.sort(), ['refunded', 'test'])
+  for (const retry of ['receipt', 'store', 'setup', 'pending', 'signin', 'miss', 'other']) assert.ok(!list.includes(retry), retry)
+  assert.match(store, /if \(FINISH_UNCREDITED\.has\(out\.miss\) && mod\?\.finishTransaction\)/)
+})
 test('the web ships English and loads the language in use; the phone loads all', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const i18n = readFileSync(path.join(root, 'src/lib/i18n.js'), 'utf8')

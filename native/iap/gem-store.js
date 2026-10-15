@@ -99,6 +99,9 @@ function buyOwner(purchase) {
   return String(purchase?.appAccountToken || purchase?.obfuscatedAccountIdAndroid || '').toLowerCase()
 }
 
+// gem-iap misses that will never credit, so the store must close the buy.
+export const FINISH_UNCREDITED = new Set(['test', 'refunded'])
+
 async function creditPurchase(purchase) {
   const mod = await loadIap()
   const owner = buyOwner(purchase)
@@ -110,7 +113,9 @@ async function creditPurchase(purchase) {
   const out = await submitGemPurchase(purchase)
   // A test buy from an account not on the server's list never credits. Close
   // it with the store anyway, or Play keeps it open and blocks that pack.
-  if (out.miss === 'test' && mod?.finishTransaction) {
+  // A refunded buy never credits either. 'receipt' stays open: gem-iap also
+  // says it when the store has not caught up yet (Apple 404), so it can retry.
+  if (FINISH_UNCREDITED.has(out.miss) && mod?.finishTransaction) {
     try {
       await mod.finishTransaction({ purchase, isConsumable: true })
     } catch {
