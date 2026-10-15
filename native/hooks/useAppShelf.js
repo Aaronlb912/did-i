@@ -45,12 +45,12 @@ import {
 import { goHash, readRoute } from '../navigation/hash.js'
 import { absorbStoredWidgetProps } from '../../src/lib/widget-tonight.js'
 import { pushShelfAfterWidgetAnswer } from '../../src/lib/widget-cloud-sync.js'
-import { syncTonightWidget, syncTonightWidgetIfChanged } from '../widget-sync.js'
+import { markWidgetTimelineRead, syncTonightWidget, syncTonightWidgetIfChanged } from '../widget-sync.js'
 import { reconcileShelfFromWidget } from '../../src/lib/widget-reconcile.js'
 import { afterNativeBridgeReady } from '../lib/defer-native.js'
 import { runAfterLaunchReady } from '../lib/launch-ready.js'
 import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
-import { refreshWidgetTimelineFromKit } from '../widget-bridge.js'
+import { beginWidgetRefresh } from '../widget-bridge.js'
 import { applyPendingAndroidWidgetTap } from '../widget-tap'
 import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
 import { useLocale } from '../../src/lib/i18n.js'
@@ -298,7 +298,8 @@ export function useAppShelf() {
       afterNativeBridgeReady(() => {
         if (cancelled) return
         if (!nativeWidgetsEnabled()) return
-        refreshWidgetTimelineFromKit()
+        // Shared with the queued widget write, so the taps are read once, first.
+        beginWidgetRefresh()
           .then((merged) => {
             if (cancelled) return merged
             const before = readShelf()
@@ -333,6 +334,9 @@ export function useAppShelf() {
       // Answers from another phone (sync): the widget shows them too. After a
       // sign-in or sign-out it always redraws (new look, buddy, or nothing).
       const changed = takeAccountChanged()
+      // The widget timeline holds the old account's taps: overwrite it, never
+      // read them into this shelf.
+      if (changed) markWidgetTimelineRead(true)
       const redraw = changed ? syncTonightWidget : syncTonightWidgetIfChanged
       redraw(event.detail).catch(() => {})
       // Reminders are rebuilt for the new account, so the last one's Did we pings go.

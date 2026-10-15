@@ -3436,6 +3436,24 @@ test('the boot screen and phone bootstrap keep the location guard', () => {
   assert.ok(bad('native/bootstrap.js', bareLoc).some((p) => p.includes('makeLocation')))
 })
 
+test('a bad OTA can roll back: early fatal errors reach the native handler, boot draws nothing, fail screen retries', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const guard = readFileSync(path.join(root, 'native/fatal-guard.cjs'), 'utf8')
+  const boot = readFileSync(path.join(root, 'native/Boot.jsx'), 'utf8')
+  const app = readFileSync(path.join(root, 'native/NativeApp.jsx'), 'utf8')
+  assert.match(guard, /isFatal && !__DEV__ && !global\.__didIReady/)
+  assert.match(guard, /\(!isFatal \|\| early\) && typeof prev === 'function'\) prev\(error, isFatal\)/)
+  assert.doesNotMatch(app, /__didIReady/)
+  assert.match(boot, /global\.__didIReady = true\s+setApp\(/)
+  assert.match(boot, /!mod\.isEmbeddedLaunch[\s\S]*getGlobalHandler\(\)\(error, true\)[\s\S]*setTimeout\(showFail, 3000\)\s+return \(\) => clearTimeout\(timer\)/)
+  assert.match(boot, /const showFail = [\s\S]*setFail\([\s\S]*SplashScreen\.hideAsync\(\)/)
+  assert.match(boot, /DevSettings\.reload\(\)/)
+  assert.match(boot, /reloadAsync\(\)\.catch\(\(\) => setRetryFailed\(true\)\)/)
+  assert.match(boot, /t\('boot\.retryFail'\)/)
+  assert.match(boot, /if \(!App\) return null/)
+  assert.match(boot, /t\('boot\.retry'\)/)
+})
+
 // Phone modules that only exist on a device, stood in for so the native shim
 // runs here. A stub is read when its module first loads.
 const phoneStubs = {
@@ -4692,13 +4710,72 @@ await testAsync('the widget redraws at midnight and when last night\'s grace end
   const now = new Date('2026-09-23T19:00:00')
   const times = widgetRedrawTimes([book], now)
   assert.ok(times.length >= 2, `got ${times.length}`)
-  // Night turns come first, so the native cap of 12 never drops midnight.
+  // Night turns come first, so Android's alarm cap of 12 (WidgetAlarms) never
+  // drops midnight. The iPhone timeline uses widgetTimelineTimes (cap 30).
   const turn = times[0]
   assert.notEqual(boardDate(turn), boardDate(now), 'the first redraw is on the new night')
   assert.equal(boardDate(new Date(turn.getTime() - 70 * 1000)), boardDate(now), 'and within a minute of the turn')
   assert.ok(times.some((d) => d.getHours() === 21 && d.getMinutes() === 0), 'ask times stay')
   assert.equal(new Set(times.map((d) => d.getTime())).size, times.length, 'no repeats')
   assert.ok(times.every((d) => d > now))
+})
+
+await testAsync('the iPhone widget timeline reaches the next nights, a card per night, and taps still carry', async () => {
+  const { widgetTimelineTimes } = await import('../src/lib/widget-config.js')
+  const { boardDate } = await import('../src/lib/recurrence.js')
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'late', question: 'Late one?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' }],
+    answers: [],
+  }
+  const shelf = writeShelf({ currentId: 't1', boards: [book] })
+  const now = new Date('2026-09-23T19:00:00')
+  const times = widgetTimelineTimes([book], now)
+  assert.ok(times.length <= 30 && times.every((d) => d > now), `got ${times.length}`)
+  assert.equal(new Set(times.map((d) => d.getTime())).size, times.length, 'no repeats')
+  for (const night of ['2026-09-23', '2026-09-24', '2026-09-25']) {
+    const ask = times.find((d) => boardDate(d) === night && d.getHours() === 21)
+    assert.ok(ask, `ask time on ${night}`)
+    const props = buildTonightWidgetProps(shelf, ask)
+    assert.equal(props.leadLampId, 'late', night)
+    assert.ok(props.items.some((item) => item.lampId === 'late' && item.periodKey === night && item.status === 'open'), night)
+  }
+  assert.ok(times.some((d) => boardDate(d) === '2026-09-26'), 'the third midnight turns over too')
+  // The native tap patch (patches/expo-widgets) closes lampId:periodKey in
+  // later entries; each later night keeps its own open card.
+  const entries = times.map((date) => ({ date, props: buildTonightWidgetProps(shelf, date) }))
+  const tapped = entries.findIndex((e) => boardDate(e.date) === '2026-09-23' && e.props.leadLampId === 'late')
+  assert.ok(tapped >= 0)
+  const later = entries.slice(tapped + 1)
+  assert.ok(later.some((e) => e.props.items.some((item) => item.lampId === 'late' && item.periodKey === '2026-09-24')), 'Thursday has its own card')
+  assert.ok(later.every((e) => e.props.items.every((item) => item.lampId !== 'late' || item.periodKey !== '2026-09-23' || item.status === 'open')), 'the tapped card is the one the patch closes')
+  const sync = readFileSync(path.join(checkRoot, 'native/widget-sync.js'), 'utf8')
+  assert.ok(sync.includes('widgetTimelineTimes(boards'), 'iOS timeline uses the multi-night times')
+})
+
+await testAsync('iOS reads widget taps out of the timeline before writing it again', async () => {
+  const sync = readFileSync(path.join(checkRoot, 'native/widget-sync.js'), 'utf8')
+  const bridge = readFileSync(path.join(checkRoot, 'native/widget-bridge.js'), 'utf8')
+  const shelfHook = readFileSync(path.join(checkRoot, 'native/hooks/useAppShelf.js'), 'utf8')
+  const body = sync.slice(sync.indexOf('export async function syncTonightWidget'))
+  assert.ok(body.indexOf('!timelineRead && readTimeline') < body.indexOf('updateTimeline'), 'sync waits for the read first')
+  assert.ok(/readTimeline\(\)\.catch\(/.test(body), 'a failed read does not block the write')
+  assert.ok(bridge.includes('setWidgetTimelineReader(() => beginWidgetRefresh())'))
+  assert.ok(bridge.includes("if (state !== 'active') markWidgetTimelineRead(false)"), 'leaving the app marks it unread')
+  // Only a getTimeline that worked marks it read; a failed one leaves it unread.
+  const pull = sync.slice(sync.indexOf('export async function pullWidgetTimelineIntoShelf'))
+  const pullTry = pull.slice(0, pull.indexOf('} catch'))
+  assert.ok(pullTry.indexOf('timelineRead = true') > pullTry.indexOf('await api.getTimeline()'), 'read marked after getTimeline')
+  assert.ok(!pull.slice(pull.indexOf('} catch'), pull.indexOf('} catch') + 60).includes('timelineRead'), 'a failed read stays unread')
+  assert.ok(!bridge.includes('markWidgetTimelineRead()'), 'the bridge does not mark it read on its own')
+  // A sign-in or sign-out overwrites the old account's timeline, never reads it in.
+  assert.ok(/if \(changed\) markWidgetTimelineRead\(true\)\r?\n\s+const redraw = changed \? syncTonightWidget/.test(shelfHook), 'account change skips the read')
+  // After the read, the newest stored shelf is drawn, not the read's copy.
+  const afterRead = body.slice(body.indexOf('await readTimeline()'), body.indexOf('const built'))
+  assert.ok(afterRead.includes('shelf = readShelf()') && !afterRead.includes('shelf = (await'), 'sync redraws from readShelf()')
+  assert.ok(shelfHook.includes('beginWidgetRefresh()') && !shelfHook.includes('refreshWidgetTimelineFromKit()'), 'cold start shares the one read')
 })
 
 await testAsync('a widget card from an earlier night does not win after midnight', async () => {
@@ -4758,6 +4835,10 @@ await testAsync('the error log keeps no personal content and is capped', async (
   const push = readFileSync(path.join(checkRoot, 'supabase/functions/push/index.ts'), 'utf8')
   assert.ok(push.includes("from('app_errors')"), 'failed pushes are logged')
   assert.ok(!push.includes('user_id: row.to_id'), 'push errors carry no user id')
+  assert.ok(push.indexOf('await accessToken()') < push.indexOf("rpc('take_push_batch'"), 'the Firebase token is fetched before rows are marked sent')
+  assert.ok(push.indexOf('await apnsJwt()') < push.indexOf("rpc('take_push_batch'"), 'the Apple key is signed before rows are marked sent')
+  assert.ok(/try \{\s*why = apple/.test(push), 'one failed send skips only that token')
+  assert.ok(push.includes("console.error('push: send threw', apple ? 'ios' : 'android', (e as Error)?.name ?? 'error')"), 'a thrown send never logs the error text, which holds the token')
 })
 
 test('a sheet that pops up on Tonight catches the next tap', () => {
@@ -6931,7 +7012,7 @@ await testAsync('readthrough 9: re-armed after the ask time, a high one keeps it
   assert.deepEqual(upcomingPings(book, new Date(2026, 9, 14, 12, 0)).map((fire) => fire.tag), ['a:2026-10-14', 'a:2026-10-14:late'])
   assert.deepEqual(upcomingPings(book, new Date(2026, 9, 14, 21, 30)), [])
   const pings = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
-  assert.ok(pings.includes('const rows = dueTonight(book, day).filter((row) => !row.answer)'), 'native keeps the late note after the ask time')
+  assert.ok(pings.includes("const rows = dueTonight(book, day).filter((row) => !row.answer || row.answer.status === 'skip')"), 'native keeps the late note after the ask time')
   assert.ok(pings.includes('if (afterQuiet(late).getTime() !== late.getTime()) continue'))
 })
 
@@ -6965,6 +7046,78 @@ await testAsync('readthrough 9: web reminder tags per question, worker respects 
   assert.equal(swMayPing({ pingsOff: ['reminders'] }, at), false)
   assert.equal(swMayPing({ pingsOff: [], quietOn: true, quietFrom: '22:00', quietTo: '07:00' }, at), false)
   assert.equal(swMayPing({ pingsOff: [], quietOn: true, quietFrom: '22:00', quietTo: '07:00' }, new Date(2026, 9, 14, 20, 0)), true)
+})
+
+await testAsync('readthrough 10: a high one with no time still gets the 21:00 late note, Not yet keeps it, low never', async () => {
+  const { upcomingPings } = await import('../src/lib/notify.js')
+  const q = (id, extra = {}) => ({ id, question: id, cadence: 'daily', createdOn: '2026-10-01', archived: false, priority: 'high', ...extra })
+  const noon = new Date(2026, 9, 14, 12, 0)
+  const book = { id: 'b1', dayFoldHour: 0, lamps: [q('a'), q('low', { priority: 'low' })], answers: [] }
+  const fires = upcomingPings(book, noon)
+  assert.deepEqual(fires.map((fire) => fire.tag), ['a:2026-10-14:late'])
+  assert.equal(new Date(fires[0].at).getHours(), 21)
+  // Not yet is not done: the last call stays. A Did drops it.
+  const notYet = { ...book, answers: [{ lampId: 'a', periodKey: '2026-10-14', status: 'skip', answeredAt: '2026-10-14T11:00:00' }] }
+  assert.deepEqual(upcomingPings(notYet, noon).map((fire) => fire.tag), ['a:2026-10-14:late'])
+  const timed = { ...notYet, lamps: [q('a', { askAfter: '18:00' })] }
+  assert.deepEqual(upcomingPings(timed, noon).map((fire) => fire.tag), ['a:2026-10-14:late'], 'no ask note for a Not yet row')
+  const did = { ...book, answers: [{ lampId: 'a', periodKey: '2026-10-14', status: 'yes', answeredAt: '2026-10-14T11:00:00' }] }
+  assert.deepEqual(upcomingPings(did, noon), [])
+  const pings = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
+  assert.ok(pings.includes("filter((row) => !row.answer || row.answer.status === 'skip')"), 'native keeps Not yet rows')
+  assert.ok(pings.includes('const at = match ? new Date(year, month - 1, date'),'native keeps the late note for no-time questions')
+})
+
+await testAsync('readthrough 10: the widget footer is not "Next at" while last night is still open', async () => {
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'late', question: 'Late one?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' }],
+    answers: [],
+  }
+  const props = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), new Date('2026-09-24T08:00:00'))
+  assert.ok(props.items.length > 0, 'last night shows')
+  assert.notEqual(props.footer, t('widget.tonight.nextAt', { time: clockWords('21:00') }))
+})
+
+test('readthrough 10: a widget-tap coin reply after an account switch writes nothing', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const url = (file) => pathToFileURL(path.join(root, file)).href
+  const script = `
+    import { registerHooks } from 'node:module'
+    const fake = 'export function creditNightCoins() { return new Promise((ok) => { globalThis.payCoins = ok }) }; ' +
+      'export function grantWeeklyGem() { return new Promise(() => {}) }; ' +
+      'export const applyCoinBalanceToShelf = (shelf, n) => ({ ...shelf, coinBalance: n }); ' +
+      'export const applyGemBalanceToShelf = (shelf) => shelf'
+    registerHooks({
+      resolve: (specifier, context, next) =>
+        specifier === './wallet.js' && String(context.parentURL).endsWith('tap-earnings.js')
+          ? { url: 'data:text/javascript,' + encodeURIComponent(fake), shortCircuit: true }
+          : next(specifier, context),
+    })
+    const store = new Map([['did-i-last-user', 'user-a']])
+    globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) }
+    globalThis.window = { dispatchEvent() {} }
+    const { returnEarnedCoins, takeEarnedCoins } = await import(${JSON.stringify(url('src/lib/purse.js'))})
+    const { settleTapEarnings } = await import(${JSON.stringify(url('src/lib/tap-earnings.js'))})
+    const clock = new Date(2026, 9, 2, 20)
+    returnEarnedCoins('2026-10-02', 2, clock)
+    const shelf = { currentId: 'b', boards: [{ id: 'b', lamps: [], answers: [] }] }
+    let wrote = 0
+    settleTapEarnings(shelf, shelf, clock, () => { wrote += 1 })
+    store.set('did-i-last-user', 'user-b')
+    globalThis.payCoins(40)
+    await new Promise((ok) => setTimeout(ok, 20))
+    console.log(JSON.stringify({ wrote, queued: takeEarnedCoins() }))
+  `
+  const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'test' },
+  })
+  assert.equal(run.status, 0, run.stderr)
+  assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { wrote: 0, queued: {} })
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

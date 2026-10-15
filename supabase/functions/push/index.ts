@@ -207,6 +207,17 @@ Deno.serve(async (req) => {
     return new Response('firebase is not set up yet', { status: 503 })
   }
 
+  // Get both credentials before take_push_batch marks rows sent. If either
+  // call throws here, nothing has been taken and the next run retries.
+  let bearer = ''
+  let appleJwt = ''
+  try {
+    bearer = await accessToken()
+    if (apnsKeyId && apnsTeam && apnsPem) appleJwt = await apnsJwt()
+  } catch (e) {
+    return new Response(`push credentials failed: ${String(e).slice(0, 200)}`, { status: 503 })
+  }
+
   const db = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -216,8 +227,6 @@ Deno.serve(async (req) => {
   if (error) return new Response(error.message, { status: 500 })
   if (!batch?.length) return Response.json({ sent: 0 })
 
-  const bearer = await accessToken()
-  const appleJwt = apnsKeyId && apnsTeam && apnsPem ? await apnsJwt() : ''
   let sent = 0
   const dead: string[] = []
   // Why sends failed, without the tokens themselves. A push that quietly
@@ -233,7 +242,18 @@ Deno.serve(async (req) => {
         trouble.apns_setup = (trouble.apns_setup ?? 0) + 1
         continue
       }
-      const why = apple ? await sendApple(token, row, appleJwt) : await send(token, row, bearer)
+      // One throw (a network drop) skips this token, not the rest of the batch.
+      // The row is already marked sent, so that push is lost, not retried. On
+      // purpose: a retry would resend to every other phone on the row.
+      let why = ''
+      try {
+        why = apple ? await sendApple(token, row, appleJwt) : await send(token, row, bearer)
+      } catch (e) {
+        // Never String(e): a fetch error carries the URL, and the URL has the token.
+        console.error('push: send threw', apple ? 'ios' : 'android', (e as Error)?.name ?? 'error')
+        trouble.threw = (trouble.threw ?? 0) + 1
+        continue
+      }
       if (!why) {
         sent += 1
         continue
