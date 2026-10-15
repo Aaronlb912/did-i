@@ -64,7 +64,7 @@ function closeOnceRows(book, now) {
 
 // Unanswered due nights before today become nope when the day turns.
 // A night skipped by flying over the date line is left alone.
-export function closePastNights(book, now = new Date(), skips = noteZone(now)) {
+export function closePastNights(book, now = new Date(), skips = noteZone(now, undefined, undefined, book?.travelSkips)) {
   let next = withTravelSkips(book, skips)
   let changed = next !== book
   for (let step = 0; step < CLOSE_CAP; step += 1) {
@@ -103,7 +103,8 @@ export function closePastNights(book, now = new Date(), skips = noteZone(now)) {
 }
 
 export function closeShelfPastNights(shelf, now = new Date()) {
-  const skips = noteZone(now)
+  // Skips any phone already made count toward the one-a-week limit.
+  const skips = noteZone(now, undefined, undefined, (shelf.boards || []).flatMap((book) => book.travelSkips || []))
   return {
     ...shelf,
     boards: (shelf.boards || []).map((book) => closePastNights(book, now, skips)),

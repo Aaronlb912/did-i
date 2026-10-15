@@ -354,17 +354,38 @@ test('only a real west-bound date-line trip skips, at most once a week', () => {
   // A week later a real trip counts again.
   const later = travel.travelStep({ ...back, zone: LA, night: '2026-10-23' }, TOKYO, new Date('2026-10-25T06:00:00Z'))
   assert.deepEqual(later.skips, ['2026-10-15', '2026-10-24'])
+  // The week counts skips another phone synced to the shelf, too.
+  const fresh = { zone: LA, night: '2026-10-23', skips: [] }
+  assert.deepEqual(travel.travelStep(fresh, TOKYO, new Date('2026-10-25T06:00:00Z'), ['2026-10-20']).skips, [])
+  assert.deepEqual(travel.travelStep(fresh, TOKYO, new Date('2026-10-25T06:00:00Z'), ['2026-10-15']).skips, ['2026-10-24'])
 })
 
-test('a night answered on any phone is never travel-skipped', () => {
-  const answered = travelBook([], [])
-  assert.deepEqual(travel.withTravelSkips(answered, ['2026-10-15']).travelSkips, [])
-  // The other phone answered the 15th: merging drops the skip.
-  const skipped = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-10-15'])] }
-  const other = { currentId: 'trip', boards: [travelBook([])] }
-  const merged = mergeShelves(skipped, other, '2026-10-16', '2026-10-15')
-  assert.deepEqual(merged.boards[0].travelSkips, [])
-  assert.equal(answerFor(merged.boards[0], 'walk', '2026-10-15')?.status, 'yes')
+test('on a travel-skipped night each question is judged on its own', () => {
+  const noon = new Date(2026, 9, 16, 12)
+  // An older phone closed the 15th on its own (Not yet at its midnight, in LA).
+  const auto = { id: 'auto', lampId: 'walk', periodKey: '2026-10-15', status: 'skip', answeredAt: '2026-10-15T07:00:00.000Z', note: '' }
+  const older = travelBook(['2026-10-15'], ['2026-10-15'])
+  const merged = mergeShelves({ currentId: 'trip', boards: [older] }, { currentId: 'trip', boards: [{ ...older, answers: [...older.answers, auto] }] }, '2026-10-16', '2026-10-15')
+  assert.deepEqual(merged.boards[0].travelSkips, ['2026-10-15'])
+  assert.equal(questionStreak(merged.boards[0], merged.boards[0].lamps[0], '2026-10-16'), 15)
+  assert.equal(travelShelfStreak(merged.boards, noon), 15)
+  // A Not yet tapped that night still counts as one.
+  const tapped = { ...auto, answeredAt: '2026-10-15T07:12:31.402Z' }
+  const real = { ...older, answers: [...older.answers, tapped] }
+  assert.equal(questionStreak(real, real.lamps[0], '2026-10-16'), 1)
+  // It is a miss for the shelf too (the freeze earned at 14 nights covers it).
+  assert.equal(weekStripNights([real], noon).find((night) => night.iso === '2026-10-15').freeze, true)
+  // One Did of three on the skipped night keeps the streak; the other two step aside.
+  const three = travelBook(['2026-10-15'], ['2026-10-15'])
+  three.lamps = [three.lamps[0], lamp('read', { createdOn: '2026-10-15' }), lamp('call', { createdOn: '2026-10-15' })]
+  three.answers = [
+    ...three.answers,
+    { id: 'r', lampId: 'read', periodKey: '2026-10-15', status: 'yes', answeredAt: '2026-10-15T20:00:00.000Z', note: '' },
+    ...['read', 'call'].map((id) => ({ id: `${id}16`, lampId: id, periodKey: '2026-10-16', status: 'yes', answeredAt: '2026-10-16T20:00:00.000Z', note: '' })),
+  ]
+  assert.equal(travelShelfStreak([three], noon), 16)
+  const marks = weekStripNights([three], noon)
+  assert.equal(marks.find((night) => night.iso === '2026-10-15').miss, false)
 })
 
 test('the other walks step over a travel-skipped night', () => {
@@ -397,10 +418,12 @@ test('travel skips on this phone belong to one account', () => {
   const kept = JSON.parse(localStorage.getItem('did-i-zone-seen'))
   assert.deepEqual([kept.zone, kept.skips], [TOKYO, []])
   assert.deepEqual(travel.noteZone(at, TOKYO, ''), [])
-  // Skips made signed out do not follow a later sign-in.
+  assert.equal(kept.skipAt, 0)
+  // Skips made signed out go to the account that signs in next, then are its own.
   put('')
   assert.deepEqual(travel.noteZone(at, TOKYO, ''), ['2026-10-15'])
-  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-c'), [])
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-c'), ['2026-10-15'])
+  assert.deepEqual(travel.noteZone(at, TOKYO, 'user-d'), [])
   localStorage.removeItem('did-i-zone-seen')
 })
 

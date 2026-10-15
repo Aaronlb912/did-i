@@ -2,6 +2,7 @@ import { dueThatNight, freezeState, hallHeat, shelfStreak } from './hall-feel.js
 import {
   addDaysIso,
   allClearTonight,
+  answerFor,
   boardDate,
   countedTonightRows,
   dueTonight,
@@ -25,7 +26,7 @@ import { localePack, t } from './i18n.js'
 import { weNight, weOpenIds } from './we-nights.js'
 import { readPrefs, uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
-import { travelSkipped } from './travel.js'
+import { travelNightState, travelSkipped } from './travel.js'
 
 export { streakLength } from './achievements.js'
 
@@ -375,7 +376,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
     let clear = true
     for (const book of prepped) {
       if (book.start ? iso < book.start : iso !== today) continue
-      if (travelSkipped(book.book, iso)) continue
+      const skipped = travelSkipped(book.book, iso)
       for (const lamp of book.lamps) {
         if (lamp.createdOn && lamp.createdOn > iso) continue
         const daily = lamp.cadence === 'daily'
@@ -383,6 +384,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
         const key = daily ? iso : periodKeyFor(lamp, iso)
         const status = book.index.byLamp.get(lamp.id)?.get(key)
         if (lamp.cadence === 'once' && status === undefined && book.index.onceDone.has(lamp.id)) continue
+        if (skipped && travelNightState(answerFor(book.book, lamp.id, key), iso) === 'none') continue
         // Same rows as countedTonightRows.
         const done = status === 'yes' || status === 'late'
         if (lamp.fromDidI) continue

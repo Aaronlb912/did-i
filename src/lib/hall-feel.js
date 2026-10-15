@@ -1,7 +1,7 @@
 import { weNight, weNightsStamp } from './we-nights.js'
 import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, isEvery, onceDoneNight, oncePastCounts, parseIsoDate } from './recurrence.js'
 import { scopedBooks } from './tags.js'
-import { travelSkipped } from './travel.js'
+import { travelNightState, travelSkipped } from './travel.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
 
 // A question only counts on nights it existed: one added today must not make
@@ -10,10 +10,12 @@ import { LOOKS_LATE, wallClock } from './zone.js'
 // A one-time question counts only on the night its Did was tapped (or its
 // due day). Once its day passes it is archived, but the night it was due
 // keeps its answer, missed or not, so a miss does not vanish with it.
-// A night skipped by travel has nothing due, like a night before the start.
+// On a night skipped by travel only answered questions count: a Did as
+// usual, a tapped Not yet as a Not yet. The rest are not due, as before the start.
 export function dueThatNight(book, iso, at) {
-  if (travelSkipped(book, iso)) return []
+  const skipped = travelSkipped(book, iso)
   return dueTonight(withPastOnce(book), at).filter((row) => {
+    if (skipped && travelNightState(row.answer, iso) === 'none') return false
     if (isEvery(row.lamp) || (row.lamp.createdOn && row.lamp.createdOn > iso)) return false
     const done = onceDoneNight(row.lamp, row.answer)
     return !done || done === iso
