@@ -2324,6 +2324,28 @@ await testAsync('a widget or reminder Did pays one purse, not one per folder', a
   assert.deepEqual(merged.boards.map((book) => book.coins), [coins[0], coins[0], coins[0]])
   assert.equal(mergePurses(merged.boards).coins, coins[0])
 
+  // Answers queued in two folders: both pays count, once each.
+  const both = mergeWidgetPropsIntoShelf(
+    fresh(),
+    {
+      items: [
+        { lampId: 'a', periodKey: '2026-09-23', status: 'yes' },
+        { lampId: 'b', periodKey: '2026-09-23', status: 'yes' },
+      ],
+    },
+    at,
+  )
+  const pay = coins[0] - 16
+  assert.deepEqual(both.boards.map((book) => book.coins), [16 + 2 * pay, 16 + 2 * pay, 16 + 2 * pay])
+
+  // Folders already out of step (A 100, B 50): a tap on B starts from 100.
+  writeShelf({ currentId: 'f1', boards: [{ ...folder('f1', 'a'), coins: 100 }, { ...folder('f2', 'b'), coins: 50 }] })
+  const fixed = applyWidgetTapOnce('b', 'did', '2026-09-23', at, at.getTime())
+  assert.deepEqual(fixed.boards.map((book) => book.coins), [100 + pay, 100 + pay])
+  writeShelf({ currentId: 'f1', boards: [{ ...folder('f1', 'a'), coins: 100 }, { ...folder('f2', 'b'), coins: 50 }] })
+  const props = mergeWidgetPropsIntoShelf(readShelf(), { items: [{ lampId: 'b', periodKey: '2026-09-23', status: 'yes' }] }, at)
+  assert.deepEqual(props.boards.map((book) => book.coins), [100 + pay, 100 + pay])
+
   // A phone already out of step shows the largest folder, not the sum.
   assert.equal(mergePurses([{ coins: 16 }, { coins: 18 }, { coins: 16 }]).coins, 18)
 })

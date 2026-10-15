@@ -15,7 +15,7 @@ import {
 import { t } from './i18n.js'
 import { lastTimeLine } from './every-copy.js'
 import { gentleOn } from './prefs.js'
-import { normalizePurse, spreadPurseFrom } from './purse.js'
+import { alignShelfPurse, normalizePurse, spreadPurseFrom } from './purse.js'
 import { readWeLine, readWeOpen } from './we-widget.js'
 import {
   answerFor,
@@ -389,9 +389,9 @@ export function peekNextTonightCard(props, dir = 1) {
 // mixes questions from every tag now.
 export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
   if (!props?.items?.length) return shelf
-  let boards = shelf.boards
+  // Each answer pays into the shared purse the one before it left.
+  let boards = alignShelfPurse(shelf).boards
   let changed = false
-  let paid = null
   for (const item of props.items) {
     if (item.status === 'open') continue
     if (String(item.lampId || '').startsWith(WE_ITEM)) {
@@ -410,13 +410,11 @@ export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
     if (!book) continue
     const nextBook = applyItemStatus(book, item, item.status, clock)
     if (nextBook === book) continue
-    boards = boards.map((b) => (b.id === nextBook.id ? nextBook : b))
-    paid = nextBook
+    boards = spreadPurseFrom({ ...shelf, boards: boards.map((b) => (b.id === nextBook.id ? nextBook : b)) }, nextBook).boards
     changed = true
   }
   if (!changed) return shelf
-  // Each answer paid only its own folder; spread the last one's purse.
-  return spreadPurseFrom({ ...shelf, boards }, paid)
+  return { ...shelf, boards }
 }
 
 function widgetStatus(kind) {
@@ -483,7 +481,8 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   const id = String(lampId || '').trim()
   if (!status || !id) return null
   if (id.startsWith(WE_ITEM)) return applyWeTap(id.slice(WE_ITEM.length), status, clock, night, tapAt)
-  const shelf = readShelf()
+  // Start from the shared purse, so a folder already out of step is not paid from.
+  const shelf = alignShelfPurse(readShelf())
   const book = findBookHoldingLamp(shelf.boards, id)
   if (!book) return null
   const row = rowForStoredNight(book, id, night, clock)
@@ -566,7 +565,8 @@ export function recordWidgetAnswer(lampId, kind, clock = new Date(), night = '')
   if (String(lampId).startsWith(WE_ITEM)) {
     return applyWeTap(String(lampId).slice(WE_ITEM.length), status, clock, night)
   }
-  const shelf = readShelf()
+  // Start from the shared purse, so a folder already out of step is not paid from.
+  const shelf = alignShelfPurse(readShelf())
   const book = findBookHoldingLamp(shelf.boards, lampId)
   if (!book) return null
   let key = String(night || '').trim()
