@@ -300,6 +300,181 @@ export function BuddyArt({ id, className = '' }) {
     )
   }
 
+  if (id === 'otter') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <ellipse cx="11" cy="22" rx="4" ry="3.6" fill="#8a5a36" />
+        <ellipse cx="37" cy="22" rx="4" ry="3.6" fill="#8a5a36" />
+        <ellipse cx="24" cy="31" rx="15" ry="14" fill="#a06a40" />
+        <ellipse cx="24" cy="34" rx="10" ry="8.5" fill="#f1dcc0" />
+        <ellipse cx="18" cy="27" rx="2.3" ry="3.1" fill="#2d241c" />
+        <ellipse cx="30" cy="27" rx="2.3" ry="3.1" fill="#2d241c" />
+        <ellipse cx="18.8" cy="26" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="30.8" cy="26" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="24" cy="31.5" rx="2.6" ry="1.9" fill="#2b2018" />
+        <path d="M21.5 34 Q24 36.2 26.5 34" fill="none" stroke="#2b2018" strokeWidth="1" strokeLinecap="round" />
+        <path d="M17 33 L11 32 M31 33 L37 32" fill="none" stroke="#7a5038" strokeWidth="0.7" strokeLinecap="round" />
+        <path d="M19 41 L24 37 L29 41 Q24 44 19 41 Z" fill="#f6b8c4" stroke="#d98aa0" strokeWidth="0.8" strokeLinejoin="round" />
+        <path d="M24 37.8 V42.4 M24 37.8 L21.4 41.7 M24 37.8 L26.6 41.7" fill="none" stroke="#d98aa0" strokeWidth="0.6" strokeLinecap="round" />
+        <ellipse cx="17" cy="44" rx="4.5" ry="3.2" fill="#8a5a36" />
+        <ellipse cx="31" cy="44" rx="4.5" ry="3.2" fill="#8a5a36" />
+      </svg>
+    )
+  }
+
+  if (id === 'hedgehog') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <polygon points="9.97,34.75 5.71,32.95 9.42,30.22 6.07,27.07 10.52,25.79 8.43,21.63 13.12,21.93 12.53,17.23 16.94,19.09 17.93,14.39 21.56,17.59 24,13.4 26.44,17.59 30.07,14.39 31.06,19.09 35.47,17.23 34.88,21.93 39.57,21.63 37.48,25.79 41.93,27.07 38.58,30.22 42.29,32.95 38.03,34.75" fill="#7a5a46" />
+        <ellipse cx="24" cy="31" rx="15" ry="14" fill="#8f6a52" />
+        <path d="M16 21.5 L14.6 19.4 M20.3 19.4 L19.6 17.1 M24 18.8 V16.4 M27.7 19.4 L28.4 17.1 M32 21.5 L33.4 19.4" fill="none" stroke="#b08a6c" strokeWidth="0.9" strokeLinecap="round" />
+        <ellipse cx="13.6" cy="25" rx="2.6" ry="2.4" fill="#e8b89a" />
+        <ellipse cx="34.4" cy="25" rx="2.6" ry="2.4" fill="#e8b89a" />
+        <ellipse cx="24" cy="34" rx="12" ry="10.5" fill="#f3d9b6" />
+        <ellipse cx="18.5" cy="29" rx="2.2" ry="2.9" fill="#2d241c" />
+        <ellipse cx="29.5" cy="29" rx="2.2" ry="2.9" fill="#2d241c" />
+        <ellipse cx="19.2" cy="28" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="30.2" cy="28" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="24" cy="33" rx="2.2" ry="1.6" fill="#2b2018" />
+        <path d="M22 35.4 Q24 37 26 35.4" fill="none" stroke="#2b2018" strokeWidth="1" strokeLinecap="round" />
+        <ellipse cx="14.8" cy="33.2" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <ellipse cx="33.2" cy="33.2" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#c48f72" />
+        <ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#c48f72" />
+      </svg>
+    )
+  }
+
+  if (id === 'panda') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <ellipse cx="12.5" cy="19.5" rx="4.8" ry="4.6" fill="#2f2c33" />
+        <ellipse cx="35.5" cy="19.5" rx="4.8" ry="4.6" fill="#2f2c33" />
+        <ellipse cx="24" cy="31" rx="15" ry="14" fill="#f4f1ea" />
+        <ellipse cx="11" cy="38.5" rx="3.6" ry="5.4" fill="#2f2c33" transform="rotate(28 11 38.5)" />
+        <ellipse cx="37" cy="38.5" rx="3.6" ry="5.4" fill="#2f2c33" transform="rotate(-28 37 38.5)" />
+        <ellipse cx="18" cy="28.2" rx="3.9" ry="4.9" fill="#2f2c33" transform="rotate(32 18 28.2)" />
+        <ellipse cx="30" cy="28.2" rx="3.9" ry="4.9" fill="#2f2c33" transform="rotate(-32 30 28.2)" />
+        <ellipse cx="18.4" cy="27.6" rx="1.9" ry="2.3" fill="#0f0d11" />
+        <ellipse cx="29.6" cy="27.6" rx="1.9" ry="2.3" fill="#0f0d11" />
+        <ellipse cx="19.1" cy="26.7" rx="0.75" ry="0.95" fill="#ffffff" opacity="0.95" />
+        <ellipse cx="30.3" cy="26.7" rx="0.75" ry="0.95" fill="#ffffff" opacity="0.95" />
+        <ellipse cx="24" cy="33.4" rx="2.1" ry="1.5" fill="#2f2c33" />
+        <path d="M22 35.4 Q24 37 26 35.4" fill="none" stroke="#2f2c33" strokeWidth="1" strokeLinecap="round" />
+        <ellipse cx="13.6" cy="34" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <ellipse cx="34.4" cy="34" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#2f2c33" />
+        <ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#2f2c33" />
+      </svg>
+    )
+  }
+
+  if (id === 'duck') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path d="M24 17 Q22 11 25 8 Q25 12 28 13 Q27 9 30 8 Q29 13 27 17 Z" fill="#ffd34d" />
+        <ellipse cx="24" cy="31" rx="15" ry="14" fill="#ffd34d" />
+        <path d="M9.5 33 Q5.5 35 6.5 39 Q10.5 39 12.5 36 Z M38.5 33 Q42.5 35 41.5 39 Q37.5 39 35.5 36 Z" fill="#f3bd2e" />
+        <ellipse cx="24" cy="36" rx="9" ry="6.5" fill="#fff1b8" />
+        <ellipse cx="18" cy="26" rx="2.3" ry="3.1" fill="#2d241c" />
+        <ellipse cx="30" cy="26" rx="2.3" ry="3.1" fill="#2d241c" />
+        <ellipse cx="18.8" cy="25" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="30.8" cy="25" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <path d="M18.5 31 Q24 28 29.5 31 Q24 35.5 18.5 31 Z" fill="#ff9a3c" stroke="#e07a22" strokeWidth="0.8" strokeLinejoin="round" />
+        <ellipse cx="13.5" cy="31" rx="2.4" ry="1.5" fill="#f08a7a" opacity="0.55" />
+        <ellipse cx="34.5" cy="31" rx="2.4" ry="1.5" fill="#f08a7a" opacity="0.55" />
+        <path d="M13 43 H22 L20 47 H15 Z M26 43 H35 L33 47 H28 Z" fill="#ff9a3c" />
+      </svg>
+    )
+  }
+
+  if (id === 'axolotl') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <ellipse cx="24" cy="43" rx="8.5" ry="6" fill="#ffc2d4" />
+        <ellipse cx="24" cy="44" rx="5" ry="3.6" fill="#ffe6ee" />
+        <path d="M31 44 Q37 44 39 40 Q39.5 44 36 46 Q34 47 31 46.5 Z" fill="#f2a4bd" />
+        <path d="M9.5 19.75 C5.82 21.09 2.18 18.99 2.23 15.55 C5.18 13.79 8.82 15.89 9.5 19.75 Z M9 25 C6.22 27.9 1.76 27.75 0.08 24.69 C1.97 21.75 6.43 21.91 9 25 Z M9.5 30.25 C8.82 34.01 5.35 35.86 2.55 33.95 C2.53 30.56 6.01 28.71 9.5 30.25 Z M38.5 19.75 C39.18 15.89 42.82 13.79 45.77 15.55 C45.82 18.99 42.18 21.09 38.5 19.75 Z M39 25 C41.57 21.91 46.03 21.75 47.92 24.69 C46.24 27.75 41.78 27.9 39 25 Z M38.5 30.25 C41.99 28.71 45.47 30.56 45.45 33.95 C42.65 35.86 39.18 34.01 38.5 30.25 Z" fill="#ff6f91" />
+        <path d="M8.46 19.15 L3.78 16.45 M7.8 24.96 L1.88 24.75 M8.44 30.81 L4.14 33.1 M39.54 19.15 L44.22 16.45 M40.2 24.96 L46.12 24.75 M39.56 30.81 L43.86 33.1" fill="none" stroke="#e2426e" strokeWidth="1" strokeLinecap="round" opacity="0.75" />
+        <ellipse cx="24" cy="26" rx="15.5" ry="13.5" fill="#ffc2d4" />
+        <ellipse cx="24" cy="30.5" rx="10" ry="6.5" fill="#ffe6ee" opacity="0.6" />
+        <ellipse cx="18" cy="26" rx="2.7" ry="3.19" fill="#1f1a1e" />
+        <ellipse cx="30" cy="26" rx="2.7" ry="3.19" fill="#1f1a1e" />
+        <ellipse cx="18.81" cy="24.92" rx="0.86" ry="1.03" fill="#ffffff" opacity="0.95" />
+        <ellipse cx="30.81" cy="24.92" rx="0.86" ry="1.03" fill="#ffffff" opacity="0.95" />
+        <path d="M21 31 Q22.5 32.65 24 31 Q25.5 32.65 27 31" fill="none" stroke="#2d1a20" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round" />
+        <ellipse cx="12.5" cy="31" rx="2.3" ry="1.4" fill="#ff6f91" opacity="0.55" />
+        <ellipse cx="35.5" cy="31" rx="2.3" ry="1.4" fill="#ff6f91" opacity="0.55" />
+        <ellipse cx="19" cy="48.5" rx="3" ry="2" fill="#f2a4bd" />
+        <ellipse cx="29" cy="48.5" rx="3" ry="2" fill="#f2a4bd" />
+      </svg>
+    )
+  }
+
+  if (id === 'turtle') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <ellipse cx="17" cy="46" rx="4.5" ry="3" fill="#8fd27a" />
+        <ellipse cx="31" cy="46" rx="4.5" ry="3" fill="#8fd27a" />
+        <path d="M7.5 42 C7.5 28 14.5 23 24 23 C33.5 23 40.5 28 40.5 42 Q24 47 7.5 42 Z" fill="#6e4f27" />
+        <path d="M9.6 40.8 C9.6 29.5 15.6 25.2 24 25.2 C32.4 25.2 38.4 29.5 38.4 40.8 Q24 45 9.6 40.8 Z" fill="#a0753e" />
+        <path d="M18.6 35.5 H29.4 L31 41.6 Q24 43.8 17 41.6 Z M11.3 39.8 C11.2 34 12.8 30.2 16.2 28.4 L17.2 35 L15.6 41.1 Q13 40.8 11.3 39.8 Z M36.7 39.8 C36.8 34 35.2 30.2 31.8 28.4 L30.8 35 L32.4 41.1 Q35 40.8 36.7 39.8 Z" fill="#c99f62" />
+        <path d="M8.4 41.8 Q24 46.6 39.6 41.8" fill="none" stroke="#e2c58c" strokeWidth="1.5" strokeLinecap="round" />
+        <ellipse cx="13.2" cy="33.5" rx="1.1" ry="2.8" fill="#ffffff" opacity="0.3" transform="rotate(22 13.2 33.5)" />
+        <ellipse cx="24" cy="25" rx="11.2" ry="10" fill="#9edb86" />
+        <ellipse cx="19.5" cy="25" rx="2.2" ry="2.8" fill="#2d241c" />
+        <ellipse cx="28.5" cy="25" rx="2.2" ry="2.8" fill="#2d241c" />
+        <ellipse cx="20.2" cy="24.1" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="29.2" cy="24.1" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <path d="M21.8 29.4 Q24 31.2 26.2 29.4" fill="none" stroke="#2f5a28" strokeWidth="1" strokeLinecap="round" />
+        <ellipse cx="15.8" cy="28.6" rx="2.1" ry="1.2" fill="#f59aa8" opacity="0.7" />
+        <ellipse cx="32.2" cy="28.6" rx="2.1" ry="1.2" fill="#f59aa8" opacity="0.7" />
+      </svg>
+    )
+  }
+
   // Never sold: earned by bringing 15 friends (src/lib/purse.js REFER_BUDDY).
   if (id === 'hive') {
     return (

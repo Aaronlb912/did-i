@@ -31,23 +31,32 @@ function toDisk(key, value) {
 export function useKept(key, initial, { disk = false } = {}) {
   // Signed out keys carry no account id; those stay in memory only.
   const onDisk = disk && !/:undefined(:|$)/.test(key)
-  const [value, setValue] = useState(() => {
+  const load = () => {
     if (kept.has(key)) return kept.get(key)
     if (onDisk) {
       const stored = fromDisk(key)
       if (stored !== undefined) return stored
     }
     return typeof initial === 'function' ? initial() : initial
-  })
+  }
+  // Held with its key: when the key changes (another account), reload for it.
+  let [slot, setSlot] = useState(() => ({ key, value: load() }))
+  if (slot.key !== key) {
+    slot = { key, value: load() }
+    setSlot(slot)
+  }
+  const value = slot.value
   const set = useCallback(
     (next) => {
-      setValue((was) => {
-        const now = typeof next === 'function' ? next(was) : next
+      setSlot((was) => {
+        const base = was.key === key ? was.value : load()
+        const now = typeof next === 'function' ? next(base) : next
         kept.set(key, now)
         if (onDisk) toDisk(key, now)
-        return now
+        return { key, value: now }
       })
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [key, onDisk],
   )
   return [value, set]

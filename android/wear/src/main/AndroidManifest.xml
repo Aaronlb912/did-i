@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-feature android:name="android.hardware.type.watch"/>
+  <uses-permission android:name="android.permission.VIBRATE"/>
+
+  <application
+    android:label="@string/app_name"
+    android:icon="@mipmap/ic_launcher"
+    android:allowBackup="true"
+    android:supportsRtl="true"
+    android:theme="@android:style/Theme.DeviceDefault">
+
+    <!-- Needs the phone app: cards come from it and taps go back to it. -->
+    <meta-data android:name="com.google.android.wearable.standalone" android:value="false"/>
+
+    <activity
+      android:name=".MainActivity"
+      android:exported="true"
+      android:taskAffinity=""
+      android:theme="@android:style/Theme.DeviceDefault">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+    </activity>
+
+    <!-- Cards from the phone (WatchModule in the phone app). -->
+    <service android:name=".CardsListenerService" android:exported="true">
+      <intent-filter>
+        <action android:name="com.google.android.gms.wearable.DATA_CHANGED"/>
+        <data android:scheme="wear" android:host="*" android:path="/didi/cards"/>
+      </intent-filter>
+    </service>
+
+    <service
+      android:name=".DidITileService"
+      android:exported="true"
+      android:label="@string/app_name"
+      android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+      <intent-filter>
+        <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER"/>
+      </intent-filter>
+      <meta-data android:name="androidx.wear.tiles.PREVIEW" android:resource="@mipmap/ic_launcher"/>
+    </service>
+  </application>
+</manifest>

@@ -8,6 +8,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { StyleSheet, View } from 'react-native'
 import * as Reanimated from 'react-native-reanimated'
 import { t } from '../../../src/lib/i18n.js'
+import { gentleOn } from '../../../src/lib/prefs.js'
 import {
   conicWedges,
   edgePoint,
@@ -49,6 +50,12 @@ import {
   NeonHeartOver,
   StormOver,
 } from './art-living.jsx'
+import { BedtimeOver, CountdownOver, LinkedOver } from './art-drop.jsx'
+import { CandlesOver, KnitOver, WindowOver } from './art-2026-12-04.jsx'
+import { GingerOver, SnowmanOver, SolsticeOver } from './art-2026-12-18.jsx'
+import { DominoOver, FreshOver, FreshUnder, MosaicOver } from './art-2027-01-01.jsx'
+import { AquariumOver, AquariumUnder, BooksOver, OrigamiOver } from './art-2027-01-15.jsx'
+import { BoatsOver, LaceUnder, ThawOver } from './art-2027-01-29.jsx'
 
 const { withTiming } = Reanimated
 
@@ -355,7 +362,8 @@ function PolaroidUnder({ f }) {
   }
   const n = Number(f.p.streak) || 0
   // Thumbnails show the date only: a sample number would read as your streak.
-  if (n > 0 && !f.still) label += ` · ${n === 1 ? t('tonight.streakOne') : t('tonight.streakMany', { n })}`
+  // Gentle mode hides streak numbers everywhere.
+  if (n > 0 && !f.still && !gentleOn()) label += ` · ${n === 1 ? t('tonight.streakOne') : t('tonight.streakMany', { n })}`
   return (
     <Layer f={f}>
       <S.Rect x={-12} y={-10} width={f.w + 24} height={f.h + 54} rx={f.R + 12} fill="#000000" opacity={0.18} />
@@ -1655,6 +1663,24 @@ export const FRAME_ART = {
   sunny: { over: SunnyOver, animated: true },
   royal: { over: RoyalOver },
   wrapped: { over: WrappedOver },
+  linked: { over: LinkedOver },
+  bedtime: { over: BedtimeOver, animated: true },
+  countdown: { over: CountdownOver, animated: true },
+  knit: { over: KnitOver },
+  window: { over: WindowOver, animated: true },
+  candles: { over: CandlesOver, animated: true },
+  ginger: { over: GingerOver },
+  snowman: { over: SnowmanOver, animated: true },
+  solstice: { over: SolsticeOver, animated: true },
+  mosaic: { over: MosaicOver },
+  domino: { over: DominoOver, animated: true },
+  fresh: { under: FreshUnder, over: FreshOver, animated: true },
+  origami: { over: OrigamiOver },
+  aquarium: { under: AquariumUnder, over: AquariumOver, animated: true },
+  books: { over: BooksOver },
+  lace: { under: LaceUnder },
+  boats: { over: BoatsOver, animated: true },
+  thaw: { over: ThawOver, animated: true },
 }
 
 const styles = StyleSheet.create({

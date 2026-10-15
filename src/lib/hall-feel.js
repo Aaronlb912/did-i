@@ -1,13 +1,38 @@
 import { weNight, weNightsStamp } from './we-nights.js'
-import { addDaysIso, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, isEvery, parseIsoDate } from './recurrence.js'
+import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, isEvery, onceDoneNight, oncePastCounts, parseIsoDate } from './recurrence.js'
 import { scopedBooks } from './tags.js'
+import { travelNightState, travelSkipped, travelWe } from './travel.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
 
 // A question only counts on nights it existed: one added today must not make
 // last night look missed, or adding a new daily question cuts the streak.
 // Every so often questions have no streak, so they never count here.
-function dueThatNight(book, iso, at) {
-  return dueTonight(book, at).filter((row) => !isEvery(row.lamp) && (!row.lamp.createdOn || row.lamp.createdOn <= iso))
+// A one-time question counts only on the night its Did was tapped (or its
+// due day). Once its day passes it is archived, but the night it was due
+// keeps its answer, missed or not, so a miss does not vanish with it.
+// On a night skipped by travel only answered questions count: a Did as
+// usual, a tapped Not yet as a Not yet. The rest are not due, as before the start.
+export function dueThatNight(book, iso, at) {
+  const skipped = travelSkipped(book, iso)
+  return dueTonight(withPastOnce(book), at).filter((row) => {
+    if (skipped && travelNightState(row.answer, iso) === 'none') return false
+    if (isEvery(row.lamp) || (row.lamp.createdOn && row.lamp.createdOn > iso)) return false
+    const done = onceDoneNight(row.lamp, row.answer)
+    return !done || done === iso
+  })
+}
+
+// The book with answered, archived one-time questions put back, so past
+// nights are judged with them. Memoized per book.
+const pastOnceByBook = new WeakMap()
+function withPastOnce(book) {
+  let out = pastOnceByBook.get(book)
+  if (out) return out
+  const back = (lamp) => lamp.archived && oncePastCounts(lamp, answerFor(book, lamp.id, `once:${lamp.id}`))
+  const lamps = book.lamps || []
+  out = lamps.some(back) ? { ...book, lamps: lamps.map((lamp) => (back(lamp) ? { ...lamp, archived: false } : lamp)) } : book
+  pastOnceByBook.set(book, out)
+  return out
 }
 
 function noonOn(iso) {
@@ -24,7 +49,7 @@ export function hallHeat(book, now = new Date()) {
   for (let step = 0; step < 40 && heat < 5; step += 1) {
     const at = noonOn(cursor)
     if (!at) break
-    const rows = dueTonight(book, at).filter((row) => !isEvery(row.lamp))
+    const rows = dueThatNight(book, cursor, at)
     if (countedTonightRows(rows).length === 0) {
       cursor = addDaysIso(cursor, -1)
       continue
@@ -186,7 +211,7 @@ function nightTally(books, iso, at, tagId = '') {
     if (night.counted && !night.clear) clear = false
   }
   // Did wes due for you that night: only your own did counts.
-  const we = weNight(iso, tagId)
+  const we = travelWe(books.some((book) => travelSkipped(book, iso)), weNight(iso, tagId))
   due += we.due
   if (we.due && !we.clear) clear = false
   return { due, clear }
@@ -300,7 +325,7 @@ function pastSign(books, before) {
     for (let i = 0; i < text.length; i += 1) hash = (Math.imul(hash, 31) + text.charCodeAt(i)) | 0
   }
   for (const book of books) {
-    mix(`|${book.id}|${book.dayFoldHour}`)
+    mix(`|${book.id}|${book.dayFoldHour}|${(book.travelSkips || []).join(',')}`)
     for (const lamp of book.lamps || []) {
       mix(JSON.stringify(lamp))
     }

@@ -4,7 +4,7 @@ import { setWidgetBeforePull } from '../src/lib/widget-reconcile.js'
 import { publishShelf } from '../src/lib/widget-tonight.js'
 import { nativeBridgeReady } from './lib/defer-native.js'
 import { nativeWidgetsEnabled } from './lib/widgets-enabled.js'
-import { pullWidgetTimelineIntoShelf, syncTonightWidget } from './widget-sync.js'
+import { markWidgetTimelineRead, pullWidgetTimelineIntoShelf, setWidgetTimelineReader, syncTonightWidget } from './widget-sync.js'
 import { reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
 let started = false
@@ -36,6 +36,8 @@ export async function initWidgetsOnLaunch(shelf = readShelf()) {
 
   if (!appStateSub) {
     appStateSub = AppState.addEventListener('change', (state) => {
+      // Taps may land while away; read them before the next write.
+      if (state !== 'active') markWidgetTimelineRead(false)
       if (state !== 'active' || !nativeBridgeReady()) return
       beginWidgetRefresh().catch(() => {})
     })
@@ -45,6 +47,7 @@ export async function initWidgetsOnLaunch(shelf = readShelf()) {
 /** Merge the latest WidgetKit timeline into the shelf (after taps while app was backgrounded). */
 export async function refreshWidgetTimelineFromKit() {
   if (!nativeWidgetsEnabled() || !nativeBridgeReady()) return readShelf()
+  // Marks the timeline read only when getTimeline worked (widget-sync.js).
   const merged = await reconcileShelfFromWidgetNow({ pullTimeline: true })
   publishShelf(merged)
   syncTonightWidget(merged).catch(() => {})
@@ -64,6 +67,7 @@ export function beginWidgetRefresh() {
 }
 
 setWidgetBeforePull(() => beginWidgetRefresh())
+setWidgetTimelineReader(() => beginWidgetRefresh())
 
 export async function pullTimelineOnly(shelf) {
   if (!nativeWidgetsEnabled()) return shelf

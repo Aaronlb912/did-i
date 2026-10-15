@@ -7,18 +7,37 @@ import { lampNights } from '../../src/lib/lamp-record.js'
 import { nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { noteShared, noteSharedNow, setNoteShared } from '../../src/lib/social-amounts.js'
+import { MenuIcon } from './MenuIcon.jsx'
 import { SetSwitch } from './SetBits.jsx'
 import { DidButton, Field, KeyButton, Meta, Row } from './ui.jsx'
-import { sectionLabel } from '../theme.js'
 import { Reveal, pressFx, useLayoutState } from '../lib/motion.jsx'
 import { publishSheet } from './SheetHost.jsx'
 import { goHash } from '../navigation/hash.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
-import { UNDO_MS } from '../../src/lib/useTonightStack.js'
+import { DELETE_UNDO_MS as UNDO_MS } from '../../src/lib/undo-times.js'
 import { showToast } from '../lib/toast-queue.js'
 
 // Clears a note, with Undo in the toast like other removals. Undo writes the
 // note back onto the folder as it is then, so nothing done since is lost.
+// The folder as saved now. A sheet stays open while answers and edits land,
+// so saving onto the book it opened with would drop them.
+function liveBook(book) {
+  return (readShelf().boards || []).find((item) => item.id === book?.id) || book
+}
+
+// "Note saved" only when the note landed: the answer may have been undone
+// or removed while the sheet was open, and then nothing was written.
+function saveNote(book, lampId, periodKey, draft, count, onChange) {
+  const next = setAnswerNote(book, lampId, periodKey, draft, undefined, count)
+  const there = (book?.answers || []).some((item) => item.lampId === lampId && item.periodKey === periodKey)
+  if (!there) {
+    confirmMiss()
+    return
+  }
+  if (next !== book) onChange(next)
+  confirmDone(t('note.saved'))
+}
+
 function removeNote(book, lampId, periodKey, note, onChange) {
   const was = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
   const amount = typeof was?.amount === 'number' ? was.amount : ''
@@ -199,15 +218,14 @@ export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange })
     share: shareProps(lamp, answer),
     colors,
     onSave: (draft, count) => {
-      onChange(setAnswerNote(live() || book, lampId, periodKey, draft, undefined, count))
-      confirmDone(t('note.saved'))
+      saveNote(live(), lampId, periodKey, draft, count, onChange)
     },
     onRemove: () => removeNote(live() || book, lampId, periodKey, answer.note, onChange),
   })
 }
 
 /** This question's nights that have a note, plus "Add a note" for a recent answered night. */
-export function NightNotes({ book, lamp, colors, onChange }) {
+export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
   const [picking, setPicking] = useLayoutState(false)
   const nights = useMemo(() => lampNights(book, lamp), [book, lamp])
   const noted = nights.filter((row) => row.answer.note)
@@ -226,16 +244,22 @@ export function NightNotes({ book, lamp, colors, onChange }) {
       share: shareProps(lamp, answer),
       colors,
       onSave: (draft, count) => {
-        onChange(setAnswerNote(book, lamp.id, answer.periodKey, draft, undefined, count))
-        confirmDone(t('note.saved'))
+        saveNote(liveBook(book), lamp.id, answer.periodKey, draft, count, onChange)
       },
-      onRemove: () => removeNote(book, lamp.id, answer.periodKey, answer.note, onChange),
+      onRemove: () => removeNote(liveBook(book), lamp.id, answer.periodKey, answer.note, onChange),
     })
   }
 
+  // "Add note" from the question page's menu: same as tapping Add a note here.
+  useEffect(() => {
+    if (!pickSignal || !picks.length) return
+    if (picks.length === 1) edit(picks[0].answer)
+    else setPicking(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickSignal])
+
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.label, { color: colors.inkSoft }]}>{t('note.title')}</Text>
       {!nights.length ? <Meta colors={colors}>{t('note.empty')}</Meta> : null}
       {shown.map(({ answer }) => (
         <Reveal key={answer.periodKey}>
@@ -312,13 +336,13 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
 
   const close = () => publishSheet(null)
   const save = (row, draft, count) => {
-    onChange(setAnswerNote(bookOf(row), row.lamp.id, row.answer.periodKey, draft, undefined, count))
+    onChange(setAnswerNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, draft, undefined, count))
     close()
     confirmDone(t('note.saved'))
   }
   const remove = (row) => {
     close()
-    removeNote(bookOf(row), row.lamp.id, row.answer.periodKey, row.answer.note, onChange)
+    removeNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, row.answer.note, onChange)
   }
   // One card with a note already: say Edit note, not Add a note.
   const label = answered.length === 1 && answered[0].answer.note ? t('note.edit') : t('note.add')
@@ -334,9 +358,15 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
     })
 
   if (quiet) {
+    // Just the pen: the done card stays light. Full 44pt tap target, named for screen readers.
     return (
-      <Pressable onPress={openSheet} accessibilityRole="button" hitSlop={10} style={({ pressed }) => pressFx(pressed)}>
-        <Text style={[styles.quiet, { color: colors.inkSoft }]}>{`✎ ${label}`}</Text>
+      <Pressable
+        onPress={openSheet}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={({ pressed }) => [styles.pen, pressFx(pressed)]}
+      >
+        <MenuIcon name="pen" color={colors.inkSoft} size={20} stroke />
       </Pressable>
     )
   }
@@ -392,11 +422,11 @@ function NotePick({ answered, colors, onSave, onRemove, onCancel }) {
 
 const styles = StyleSheet.create({
   wrap: { gap: 8, marginTop: 8 },
-  label: { ...sectionLabel },
   // Full width, so in a row of buttons the open note drops to its own line.
   edit: { gap: 8, marginTop: 8, width: '100%' },
   keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   quiet: { fontSize: 14 },
+  pen: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   noteText: { width: '100%', fontStyle: 'italic' },
   seeAll: { alignSelf: 'flex-start', marginTop: 8 },
 })

@@ -84,7 +84,9 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
       readFriendCheers(),
       listAutoAdds(),
     ])
-    setLinks(friendRows)
+    // A failed read keeps the friends we had and says so.
+    if (friendRows.miss) setMiss('people.reach')
+    else setLinks(friendRows)
     const ids = friendRows.friends.map((row) => row.person.user_id)
     const [noteRows, askRows, mine] = await Promise.all([
       sharedNotesOf(ids).catch(() => new Map()),
@@ -94,7 +96,8 @@ export function Friends({ book, onChange, now, highlightAsk = '' }) {
     setNotes(noteRows)
     if (mine) setMyNotes(mine)
     if (askRows) setCheckOns(askRows)
-    else setMiss('people.reach')
+    if (friendRows.miss || !askRows) setMiss('people.reach')
+    else setMiss((was) => (was === 'people.reach' ? '' : was))
     setBlocks(blockRows)
     setAutoAdds(autoRows)
     if (typeof serverCheers === 'number') setStock(serverCheers)

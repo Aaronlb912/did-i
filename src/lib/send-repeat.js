@@ -39,6 +39,12 @@ export function repeatLabel(repeat) {
   return ''
 }
 
+// True when a question kept from this send is already on one of the boards.
+export function sendOnShelf(boards, id) {
+  const want = String(id || '').toLowerCase()
+  return Boolean(want) && (boards || []).some((board) => (board?.lamps || []).some((lamp) => lamp?.sendId === want))
+}
+
 // What keeping a Did you puts on your Tonight. Takes the question text, or
 // { question, repeat } from a send. Dated by your night (boardDate, in the
 // account's time zone, as Tonight counts), not the phone's calendar, so a
@@ -59,6 +65,10 @@ export function keptLamp(item, clock = new Date(), dayFoldHour = 0) {
     base.fromDidYou = true
     const name = String(item?.person?.display_name || item?.person?.handle || '').replace(/\s+/g, ' ').trim().slice(0, 40)
     if (name) base.fromName = name
+    // The send it came from (inbox rows carry id, auto adds sendId), so the
+    // sender can see its answers. A Did you link or Did I has none.
+    const sendId = String(item?.sendId || item?.id || '').toLowerCase()
+    if (!item?.fromDidI && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(sendId)) base.sendId = sendId
   }
   const { cadence, weekdays, everyDays } = readRepeat(typeof item === 'string' ? '' : item.repeat)
   if (cadence === 'once') return { ...base, cadence: 'once', onceOn: night }

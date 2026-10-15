@@ -1,7 +1,7 @@
 import { answeredAtIso, cleanAmount, duplicateLamp, newAnswerId } from './board-json.js'
 import { activeLook } from './active-look.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
-import { answerFor, openFloorIso, periodPassed } from './recurrence.js'
+import { answerFor, openFloorIso, periodPassed, stampMs } from './recurrence.js'
 
 export function putAnswer(book, row, status, clock = new Date()) {
   if (!row || !row.lamp) return book
@@ -187,7 +187,7 @@ export const NOTE_MAX = 120
 export function answerStamp(answer) {
   const tap = String(answer?.answeredAt || '')
   const note = String(answer?.noteAt || '')
-  return note > tap ? note : tap
+  return stampMs(note) > stampMs(tap) ? note : tap
 }
 
 // amount: leave it out to keep the night's amount; '' or null clears it.
@@ -202,7 +202,7 @@ export function setAnswerNote(book, lampId, periodKey, note, clock = new Date(),
   if ((answers[at].note || '') === text && count === was) return book
   const prev = answerStamp(answers[at])
   let stamp = answeredAtIso(clock)
-  if (prev && stamp <= prev) {
+  if (prev && stampMs(stamp) <= stampMs(prev)) {
     const last = new Date(prev)
     if (!Number.isNaN(last.getTime())) stamp = answeredAtIso(new Date(last.getTime() + 1000))
   }

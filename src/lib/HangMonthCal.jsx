@@ -66,7 +66,11 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
     return night.iso === value
   }
 
+  // A date to do it by or on can't be in the past, like the phone.
+  const gone = (night) => mode !== 'monthly' && night.iso < todayIso
+
   function pickDay(night) {
+    if (gone(night)) return
     if (mode === 'monthly') onChange(Number(night.dayNum))
     else onChange(night.iso)
   }
@@ -115,6 +119,7 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
               role="gridcell"
               aria-pressed={isPick(night)}
               aria-current={night.isToday ? 'date' : undefined}
+              disabled={gone(night)}
               onClick={() => pickDay(night)}
             >
               {night.dayNum}

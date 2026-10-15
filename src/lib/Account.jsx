@@ -15,13 +15,14 @@ import {
   keptProfileName,
   loadProfile,
   pullAndMerge,
+  saveBeforeSignOut,
   saveProfile,
   signedOutSync,
   useSync,
 } from './cloud-sync.js'
 import { t, tMiss } from './i18n.js'
 import { uses24h } from './prefs.js'
-import { CHEERS, LOOKS, normalizePurse } from './purse.js'
+import { liveCheers, liveLooks, normalizePurse } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { LegalLinks } from './LegalLinks.jsx'
 import { AuthAppleSignIn } from './AuthAppleSignIn.jsx'
@@ -284,12 +285,18 @@ function SignedIn({ book, email, onChange }) {
   // Until the list comes back, say nothing rather than "only this phone".
   const [devicesIn, setDevicesIn] = useState(false)
   const [note, setNote] = useState(null)
+  const [leaving, setLeaving] = useState(false)
+  const missNote = () => setNote({ kicker: t('account.kicker'), title: t('confirm.miss'), yes: t('linkGuide.ok'), go: () => {} })
+  // Some answers never reached the account; signing out would drop them.
+  const unsavedNote = (go) =>
+    setNote({ kicker: t('account.kicker'), title: t('account.unsavedTitle'), body: t('account.unsavedBody'), yes: t('account.unsavedYes'), go })
   const here = deviceKey()
 
   useEffect(() => {
     let alive = true
     listDevices().then((rows) => {
       if (!alive) return
+      if (!rows) return missNote()
       setDevices(rows)
       setDevicesIn(true)
     })
@@ -301,18 +308,25 @@ function SignedIn({ book, email, onChange }) {
     }
   }, [book.keeperName, sync.at])
 
-  const lookName = LOOKS.find((item) => item.id === purse.lookOn)?.name || purse.lookOn
-  const cheerName = CHEERS.find((item) => item.id === purse.cheerOn)?.name || purse.cheerOn
+  const lookName = liveLooks().find((item) => item.id === purse.lookOn)?.name || purse.lookOn
+  const cheerName = liveCheers().find((item) => item.id === purse.cheerOn)?.name || purse.cheerOn
 
   async function download() {
-    const all = await exportAll()
+    let all
+    try {
+      all = await exportAll()
+    } catch {
+      setNote({ kicker: t('account.kicker'), title: t('confirm.exportMiss'), yes: t('linkGuide.ok'), go: () => {} })
+      return
+    }
     const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.download = 'did-i-account.json'
     link.click()
-    URL.revokeObjectURL(url)
+    // Revoked at once, some browsers drop the download before it starts.
+    setTimeout(() => URL.revokeObjectURL(url), 500)
   }
 
   return (
@@ -375,8 +389,11 @@ function SignedIn({ book, email, onChange }) {
                 row.device_key === here
                   ? undefined
                   : async () => {
-                      await forgetDevice(row.device_key)
-                      setDevices(await listDevices())
+                      const out = await forgetDevice(row.device_key).catch(() => ({ miss: true }))
+                      if (out?.miss) return missNote()
+                      const rows = await listDevices()
+                      if (rows) setDevices(rows)
+                      else missNote()
                     }
               }
             />
@@ -398,8 +415,22 @@ function SignedIn({ book, email, onChange }) {
         <SetRow
           label={t('account.out')}
           onClick={async () => {
-            await signOutHere()
-            signedOutSync()
+            if (leaving) return
+            setLeaving(true)
+            const out = async () => {
+              try {
+                await signOutHere()
+                signedOutSync()
+              } catch {
+                missNote()
+              }
+            }
+            try {
+              if (await saveBeforeSignOut()) await out()
+              else unsavedNote(out)
+            } finally {
+              setLeaving(false)
+            }
           }}
         />
         <SetRow
@@ -412,13 +443,17 @@ function SignedIn({ book, email, onChange }) {
               body: t('account.outAllBody'),
               yes: t('account.outAllYes'),
               go: async () => {
-                try {
-                  await signOutEverywhere()
-                  signedOutSync()
-                } catch {
-                  // Still signed in here; say so instead of looking done.
-                  setNote({ kicker: t('account.kicker'), title: t('confirm.miss'), yes: t('linkGuide.ok'), go: () => {} })
+                const out = async () => {
+                  try {
+                    await signOutEverywhere()
+                    signedOutSync()
+                  } catch {
+                    // Still signed in here; say so instead of looking done.
+                    setNote({ kicker: t('account.kicker'), title: t('confirm.miss'), yes: t('linkGuide.ok'), go: () => {} })
+                  }
                 }
+                if (await saveBeforeSignOut()) await out()
+                else unsavedNote(out)
               },
             })
           }
@@ -433,7 +468,9 @@ function SignedIn({ book, email, onChange }) {
               body: t('account.deleteBody'),
               yes: t('account.deleteYes'),
               go: async () => {
-                await deleteAccount()
+                // A failed delete leaves the account; say so instead of signing out here.
+                const out = await deleteAccount().catch(() => ({ miss: 'off' }))
+                if (out?.miss) return missNote()
                 signedOutSync()
               },
             })

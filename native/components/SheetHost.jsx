@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Animated, BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Animated, BackHandler, Keyboard, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
 import { FRIEND_CHEER_GEMS, FRIEND_CHEERS_PER_GEM } from '../../src/lib/purse.js'
 import { goHash } from '../navigation/hash.js'
@@ -82,15 +83,32 @@ export function SheetHost() {
   // The last sheet stays drawn while it slides out, then unmounts.
   const [sheet, setShown] = useState(current)
   const fade = useRef(new Animated.Value(0)).current
+  const insets = useSafeAreaInsets()
+  const wasOpen = useRef(false)
+  // A sheet acts on its first Done or close only. A second quick tap lands
+  // before the sheet is gone and would run the close again (and a toggle
+  // would open it back up).
+  const fired = useRef(null)
+  const once = (of, run) => {
+    if (!run || fired.current === of) return
+    fired.current = of
+    run()
+  }
 
   useEffect(() => {
     if (next?.title) {
+      wasOpen.current = true
       setShown(next)
       fade.stopAnimation()
       if (reduce) fade.setValue(1)
       else Animated.timing(fade, { toValue: 1, duration: MOTION_MS, easing: easeOut, useNativeDriver: true }).start()
       return undefined
     }
+    // Drop the keyboard while the closing sheet's text box is still mounted.
+    // Unmounting a focused box on Android leaves the keyboard up with nothing
+    // behind it, and the next note box then ignores every key.
+    if (wasOpen.current) Keyboard.dismiss()
+    wasOpen.current = false
     if (reduce) {
       fade.setValue(0)
       setShown(null)
@@ -130,7 +148,7 @@ export function SheetHost() {
   useEffect(() => {
     if (!next?.title) return undefined
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      next.onClose?.()
+      once(next, next.onClose)
       return true
     })
     return () => sub.remove()
@@ -139,36 +157,38 @@ export function SheetHost() {
   if (!sheet?.title || !sheet.colors) return null
   const colors = sheet.colors
   const closing = !next?.title
-  const lift = fade.interpolate({ inputRange: [0, 1], outputRange: [24, 0] })
+  const lift = fade.interpolate({ inputRange: [0, 1], outputRange: [sheet.bottom ? 320 : 24, 0] })
 
   return (
-    <View style={styles.host} pointerEvents={closing ? 'none' : 'box-none'}>
+    <View style={[styles.host, sheet.bottom && styles.hostBottom]} pointerEvents={closing ? 'none' : 'box-none'}>
       {/* The veil always takes taps, so a quick tap as a sheet pops up never
           lands on Did or Nope behind it. It only closes the sheet once live. */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: fade }]}>
       <Pressable
         style={[StyleSheet.absoluteFill, { backgroundColor: colors.veil }]}
         onPress={() => {
-          if (live) sheet.onClose?.()
+          if (live) once(sheet, sheet.onClose)
         }}
         accessibilityRole="button"
         accessibilityLabel={sheet.closeLabel || t('settings.neverMind')}
       />
       </Animated.View>
       {/* A sheet with a text box (a note) rises over the keyboard, buttons and all. */}
-      <KeyboardLift pointerEvents="box-none" style={styles.lift}>
+      <KeyboardLift pointerEvents="box-none" style={sheet.bottom ? styles.liftBottom : styles.lift}>
       <Animated.View
         style={[
           styles.pop,
           sheet.center && styles.popCenter,
+          sheet.bottom && [styles.popBottom, { paddingBottom: 18 + insets.bottom }],
           { backgroundColor: colors.panel, borderColor: colors.line, opacity: fade, transform: [{ translateY: reduce ? 0 : lift }] },
         ]}
       >
+        {sheet.bottom ? <Grabber colors={colors} onDown={() => once(sheet, sheet.onClose)} /> : null}
         {sheet.preview ? <View style={styles.preview}>{sheet.preview}</View> : null}
         {sheet.kicker ? <Text style={[styles.kicker, sheet.center && styles.mid, { color: colors.on }]}>{sheet.kicker}</Text> : null}
         <Text style={[styles.title, sheet.center && styles.mid, { color: colors.ink }]}>{sheet.title}</Text>
         {sheet.body ? <Text style={[styles.body, sheet.center && styles.mid, { color: colors.inkSoft }]}>{sheet.body}</Text> : null}
-        {sheet.content ? <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">{sheet.content}</ScrollView> : null}
+        {sheet.content ? <ScrollView ref={sheet.scrollRef} style={sheet.bottom ? styles.contentBottom : styles.content} keyboardShouldPersistTaps="handled">{sheet.content}</ScrollView> : null}
         {sheet.quote ? (
           <Text style={[styles.quote, sheet.center ? styles.quoteMid : { borderLeftWidth: 3, paddingLeft: 10, borderColor: colors.on }, { color: colors.ink }]}>{sheet.quote}</Text>
         ) : null}
@@ -177,20 +197,20 @@ export function SheetHost() {
         <View style={[styles.row, sheet.center && styles.rowMid]}>
           {sheet.danger && sheet.onGo && !sheet.noClose ? (
             <>
-              <DidButton small label={sheet.closeLabel || t('settings.neverMind')} onPress={() => sheet.onClose?.()} colors={colors} />
+              <DidButton small label={sheet.closeLabel || t('settings.neverMind')} onPress={() => once(sheet, sheet.onClose)} colors={colors} />
               {sheet.onMore ? <MoreButton sheet={sheet} colors={colors} /> : null}
-              <KeyButton danger label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
+              <KeyButton danger label={sheet.goLabel || t('shop.buy')} onPress={() => once(sheet, sheet.onGo)} colors={colors} />
             </>
           ) : (
             <>
               {sheet.onGo ? (
-                <DidButton small danger={sheet.danger} disabled={Boolean(sheet.goDisabled)} label={sheet.goLabel || t('shop.buy')} onPress={() => sheet.onGo()} colors={colors} />
+                <DidButton small danger={sheet.danger} disabled={Boolean(sheet.goDisabled)} label={sheet.goLabel || t('shop.buy')} onPress={() => once(sheet, sheet.onGo)} colors={colors} />
               ) : null}
               {sheet.onMore ? <MoreButton sheet={sheet} colors={colors} /> : null}
               {sheet.noClose ? null : (
                 <KeyButton
                   label={sheet.closeLabel || t('settings.neverMind')}
-                  onPress={() => sheet.onClose?.()}
+                  onPress={() => once(sheet, sheet.onClose)}
                   colors={colors}
                 />
               )}
@@ -198,12 +218,29 @@ export function SheetHost() {
           )}
         </View>
         {sheet.onFoot ? (
-          <Pressable onPress={() => sheet.onFoot()} accessibilityRole="button" hitSlop={8} style={[styles.foot, sheet.center && styles.footMid]}>
-            <Text style={[styles.footText, { color: colors.inkDim }]}>{sheet.footLabel}</Text>
-          </Pressable>
+          <View style={[styles.foot, sheet.center && styles.footMid]}>
+            <KeyButton colors={colors} label={sheet.footLabel} onPress={() => sheet.onFoot()} />
+          </View>
         ) : null}
       </Animated.View>
       </KeyboardLift>
+    </View>
+  )
+}
+
+// The handle on a bottom sheet: a drag down closes it, like the phone's own sheets.
+function Grabber({ colors, onDown }) {
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_e, g) => g.dy > 6,
+      onPanResponderRelease: (_e, g) => {
+        if (g.dy > 40) onDown()
+      },
+    }),
+  ).current
+  return (
+    <View {...pan.panHandlers} style={styles.grabArea} accessibilityElementsHidden importantForAccessibility="no">
+      <View style={[styles.grabber, { backgroundColor: colors.line }]} />
     </View>
   )
 }
@@ -246,6 +283,13 @@ const styles = StyleSheet.create({
   },
   preview: { alignItems: 'center', marginBottom: 2 },
   lift: { justifyContent: 'center' },
+  // bottom: the sheet rises from the bottom edge, like the sketch's When picker.
+  hostBottom: { justifyContent: 'flex-end', padding: 0 },
+  liftBottom: { justifyContent: 'flex-end' },
+  popBottom: { borderBottomWidth: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 0, maxHeight: '88%' },
+  contentBottom: { flexGrow: 0, flexShrink: 1 },
+  grabArea: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: 10 },
+  grabber: { width: 36, height: 5, borderRadius: 3 },
   content: { maxHeight: 320 },
   title: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   body: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
@@ -257,5 +301,4 @@ const styles = StyleSheet.create({
   rowMid: { justifyContent: 'center' },
   footMid: { alignSelf: 'center' },
   foot: { alignSelf: 'flex-start' },
-  footText: { fontFamily: fonts.ui, fontSize: 13, textDecorationLine: 'underline' },
 })

@@ -48,6 +48,16 @@ const files = [
   'supabase/shared-every.sql',
   'supabase/admin.sql',
   'supabase/admin-mail.sql',
+  'supabase/send-answers.sql',
+  'supabase/consent-guards.sql',
+  'supabase/app-send-answer-upsert.sql',
+  'supabase/server-stamps.sql',
+  'supabase/readthrough-5.sql',
+  'supabase/readthrough-6.sql',
+  'supabase/readthrough-7.sql',
+  'supabase/readthrough-8.sql',
+  'supabase/readthrough-9.sql',
+  'supabase/readthrough-12.sql',
   'supabase/drop-tonight.sql',
 ]
 

@@ -4,7 +4,8 @@
 // question that shares the most words with them.
 
 import { readShelf } from './board-shelf.js'
-import { dueTonight } from './recurrence.js'
+import { graceRowsFor } from './grace.js'
+import { dueTonight, graceFirst, graceNightIso, rowDoneTonight } from './recurrence.js'
 
 const SMALL = new Set(['did', 'i', 'a', 'an', 'the', 'my', 'to', 'tonight', 'today', 'it', 'do', 'in', 'of', 'and', 'yes', 'no', 'not', 'didnt'])
 
@@ -31,6 +32,7 @@ export function matchSpoken(said, rows) {
   if (!want.length) return rows.length === 1 ? rows[0] : null
   let best = null
   let bestScore = 0
+  let second = 0
   for (const row of rows) {
     const have = new Set(words(row.lamp?.question))
     if (!have.size) continue
@@ -41,19 +43,28 @@ export function matchSpoken(said, rows) {
     // Share of the spoken words found, nudged toward shorter questions.
     const score = hits / want.length + hits / (have.size * 10)
     if (score > bestScore) {
+      // The same question in last night's grace rows is not a rival.
+      if (best && best.lamp?.id !== row.lamp?.id) second = bestScore
       best = row
       bestScore = score
+    } else if (row.lamp?.id !== best?.lamp?.id && score > second) {
+      second = score
     }
   }
+  // Two questions about as close: guessing could save the wrong one.
+  if (bestScore - second < 0.05) return null
   return bestScore >= 0.5 ? best : null
 }
 
 // Every question tonight not answered yet, across all tags, including ones
-// whose ask time has not come: saying "I did" early counts.
-export function openTonight(now = new Date()) {
-  const shelf = readShelf()
-  return (shelf.boards || [])
-    .filter((book) => !book.archived)
-    .flatMap((book) => dueTonight(book, now))
-    .filter((row) => !row.answer)
+// whose ask time has not come: saying "I did" early counts. A Not yet is
+// still open. In last night's grace period its open questions are in too,
+// first while graceFirst (ties go to the earlier row).
+export function openTonight(now = new Date(), shelf = readShelf()) {
+  const books = (shelf.boards || []).filter((book) => !book.archived)
+  const tonight = books.flatMap((book) => dueTonight(book, now)).filter((row) => !rowDoneTonight(row))
+  const night = graceNightIso(now)
+  if (!night) return tonight
+  const last = graceRowsFor(books, night)
+  return graceFirst(now) ? [...last, ...tonight] : [...tonight, ...last]
 }

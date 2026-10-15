@@ -311,7 +311,10 @@ export function useWeAnswer(reload, book) {
   // `night` answers a later night early; tonight when left out.
   async function answer(card, status, night) {
     const mine = weMine(card)
-    const next = mine?.status === status ? null : status
+    // A repeat tap on tonight's lit answer does nothing: a Did we answer has
+    // no undo, so it must not clear by accident. Taking back is explicit.
+    if (!night && status && mine?.status === status) return
+    const next = status
     const out = await run(card.id, () => weAnswer(card.id, next, night || undefined))
     // A Did we answer has no undo: it says it was saved, or that it was not.
     if (out?.miss) {
@@ -322,10 +325,17 @@ export function useWeAnswer(reload, book) {
       feelTap(next === 'nope' ? 'skip' : 'did')
       confirmDone(t('tonight.weSaved'))
     }
-    if (!out.done || card.done) return
+    // Only the answer that finished it cheers; card.done may be stale.
+    if (!out.finished) return
     const purse = normalizePurse(book)
     if (purse.cheerOn) fireCheer(purse.cheerOn, weCheerStageIfDone(card))
-    const paid = await weClaim(card.id, night || undefined)
+    const claim = () => weClaim(card.id, night || undefined).catch(() => ({ miss: 'confirm.miss', coins: 0 }))
+    let paid = await claim()
+    if (paid.miss) paid = await claim()
+    if (paid.miss) {
+      confirmMiss(tMiss(paid.miss))
+      return
+    }
     if (paid.coins > 0) {
       setNote(t('we.coins', { n: paid.coins }))
       pullAndMerge().catch(() => {})

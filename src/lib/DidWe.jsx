@@ -3,7 +3,7 @@ import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { readAmount, togetherLine, wePutAmount, weTrackAmount, weWeekTotals } from './social-amounts.js'
 import { BoardShell } from './BoardShell.jsx'
-import { pullAndMerge } from './cloud-sync.js'
+import { pullAndMerge, SHELF_IN } from './cloud-sync.js'
 import {
   WE_GOALS,
   useWeTonight,
@@ -221,8 +221,15 @@ export function useWeAnswer(reload, book) {
 
   async function answer(card, status) {
     const mine = weMine(card)
-    const out = await run(card.id, () => weAnswer(card.id, mine?.status === status ? null : status))
-    if (out.miss || !out.done || card.done) return
+    const takeBack = mine?.status === status
+    const out = await run(card.id, () => weAnswer(card.id, takeBack ? null : status))
+    if (takeBack && !out.miss) {
+      // The widget still shows the old answer and would put it back on the
+      // next merge. Fresh nights, then the shelf event redraws it (native).
+      await refreshWeNights().catch(() => {})
+      window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: readShelf() }))
+    }
+    if (out.miss || !out.finished) return
     const purse = normalizePurse(book)
     if (purse.cheerOn) fireCheer(purse.cheerOn, weCheerStageIfDone(card))
     const paid = await weClaim(card.id)
@@ -594,7 +601,7 @@ function WeNewForm({ book, start = '', withId = '' }) {
     if (draft.cadence === 'weekly' && !draft.weekdays.length) return setMiss(t('we.missDays'))
     setBusy(true)
     const out = await weMake({ ...draft, ask: picked })
-    if (out.miss) {
+    if (out.miss && !out.id) {
       setBusy(false)
       return setMiss(tMiss(out.miss))
     }
@@ -608,6 +615,11 @@ function WeNewForm({ book, start = '', withId = '' }) {
       }
     }
     setBusy(false)
+    // Made, but the time, note or folder did not save: say so, offer the card.
+    if (out.miss) {
+      setMadeId(out.id)
+      return setMiss(tMiss(out.miss))
+    }
     goHash('/we', { id: out.id })
   }
 
@@ -888,17 +900,18 @@ export function WeHome({ book, onChange, link = '' }) {
   const { cards, reload } = useWeTonight(account.user)
   const ans = useWeAnswer(reload, book)
   const cheer = useWeCheer(book, onChange)
+  // Hooks run before any early return so their order never changes.
+  const mine = cards.filter((card) => card.myState === 'in')
+  const sums = useWeTotals(mine.map((card) => card.id))
   if (link && account.ready && !account.user) {
     saveWebWeLink(link)
     return <NeedAccount book={book} note={t('weLink.webSignIn')} />
   }
   if (link && account.user) return <WeLinkJoin book={book} code={link} />
   if (account.ready && !account.user) return <NeedAccount book={book} />
-  const mine = cards.filter((card) => card.myState === 'in')
   const month = new Date().toISOString().slice(0, 7)
   const nights = mine.reduce((sum, card) => sum + weMonth(card, month).done, 0)
   const longest = mine.map((card) => ({ card, n: weStreak(card) })).sort((a, b) => b.n - a.n)[0]
-  const sums = useWeTotals(mine.map((card) => card.id))
 
   return (
     <Shell book={book} title={t('we.title')}>

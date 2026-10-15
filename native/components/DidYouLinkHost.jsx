@@ -61,6 +61,8 @@ export function DidYouLinkHost({ colors, onKeep }) {
   const userId = account.user?.id || ''
   const [tick, setTick] = useState(0)
   const keep = useRef(onKeep)
+  // The Did we code we last asked to sign in for, so a new one is asked too.
+  const askedSignIn = useRef('')
   keep.current = onKeep
 
   useEffect(() => onPendingDidYou(() => setTick((n) => n + 1)), [])
@@ -70,12 +72,30 @@ export function DidYouLinkHost({ colors, onKeep }) {
   }, [userId])
 
   useEffect(() => {
+    // Until the session is read, signed in looks like signed out.
+    if (!account.ready) return undefined
     const code = peekPendingDidYou()
     if (!code) return undefined
     const we = isWeLinkCode(code)
     if (we && !userId) {
-      // Kept until they sign in.
-      showToast({ id: 'did-you-link', text: t('weLink.signIn'), ms: 5200 })
+      // Kept until they sign in. Asked once; Not now lets the link go.
+      if (askedSignIn.current === code) return undefined
+      askedSignIn.current = code
+      publishSheet({
+        title: t('people.outTitle'),
+        body: t('weLink.signIn'),
+        goLabel: t('we.signIn'),
+        closeLabel: t('account.stay'),
+        colors,
+        onClose: () => {
+          publishSheet(null)
+          dropPendingDidYou(code)
+        },
+        onGo: () => {
+          publishSheet(null)
+          goHash('/account')
+        },
+      })
       return undefined
     }
     let alive = true
@@ -83,6 +103,11 @@ export function DidYouLinkHost({ colors, onKeep }) {
       if (!alive) return
       // Already friends: nothing to add, so the name is only for the title.
       const found = raw && !raw.miss && friends ? { ...raw, friends: true } : raw
+      if (found?.miss === 'off') {
+        // No cloud on this build: asking again next open will not help.
+        dropPendingDidYou(code)
+        return
+      }
       if (found?.miss) {
         // Kept for the next open.
         showToast({ id: 'did-you-link', kind: 'error', text: t('didYouLink.reach'), ms: 5200 })
@@ -181,7 +206,7 @@ export function DidYouLinkHost({ colors, onKeep }) {
         // first thing they see.
         goHash('/tonight', { tag: 'all', ...(ids[0] ? { face: ids[0] } : {}) })
         if (firstTime('did-i-guide-link')) guide('link', name, colors)
-        else showToast({ id: 'did-you-link', text: t(addFriend ? 'didYouLink.addedFriend' : 'didYouLink.added', { name }), ms: 3200 })
+        else showToast({ id: 'did-you-link', text: t(addFriend ? 'didYouLink.askedFriend' : 'didYouLink.added', { name }), ms: 3200 })
         // With no name, the sender only sees "someone". Ask once, after the guide.
         if (userId && found.name) {
           readMine()
@@ -223,7 +248,7 @@ export function DidYouLinkHost({ colors, onKeep }) {
       alive = false
     }
     // colors only styles the sheet.
-  }, [tick, userId])
+  }, [tick, userId, account.ready])
 
   return null
 }

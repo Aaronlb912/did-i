@@ -204,7 +204,10 @@ export function Tonight({ value, boards = [], tagId = '', onTag, onChange, now, 
     body = (
       <section className="di-face">
         <p className="di-face-plate">{t('tonight.doneKicker')}</p>
-        <h2 className="di-question">{t('tonight.doneTitle')}</h2>
+        {/* Same day hours as the phone's sun (native/lib/night-sky.js). */}
+        <h2 className="di-question">
+          {t(stack.clock.getHours() >= 6 && stack.clock.getHours() < 18 ? 'tonight.doneTitle' : 'tonight.doneTitleNight')}
+        </h2>
       </section>
     )
   } else if (stack.bodyKind === 'rest') {

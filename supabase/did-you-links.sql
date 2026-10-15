@@ -128,8 +128,10 @@ declare
   hit integer;
 begin
   if me is null then return false; end if;
+  -- Blocked either way: nothing is counted and the maker hears nothing.
   if not exists (select 1 from public.did_you_links l
-                 where l.code = c and not l.ended and l.made_by is distinct from me) then
+                 where l.code = c and not l.ended and l.made_by is distinct from me
+                   and (l.made_by is null or not public.blocked_with(l.made_by))) then
     return false;
   end if;
   insert into public.did_you_link_claims (code, user_id) values (c, me) on conflict do nothing;

@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { t, tMiss } from "../../src/lib/i18n.js";
-import { listFriends, personName, sendDidI } from "../../src/lib/people.js";
-import { repeatFrom, senderLastDid } from "../../src/lib/send-repeat.js";
+import { listFriends, personName, sendDidI, sendMiss } from "../../src/lib/people.js";
+import { repeatFrom, repeatLabel, senderLastDid } from "../../src/lib/send-repeat.js";
+import { HangCard } from "./HangCard.jsx";
+import { PickSheet } from "./PickSheet.jsx";
+import { ScheduleTile, ScheduleTiles } from "./ScheduleTile.jsx";
+import { SheetHost } from "./SheetHost.jsx";
 import { boardDate } from "../../src/lib/recurrence.js";
 import {
   makeDidYouLink,
@@ -35,7 +39,9 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
     let live = true;
     listFriends()
       .then((out) => {
-        if (live) setFriends(out.friends);
+        if (!live) return;
+        setFriends(out.friends);
+        setLoadMiss(out.miss ? t("people.reach") : "");
       })
       .catch(() => {
         if (live) {
@@ -51,10 +57,15 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
   const [note, setNote] = useState("");
   const [miss, setMiss] = useState("");
   const [busy, setBusy] = useState(false);
+  // State lags a fast double tap; this does not, so one tap sends once.
+  const inFlight = useRef(false);
   const [said, setSaid] = useState("");
   const [cadence, setCadence] = useState("once");
   const [days, setDays] = useState([]);
   const [everyDays, setEveryDays] = useState(7);
+  const [whenOpen, setWhenOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const whenWords = repeatLabel(repeatFrom(cadence, days, everyDays)) || t("hang.once");
   const name = personName(person) || t("people.someone");
   // No person: only a link, to text anyone, friend or not.
   const linkOnly = !person;
@@ -68,7 +79,10 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
       setMiss(t("we.missDays"));
       return;
     }
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
+    // A throw (offline) must not leave the button stuck busy.
     const { miss: why } = await sendDidI(
       person.user_id,
       question,
@@ -76,7 +90,8 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
       undefined,
       repeatFrom(cadence, days, everyDays),
       cadence === "every" ? senderLastDid(book, question, boardDate(new Date())) : "",
-    );
+    ).catch(() => ({ miss: "people.reach" }));
+    inFlight.current = false;
     setBusy(false);
     if (why === "already") return setMiss(t("people.sendAlready"));
     if (why) return setMiss(tMiss(why));
@@ -91,16 +106,24 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
       setMiss(t("people.sendBlank"));
       return;
     }
+    if (inFlight.current) return;
+    inFlight.current = true;
     setMiss("");
     setBusy(true);
-    const { code, miss: why } = await makeDidYouLink(question);
+    const { code, miss: why } = await makeDidYouLink(question).catch(() => ({ miss: "people.reach" }));
     setBusy(false);
-    if (why === "linkCap") return setMiss(t("didYouLink.cap"));
-    if (why || !code) return setMiss(tMiss(why || "people.reach"));
+    if (why || !code) {
+      inFlight.current = false;
+      if (why === "linkCap") return setMiss(t("didYouLink.cap"));
+      // A key from makeDidYouLink (sign in first) shows as is; raw server text is mapped.
+      return setMiss(tMiss(String(why).includes(".") ? why : sendMiss(why)));
+    }
     const how = await passAlong(
       sharedDidYouLine(question, code, t('people.sendWhat')),
       t("didYouLink.share"),
-    );
+    ).finally(() => {
+      inFlight.current = false;
+    });
     if (how === "copied") setSaid(t("didYouLink.copied"));
     else if (how === "shared") confirmDone(t("confirm.shared"));
   }
@@ -166,36 +189,38 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                   ? t("people.sendHintFamily", { name })
                   : t("people.sendHint", { name })}
             </Meta>
-            <Field
-              colors={colors}
-              label={t("people.sendWhat")}
-              value={question}
-              onChangeText={setQuestion}
+            <HangCard
+              tag={linkOnly ? t("lead.you") : t("lead.toLine", { name })}
+              lead={false}
+              blank={question}
+              onBlank={setQuestion}
               placeholder={t("people.sendPh")}
+              meta={linkOnly ? "" : whenWords}
+              metaAction={
+                linkOnly
+                  ? undefined
+                  : { label: t("checkOn.change"), a11y: `${t("we.when")}: ${whenWords}`, onPress: () => setWhenOpen(true) }
+              }
+              focused={focused}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              colors={colors}
             />
             {linkOnly ? null : (
               <>
-                <View
-                  style={styles.actions}
-                  accessibilityRole="radiogroup"
-                  accessibilityLabel={t("we.when")}
-                >
-                  {[
-                    ["once", t("hang.once")],
-                    ["daily", t("we.daily")],
-                    ["weekly", t("we.someDays")],
-                    ["every", t("hang.every")],
-                  ].map(([id, label]) => (
-                    <Pill
-                      key={id}
-                      label={label}
-                      on={cadence === id}
-                      onPress={() => setCadence(id)}
-                      colors={colors}
-                      radio
-                    />
-                  ))}
-                </View>
+                <PickSheet open={whenOpen} title={t("hang.whenAsk")} onClose={() => setWhenOpen(false)} colors={colors}>
+                  <View style={styles.whenBody}>
+                    <ScheduleTiles label={t("we.when")}>
+                      {[
+                        ["once", t("hang.once"), "once_on"],
+                        ["daily", t("we.daily"), "daily"],
+                        ["weekly", t("we.someDays"), "weekly"],
+                        ["every", t("hang.every"), "every"],
+                      ].map(([id, label, sub]) => (
+                        <ScheduleTile key={id} label={label} sub={t(`hang.tileSub.${sub}`)} on={cadence === id} onPress={() => setCadence(id)} colors={colors} />
+                      ))}
+                    </ScheduleTiles>
+                    <Reveal key={cadence} style={styles.whenBody}>
                 {cadence === "weekly" ? (
                   <View style={styles.actions}>
                     {[0, 1, 2, 3, 4, 5, 6].map((day) => {
@@ -237,6 +262,9 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                   </View>
                 ) : null}
                 {cadence === "every" ? <Meta colors={colors}>{t("people.sendEveryHint")}</Meta> : null}
+                    </Reveal>
+                  </View>
+                </PickSheet>
                 <Field
                   colors={colors}
                   label={t("people.sendNote")}
@@ -303,11 +331,14 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
           </Pressable>
         </Pressable>
       </KeyboardLift>
+      {/* The When sheet draws in this modal, over the form, not behind it. */}
+      <SheetHost />
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  whenBody: { gap: 10 },
   veil: { flex: 1, justifyContent: "center", padding: 20 },
   pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
   popKicker: {

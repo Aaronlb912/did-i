@@ -20,7 +20,7 @@ export function familyQrLink(code) {
 // { friend: '123456789012' }, { family: 'ABC123' }, or null. Reads the page
 // link and the didi:// link the page's Open button uses.
 export function readQrLink(text) {
-  const raw = String(text || '').trim()
+  const raw = String(text || '').trim().split(/[?#]/)[0]
   const friend = /^(?:https:\/\/(?:www\.)?did-i\.app\/f\/|didi(?:-dev)?:\/\/friend\/)(\d{12})\/?$/i.exec(raw)
   if (friend) return { friend: friend[1] }
   const family = /^(?:https:\/\/(?:www\.)?did-i\.app\/j\/|didi(?:-dev)?:\/\/family\/)([a-z0-9]{6})\/?$/i.exec(raw)

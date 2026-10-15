@@ -64,8 +64,8 @@ const DidITogetherWidget = (props: DidITogetherWidgetProps, environment: WidgetE
     line: '#2b3140',
   }
 
-  const people = Array.isArray(props?.people) ? props.people : []
-  const title = String(props?.title || 'Together tonight')
+  const people = Array.isArray(props?.people) ? props.people.filter((item) => item && typeof item === 'object') : []
+  const title = String(props?.title || 'Together today')
   const countLine = String(props?.countLine || '')
   const emptyLabel = String(props?.emptyLabel || 'Add friends or family in Did I.')
   const openUri = String(props?.openUri || 'didi://open/friends')

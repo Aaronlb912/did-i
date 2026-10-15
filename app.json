@@ -3,7 +3,7 @@
     "name": "Did I",
     "slug": "did-i",
     "scheme": "didi",
-    "version": "1.3.3",
+    "version": "1.3.4",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -16,7 +16,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.aaronbryant.didi",
-      "buildNumber": "78",
+      "buildNumber": "84",
       "supportsTablet": false,
       "deploymentTarget": "17.0",
       "infoPlist": {

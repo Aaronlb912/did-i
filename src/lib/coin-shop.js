@@ -1,5 +1,5 @@
 import { accountSessionOn } from './session-id.js'
-import { SHOP_BUDDIES, buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, CHEERS, LOOKS, normalizePurse, wearAccessory } from './purse.js'
+import { buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, liveCheers, liveLooks, nextCheerStage, shopBuddies, normalizePurse, wearAccessory } from './purse.js'
 import { accessoryById } from './accessories.js'
 import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems } from './wallet.js'
 import { buyFrameLocal, frameById, frameForSale } from './frames.js'
@@ -30,7 +30,7 @@ async function buyFrameRaw(book, id) {
 }
 
 async function buyLookWithCoinsRaw(book, id) {
-  const look = LOOKS.find((item) => item.id === id)
+  const look = liveLooks().find((item) => item.id === id)
   if (!look) return { book, miss: 'shop.miss.lookGone' }
   const purse = normalizePurse(book)
   if (purse.looks.includes(id)) {
@@ -48,9 +48,13 @@ async function buyLookWithCoinsRaw(book, id) {
 
 async function buyCheerStageWithCoinsRaw(book, id) {
   if (accountSessionOn()) {
+    const shown = nextCheerStage(normalizePurse(book).cheerStages[id] || 1)
     const remote = await purchaseWithCoins('cheer_stage', id)
     if (remote.miss) return { book, miss: remote.miss, missN: remote.missN }
-    return { book: applyPurchaseToBook(book, remote), miss: '' }
+    // The server counts bought stages; the phone also counts uses. Keep the stage that was paid for.
+    const next = applyPurchaseToBook(book, remote)
+    const stage = Math.max(Number(next.cheerStages?.[id]) || 1, shown)
+    return { book: { ...next, cheerStages: { ...next.cheerStages, [id]: stage } }, miss: '' }
   }
   return buyCheerStage(book, id)
 }
@@ -72,16 +76,16 @@ async function buyAccessoryWithCoinsRaw(book, id) {
 }
 
 const GEM_KINDS = {
-  look: { list: LOOKS, owned: 'looks', on: 'lookOn', local: buyLook },
-  cheer: { list: CHEERS, owned: 'cheers', on: 'cheerOn', local: buyCheer },
-  buddy: { list: SHOP_BUDDIES, owned: 'buddies', on: 'buddyOn', local: buyBuddy },
+  look: { list: liveLooks, owned: 'looks', on: 'lookOn', local: buyLook },
+  cheer: { list: liveCheers, owned: 'cheers', on: 'cheerOn', local: buyCheer },
+  buddy: { list: shopBuddies, owned: 'buddies', on: 'buddyOn', local: buyBuddy },
 }
 
 // Signed in, the server takes the gems and records the item, so it cannot be
 // added by editing the phone's saved data. Signed out, it asks to sign in.
 async function buyWithGemsRaw(book, kind, id) {
   const how = GEM_KINDS[kind]
-  const item = how?.list.find((row) => row.id === id)
+  const item = how?.list().find((row) => row.id === id)
   const purse = normalizePurse(book)
   if (!how) return { book, miss: 'shop.miss.buyFail' }
   if (!item || purse[how.owned].includes(id)) return how.local(book, id)

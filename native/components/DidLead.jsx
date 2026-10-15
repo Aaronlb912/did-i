@@ -126,7 +126,7 @@ export function IdeaPicks({ label, starters, picked, isOn, onPick, tilt, colors,
   if (!starters.length) return null
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.label, { color: colors.inkSoft }]}>{label}</Text>
+      {label ? <Text style={[styles.label, { color: colors.inkSoft }]}>{label}</Text> : null}
       <View style={styles.picks}>
         {starters.map((starter, index) => {
           const on = isOn ? isOn(starter) : picked === starter

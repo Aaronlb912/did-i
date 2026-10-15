@@ -10,6 +10,7 @@ import { useLookColors } from '../hooks/useHallColors.js'
 import { HallAmbient } from './HallAmbient.jsx'
 import { AppHeader, HeaderLargeTitle, LARGE_TITLE } from './AppHeader.jsx'
 import { MastMenuRoot } from './MastMenu.jsx'
+import { TileWindow, tileScrolled } from './frames/FramePreview.jsx'
 // Room under the last row so it never sits against the home indicator or nav bar.
 const END_ROOM = 24
 
@@ -78,6 +79,7 @@ export function BoardShell({
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
       lastY.current = value
+      tileScrolled()
     })
     return () => scrollY.removeListener(id)
   }, [scrollY])
@@ -123,7 +125,7 @@ export function BoardShell({
 
   const body = (
     <View style={[styles.page, { paddingBottom: bottomPad + (scroll ? END_ROOM : 0) + keyboardPad }]}>
-      {children}
+      <TileWindow.Provider value={Boolean(scroll)}>{children}</TileWindow.Provider>
     </View>
   )
 

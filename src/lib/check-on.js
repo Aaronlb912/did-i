@@ -144,6 +144,7 @@ async function me(db) {
 }
 
 function missOf(error) {
+  if (/too many check-ons/i.test(error?.message || '')) return 'checkOn.capToday'
   if (/check-on cap/i.test(error?.message || '')) return 'checkOn.cap'
   if (/row-level security/i.test(error?.message || '')) return 'checkOn.notFriend'
   return 'people.reach'
@@ -205,7 +206,9 @@ export function checkOnRule(lamp) {
 export async function followCheckOn(before, after) {
   if (!before || !after || before.id !== after.id) return { miss: '' }
   const rule = checkOnRule(after)
-  if (!rule || rule === checkOnRule(before)) return { miss: '' }
+  // The new schedule has no night the server can check: stop the old one.
+  if (!rule) return checkOnRule(before) ? dropCheckOn(after.id) : { miss: '' }
+  if (rule === checkOnRule(before)) return { miss: '' }
   const db = cloud()
   if (!db) return { miss: 'off' }
   const user = await me(db)
@@ -216,6 +219,20 @@ export async function followCheckOn(before, after) {
     .update({ question, days, ...shape })
     .eq('owner_id', user.id)
     .eq('lamp_id', String(after.id))
+  return error ? { miss: missOf(error) } : { miss: '' }
+}
+
+/**
+ * Stops your check-on for one question, if there is one: after a delete,
+ * pause or stop, so the friend is not pushed about a question you dropped.
+ * With no cloud or no session there is nothing on the server to stop.
+ */
+export async function dropCheckOn(lampId) {
+  const db = cloud()
+  if (!db || lampId == null) return { miss: '' }
+  const user = await me(db)
+  if (!user) return { miss: '' }
+  const { error } = await db.from('check_ons').delete().eq('owner_id', user.id).eq('lamp_id', String(lampId))
   return error ? { miss: missOf(error) } : { miss: '' }
 }
 

@@ -1,0 +1,10 @@
+{
+  "type": "watch-widget",
+  "name": "DidIWatchWidget",
+  "displayName": "Did I",
+  "bundleIdentifier": "com.aaronbryant.didi.watchkitapp.widget",
+  "deploymentTarget": "10.0",
+  "entitlements": {
+    "com.apple.security.application-groups": ["group.com.aaronbryant.didi"]
+  }
+}

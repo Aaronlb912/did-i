@@ -1,15 +1,18 @@
 import { goHash } from '../site/hash.js'
 import { BoardShell } from './BoardShell.jsx'
 import { ACHIEVEMENTS, markLabel } from './achievements.js'
+import { shelfStreak } from './hall-feel.js'
 import { statsCounts } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 
-export function StatsPage({ book, now }) {
+export function StatsPage({ book, boards, now }) {
   const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const counts = statsCounts(book, clock)
+  // Every folder, like the phone and the streak on Tonight.
+  if (boards) counts.heat = shelfStreak(boards, clock)
   const pips = ACHIEVEMENTS.filter((item) => (book.unlocked || []).includes(item.id))
 
   return (

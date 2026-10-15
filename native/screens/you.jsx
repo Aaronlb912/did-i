@@ -10,6 +10,9 @@ import { repeatFrom, repeatLabel } from '../../src/lib/send-repeat.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
+import { PickSheet } from '../components/PickSheet.jsx'
+import { Reveal } from '../lib/motion.jsx'
+import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { SetCap, SetCard } from '../components/SetBits.jsx'
 import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -47,6 +50,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
   const [cadence, setCadence] = useState('once')
   const [days, setDays] = useState([])
   const [open, setOpen] = useState('')
+  const [sheet, setSheet] = useState(false)
   const [focused, setFocused] = useState(false)
   const [shake, setShake] = useState(0)
   const feel = useAddFeel(book, inputRef)
@@ -85,7 +89,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
     if (cadence === 'weekly' && !days.length) {
       feel.buzz()
       setMiss(t('we.missDays'))
-      if (open !== 'when') fold('when')
+      setSheet(true)
       return
     }
     Keyboard.dismiss()
@@ -122,6 +126,8 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
     else if (how === 'shared') confirmDone(t('confirm.shared'))
   }
 
+  const whenWords = repeatLabel(repeat) || (cadence === 'weekly' ? t('we.someDays') : t('hang.once'))
+
   return (
     <BoardShell
       book={book}
@@ -144,7 +150,8 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
         }}
         onLeadPress={onLeadPress}
         placeholder={t('lead.youHint')}
-        meta={repeatLabel(repeat)}
+        meta={whenWords}
+        metaAction={{ label: t('checkOn.change'), a11y: `${t('we.when')}: ${whenWords}`, onPress: () => setSheet(true) }}
         wave={feel.wave}
         stamp={feel.stamp}
         shake={shake}
@@ -159,7 +166,6 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
       />
 
       <View style={styles.settings}>
-        <SetCap colors={colors}>{t('we.who')}</SetCap>
         <SetCard colors={colors}>
           <HangFold
             label={t('we.people')}
@@ -172,54 +178,17 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
             {people === null ? (
               <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.loadingPeople')}</Text>
             ) : people.length ? (
-              <View style={styles.pillRow} accessibilityRole="radiogroup">
+              <Reveal key="people" layout={false} style={styles.pillRow} accessibilityRole="radiogroup">
                 {people.map((p) => (
                   <Pill key={p.id} label={p.name} on={to === p.id} onPress={() => setTo(p.id)} colors={colors} radio />
                 ))}
-              </View>
+              </Reveal>
             ) : (
-              <>
+              <Reveal key="none" layout={false} style={styles.noneBody}>
                 <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.noPeople')}</Text>
                 <Pill label={t('we.findPeople')} onPress={() => goHash('/people')} colors={colors} />
-              </>
+              </Reveal>
             )}
-          </HangFold>
-          <HangFold
-            label={t('we.when')}
-            value={repeatLabel(repeat) || (cadence === 'weekly' ? t('we.someDays') : t('hang.once'))}
-            icon="calendar"
-            open={open === 'when'}
-            onToggle={() => fold('when')}
-            colors={colors}
-          >
-            <View style={styles.pillRow} accessibilityRole="radiogroup">
-              {[
-                ['once', t('hang.once')],
-                ['daily', t('we.daily')],
-                ['weekly', t('we.someDays')],
-              ].map(([id, label]) => (
-                <Pill key={id} label={label} on={cadence === id} onPress={() => setCadence(id)} colors={colors} radio />
-              ))}
-            </View>
-            {cadence === 'weekly' ? (
-              <View style={[styles.pillRow, styles.dayRow]}>
-                {[0, 1, 2, 3, 4, 5, 6].map((day) => {
-                  const on = days.includes(day)
-                  return (
-                    <Pill
-                      key={day}
-                      label={t(`we.day.${day}`)}
-                      on={on}
-                      onPress={() => setDays(on ? days.filter((d) => d !== day) : [...days, day].sort())}
-                      colors={colors}
-                    />
-                  )
-                })}
-              </View>
-            ) : null}
-            <Text style={[styles.hint, { color: colors.inkDim }]}>
-              {cadence === 'once' ? t('lead.youOnceHint') : t('lead.youRepeatHint')}
-            </Text>
           </HangFold>
           <HangFold
             label={t('people.sendNote')}
@@ -244,6 +213,41 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
         </SetCard>
       </View>
 
+      <PickSheet open={sheet} title={t('hang.whenAsk')} onClose={() => setSheet(false)} colors={colors}>
+          <View style={styles.sheetBody}>
+            <ScheduleTiles label={t('we.when')}>
+              {[
+                ['once', t('hang.once'), 'once_on'],
+                ['daily', t('we.daily'), 'daily'],
+                ['weekly', t('we.someDays'), 'weekly'],
+              ].map(([id, label, sub]) => (
+                <ScheduleTile key={id} label={label} sub={t(`hang.tileSub.${sub}`)} on={cadence === id} onPress={() => setCadence(id)} colors={colors} />
+              ))}
+            </ScheduleTiles>
+            {cadence === 'weekly' ? (
+<Reveal>
+              <View style={[styles.pillRow, styles.dayRow]}>
+                {[0, 1, 2, 3, 4, 5, 6].map((day) => {
+                  const on = days.includes(day)
+                  return (
+                    <Pill
+                      key={day}
+                      label={t(`we.day.${day}`)}
+                      on={on}
+                      onPress={() => setDays(on ? days.filter((d) => d !== day) : [...days, day].sort())}
+                      colors={colors}
+                    />
+                  )
+                })}
+              </View>
+            </Reveal>
+) : null}
+            <Text style={[styles.hint, { color: colors.inkDim }]}>
+              {cadence === 'once' ? t('lead.youOnceHint') : t('lead.youRepeatHint')}
+            </Text>
+          </View>
+      </PickSheet>
+
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('lead.youLead')}</Text>
       <KeyButton colors={colors} label={t('didYouLink.share')} disabled={busy || !question} onPress={shareLink} />
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('didYouLink.textHint')}</Text>
@@ -258,8 +262,10 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
 }
 
 const styles = StyleSheet.create({
+  sheetBody: { gap: 10, paddingBottom: 4 },
   settings: { marginTop: 4 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  noneBody: { gap: 8, alignItems: 'flex-start' },
   dayRow: { marginTop: 8 },
   hint: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17, marginTop: 8 },
   miss: { fontFamily: fonts.ui, fontSize: 13 },

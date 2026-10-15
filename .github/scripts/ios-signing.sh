@@ -43,6 +43,7 @@ install_profile_b64() {
   local env_prefix="$2"
   local tmp="${RUNNER_TEMP}/profile.mobileprovision"
   local decoded="${RUNNER_TEMP}/profile-decoded.plist"
+  echo "Installing profile for ${env_prefix} (${#b64} chars)"
   echo -n "${b64}" | base64 --decode > "${tmp}"
   security cms -D -i "${tmp}" > "${decoded}"
   local uuid name app_id bundle
@@ -64,6 +65,10 @@ fi
 # Apple Watch app (com.aaronbryant.didi.watchkitapp), only when DIDI_WATCH=1.
 if [ -n "${IOS_WATCH_PROVISIONING_PROFILE:-}" ]; then
   install_profile_b64 "${IOS_WATCH_PROVISIONING_PROFILE}" "IOS_WATCH_PROFILE"
+fi
+# Watch complication (com.aaronbryant.didi.watchkitapp.widget).
+if [ -n "${IOS_WATCH_WIDGET_PROVISIONING_PROFILE:-}" ]; then
+  install_profile_b64 "${IOS_WATCH_WIDGET_PROVISIONING_PROFILE}" "IOS_WATCH_WIDGET_PROFILE"
 fi
 
 gha_env "EXPORT_OPTIONS_PLIST=${EXPORT_PLIST}"

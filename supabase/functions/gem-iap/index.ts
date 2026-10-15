@@ -35,7 +35,9 @@ const admin = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 )
 
-type Verified = { ok: true; ref: string; test: boolean } | { ok: false; miss: string }
+// owner: the account id the app set on the buy (appAccountToken / obfuscatedExternalAccountId).
+// Empty on buys made before the app set it.
+type Verified = { ok: true; ref: string; test: boolean; owner: string } | { ok: false; miss: string }
 
 function testerAllowed(userId: string) {
   return testBuyCredits(userId, {
@@ -104,7 +106,7 @@ async function verifyApple(productId: string, transactionId: string): Promise<Ve
     if (info.productId !== productId) return { ok: false, miss: 'receipt' }
     if (info.type !== 'Consumable') return { ok: false, miss: 'receipt' }
     if (info.revocationDate) return { ok: false, miss: 'refunded' }
-    return { ok: true, ref: String(info.transactionId), test: info.environment !== 'Production' }
+    return { ok: true, ref: String(info.transactionId), test: info.environment !== 'Production', owner: String(info.appAccountToken || '') }
   }
   return { ok: false, miss: 'receipt' }
 }
@@ -154,7 +156,7 @@ async function verifyPlay(productId: string, purchaseToken: string): Promise<Ver
   // 0 purchased, 1 cancelled, 2 pending.
   if (info.purchaseState !== 0) return { ok: false, miss: info.purchaseState === 2 ? 'pending' : 'receipt' }
   // purchaseType 0 is a license tester's test buy (1 promo, 2 rewarded; absent when paid).
-  return { ok: true, ref: String(info.orderId || purchaseToken), test: info.purchaseType === 0 }
+  return { ok: true, ref: String(info.orderId || purchaseToken), test: info.purchaseType === 0, owner: String(info.obfuscatedExternalAccountId || '') }
 }
 
 Deno.serve(async (req) => {
@@ -202,6 +204,8 @@ Deno.serve(async (req) => {
     verified = { ok: false, miss: 'store' }
   }
   if (!verified.ok) return json({ miss: verified.miss }, verified.miss === 'setup' || verified.miss === 'store' ? 503 : 400)
+  // Bought for another account: never credit it to this one.
+  if (verified.owner && verified.owner.toLowerCase() !== userId.toLowerCase()) return json({ miss: 'other' }, 403)
   if (verified.test && !testerAllowed(userId)) return json({ miss: 'test' }, 403)
 
   const { error } = await admin.rpc('record_gem_purchase', {

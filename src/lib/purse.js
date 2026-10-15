@@ -1,7 +1,7 @@
-import { accountSessionOn } from './session-id.js'
-import { allClearTonight, boardDate } from './recurrence.js'
+import { accountSessionOn, readAccountUserId } from './session-id.js'
+import { addDaysIso, allClearTonight, boardDate, periodNight, stampDay } from './recurrence.js'
 import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
-import { FRAMES, FRAME_IDS, frameById, frameText, normalizeFrames, normalizeWornFrame, seasonOpen } from './frames.js'
+import { FRAMES, FRAME_IDS, frameById, frameLive, frameText, normalizeFrames, normalizeWornFrame, seasonOpen } from './frames.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 2
@@ -39,6 +39,18 @@ const ALL_CHEERS = [
   { id: 'sun', gems: CHEER_GEMS, from: '2026-10-23' },
   { id: 'leaves', gems: CHEER_GEMS, from: '2026-11-06' },
   { id: 'lantern', gems: CHEER_GEMS, from: '2026-11-06' },
+  { id: 'gift', gems: CHEER_GEMS, from: '2026-11-20' },
+  { id: 'popcorn', gems: CHEER_GEMS, from: '2026-11-20' },
+  { id: 'snowflake', gems: CHEER_GEMS, from: '2026-12-04' },
+  { id: 'bell', gems: CHEER_GEMS, from: '2026-12-04' },
+  { id: 'disco', gems: CHEER_GEMS, from: '2026-12-18' },
+  { id: 'ribbon', gems: CHEER_GEMS, from: '2026-12-18' },
+  { id: 'clink', gems: CHEER_GEMS, from: '2027-01-01' },
+  { id: 'balldrop', gems: CHEER_GEMS, from: '2027-01-01' },
+  { id: 'bolt', gems: CHEER_GEMS, from: '2027-01-15' },
+  { id: 'splat', gems: CHEER_GEMS, from: '2027-01-15' },
+  { id: 'butterfly', gems: CHEER_GEMS, from: '2027-01-29' },
+  { id: 'bounce', gems: CHEER_GEMS, from: '2027-01-29' },
 ]
 
 export const FREE_BUDDY = 'ant'
@@ -53,6 +65,12 @@ const ALL_BUDDIES = [
   { id: 'frog', gems: BUDDY_GEMS, from: '2026-10-09' },
   { id: 'penguin', gems: BUDDY_GEMS, from: '2026-10-23' },
   { id: 'fox', gems: BUDDY_GEMS, from: '2026-11-06' },
+  { id: 'otter', gems: BUDDY_GEMS, from: '2026-11-20' },
+  { id: 'hedgehog', gems: BUDDY_GEMS, from: '2026-12-04' },
+  { id: 'panda', gems: BUDDY_GEMS, from: '2026-12-18' },
+  { id: 'duck', gems: BUDDY_GEMS, from: '2027-01-01' },
+  { id: 'axolotl', gems: BUDDY_GEMS, from: '2027-01-15' },
+  { id: 'turtle', gems: BUDDY_GEMS, from: '2027-01-29' },
   // Never sold. The server gives it at 15 friends joined (claim_invites).
   { id: 'hive', gems: 0, refer: 15 },
 ]
@@ -82,6 +100,24 @@ const ALL_LOOKS = [
   { id: 'maple', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-06' },
   { id: 'fig', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-06' },
   { id: 'oat', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-11-06' },
+  { id: 'cranberry', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-20' },
+  { id: 'saffron', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-11-20' },
+  { id: 'pine', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-11-20' },
+  { id: 'iris', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-12-04' },
+  { id: 'lagoon', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-12-04' },
+  { id: 'cocoa', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-12-04' },
+  { id: 'emerald', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-12-18' },
+  { id: 'candy', coins: 0, gems: LOOK_GEM_PRICE, from: '2026-12-18' },
+  { id: 'denim', coins: LOOK_COIN_PRICE, gems: 0, from: '2026-12-18' },
+  { id: 'magenta', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-01' },
+  { id: 'copper', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-01' },
+  { id: 'lilac', coins: LOOK_COIN_PRICE, gems: 0, from: '2027-01-01' },
+  { id: 'lemon', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-15' },
+  { id: 'peacock', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-15' },
+  { id: 'rosewood', coins: LOOK_COIN_PRICE, gems: 0, from: '2027-01-15' },
+  { id: 'sunset', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-29' },
+  { id: 'twilight', coins: 0, gems: LOOK_GEM_PRICE, from: '2027-01-29' },
+  { id: 'fog', coins: LOOK_COIN_PRICE, gems: 0, from: '2027-01-29' },
 ]
 
 // Cheers that are never sold, only given out by hand as a gift (see gifts.sql).
@@ -98,6 +134,24 @@ export function isReferBuddy(id) {
   return Boolean(ALL_BUDDIES.find((item) => item.id === id)?.refer)
 }
 export const LOOKS = ALL_LOOKS.filter((item) => isLive(item))
+
+// The consts above are fixed when the app loads. An app left open past a
+// drop day needs these, which read the date when called.
+export function liveLooks(today = boardDate(new Date())) {
+  return ALL_LOOKS.filter((item) => isLive(item, today))
+}
+export function liveCheers(today = boardDate(new Date())) {
+  return ALL_CHEERS.filter((item) => isLive(item, today))
+}
+export function liveBuddies(today = boardDate(new Date())) {
+  return ALL_BUDDIES.filter((item) => isLive(item, today))
+}
+export function shopBuddies(today = boardDate(new Date())) {
+  return liveBuddies(today).filter((item) => !item.refer)
+}
+export function ownableCheers(today = boardDate(new Date())) {
+  return [...liveCheers(today), ...SPECIAL_CHEERS]
+}
 
 // A drop shows as "Coming" for the week before its day, then goes on sale.
 // Anything further out stays hidden.
@@ -145,7 +199,7 @@ export function dropSlides(today = boardDate(new Date())) {
   if (coming) {
     slides.push({ kind: 'coming', date: coming.date, days: daysUntil(coming.date, today), items: slideItems(coming.date) })
   }
-  const dates = [...new Set([...LOOKS, ...CHEERS, ...BUDDIES].map((item) => item.from).filter(Boolean))]
+  const dates = [...new Set([...liveLooks(today), ...liveCheers(today), ...liveBuddies(today)].map((item) => item.from).filter(Boolean))]
     .filter((date) => date <= today)
     .sort()
     .reverse()
@@ -225,6 +279,20 @@ export const GEM_LOOK_IDS = [
   'indigo',
   'sky',
   'orchid',
+  'maple',
+  'fig',
+  'cranberry',
+  'saffron',
+  'iris',
+  'lagoon',
+  'emerald',
+  'candy',
+  'magenta',
+  'copper',
+  'lemon',
+  'peacock',
+  'sunset',
+  'twilight',
 ]
 
 export function isGemLook(id) {
@@ -232,26 +300,29 @@ export function isGemLook(id) {
 }
 
 export function recentLooks(count = 2) {
-  const drop = newestDrop(LOOKS)
+  const looks = liveLooks()
+  const drop = newestDrop(looks)
   if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
-  const gem = LOOKS.filter((item) => item.gems > 0)
+  const gem = looks.filter((item) => item.gems > 0)
   if (gem.length) return gem.slice(0, Math.min(n, gem.length))
-  return LOOKS.slice(-n)
+  return looks.slice(-n)
 }
 
 export function recentCheers(count = 2) {
-  const drop = newestDrop(CHEERS)
+  const cheers = liveCheers()
+  const drop = newestDrop(cheers)
   if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
-  return CHEERS.slice(-n)
+  return cheers.slice(-n)
 }
 
 export function recentBuddies(count = 2) {
-  const drop = newestDrop(SHOP_BUDDIES)
+  const buddies = shopBuddies()
+  const drop = newestDrop(buddies)
   if (drop.length) return drop
   const n = Math.max(1, Math.floor(Number(count) || 2))
-  return SHOP_BUDDIES.slice(-n)
+  return buddies.slice(-n)
 }
 
 export const FRIEND_CHEER_GEMS = 1
@@ -262,9 +333,11 @@ export const CHEER_STAGE_MAX = 5
 export const CHEER_STAGE_USES = [0, 0, 5, 10, 15, 20]
 export const CHEER_STAGE_COINS = [0, 0, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN]
 
-const CHEER_IDS = new Set(OWNABLE_CHEERS.map((item) => item.id))
-const LOOK_IDS = new Set(LOOKS.map((item) => item.id))
-const BUDDY_IDS = new Set(BUDDIES.map((item) => item.id))
+// Every id that can be owned, released or not, so a purse loaded before a
+// drop day (or a gift of a new item) keeps what it has.
+const CHEER_IDS = new Set([...ALL_CHEERS, ...SPECIAL_CHEERS].map((item) => item.id))
+const LOOK_IDS = new Set(ALL_LOOKS.map((item) => item.id))
+const BUDDY_IDS = new Set(ALL_BUDDIES.map((item) => item.id))
 
 function asCount(value) {
   const n = Math.floor(Number(value) || 0)
@@ -370,8 +443,10 @@ export function mergePurses(boards) {
   const coinsSame = purses.every((item) => item.coins === purses[0].coins)
   const gemsSame = purses.every((item) => item.gems === purses[0].gems)
   return {
-    coins: coinsSame ? purses[0].coins : purses.reduce((n, item) => n + item.coins, 0),
-    gems: gemsSame ? purses[0].gems : purses.reduce((n, item) => n + item.gems, 0),
+    // Folders share one purse. Folders that disagree come from a write that
+    // paid one folder only, so take the largest; a sum grew on every save.
+    coins: coinsSame ? purses[0].coins : Math.max(...purses.map((item) => item.coins)),
+    gems: gemsSame ? purses[0].gems : Math.max(...purses.map((item) => item.gems)),
     cheers: [...new Set(purses.flatMap((item) => item.cheers))],
     cheerOn: purses.find((item) => item.cheerOn !== 'lime')?.cheerOn || purses[0].cheerOn,
     looks: [...new Set(purses.flatMap((item) => item.looks))],
@@ -469,7 +544,7 @@ function tapsPaidTonight(book, clock) {
   return (book.answers || []).filter((answer) => {
     if (answer.status !== 'yes' && answer.status !== 'late') return false
     const period = String(answer.periodKey || '')
-    const at = String(answer.answeredAt || '')
+    const at = stampDay(answer.answeredAt)
     return period === today || period.startsWith(today) || at.startsWith(today)
   }).length
 }
@@ -518,12 +593,85 @@ export function weeklyGemBump(shelf, prevShelf, clock = new Date(), opts = {}) {
 // Signed in, the server owns the balance: a tap does not add coins here, it
 // leaves them for the save to credit (credit_night_coins). Without this the
 // save never saw the count go up and no account earned night coins.
-let earnedForServer = 0
+// Kept per answered night, so a late answer for last night pays last night.
+// Saved on every change so a killed app still credits them on the next start,
+// and only for the account that earned them.
+let earnedForServer = null
+const EARNED_KEY = 'did-i-earned-coins'
 
+// The id the cached queue was loaded for. Built while the id was '' (sign
+// in, before the first pull), it loads the user's saved queue once the id lands.
+let earnedFor = ''
+
+function earnedQueue() {
+  const user = readAccountUserId()
+  if (earnedForServer && earnedFor === user) return earnedForServer
+  const blank = earnedForServer && !earnedFor ? earnedForServer : {}
+  earnedForServer = {}
+  earnedFor = user
+  try {
+    const saved = JSON.parse(localStorage.getItem(EARNED_KEY) || 'null')
+    if (saved && user && saved.user === user && saved.nights && typeof saved.nights === 'object') {
+      for (const [night, n] of Object.entries(saved.nights)) if (Number(n) > 0) earnedForServer[night] = Number(n)
+    }
+  } catch {
+    // ok
+  }
+  for (const [night, n] of Object.entries(blank)) earnedForServer[night] = (earnedForServer[night] || 0) + n
+  return earnedForServer
+}
+
+function saveEarned() {
+  try {
+    const user = readAccountUserId()
+    // Id not known yet (sign in, before the first pull): keep the queue in
+    // memory and leave storage alone; it is stamped per user, and the next
+    // save once the id lands writes it. Sign out empties it (dropEarnedCoins).
+    if (!user) return
+    if (Object.keys(earnedForServer || {}).length) {
+      localStorage.setItem(EARNED_KEY, JSON.stringify({ user, nights: earnedForServer }))
+    } else localStorage.removeItem(EARNED_KEY)
+  } catch {
+    // ok
+  }
+}
+
+// Bumped on sign out. A credit that fails after it hands back coins taken
+// for the old account; returnEarnedCoins drops them by this stamp.
+let earnedGen = 0
+
+// { nightIso: coins }. A failed credit hands its coins back with
+// returnEarnedCoins; the server caps each night, so a retry cannot double pay.
+// out.gen (not enumerable) goes back with returnEarnedCoins.
 export function takeEarnedCoins() {
-  const n = earnedForServer
-  earnedForServer = 0
-  return n
+  const out = earnedQueue()
+  earnedForServer = {}
+  saveEarned()
+  Object.defineProperty(out, 'gen', { value: earnedGen })
+  return out
+}
+
+// Sign out: forget the queue, and refuse coins a credit still out hands back.
+export function dropEarnedCoins() {
+  earnedGen += 1
+  earnedForServer = {}
+  // Not saveEarned: it leaves storage alone while the id is ''.
+  try {
+    localStorage.removeItem(EARNED_KEY)
+  } catch {
+    // ok
+  }
+}
+
+export function returnEarnedCoins(night, n, clock = new Date(), gen) {
+  if (!night || !(n > 0)) return
+  if (gen != null && gen !== earnedGen) return
+  // The server takes yesterday or today (payTap); an older night would be refused forever.
+  const today = boardDate(clock)
+  if (night < addDaysIso(today, -1) || night > today) night = today
+  const queue = earnedQueue()
+  queue[night] = (queue[night] || 0) + n
+  saveEarned()
 }
 
 export function payTap(before, after, row, status, clock = new Date()) {
@@ -535,7 +683,12 @@ export function payTap(before, after, row, status, clock = new Date()) {
   let coins = purse.coins
   if (!paid) {
     const earned = coinsFor(status, before, row, clock)
-    if (accountSessionOn()) earnedForServer += earned
+    if (accountSessionOn()) {
+      // The server takes yesterday or today; a week or month key maps further back.
+      const today = boardDate(clock)
+      const night = periodNight(row?.lamp, row?.periodKey)
+      returnEarnedCoins(night || today, earned, clock)
+    }
     else coins += earned
   }
   return { ...after, ...purse, coins }
@@ -720,7 +873,7 @@ export function spendGems(book, gems) {
 }
 
 export function buyLook(book, id) {
-  const look = LOOKS.find((item) => item.id === id)
+  const look = liveLooks().find((item) => item.id === id)
   const purse = normalizePurse(book)
   if (!look) return { book, miss: 'shop.miss.lookGone' }
   if (purse.looks.includes(id)) {
@@ -749,10 +902,10 @@ export function buyLook(book, id) {
 
 // Signed out, an accessory is bought and kept on this phone. Signed in, the
 // server takes the coins (coin-shop.js). Buying one puts it on.
-export function buyAccessory(book, id) {
+export function buyAccessory(book, id, today = boardDate(new Date())) {
   const item = accessoryById(id)
   const purse = normalizePurse(book)
-  if (!item || !isLive(item)) return { book, miss: 'shop.miss.accessoryGone' }
+  if (!item || !accessoryOnSale(item, today)) return { book, miss: 'shop.miss.accessoryGone' }
   if (purse.accessories.includes(id)) return wearAccessory(book, id)
   if (purse.coins < item.coins) return { book, miss: 'shop.miss.needCoins', missN: item.coins }
   const accessories = [...purse.accessories, id]
@@ -819,7 +972,7 @@ export function buyCheerStage(book, id) {
 }
 
 export function buyBuddy(book, id) {
-  const buddy = SHOP_BUDDIES.find((item) => item.id === id)
+  const buddy = shopBuddies().find((item) => item.id === id)
   const purse = normalizePurse(book)
   if (!buddy) return { book, miss: 'shop.miss.buddyGone' }
   if (purse.buddies.includes(id)) {
@@ -854,7 +1007,7 @@ export function wearCheer(book, id) {
 }
 
 export function buyCheer(book, id) {
-  const cheer = CHEERS.find((item) => item.id === id)
+  const cheer = liveCheers().find((item) => item.id === id)
   const purse = normalizePurse(book)
   if (!cheer) return { book, miss: 'shop.miss.cheerGone' }
   if (purse.cheers.includes(id)) {
@@ -881,11 +1034,11 @@ export function buyCheer(book, id) {
 // shop_catalog. Coin, earned, seasonal and free frames are not gifts.
 export function giftItems() {
   return {
-    looks: LOOKS.filter((item) => item.gems > 0 || item.coins > 0),
-    cheers: CHEERS.filter((item) => item.gems > 0),
-    buddies: BUDDIES.filter((item) => item.gems > 0),
+    looks: liveLooks().filter((item) => item.gems > 0 || item.coins > 0),
+    cheers: liveCheers().filter((item) => item.gems > 0),
+    buddies: liveBuddies().filter((item) => item.gems > 0),
     accessories: accessoriesForSale(boardDate(new Date())),
-    frames: FRAMES.filter((item) => item.kind === 'gem'),
+    frames: FRAMES.filter((item) => item.kind === 'gem' && frameLive(item, boardDate(new Date()))),
   }
 }
 
@@ -1005,7 +1158,7 @@ export function wishGoal(purse, today = boardDate(new Date())) {
 
 // A shop row: on sale today, not in a coming drop, not owned.
 export function shopRow(type, list, purse, today = boardDate(new Date())) {
-  return list.filter((item) => isLive(item, today) && !shopTag(purse, type, item).owned)
+  return list.filter((item) => (type === 'accessory' ? accessoryOnSale(item, today) : isLive(item, today)) && !shopTag(purse, type, item).owned)
 }
 
 // Owned items go to the end of an All page.

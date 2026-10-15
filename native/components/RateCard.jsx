@@ -2,30 +2,31 @@ import { useEffect, useState } from 'react'
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import * as StoreReview from 'expo-store-review'
 import { t } from '../../src/lib/i18n.js'
-import { markRateAsked, noteClearedNight } from '../../src/lib/rate-ask.js'
+import { markRateAsked, noteClearedNight, rateAskDue } from '../../src/lib/rate-ask.js'
 import { APP_STORE_REVIEW_URL, PLAY_STORE_URL } from '../../src/lib/store-skus.js'
 import { confirmMiss } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 
 // A small card on Home after the 7th cleared night: the in-app review sheet,
 // or the store page when the sheet is not there.
-// Shown once. Marked asked as soon as it shows, so it never comes back.
+// It stays until Open or close is tapped, so a card seen for a blink comes back.
 export function RateCard({ colors, nightDone, dateIso }) {
-  const [show, setShow] = useState(false)
+  const [show, setShow] = useState(rateAskDue)
 
   useEffect(() => {
     if (!nightDone || !dateIso || show) return
-    if (noteClearedNight(dateIso)) {
-      markRateAsked()
-      setShow(true)
-    }
+    if (noteClearedNight(dateIso)) setShow(true)
   }, [nightDone, dateIso, show])
 
   if (!show) return null
   const url = Platform.OS === 'ios' ? APP_STORE_REVIEW_URL : PLAY_STORE_URL
+  const hide = () => {
+    markRateAsked()
+    setShow(false)
+  }
   // The in-app review sheet when the phone has it, else the store page.
   const open = async () => {
-    setShow(false)
+    hide()
     try {
       if ((await StoreReview.isAvailableAsync()) && (await StoreReview.hasAction())) {
         await StoreReview.requestReview()
@@ -50,7 +51,7 @@ export function RateCard({ colors, nightDone, dateIso }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('rate.hide')}
-        onPress={() => setShow(false)}
+        onPress={hide}
         hitSlop={10}
         style={styles.x}
       >

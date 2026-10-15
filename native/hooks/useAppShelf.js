@@ -8,32 +8,32 @@ import {
   mergeSameTitles,
   nextBoardTitle,
   parkEmptyTags,
+  addBook,
   putBook,
   readShelf,
   selectBook,
   writeShelf,
 } from '../../src/lib/board-shelf.js'
-import { hangInto, takeDown } from '../../src/lib/board-ops.js'
+import { bulkLamps, hangInto, takeDown } from '../../src/lib/board-ops.js'
 import { blankLamp } from '../../src/lib/board-json.js'
 import { keptLamp } from '../../src/lib/send-repeat.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from '../../src/lib/daily.js'
 import { forgetAnswerMarks } from '../../src/lib/answer-log.js'
 import { bindForegroundSync, pullAndMerge, pushSoon, SHELF_IN, takeAccountChanged } from '../../src/lib/cloud-sync.js'
 import { stripDemoShelf } from '../../src/lib/demo-strip.js'
-import { boardDate, isoDate } from '../../src/lib/recurrence.js'
+import { isoDate } from '../../src/lib/recurrence.js'
 import {
   maybeStreakMiss,
   queueStreakMoment,
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
-import { cloudSetUp } from '../../src/lib/cloud.js'
-import { accountSessionOn } from '../../src/lib/session-id.js'
+import { accountSessionOn, readAccountUserId } from '../../src/lib/session-id.js'
 import { reportRejection } from '../../src/lib/report.js'
 import {
   alignShelfPurse,
-  mergePurses,
   spreadPurseFrom,
   weeklyGemBump,
+  returnEarnedCoins,
   takeEarnedCoins,
 } from '../../src/lib/purse.js'
 import {
@@ -45,12 +45,12 @@ import {
 import { goHash, readRoute } from '../navigation/hash.js'
 import { absorbStoredWidgetProps } from '../../src/lib/widget-tonight.js'
 import { pushShelfAfterWidgetAnswer } from '../../src/lib/widget-cloud-sync.js'
-import { syncTonightWidget, syncTonightWidgetIfChanged } from '../widget-sync.js'
+import { markWidgetTimelineRead, syncTonightWidget, syncTonightWidgetIfChanged } from '../widget-sync.js'
 import { reconcileShelfFromWidget } from '../../src/lib/widget-reconcile.js'
 import { afterNativeBridgeReady } from '../lib/defer-native.js'
 import { runAfterLaunchReady } from '../lib/launch-ready.js'
 import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
-import { refreshWidgetTimelineFromKit } from '../widget-bridge.js'
+import { beginWidgetRefresh } from '../widget-bridge.js'
 import { applyPendingAndroidWidgetTap } from '../widget-tap'
 import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
 import { useLocale } from '../../src/lib/i18n.js'
@@ -83,6 +83,10 @@ function firstShelf() {
 
 export function useAppShelf() {
   const [shelf, setShelf] = useState(firstShelf)
+  // The latest shelf, for saves that run after a delay (undo toasts, sheets):
+  // building from the render-time shelf would drop edits made since.
+  const shelfRef = useRef(shelf)
+  shelfRef.current = shelf
   // Marks unlocked together wait their turn instead of only the first showing.
   const [marks, setMarks] = useState([])
   // The General folder's name follows the app language. Reading the shelf
@@ -104,9 +108,9 @@ export function useAppShelf() {
   )
 
   const persist = useCallback((nextShelf) => {
+    const shelf = shelfRef.current
     const now = new Date()
     const before = currentBook(shelf)
-    const coinsBefore = mergePurses(shelf.boards).coins
     const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: accountSessionOn() })
     const mapped = bumped.boards.map((item) => {
       let next = normalizeBook(item)
@@ -119,21 +123,31 @@ export function useAppShelf() {
     const written = writeShelf(spreadPurseFrom(drafted, current))
     const miss = maybeStreakMiss(written.boards, now)
     if (miss) queueStreakMoment(miss, miss.dateIso)
+    shelfRef.current = written
     setShelf(written)
     pushSoon(written)
-    const fold = written.boards.find((b) => b.id === written.currentId)?.dayFoldHour ?? 0
-    const coinsAfter = mergePurses(written.boards).coins
-    const earned = Math.max(0, coinsAfter - coinsBefore) + takeEarnedCoins()
-    if (cloudSetUp() && earned > 0) {
-      creditNightCoins(boardDate(now, fold), earned).then((bal) => {
-        if (bal == null) return
+    // Signed in, taps queue their coins (payTap); signed out, the phone keeps them.
+    // Crediting without a session failed, re-queued, and paid twice on sign-in.
+    // A reply that lands after a sign out or account switch belongs to the old account.
+    const who = readAccountUserId()
+    const sameAccount = () => !who || readAccountUserId() === who
+    const taken = accountSessionOn() ? takeEarnedCoins() : {}
+    for (const [night, earned] of Object.entries(taken)) {
+      creditNightCoins(night, earned).then((bal) => {
+        if (!sameAccount()) return
+        // Not paid: keep the coins for the next save to try again.
+        if (bal == null) return returnEarnedCoins(night, earned, new Date(), taken.gen)
         const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
         setShelf(synced)
         pushSoon(synced)
-      }).catch(reportRejection('night-coins'))
+      }).catch((err) => {
+        if (sameAccount()) returnEarnedCoins(night, earned, new Date(), taken.gen)
+        reportRejection('night-coins')(err)
+      })
     }
     if (accountSessionOn() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
       grantWeeklyGem(bumped.gemWeek).then((bal) => {
+        if (!sameAccount()) return
         // Not granted: forget the week so the next cleared night asks again.
         if (bal == null) {
           const now = readShelf()
@@ -146,7 +160,8 @@ export function useAppShelf() {
       }).catch(reportRejection('weekly-gem'))
     }
     const after = currentBook(written)
-    if (after) scheduleNativePings(after).catch(reportRejection('schedule-pings'))
+    // Every board, the same as armLampPings: one board would cancel the rest.
+    if (written?.boards?.length) scheduleNativePings(written.boards).catch(reportRejection('schedule-pings'))
     syncTonightWidget(written).catch(() => {})
     // A mark that unlocks with nothing on screen may as well not have.
     if (after && after.id === before?.id && !after.quietMode) {
@@ -156,28 +171,28 @@ export function useAppShelf() {
       if (toasts.length) setMarks((queue) => [...queue, ...toasts.filter((mark) => !queue.some((item) => item.id === mark.id))])
     }
     return { written, before, after }
-  }, [shelf])
+  }, [])
 
   const change = useCallback(
     (next) => {
-      persist(putBook(shelf, { ...next, id: next.id || book.id }))
+      persist(putBook(shelfRef.current, { ...next, id: next.id || book.id }))
     },
-    [book, persist, shelf],
+    [book, persist],
   )
 
   // Several folders at once, for example a bulk edit on Questions.
   const changeBooks = useCallback(
     (books) => {
       if (!books.length) return
-      persist(books.reduce((next, one) => putBook(next, one), shelf))
+      persist(books.reduce((next, one) => putBook(next, one), shelfRef.current))
     },
-    [persist, shelf],
+    [persist],
   )
 
   const saveLamp = useCallback(
     (target, lamp, fromBook, clock = new Date()) => {
       const source = fromBook && Array.isArray(fromBook.lamps) ? fromBook : null
-      let next = shelf
+      let next = shelfRef.current
       let dest = target
       if (source && source.id !== target.id) {
         const answers = (source.answers || []).filter((item) => item.lampId === lamp.id)
@@ -201,50 +216,52 @@ export function useAppShelf() {
       const clock = new Date()
       const lamps = [].concat(questions).map((item) => keptLamp(item, clock, live.dayFoldHour)).filter(Boolean)
       if (!lamps.length) return []
-      let dest = live
+      const latest = shelfRef.current
+      let dest = currentBook(latest) || live
       for (const lamp of lamps) {
         dest = hangInto(dest, lamp, false)
       }
-      persist(putBook(shelf, commitBook(dest, clock)))
+      persist(putBook(latest, commitBook(dest, clock)))
       // The new questions' ids, so a link can open Tonight right on them.
       return lamps.map((lamp) => lamp.id)
     },
-    [live, persist, shelf],
+    [live, persist],
   )
 
   const setTag = useCallback(
     (id) => {
       const first = tagIdsOf(id)[0]
-      if (first) persist(selectBook(shelf, first))
+      if (first) persist(selectBook(shelfRef.current, first))
       // The route is read on tap, not kept as a dependency: a new setTag on
       // every navigation re-rendered every mounted screen mid-transition.
       const { path, face } = readRoute()
       const stay = path === '/tonight' || path === '/lamps' || path === '/later' || path === '/home' ? path : '/'
       goHash(stay === '/home' ? '/' : stay, { tag: id || 'all', face, keepFocus: true })
     },
-    [persist, shelf],
+    [persist],
   )
 
-  const switchBoard = useCallback((id) => persist(selectBook(shelf, id)), [persist, shelf])
+  const switchBoard = useCallback((id) => persist(selectBook(shelfRef.current, id)), [persist])
   const addBoard = useCallback((name) => {
+    const latest = shelfRef.current
     persist(
-      putBook(shelf, {
+      addBook(latest, {
         ...emptyBoard(),
-        title: String(name || '').trim() || nextBoardTitle(shelf.boards),
+        title: String(name || '').trim() || nextBoardTitle(latest.boards),
         keeperName: live.keeperName,
       }),
     )
-  }, [live.keeperName, persist, shelf])
+  }, [live.keeperName, persist])
   const removeBoard = useCallback(
     (id) => {
-      persist(dropBook(shelf, id))
+      persist(dropBook(shelfRef.current, id))
       const now = readRoute()
       if (tagIdsOf(now.tag).includes(id)) {
         const rest = joinTagIds(tagIdsOf(now.tag).filter((other) => other !== id))
         goHash(now.path === '/lamps' ? '/lamps' : '/', { tag: rest || 'all' })
       }
     },
-    [persist, shelf],
+    [persist],
   )
 
   useEffect(() => {
@@ -284,7 +301,8 @@ export function useAppShelf() {
       afterNativeBridgeReady(() => {
         if (cancelled) return
         if (!nativeWidgetsEnabled()) return
-        refreshWidgetTimelineFromKit()
+        // Shared with the queued widget write, so the taps are read once, first.
+        beginWidgetRefresh()
           .then((merged) => {
             if (cancelled) return merged
             const before = readShelf()
@@ -318,8 +336,14 @@ export function useAppShelf() {
       setShelf(event.detail)
       // Answers from another phone (sync): the widget shows them too. After a
       // sign-in or sign-out it always redraws (new look, buddy, or nothing).
-      const redraw = takeAccountChanged() ? syncTonightWidget : syncTonightWidgetIfChanged
+      const changed = takeAccountChanged()
+      // The widget timeline holds the old account's taps: overwrite it, never
+      // read them into this shelf.
+      if (changed) markWidgetTimelineRead(true)
+      const redraw = changed ? syncTonightWidget : syncTonightWidgetIfChanged
       redraw(event.detail).catch(() => {})
+      // Reminders are rebuilt for the new account, so the last one's Did we pings go.
+      if (changed) scheduleNativePings(event.detail.boards || []).catch(reportRejection('schedule-pings'))
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {
@@ -337,14 +361,14 @@ export function useAppShelf() {
 
   const importShelf = useCallback((next) => persist(next), [persist])
 
+  // Clear this folder goes the delete path: the shared purse stays, and other
+  // phones get gone marks instead of bringing the questions back.
   const startEmpty = useCallback(() => {
-    change({
-      ...emptyBoard(),
-      id: live.id,
-      title: live.title,
-      keeperName: live.keeperName,
-    })
-  }, [change, live.id, live.keeperName, live.title])
+    const now = currentBook(shelfRef.current) || live
+    const picks = (now.lamps || []).map((lamp) => ({ boardId: now.id, lampId: lamp.id }))
+    const [cleared] = bulkLamps([now], picks, 'delete')
+    change({ ...(cleared || now), answers: [] })
+  }, [change, live])
 
   const sendCopy = useCallback(async () => {
     try {

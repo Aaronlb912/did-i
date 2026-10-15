@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import {
+  Keyboard,
   Linking,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -13,6 +15,7 @@ import { MarksGrid } from '../components/MarksGrid.jsx'
 import { EmptyCard } from '../components/PersonCard.jsx'
 import { clearNotices, markNoticesSeen, restoreNotices, useNotices } from '../../src/lib/notices.js'
 import { useUndoToast } from '../lib/toast-queue.js'
+import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import {
@@ -74,7 +77,7 @@ import { weCardShort } from '../../src/lib/did-we.js'
 import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
-import { readMine } from '../../src/lib/people.js'
+import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
@@ -118,11 +121,13 @@ import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
 import { pressFx, Reveal } from '../lib/motion.jsx'
+import { leaveAccount } from '../lib/leave-account.js'
+import { missDot } from '../palette.js'
 
 const IDEA_IDS = ['pills', 'water', 'text', 'skin', 'bill', 'charge']
 
 // Signing every phone out and deleting an account do not come back.
-function SureModal({ sure, colors, onClose, onGo }) {
+export function SureModal({ sure, colors, onClose, onGo }) {
   if (!sure) return null
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -146,7 +151,7 @@ function SureModal({ sure, colors, onClose, onGo }) {
 }
 
 // locked: no back, menu or purse, so the screen can only be left by finishing it.
-export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false }) {
+export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false, scrollHandle }) {
   const live = book || currentBook(readShelf())
   return (
     <BoardShell
@@ -156,6 +161,7 @@ export function ScreenShell({ book, title, children, colors, showAdd = false, lo
       showAdd={showAdd}
       back={locked ? false : undefined}
       showCogs={!locked}
+      scrollHandle={scrollHandle}
     >
       {children}
     </BoardShell>
@@ -340,7 +346,9 @@ export function HelpScreen() {
           label={t('feedback.send')}
           onPress={() => {
             const url = feedbackMailto()
-            if (url) Linking.openURL(url)
+            // No mail app (or no address): say so instead of a dead tap.
+            if (!url) return confirmMiss(t('confirm.miss'))
+            return Linking.openURL(url).catch(() => confirmMiss(t('confirm.miss')))
           }}
         />
       </HelpFold>
@@ -397,6 +405,7 @@ export function LaterScreen({ book, now }) {
 
 export function MarksScreen({ book, boards = [], now }) {
   const colors = useHallColors()
+  const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   const dateIso = boardDate(clock, book?.dayFoldHour)
   // Best ever, across every folder. hallHeat is a 0 to 5 level, not a streak, and read as a wrong number here.
@@ -412,7 +421,7 @@ export function MarksScreen({ book, boards = [], now }) {
       ) : (
         <MarksGrid have={have} colors={colors} />
       )}
-      <Meta colors={colors}>{t('recap.best', { n: best })}</Meta>
+      {gentle ? null : <Meta colors={colors}>{t('recap.best', { n: best })}</Meta>}
       <KeyButton colors={colors} label={t('marks.stats')} onPress={() => goHash('/stats')} />
     </ScreenShell>
   )
@@ -446,6 +455,9 @@ export function IdeasScreen() {
 export function RecentScreen() {
   const colors = useHallColors()
   const { list } = useNotices()
+  // The menu row counts inbox asks too, so the page shows them first.
+  const account = useAccount()
+  const { inbox } = usePeoplePulse(account.user)
   useEffect(() => {
     markNoticesSeen()
   }, [list.length])
@@ -454,12 +466,22 @@ export function RecentScreen() {
   useUndoToast('recent', undo, () => {
     restoreNotices(undo?.list)
     setUndo(null)
-  }, 6000)
+  }, DELETE_UNDO_MS)
   function clearAll() {
     setUndo({ label: t('recent.cleared'), list: clearNotices() })
   }
   return (
     <ScreenShell title={t('recent.title')} colors={colors}>
+      {account.user && inbox > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => goHash('/inbox')}
+          style={({ pressed }) => [styles.idea, { borderColor: colors.on, backgroundColor: pressed ? colors.panel2 : colors.panel }]}
+        >
+          <Kicker colors={colors}>{t('people.waiting', { n: inbox })}</Kicker>
+          <Text style={[styles.recentText, { color: colors.ink }]}>{t('people.waitingSub')}</Text>
+        </Pressable>
+      ) : null}
       {list.length ? <KeyButton colors={colors} label={t('recent.clear')} onPress={clearAll} /> : null}
       {list.length ? (
         list.map((item) => (
@@ -477,7 +499,7 @@ export function RecentScreen() {
             </Meta>
           </Pressable>
         ))
-      ) : (
+      ) : account.user && inbox > 0 ? null : (
         <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors} />
       )}
     </ScreenShell>
@@ -725,7 +747,7 @@ export function CalendarScreen({ book, boards, tagId, now }) {
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
         {gentle ? null : (
           <>
-            <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.miss }]} />
+            <View style={[styles.calDot, view === 'year' && styles.calSquare, missDot(colors)]} />
             <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
           </>
         )}
@@ -782,6 +804,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     if (state === 'open') return { borderWidth: 1.5, borderColor: colors.openRing || colors.inkDim }
     // A night a freeze kept: a ring, as in the history legend.
     if (state === 'freeze') return { borderWidth: 1.5, borderColor: colors.freeze }
+    if (state === 'hole') return missDot(colors, cellColor(state))
     return { backgroundColor: cellColor(state) }
   }
 
@@ -1002,11 +1025,19 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   const [addMiss, setAddMiss] = useState('')
   const [adding, setAdding] = useState(false)
   const [newName, setNewName] = useState('')
+  const reduce = useReduceMotion()
+  const scrollHandle = useRef(null)
+  const addRef = useRef(null)
   const renameDirty = Boolean(titleDraft.trim()) && titleDraft.trim() !== (book?.title || '')
 
   function saveName() {
     const title = titleDraft.trim()
     if (!title || title === book?.title) return
+    // Same name as another folder: saving would merge the two.
+    if ((boards || []).some((item) => item.id !== book?.id && String(item.title || '').trim().toLowerCase() === title.toLowerCase())) {
+      confirmMiss(t('boards.addSame'))
+      return
+    }
     setTitleDraft(title)
     onChange({ ...book, title })
     confirmDone(t('settings.saved'))
@@ -1028,13 +1059,54 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
     setAddMiss('')
   }
   const live = (boards || []).filter((item) => !item.archived)
+  // Empty folders parked once the list is crowded: kept behind one row, so
+  // they can still be opened (which brings one back) or removed.
+  const parked = (boards || []).filter((item) => item.archived)
+  const [showParked, setShowParked] = useState(false)
 
   useEffect(() => {
     setTitleDraft(book?.title || '')
   }, [book?.title, book?.id])
 
+  // The keyboard covers Add and Cancel. Once it is up, scroll so they sit above it.
+  useEffect(() => {
+    if (!adding) return undefined
+    const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    let timer = null
+    const lift = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        const scroller = scrollHandle.current
+        const block = addRef.current
+        const keyTop = Keyboard.metrics?.()?.screenY
+        const inner = scroller?.getInnerViewRef?.()
+        if (!scroller?.scrollTo || !inner || !block?.measureLayout || !keyTop) return
+        block.measureLayout(
+          inner,
+          (_x, top) => {
+            block.measureInWindow((_bx, blockTop, _bw, blockH) => {
+              scroller.measureInWindow?.((_sx, viewTop) => {
+                const now = top - (blockTop - viewTop)
+                const need = blockTop + blockH + 16 - keyTop
+                if (need <= 0) return
+                scroller.scrollTo({ y: now + need, animated: !reduce })
+              })
+            })
+          },
+          () => {},
+        )
+      }, Platform.OS === 'ios' ? 300 : 60)
+    }
+    const sub = Keyboard.addListener(event, lift)
+    if (Keyboard.isVisible?.()) lift()
+    return () => {
+      clearTimeout(timer)
+      sub.remove()
+    }
+  }, [adding, reduce])
+
   return (
-    <ScreenShell book={book} title={t('boards.title')} colors={colors} showAdd>
+    <ScreenShell book={book} title={t('boards.title')} colors={colors} showAdd scrollHandle={scrollHandle}>
       <SetCard colors={colors}>
       {live.map((item, at) => {
         const left = leftoverOn(boards, new Date(), item.id)
@@ -1076,9 +1148,36 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
         )
       })}
       </SetCard>
+      {parked.length ? (
+        <SetCard colors={colors}>
+          <SetRow
+            colors={colors}
+            icon="folder"
+            label={t('hang.tagLater')}
+            sub={showParked ? t('hang.tagLaterHint') : undefined}
+            value={showParked ? '▾' : `${parked.length} ▸`}
+            plain
+            last={!showParked}
+            onPress={() => setShowParked((open) => !open)}
+          />
+          {showParked
+            ? parked.map((item, at) => (
+                <SetRow
+                  key={item.id}
+                  colors={colors}
+                  icon="folder"
+                  label={item.title}
+                  chevron
+                  last={at === parked.length - 1}
+                  onPress={() => onSelect?.(item.id)}
+                />
+              ))
+            : null}
+        </SetCard>
+      ) : null}
       <View style={styles.dataGap} />
       {adding ? (
-        <View style={styles.tagName}>
+        <View ref={addRef} collapsable={false} style={styles.tagName}>
           <Field
             colors={colors}
             label={t('boards.addName')}
@@ -1129,7 +1228,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
         <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
         <SetRow colors={colors} icon="chart" label={t('boards.stats')} sub={t('settings.statsSub')} chevron last onPress={() => goHash('/stats')} />
       </SetCard>
-      {boards?.length > 1 && book ? (
+      {live.length > 1 && book ? (
         <KeyButton
           colors={colors}
           label={t('boards.removeNamed', { title: book.title })}
@@ -1206,7 +1305,7 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
 
   async function sendForgotCode() {
     setBusy(true)
-    const { miss: bad } = await sendCode(email)
+    const { miss: bad } = await sendCode(email).catch(() => ({ miss: 'net' }))
     setBusy(false)
     setMiss(bad ? accountMissText(bad) : '')
   }
@@ -1241,7 +1340,7 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
 
   async function removeWithCode() {
     setBusy(true)
-    const { miss: bad } = await checkCode(email, code)
+    const { miss: bad } = await checkCode(email, code).catch(() => ({ miss: 'net' }))
     setBusy(false)
     if (bad) {
       setMiss(accountMissText(bad))
@@ -1347,7 +1446,8 @@ export function WelcomeScreen({ book }) {
 
   function finish() {
     markWelcomeSeen()
-    const empty = (book?.lamps || []).filter((lamp) => !lamp.archived).length === 0
+    // Every folder, not only the open one: questions in another folder count.
+    const empty = readShelf().boards.every((item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0)
     goHash(empty ? '/first' : '/tonight')
   }
 
@@ -1391,7 +1491,11 @@ export function FirstNightScreen({ book, onChange, now }) {
     playClick()
   }
 
+  // A second tap on Done before the page leaves would add the picks again.
+  const finished = useRef(false)
   function finish() {
+    if (finished.current) return
+    finished.current = true
     const own =
       question && !picks.some((item) => item.question === question)
         ? { question, short: shortFromQuestion(question, 24) }
@@ -1568,7 +1672,10 @@ function PingKinds({ colors, on }) {
     const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     // Signed out there are no pushes, so the switch only has to hold here.
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      writePrefs({ pingsOff: was })
+      // Undo only this switch; another tap may have saved since.
+      const now = readPrefs().pingsOff
+      const wasOff = was.includes(kind)
+      writePrefs({ pingsOff: wasOff ? (now.includes(kind) ? now : [...now, kind]) : now.filter((k) => k !== kind) })
       setMiss(t('pings.kindsMiss'))
     }
   }
@@ -1581,7 +1688,11 @@ function PingKinds({ colors, on }) {
     armLampPings(readShelf().boards).catch(() => {})
     const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      writePrefs({ quietOn: was.quietOn, quietFrom: was.quietFrom, quietTo: was.quietTo })
+      // Undo only what this save changed, and only if nothing changed it since.
+      const now = readPrefs()
+      const back = {}
+      for (const key of Object.keys(patch)) if (now[key] === patch[key]) back[key] = was[key]
+      writePrefs(back)
       armLampPings(readShelf().boards).catch(() => {})
       setMiss(t('pings.kindsMiss'))
     }
@@ -1738,25 +1849,30 @@ function PingTest({ colors }) {
   )
 }
 
-export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
+export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const labelKey = pingLabel || 'pings.state.on'
   const on = labelKey === 'pings.state.on'
+  // Every folder pings (armLampPings gets the whole shelf), so list them all.
+  const books = boards?.length ? boards : book ? [book] : []
   // One row per question. Rows you switch off stay here until you leave, so
   // you can switch them back on.
   const [seen, setSeen] = useState(() => new Map())
   const rows = new Map(seen)
-  for (const fire of upcomingPings(book, clock)) if (!rows.has(fire.id)) rows.set(fire.id, fire)
+  for (const one of books) {
+    for (const fire of upcomingPings(one, clock)) if (!rows.has(fire.id)) rows.set(fire.id, fire)
+  }
   const fires = [...rows.values()].sort((a, b) => a.at - b.at)
-  const lampOf = (id) => (book?.lamps || []).find((lamp) => lamp.id === id)
+  const bookOf = (id) => books.find((one) => (one.lamps || []).some((lamp) => lamp.id === id))
 
   function flipOne(fire) {
-    const lamp = lampOf(fire.id)
+    const home = bookOf(fire.id)
+    const lamp = home?.lamps.find((item) => item.id === fire.id)
     if (!lamp || !onChange) return confirmMiss(t('confirm.miss'))
     const next = !lampNotifyOn(lamp)
     setSeen((was) => new Map(was).set(fire.id, fire))
-    onChange(commitBook({ ...book, lamps: book.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next } : item)) }, clock))
+    onChange(commitBook({ ...home, lamps: home.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next } : item)) }, clock))
     return confirmDone(next ? t('pings.oneOn') : t('pings.oneOff'))
   }
 
@@ -1803,7 +1919,7 @@ export function PingScreen({ book, now, onAskPings, pingLabel, onChange }) {
               icon="bell"
               label={shortFromQuestion(fire.question) || t('lamp.unnamed')}
               sub={foldClock(fire.at)}
-              on={lampNotifyOn(lampOf(fire.id))}
+              on={lampNotifyOn(bookOf(fire.id)?.lamps.find((lamp) => lamp.id === fire.id))}
               last={at === fires.length - 1}
               onPress={() => flipOne(fire)}
             />
@@ -1884,6 +2000,37 @@ function PhoneLockSection({ colors }) {
   )
 }
 
+// Name and note for this phone, and People: they sat on the first Settings
+// page before it was grouped, so they live with the account now.
+function AccountLinks({ colors }) {
+  return (
+    <>
+      <View style={styles.dataGap} />
+      <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="settings"
+          tint={colors.inkSoft}
+          label={t('settings.title')}
+          sub={t('settings.phoneSubOut')}
+          chevron
+          onPress={() => goHash('/settings/phone')}
+        />
+        <SetRow
+          colors={colors}
+          icon="people"
+          tint={colors.late}
+          label={t('people.kicker')}
+          sub={t('people.rowSub')}
+          chevron
+          last
+          onPress={() => goHash('/people')}
+        />
+      </SetCard>
+    </>
+  )
+}
+
 function AccountSignedOut({ on }) {
   const colors = useHallColors()
   const auth = useAuthSignIn({})
@@ -1893,6 +2040,7 @@ function AccountSignedOut({ on }) {
       <ScreenShell title={t('account.offTitle')} colors={colors}>
         <Meta colors={colors}>{t('account.offBody')}</Meta>
         <Meta colors={colors}>{t('account.offTester')}</Meta>
+        <AccountLinks colors={colors} />
       </ScreenShell>
     )
   }
@@ -1911,6 +2059,7 @@ function AccountSignedOut({ on }) {
       <View style={[styles.lockPanel, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
         <PhoneLockSection colors={colors} />
       </View>
+      <AccountLinks colors={colors} />
     </ScreenShell>
   )
 }
@@ -2003,12 +2152,16 @@ function AccountSignedIn({ book, email, onChange }) {
     let alive = true
     listDevices().then((rows) => {
       if (!alive) return
+      // null = the list didn't load: keep the saved one.
+      if (!rows) return confirmMiss(t('confirm.miss'))
       setDevices(rows)
       setDevicesIn(true)
+    }).catch(() => {
+      if (alive) confirmMiss(t('confirm.miss'))
     })
     loadProfile().then((row) => {
       if (alive && row?.display_name && !book?.keeperName) setNameDraft(row.display_name)
-    })
+    }).catch(() => {})
     return () => {
       alive = false
     }
@@ -2043,22 +2196,19 @@ function AccountSignedIn({ book, email, onChange }) {
   }
 
   // Leaving the account: say it worked, or keep them here with what went wrong.
-  async function leave(kind, run) {
+  async function leave(kind, run, force = false) {
     if (busy) return
     setBusy(kind)
-    try {
-      const out = await run()
-      if (out?.miss) {
-        confirmMiss(tMiss(out.miss))
-        setBusy('')
-        return
-      }
-      confirmDone(t(kind === 'delete' ? 'confirm.deleted' : 'confirm.signedOut'))
-      signedOutSync()
-    } catch {
-      confirmMiss(t('confirm.miss'))
-    }
+    const out = await leaveAccount(kind, run, force)
     setBusy('')
+    if (out === 'unsaved') {
+      setSure({
+        title: t('account.unsavedTitle'),
+        body: t('account.unsavedBody'),
+        yes: t('account.unsavedYes'),
+        go: () => leave(kind, run, true),
+      })
+    }
   }
 
   async function pickPhoto(from) {
@@ -2136,8 +2286,10 @@ function AccountSignedIn({ book, email, onChange }) {
       yes: t('account.forgetYes'),
       go: async () => {
         try {
-          await forgetDevice(row.device_key)
-          setDevices(await listDevices())
+          const out = await forgetDevice(row.device_key)
+          if (out?.miss) return confirmMiss(t('confirm.miss'))
+          const rows = await listDevices()
+          if (rows) setDevices(rows)
           confirmDone(t('confirm.phoneForgot'))
         } catch {
           confirmMiss(t('confirm.miss'))
@@ -2246,73 +2398,7 @@ function AccountSignedIn({ book, email, onChange }) {
       </SetCard>
       {photoMiss ? <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">{photoMiss}</Text> : null}
 
-      <SetCap colors={colors}>{t('account.syncPhonesCap')}</SetCap>
-      <SetCard colors={colors}>
-        <SetRow colors={colors} icon="globe" label={t('account.syncNow')} sub={syncNote} onPress={() => pullAndMerge()} />
-        {phones.length ? (
-          shownPhones.map((row, at) => (
-            <Reveal key={row.device_key}>
-            <SetRow
-              colors={colors}
-              icon={row.platform === 'web' ? 'globe' : 'person'}
-              tint={row.device_key === here ? colors.on : colors.inkSoft}
-              label={phoneName(row, here)}
-              sub={phoneSub(row, here)}
-              chevron
-              last={at === shownPhones.length - 1 && !phonesHidden}
-              onPress={() => phoneMenu(row)}
-            />
-            </Reveal>
-          ))
-        ) : (
-          devicesIn ? <SetRow colors={colors} label={t('account.noDevices')} last /> : null
-        )}
-        {phonesHidden ? (
-          <SetRow colors={colors} label={t('people.seeAll')} value={String(phones.length)} chevron last onPress={() => setAllPhones(true)} />
-        ) : null}
-      </SetCard>
-      <SetNote colors={colors}>{t('account.devicesNote')}</SetNote>
-      {renaming ? (
-        <RenamePhone
-          row={renaming}
-          colors={colors}
-          onClose={() => setRenaming(null)}
-          onSaved={async () => {
-            setRenaming(null)
-            setDevices(await listDevices())
-          }}
-        />
-      ) : null}
-      {sync.how === 'miss' && sync.miss ? (
-        <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
-      ) : null}
-      {others.length > 1 ? (
-        <SetCard colors={colors}>
-        <SetRow
-          colors={colors}
-          icon="trash"
-          danger
-          last
-          label={t('account.forgetOthers', { n: others.length })}
-          onPress={() =>
-            setSure({
-              title: t('account.forgetOthersTitle'),
-              body: t('account.forgetOthersBody'),
-              yes: t('account.forgetYes'),
-              go: async () => {
-                try {
-                  await forgetOtherDevices()
-                  setDevices(await listDevices())
-                  confirmDone(t('confirm.phonesForgot'))
-                } catch {
-                  confirmMiss(t('confirm.miss'))
-                }
-              },
-            })
-          }
-        />
-        </SetCard>
-      ) : null}
+      <AccountLinks colors={colors} />
 
       <PhoneLockSection colors={colors} />
 
@@ -2349,6 +2435,76 @@ function AccountSignedIn({ book, email, onChange }) {
       </SetCard>
       {dataOpen ? (
         <Reveal>
+      <SetCap colors={colors}>{t('account.syncPhonesCap')}</SetCap>
+      <SetCard colors={colors}>
+        <SetRow colors={colors} icon="globe" label={t('account.syncNow')} sub={syncNote} onPress={() => pullAndMerge()} />
+        {phones.length ? (
+          shownPhones.map((row, at) => (
+            <Reveal key={row.device_key}>
+            <SetRow
+              colors={colors}
+              icon={row.platform === 'web' ? 'globe' : 'person'}
+              tint={row.device_key === here ? colors.on : colors.inkSoft}
+              label={phoneName(row, here)}
+              sub={phoneSub(row, here)}
+              chevron
+              last={at === shownPhones.length - 1 && !phonesHidden}
+              onPress={() => phoneMenu(row)}
+            />
+            </Reveal>
+          ))
+        ) : (
+          devicesIn ? <SetRow colors={colors} label={t('account.noDevices')} last /> : null
+        )}
+        {phonesHidden ? (
+          <SetRow colors={colors} label={t('people.seeAll')} value={String(phones.length)} chevron last onPress={() => setAllPhones(true)} />
+        ) : null}
+      </SetCard>
+      <SetNote colors={colors}>{t('account.devicesNote')}</SetNote>
+      {renaming ? (
+        <RenamePhone
+          row={renaming}
+          colors={colors}
+          onClose={() => setRenaming(null)}
+          onSaved={async () => {
+            setRenaming(null)
+            const rows = await listDevices()
+            if (rows) setDevices(rows)
+          }}
+        />
+      ) : null}
+      {sync.how === 'miss' && sync.miss ? (
+        <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
+      ) : null}
+      {others.length > 1 ? (
+        <SetCard colors={colors}>
+        <SetRow
+          colors={colors}
+          icon="trash"
+          danger
+          last
+          label={t('account.forgetOthers', { n: others.length })}
+          onPress={() =>
+            setSure({
+              title: t('account.forgetOthersTitle'),
+              body: t('account.forgetOthersBody'),
+              yes: t('account.forgetYes'),
+              go: async () => {
+                try {
+                  const out = await forgetOtherDevices()
+                  if (out?.miss) return confirmMiss(t('confirm.miss'))
+                  const rows = await listDevices()
+                  if (rows) setDevices(rows)
+                  confirmDone(t('confirm.phonesForgot'))
+                } catch {
+                  confirmMiss(t('confirm.miss'))
+                }
+              },
+            })
+          }
+        />
+        </SetCard>
+      ) : null}
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={busy ? undefined : download} />

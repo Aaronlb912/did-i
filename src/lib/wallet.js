@@ -1,8 +1,9 @@
 import { cloud, cloudSetUp } from './cloud.js'
 import { readUser } from './account.js'
 import { accountSessionOn } from './session-id.js'
-import { CHEER_STAGE_COIN, FREE_BUDDY, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, LOOKS, normalizePurse } from './purse.js'
-import { accessoryById } from './accessories.js'
+import { CHEER_STAGE_COIN, FREE_BUDDY, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, liveLooks, normalizePurse } from './purse.js'
+import { accessoryById, accessoryOnSale } from './accessories.js'
+import { boardDate } from './recurrence.js'
 import { frameById, withServerFrames } from './frames.js'
 
 export function applyGemBalanceToShelf(shelf, balance) {
@@ -57,7 +58,7 @@ export function applyCoinCatalogToShelf(shelf, payload) {
 export function applyCoinCatalogToBook(book, cat, opts = {}) {
   const purse = normalizePurse(book)
   const catalog = cat && typeof cat === 'object' ? cat : normalizeCoinCatalog(cat)
-  const coins = catalog.coins || purse.coins
+  const coins = Number.isFinite(catalog.coins) ? catalog.coins : purse.coins
   const gemLooks = purse.looks.filter((id) => id === 'lime' || isGemLook(id))
   const looks = [...new Set(['lime', ...gemLooks, ...catalog.looks])]
   const cheerStages = { ...purse.cheerStages }
@@ -231,8 +232,6 @@ export async function creditNightCoins(nightIso, addCoins) {
   return Math.max(0, Math.floor(Number(data) || 0))
 }
 
-const COIN_LOOK_IDS = new Set(LOOKS.filter((item) => item.coins > 0).map((item) => item.id))
-
 function coinCostFor(kind, itemId) {
   if (kind === 'look') return LOOK_COIN_PRICE
   if (kind === 'cheer_stage') return CHEER_STAGE_COIN
@@ -241,11 +240,11 @@ function coinCostFor(kind, itemId) {
   return 0
 }
 
-export function validateCoinItem(kind, itemId) {
+export function validateCoinItem(kind, itemId, today = boardDate(new Date())) {
   const id = String(itemId || '')
-  if (kind === 'look') return COIN_LOOK_IDS.has(id)
+  if (kind === 'look') return liveLooks().some((item) => item.coins > 0 && item.id === id)
   if (kind === 'cheer_stage') return Boolean(id)
-  if (kind === 'accessory') return Boolean(accessoryById(id) && isLive(accessoryById(id)))
+  if (kind === 'accessory') return accessoryOnSale(accessoryById(id), today)
   if (kind === 'frame') return frameById(id)?.kind === 'coin'
   return false
 }

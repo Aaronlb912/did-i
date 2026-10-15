@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Did I — a nightly habit app. One question at a time, tap Did or Nope,
+Did I — a nightly habit app. One question at a time, tap Did or Not yet,
 streaks, tags, family, shop (coins/gems), cheers, home-screen widgets. Two
 programs share one repo:
 
@@ -127,9 +127,12 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
   `src/locales/*.js` files (the check test requires identical keys). English
   is the fallback.
 - **Product vocabulary** (user-facing copy only): folder, folders, add,
-  question, tonight, Did I, coins, gems, shop, cheer, streak, nope. Do **not**
+  question, today, Did I, coins, gems, shop, cheer, streak, Not yet. Do **not**
   use tag (renamed to folder 2026-09-26; code and keys still say tag), board,
-  hall, hang, heat, or skip (skip especially — the tap button is "nope").
+  hall, hang, heat, nope, did not, or skip. The two answers are "Did" and
+  "Not yet" (code and keys still say nope/skip). Copy says day, not night
+  (renamed 2026-10-14: "Today", "days in a row", "yesterday"); code, keys
+  and routes still say tonight/night.
   See `.cursor/rules/copy.mdc`.
 - **Reduced motion**: `useReduceMotion` / `prefers-reduced-motion`.
 - **Shop buy confirmation** uses `SheetHost`, not `Modal` — `scripts/check.mjs`

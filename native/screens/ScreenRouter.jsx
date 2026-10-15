@@ -183,7 +183,7 @@ export function ScreenRouter({
   if (path === '/stats') return <StatsScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/feed') return <FeedScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/notes') return <NotesScreen book={book} boards={boards} />
-  if (path === '/pings') return <PingScreen book={book} onChange={change} onAskPings={onAskPings} pingLabel={pingLabel} />
+  if (path === '/pings') return <PingScreen book={book} boards={shelf.boards} onChange={change} onAskPings={onAskPings} pingLabel={pingLabel} />
   if (path === '/me') {
     return (
       <BoardsScreen
@@ -197,10 +197,11 @@ export function ScreenRouter({
       />
     )
   }
-  if (path === '/settings' || path === '/settings/more') {
+  const settingsPage = { '/settings/more': 'more', '/settings/look': 'look', '/settings/nights': 'nights', '/settings/privacy': 'privacy', '/settings/help': 'help' }[path]
+  if (path === '/settings' || settingsPage) {
     return (
       <ProfileScreen
-        page={path === '/settings/more' ? 'more' : ''}
+        page={settingsPage || ''}
         book={book}
         onChange={change}
         onImport={onImport}

@@ -17,9 +17,9 @@ import {
   TOGETHER_WIDGET_NAME,
 } from '../src/lib/together-widget.js'
 import { readShelf } from '../src/lib/board-shelf.js'
+import { resendWatchCards, sendWatchCards } from './watch-sync.js'
 import { widgetRedrawTimes } from '../src/lib/widget-config.js'
 import {
-  androidWidgetCardStamp,
   applyPendingAndroidWidgetTap,
   armAndroidWidgetAskTimes,
   loadAndroidWidgetCard,
@@ -56,14 +56,14 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
       return
     }
   }
-  const stamp = await androidWidgetCardStamp()
   const applied = await applyPendingAndroidWidgetTap()
   let clicked = null
   if (widgetAction === 'WIDGET_CLICK') {
     clicked = handleAndroidWidgetClick(clickAction, clickActionData)
   }
   const tappedShelf = clicked || applied
-  const later = await androidWidgetCardStamp()
+  // A tap may have come from the watch: send it the cards again either way.
+  if (tappedShelf) resendWatchCards()
   const shelf = readShelf()
   const props = await tonightPropsForWidget(shelf)
   writeWidgetTonightProps(props)
@@ -71,12 +71,10 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
   renderWidget(renderDidITonightAndroidWidget(props, widgetInfo))
   // A redraw from an alarm (midnight, an ask time): set the next ones, so
   // tomorrow night turns over even if the app is never opened.
+  // The Wear watch gets the new night too.
   if (!tappedShelf) {
+    sendWatchCards(props, shelf)
     await armAndroidWidgetAskTimes(widgetRedrawTimes((shelf?.boards || []).filter((b) => !b.archived), new Date()))
-  }
-  if (stamp && later && later !== stamp) {
-    if (tappedShelf) await syncTonightWidget(tappedShelf)
-    return
   }
   if (tappedShelf) await syncTonightWidget(tappedShelf)
 }

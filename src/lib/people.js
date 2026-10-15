@@ -6,6 +6,7 @@ import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { sharedEveryDue } from './every-copy.js'
+import { readSendAnswers } from './send-answers.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { noteMilestone } from './milestones.js'
 
@@ -36,6 +37,15 @@ async function me() {
 
 function bad(error) {
   return { miss: error?.message || 'people.reach' }
+}
+
+// Server text is English; show our own words for the ones we know.
+export function sendMiss(error) {
+  const text = String(error?.message || error || '')
+  if (/too many waiting/i.test(text)) return 'sent.missWaiting'
+  if (/too many today/i.test(text)) return 'sent.missToday'
+  if (/sign in first/i.test(text)) return 'people.outTitle'
+  return 'people.reach'
 }
 
 // A family join code is six. An invite code is ten. Same alphabet.
@@ -192,7 +202,10 @@ async function peopleByIds(db) {
   // Every people load comes through here, so the Together widget stays
   // current without a load of its own.
   if (!error) saveTogetherPeople((data || []).map(togetherRow))
-  return new Map((data || []).map((row) => [row.user_id, row]))
+  const who = new Map((data || []).map((row) => [row.user_id, row]))
+  // A failed read is not "nobody": callers that care check who.miss.
+  if (error) who.miss = 'people.reach'
+  return who
 }
 
 // Keeps the Together widget current when the app comes back to the
@@ -225,6 +238,8 @@ export async function personById(id) {
   const db = cloud()
   if (!db || !id) return { user_id: id }
   const who = await peopleByIds(db)
+  // A failed read carries miss and no name, so callers keep what they had.
+  if (who.miss) return { user_id: id, miss: who.miss }
   return who.get(id) || { user_id: id }
 }
 
@@ -285,9 +300,10 @@ export async function listFriends() {
     .from('friend_links')
     .select('id, from_id, to_id, state, made_at')
     .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
-  if (error || !data) return empty
+  if (error || !data) return { ...empty, miss: 'people.reach' }
 
   const who = await peopleByIds(db)
+  if (who.miss) return { ...empty, miss: who.miss }
   // known_people only covers friends and family; people still asking come from here.
   if (data.some((row) => row.to_id === user.id && row.state !== 'ok')) {
     const { data: askers } = await db.rpc('friend_askers')
@@ -451,7 +467,7 @@ export async function sendDidI(toId, question, note, dueOn, repeat = '', lastDid
     kind: 'todo',
     question: text,
     note: String(note || '').trim(),
-    due_on: dueOn || isoDate(new Date()),
+    due_on: dueOn || boardDate(),
     ...(repeat ? { repeat } : {}),
     // Only an every so often ask carries the sender's last Did (shared-every.sql).
     ...(repeat.startsWith('every:') && /^\d{4}-\d{2}-\d{2}$/.test(String(lastDidOn || '')) ? { last_did_on: lastDidOn } : {}),
@@ -459,7 +475,7 @@ export async function sendDidI(toId, question, note, dueOn, repeat = '', lastDid
   if (error) {
     if (/duplicate|unique/i.test(error.message)) return { miss: 'already' }
     if (/too many repeats/i.test(error.message)) return { miss: 'people.missRepeats' }
-    return { miss: error.message }
+    return { miss: sendMiss(error) }
   }
   return { miss: '' }
 }
@@ -638,7 +654,10 @@ export async function friendWeek(otherId, upto) {
 export async function readKnownPerson(id) {
   const db = cloud()
   if (!db || !id) return null
-  return (await peopleByIds(db)).get(id) || null
+  const who = await peopleByIds(db)
+  // undefined: the read failed, so we do not know. null: truly not known.
+  if (who.miss) return undefined
+  return who.get(id) || null
 }
 
 // A look, cheer or buddy for a friend or family member. The server takes the
@@ -808,7 +827,7 @@ export async function listInbox() {
   if (!db) return []
   const user = await me()
   if (!user) return []
-  const [{ data }, fromDidI] = await Promise.all([
+  const [{ data, error }, fromDidI] = await Promise.all([
     db
       .from('sends')
       .select('id, from_id, kind, question, note, due_on, state, made_at, cheer_id, repeat, last_did_on')
@@ -826,8 +845,11 @@ export async function listInbox() {
     made_at: row.made_at,
     person: DID_I_PERSON,
   }))
+  // Still an array (the Did I sends, if any), with miss so a screen can say so.
+  if (error) return Object.assign(apps, { miss: 'people.reach' })
   if (!data?.length) return apps
   const who = await peopleByIds(db)
+  if (who.miss) return Object.assign(apps, { miss: who.miss })
   return [...apps, ...data.map((row) => ({ ...row, person: who.get(row.from_id) || { user_id: row.from_id } }))]
 }
 
@@ -853,12 +875,20 @@ async function claimDidITonight(db, user) {
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
   const waiting = (await appSendsWaiting(db, user, 'tonight')).filter((row) => row.night >= isoDate(yesterday))
-  const added = []
-  for (const row of waiting) {
-    const { error } = await db.from('app_send_answers').insert({ app_send_id: row.id, user_id: user.id, state: 'added' })
-    if (!error) added.push({ question: row.question, night: row.night, fromDidI: true, person: DID_I_PERSON })
-  }
-  return added
+  if (!waiting.length) return []
+  // One write; a row another phone already wrote is skipped and not returned.
+  const { data, error } = await db
+    .from('app_send_answers')
+    .upsert(waiting.map((row) => ({ app_send_id: row.id, user_id: user.id, state: 'added' })), {
+      onConflict: 'app_send_id,user_id',
+      ignoreDuplicates: true,
+    })
+    .select('app_send_id')
+  if (error) return []
+  const won = new Set((data || []).map((row) => row.app_send_id))
+  return waiting
+    .filter((row) => won.has(row.id))
+    .map((row) => ({ question: row.question, night: row.night, fromDidI: true, person: DID_I_PERSON }))
 }
 
 export async function friendAskCount() {
@@ -889,15 +919,22 @@ export async function listSent() {
   if (!db) return []
   const user = await me()
   if (!user) return []
-  const { data } = await db
+  const { data, error } = await db
     .from('sends')
     .select('id, to_id, kind, question, note, due_on, state, made_at, repeat, last_did_on')
     .eq('from_id', user.id)
     .order('made_at', { ascending: false })
     .limit(100)
+  if (error) return Object.assign([], { miss: 'people.reach' })
   if (!data?.length) return []
-  const who = await peopleByIds(db)
-  return data.map((row) => ({ ...row, person: who.get(row.to_id) || { user_id: row.to_id } }))
+  // How they answered the kept ones, in the same pass (one call).
+  const [who, answers] = await Promise.all([peopleByIds(db), readSendAnswers(keptIds(data))])
+  if (who.miss) return Object.assign([], { miss: who.miss })
+  return data.map((row) => ({ ...row, person: who.get(row.to_id) || { user_id: row.to_id }, answers: answers.get(row.id) || [] }))
+}
+
+function keptIds(rows) {
+  return rows.filter((row) => row.state === 'kept' && row.kind === 'todo').map((row) => row.id)
 }
 
 // Did yous between you and one friend, both ways, newest first.
@@ -916,8 +953,10 @@ export async function sendsWith(otherId) {
     .limit(100)
   if (error) return { ...empty, ...bad(error) }
   const rows = data || []
+  const mine = rows.filter((row) => row.from_id === user.id)
+  const answers = await readSendAnswers(keptIds(mine))
   return {
-    mine: rows.filter((row) => row.from_id === user.id),
+    mine: mine.map((row) => ({ ...row, answers: answers.get(row.id) || [] })),
     theirs: rows.filter((row) => row.from_id === otherId),
     miss: '',
   }
@@ -927,8 +966,10 @@ export async function sendsWith(otherId) {
 export async function takeBack(id) {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  const { error } = await db.from('sends').delete().eq('id', id).eq('state', 'sent')
-  return error ? bad(error) : { miss: '' }
+  const { data, error } = await db.from('sends').delete().eq('id', id).eq('state', 'sent').select('id')
+  if (error) return bad(error)
+  // Nothing went: they answered it first.
+  return data?.length ? { miss: '' } : { miss: 'sent.editAnswered' }
 }
 
 // New words for a Did you you sent. Only while they have not answered it;
@@ -968,17 +1009,26 @@ export async function answerSend(id, keep) {
   if (String(id).startsWith('app:')) {
     const user = await me()
     if (!user) return { miss: 'off' }
-    const { error } = await db
-      .from('app_send_answers')
-      .insert({ app_send_id: String(id).slice(4), user_id: user.id, state: keep ? 'kept' : 'passed' })
-    // Already answered on another phone is fine.
-    return error && error.code !== '23505' ? bad(error) : { miss: '' }
+    // A second answer (kept, then added) updates the same row.
+    const { data, error } = await db.rpc('set_app_send_answer', {
+      send_id: String(id).slice(4),
+      answer: keep ? 'kept' : 'passed',
+    })
+    if (error) return bad(error)
+    return data ? { miss: '' } : { miss: 'sent.gone' }
   }
-  const { error } = await db
+  const { data, error } = await db
     .from('sends')
     .update({ state: keep ? 'kept' : 'passed' })
     .eq('id', id)
-  return error ? bad(error) : { miss: '' }
+    .eq('state', 'sent')
+    .select('id')
+  if (error) return bad(error)
+  if (data?.length) return { miss: '' }
+  // Nothing changed. Still there: another phone answered it, which is fine.
+  // Gone: they took it back.
+  const { data: still } = await db.from('sends').select('id, state').eq('id', id).maybeSingle()
+  return still ? { miss: '', already: true, state: still.state } : { miss: 'sent.gone' }
 }
 
 // Blocking ---------------------------------------------------------------
@@ -1038,7 +1088,8 @@ export function inviteGemsDue(joined, invitesPaid, gemsPaid) {
 export async function myInvite() {
   const db = cloud()
   if (!db) return ''
-  const { data } = await db.rpc('my_invite')
+  const { data, error } = await db.rpc('my_invite')
+  if (error) throw error
   return data || ''
 }
 
@@ -1082,10 +1133,11 @@ export async function listFamilies() {
   if (!db) return []
   const user = await me()
   if (!user) return []
-  const { data } = await db
+  const { data, error } = await db
     .from('family_members')
     .select('role, family_id, families(id, name, code)')
     .eq('user_id', user.id)
+  if (error) return Object.assign([], { miss: 'people.reach' })
   return (data || [])
     .filter((row) => row.families)
     .map((row) => ({ ...row.families, role: row.role }))
@@ -1110,6 +1162,8 @@ export async function joinFamily(code) {
     if (/too many tries/i.test(error.message)) return { miss: 'tooMany' }
     return { miss: /no family/i.test(error.message) ? 'nofamily' : error.message }
   }
+  // A wrong code comes back as null, so the miss still counts toward the limit.
+  if (!data) return { miss: 'nofamily' }
   return { miss: '', id: data }
 }
 
@@ -1172,8 +1226,11 @@ export async function readFamily(familyId) {
     db.from('family_members').select('user_id, role, joined_at').eq('family_id', familyId),
     db.from('family_tags').select('id, title, look').eq('family_id', familyId).order('made_at'),
   ])
+  // A failed read is not a gone family: the screen keeps what it had.
+  if (famRow.error || memberRows.error || tagRows.error) return { miss: 'people.reach' }
   if (!famRow.data) return null
   const who = await peopleByIds(db)
+  if (who.miss) return { miss: who.miss }
   const members = (memberRows.data || [])
     .map((row) => ({
       ...row,
@@ -1237,6 +1294,9 @@ export async function listFamilyLamps(familyId, periodKey) {
       .eq('family_id', familyId)
       .eq('period_key', periodKey || isoDate(new Date())),
   ])
+  // A failed read must not look like a family with no questions.
+  const error = lampRows.error || answerRows.error
+  if (error) return { miss: error.message || 'confirm.miss', lamps: [], answers: [] }
   const lamps = lampRows.data || []
   return { lamps, answers: answerRows.data || [], last: await familyEveryLast(db, lamps) }
 }
@@ -1268,6 +1328,8 @@ export async function addFamilyLamp(familyId, tagId, question, forId, everyDays 
     question: text,
     for_id: forId || null,
     made_by: user.id,
+    // The app's night, the same date the family readers compare made_on to.
+    made_on: boardDate(),
     ...(Number(everyDays) >= 1 ? { cadence: 'every', every_days: Math.min(365, Math.round(Number(everyDays))) } : {}),
   })
   return error ? bad(error) : { miss: '' }
@@ -1469,10 +1531,58 @@ function pulseEmit(next) {
   for (const fn of pulse.subs) fn(next)
 }
 
-async function claimAutoSends(db) {
-  const { data, error } = await db.rpc('claim_auto_sends')
+// Auto added sends already on this phone's shelf but not yet kept on the
+// server, so a phone that closed between the two steps does not add them twice.
+const AUTO_ADDED_KEY = 'did-i-auto-added'
+
+function readAutoAdded() {
+  try {
+    const list = JSON.parse(localStorage.getItem(AUTO_ADDED_KEY) || '[]')
+    return new Set(Array.isArray(list) ? list : [])
+  } catch {
+    return new Set()
+  }
+}
+
+function writeAutoAdded(ids) {
+  try {
+    localStorage.setItem(AUTO_ADDED_KEY, JSON.stringify([...ids].slice(-200)))
+  } catch {
+    // Without storage a rare close in between can add one twice; nothing is lost.
+  }
+}
+
+async function autoSendsWaiting(db) {
+  const { data, error } = await db.rpc('auto_sends_waiting')
   if (error) return []
-  return (data || []).filter((row) => String(row.question || '').trim())
+  return data || []
+}
+
+// Shelf first, then kept on the server: a failure in between leaves the send
+// waiting for the next look instead of losing it.
+async function addAutoSends(db, adder) {
+  const waiting = await autoSendsWaiting(db)
+  if (!waiting.length) return []
+  const added = readAutoAdded()
+  const fresh = waiting.filter((row) => !added.has(row.send_id) && String(row.question || '').trim())
+  if (fresh.length) {
+    let senders = new Map()
+    try {
+      senders = await peopleByIds(db)
+    } catch {
+      // Names are a nice to have; the questions still go on tonight.
+    }
+    // Nobody chose these for tonight, so they are optional (see normalizeLamp).
+    adder(fresh.map((row) => ({ question: row.question, repeat: row.repeat, optional: true, sendId: row.send_id, person: senders.get(row.sender_id) })))
+    for (const row of fresh) added.add(row.send_id)
+    writeAutoAdded(added)
+  }
+  const ids = waiting.map((row) => row.send_id)
+  const { error } = await db.rpc('keep_auto_sends', { ids })
+  if (error) return fresh
+  for (const id of ids) added.delete(id)
+  writeAutoAdded(added)
+  return fresh
 }
 
 async function pulseLook() {
@@ -1484,14 +1594,7 @@ async function pulseLook() {
     pulse.at = Date.now()
     // Only claim while something is there to put the questions on tonight.
     const adder = pulse.adder
-    const claimed = adder ? await claimAutoSends(db) : []
-    // Straight onto tonight before anything else can fail; the server has
-    // already marked these kept.
-    // Nobody chose these for tonight, so they are optional (see normalizeLamp).
-    if (claimed.length) {
-      const senders = await peopleByIds(db)
-      adder(claimed.map((row) => ({ question: row.question, repeat: row.repeat, optional: true, person: senders.get(row.sender_id) })))
-    }
+    const claimed = adder ? await addAutoSends(db, adder) : []
     const fromDidI = adder ? await claimDidITonight(db, user) : []
     if (fromDidI.length) adder(fromDidI)
     const [waiting, asks] = await Promise.all([
@@ -1671,13 +1774,19 @@ export function useFamilyTonight(user) {
     seen.current = key
     setRows(next)
   }, [])
+  // A read that lands after a sign out or account switch is the old account's.
+  const userIdRef = useRef(user?.id)
+  userIdRef.current = user?.id
 
   const look = useCallback(async () => {
     if (!cloudSetUp() || !user) {
       keep([])
       return
     }
-    keep(await familyTonight())
+    const who = user.id
+    const next = await familyTonight()
+    if (userIdRef.current !== who) return
+    keep(next)
   }, [user, keep])
 
   useEffect(() => {

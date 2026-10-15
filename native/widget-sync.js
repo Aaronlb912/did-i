@@ -1,15 +1,16 @@
 import { Platform } from 'react-native'
 import { nativeBridgeReady, queueWidgetSync } from './lib/defer-native.js'
 import { nativeWidgetsEnabled } from './lib/widgets-enabled.js'
-import { widgetRedrawTimes, widgetColorBook, widgetLookId, widgetTheme } from '../src/lib/widget-config.js'
+import { widgetRedrawTimes, widgetTimelineTimes, widgetColorBook, widgetLookId, widgetTheme } from '../src/lib/widget-config.js'
 import { buildTonightWidgetProps, mergeWidgetPropsIntoShelf, tonightWidgetKey, WIDGET_NAME } from '../src/lib/widget-tonight.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { hallColors } from './palette.js'
 import { wornShapes } from '../src/lib/accessory-shapes.js'
 import { readShelf } from '../src/lib/board-shelf.js'
-import { isoDate } from '../src/lib/recurrence.js'
+import { boardDate } from '../src/lib/recurrence.js'
 import { recordAppError } from '../src/lib/app-errors.js'
 import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
+import { sendWatchCards } from './watch-sync.js'
 
 // The native side takes plain records. undefined, functions or Dates in the
 // props can make the whole update throw, so send a JSON copy.
@@ -63,7 +64,8 @@ let lastTonightKey = ''
 
 export function syncTonightWidgetIfChanged(shelf) {
   if (Platform.OS === 'web' || !nativeWidgetsEnabled()) return Promise.resolve()
-  const key = tonightWidgetKey(buildTonightWidgetProps(shelf))
+  // Built from the enriched props, so a look or theme change redraws.
+  const key = tonightWidgetKey(enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf)))
   if (key === lastTonightKey) return Promise.resolve()
   return syncTonightWidget(shelf)
 }
@@ -86,6 +88,20 @@ function tonightWidgetApi() {
   return widgetApiPromise
 }
 
+// iOS: updateTimeline replaces the stored timeline, widget taps included, so
+// after a cold start or a return to the app the timeline has to be read
+// (widget-bridge.js) before it is written again.
+let timelineRead = false
+let readTimeline = null
+
+export function setWidgetTimelineReader(fn) {
+  readTimeline = typeof fn === 'function' ? fn : null
+}
+
+export function markWidgetTimelineRead(read = true) {
+  timelineRead = read
+}
+
 export async function syncTonightWidget(shelf) {
   if (Platform.OS === 'web') return
   if (!nativeWidgetsEnabled()) return
@@ -93,19 +109,27 @@ export async function syncTonightWidget(shelf) {
     queueWidgetSync(shelf)
     return
   }
+  if (Platform.OS === 'ios' && !timelineRead && readTimeline) {
+    // A failed read must not hold the widget back for good.
+    await readTimeline().catch(() => {})
+    // The read merged the taps into the stored shelf; read it again so an
+    // answer made in the app meanwhile is not drawn over.
+    shelf = readShelf()
+  }
   const built = buildTonightWidgetProps(shelf)
-  lastTonightKey = tonightWidgetKey(built)
   const props = enrichTonightWidgetProps(shelf, built)
+  lastTonightKey = tonightWidgetKey(props)
   writeWidgetTonightProps(props)
   if (Platform.OS === 'ios') {
+    // Same cards to the Apple Watch, when one is paired (native/watch-sync.js).
+    sendWatchCards(props, shelf)
     try {
       const api = await tonightWidgetApi()
       if (!api) return
-      // One entry per ask time still to come tonight, so a question shows
-      // up on the widget when its time comes without the app being open.
-      // Midnight and the end of last night's grace get an entry too.
+      // One entry per ask time, midnight and grace end, for the next few
+      // nights, so a widget-only night still shows its own card.
       const boards = (shelf?.boards || []).filter((b) => !b.archived)
-      const times = widgetRedrawTimes(boards, new Date()).sort((a, b) => a - b)
+      const times = widgetTimelineTimes(boards, new Date())
       const later = times.map((date) => ({
         date,
         props: enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf, date)),
@@ -120,6 +144,8 @@ export async function syncTonightWidget(shelf) {
     return
   }
   if (Platform.OS === 'android') {
+    // Same cards to the Wear OS app, when one is paired (native/watch-sync.js).
+    sendWatchCards(props, shelf)
     try {
       const widgetMod = await import('react-native-android-widget')
       const requestWidgetUpdate = widgetMod?.requestWidgetUpdate
@@ -183,7 +209,7 @@ export async function syncTogetherWidget(people = readTogetherPeople()) {
       midnight.setHours(24, 0, 0, 0)
       const tomorrow = enrichTogetherWidgetProps(
         readShelf(),
-        buildTogetherWidgetProps(people, isoDate(midnight)),
+        buildTogetherWidgetProps(people, boardDate(midnight)),
       )
       if (api.updateTimeline) {
         await api.updateTimeline([
@@ -224,6 +250,8 @@ export async function pullWidgetTimelineIntoShelf(shelf) {
     // that has come round, not only the last one.
     const now = Date.now()
     const shown = (await api.getTimeline()).filter((entry) => entry?.props && entry.date.getTime() <= now)
+    // Only a read that worked lets the next updateTimeline replace the taps.
+    timelineRead = true
     if (!shown.length) return shelf
     writeWidgetTonightProps(shown[shown.length - 1].props)
     return shown.reduce((next, entry) => mergeWidgetPropsIntoShelf(next, entry.props), shelf)

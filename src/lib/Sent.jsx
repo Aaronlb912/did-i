@@ -9,11 +9,13 @@ import { editSend, listSent, personName, takeBack } from './people.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { sendLastLine } from './every-copy.js'
 import { repeatLabel } from './send-repeat.js'
+import { sendAnswerLine } from './send-answers.js'
 import { SetCard } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
 
-function howItWent(state) {
-  if (state === 'kept') return t('sent.kept')
+function howItWent(state, answers) {
+  // Kept: how they answered it lately, when they share that.
+  if (state === 'kept') return sendAnswerLine(answers) || t('sent.kept')
   if (state === 'passed') return t('sent.passed')
   return t('sent.waiting')
 }
@@ -37,7 +39,12 @@ export function Sent({ book, now }) {
       return
     }
     const [sent, made] = await Promise.all([listSent(), myDidYouLinks().catch(() => [])])
-    setRows(sent)
+    // A failed read keeps the rows we had and says so.
+    if (sent.miss) setMiss('people.reach')
+    else {
+      setRows(sent)
+      setMiss((was) => (was === 'people.reach' ? '' : was))
+    }
     setLinks(made)
     setReady(true)
   }, [account.user])
@@ -134,7 +141,7 @@ export function Sent({ book, now }) {
                   .filter(Boolean)
                   .join(' · ')}
                 {' · '}
-                {howItWent(row.state)}
+                {howItWent(row.state, row.answers)}
               </em>
             </span>
             {canEditSent(row) ? (

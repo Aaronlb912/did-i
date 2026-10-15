@@ -6,14 +6,14 @@ import { cloudSetUp } from './cloud.js'
 import { WeAsks } from './DidWe.jsx'
 import { t, tMiss } from './i18n.js'
 import { sendLastLine } from './every-copy.js'
-import { repeatLabel } from './send-repeat.js'
+import { repeatLabel, sendOnShelf } from './send-repeat.js'
 import { answerSend, cheerTitle, listInbox, personName, refreshPeople, reportSend } from './people.js'
 import { fireCheer } from './purse.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { SetCard } from './set-bits.jsx'
 import { useOnline } from './useOnline.js'
 
-export function Inbox({ book, now, onKeep }) {
+export function Inbox({ book, boards, now, onKeep }) {
   const clock = now || new Date()
   const account = useAccount()
   const [rows, setRows] = useState([])
@@ -29,7 +29,13 @@ export function Inbox({ book, now, onKeep }) {
     }
     // Family did yous and allowed friends go onto tonight first.
     await refreshPeople()
-    setRows(await listInbox())
+    const inbox = await listInbox()
+    // A failed read keeps the rows we had and says so.
+    if (inbox.miss) setMiss('people.reach')
+    else {
+      setRows(inbox)
+      setMiss((was) => (was === 'people.reach' ? '' : was))
+    }
     setReady(true)
   }, [account.user])
 
@@ -38,8 +44,17 @@ export function Inbox({ book, now, onKeep }) {
   }, [load])
 
   async function answer(row, keep) {
-    const { miss: why } = await answerSend(row.id, keep)
-    if (why) return setMiss(why)
+    const { miss: why, already, state } = await answerSend(row.id, keep)
+    if (why) {
+      setMiss(why)
+      return why === 'sent.gone' ? load() : undefined
+    }
+    // Already answered on another device: that one added it, so do not add
+    // twice. Kept there but not on this shelf (it never synced): add it here.
+    if (already) {
+      if (keep && state === 'kept' && row.kind === 'todo' && onKeep && !sendOnShelf(boards || [book], row.id)) onKeep(row)
+      return load()
+    }
     if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
     if (keep && row.kind === 'todo' && onKeep) onKeep(row)
     return load()

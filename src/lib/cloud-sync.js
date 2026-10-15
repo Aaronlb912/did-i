@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { recordAppError } from './app-errors.js'
 import { deviceKey, deviceLabel, deviceModel, devicePlatform, takeOldDeviceKey } from './account.js'
 import { noteAvatar } from './avatar.js'
+import { clearNotices, markNoticesSeen } from './notices.js'
 import { clearAuthSkip } from './auth-gate.js'
 import { forgetAccountCaches } from './account-cache.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
@@ -19,14 +20,15 @@ import {
 } from './answer-log.js'
 import { stripDemoShelf } from './demo-strip.js'
 import { personZone } from './zone.js'
+import { pushSendAnswers } from './send-answers.js'
 import { shelfStreak } from './hall-feel.js'
 import { clearWeNights, onWeNights, weNight } from './we-nights.js'
 import { allClearTonight, boardDate, countedTonightRows, dueTonight } from './recurrence.js'
-import { claimGifts, claimInvites, onGiftsWaiting, readMine, returnGift } from './people.js'
-import { queueGifts } from './gift-inbox.js'
+import { claimGifts, claimInvites, onGiftsWaiting, readMine } from './people.js'
+import { clearGifts, queueGifts } from './gift-inbox.js'
 import { applyPendingInvite } from './invite-link.js'
 import { claimGemPurchases } from './gem-claim.js'
-import { applyInvitePayout, mergeGift, mergePurses } from './purse.js'
+import { applyInvitePayout, dropEarnedCoins, mergeGift, mergePurses } from './purse.js'
 import { FRAME_IDS } from './frames.js'
 import {
   applyCoinCatalogToShelf,
@@ -40,6 +42,7 @@ import {
 import { closeShelfPastNights } from './daily.js'
 import { isAppForeground, onAppForegroundChange } from './app-foreground.js'
 import { readAccountUserId, writeAccountUserId } from './session-id.js'
+import { forgetTravelSkips } from './travel.js'
 import { flushPendingWidgetCloud, widgetCloudPending } from './widget-cloud-sync.js'
 import { awaitWidgetTimeline, reconcileShelfFromWidget, reconcileShelfFromWidgetNow } from './widget-reconcile.js'
 
@@ -131,10 +134,24 @@ function writeLastUser(id) {
   writeAccountUserId(id)
 }
 
+// Bumped on sign out so a pull already out drops its result instead of
+// merging the old account's shelf into the cleared one.
+let syncRun = 0
+
 export function signedOutSync() {
+  syncRun += 1
+  // Every way out (here, everywhere, deleted, signed out elsewhere) lands here.
+  forgetAccountCaches()
+  clearGifts()
+  dropEarnedCoins()
   // The next person to sign in on this phone starts from nothing.
   forgetAnswerMarks()
   clearWeNights()
+  forgetTravelSkips()
+  // Recent notices and your photo belong to the account that left.
+  clearNotices()
+  markNoticesSeen(0)
+  noteAvatar('')
   const shelf = clearLocalShelf()
   keepProfileName('')
   writeLastUser('')
@@ -155,6 +172,9 @@ export function sessionMissing() {
     signedOutSync()
     return
   }
+  // No last user can still mean a sign in whose id never landed: coins it
+  // queued must not reach the next account.
+  dropEarnedCoins()
   if (state.how !== 'out' || state.firstPull) setState({ how: 'out', miss: '', firstPull: false })
 }
 
@@ -205,6 +225,7 @@ async function putPrefs(db, user, shelf) {
   if (!error) {
     markCleared(db, user, mark)
     markCard(db, user, doc)
+    pushSendAnswers(db, user, doc)
   }
   return error || null
 }
@@ -330,6 +351,7 @@ function reconcileLocalShelfFromWidget() {
 async function pullAndMergeOnce() {
   const db = cloud()
   if (!db) return null
+  const run = syncRun
   try {
     const user = await me()
     if (!user) {
@@ -358,10 +380,13 @@ async function pullAndMergeOnce() {
     // A delete or a tap made on this phone while the pull was out would be
     // written over by the older shelf the pull started from. When the phone
     // saved since, fold its newest copy in first (its gone list included).
+    // `next` was built from the copy saved at seenAt, so that is its stamp
+    // in the compare; `at` (upload time) would let it beat newer local edits.
     let seenAt = readSavedAt()
     const land = (next, at) => {
+      if (run !== syncRun) throw new Error('account.signedOut')
       const nowAt = readSavedAt()
-      const base = nowAt !== seenAt ? mergeShelves(readShelf(), next, nowAt, at) : next
+      const base = nowAt !== seenAt ? mergeShelves(readShelf(), next, nowAt, seenAt) : next
       const out = writeShelf(base, at)
       seenAt = readSavedAt()
       return out
@@ -374,17 +399,15 @@ async function pullAndMergeOnce() {
     let written = land(closeShelfPastNights(pulled.shelf), metaAt)
     // The account's questions are on the phone now; Tonight can draw them.
     if (state.firstPull) setState({ firstPull: false })
-    // Gifts go straight into the collection. One already owned goes back to
-    // the giver; the rest wait for the pop-up.
+    // Gifts go straight into the collection; the rest wait for the pop-up.
+    // claim_gifts (readthrough-8.sql) already sent back the ones the account
+    // owned, so one this phone already has is just not shown again.
     const { gifts } = await claimGifts()
     if (gifts.length) {
       const fresh = []
       let boards = written.boards
       for (const gift of gifts) {
-        if (boards.some((book) => mergeGift(book, gift).had)) {
-          await returnGift(gift.id).catch(() => {})
-          continue
-        }
+        if (boards.some((book) => mergeGift(book, gift).had)) continue
         boards = boards.map((book) => mergeGift(book, gift).book)
         fresh.push(gift)
       }
@@ -448,6 +471,8 @@ async function pullAndMergeOnce() {
 
     const bad = (await putShelf(db, user, written, uploadAt)) || (await putPrefs(db, user, written))
     if (bad) throw bad
+    // The shelf landed for this account: later pushes may send it.
+    writeLastUser(user.id)
 
     // Opening the app is the one moment worth reconciling in full: send
     // everything, then clear out answers whose question is gone.
@@ -461,6 +486,7 @@ async function pullAndMergeOnce() {
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
     return written
   } catch (error) {
+    if (run !== syncRun) return null
     setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
     recordAppError('sync', error).catch(() => {})
     return null
@@ -486,11 +512,22 @@ export async function pushNow(shelf) {
   }
   setState({ how: 'busy', miss: '' })
   try {
-    const doc = shelf || readShelf()
+    let doc = shelf || readShelf()
     // Usually one answer. The document only moves because a tag or a
     // question changed, and those are small.
     const sent = await pushAnswers(doc)
     if (sent.miss) throw new Error(sent.miss)
+    // No pull has landed for this account on this phone yet (the last user id
+    // is written only after one does), so the local shelf may be the empty one
+    // sign out left. Sending it would overwrite the account's questions.
+    // Pull instead (shared with any pull already running); a landed pull opens
+    // the gate, and only a failed one shows as a miss.
+    if (readLastUser() !== user.id) {
+      await pullAndMerge()
+      if (readLastUser() !== user.id) return
+      // Landed: send what is on the phone now, edits made during the pull too.
+      doc = readShelf()
+    }
     const uploadAt = new Date().toISOString()
     stampSavedAt(uploadAt)
     const bad = (await putShelf(db, user, doc, uploadAt)) || (await putPrefs(db, user, doc))
@@ -533,6 +570,38 @@ export function flushPushSoon() {
   return pushNow(readShelf())
 }
 
+// Before signing out: send anything still waiting, then try once more if the
+// last send missed. False means some answers never reached the account, so
+// the caller asks before signedOutSync wipes them.
+export async function saveBeforeSignOut(ms = 8000) {
+  if (!cloudSetUp() || state.how === 'off' || state.how === 'out') return true
+  let timer
+  try {
+    // No session: pushNow would wipe the shelf without asking. Ask instead.
+    if (!(await me())) return false
+    const sent = (async () => {
+      // iOS widget taps since the last open are only in the WidgetKit timeline;
+      // read them in (registered reader, a no-op off iOS) so they send too.
+      await awaitWidgetTimeline()
+      const shelf = readShelf()
+      const next = reconcileShelfFromWidget(shelf)
+      if (next !== shelf && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: next }))
+      const flushed = flushPushSoon()
+      if (flushed) await flushed
+      else if (next !== shelf) await pushNow(next)
+      if (state.how === 'miss') await pushNow(readShelf())
+      return state.how !== 'miss'
+    })()
+    // A stalled network asks too, instead of spinning the button.
+    const late = new Promise((resolve) => { timer = setTimeout(() => resolve(false), ms) })
+    return await Promise.race([sent, late])
+  } catch {
+    return false
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export async function touchDevice() {
   const db = cloud()
   if (!db) return
@@ -545,15 +614,16 @@ export async function touchDevice() {
     platform: devicePlatform(),
     last_seen_at: new Date().toISOString(),
   }
-  const model = deviceModel()
-  const first = await db.from('devices').upsert(model ? { ...row, model } : row, { onConflict: 'user_id,device_key' })
-  // Before supabase/device-names.sql is applied there is no model column.
-  if (first?.error && model) await db.from('devices').upsert(row, { onConflict: 'user_id,device_key' })
   // This phone moved to its stable id: its old row is the same phone.
+  // Gone first, so a failed upsert never leaves it counted twice.
   const old = takeOldDeviceKey()
   if (old && old !== deviceKey()) {
     await db.from('devices').delete().eq('user_id', user.id).eq('device_key', old)
   }
+  const model = deviceModel()
+  const first = await db.from('devices').upsert(model ? { ...row, model } : row, { onConflict: 'user_id,device_key' })
+  // Before supabase/device-names.sql is applied there is no model column.
+  if (first?.error && model) await db.from('devices').upsert(row, { onConflict: 'user_id,device_key' })
 }
 
 // Phones seen in the last 90 days. The server removes older rows when a
@@ -576,7 +646,9 @@ export async function listDevices() {
   const named = await pick('device_key, label, platform, last_seen_at, model, name')
   if (!named.error) return named.data || []
   // Older database: no model or name yet.
-  const { data } = await pick('device_key, label, platform, last_seen_at')
+  const { data, error } = await pick('device_key, label, platform, last_seen_at')
+  // null, not [], so a screen can tell a failed load from no phones.
+  if (error) return null
   return data || []
 }
 
@@ -600,7 +672,8 @@ export async function forgetOtherDevices() {
   if (!db) return
   const user = await me()
   if (!user) return
-  await db.from('devices').delete().eq('user_id', user.id).neq('device_key', deviceKey())
+  const { error } = await db.from('devices').delete().eq('user_id', user.id).neq('device_key', deviceKey())
+  if (error) return { miss: error.message }
 }
 
 export async function forgetDevice(key) {
@@ -608,7 +681,8 @@ export async function forgetDevice(key) {
   if (!db) return
   const user = await me()
   if (!user) return
-  await db.from('devices').delete().eq('user_id', user.id).eq('device_key', key)
+  const { error } = await db.from('devices').delete().eq('user_id', user.id).eq('device_key', key)
+  if (error) return { miss: error.message }
 }
 
 // Your display name from the last profile load, so Account and Friends show
@@ -632,16 +706,18 @@ function keepProfileName(name) {
   }
 }
 
-export async function loadProfile() {
+// strict: throw on a failed read instead of returning null (export).
+export async function loadProfile({ strict = false } = {}) {
   const db = cloud()
   if (!db) return null
   const user = await me()
   if (!user) return null
-  const { data } = await db
+  const { data, error } = await db
     .from('profiles')
     .select('display_name, look_on, badge_cheer, prefs, gem_balance, avatar_url')
     .eq('user_id', user.id)
     .maybeSingle()
+  if (error && strict) throw error
   if (data) {
     noteAvatar(data.avatar_url)
     keepProfileName(data.display_name || '')
@@ -664,9 +740,12 @@ export async function saveProfile(patch) {
 
 export async function exportAll() {
   const shelf = readShelf()
-  const profile = await loadProfile()
+  // A failed read throws, so the caller says the export missed instead of
+  // handing over a file with parts quietly left out.
+  const profile = await loadProfile({ strict: true })
   const devices = await listDevices()
-  const social = await exportSocial().catch(() => ({}))
+  if (!devices) throw new Error('devices')
+  const social = await exportSocial()
   return {
     kind: 'did-i-account',
     pulledAt: new Date().toISOString(),
@@ -696,15 +775,18 @@ async function exportSocial() {
       .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
       .limit(5000),
   ])
+  const failed = [mine, answers, sends].find((res) => res.error)
+  if (failed) throw failed.error
   const ids = (mine.data || []).map((row) => row.card_id)
-  const cards = ids.length
-    ? (
-        await db
-          .from('we_cards')
-          .select('id, question, mode, shows, cadence, weekdays, goal_nights, starts_on, archived, made_at')
-          .in('id', ids)
-      ).data || []
-    : []
+  let cards = []
+  if (ids.length) {
+    const res = await db
+      .from('we_cards')
+      .select('id, question, mode, shows, cadence, weekdays, goal_nights, starts_on, archived, made_at')
+      .in('id', ids)
+    if (res.error) throw res.error
+    cards = res.data || []
+  }
   return {
     didWe: { cards, memberships: mine.data || [], answers: answers.data || [] },
     didYou: sends.data || [],

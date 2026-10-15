@@ -6,6 +6,7 @@ import { cloudSetUp, supabaseSqlUrl } from '../../src/lib/cloud.js'
 import { canEditSent, cleanSentEdit, endDidYouLink, myDidYouLinks } from '../../src/lib/did-you-links.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { repeatLabel } from '../../src/lib/send-repeat.js'
+import { sendAnswerLine } from '../../src/lib/send-answers.js'
 import { copyText, passAlong } from '../../src/lib/native.js'
 import {
   INVITE_GEMS_CAP,
@@ -105,8 +106,9 @@ import {
 import { useHallColors, useLookColors } from '../hooks/useHallColors.js'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { FRAME_IDS, frameText } from '../../src/lib/frames.js'
-import { goHash } from '../navigation/hash.js'
+import { goHash, swapHash } from '../navigation/hash.js'
 import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
+import { keptButMissing } from '../lib/kept-send.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { useNoted } from '../hooks/useNoted.js'
 import { inviteLink } from '../../src/lib/invite-link.js'
@@ -379,8 +381,9 @@ function keepSentHidden(uid, list) {
   }
 }
 
-function sentState(state, name) {
-  if (state === 'kept') return t('sent.kept')
+function sentState(state, name, answers) {
+  // Kept: how they answered it lately, when they share that.
+  if (state === 'kept') return sendAnswerLine(answers) || t('sent.kept')
   if (state === 'passed') return t('sent.passed')
   // On a friend's own page the line has no "To {name}" before it, so it names them.
   if (name !== undefined) return name ? t('sent.waitingName', { name }) : t('sent.waitingNone')
@@ -645,7 +648,7 @@ function AddFriendPop({ colors, onClose, onAsked }) {
     let alive = true
     myFriendId().then((out) => {
       if (alive) setMyId(out.id || '')
-    })
+    }).catch(() => {})
     return () => {
       alive = false
     }
@@ -728,11 +731,12 @@ export function PeopleScreen({ book, onChange }) {
       ])
       setMine(who)
       await syncDisplayName(book.keeperName)
-      setLinks(friendRows)
-      setFamilies(famRows)
+      // A failed list keeps the rows we had and says so.
+      if (!friendRows.miss) setLinks(friendRows)
+      if (!famRows.miss) setFamilies(famRows)
       setWaiting(count)
       setWeWaiting(weCount)
-      setMiss('')
+      setMiss(friendRows.miss || famRows.miss ? t('people.reach') : '')
     } catch {
       setMiss(t('people.reach'))
     }
@@ -820,7 +824,7 @@ export function PeopleScreen({ book, onChange }) {
       </View>
 
       {tab === 'friends' && links.asked.length ? (
-        <>
+        <Reveal key="asks" layout={false} style={styles.tabBody}>
           <SectionHead colors={colors} label={t('people.askBanner', { n: links.asked.length })} />
           {links.asked.map((row) => (
             <PersonCard
@@ -838,11 +842,11 @@ export function PeopleScreen({ book, onChange }) {
               }
             />
           ))}
-        </>
+        </Reveal>
       ) : null}
 
       {tab === 'friends' ? (
-        <>
+        <Reveal key="friends" layout={false} style={styles.tabBody}>
       <SectionHead
         colors={colors}
         label={t('people.friends')}
@@ -886,11 +890,11 @@ export function PeopleScreen({ book, onChange }) {
           <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
         </EmptyCard>
       )}
-        </>
+        </Reveal>
       ) : null}
 
       {tab === 'families' ? (
-        <>
+        <Reveal key="families" layout={false} style={styles.tabBody}>
       <SectionHead
         colors={colors}
         label={t('people.families')}
@@ -927,19 +931,19 @@ export function PeopleScreen({ book, onChange }) {
         </EmptyCard>
       )}
       {families.length ? null : <JoinFamilyCard colors={colors} />}
-        </>
+        </Reveal>
       ) : null}
 
       {tab === 'we' ? (
-        <>
+        <Reveal key="we" layout={false} style={styles.tabBody}>
       {/* The tab already says Did we; no second header. */}
       <WeHomeList book={book} onChange={onChange} />
-        </>
+        </Reveal>
       ) : null}
 
       {/* You: only on the Friends tab, so it does not repeat on every tab. */}
       {tab === 'friends' ? (
-        <>
+        <Reveal key="you" layout={false} style={styles.tabBody}>
       <SectionHead colors={colors} label={t('people.you')} />
       <Row
         colors={colors}
@@ -987,7 +991,7 @@ export function PeopleScreen({ book, onChange }) {
         onPress={() => goHash('/people/connect')}
       />
 
-        </>
+        </Reveal>
       ) : null}
       {links.sent.length ? (
         <Meta colors={colors}>
@@ -1158,8 +1162,8 @@ export function PeopleConnectScreen({ book, route }) {
     if (!account.user) return undefined
     let alive = true
     myFriendId().then((out) => {
-      if (alive) setMyId(out.id)
-    })
+      if (alive) setMyId(out.id || '')
+    }).catch(() => {})
     return () => {
       alive = false
     }
@@ -1260,7 +1264,7 @@ export function PeopleConnectScreen({ book, route }) {
 
       <Cap colors={colors}>{t('people.startFamily')}</Cap>
       <Field colors={colors} label={t('people.newFamily')} value={famDraft} onChangeText={setFamDraft} />
-      <DidButton colors={colors} label={t('people.makeFamily')} onPress={newFamily} />
+      <DidButton colors={colors} label={t('people.makeFamily')} onPress={() => once('make-family', newFamily)} />
       <JoinFamilyCard colors={colors} bare />
 
       <Miss colors={colors}>{miss}</Miss>
@@ -1300,11 +1304,11 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
         readFriendCheers(),
         listAutoAdds(),
       ])
-      setLinks(friendRows)
+      if (!friendRows.miss) setLinks(friendRows)
       setBlocks(blockRows)
       setAutoAdds(autoRows)
       if (typeof serverCheers === 'number') setStock(serverCheers)
-      setMiss('')
+      setMiss(friendRows.miss ? t('people.reach') : '')
     } catch {
       setMiss(t('people.reach'))
     }
@@ -1568,7 +1572,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                     colors={colors}
                     disabled={cheersLeft < 1}
                     label={t('friends.cheerUse')}
-                    onPress={() => cheer(row.person)}
+                    onPress={() => once(`cheer:${row.person.user_id}`, () => cheer(row.person))}
                   />
                 </>
               }
@@ -1678,13 +1682,17 @@ function FamilyListScreen({ colors }) {
   const [families, setFamilies] = useKept(`people.families:${account.user?.id}`, [], KEEP)
   const [pop, setPop] = useState(false)
   const [ready, setReady] = useKept(`families.ready:${account.user?.id}`, false, KEEP)
+  const [miss, setMiss] = useState('')
 
   const load = useCallback(async () => {
     if (!account.user) {
       setReady(true)
       return
     }
-    setFamilies(await listFamilies())
+    const rows = await listFamilies()
+    // A failed read keeps the families we had and says so.
+    if (!rows.miss) setFamilies(rows)
+    setMiss(rows.miss ? t('people.reach') : '')
     setReady(true)
   }, [account.user])
 
@@ -1707,6 +1715,7 @@ function FamilyListScreen({ colors }) {
   return (
     <ScreenShell title={t('people.families')} colors={colors}>
       <OfflineLine colors={colors} />
+      <Miss colors={colors}>{miss}</Miss>
       <SectionHead
         colors={colors}
         label={t('people.families')}
@@ -1935,25 +1944,40 @@ export function FriendScreen({ book, onChange, route }) {
   const [week, setWeek] = useKept(`friend.week:${account.user?.id}:${otherId}`, [], KEEP)
   // Notes they chose to share in the last few nights.
   const [notes, setNotes] = useState([])
+  const [loadMiss, setLoadMiss] = useState('')
   const { cards } = useWeTonight(account.user)
 
   const load = useCallback(async () => {
     if (!account.user || !otherId) return
-    const [who, both, linked, made, serverCheers, nights, shared] = await Promise.all([
-      personById(otherId),
-      sendsWith(otherId),
-      stillLinked(otherId),
-      myDidYouLinks().catch(() => []),
-      readFriendCheers().catch(() => null),
-      friendWeek(otherId, boardDate(new Date())).catch(() => []),
-      sharedNotesFrom(otherId).catch(() => []),
-    ])
+    let got
+    try {
+      got = await Promise.all([
+        personById(otherId),
+        sendsWith(otherId),
+        stillLinked(otherId),
+        myDidYouLinks().catch(() => []),
+        readFriendCheers().catch(() => null),
+        friendWeek(otherId, boardDate(new Date())).catch(() => []),
+        sharedNotesFrom(otherId).catch(() => []),
+      ])
+    } catch {
+      setLoadMiss(t('people.reach'))
+      setReady(true)
+      return
+    }
+    const [who, both, linked, made, serverCheers, nights, shared] = got
     setNotes(shared)
     if (typeof serverCheers === 'number') setStock(serverCheers)
     setWeek(nights)
     setKeptLinks(made.filter((link) => link.kept.some((row) => row.user_id === otherId)))
-    setPerson(who)
-    setSends(both)
+    // A failed or nameless read keeps the name and photo we already show.
+    setPerson((was) => (!who?.miss && personName(who) ? who : was?.user_id ? was : who))
+    // A failed read keeps the did yous we had and says so.
+    if (both.miss) setLoadMiss(t('people.reach'))
+    else {
+      setSends(both)
+      setLoadMiss('')
+    }
     setGone(linked === false)
     setReady(true)
   }, [account.user, otherId])
@@ -2021,7 +2045,7 @@ export function FriendScreen({ book, onChange, route }) {
   if (gone) {
     return (
       <ScreenShell title={shownName} colors={colors}>
-        <EmptyCard colors={colors} title={t('friend.goneTitle', { name })} body={t('friend.goneBody')}>
+        <EmptyCard colors={colors} title={t('friend.goneTitle', { name })} body={t('friend.goneBody', { name })}>
           <DidButton colors={colors} small label={t('people.seeAll')} onPress={() => goHash('/friends')} />
         </EmptyCard>
       </ScreenShell>
@@ -2149,7 +2173,8 @@ export function FriendScreen({ book, onChange, route }) {
                   onMiss: setSaid,
                   onDone: (words) => {
                     confirmDone(words)
-                    goHash('/friends')
+                    refreshPeople()
+                    swapHash('/friends')
                   },
                 }),
             },
@@ -2173,7 +2198,8 @@ export function FriendScreen({ book, onChange, route }) {
                           const { miss: why } = await blockPerson(otherId, 'photo')
                           if (why) return setSaid(tMiss(why))
                           confirmDone(t('confirm.blocked', { name }))
-                          return goHash('/friends')
+                          refreshPeople()
+                          return swapHash('/friends')
                         },
                       }),
                   },
@@ -2190,12 +2216,14 @@ export function FriendScreen({ book, onChange, route }) {
           onDone={(why) => {
             if (why) return setSaid(tMiss(why))
             confirmDone(t('confirm.blocked', { name }))
-            return goHash('/friends')
+            refreshPeople()
+            return swapHash('/friends')
           }}
         />
       ) : null}
 
       {!ready ? <LateMeta colors={colors}>{t('family.loading')}</LateMeta> : null}
+      <Miss colors={colors}>{loadMiss}</Miss>
       {ready ? (
       <View style={styles.friendTabs}>
         <KitSegment
@@ -2243,17 +2271,18 @@ export function FriendScreen({ book, onChange, route }) {
             key={send.id}
             colors={colors}
             title={askShown(send.question)}
-            note={[repeatLabel(send.repeat), sendLastLine(send.repeat, send.last_did_on, boardDate()), sentState(send.state, personName(person) || '')].filter(Boolean).join(' · ')}
+            note={[repeatLabel(send.repeat), sendLastLine(send.repeat, send.last_did_on, boardDate()), sentState(send.state, personName(person) || '', send.answers)].filter(Boolean).join(' · ')}
           >
             {send.state === 'sent' ? (
               <KeyButton
                 colors={colors}
                 label={t('sent.takeBack')}
-                onPress={async () => {
+                onPress={() => once(`take-back:${send.id}`, async () => {
                   const { miss: why } = await takeBack(send.id)
                   setSaid(why ? tMiss(why) : '')
+                  if (!why) confirmDone(t('confirm.takenBack'))
                   load()
-                }}
+                })}
               />
             ) : null}
           </PersonRow>
@@ -2339,7 +2368,10 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     try {
       // Family did yous and allowed friends go onto tonight first.
       await refreshPeople()
-      setRows(await listInbox())
+      const inbox = await listInbox()
+      // A failed read keeps the rows we had.
+      if (inbox.miss) throw new Error(inbox.miss)
+      setRows(inbox)
       setMiss('')
     } catch {
       setMiss(t('people.reach'))
@@ -2365,9 +2397,24 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     if (answering.current.has(row.id)) return
     answering.current.add(row.id)
     setMiss('')
-    const { miss: why } = await answerSend(row.id, keep)
-    answering.current.delete(row.id)
-    if (why) return setMiss(tMiss(why))
+    let res
+    try {
+      res = await answerSend(row.id, keep)
+    } catch {
+      res = { miss: 'confirm.miss' }
+    } finally {
+      answering.current.delete(row.id)
+    }
+    const { miss: why, already } = res
+    if (why) {
+      setMiss(tMiss(why))
+      return why === 'sent.gone' ? load() : undefined
+    }
+    if (already) {
+      // Kept elsewhere, but the question never landed on this shelf.
+      if (keep && row.kind === 'todo' && onKeep && keptButMissing(res, row.id)) onKeep(row)
+      return load()
+    }
     if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
     if (keep && row.kind === 'todo' && onKeep) onKeep(row)
     if (row.kind === 'todo') confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
@@ -2536,9 +2583,9 @@ export function SentScreen({ book, onChange }) {
     }
     try {
       const [sent, made] = await Promise.all([listSent(), myDidYouLinks()])
-      setRows(sent)
+      if (!sent.miss) setRows(sent)
       setLinks(made)
-      setMiss('')
+      setMiss(sent.miss ? t('people.reach') : '')
     } catch {
       setMiss(t('people.reach'))
     }
@@ -2618,7 +2665,7 @@ export function SentScreen({ book, onChange }) {
           <View style={[styles.personCopy, styles.personCopyFlex]}>
             <Text style={[styles.personTitle, { color: colors.ink }]}>{row.kind === 'cheer' ? t('inbox.aCheer') : askShown(row.question)}</Text>
             <Text style={[styles.personNote, { color: colors.inkDim }]}>
-              {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), sentState(row.state)]
+              {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), sentState(row.state, undefined, row.answers)]
                 .filter(Boolean)
                 .join(' · ')}
             </Text>
@@ -2633,13 +2680,13 @@ export function SentScreen({ book, onChange }) {
             <KeyButton
               colors={colors}
               label={t('sent.takeBack')}
-              onPress={async () => {
+              onPress={() => once(`take-back:${row.id}`, async () => {
                 setMiss('')
                 const { miss: why } = await takeBack(row.id)
                 if (why) setMiss(tMiss(why))
                 else confirmDone(t('confirm.takenBack'))
                 load()
-              }}
+              })}
             />
           ) : null}
           </View>
@@ -2714,6 +2761,8 @@ function askShown(question) {
 }
 
 const styles = StyleSheet.create({
+  // A tab body: the page gap does not reach inside a wrapper, so it keeps its own.
+  tabBody: { gap: 12 },
   // The 180 preview tile is 216 tall around a ~143 tall card; the box fits the
   // card plus frame overhang so the sheet has no empty band under it.
   cardBig: { width: '100%', height: 184, alignItems: 'center', justifyContent: 'center' },

@@ -1,6 +1,61 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ROCKET_BODY, ROCKET_FINS, ROCKET_FLAME, ROCKET_VIEW, STAR_PATH, holdFor, popsFor } from './cheer-pops.js'
+import {
+  BALL_STRIPE,
+  BELL_BODY,
+  BELL_LIP,
+  BELL_SHADE,
+  BELL_SHINE,
+  BELL_VIEW,
+  BOLT_PATH,
+  BOLT_VIEW,
+  BOW_INNER,
+  BOW_KNOT,
+  BOW_LOOPS,
+  BOW_TAILS,
+  BUTTERFLY_DOTS,
+  BUTTERFLY_FEELERS,
+  BUTTERFLY_VIEW,
+  CRACKLE_PATH,
+  DISCO_LATS,
+  GIFT_BAND,
+  GIFT_BOW,
+  GIFT_BOX,
+  GIFT_LID,
+  GIFT_LID_BAND,
+  GIFT_SHADE,
+  GIFT_SHINE,
+  GIFT_VIEW,
+  KERNEL_HULL,
+  KERNEL_PUFFS,
+  KERNEL_SHINE,
+  MUG_BAND,
+  MUG_BODY,
+  MUG_COCOA,
+  MUG_FOAM,
+  MUG_HANDLE,
+  MUG_SHINE,
+  MUG_VIEW,
+  RIBBON_SWIRL,
+  RIBBON_VIEW,
+  SNOW_CORE,
+  SNOW_PATH,
+  SOUND_ARC,
+  SPLAT_DRIPS,
+  SPLAT_PATH,
+  SPLAT_VIEW,
+  WING_LOW_L,
+  WING_LOW_R,
+  WING_UP_L,
+  WING_UP_R,
+  ROCKET_BODY,
+  ROCKET_FINS,
+  ROCKET_FLAME,
+  ROCKET_VIEW,
+  STAR_PATH,
+  holdFor,
+  popsFor,
+} from './cheer-pops.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { useReduceMotion } from './useReduceMotion.js'
@@ -120,6 +175,225 @@ function Lantern({ delay, size, rise, swing }) {
         <rect className="di-lantern-cap" x="11" y="34" width="10" height="4" rx="1.5" />
         <path className="di-lantern-tassel" d="M16 38 V43" />
       </svg>
+    </b>
+  )
+}
+
+function Gift({ delay, size, swing }) {
+  return (
+    <b className="di-gift" style={{ '--sz': size, '--swing': swing < 0 ? -1 : 1, animationDelay: delay }}>
+      <svg viewBox={GIFT_VIEW} aria-hidden="true" focusable="false">
+        <path className="di-gift-box" d={GIFT_BOX} />
+        <path className="di-gift-shade" d={GIFT_SHADE} />
+        <path className="di-gift-band" d={GIFT_BAND} />
+        <g className="di-gift-lid" style={{ animationDelay: delay }}>
+          <path className="di-gift-box" d={GIFT_LID} />
+          <path className="di-gift-shine" d={GIFT_SHINE} />
+          <path className="di-gift-band" d={GIFT_LID_BAND} />
+          <path className="di-gift-band" d={GIFT_BOW} />
+          <circle className="di-gift-band" cx="20" cy="11.5" r="2.4" />
+        </g>
+      </svg>
+    </b>
+  )
+}
+
+function Kernel({ delay, x, y, fall, rot, size, tone }) {
+  return (
+    <b className="di-kernel" data-tone={tone} style={{ '--cx': x, '--cy': y, '--fall': fall, '--rot': rot, '--sz': size, animationDelay: delay }}>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style={{ animationDelay: delay }}>
+        <path className="di-kernel-hull" d={KERNEL_HULL} />
+        {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+          <circle key={i} className="di-kernel-puff" cx={cx} cy={cy} r={r} />
+        ))}
+        {KERNEL_PUFFS.map(([cx, cy, r], i) => (
+          <circle key={`in-${i}`} className={i === 1 ? 'di-kernel-fill is-butter' : 'di-kernel-fill'} cx={cx} cy={cy} r={r - 0.9} />
+        ))}
+        <ellipse className="di-kernel-shine" cx={KERNEL_SHINE[0]} cy={KERNEL_SHINE[1]} rx={KERNEL_SHINE[2]} ry={KERNEL_SHINE[3]} />
+      </svg>
+    </b>
+  )
+}
+
+const TONE_VAR = {
+  on: 'var(--di-on)',
+  gold: 'var(--di-on-deep)',
+  blue: 'var(--di-late)',
+  warm: 'var(--di-miss)',
+  ink: 'var(--di-ink)',
+}
+
+function toneVar(tone) {
+  return TONE_VAR[tone] || TONE_VAR.on
+}
+
+function Snowflake({ delay, x, y, size, turn }) {
+  return (
+    <b className="di-flake" style={{ '--fx': x || '0rem', '--fy': y || '0rem', '--sz': size, '--turn': turn < 0 ? -1 : 1, animationDelay: delay }}>
+      <i className="di-flake-flash" style={{ animationDelay: delay }} />
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d={SNOW_PATH} />
+        <path d={SNOW_CORE} />
+      </svg>
+    </b>
+  )
+}
+
+function Bell({ delay, size, swing }) {
+  return (
+    <b className="di-bell" style={{ '--sz': size, '--swing': swing < 0 ? -1 : 1, animationDelay: delay }}>
+      <svg viewBox={BELL_VIEW} aria-hidden="true" focusable="false">
+        <g className="di-bell-clapper" style={{ animationDelay: delay }}>
+          <path d="M20 30 V37" />
+          <circle cx="20" cy="40" r="3" />
+        </g>
+        <path className="di-bell-body" d={BELL_BODY} />
+        <path className="di-bell-shade" d={BELL_SHADE} />
+        <path className="di-bell-lip" d={BELL_LIP} />
+        <path className="di-bell-shine" d={BELL_SHINE} />
+        <circle className="di-bell-knob" cx="20" cy="4" r="2.4" />
+      </svg>
+    </b>
+  )
+}
+
+function Disco({ delay, size, turn }) {
+  return (
+    <b className="di-disco" style={{ '--sz': size, '--turn': turn < 0 ? -1 : 1, animationDelay: delay }}>
+      <i className="di-disco-line" />
+      <span className="di-disco-ball">
+        <i className="di-disco-tiles" style={{ animationDelay: delay }} />
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d={DISCO_LATS} />
+        </svg>
+      </span>
+    </b>
+  )
+}
+
+function Ribbon({ delay, size, turn }) {
+  return (
+    <b className="di-ribbon" style={{ '--sz': size, '--turn': turn < 0 ? -1 : 1 }}>
+      <svg className="di-ribbon-swirl" viewBox={RIBBON_VIEW} aria-hidden="true" focusable="false" style={{ animationDelay: delay }}>
+        <path className="di-ribbon-band" d={RIBBON_SWIRL} />
+        <path className="di-ribbon-edge" d={RIBBON_SWIRL} />
+      </svg>
+      <svg className="di-ribbon-bow" viewBox={RIBBON_VIEW} aria-hidden="true" focusable="false" style={{ animationDelay: delay }}>
+        <path className="di-bow-main" d={BOW_TAILS} />
+        <path className="di-bow-main" d={BOW_LOOPS} />
+        <path className="di-bow-deep is-soft" d={BOW_INNER} />
+        <path className="di-bow-deep" d={BOW_KNOT} />
+      </svg>
+    </b>
+  )
+}
+
+function Cup({ delay, side, size }) {
+  return (
+    <b className="di-cup" data-side={side} style={{ '--sz': size, '--dir': side === 'left' ? -1 : 1, animationDelay: delay }}>
+      <svg viewBox={MUG_VIEW} aria-hidden="true" focusable="false">
+        <path className="di-cup-handle" d={MUG_HANDLE} />
+        <path className="di-cup-body" d={MUG_BODY} />
+        <path className="di-cup-band" d={MUG_BAND} />
+        <path className="di-cup-shine" d={MUG_SHINE} />
+        <ellipse className="di-cup-cocoa" cx={MUG_COCOA[0]} cy={MUG_COCOA[1]} rx={MUG_COCOA[2]} ry={MUG_COCOA[3]} />
+        {MUG_FOAM.map(([cx, cy, r], i) => (
+          <circle key={i} className="di-cup-foam" cx={cx} cy={cy} r={r} />
+        ))}
+      </svg>
+    </b>
+  )
+}
+
+function DropBall({ delay, size, fall }) {
+  return (
+    <b className="di-dropball" style={{ '--sz': size, '--fall': fall, animationDelay: delay }}>
+      <i className="di-dropball-flash" style={{ animationDelay: delay }} />
+      <i className="di-dropball-halo" style={{ animationDelay: delay }} />
+      <i className="di-dropball-orb" />
+    </b>
+  )
+}
+
+function Bolt({ delay, size }) {
+  return (
+    <b className="di-bolt" style={{ '--sz': size, animationDelay: delay }}>
+      <i className="di-bolt-flash" style={{ animationDelay: delay }} />
+      <svg viewBox={BOLT_VIEW} aria-hidden="true" focusable="false" style={{ animationDelay: delay }}>
+        <path d={BOLT_PATH} />
+      </svg>
+    </b>
+  )
+}
+
+function Splat({ delay, x, y, rot, len, size, tone }) {
+  const angle = ((Number.parseFloat(rot) || 0) * Math.PI) / 180
+  const far = Number.parseFloat(len) || 0
+  return (
+    <b
+      className="di-splat"
+      style={{
+        '--sx': x,
+        '--sy': y,
+        '--bx': `${(Math.cos(angle) * far).toFixed(2)}rem`,
+        '--by': `${(Math.sin(angle) * far).toFixed(2)}rem`,
+        '--sz': size,
+        '--tone': toneVar(tone),
+      }}
+    >
+      <i className="di-splat-blob" style={{ animationDelay: delay }} />
+      {SPLAT_DRIPS.map(([dx, top, w, l], i) => (
+        <i
+          key={i}
+          className="di-splat-drip"
+          style={{ '--dx': dx / 40 - 0.5, '--dt': top / 40 - 0.5, '--dw': w / 40, '--dl': l / 40, animationDelay: delay }}
+        />
+      ))}
+      <svg className="di-splat-art" viewBox={SPLAT_VIEW} aria-hidden="true" focusable="false" style={{ animationDelay: delay }}>
+        <path d={SPLAT_PATH} />
+        <ellipse cx="15" cy="15" rx="3.2" ry="2" />
+      </svg>
+    </b>
+  )
+}
+
+function Butterfly({ delay, x, y, size, tone, turn }) {
+  return (
+    <b
+      className="di-butterfly"
+      style={{ '--bx': x, '--by': y, '--sz': size, '--tone': toneVar(tone), '--turn': turn < 0 ? -1 : 1, animationDelay: delay }}
+    >
+      <svg viewBox={BUTTERFLY_VIEW} aria-hidden="true" focusable="false">
+        <g className="di-wing">
+          <path d={WING_UP_L} />
+          <path className="di-wing-low" d={WING_LOW_L} />
+          <circle cx={BUTTERFLY_DOTS[0][0]} cy={BUTTERFLY_DOTS[0][1]} r={BUTTERFLY_DOTS[0][2]} />
+        </g>
+        <g className="di-wing">
+          <path d={WING_UP_R} />
+          <path className="di-wing-low" d={WING_LOW_R} />
+          <circle cx={BUTTERFLY_DOTS[1][0]} cy={BUTTERFLY_DOTS[1][1]} r={BUTTERFLY_DOTS[1][2]} />
+        </g>
+        <ellipse className="di-butterfly-body" cx="20" cy="17" rx="1.6" ry="7" />
+        <path className="di-butterfly-feelers" d={BUTTERFLY_FEELERS} />
+      </svg>
+    </b>
+  )
+}
+
+function RubberBall({ delay, x, len, fall, size, tone }) {
+  const roll = Number.parseFloat(len) || 0
+  const spin = (roll / (Math.PI * (Number.parseFloat(size) || 1))) * 360
+  return (
+    <b className="di-rubber" style={{ '--bx': x, '--roll': len, '--h': fall, '--sz': size, '--tone': toneVar(tone), '--spin': `${spin.toFixed(0)}deg`, animationDelay: delay }}>
+      <i className="di-rubber-shadow" style={{ animationDelay: delay }} />
+      <span className="di-rubber-hop" style={{ animationDelay: delay }}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style={{ animationDelay: delay }}>
+          <circle cx="12" cy="12" r="11" />
+          <path d={BALL_STRIPE} />
+        </svg>
+        <i className="di-rubber-shine" />
+      </span>
     </b>
   )
 }
@@ -257,6 +531,112 @@ function renderBit(burst, pop, bit, screen = false) {
   }
   if (bit.lantern) {
     return <Lantern key={key} delay={delay} size={bit.size} rise={bit.rise} swing={bit.swing} />
+  }
+  if (bit.gift) {
+    return <Gift key={key} delay={delay} size={bit.size} swing={bit.swing} />
+  }
+  if (bit.kernel) {
+    return <Kernel key={key} delay={delay} x={bit.x} y={bit.y} fall={bit.fall} rot={bit.rot} size={bit.size} tone={bit.tone} />
+  }
+  if (bit.snowflake) {
+    return <Snowflake key={key} delay={delay} x={bit.x} y={bit.y} size={bit.size} turn={bit.turn} />
+  }
+  if (bit.iceDust) {
+    return (
+      <i
+        key={key}
+        className="di-ice-dust"
+        style={{ '--dx': bit.x, '--dy': bit.y, '--sz': bit.size, '--tone': toneVar(bit.tone), animationDelay: delay }}
+      />
+    )
+  }
+  if (bit.bell) {
+    return <Bell key={key} delay={delay} size={bit.size} swing={bit.swing} />
+  }
+  if (bit.soundArc) {
+    return (
+      <b
+        key={key}
+        className="di-sound-arc"
+        style={{ '--ax': bit.x, '--ay': bit.y, '--sz': bit.size, '--turn': bit.turn < 0 ? -1 : 1, '--tone': toneVar(bit.tone), animationDelay: delay }}
+      >
+        <svg viewBox="0 0 12 24" aria-hidden="true" focusable="false">
+          <path d={SOUND_ARC} />
+        </svg>
+      </b>
+    )
+  }
+  if (bit.disco) {
+    return <Disco key={key} delay={delay} size={bit.size} turn={bit.turn} />
+  }
+  if (bit.discoSpot) {
+    return (
+      <b
+        key={key}
+        className="di-disco-spot"
+        style={{ '--a': bit.rot, '--sweep': `${bit.turn}deg`, '--len': bit.len, '--sz': bit.size, '--tone': toneVar(bit.tone), animationDelay: delay }}
+      >
+        <i style={{ animationDelay: delay }} />
+      </b>
+    )
+  }
+  if (bit.ribbon) {
+    return <Ribbon key={key} delay={delay} size={bit.size} turn={bit.turn} />
+  }
+  if (bit.cup) {
+    return <Cup key={key} delay={delay} side={bit.side} size={bit.size} />
+  }
+  if (bit.fizz) {
+    return (
+      <i
+        key={key}
+        className="di-fizz"
+        style={{ '--fx': bit.x, '--fy': bit.y, '--rise': bit.rise, '--sz': bit.size, '--tone': toneVar(bit.tone), animationDelay: delay }}
+      />
+    )
+  }
+  if (bit.pole) {
+    return <i key={key} className="di-pole" style={{ '--sz': bit.size, '--fall': bit.fall, animationDelay: delay }} />
+  }
+  if (bit.dropBall) {
+    return <DropBall key={key} delay={delay} size={bit.size} fall={bit.fall} />
+  }
+  if (bit.beam) {
+    return (
+      <b key={key} className="di-beam" style={{ '--rot': bit.rot, '--len': bit.len, '--sz': bit.size, '--tone': toneVar(bit.tone) }}>
+        <i style={{ animationDelay: delay }} />
+      </b>
+    )
+  }
+  if (bit.bolt) {
+    return <Bolt key={key} delay={delay} size={bit.size} />
+  }
+  if (bit.crackle) {
+    return (
+      <b key={key} className="di-crackle" style={{ '--rot': bit.rot, '--len': bit.len, '--sz': bit.size, '--tone': toneVar(bit.tone) }}>
+        <svg viewBox="0 0 14 9" aria-hidden="true" focusable="false" style={{ animationDelay: delay }}>
+          <path d={CRACKLE_PATH} />
+        </svg>
+      </b>
+    )
+  }
+  if (bit.splat) {
+    return <Splat key={key} delay={delay} x={bit.x} y={bit.y} rot={bit.rot} len={bit.len} size={bit.size} tone={bit.tone} />
+  }
+  if (bit.splatDot) {
+    return (
+      <i
+        key={key}
+        className="di-splat-dot"
+        style={{ '--dx': bit.x, '--dy': bit.y, '--sz': bit.size, '--tone': toneVar(bit.tone), animationDelay: delay }}
+      />
+    )
+  }
+  if (bit.butterfly) {
+    return <Butterfly key={key} delay={delay} x={bit.x} y={bit.y} size={bit.size} tone={bit.tone} turn={bit.turn} />
+  }
+  if (bit.rubberBall) {
+    return <RubberBall key={key} delay={delay} x={bit.x} len={bit.len} fall={bit.fall} size={bit.size} tone={bit.tone} />
   }
   if (bit.sparkFlash) {
     return <i key={key} className="di-spark-flash" style={{ animationDelay: delay }} />

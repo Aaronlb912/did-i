@@ -93,12 +93,29 @@ export function storePrice(packId) {
   return prices.get(sku) || prices.get(pack.storeId) || ''
 }
 
+// The account id a buy was made for (set on the buy since 1.x). Older buys
+// carry none and credit whoever is signed in, as before.
+function buyOwner(purchase) {
+  return String(purchase?.appAccountToken || purchase?.obfuscatedAccountIdAndroid || '').toLowerCase()
+}
+
+// gem-iap misses that will never credit, so the store must close the buy.
+export const FINISH_UNCREDITED = new Set(['test', 'refunded'])
+
 async function creditPurchase(purchase) {
   const mod = await loadIap()
+  const owner = buyOwner(purchase)
+  // Bought on another account on this phone: leave it open for that account.
+  if (owner) {
+    const user = await readUser()
+    if (user && owner !== String(user.id).toLowerCase()) return { miss: 'other' }
+  }
   const out = await submitGemPurchase(purchase)
   // A test buy from an account not on the server's list never credits. Close
   // it with the store anyway, or Play keeps it open and blocks that pack.
-  if (out.miss === 'test' && mod?.finishTransaction) {
+  // A refunded buy never credits either. 'receipt' stays open: gem-iap also
+  // says it when the store has not caught up yet (Apple 404), so it can retry.
+  if (FINISH_UNCREDITED.has(out.miss) && mod?.finishTransaction) {
     try {
       await mod.finishTransaction({ purchase, isConsumable: true })
     } catch {
@@ -165,19 +182,27 @@ export async function restoreGemPurchases() {
   if (!linked) return { gems: 0, miss: 'setup' }
   const api = iapApi(mod)
   let gems = 0
+  let failed = 0
   try {
     const open = (await api.getAvailablePurchases?.()) || []
     for (const purchase of open) {
       const id = String(purchase?.productId || purchase?.id || '')
       if (!GEM_PACKS.some((row) => row.storeId === id)) continue
-      const out = await creditPurchase(purchase)
-      gems += out.gems || 0
+      // One bad purchase must not stop the rest from being credited.
+      try {
+        const out = await creditPurchase(purchase)
+        gems += out.gems || 0
+      } catch {
+        // The next restore or connect tries it again.
+        failed += 1
+      }
     }
   } catch (error) {
     return { gems, miss: 'store', code: String(error?.code || error?.message || '').slice(0, 120) }
   }
   const claimed = await claimAndCredit()
   if (claimed.miss && !gems) return { gems: 0, miss: claimed.miss }
+  if (failed && !gems && !claimed.gems) return { gems: 0, miss: 'store' }
   return { gems: gems + claimed.gems, miss: '' }
 }
 
@@ -189,7 +214,12 @@ async function retryUnfinished(api) {
     const open = await api.getAvailablePurchases()
     for (const purchase of open || []) {
       const id = String(purchase?.productId || purchase?.id || '')
-      if (GEM_PACKS.some((row) => row.storeId === id)) await creditPurchase(purchase)
+      if (!GEM_PACKS.some((row) => row.storeId === id)) continue
+      try {
+        await creditPurchase(purchase)
+      } catch {
+        // Keep going; this one is tried again next connect.
+      }
     }
   } catch {
     // Next connect tries again.
@@ -247,7 +277,7 @@ async function connectStore() {
       // Paid but not credited: say so, with a tap that tries again. The store
       // keeps the buy open, so the next connect retries too.
       if (out?.miss === 'test') testBuyToast()
-      else if (out?.miss) creditMissToast()
+      else if (out?.miss && out.miss !== 'other') creditMissToast()
     })
     errorSub = purchaseErrorListener((error) => {
       if (error?.code === ErrorCode.UserCancelled) return
@@ -287,11 +317,14 @@ export async function buyGemPack(packId) {
     if (!liveSku.has(pack.id)) return { miss: 'store', code: 'not-listed' }
   }
   const sku = liveSku.get(pack.id) || pack.storeId
+  // Tie the buy to this account, so another account on the phone never
+  // gets its gems. Apple wants a UUID; Supabase user ids are one.
+  const userId = (await readUser())?.id || null
   const ask = () =>
     api.requestPurchase({
       request: {
-        apple: { sku },
-        google: { skus: [sku] },
+        apple: { sku, appAccountToken: userId },
+        google: { skus: [sku], obfuscatedAccountId: userId },
       },
       type: 'in-app',
     })
@@ -314,7 +347,9 @@ export async function buyGemPack(packId) {
     } catch (error) {
       // Play answered the buy's own lookup with nothing though the same pack
       // loaded at start. A stale billing connection does that; reconnect once.
-      if (Platform.OS !== 'android' || error?.code === api.ErrorCode?.UserCancelled) throw error
+      // Anything else (a decline, a pending card) is not retried.
+      const empty = error?.isEmptyProductList || /failed to query product/i.test(String(error?.message || ''))
+      if (Platform.OS !== 'android' || !empty || error?.code === api.ErrorCode?.UserCancelled) throw error
       try {
         await api.endConnection?.()
       } catch {

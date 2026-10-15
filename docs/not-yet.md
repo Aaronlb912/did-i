@@ -5,10 +5,27 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
-## Apple Watch (branch `watch-1`)
+## Nights lost flying west over the date line (branch `travel-skipped-nights`)
 
-- **Built:** step 1 only. An empty watch app in `targets/watch` ("Did I", "Open Did I on your iPhone"), opt-in with `DIDI_WATCH=1`, built unsigned in CI by ios-watch-check.yml.
-- **Not done:** the watch App ID, App Group and `IOS_WATCH_PROVISIONING_PROFILE` secret (steps in docs/watch.md); tonight's cards on the watch, the complication and a TestFlight pass (steps 2 to 4).
+- **Built:** flying west over the date line (LA to Tokyo) skips the night that was never tonight. Questions left open that night, or closed by the app on its own, are stepped over; a Did counts and a tapped Not yet stays a Not yet. At most one skip a week (`src/lib/travel.js`).
+- **Not done:** no skip when the app was not opened the night before the flight, or when the phone changes zone mid-flight in steps under 14 hours. A phone on an older build drops the skipped nights on sync until a newer phone closes again. On a skipped night the widget's last-night rows still take a tapped Not yet, and it counts as a real Not yet. Nights skipped while signed out go to the next account that signs in on that phone, the same as signed-out answers. Not tried on a phone.
+
+## Did you answers for the sender (branch `did-you-answers`)
+
+- **Built:** a kept Did you remembers its send (`sendId` on the question). Each sync copies the last 7 nights of Did / Not yet for those questions to `send_answers` (`supabase/send-answers.sql`, `src/lib/send-answers.js`); taking an answer back drops it on the next sync. The sender's Sent list (web and phone) and the friend page show "Did today 10:41 PM", "Not yet today", "Did yesterday" or "Did {day}" in place of "kept it". The keeper sees "{name} sees your answers to this" with a Share my answers switch on the question's page; off deletes what the sender could see. Blocking, unfriending or leaving the family deletes what was shared, and so does deleting the question. Gentle mode does not hide it (it is not a streak).
+- **Supabase not applied yet.** Run `supabase/send-answers.sql` (in `db:apply:all`), then `npm run db:test supabase/tests/send-answers.test.sql`. Until then the reads fail quietly and Sent shows "kept it" as before.
+- **Not done:** Did yous kept before this ship have no `sendId`, so they never share (no backfill: the shelf does not know which send they came from). Only the last 7 nights are shared, and offline answers go with the next sync. A phone on an older build keeps Did yous without `sendId`. Not tried on a phone.
+- **Follow-ups:** a small 7-night run on Sent for repeating Did yous (rows are already returned); a push to the sender on Did (needs a quiet-hours check).
+
+## Wear OS (branch `wear-os`)
+
+- **Built:** `android/wear` (Compose for Wear OS) shows tonight's cards with the ring, buddy, Not yet and Did, the done screen and a tile; taps save on the phone like a widget tap (`WatchTapService`, `WatchModule`). See docs/watch.md, Wear OS app. CI: wear-check.yml; android-apk.yml builds `did-i-wear-aab` with the release key.
+- **Not done:** never run on a Wear emulator or real watch; Play Console Wear OS form factor opt-in and Wear screenshots; no complication (tile only). A tap the phone refuses shows open again on the watch only when cards arrive more than 24 hours later. English-only fallback words before the first cards.
+
+## Apple Watch (branches `watch-1`, `watch-2`)
+
+- **Built:** steps 1 to 3. Watch app in `targets/watch` shows tonight's cards one at a time with Did and Not yet, a done state and "Open Did I on your iPhone" when it has no cards; taps go back to the phone and save like a widget tap (`modules/didi-watch`, `native/watch-sync.js`). Complication "1 of 3" in `targets/watch-widget`. Opt-in with `DIDI_WATCH=1`, built unsigned in CI by ios-watch-check.yml.
+- **Not done:** the watch and complication App IDs, App Group and the `IOS_WATCH_PROVISIONING_PROFILE` / `IOS_WATCH_WIDGET_PROVISIONING_PROFILE` secrets (steps in docs/watch.md); a TestFlight pass on a real watch (step 4). Watch words come from the phone in its language; before the first cards, the complication gallery text and the "Open Did I on your iPhone" fallback are English only. Cards from last night stay on the watch until the phone sends new ones. Did we cards are not on the watch.
 
 ## Did we look (branch `we-polish`)
 

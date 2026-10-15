@@ -19,12 +19,11 @@ import {
   framesOwned,
   seasonNextText,
   seasonOpen,
-  SHOWN_FRAMES,
+  shownFrames,
   wearFrame,
   wornFrame,
 } from '../../src/lib/frames.js'
 import { askSignIn, confirmBuy, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
-import { openCoinsHow } from '../components/NightSheets.jsx'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
@@ -142,6 +141,16 @@ function weekFor(frame, owned, ctx) {
 const CORNER_ART = new Set(['frost'])
 
 // What is left after a buy, so spending the last gem is never a surprise.
+// A buy awaits the server, and the book it was handed is from the tap. Put
+// the bought purse on the folder as it is now, so answers made meanwhile stay.
+export function onLiveBook(out) {
+  if (!out?.book) return out
+  const live = readShelf().boards.find((item) => item.id === out.book.id)
+  // The folder was removed meanwhile: say so, and write nothing back.
+  if (!live) return { ...out, miss: out.miss || 'confirm.miss' }
+  return { ...out, book: { ...live, ...normalizePurse(out.book) } }
+}
+
 export function leftAfter(purse, item) {
   if (item.gems) {
     const n = purse.gems - item.gems
@@ -210,11 +219,7 @@ function FrameFacts({ frame, owned, colors }) {
                   : t('frames.howStreak', { n: frame.need })}
           </Text>
         </View>
-      ) : (
-        <View style={[styles.rarity, { borderColor: colors.on }]}>
-          <Text style={[styles.rarityText, { color: colors.on }]}>{t(`frames.rarity.${frame.rarity}`)}</Text>
-        </View>
-      )}
+      ) : null}
       <Text style={[styles.desc, { color: colors.ink }]}>{t(frameText(frame.id, 'desc'))}</Text>
       {['f1', 'f2', 'f3'].map((key) => (
         <Text key={key} style={[styles.fact, { color: colors.inkSoft }]}>
@@ -275,7 +280,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
             title: frameName(id),
             body: `${t('frames.buyBody', { cost: frame.coins ? t('shop.coins', { n: frame.coins }) : t('shop.gems', { n: frame.gems }) })} ${leftAfter(purse, frame)}`,
             onGo: async () => {
-              const next = await buyFrame(book, id)
+              const next = onLiveBook(await buyFrame(book, id))
               if (next.miss === 'shop.miss.needGems') return offerMoreGems(colors)
               if (next.miss === SIGN_IN_MISS) return askSignIn(colors)
               if (next.miss) return confirmMiss(frameMiss(next))
@@ -327,7 +332,6 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
     body: shortCoins
       ? `${priceLine}\n${t('shop.needMoreCoins', { n: frame.coins - purse.coins })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
       : `${priceLine}${seasonLine}`,
-    ...(shortCoins ? { footLabel: t('coins.howTitle'), onFoot: () => openCoinsHow(colors, () => reopen(book)) } : {}),
     // Gem frames point at Get gems, like coin frames point at How coins work.
     // When short, the main button already goes there.
     ...(!owned && frame.gems && purse.gems >= frame.gems
@@ -382,7 +386,7 @@ const SALE_RANK = { season: 0, coin: 1, gem: 2 }
 // What you can buy or claim now. Owned frames are worn from the Collection.
 function shopOrder(purse, ctx) {
   const owned = framesOwned(purse, ctx)
-  const forSale = SHOWN_FRAMES
+  const forSale = shownFrames(ctx.today)
     .filter((f) => !owned.has(f.id) && (f.kind === 'coin' || f.kind === 'gem' || (f.kind === 'season' && seasonOpen(f, ctx.today))))
     .sort((a, b) => SALE_RANK[a.kind] - SALE_RANK[b.kind] || byPrice(a, b))
   return { forSale }
@@ -427,28 +431,30 @@ function allFramesLists(purse, ctx) {
   const owned = framesOwned(purse, ctx)
   const open = (f) => !owned.has(f.id) && (f.kind !== 'season' || seasonOpen(f, ctx.today))
   const sections = SECTIONS.map((sec) => {
-    const list = SHOWN_FRAMES.filter((f) => f.kind === sec.kind && open(f))
+    const list = shownFrames(ctx.today).filter((f) => f.kind === sec.kind && open(f))
     if (sec.kind === 'coin' || sec.kind === 'gem') list.sort(byPrice)
     return { ...sec, list }
   }).filter((sec) => sec.list.length)
   // The soonest season that is not on now, for the line under the list.
-  const next = SHOWN_FRAMES.filter((f) => f.kind === 'season' && !seasonOpen(f, ctx.today))
+  const next = shownFrames(ctx.today).filter((f) => f.kind === 'season' && !seasonOpen(f, ctx.today))
     .map((f) => ({ f, on: seasonNextText(f, ctx.today) }))
     .sort((a, b) => a.on.localeCompare(b.on))[0]
-  const mineCount = SHOWN_FRAMES.filter((f) => owned.has(f.id)).length
+  const mineCount = shownFrames(ctx.today).filter((f) => owned.has(f.id)).length
   return { sections, next, mineCount }
 }
 
 export function ShopFramesScreen({ book, onChange }) {
   const colors = useLookColors(activeLook(book), true)
-  const ctx = useFrameCtx(book)
+  const shelfCtx = useFrameCtx(book)
+  // Wrapped counts gifts you sent; ask the account once per visit.
+  const [giftsSent, setGiftsSent] = useState(shelfCtx.giftsSent)
+  useEffect(() => {
+    refreshGiftsSent().then((n) => { if (typeof n === 'number') setGiftsSent(n) }).catch(() => {})
+  }, [])
+  const ctx = { ...shelfCtx, giftsSent }
   const purse = normalizePurse(book)
   const open = (id) => openFrameSheet({ id, book, colors, ctx, onChange })
   const lists = allFramesLists(purse, ctx)
-  // Wrapped counts gifts you sent; ask the account once per visit.
-  useEffect(() => {
-    refreshGiftsSent().catch(() => {})
-  }, [])
   return (
     <BoardShell book={book} title={t('frames.all')} date={formatBoardDate(ctx.today)} colors={colors} showPurse>
       <Meta colors={colors}>{t('frames.hint')}</Meta>
@@ -524,8 +530,8 @@ export function FramesCollection({ book, colors, onChange }) {
   const purse = normalizePurse(book)
   const owned = framesOwned(purse, ctx)
   const worn = wornFrame(purse, ctx)
-  const mine = SHOWN_FRAMES.filter((f) => owned.has(f.id))
-  const locked = SHOWN_FRAMES.filter((f) => f.kind === 'earned' && !owned.has(f.id))
+  const mine = shownFrames(ctx.today).filter((f) => owned.has(f.id))
+  const locked = shownFrames(ctx.today).filter((f) => f.kind === 'earned' && !owned.has(f.id))
   function wear(id) {
     const next = wearFrame(book, id === worn ? '' : id, ctx)
     if (next.miss) return confirmMiss(frameMiss(next))
@@ -576,7 +582,8 @@ export function framesOwnedCount(book) {
   const purse = normalizePurse(book)
   const ctx = frameCtxFor(readShelf().boards)
   const owned = framesOwned(purse, ctx)
-  return { n: SHOWN_FRAMES.filter((f) => owned.has(f.id)).length, of: SHOWN_FRAMES.length, worn: wornFrame(purse, ctx) }
+  const shown = shownFrames(ctx.today)
+  return { n: shown.filter((f) => owned.has(f.id)).length, of: shown.length, worn: wornFrame(purse, ctx) }
 }
 
 const styles = StyleSheet.create({
@@ -610,7 +617,6 @@ const styles = StyleSheet.create({
   miniTitle: { fontSize: 22, lineHeight: 28, textAlign: 'center' },
   miniCardRoomy: { paddingHorizontal: 54, paddingVertical: 50 },
   facts: { gap: 6, paddingBottom: 4 },
-  rarity: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   rarityText: { fontFamily: fonts.uiSemi, fontSize: 12 },
   desc: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
   fact: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20 },

@@ -1,6 +1,6 @@
 // Shared plumbing for card frames: the svg loader, the battery rules hook,
 // one UI-thread clock per frame, and the particle view.
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { AppState, StyleSheet, View } from 'react-native'
 import * as Reanimated from 'react-native-reanimated'
 import { requireOptionalNativeModule } from 'expo'
@@ -31,16 +31,43 @@ export function svgAll() {
   return svgCache
 }
 
+/**
+ * How much a scale transform above shrinks this frame (FramePreview tiles).
+ * An svg is a bitmap at its own layout size, so a tile that scales a full card
+ * down still paid for full-card bitmaps; SvgLayer draws at the shrunk size
+ * instead and scales back up, so the pixels match the screen.
+ */
+export const SvgScale = createContext(1)
+
 /** An svg drawn in card coordinates, reaching PAD past every edge. */
 export function SvgLayer({ w, h, children }) {
   const S = svgAll()
+  const k = useContext(SvgScale)
   if (!S || !w || !h) return null
   const W = w + PAD * 2
   const H = h + PAD * 2
+  const box = `${-PAD} ${-PAD} ${W} ${H}`
+  if (k >= 1) {
+    return (
+      <S.Svg pointerEvents="none" style={[styles.layer, { width: W, height: H }]} width={W} height={H} viewBox={box}>
+        {children}
+      </S.Svg>
+    )
+  }
+  const sw = W * k
+  const sh = H * k
   return (
-    <S.Svg pointerEvents="none" style={[styles.layer, { width: W, height: H }]} width={W} height={H} viewBox={`${-PAD} ${-PAD} ${W} ${H}`}>
-      {children}
-    </S.Svg>
+    <View pointerEvents="none" style={[styles.layer, { width: W, height: H }]}>
+      <S.Svg
+        pointerEvents="none"
+        style={{ position: 'absolute', left: (W - sw) / 2, top: (H - sh) / 2, width: sw, height: sh, transform: [{ scale: 1 / k }] }}
+        width={sw}
+        height={sh}
+        viewBox={box}
+      >
+        {children}
+      </S.Svg>
+    </View>
   )
 }
 

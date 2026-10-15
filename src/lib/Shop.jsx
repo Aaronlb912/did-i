@@ -13,9 +13,9 @@ import { frameText } from './frames.js'
 import { usePrefs } from './prefs.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import {
-  SHOP_BUDDIES,
-  CHEERS,
-  LOOKS,
+  liveCheers,
+  liveLooks,
+  shopBuddies,
   buddyText,
   cheerText,
   dropSlides,
@@ -223,9 +223,9 @@ export function Shop({ book, now }) {
           </div>
         ) : null}
 
-        <KindRow type="look" list={LOOKS} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} onTile={peekAt} />
-        <KindRow type="cheer" list={CHEERS} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} onTile={peekAt} />
-        <KindRow type="buddy" list={SHOP_BUDDIES} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} onTile={peekAt} />
+        <KindRow type="look" list={liveLooks()} cap={t('shop.looks')} allLabel={t('shop.allLooks')} onAll={() => goHash('/shop/looks')} purse={purse} onTile={peekAt} />
+        <KindRow type="cheer" list={liveCheers()} cap={t('shop.cheers')} allLabel={t('shop.allCheers')} onAll={() => goHash('/shop/cheers')} purse={purse} onTile={peekAt} />
+        <KindRow type="buddy" list={shopBuddies()} cap={t('shop.buddies')} allLabel={t('shop.allBuddies')} onAll={() => goHash('/shop/buddies')} purse={purse} onTile={peekAt} />
         {peekAcc ? <AccessoryPreview id={peekAcc} purse={purse} /> : null}
         <KindRow type="accessory" list={accessoriesForSale(today)} cap={t('shop.accessories')} allLabel={t('shop.allAccessories')} onAll={() => goHash('/shop/accessories')} purse={purse} onTile={peekAt} />
 

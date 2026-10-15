@@ -145,9 +145,12 @@ drop policy if exists "see cards you are on" on public.we_cards;
 create policy "see cards you are on" on public.we_cards
   for select using (public.we_seen(id));
 
+-- Only your own rows. Other people's folders, topics and noes stay theirs;
+-- who else is on a card comes out through we_tonight and we_counts.
 drop policy if exists "see who is on a card" on public.we_members;
-create policy "see who is on a card" on public.we_members
-  for select using (public.we_seen(card_id));
+drop policy if exists "see your own memberships" on public.we_members;
+create policy "see your own memberships" on public.we_members
+  for select using (user_id = (select auth.uid()));
 
 drop policy if exists "see your own answers" on public.we_answers;
 create policy "see your own answers" on public.we_answers
@@ -230,7 +233,27 @@ as $$
     and (how = 'daily' or extract(dow from on_night)::smallint = any (days));
 $$;
 
--- Whose turn it is on a night, for a turns card. Members take turns in the
+-- Whose turn a night was, kept once someone answers it or the people on the
+-- card change, so a join or a leave does not hand tonight to someone else.
+create table if not exists public.we_turns (
+  card_id uuid not null references public.we_cards on delete cascade,
+  night date not null,
+  user_id uuid not null references auth.users on delete cascade,
+  primary key (card_id, night)
+);
+
+create index if not exists we_turns_user_idx on public.we_turns (user_id);
+
+alter table public.we_turns enable row level security;
+revoke all on public.we_turns from anon;
+revoke insert, update, delete on public.we_turns from authenticated;
+
+drop policy if exists "see turns on cards you are on" on public.we_turns;
+create policy "see turns on cards you are on" on public.we_turns
+  for select using (public.we_seen(card_id));
+
+-- Whose turn it is on a night, for a turns card. A kept turn wins while
+-- that person is still on the card. Otherwise members take turns in the
 -- order they were asked, and the count only moves on nights the card is due.
 create or replace function public.we_turn(card uuid, on_night date)
 returns uuid
@@ -239,24 +262,51 @@ stable
 security definer
 set search_path = public
 as $$
-  with c as (select * from public.we_cards where id = card),
-  people as (
-    select m.user_id, row_number() over (order by m.turn, m.asked_at) - 1 as spot
-    from public.we_members m
-    where m.card_id = card and m.state = 'in'
-  ),
-  due_nights as (
-    select count(*) as n
-    from c, generate_series(c.starts_on, on_night - 1, interval '1 day') as d
-    where public.we_due(c.starts_on, c.cadence, c.weekdays, d::date)
+  select coalesce(
+    (select t.user_id from public.we_turns t
+     join public.we_members m on m.card_id = t.card_id and m.user_id = t.user_id and m.state = 'in'
+     where t.card_id = card and t.night = on_night),
+    (with c as (select * from public.we_cards where id = card),
+    people as (
+      select m.user_id, row_number() over (order by m.turn, m.asked_at) - 1 as spot
+      from public.we_members m
+      where m.card_id = card and m.state = 'in'
+    ),
+    due_nights as (
+      select count(*) as n
+      from c, generate_series(c.starts_on, on_night - 1, interval '1 day') as d
+      where public.we_due(c.starts_on, c.cadence, c.weekdays, d::date)
+    )
+    select p.user_id
+    from people p, due_nights
+    where p.spot = due_nights.n % greatest((select count(*) from people), 1))
   )
-  select p.user_id
-  from people p, due_nights
-  where p.spot = due_nights.n % greatest((select count(*) from people), 1)
 $$;
 
 revoke all on function public.we_turn(uuid, date) from public;
 grant execute on function public.we_turn(uuid, date) to authenticated;
+
+-- Keep whose turn each due night from first_night to last_night is, before
+-- an answer or a change to who is on the card.
+create or replace function public.we_pin_turns(card uuid, first_night date, last_night date)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  insert into public.we_turns (card_id, night, user_id)
+  select c.id, g.d::date, public.we_turn(c.id, g.d::date)
+  from public.we_cards c, generate_series(first_night, last_night, interval '1 day') g(d)
+  where c.id = card and c.mode = 'turns'
+    -- One person is not taking turns yet; keeping those nights would hand
+    -- them all to the maker once the next person joins.
+    and (select count(*) from public.we_members m where m.card_id = c.id and m.state = 'in') >= 2
+    and public.we_due(c.starts_on, c.cadence, c.weekdays, g.d::date)
+    and public.we_turn(c.id, g.d::date) is not null
+  on conflict do nothing;
+$$;
+
+revoke all on function public.we_pin_turns(uuid, date, date) from public, anon, authenticated;
 
 -- Done together on a night, by the card's rule.
 create or replace function public.we_is_done(card uuid, on_night date)
@@ -279,6 +329,10 @@ begin
   join public.we_members m on m.card_id = a.card_id and m.user_id = a.user_id and m.state = 'in'
   where a.card_id = card and a.night = on_night and a.status = 'did';
   if total = 0 then
+    return false;
+  end if;
+  -- Together needs two: the maker alone does not finish an all or most card.
+  if how in ('all', 'most') and total < 2 then
     return false;
   end if;
   if how = 'any' then
@@ -311,10 +365,18 @@ declare
   q text;
 begin
   if now_done and not was_done then
+    -- The finisher is whoever said the Did that finished it. A join, leave or
+    -- edit that tips the night over credits nobody.
     insert into public.we_done (card_id, night, finisher, finisher_cheer)
-    select card, on_night, (select auth.uid()), left(coalesce(p.badge_cheer, ''), 24)
-    from (select 1) one
-    left join public.profiles p on p.user_id = (select auth.uid())
+    select card, on_night, f.who, left(coalesce(p.badge_cheer, ''), 24)
+    from (
+      select case when exists (
+        select 1 from public.we_answers a
+        where a.card_id = card and a.night = on_night
+          and a.user_id = (select auth.uid()) and a.status = 'did'
+      ) then (select auth.uid()) end as who
+    ) f
+    left join public.profiles p on p.user_id = f.who
     on conflict do nothing;
     select question into q from public.we_cards where id = card;
     insert into public.push_queue (to_id, title, body, go)
@@ -328,10 +390,47 @@ begin
 end;
 $$;
 
-revoke all on function public.we_settle(uuid, date) from public;
+-- Server only: Supabase gives anon and authenticated execute on new functions,
+-- so revoking from public alone left anyone able to mark a card done.
+revoke all on function public.we_settle(uuid, date) from public, anon, authenticated;
+
+-- After a join, a leave or an edit: settle every night that can still be
+-- open somewhere (yesterday through tomorrow), so done is not left stale.
+-- Coins and claims already paid stay paid.
+create or replace function public.we_resettle(card uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  d date;
+begin
+  for d in select g::date from generate_series(current_date - 1, current_date + 1, interval '1 day') g loop
+    perform public.we_settle(card, d);
+  end loop;
+end;
+$$;
+
+revoke all on function public.we_resettle(uuid) from public, anon, authenticated;
+
+-- A night sent by the phone, kept to yesterday through tomorrow so it can
+-- only be the sender's own tonight in some time zone.
+create or replace function public.we_near_night(want date)
+returns date
+language sql
+stable
+as $$
+  select greatest(current_date - 1, least(current_date + 1, coalesce(want, current_date)));
+$$;
+
+revoke all on function public.we_near_night(date) from public, anon;
 
 -- Making and joining ------------------------------------------------
 
+-- want_starts: the maker's tonight, so a card made in the evening is due
+-- that night in their time zone, not the server's.
+drop function if exists public.we_make(text, text, text, text, smallint[], smallint, uuid[]);
 create or replace function public.we_make(
   want_question text,
   want_mode text default 'all',
@@ -339,7 +438,8 @@ create or replace function public.we_make(
   want_cadence text default 'daily',
   want_weekdays smallint[] default '{}',
   want_goal smallint default null,
-  ask uuid[] default '{}'
+  ask uuid[] default '{}',
+  want_starts date default null
 )
 returns uuid
 language plpgsql
@@ -370,7 +470,7 @@ begin
     raise exception 'too many people';
   end if;
 
-  insert into public.we_cards (made_by, question, mode, shows, cadence, weekdays, goal_nights)
+  insert into public.we_cards (made_by, question, mode, shows, cadence, weekdays, goal_nights, starts_on)
   values (
     who,
     btrim(want_question),
@@ -378,7 +478,8 @@ begin
     coalesce(want_shows, 'waiting'),
     coalesce(want_cadence, 'daily'),
     coalesce(want_weekdays, '{}'),
-    want_goal
+    want_goal,
+    public.we_near_night(want_starts)
   )
   returning id into card;
 
@@ -402,8 +503,8 @@ begin
 end;
 $$;
 
-revoke all on function public.we_make(text, text, text, text, smallint[], smallint, uuid[]) from public;
-grant execute on function public.we_make(text, text, text, text, smallint[], smallint, uuid[]) to authenticated;
+revoke all on function public.we_make(text, text, text, text, smallint[], smallint, uuid[], date) from public, anon;
+grant execute on function public.we_make(text, text, text, text, smallint[], smallint, uuid[], date) to authenticated;
 
 -- Anyone on the card can ask one more person in.
 create or replace function public.we_ask(card uuid, other uuid)
@@ -464,10 +565,17 @@ begin
         where not c.archived) >= public.we_max_cards() then
       raise exception 'too many shared questions';
     end if;
+    -- Same lock as we_answer, so a join and an answer never settle at once.
+    perform pg_advisory_xact_lock(hashtext('we_card:' || card::text));
+    perform public.we_pin_turns(card, current_date - 1, current_date + 1);
     update public.we_members
     set state = 'in', joined_at = now()
     where card_id = card and user_id = who and state = 'asked'
       and asked_at > now() - make_interval(days => public.we_ask_days());
+    if not found then
+      raise exception 'that ask has closed';
+    end if;
+    perform public.we_resettle(card);
   else
     -- Kept, not deleted, so we_said_no_lately can hold the no.
     update public.we_members set state = 'left', said_no_at = now()
@@ -491,6 +599,8 @@ declare
   who uuid := (select auth.uid());
   heir uuid;
 begin
+  perform pg_advisory_xact_lock(hashtext('we_card:' || card::text));
+  perform public.we_pin_turns(card, current_date - 1, current_date + 1);
   update public.we_members set state = 'left'
   where card_id = card and user_id = who and state = 'in';
   if not found then
@@ -502,8 +612,11 @@ begin
   limit 1;
   if heir is null then
     update public.we_cards set archived = true where id = card;
-  elsif (select made_by from public.we_cards where id = card) = who then
-    update public.we_cards set made_by = heir where id = card;
+  else
+    if (select made_by from public.we_cards where id = card) = who then
+      update public.we_cards set made_by = heir where id = card;
+    end if;
+    perform public.we_resettle(card);
   end if;
 end;
 $$;
@@ -527,6 +640,8 @@ security definer
 set search_path = public
 as $$
 begin
+  perform pg_advisory_xact_lock(hashtext('we_card:' || card::text));
+  perform public.we_pin_turns(card, current_date - 1, current_date + 1);
   update public.we_cards
   set question = btrim(want_question),
       mode = want_mode,
@@ -538,6 +653,7 @@ begin
   if not found then
     raise exception 'only the person who made it can change it';
   end if;
+  perform public.we_resettle(card);
 end;
 $$;
 
@@ -626,18 +742,25 @@ grant execute on function public.we_file(uuid, text, text) to authenticated;
 
 -- Answering ---------------------------------------------------------
 
+-- Comes back 0: not done, 1: done, 2: this answer finished it. Older apps
+-- read any number above 0 as done, the same as the old true.
+drop function if exists public.we_answer(uuid, date, text);
 create or replace function public.we_answer(card uuid, on_night date, want_status text)
-returns boolean
+returns integer
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
   who uuid := (select auth.uid());
+  was_done boolean;
 begin
   if not exists (select 1 from public.we_members where card_id = card and user_id = who and state = 'in') then
     raise exception 'not on this card';
   end if;
+  -- One change to a card at a time: two people answering in the same moment
+  -- would each count only their own Did, and the night would stay not done.
+  perform pg_advisory_xact_lock(hashtext('we_card:' || card::text));
   -- Tonight or the night before in any time zone. No reaching back to fill
   -- in a streak.
   if on_night < current_date - 2 then
@@ -657,6 +780,17 @@ begin
   ) then
     raise exception 'that night is closed';
   end if;
+  -- A closed card, or a night it is not asked, takes no new answers. Taking
+  -- one back (want_status null) still works after the card changed.
+  if want_status is not null and not exists (
+    select 1 from public.we_cards c
+    where c.id = card and not c.archived
+      and public.we_due(c.starts_on, c.cadence, c.weekdays, on_night)
+  ) then
+    raise exception 'that night is closed: not asked';
+  end if;
+  perform public.we_pin_turns(card, on_night, on_night);
+  was_done := exists (select 1 from public.we_done where card_id = card and night = on_night);
   if want_status is null then
     delete from public.we_answers where card_id = card and user_id = who and night = on_night;
   else
@@ -665,7 +799,10 @@ begin
     on conflict (card_id, user_id, night) do update
       set status = excluded.status, answered_at = now();
   end if;
-  return public.we_settle(card, on_night);
+  if not public.we_settle(card, on_night) then
+    return 0;
+  end if;
+  return case when was_done then 1 else 2 end;
 end;
 $$;
 
@@ -760,8 +897,10 @@ $$;
 
 revoke all on function public.we_paused(uuid, date) from public, anon;
 
--- Any member can restart a paused card. It asks again from tonight.
-create or replace function public.we_restart(card uuid)
+-- Any member can restart a paused card. It asks again from tonight, the
+-- phone's night when it sends one.
+drop function if exists public.we_restart(uuid);
+create or replace function public.we_restart(card uuid, want_night date default null)
 returns void
 language plpgsql
 security definer
@@ -772,13 +911,13 @@ begin
                  where card_id = card and user_id = (select auth.uid()) and state = 'in') then
     raise exception 'not on this card';
   end if;
-  update public.we_cards set restarted_on = current_date
-  where id = card and not archived and restarted_on is distinct from current_date;
+  update public.we_cards set restarted_on = public.we_near_night(want_night)
+  where id = card and not archived and restarted_on is distinct from public.we_near_night(want_night);
 end;
 $$;
 
-revoke all on function public.we_restart(uuid) from public, anon;
-grant execute on function public.we_restart(uuid) to authenticated;
+revoke all on function public.we_restart(uuid, date) from public, anon;
+grant execute on function public.we_restart(uuid, date) to authenticated;
 
 -- Reading -----------------------------------------------------------
 

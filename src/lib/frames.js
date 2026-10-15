@@ -4,6 +4,9 @@
 // season is open and kept after. Everyone owns First Light. The drawings
 // live in native/components/frames/; this file is the catalog and the rules.
 // Prices here must match supabase/shop-catalog.sql (a check keeps them equal).
+// A frame with `from: 'YYYY-MM-DD'` stays out of the shop until that day, like
+// the rest of a shop drop (docs/shop-drops.md).
+import { boardDate } from './recurrence.js'
 
 // The day Did I went live on the App Store, as 'YYYY-MM-DD'. Leave it empty
 // until then. The Birthday frame opens each year on that date, for a week,
@@ -20,9 +23,9 @@ const LAUNCH_MD = APP_LAUNCH.length === 10 ? APP_LAUNCH.slice(5, 10) : ''
 export const FRAME_KINDS = ['free', 'coin', 'gem', 'earned', 'season']
 export const FREE_FRAME = 'first'
 
-const coin = (id, coins) => ({ id, kind: 'coin', price: { coins }, coins, gems: 0, animated: false, season: null, earn: null })
-const gem = (id, gems) => ({ id, kind: 'gem', price: { gems }, coins: 0, gems, animated: true, season: null, earn: null })
-const earned = (id, earn, need) => ({ id, kind: 'earned', price: null, coins: 0, gems: 0, animated: id !== 'vine', season: null, earn, need })
+const coin = (id, coins, extra = {}) => ({ id, kind: 'coin', price: { coins }, coins, gems: 0, animated: false, season: null, earn: null, ...extra })
+const gem = (id, gems, extra = {}) => ({ id, kind: 'gem', price: { gems }, coins: 0, gems, animated: true, season: null, earn: null, ...extra })
+const earned = (id, earn, need, extra = {}) => ({ id, kind: 'earned', price: null, coins: 0, gems: 0, animated: id !== 'vine', season: null, earn, need, ...extra })
 const season = (id, from, until, extra = {}) => ({ id, kind: 'season', price: null, coins: 0, gems: 0, animated: true, season: { from, until }, earn: null, ...extra })
 
 const RAW = [
@@ -88,6 +91,30 @@ const RAW = [
   season('leaves', '11-01', '11-30'),
   season('snow', '12-01', '12-31'),
   season('sakura', '03-15', '04-15'),
+  // Drop 2026-11-20.
+  coin('linked', 90, { from: '2026-11-20' }),
+  gem('bedtime', 3, { from: '2026-11-20' }),
+  season('countdown', '12-01', '12-24', { from: '2026-11-20' }),
+  // Drop 2026-12-04.
+  coin('knit', 100, { from: '2026-12-04' }),
+  gem('window', 3, { from: '2026-12-04' }),
+  earned('candles', 'streak', 14, { from: '2026-12-04' }),
+  // Drop 2026-12-18.
+  coin('ginger', 110, { from: '2026-12-18' }),
+  gem('snowman', 3, { from: '2026-12-18' }),
+  season('solstice', '12-20', '12-22', { from: '2026-12-18' }),
+  // Drop 2027-01-01.
+  coin('mosaic', 120, { from: '2027-01-01' }),
+  gem('domino', 3, { from: '2027-01-01' }),
+  season('fresh', '01-01', '01-07', { from: '2027-01-01' }),
+  // Drop 2027-01-15.
+  coin('origami', 90, { from: '2027-01-15' }),
+  gem('aquarium', 3, { from: '2027-01-15' }),
+  earned('books', 'streak', 21, { from: '2027-01-15' }),
+  // Drop 2027-01-29.
+  coin('lace', 90, { from: '2027-01-29' }),
+  gem('boats', 3, { from: '2027-01-29' }),
+  season('thaw', '02-20', '03-05', { from: '2027-01-29' }),
   // Did I's birthday: hidden until APP_LAUNCH is set.
   LAUNCH_MD ? season('bday', LAUNCH_MD, addDays(LAUNCH_MD, 6), { firstYear: Number(APP_LAUNCH.slice(0, 4)) + 1 }) : season('bday', '01-01', '01-01', { hidden: true }),
 ]
@@ -114,6 +141,16 @@ export function frameById(id) {
 
 // What the shop lists: everything but hidden ones.
 export const SHOWN_FRAMES = FRAMES.filter((frame) => !frame.hidden)
+
+// Out once its drop day has come.
+export function frameLive(frame, today = boardDate(new Date())) {
+  return Boolean(frame) && (!frame.from || frame.from <= today)
+}
+
+// SHOWN_FRAMES that are out today.
+export function shownFrames(today) {
+  return SHOWN_FRAMES.filter((frame) => frameLive(frame, today))
+}
 
 export function frameText(id, field) {
   return `frame.${id}.${field}`
@@ -154,10 +191,10 @@ export function seasonNextText(frame, today) {
   return a < b ? a : b
 }
 
-// Only coin and gem frames are ever sold.
-export function frameForSale(id, _today) {
+// Only coin and gem frames are ever sold, and only from their drop day.
+export function frameForSale(id, today) {
   const frame = frameById(id)
-  return Boolean(frame && (frame.kind === 'coin' || frame.kind === 'gem'))
+  return Boolean(frame && (frame.kind === 'coin' || frame.kind === 'gem') && frameLive(frame, today))
 }
 
 export function isSoldFrame(id) {
@@ -238,7 +275,7 @@ export function claimFrame(book, id, today) {
   const frames = normalizeFrames(book?.frames)
   if (!frame || frame.kind !== 'season') return { book, miss: 'shop.miss.buyFail' }
   if (frames.includes(id)) return { book: { ...book, frames, frame: id }, miss: '' }
-  if (!seasonOpen(frame, today)) return { book, miss: 'frames.miss.closed' }
+  if (!seasonOpen(frame, today) || !frameLive(frame, today)) return { book, miss: 'frames.miss.closed' }
   return { book: { ...book, frames: [...frames, id], frame: id }, miss: '' }
 }
 

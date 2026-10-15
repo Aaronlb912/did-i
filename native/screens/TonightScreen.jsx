@@ -19,6 +19,7 @@ import {
   isRecapNight,
   markGraceExplained,
   markWeekRecapSeen,
+  recapLine,
   recapShareText,
   tomorrowPreview,
   weekRecap,
@@ -27,9 +28,9 @@ import {
 } from '../../src/lib/hall-pages.js'
 import { passAlong } from '../../src/lib/native.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { keptButMissing } from '../lib/kept-send.js'
 import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
-import { WeekRecap } from '../components/WeekRecap.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
@@ -77,7 +78,8 @@ import { fonts } from '../theme.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { HallAmbient } from '../components/HallAmbient.jsx'
-import { NightSky } from '../components/NightSky.jsx'
+import { NightSky, useSkyClock } from '../components/NightSky.jsx'
+import { isDaytime } from '../lib/night-sky.js'
 import { Slot } from '../components/Slot.jsx'
 import { answerFamilyLamp, answerSend, listInbox, personName, useFamilyTonight } from '../../src/lib/people.js'
 import { peopleTonightItems, peopleWaitingLine } from '../../src/lib/people-tonight.js'
@@ -87,7 +89,7 @@ import { pickSocialLine } from '../../src/lib/social-line.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { weOpenOn } from '../../src/lib/we-nights.js'
 import { didStatusForRow, graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
-import { saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
+import { saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weClaim, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
@@ -184,6 +186,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const theme = useTheme()
   const look = activeLook(book)
   const colors = useHallColors(book)
+  const skyNow = useSkyClock()
   const account = useAccount()
   const [together, setTogether] = useState(() => readTogetherPeople())
   useEffect(() => onTogetherSaved(() => setTogether(readTogetherPeople())), [])
@@ -206,6 +209,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const family = useFamilyTonight(account.user)
   const [asks, setAsks] = useState([])
   const [peopleGone, setPeopleGone] = useState([])
+  // A read that lands after a sign out or account switch is the old account's.
+  const userIdRef = useRef(account.user?.id)
+  userIdRef.current = account.user?.id
   // Same asks again keep the old array, so a wake with nothing new does not redraw tonight.
   const asksKey = useRef('[]')
   const loadAsks = useCallback(async () => {
@@ -216,8 +222,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       setAsks(next)
     }
     if (!account.user) return keep([])
+    const who = account.user.id
     try {
-      keep(await listInbox())
+      const rows = await listInbox()
+      if (userIdRef.current !== who) return
+      // A failed read keeps the cards we had.
+      if (!rows.miss) keep(rows)
     } catch {
       // Offline: the cards wait for the next look.
     }
@@ -233,7 +243,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const [wePick, setWePick] = useState('')
   // Keep the widget's Did we line in step with what Tonight knows.
   useEffect(() => {
-    if (!account.user) return
+    // A failed load kept old cards: leave the widget line and reminders as they were.
+    if (!account.user || we.miss) return
     if (saveWeWidgetLine(we.cards)) syncTonightWidget(readShelf()).catch(() => {})
     // Did we reminders ride along with your own; set them again when they change.
     if (saveWeReminders(we.cards)) armLampPings(readShelf().boards).catch(() => {})
@@ -242,6 +253,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     if (earned.length) onChange({ ...book, unlocked: [...(book.unlocked || []), ...earned] })
     // Someone else's did finished a card: play their cheer here, once.
     const [first, ...more] = takeWeFinishes(we.cards)
+    // Streak coins are claimed by each member; a repeat claim pays nothing.
+    if (first) {
+      Promise.all([first, ...more].map((done) => weClaim(done.card.id).catch(() => ({ coins: 0 })))).then((paid) => {
+        const coins = paid.reduce((sum, out) => sum + (out.coins || 0), 0)
+        if (coins <= 0) return
+        showToast({ id: 'we-coins', kind: 'we', text: t('we.coins', { n: coins }), ms: 3600 })
+        pullAndMerge().catch(() => {})
+      })
+    }
     if (!first) {
       // You and someone else both said did: a small moment, once a night.
       const both = takeWeBoth(we.cards)
@@ -366,6 +386,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
   // How to swipe, once, the first time a card is up. The dots key waits until after it.
   const introSeen = swipeIntroSeen(usePrefs())
+  const answerButtons = useAnswerButtons()
   const showIntro = !introSeen && !answerButtons && stack.bodyKind === 'face' && !stack.nightDone && !stack.cheer
   // The first answer while the hint is up means the swipe is learned.
   const answeredNow = stack.dueWithWait.filter((row) => row.answer).length
@@ -391,7 +412,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // New people see Did and Nope buttons and a swipe hint until they have
   // answered on 3 different nights. Read from the shelf, nothing stored.
   const isNew = useMemo(() => isNewShelf(stack.shelf), [stack.shelf])
-  const answerButtons = useAnswerButtons()
   // Night one: the first cleared night gets a bigger moment, once ever.
   const [nightOne, setNightOne] = useState(false)
   useEffect(() => {
@@ -438,16 +458,23 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   useShakeUndo(Boolean(stack.undo), undoAnswer)
   // An answer saved with no signal says where it is, once per offline stretch.
   const online = useOnline()
+  // It waits for the undo toast to clear so undo stays on screen, and only says so when signed in.
   const offlineNoted = useRef(false)
+  const offlineAnswered = useRef(false)
   useEffect(() => {
     if (online) {
       offlineNoted.current = false
+      offlineAnswered.current = false
       return
     }
-    if (!undoNow || offlineNoted.current) return
+    if (undoNow) {
+      offlineAnswered.current = true
+      return
+    }
+    if (!account.user || !offlineAnswered.current || offlineNoted.current) return
     offlineNoted.current = true
     showToast({ id: 'offline-saved', kind: 'done', text: t('tonight.offlineSaved'), ms: 4200 })
-  }, [online, undoNow])
+  }, [online, undoNow, account.user])
   // A sync that cannot reach the account says so once, in the same line.
   const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
   useEffect(() => {
@@ -502,7 +529,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // After your own and Did we: family questions, then Did you asks. A swiped
   // card leaves at once; a failed save brings it back with a toast.
   // People cards have no undo, so a family answer says it was saved instead.
-  const peopleAnswer = async (key, save, reload, kind) => {
+  const peopleAnswer = async (key, save, reload, kind, refresh) => {
     setPeopleGone((keys) => [...keys, key])
     feelTap(kind === 'skip' ? 'skip' : 'did')
     let why = ''
@@ -510,6 +537,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       why = (await save()).miss
     } catch {
       why = 'off'
+    }
+    if (why === 'sent.gone') {
+      // Taken back before you answered: the card stays gone, say why.
+      showToast({ id: `people-miss:${key}`, kind: 'error', text: t('sent.gone'), ms: 5200 })
+      // Only refresh: the success steps (keep, confirm) must not run.
+      refresh?.()
+      return
     }
     if (why) {
       setPeopleGone((keys) => keys.filter((k) => k !== key))
@@ -535,6 +569,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             family.reload()
           },
           status,
+          family.reload,
         )
       return {
         ...item,
@@ -544,13 +579,28 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         onNope: save('skip'),
       }
     }
-    const save = (keep) => () =>
-      peopleAnswer(item.key, () => answerSend(row.id, keep), () => {
+    const save = (keep) => () => {
+      let already = false
+      let lost = false
+      const send = async () => {
+        const res = await answerSend(row.id, keep)
+        already = !!res?.already
+        lost = keptButMissing(res, row.id)
+        return res
+      }
+      return peopleAnswer(item.key, send, () => {
+        // Answered elsewhere already: no second keep or toast, unless the
+        // kept question never landed on this shelf.
+        if (already) {
+          if (keep && lost && row.kind === 'todo' && onKeep) onKeep(row)
+          return loadAsks()
+        }
         // Like Keep in the inbox: a kept ask joins your own questions.
         if (keep && row.kind === 'todo' && onKeep) onKeep(row)
         confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
         loadAsks()
-      }, keep ? 'yes' : 'skip')
+      }, keep ? 'yes' : 'skip', loadAsks)
+    }
     return {
       ...item,
       kicker: t('tonight.peopleFrom', { name: personName(row.person) || t('people.someone') }),
@@ -665,14 +715,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     publishSheet({
       kicker: t('recap.lastWeek'),
       title: t('recap.cleared', { cleared: recap.cleared, n: recap.nights }),
-      body: `${t('recap.dids', { n: recap.dids })} · ${t('recap.best', { n: recap.best })}`,
+      body: recapLine(recap, gentle),
       goLabel: t('recap.shareBtn'),
       closeLabel: t('settings.close'),
       colors,
       onClose: () => publishSheet(null),
       onGo: async () => {
         publishSheet(null)
-        const how = await passAlong(recapShareText(recap), t('recap.lastWeek'))
+        const how = await passAlong(recapShareText(recap, gentle), t('recap.lastWeek'))
         if (how === 'copied') confirmDone(t('recap.copied'))
         else if (!how) confirmMiss(t('confirm.shareMiss'))
       },
@@ -791,7 +841,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
           <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
           <Text style={[faceCardStyles.title, { color: colors.ink }]}>
-            {nightOne ? t('nightOne.title') : t('tonight.doneTitle')}
+            {nightOne ? t('nightOne.title') : t(isDaytime(skyNow) ? 'tonight.doneTitle' : 'tonight.doneTitleNight')}
           </Text>
           {nightOne ? (
             <>
@@ -832,7 +882,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             ) : null}
             <TonightNote quiet rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
           </View>
-          {summary?.recap ? <WeekRecap recap={summary.recap} colors={colors} /> : null}
           {wish ? (
             <Pressable accessibilityRole="link" accessibilityHint={t('shop.wishTitle')} onPress={() => goHash('/kit', { id: 'wish' })} hitSlop={8}>
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
@@ -1165,24 +1214,25 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       <SwipeFlyHost style={styles.slot}>
         {stack.bodyKind === 'hall' && stack.nightDone && !pullWait ? (
           <Slot>
-            <NightSky colors={colors} />
+            <DoneIn style={StyleSheet.absoluteFill}>
+              <NightSky colors={colors} now={skyNow} />
+            </DoneIn>
           </Slot>
         ) : null}
         {doneFace ? (
-          <ScrollView
-            style={styles.doneScroll}
-            contentContainerStyle={styles.doneScrollIn}
-            showsVerticalScrollIndicator={false}
-          >
+          <DoneScroll fade={colors.bg}>
             <Slot>
               <DoneIn>{face}</DoneIn>
             </Slot>
-          </ScrollView>
+          </DoneScroll>
         ) : (
           <Slot>
             {/* flex: 1 because the card fills this box; without it the card collapses to no height. */}
             <View onLayout={onPickLayout} style={[styles.pickBox, pickMinH ? { minHeight: pickMinH } : null]}>
-              {face}
+              {/* Loading to the real card eases in, never a hard swap. */}
+              <DoneIn key={pullWait ? 'wait' : 'card'} style={styles.pickBox}>
+                {face}
+              </DoneIn>
             </View>
           </Slot>
         )}
@@ -1213,7 +1263,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       </SwipeFlyHost>
       {answerBar}
       {/* Toasts show in this room, so they never cover a card and nothing jumps. */}
-      <View style={styles.toastRoom} pointerEvents="none" />
+      {/* The done card has no answer buttons to keep clear, so it takes this room too. */}
+      {doneFace ? null : <View style={styles.toastRoom} pointerEvents="none" />}
     </View>
     </View>
     </MastMenuRoot>
@@ -1227,18 +1278,54 @@ const frameStyles = StyleSheet.create({
 
 // The done card settles in: a short fade and a small scale, no confetti.
 // Reduced motion shows it as it is.
-function DoneIn({ children }) {
+const DONE_FADE = [0.2, 0.45, 0.7, 0.9]
+
+// The done card scrolls when it is taller than the room. With more below, the
+// bottom edge fades out instead of stopping at a hard line, so it reads as "scroll".
+function DoneScroll({ fade, children }) {
+  const [box, setBox] = useState(0)
+  const [inner, setInner] = useState(0)
+  const [y, setY] = useState(0)
+  const more = inner - box - y > 4
+  return (
+    <View style={styles.doneScroll}>
+      <ScrollView
+        contentContainerStyle={styles.doneScrollIn}
+        scrollEnabled={inner > box + 4}
+        bounces={false}
+        overScrollMode="never"
+        showsVerticalScrollIndicator={inner > box + 4}
+        scrollEventThrottle={32}
+        onScroll={(e) => setY(e.nativeEvent.contentOffset.y)}
+        onLayout={(e) => setBox(e.nativeEvent.layout.height)}
+        onContentSizeChange={(_, h) => setInner(h)}
+      >
+        {children}
+      </ScrollView>
+      {more ? (
+        <View pointerEvents="none" style={styles.doneFade}>
+          {DONE_FADE.map((opacity) => (
+            <View key={opacity} style={[styles.doneFadeStep, { backgroundColor: fade, opacity }]} />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+function DoneIn({ children, style: box }) {
   const reduce = useReduceMotion()
   const grow = useSharedValue(reduce ? 1 : 0)
   useEffect(() => {
     if (!reduce) grow.value = withTiming(1, { duration: 260, easing: Easing.out(Easing.quad) })
   }, [grow, reduce])
   const style = useAnimatedStyle(() => ({
-    opacity: 0.2 + grow.value * 0.8,
+    // Starts mostly visible, so a stalled frame never leaves the card unreadable.
+    opacity: 0.6 + grow.value * 0.4,
     transform: [{ scale: 0.97 + grow.value * 0.03 }],
   }))
-  if (reduce) return children
-  return <Animated.View style={style}>{children}</Animated.View>
+  if (reduce) return box ? <View style={box}>{children}</View> : children
+  return <Animated.View style={[box, style]}>{children}</Animated.View>
 }
 
 const styles = StyleSheet.create({
@@ -1295,6 +1382,8 @@ const styles = StyleSheet.create({
   // The height of Back to tonight (36 + its 6 below), so both cards start on one line.
   // Centered, so the cards that do not swipe (waiting, nothing right now, rest) sit mid-screen too.
   pickBox: { flex: 1, justifyContent: 'center' },
-  doneScroll: { flexGrow: 0, flexShrink: 1 },
+  doneScroll: { flexGrow: 0, flexShrink: 1, position: 'relative' },
+  doneFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 36 },
+  doneFadeStep: { flex: 1 },
   doneScrollIn: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
 })

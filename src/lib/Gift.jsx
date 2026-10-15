@@ -80,6 +80,9 @@ export function Gift({ book, onChange, toId, now }) {
   const [tab, setTab] = useState('looks')
   const [note, setNote] = useState('')
   const [person, setPerson] = useState(undefined)
+  // The person read failed (not "nobody"): say so and offer a retry.
+  const [lost, setLost] = useState(false)
+  const [tries, setTries] = useState(0)
   const [pick, setPick] = useState(null)
   const [miss, setMiss] = useState('')
   const [sent, setSent] = useState('')
@@ -89,11 +92,16 @@ export function Gift({ book, onChange, toId, now }) {
 
   useEffect(() => {
     let alive = true
-    readKnownPerson(toId).then((row) => alive && setPerson(row))
+    setLost(false)
+    readKnownPerson(toId).then((row) => {
+      if (!alive) return
+      setPerson(row)
+      setLost(row === undefined)
+    })
     return () => {
       alive = false
     }
-  }, [toId])
+  }, [toId, tries])
 
   const name = person ? personName(person) || t('people.someone') : ''
 
@@ -137,6 +145,20 @@ export function Gift({ book, onChange, toId, now }) {
         <div className="di-hang-actions">
           <button className="di-did di-did-small" type="button" onClick={() => goHash('/account')}>
             {t('we.signIn')}
+          </button>
+        </div>
+      </>,
+    )
+  }
+  if (lost) {
+    return shell(
+      <>
+        <p className="di-miss" role="alert">
+          {t('people.reach')}
+        </p>
+        <div className="di-hang-actions">
+          <button className="di-key" type="button" onClick={() => setTries((n) => n + 1)}>
+            {t('gift.retry')}
           </button>
         </div>
       </>,

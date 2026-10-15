@@ -1,0 +1,6 @@
+<resources>
+  <string name="widget_diditonight_description">你的文件夹里今天的问题。设置 → 小组件。</string>
+  <string name="widget_diditogether_description">你的好友与家人，以及今天谁已完成。</string>
+  <string name="shortcut_add_short">添加问题</string>
+  <string name="shortcut_add_long">添加一个 Did I 问题</string>
+</resources>

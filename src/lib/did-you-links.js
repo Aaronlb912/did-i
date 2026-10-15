@@ -35,7 +35,7 @@ export function didYouLink(code) {
 
 // The code from the page link or the didi://d/CODE link its Open button uses.
 export function readDidYouLink(text) {
-  const hit = /^(?:https:\/\/(?:www\.)?did-i\.app\/d\/|didi(?:-dev)?:\/\/d\/)([a-z0-9]{12}|[a-z0-9]{10})\/?$/i.exec(String(text || '').trim())
+  const hit = /^(?:https:\/\/(?:www\.)?did-i\.app\/d\/|didi(?:-dev)?:\/\/d\/)([a-z0-9]{12}|[a-z0-9]{10})\/?$/i.exec(String(text || '').trim().split(/[?#]/)[0])
   return hit ? hit[1].toLowerCase() : ''
 }
 
@@ -154,7 +154,11 @@ export async function makeDidYouLink(question) {
   const text = String(question || '').trim()
   if (!text) return { code: '', miss: 'blank' }
   const { data, error } = await db.rpc('make_did_you_link', { question: text })
-  if (error) return { code: '', miss: /too many/i.test(error.message || '') ? 'linkCap' : error.message || 'people.reach' }
+  if (error) {
+    const text = error.message || ''
+    // Server words are English; only our own keys reach the screen.
+    return { code: '', miss: /too many/i.test(text) ? 'linkCap' : /sign in first/i.test(text) ? 'people.outTitle' : 'people.reach' }
+  }
   return { code: cleanCode(data), miss: '' }
 }
 

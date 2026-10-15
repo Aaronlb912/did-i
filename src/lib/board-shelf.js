@@ -62,12 +62,19 @@ export function enterLand(home = '/') {
   return hallEmpty(readShelf()) ? '/first' : home
 }
 
-// Empty folders hide, except the one you're on: a folder you just made
-// stays until you add to it or move away.
+// Past this many folders the list is crowded, and empty ones step aside.
+export const CROWDED_FOLDERS = 6
+
+// Empty folders stay listed until the list gets crowded. Then empty ones go,
+// except the current folder and the newest one (a folder you just made).
 export function parkEmptyTags(shelf) {
-  const boards = (shelf.boards || []).map((book) => ({
+  const all = shelf.boards || []
+  const crowded = all.length > CROWDED_FOLDERS
+  const newest = all[all.length - 1]?.id
+  const empty = (book) => !(book.lamps || []).some((lamp) => !lamp.archived)
+  const boards = all.map((book) => ({
     ...book,
-    archived: liveLampCount(book) === 0 && book.id !== shelf.currentId,
+    archived: crowded && empty(book) && book.id !== shelf.currentId && book.id !== newest,
   }))
   const live = boards.filter((book) => !book.archived)
   if (!boards.length) return shelf
@@ -202,6 +209,13 @@ export function mergeSameTitles(shelf) {
   if (!boards.length) return shelf
   const currentId = boards.some((book) => book.id === shelf.currentId) ? shelf.currentId : boards[0].id
   return { ...shelf, currentId, boards }
+}
+
+// Adding a folder keeps the default for new questions where it was (owner call).
+export function addBook(shelf, book) {
+  const next = putBook(shelf, book)
+  const keep = next.boards.some((item) => item.id === shelf.currentId)
+  return keep ? { ...next, currentId: shelf.currentId } : next
 }
 
 export function putBook(shelf, book) {

@@ -13,6 +13,7 @@ import { afterNativeBridgeReady } from './lib/defer-native.js'
 import { nativeWidgetsEnabled } from './lib/widgets-enabled.js'
 import { initWidgetsOnLaunch } from './widget-bridge.js'
 import { syncTonightWidget } from './widget-sync.js'
+import { listenForWatchTaps, resendWatchCards } from './watch-sync.js'
 import { installQuickActions } from './quick-actions.js'
 import { refreshTogether } from '../src/lib/people.js'
 import { t, tMiss } from '../src/lib/i18n.js'
@@ -61,21 +62,36 @@ export function NativeApp() {
       onBack() {
         const shelf = readShelf()
         const book = currentBook(shelf)
-        const empty = (book?.lamps || []).filter((lamp) => !lamp.archived).length === 0
+        // Every folder, not only the open one.
+        const empty = shelf.boards.every((item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0)
         return goBack({ emptyHall: empty, needsEnter: needsEnter(book) })
       },
       onOpenLamp(lampId) {
         goHash('/tonight', lampId ? { face: lampId, tag: 'all' } : '')
       },
     })
+    let alive = true
+    let stopWatch = () => {}
     afterNativeBridgeReady(async () => {
       installQuickActions()
-      if (nativeWidgetsEnabled()) {
-        // Who is done tonight, for the Together widget, on open and on return.
-        refreshTogether().catch(() => {})
-        globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
-        await initWidgetsOnLaunch(readShelf()).catch(() => {})
+      // Did or Not yet on the watch: saved like a widget tap, then the watch
+      // gets the cards again (also when the phone said no). Listening first,
+      // so a tap made during launch is not missed. No watch module: a no-op.
+      if (alive) {
+        stopWatch = listenForWatchTaps((tap) => {
+          const shelf = applyWidgetTapOnce(tap?.id, tap?.answer, tap?.night || '', new Date(), Number(tap?.at) || Date.now())
+          resendWatchCards()
+          syncTonightWidget(shelf || readShelf()).catch(() => {})
+        }, async () => {
+          // Wear OS: the tap is already in the widget tap queue (WatchTapService).
+          const { applyPendingAndroidWidgetTap } = await import('./widget-tap.android.js')
+          const shelf = await applyPendingAndroidWidgetTap()
+          resendWatchCards()
+          syncTonightWidget(shelf || readShelf()).catch(() => {})
+        })
       }
+      // Before widget init: a slow or failing init must not drop the reminder
+      // tap that launched the app.
       preparePush({
         onGo: (where) => goFromPush(where),
         onLamp: (lampId) => goHash('/tonight', lampId ? { face: lampId, tag: 'all' } : ''),
@@ -101,8 +117,18 @@ export function NativeApp() {
           }
         },
       }).catch(() => {})
+      if (nativeWidgetsEnabled()) {
+        // Who is done tonight, for the Together widget, on open and on return.
+        refreshTogether().catch(() => {})
+        globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
+        await initWidgetsOnLaunch(readShelf()).catch(() => {})
+      }
     })
-    return stop
+    return () => {
+      alive = false
+      stop?.()
+      stopWatch()
+    }
   }, [launchReady])
 
   return (

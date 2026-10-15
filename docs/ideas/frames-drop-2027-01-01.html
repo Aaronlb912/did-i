@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frames Drop Jan 1</title>
+<style>
+:root{color-scheme:dark;--bg:#07090d;--panel:#111620;--ink:#eef1f6;--soft:#a3abb8;--dim:#5f6876;--line:#1f2632;--gold:#f2c45a;--accent:#c9f24d;
+ --ui:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;--display:Georgia,"Times New Roman",serif;--mono:ui-monospace,Consolas,monospace;--halo:#16203a}
+body.light{color-scheme:light;--bg:#e9ece4;--panel:#f7f8f4;--ink:#171a14;--soft:#4c5446;--dim:#7a8274;--line:#d3d8cb;--gold:#9a6b10;--halo:#ffffff}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 50% -10%,var(--halo) 0,transparent 60%),var(--bg);color:var(--ink);font:400 15px/1.55 var(--ui)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 16px 80px;display:grid;gap:34px}
+header{text-align:center;display:grid;gap:12px;justify-items:center}
+.kicker{font:700 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font:800 clamp(34px,7vw,56px)/1 var(--display);margin:0}
+h2{font:800 clamp(26px,4vw,34px)/1.1 var(--display);margin:0}
+h3{margin:0;font:800 24px/1.1 var(--display)}
+.lede{color:var(--soft);margin:0;max-width:64ch}
+.controls{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:var(--panel);border:1px solid var(--line);gap:4px}
+.seg button{font:600 13px/1 var(--ui);padding:9px 14px;border-radius:999px;border:0;background:transparent;color:var(--soft);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg i{width:10px;height:10px;border-radius:50%;display:inline-block}
+button:focus-visible{outline:3px solid #6aa8ff;outline-offset:2px}
+section.opt{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:18px;display:grid;gap:14px}
+.tag{font:700 10.5px/1 var(--mono);letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.opt p{margin:0;color:var(--soft);font-size:14.5px;max-width:78ch}
+.feat{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:0;list-style:none;font:600 12.5px/1.4 var(--mono);color:var(--ink)}
+.feat li::before{content:"· ";color:var(--gold)}
+.row{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:flex-start}
+.stage{border-radius:20px;padding:6px;display:grid;justify-items:center;gap:2px}
+.cap{font:700 11px/1.3 var(--mono);letter-spacing:.06em;color:var(--soft);text-align:center;padding-bottom:8px}
+.fw{position:relative;flex:none}
+.fw>.lay{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.card{position:absolute;box-sizing:border-box;overflow:hidden}
+.card .k{font:700 11px/1 var(--mono);letter-spacing:.16em}
+.card .q{font:800 27px/1.12 var(--ui);margin-top:14px;max-width:92%}
+.card .s{font:600 14px/1.3 var(--ui);margin-top:10px}
+.card .pills{position:absolute;left:20px;right:20px;bottom:20px;display:flex;gap:12px}
+.card .pill{flex:1;height:46px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:800 16px/1 var(--ui)}
+.card .chip{position:absolute;right:20px;top:18px;font:700 11px/1 var(--ui);padding:6px 9px;border-radius:999px}
+.tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.tile{width:120px;height:144px;border-radius:16px;position:relative;overflow:hidden;flex:none}
+.tile .fw{position:absolute}
+.tl{font:600 10px/1.2 var(--mono);color:var(--soft);text-align:center;margin-top:4px;max-width:120px}
+.tilecol{display:grid;justify-items:center}
+.cmp{display:grid;gap:10px}
+.cmp h4{margin:0;font:800 18px/1.1 var(--display)}
+.review{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:8px 18px;font-size:13.5px;color:var(--soft)}
+.review b{color:var(--ink)}
+/* motion */
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.12)}}
+.blink{transform-box:fill-box;transform-origin:center;animation:blink 4.6s infinite}
+.blink.slow{animation-duration:6.8s}
+@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.1px)}}
+.breathe{animation:breathe 4.8s ease-in-out infinite}
+@keyframes zz{0%{transform:translate(0,0) scale(.7);opacity:0}15%{opacity:.95}50%{transform:translate(2px,-10px) scale(.95)}100%{transform:translate(-4px,-20px) scale(1.1);opacity:0}}
+.zz{transform-box:fill-box;transform-origin:center;animation:zz 4.8s ease-out infinite}
+@keyframes lamp{0%,100%{opacity:.82}50%{opacity:1}}
+.lamp{animation:lamp 5.5s ease-in-out infinite}
+@keyframes swish{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(6deg)}}
+.swish{transform-box:fill-box;transform-origin:100% 100%;animation:swish 3.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.92)}50%{opacity:1;transform:scale(1.06)}}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 3.4s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.25}50%{opacity:1}}
+.tw{animation:tw 2.8s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 7s linear infinite}
+@keyframes sweep{0%,20%{transform:translateX(-70%)}60%,100%{transform:translateX(70%)}}
+.sweep{animation:sweep 4.5s ease-in-out infinite}
+@keyframes fall{from{transform:translateY(-30px)}to{transform:translateY(420px)}}
+.fall{animation:fall linear infinite}
+@keyframes breatheO{0%,100%{opacity:.6}50%{opacity:1}}
+.breatheO{animation:breatheO 7s ease-in-out infinite}
+@keyframes dfall{0%,8%{transform:scaleX(.13)}15%,86%{transform:scaleX(1)}94%,100%{transform:scaleX(.13)}}
+.dfall{transform-box:fill-box;transform-origin:0% 50%;animation:dfall 5s ease-in both infinite}
+@keyframes dcap{0%,9%{opacity:1}13%,90%{opacity:0}95%,100%{opacity:1}}
+.dcap{opacity:0;animation:dcap 5s linear both infinite}
+@keyframes clack{0%,13%{opacity:0}15%{opacity:.9}20%,100%{opacity:0}}
+.clack{opacity:0;animation:clack 5s linear both infinite}
+@keyframes burst{0%,100%{transform:scale(.86) rotate(0)}50%{transform:scale(1.04) rotate(10deg)}}
+.burst{transform-box:fill-box;transform-origin:center;animation:burst 3.6s ease-in-out infinite}
+@keyframes flap{0%,100%{transform:rotate(0)}40%{transform:rotate(-5deg)}70%{transform:rotate(2deg)}}
+.flap{transform-box:fill-box;transform-origin:30% 0%;animation:flap 4.4s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
+.sway{transform-box:fill-box;transform-origin:50% 0%;animation:sway 5.2s ease-in-out infinite}
+.still *,body.nomotion *{animation:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+.notes{color:var(--soft);font-size:14px;max-width:80ch;margin:0 auto}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+ <span class="kicker">Frame drop · 2027-01-01</span>
+ <h1>Mosaic, Domino Run, Fresh Page</h1>
+ <p class="lede">Three new frames for the new year: glazed tiles for coins, a living domino run for gems, and a fresh page for the first week of January. Each sits around the card and never on the text. Switch theme, look and motion to check them.</p>
+</header>
+
+<div class="controls" role="group" aria-label="Preview">
+ <div class="seg" id="theme"><button aria-pressed="true" data-v="dark">Dark</button><button aria-pressed="false" data-v="light">Light</button></div>
+ <div class="seg" id="look"><button aria-pressed="true" data-v="lime"><i style="background:#c9f24d"></i>Lime</button><button aria-pressed="false" data-v="sky"><i style="background:#4aa8ff"></i>Sky</button><button aria-pressed="false" data-v="maple"><i style="background:#fa774f"></i>Maple</button></div>
+ <div class="seg" id="motion"><button aria-pressed="true" data-v="on">Motion</button><button aria-pressed="false" data-v="off">Still</button></div>
+</div>
+
+<div id="out" style="display:grid;gap:34px"></div>
+<p class="notes">Port notes: every new drawing uses only Path, Circle, Ellipse, Rect, Line, LinearGradient, RadialGradient and ClipPath, in card space like art.jsx (0,0 is the card's top-left; art reaches at most 24 px out). Motion here is CSS; in the app it becomes Mover worklets on the frame clock and stops for still tiles, reduced motion and low power.</p>
+</div>
+
+<script>
+const PAD=48;
+const fx=n=>Math.round(n*100)/100;
+let N=0;const uid=p=>p+(++N);
+function rrPath(x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));return `M${fx(x)} ${fx(y+h-r)}L${fx(x)} ${fx(y+r)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+r)} ${fx(y)}L${fx(x+w-r)} ${fx(y)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+w)} ${fx(y+r)}L${fx(x+w)} ${fx(y+h-r)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+w-r)} ${fx(y+h)}L${fx(x+r)} ${fx(y+h)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x)} ${fx(y+h-r)}Z`}
+function rrLength(w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));return 2*(w-2*r)+2*(h-2*r)+2*Math.PI*r}
+// Same as geometry.js rrPointAt: starts at the bottom of the left edge, clockwise.
+function rrPointAt(x,y,w,h,r,d){r=Math.max(0,Math.min(r,w/2,h/2));const sv=h-2*r,sh=w-2*r,arc=Math.PI*r/2,L=rrLength(w,h,r);let s=((d%L)+L)%L;
+ const out=(px,py,ang)=>({x:px,y:py,ang,nx:Math.sin(ang),ny:-Math.cos(ang)});const onArc=(cx,cy,from,k)=>{const th=from+(r?k/r:0);return out(cx+r*Math.cos(th),cy+r*Math.sin(th),th+Math.PI/2)};
+ if(s<sv)return out(x,y+h-r-s,-Math.PI/2);s-=sv;if(s<arc)return onArc(x+r,y+r,Math.PI,s);s-=arc;if(s<sh)return out(x+r+s,y,0);s-=sh;if(s<arc)return onArc(x+w-r,y+r,-Math.PI/2,s);s-=arc;
+ if(s<sv)return out(x+w,y+r+s,Math.PI/2);s-=sv;if(s<arc)return onArc(x+w-r,y+h-r,0,s);s-=arc;if(s<sh)return out(x+w-r-s,y+h,Math.PI);s-=sh;return onArc(x+r,y+h-r,Math.PI/2,Math.min(s,arc))}
+const ring=(f,o)=>rrPath(-o,-o,f.w+2*o,f.h+2*o,Math.max(0,f.R+o));
+const band=(f,a,b)=>`${ring(f,b)} ${ring(f,a)}`;
+function spots(f,o,n,t0=0){const W=f.w+2*o,H=f.h+2*o,L=rrLength(W,H,f.R+o);return Array.from({length:n},(_,i)=>rrPointAt(-o,-o,W,H,f.R+o,((t0+i/n)%1)*L))}
+const seeded=s=>{let x=s;return()=>{x=(x*9301+49297)%233280;return x/233280}};
+function openTopPath(w,h,r,gap){const m=w/2;return `M${m-gap} 0L${r} 0A${r} ${r} 0 0 0 0 ${r}L0 ${h-r}A${r} ${r} 0 0 0 ${r} ${h}L${w-r} ${h}A${r} ${r} 0 0 0 ${w} ${h-r}L${w} ${r}A${r} ${r} 0 0 0 ${w-r} 0L${m+gap} 0`}
+
+// Orange tabby head in the 48x58 buddy space; eye state: open 0..1 lid, or shut.
+function catHead(lid,asleep,blinkCls){
+ const eye=(cx)=>{if(asleep)return `<path d="M${cx-2.4} 28.4 Q${cx} 30.6 ${cx+2.4} 28.4" fill="none" stroke="#2b2018" stroke-width="1.15" stroke-linecap="round"/>`;
+  if(lid<.15)return `<g class="${blinkCls}"><ellipse cx="${cx}" cy="28" rx="2.2" ry="3" fill="#2b2018"/><ellipse cx="${cx+.8}" cy="27" rx=".7" ry=".85" fill="#fff"/></g>`;
+  // Half-lidded and relaxed: a soft lid arc over the lower part of the eye, no brow angle.
+  const top=25.4+5.2*lid,ry=Math.max(.9,31-top);
+  return `<g class="${blinkCls}"><path d="M${cx-2.3} ${fx(top)}A2.3 ${fx(ry)} 0 0 0 ${cx+2.3} ${fx(top)}Z" fill="#2b2018"/>${lid<.55?`<circle cx="${cx+.9}" cy="${fx(top+ry*.42)}" r=".55" fill="#fff"/>`:''}<path d="M${cx-2.8} ${fx(top+.5)}Q${cx} ${fx(top-1.2)} ${cx+2.8} ${fx(top+.5)}" fill="#f0a64a" stroke="#9a5e2a" stroke-width=".7" stroke-linecap="round"/></g>`};
+ return `<path d="M10 19 L14 7.5 L19.5 18Z M28.5 18 L34 7.5 L38 19Z" fill="#f0a64a" stroke="#c9762a" stroke-width=".8" stroke-linejoin="round"/><path d="M11.6 17.4 L14 10.4 L17 17.4Z M31 17.4 L34 10.4 L36.4 17.4Z" fill="#ffd4a8"/>
+ <ellipse cx="24" cy="30" rx="15" ry="13.6" fill="url(#CATG)" stroke="#c9762a" stroke-width=".8"/>
+ <path d="M20.6 17.6 l1 4 M24 17 v4.6 M27.4 17.6 l-1 4" stroke="#cf7d2c" stroke-width="1.5" stroke-linecap="round"/>
+ <path d="M9.6 27 l3.4 .8 M9.4 30.4 l3.4 0 M38.4 27 l-3.4 .8 M38.6 30.4 l-3.4 0" stroke="#cf7d2c" stroke-width="1.3" stroke-linecap="round"/>
+ <ellipse cx="24" cy="34" rx="9.6" ry="7.2" fill="#ffe8c8" opacity=".9"/>
+ ${eye(18)}${eye(30)}
+ <ellipse cx="13.6" cy="33" rx="2.6" ry="1.6" fill="#f08a7a" opacity="${asleep?.7:.45}"/><ellipse cx="34.4" cy="33" rx="2.6" ry="1.6" fill="#f08a7a" opacity="${asleep?.7:.45}"/>
+ <path d="M22.4 31.4 L25.6 31.4 L24 33.4Z" fill="#e07a8a"/>${!asleep&&lid>=.3?`<path d="M24 33.4 v.8" stroke="#7a4a1c" stroke-width=".8"/><ellipse cx="24" cy="35.7" rx="1.15" ry="1.35" fill="#9a3c42" stroke="#7a4a1c" stroke-width=".5"/><ellipse cx="24" cy="36.3" rx=".65" ry=".5" fill="#f08a9a"/>`:`<path d="M24 33.4 v1 M21.8 35 q1.1 1 2.2 0 q1.1 1 2.2 0" fill="none" stroke="#7a4a1c" stroke-width=".8" stroke-linecap="round"/>`}
+ <path d="M14 34 l-7 -1.4 M14 36 l-7 1 M34 34 l7 -1.4 M34 36 l7 1" stroke="#7a5a44" stroke-width=".7" stroke-linecap="round" opacity=".8"/>`;
+}
+function crescent(cx,cy,r,dx,dy,r2){// lit part of a circle r minus an offset circle r2: two arcs
+ const d=Math.hypot(dx,dy),a=(r*r-r2*r2+d*d)/(2*d),hh=Math.sqrt(Math.max(0,r*r-a*a)),ux=dx/d,uy=dy/d,mx=cx+a*ux,my=cy+a*uy;
+ const p1=[mx-hh*uy,my+hh*ux],p2=[mx+hh*uy,my-hh*ux];
+ return `M${fx(p1[0])} ${fx(p1[1])}A${r} ${r} 0 1 1 ${fx(p2[0])} ${fx(p2[1])}A${r2} ${r2} 0 0 0 ${fx(p1[0])} ${fx(p1[1])}Z`}
+function star5(cx,cy,R1,R2){let d='';for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?R2:R1;d+=(i?'L':'M')+fx(cx+rr*Math.cos(a))+' '+fx(cy+rr*Math.sin(a))}return d+'Z'}
+const DIG={0:'M1.5 0C.5 0 0 1.1 0 2.5C0 3.9 .5 5 1.5 5C2.5 5 3 3.9 3 2.5C3 1.1 2.5 0 1.5 0Z',1:'M.4 1.1L1.8 0V5',2:'M.1 1.1C.3 .4 .8 0 1.5 0C2.4 0 3 .6 3 1.4C3 2.7 0 3.5 0 5H3',3:'M.2 .6C.5 .2 1 0 1.5 0C2.3 0 2.9 .5 2.9 1.2C2.9 2 2.2 2.4 1.3 2.4C2.3 2.4 3 2.9 3 3.7C3 4.5 2.3 5 1.5 5C.9 5 .4 4.8 .1 4.4',4:'M2.2 5V0L0 3.4H3',5:'M2.8 0H.5L.3 2.2C.7 1.9 1.1 1.8 1.6 1.8C2.4 1.8 3 2.4 3 3.4C3 4.4 2.3 5 1.5 5C.9 5 .4 4.8 .1 4.4',6:'M2.6 .3C2.3 .1 1.9 0 1.6 0C.6 0 0 1.2 0 3C0 4.3 .6 5 1.5 5C2.4 5 3 4.4 3 3.4C3 2.5 2.4 1.9 1.6 1.9C.9 1.9 .3 2.3 0 3',7:'M0 0H3L1.2 5',8:'M1.5 2.4C.7 2.4 .2 1.9 .2 1.2C.2 .5 .8 0 1.5 0C2.2 0 2.8 .5 2.8 1.2C2.8 1.9 2.3 2.4 1.5 2.4ZM1.5 2.4C.6 2.4 0 3 0 3.7C0 4.5 .6 5 1.5 5C2.4 5 3 4.5 3 3.7C3 3 2.4 2.4 1.5 2.4Z',9:'M3 2C2.7 2.7 2.1 3.1 1.4 3.1C.6 3.1 0 2.5 0 1.6C0 .6 .6 0 1.5 0C2.4 0 3 .7 3 2C3 3.8 2.4 5 1.4 5C1 5 .6 4.9 .4 4.7'};
+function digits(n,cx,cy,col,k=.95){const s=String(n),wd=s.length*3+(s.length-1)*1.3,x0=cx-wd*k/2,y0=cy-2.5*k;
+ return s.split('').map((c,i)=>`<path transform="translate(${fx(x0+i*4.3*k)} ${fx(y0)}) scale(${k})" d="${DIG[c]}" fill="none" stroke="${col}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>`).join('')}
+
+// A point on the top piece of the ring o px out: from 8 px below the top-left
+// corner, round the top, to 8 px below the top-right corner (same as the 11-20 page).
+function topAt(f,o,u){const r=f.R+o,arc=Math.PI*r/2,sh=f.w-2*f.R,sv=f.h-2*f.R,e=8;
+ const ref=[e,Math.PI*(f.R+12)/2,sh,Math.PI*(f.R+12)/2,e],seg=[e,arc,sh,arc,e],tot=ref.reduce((a,b)=>a+b,0);
+ let k=u*tot,d=sv-e;for(let i=0;i<5;i++){if(k<=ref[i]||i===4){d+=seg[i]*Math.min(1,k/ref[i]);break}k-=ref[i];d+=seg[i]}
+ return rrPointAt(-o,-o,f.w+2*o,f.h+2*o,r,d)}
+function shade(hex,k){const n=parseInt(hex.slice(1),16),c=[n>>16,(n>>8)&255,n&255].map(v=>Math.round(k<1?v*k:v+(255-v)*(k-1)));return '#'+c.map(v=>v.toString(16).padStart(2,'0')).join('')}
+
+/* ================= NEW 1: MOSAIC (coin, still) ================= */
+// Hand-cut glazed tiles set in grout. One course all the way round (1 to 7.6 px out),
+// a second course on the sides and bottom (8.6 to 14.6 px) that tapers out round the top
+// corners so nothing rises more than 8 px above the card. Color flows slowly between
+// cobalt and teal like a real mosaic's direction of lay, with cream and aqua scattered
+// through and a gold tile on a steady beat. Batched: one fill path per glaze shade, one
+// light-edge path, one dark-edge path, one wet-glint path, one gold path.
+const MOS={cobalt:['#1d4f9a','#2459aa','#2c67bd'],indigo:['#2a3c86','#324795'],teal:['#1f8585','#279a99','#30ada7'],aqua:['#78c9c1','#8fd6cd'],cream:['#e9e0cb','#f3ecdc','#ddd2b9']};
+function mosaicOver(f){
+ const {w,h,R}=f,id=uid('ms'),L=f.c.light,rnd=seeded(17);
+ const TOP=8,SIDE=15;
+ // How far out the bed may reach along this normal: 8 on the top, 15 on sides and bottom,
+ // an ellipse between them round the top corners.
+ const oMax=(n)=>n.ny<-.001?1/Math.hypot(n.nx/(R+SIDE),n.ny/(R+TOP))-R:SIDE;
+ const at=(o,d)=>rrPointAt(-o,-o,w+2*o,h+2*o,R+o,d);
+ const jit=()=>(rnd()-.5)*.8;
+ const fills={},hl=[],sh=[],gl=[],golds=[];let goldD='';
+ const one=a=>a[Math.floor(rnd()*a.length)];
+ // Inner course: deep blues with a rare cream tile. Outer course: sea greens flowing
+ // into aqua, with cream through it. Gold keeps the beat in both.
+ const pick=(d,c)=>{const t=rnd();
+  if(c===0)return t<.07?one(MOS.cream):t<.27?one(MOS.indigo):one(MOS.cobalt);
+  if(t<.22)return one(MOS.cream);return .5+.5*Math.sin(d/42)>rnd()?one(MOS.teal):one(MOS.aqua)};
+ const LX=-.6,LY=-.8;
+ const tile=(pts,col)=>{
+  const d='M'+pts.map(p=>fx(p[0])+' '+fx(p[1])).join('L')+'Z';
+  if(col==='gold')goldD+=d;else fills[col]=(fills[col]||'')+d;
+  // Edges facing the light get a bright glaze line, edges facing away a dark one.
+  const cx=pts.reduce((a,p)=>a+p[0],0)/4,cy=pts.reduce((a,p)=>a+p[1],0)/4;
+  for(let i=0;i<4;i++){const a=pts[i],b=pts[(i+1)%4];let nx=b[1]-a[1],ny=a[0]-b[0];const m=Math.hypot(nx,ny)||1;nx/=m;ny/=m;
+   const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;if((mx-cx)*nx+(my-cy)*ny<0){nx=-nx;ny=-ny}
+   const k=nx*LX+ny*LY,ins=.6,seg=`M${fx(a[0]-nx*ins+(cx-a[0])*.14)} ${fx(a[1]-ny*ins+(cy-a[1])*.14)}L${fx(b[0]-nx*ins+(cx-b[0])*.14)} ${fx(b[1]-ny*ins+(cy-b[1])*.14)}`;
+   if(k>.35)hl.push(seg);else if(k<-.35)sh.push(seg)}
+  if(col==='gold')golds.push([cx,cy]);
+  else if(rnd()<.35)gl.push(`M${fx(cx-1.6)} ${fx(cy-1.1)}a.75 .55 0 1 0 1.5 0a.75 .55 0 1 0 -1.5 0`)};
+ const course=(oIn,oOut,minH,c,beat)=>{const om=(oIn+oOut)/2,W=w+2*om,H=h+2*om,Lk=rrLength(W,H,R+om);let d=rnd()*3,k=0;
+  while(d<Lk-2){let sz=6.4+rnd()*1.8;if(Lk-d-sz<4)sz=Lk-d;const d0=d+.65,d1=d+sz-.65;d+=sz;
+   const p0=at(om,d0),p1=at(om,d1);
+   const top0=Math.min(oOut,oMax(p0)-.9),top1=Math.min(oOut,oMax(p1)-.9);
+   if(Math.min(top0,top1)-oIn<minH)continue;
+   const q=(p,o)=>[p.x+p.nx*(o-om)+jit(),p.y+p.ny*(o-om)+jit()];
+   const pts=[q(p0,oIn+.6),q(p1,oIn+.6),q(p1,top1-.6),q(p0,top0-.6)];
+   const tc=[(pts[0][0]+pts[2][0])/2,(pts[0][1]+pts[2][1])/2];if(KEYS.some(K=>Math.hypot(K.x-tc[0],K.y-tc[1])<K.s+4.2))continue;
+   k++;tile(pts,k%beat===Math.floor(beat/2)?'gold':pick(d,c))}};
+ // Keystones: a bigger gold tile at each corner apex, a resting point for the eye.
+ const KEYS=[[R,R,-1,-1,5.6,4.6],[w-R,R,1,-1,5.6,4.6],[w-R,h-R,1,1,7.6,6],[R,h-R,-1,1,7.6,6]].map(([cx,cy,sx,sy,o,s])=>{const k=Math.SQRT1_2;return {x:cx+sx*(R+o)*k,y:cy+sy*(R+o)*k,s,a:Math.atan2(sy,sx)}});
+ const sq=(K,e)=>{const c=Math.cos(K.a),s=Math.sin(K.a),pt=(u,v)=>fx(K.x+u*c-v*s)+' '+fx(K.y+u*s+v*c);return `M${pt(-e,-e)}L${pt(e,-e)}L${pt(e,e)}L${pt(-e,e)}Z`};
+ const keyD=KEYS.map(K=>sq(K,K.s)).join(''),keyIn=KEYS.map(K=>sq(K,K.s-1.5)).join('');
+ course(1,7.6,2,0,8);course(8.6,14.6,2.6,1,13);
+ // Grout bed: inner edge on the card, outer edge as far as tiles may go.
+ const NS=260,L0=rrLength(w,h,R);let bed='';
+ for(let i=0;i<NS;i++){const p=rrPointAt(0,0,w,h,R,i/NS*L0),o=Math.min(SIDE,oMax(p));bed+=(i?'L':'M')+fx(p.x+p.nx*o)+' '+fx(p.y+p.ny*o)}bed+='Z';
+ const GROUT=L?'#d6cfbf':'#57534b',GROUT2=L?'#bfb5a1':'#3f3b35';
+ // Gold catches light: every other gold tile gets a four-point glint.
+ const lit=golds.filter((_,i)=>i%2===0).concat(KEYS.map(K=>[K.x-K.s*.3,K.y-K.s*.3]));
+ const spark=lit.map(([x,y])=>{const s=3;return `M${fx(x)} ${fx(y-s)}Q${fx(x)} ${fx(y)} ${fx(x+s)} ${fx(y)}Q${fx(x)} ${fx(y)} ${fx(x)} ${fx(y+s)}Q${fx(x)} ${fx(y)} ${fx(x-s)} ${fx(y)}Q${fx(x)} ${fx(y)} ${fx(x)} ${fx(y-s)}Z`}).join('');
+ return `<defs><linearGradient id="${id}g" x1="0" y1="0" x2="${w}" y2="${h}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff0bf"/><stop offset=".18" stop-color="#e2b75a"/><stop offset=".34" stop-color="#b9862c"/><stop offset=".5" stop-color="#f6d98a"/><stop offset=".68" stop-color="#c8963a"/><stop offset=".84" stop-color="#ffe9a8"/><stop offset="1" stop-color="#a8781e"/></linearGradient>
+  <linearGradient id="${id}k" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c8"/><stop offset=".45" stop-color="#e9c46a"/><stop offset="1" stop-color="#a8761c"/></linearGradient><radialGradient id="${id}s"><stop offset="0" stop-color="#fffbe6" stop-opacity=".85"/><stop offset="1" stop-color="#fff3c4" stop-opacity="0"/></radialGradient></defs>
+ <path d="${bed}${ring(f,.2)}" fill-rule="evenodd" fill="#000" fill-opacity="${L?.1:.35}" transform="translate(.6 1.8)"/>
+ <path d="${bed}${ring(f,.2)}" fill-rule="evenodd" fill="${GROUT}"/>
+ <path d="${bed}" fill="none" stroke="${GROUT2}" stroke-width="1.1"/>
+ ${Object.entries(fills).map(([c,d])=>`<path d="${d}" fill="${c}"/>`).join('')}
+ <path d="${goldD}" fill="url(#${id}g)"/>
+ <path d="${keyD}" fill="#000" fill-opacity=".3" transform="translate(.5 1)"/><path d="${keyD}" fill="url(#${id}k)" stroke="#8a5a14" stroke-width=".7"/><path d="${keyIn}" fill="none" stroke="#fff3c4" stroke-opacity=".7" stroke-width=".7"/>
+ <path d="${sh.join('')}" fill="none" stroke="#000" stroke-opacity=".3" stroke-width=".85" stroke-linecap="round"/>
+ <path d="${hl.join('')}" fill="none" stroke="#ffffff" stroke-opacity=".6" stroke-width=".85" stroke-linecap="round"/>
+ <path d="${gl.join('')}" fill="#ffffff" fill-opacity=".6"/>
+ ${lit.map(([x,y])=>`<circle cx="${fx(x)}" cy="${fx(y)}" r="5" fill="url(#${id}s)"/>`).join('')}
+ <path d="${spark}" fill="#fffbe6"/>
+ <path d="${ring(f,.5)}" fill="none" stroke="#000" stroke-opacity="${L?.12:.35}" stroke-width="1"/>`;
+}
+
+/* ================= NEW 2: DOMINO RUN (gem, living) ================= */
+// Seen from above: dominoes stand on end in a U down the left side, along the bottom and
+// up the right side, one colored run per question. A glass marble waits at the start on
+// the top-left corner; a star waits at the end on the top-right corner. Standing dominoes
+// show a glossy colored top and a darker side wall with a long shadow; fallen ones lie
+// face up in overlapping shingles with pips. The top edge stays clear (8 px rule).
+const DCOL=['#ff6b5c','#ffb443','#3fcf9e','#4aa8ff','#a37bff','#ff6fae','#b8e04a','#36c6d8'];
+const PIPS={0:[],1:[[0,0]],2:[[-1,-1],[1,1]],3:[[-1,-1],[0,0],[1,1]],4:[[-1,-1],[1,-1],[-1,1],[1,1]],5:[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],6:[[-1,-1],[0,-1],[1,-1],[-1,1],[0,1],[1,1]]};
+function dominoOver(f){
+ const {w,h,R}=f,id=uid('dm'),P=f.p,N=Math.max(1,Math.min(10,P.total||4)),ans=Math.min(N,P.answered||0),sk=Math.min(N-ans,P.skipped||0),done=ans>=N;
+ const anim=!f.still&&!document.body.classList.contains('nomotion'),L=f.c.light,pull=f.still?0:(P.pull||0);
+ // The run that is falling right now (the last one answered). Still tiles show it fallen.
+ const fallingSec=anim&&P.falling&&ans>0?ans-1:-1;
+ const o=8.4,W=w+2*o,H=h+2*o,r=R+o,Lr=rrLength(W,H,r),sv=H-2*r,arc=Math.PI*r/2,shr=W-2*r;
+ // The runs climb a little way round both top corners, so the marble and the star sit at their ends.
+ const dS=sv+arc*.2,dE=sv+arc+shr+arc*.8,run=Lr-(dE-dS);
+ const n=Math.round(run/11)+1,step=run/(n-1);
+ const sAt=i=>dS-i*step,secOf=i=>i<0?-1:Math.min(N-1,Math.floor(i*N/n));
+ // Local frame: x along the run (counterclockwise), y inward.
+ const wp=(s,x,y)=>{const p=rrPointAt(-o,-o,W,H,r,s-x);return [p.x-p.nx*y,p.y-p.ny*y]};
+ const qd=(s,x0,x1,y0,y1,dx=0,dy=0)=>{const a=[wp(s,x0,y0),wp(s,x1,y0),wp(s,x1,y1),wp(s,x0,y1)];return 'M'+a.map(p=>fx(p[0]+dx)+' '+fx(p[1]+dy)).join('L')+'Z'};
+ const HW=6.2,TH=2.2,FL=17,FACE0=-TH,FACE1=FL-TH,MIDX=(FACE0+FACE1)/2;
+ const WX=1.1,WY=2.1; // side wall of a standing domino, toward the bottom right
+ const rnd=seeded(31);const pipN=Array.from({length:n},()=>1+Math.floor(rnd()*6));
+ const pip=(x,y,rr=1)=>`M${fx(x-rr)} ${fx(y)}a${rr} ${rr} 0 1 0 ${2*rr} 0a${rr} ${rr} 0 1 0 ${-2*rr} 0`;
+ const pipsAt=(s,cx,k)=>PIPS[k].map(([a,b])=>{const [x,y]=wp(s,cx+a*2.5,b*3);return pip(x,y)}).join('');
+ const tint={};let faces='',edge='',fronts='',dividers='',pips='',fshadow='',side={},caps={},walls={},cshadow='',chl='',tipped='',animated='';
+ const state=i=>{const k=secOf(i);if(k<ans)return k===fallingSec?'anim':'down';if(k<ans+sk&&secOf(i-1)!==k)return 'tip';
+  if(k===ans+sk&&pull>0&&secOf(i-1)!==k)return 'lean';return 'up'};
+ const standing=(s,col,lean,into)=>{// lean 0: upright. lean > 0: tipped forward, a strip of face shows.
+  const x0=-TH+lean,x1=TH+lean;
+  if(lean>0){const g=wp(s,lean*.5,0);into.t+=`<circle cx="${fx(g[0])}" cy="${fx(g[1])}" r="16" fill="url(#${id}wt)"/><path d="${qd(s,x0-1,x1+2.6,-HW+1,HW+1,3,5)}" fill="#000" fill-opacity="${L?.16:.34}"/><path d="${qd(s,-TH,x0+.6,-HW,HW)}" fill="url(#${id}fc)" stroke="#2a2833" stroke-opacity=".5" stroke-width=".55"/><path d="${qd(s,-TH,x0+.6,HW-1.4,HW)}" fill="${col}"/>${PIPS[2].map(([a,b])=>{const [x,y]=wp(s,x0-2.4+a*.9,b*3);return `<path d="${pip(x,y,.85)}" fill="#1d1c24"/>`}).join('')}
+   <path d="${qd(s,x0,x1,-HW,HW,WX,WY)}" fill="${shade(col,.62)}"/><path d="${qd(s,x0,x1,-HW,HW)}" fill="${col}" stroke="#000" stroke-opacity=".3" stroke-width=".5"/><path d="${qd(s,x0+.4,x0+1.3,-HW+.7,HW-.7)}" fill="#fff" fill-opacity=".5"/>`;return}
+  cshadow+=qd(s,x0,x1,-HW,HW,2.8,4.6);
+  walls[col]=(walls[col]||'')+qd(s,x0,x1,-HW,HW,WX,WY);
+  caps[col]=(caps[col]||'')+qd(s,x0,x1,-HW,HW);
+  chl+=qd(s,x0+.45,x0+1.35,-HW+.7,HW-.7)};
+ const T={t:''};
+ // Fallen dominoes rest on the next one, so the earlier one is on top: build from the end back.
+ for(let i=n-1;i>=0;i--){const s=sAt(i),k=secOf(i),col=DCOL[k%DCOL.length],st=state(i);
+  if(st==='down'){
+   fshadow+=qd(s,FACE0,FACE1+.4,-HW,HW+.6,.8,1.6);
+   edge+=qd(s,FACE0,FACE1,-HW,HW,.5,1);
+   faces+=qd(s,FACE0,FACE1,-HW,HW);
+   side[col]=(side[col]||'')+qd(s,FACE0,FACE1,HW-2.4,HW);tint[col]=(tint[col]||'')+qd(s,FACE0,FACE1,-HW,HW-2.4);
+   const a=wp(s,FACE1,-HW),b=wp(s,FACE1,HW);fronts+=`M${fx(a[0])} ${fx(a[1])}L${fx(b[0])} ${fx(b[1])}`;
+   const c=wp(s,MIDX,-HW+1.2),e=wp(s,MIDX,HW-2);dividers+=`M${fx(c[0])} ${fx(c[1])}L${fx(e[0])} ${fx(e[1])}`;
+   pips+=pipsAt(s,(MIDX+FACE1)/2,pipN[i]);
+  }else if(st==='up')standing(s,col,0);
+  else if(st==='tip')standing(s,col,8,T);
+  else if(st==='lean')standing(s,col,4*Math.min(1,pull),T);
+  else if(st==='anim'){
+   // One group per domino: the face swings down from the base (scaleX), the top fades.
+   const p=rrPointAt(-o,-o,W,H,r,s),deg=fx(p.ang*180/Math.PI+180),j=i-Math.ceil(n*(ans-1)/N),dl=fx(.6+j*.08);
+   const fp=PIPS[pipN[i]].map(([a,b])=>pip((MIDX+FACE1)/2+a*2.5,b*3)).join('');
+   animated+=`<g transform="translate(${fx(p.x)} ${fx(p.y)}) rotate(${deg}) scale(1 -1)"><g class="dfall" style="animation-delay:${dl}s"><rect x="${FACE0}" y="${-HW}" width="${FL}" height="${2*HW}" fill="#000" fill-opacity="${L?.14:.3}" transform="translate(.6 1.4)"/><rect x="${FACE0}" y="${-HW}" width="${FL}" height="${2*HW}" fill="#f5f0e3" stroke="#2a2833" stroke-opacity=".5" stroke-width=".55"/><rect x="${FACE0}" y="${HW-1.4}" width="${FL}" height="1.4" fill="${col}"/><path d="M${MIDX} ${-HW+1.2}V${HW-2}" stroke="#2a2833" stroke-opacity=".55" stroke-width=".6"/><path d="${fp}" fill="#1d1c24"/></g>
+    <g class="dcap" style="animation-delay:${dl}s"><rect x="${-TH}" y="${-HW}" width="${2*TH}" height="${2*HW}" fill="#000" fill-opacity="${L?.16:.34}" transform="translate(2.8 -4)"/><rect x="${-TH}" y="${-HW}" width="${2*TH}" height="${2*HW}" fill="${col}" stroke="#000" stroke-opacity=".3" stroke-width=".5"/><rect x="${-TH+.45}" y="${-HW+.7}" width=".9" height="${2*HW-1.4}" fill="#fff" fill-opacity=".5"/></g>
+    <ellipse class="clack" style="animation-delay:${dl}s" cx="${FACE1}" cy="0" rx="1.6" ry="${HW+1.5}" fill="#fff8dc"/></g>`;
+  }}
+ // Glass marble at the start, star at the end.
+ const mp=rrPointAt(-6,-6,w+12,h+12,R+6,(h-2*R)+Math.PI*(R+6)/2*.62);
+ const mx=fx(mp.x+1),my=fx(mp.y+1.2);
+ const marble=`<ellipse cx="${fx(mx+2)}" cy="${fx(my+3.4)}" rx="5" ry="3.2" fill="#000" fill-opacity="${L?.18:.4}"/><circle cx="${mx}" cy="${my}" r="5.8" fill="url(#${id}mb)" stroke="#16507a" stroke-opacity=".6" stroke-width=".5"/>
+  <path d="M${fx(mx-3.2)} ${fx(my+1.6)}C${fx(mx-1)} ${fx(my-1.4)} ${fx(mx+1.2)} ${fx(my+3)} ${fx(mx+3.6)} ${fx(my-.4)}" fill="none" stroke="#ff6b5c" stroke-width="1.3" stroke-linecap="round"/><path d="M${fx(mx-2.6)} ${fx(my-1.6)}C${fx(mx-.6)} ${fx(my-3.2)} ${fx(mx+1.4)} ${fx(my-.8)} ${fx(mx+3)} ${fx(my-2.6)}" fill="none" stroke="#ffd34d" stroke-width=".9" stroke-linecap="round"/>
+  <ellipse cx="${fx(mx-1.7)}" cy="${fx(my-2.2)}" rx="1.6" ry="1" fill="#fff" fill-opacity=".9" transform="rotate(-30 ${fx(mx-1.7)} ${fx(my-2.2)})"/>`;
+ const sp=rrPointAt(-6.2,-6.2,w+12.4,h+12.4,R+6.2,(h-2*R)+Math.PI*(R+6.2)/2+(w-2*R)+Math.PI*(R+6.2)/2*.4);
+ const sx=fx(sp.x+1.4),sy=fx(sp.y+1.6);
+ // Burst: sparkles and confetti dots thrown out of the star, only where they stay outside
+ // the card and no more than 8 px above it.
+ const inCard=(x,y)=>{if(x<0||x>w||y<0||y>h)return false;const cx=Math.min(Math.max(x,R),w-R),cy=Math.min(Math.max(y,R),h-R);return Math.hypot(x-cx,y-cy)<=R+1.5};
+ const spots2=[];for(let k=0;k<16;k++){const a=(-170+k*17)*Math.PI/180,d=k%2?15:11,x=sx+Math.cos(a)*d,y=sy+Math.sin(a)*d;if(y>=-7&&x<=w+19&&!inCard(x,y))spots2.push([x,y,k])}
+ const four=(x,y,s)=>`M${fx(x)} ${fx(y-s)}Q${fx(x)} ${fx(y)} ${fx(x+s)} ${fx(y)}Q${fx(x)} ${fx(y)} ${fx(x)} ${fx(y+s)}Q${fx(x)} ${fx(y)} ${fx(x-s)} ${fx(y)}Q${fx(x)} ${fx(y)} ${fx(x)} ${fx(y-s)}Z`;
+ const rays=spots2.filter(([,,k])=>k%2===0).map(([x,y])=>four(x,y,2.6)).join('');
+ const bits=done?spots2.filter(([,,k])=>k%2===1).map(([x,y,k],i)=>`<circle class="${anim?'tw':''}" style="animation-delay:${fx(i*.4)}s" cx="${fx(x)}" cy="${fx(y)}" r="${i%2?1:1.3}" fill="${DCOL[k%DCOL.length]}"/>`).join(''):''; // Soft mat under the run.
+ let mat='';for(let t=0;t<=run;t+=6)mat+=(t?'L':'M')+(p=>fx(p.x)+' '+fx(p.y))(rrPointAt(-o,-o,W,H,r,dS-t));
+ const glint=false?`<path d="${mat}" fill="none" stroke="#fff6d2" stroke-opacity=".5" stroke-width="11" stroke-linecap="round" stroke-dasharray="18 ${fx(run+60)}"><animate attributeName="stroke-dashoffset" values="20;${-fx(run)};${-fx(run)}" keyTimes="0;.7;1" dur="6s" repeatCount="indefinite"/></path>`:'';
+ return `<defs><radialGradient id="${id}gl"><stop offset="0" stop-color="#ffe58a" stop-opacity=".95"/><stop offset=".5" stop-color="#ffc94a" stop-opacity=".35"/><stop offset="1" stop-color="#ffc94a" stop-opacity="0"/></radialGradient>
+  <radialGradient id="${id}st" cx=".38" cy=".35" r=".7"><stop offset="0" stop-color="#fff6cc"/><stop offset=".55" stop-color="#ffd34d"/><stop offset="1" stop-color="#d99a16"/></radialGradient>
+  <radialGradient id="${id}wt"><stop offset="0" stop-color="#ffc94a" stop-opacity=".9"/><stop offset=".45" stop-color="#ffb443" stop-opacity=".45"/><stop offset="1" stop-color="#ffb443" stop-opacity="0"/></radialGradient><radialGradient id="${id}mb" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#e6f6ff"/><stop offset=".5" stop-color="#7cc8f2"/><stop offset="1" stop-color="#2a74b0"/></radialGradient>
+  <linearGradient id="${id}fc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffdf6"/><stop offset="1" stop-color="#e6decb"/></linearGradient>
+  <clipPath id="${id}out"><path clip-rule="evenodd" d="M-60 -60H${w+60}V${h+60}H-60Z${rrPath(0,0,w,h,R)}"/></clipPath></defs>
+ <path d="${mat}" fill="none" stroke="${L?'#1b2030':'#000'}" stroke-opacity="${L?.06:.24}" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="${cshadow}" fill="#000" fill-opacity="${L?.13:.32}"/>
+ <path d="${fshadow}" fill="#000" fill-opacity="${L?.14:.3}"/>
+ <path d="${edge}" fill="#c9bfa6"/>
+ <path d="${faces}" fill="url(#${id}fc)"/>
+ ${Object.entries(tint).map(([c,d])=>`<path d="${d}" fill="${c}" fill-opacity="${L?.13:.17}"/>`).join('')}
+ ${Object.entries(side).map(([c,d])=>`<path d="${d}" fill="${c}"/>`).join('')}
+ <path d="${faces}" fill="none" stroke="#2a2833" stroke-opacity=".3" stroke-width=".5"/>
+ <path d="${fronts}" stroke="#2a2833" stroke-width=".75"/>
+ <path d="${dividers}" stroke="#2a2833" stroke-opacity=".5" stroke-width=".6"/>
+ <path d="${pips}" fill="#1d1c24"/>
+ ${glint}
+ ${Object.entries(walls).map(([c,d])=>`<path d="${d}" fill="${shade(c,.62)}"/>`).join('')}
+ ${Object.entries(caps).map(([c,d])=>`<path d="${d}" fill="${c}"/>`).join('')}
+ <path d="${chl}" fill="#fff" fill-opacity=".5"/>
+ ${T.t}${animated}
+ ${marble}
+ <g>
+  ${done?`<circle class="${anim?'pulse':''}" cx="${sx}" cy="${sy}" r="17" fill="url(#${id}gl)"/><path class="${anim?'tw':''}" d="${rays}" fill="#fff3b0"/>`:''}
+ </g>
+ <circle cx="${sx}" cy="${fx(sy+.8)}" r="7.6" fill="#000" fill-opacity="${L?.12:.35}"/>
+ <path d="${star5(sx,sy,7.4,3.2)}" fill="${done?`url(#${id}st)`:(L?'#eef0f5':'#3a3f4f')}" stroke="${done?'#a8700c':(L?'#9aa0b0':'#6b7186')}" stroke-width=".8" stroke-linejoin="round"/>
+ ${done?`<path d="M${fx(sx-2.4)} ${fx(sy-1.6)}L${fx(sx-1)} ${fx(sy-3.6)}" stroke="#fffbe6" stroke-width=".9" stroke-linecap="round"/>`:''}
+ ${bits}`;
+}
+
+/* ================= NEW 3: FRESH PAGE (seasonal, Jan 1 to 7) ================= */
+// The card is the top page of a new tear-off pad: a block of fresh pages under it, a red
+// cloth binding that caps the top corners, a torn strip of last year's page caught under
+// it with a corner that still shows 31, a ribbon bookmark and a little confetti left over.
+function freshUnder(f){
+ const {w,h,R}=f,L=f.c.light,anim=!f.still;
+ // Page block: 9 sheets stepping down and right, warmer the deeper they go.
+ let st='';const K=9,DX=.75,DY=1.45;
+ for(let i=K;i>=1;i--){const t=i/K,c=L?shade('#fbf8f0',1-t*.07):shade('#f1ebdc',1-t*.1);
+  st+=`<path d="${rrPath(i*DX,i*DY,w,h,R)}" fill="${c}" stroke="${L?'#c9bb98':'#a69676'}" stroke-width=".45"/>`}
+ // Ribbon bookmark out of the bottom of the pad.
+ const bx=Math.round(w*.16),rb=`M${bx-3.6} ${h-6}H${bx+3.6}V${h+19}L${bx} ${h+15.4}L${bx-3.6} ${h+19}Z`;
+ return `<defs><linearGradient id="rbg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8f2620"/><stop offset=".45" stop-color="#d9493e"/><stop offset="1" stop-color="#a42d25"/></linearGradient></defs>
+ <path d="${rrPath(K*DX+1,K*DY+2.4,w,h,R)}" fill="#000" fill-opacity="${L?.12:.42}"/>
+ ${st}
+ <g><path d="${rb}" fill="#000" fill-opacity=".25" transform="translate(.8 1)"/><path d="${rb}" fill="url(#rbg)"/><path d="M${bx-1.4} ${h}V${h+16}" stroke="#ff9a8e" stroke-opacity=".55" stroke-width=".7"/></g>`;
+}
+function freshOver(f){
+ const {w,h,R}=f,L=f.c.light,id=uid('fp'),anim=!f.still;
+ const OUT=7,IN=-2.6,NB=70;
+ const pts=(o)=>Array.from({length:NB+1},(_,i)=>topAt(f,o,i/NB));
+ const po=pts(OUT),pi=pts(IN);
+ const P=p=>fx(p.x)+' '+fx(p.y);
+ // Binding: caps the top edge and both top corners, 7 px out to 2.6 px in.
+ const bind='M'+po.map(P).join('L')+'L'+pi.slice().reverse().map(P).join('L')+'Z';
+ let weave='';for(let i=1;i<NB*2;i++){const a=topAt(f,OUT-1,i/(NB*2)),b=topAt(f,IN+1,(i-.6)/(NB*2));weave+=`M${P(a)}L${P(b)}`}
+ const hi='M'+pts(OUT-1).map(P).join('L');
+ const stitch='M'+pts(IN+1.3).map(P).join('L');
+ // Torn strip of last year's page under the binding: a ragged paper edge just inside the card.
+ const rnd=seeded(5);let rag='M'+P(pi[0]);const NR=120;
+ for(let i=0;i<=NR;i++){const u=i/NR,p=topAt(f,IN-(i%2?1+rnd()*2.4:.6+rnd()*1),u);rag+='L'+P(p)}
+ rag+='L'+pi.slice().reverse().map(P).join('L')+'Z';
+ // A bigger torn corner of the old page still hangs at the left, showing 31.
+ const fx0=R+2,fy=-IN;
+ const flap=`M${fx0} ${fy-.6}L${fx0+21} ${fy-.6}L${fx0+17.5} ${fy+5}L${fx0+13.6} ${fy+3.2}L${fx0+10} ${fy+8.6}L${fx0+6.4} ${fy+6}L${fx0+2.4} ${fy+10.6}L${fx0-1.6} ${fy+7.4}L${fx0-2} ${fy-.6}Z`;
+ const gp=[topAt(f,2.2,.3),topAt(f,2.2,.7)];
+ const grom=gp.map(p=>`<circle cx="${fx(p.x)}" cy="${fx(p.y)}" r="2.7" fill="url(#${id}m)" stroke="#6b4510" stroke-width=".6"/><circle cx="${fx(p.x)}" cy="${fx(p.y)}" r="1.6" fill="none" stroke="#7a4f12" stroke-width=".75"/><circle cx="${fx(p.x)}" cy="${fx(p.y)}" r="1.05" fill="#3a120e"/><path d="M${fx(p.x-1.7)} ${fx(p.y-1)}A2 2 0 0 1 ${fx(p.x+.4)} ${fx(p.y-2)}" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width=".6" stroke-linecap="round"/>`).join('');
+ // Confetti left over from last night, resting on the binding and on the page block.
+ const on=(u,o)=>{const p=topAt(f,o,u);return [p.x,p.y]};
+ const CF=[['#ffd34d','r',...on(.18,3),20],['#ff5fa2','r',...on(.56,4.2),-35],['#3fcf9e','c',...on(.83,2.6)],['#ffd34d','s',...on(.42,3.2)],['#6aa8ff','c',...on(.95,3.4)],
+  ['#3fcf9e','r',w*.38,h+8.6,-15],['#ffd34d','s',w*.6,h+9.4],['#ff5fa2','r',w*.8,h+8,30],['#6aa8ff','r',w+5.6,h*.7,75],['#ffd34d','c',w+5.4,h*.42]];
+ // Every third piece is bigger so they do not read as specks.
+ const conf=CF.map(([c,k,x,y,a=0],i)=>{const tw=anim&&c==='#ffd34d'?'tw':'',big=i%3===0?1.6:1;
+  if(k==='r')return `<g transform="translate(${fx(x)} ${fx(y)}) rotate(${a}) scale(${big})"><rect x="-2.5" y="-1.2" width="5" height="2.4" rx=".5" fill="#000" fill-opacity=".25" transform="translate(.4 .7)"/><rect class="${tw}" x="-2.5" y="-1.2" width="5" height="2.4" rx=".5" fill="${c}"/><rect x="-2.1" y="-.95" width="2.2" height=".65" fill="#fff" fill-opacity=".55"/></g>`;
+  if(k==='c')return `<circle cx="${fx(x+.4)}" cy="${fx(y+.7)}" r="${1.6*big}" fill="#000" fill-opacity=".25"/><circle class="${tw}" cx="${fx(x)}" cy="${fx(y)}" r="${1.6*big}" fill="${c}"/><circle cx="${fx(x-.5)}" cy="${fx(y-.5)}" r=".5" fill="#fff" fill-opacity=".75"/>`;
+  return `<path d="${star5(x+.4,y+.7,2.7*big,1.15*big)}" fill="#000" fill-opacity=".25"/><path class="${tw}" d="${star5(x,y,2.7*big,1.15*big)}" fill="${c}" stroke="#b07d10" stroke-width=".35"/>`}).join('');
+ return `<defs><linearGradient id="${id}b" x1="0" y1="${-OUT}" x2="0" y2="${-IN}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#e65a4e"/><stop offset=".55" stop-color="#c23b31"/><stop offset="1" stop-color="#8f2620"/></linearGradient>
+  <radialGradient id="${id}m" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff4cc"/><stop offset=".45" stop-color="#ddb04e"/><stop offset="1" stop-color="#8a5a14"/></radialGradient></defs>
+ <path d="${rag}" fill="#000" fill-opacity=".22" transform="translate(.4 .9)"/>
+ <path d="${rag}" fill="#f3ecdb" stroke="#c8b994" stroke-width=".4"/>
+ <g><path d="${flap}" fill="#000" fill-opacity=".22" transform="translate(.6 1.1)"/><path d="${flap}" fill="#f7f1e3" stroke="#c8b994" stroke-width=".45"/>${digits(31,fx0+7.4,fy+3.2,'#c8352c',.78)}</g>
+ <path d="${bind}" fill="#000" fill-opacity="${L?.16:.38}" transform="translate(.3 1.5)"/>
+ <path d="${bind}" fill="url(#${id}b)" stroke="#6e1a15" stroke-width=".6"/>
+ <path d="${weave}" stroke="#fff" stroke-opacity=".08" stroke-width=".7"/>
+ <path d="${hi}" fill="none" stroke="#ffb3a8" stroke-opacity=".75" stroke-width=".9" stroke-linecap="round"/>
+ <path d="${stitch}" fill="none" stroke="#ffd98a" stroke-opacity=".8" stroke-width=".6" stroke-dasharray="1.6 1.2"/>
+ ${grom}${conf}`;
+}
+
+/* ================= Existing frames, recreated roughly from art.jsx ================= */
+function goldUnder(f){const id=uid('gd');let halo='';for(let i=0;i<3;i++){const k=-10-1-i*2;halo+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="#e2b75a" stroke-width="2" stroke-opacity="${fx(.18*Math.pow(1-i/3,1.6))}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a5414"/><stop offset=".22" stop-color="#f8dc8a"/><stop offset=".4" stop-color="#b8892b"/><stop offset=".52" stop-color="#fff1c2"/><stop offset=".66" stop-color="#a87a24"/><stop offset=".84" stop-color="#f3d27a"/><stop offset="1" stop-color="#7a5414"/></linearGradient></defs>${halo}<path d="${ring(f,10)}" fill="url(#${id})"/><path d="${ring(f,9.5)}" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1"/>`}
+function goldHtml(f){const o=10;return `<div style="position:absolute;left:${PAD-o}px;top:${PAD-o}px;width:${f.w+2*o}px;height:${f.h+2*o}px;border-radius:${f.R+o}px;overflow:hidden"><div class="sweep" style="position:absolute;inset:-40% -60%;background:linear-gradient(100deg,transparent 44%,rgba(255,255,255,.6) 50%,transparent 56%)"></div></div>`}
+function goldOver(f){const id='gg'+uid('');const art=`<path d="M6 58 C6 26 26 6 58 6" fill="none" stroke="url(#${id})" stroke-width="3"/><path d="M14 54 C16 32 32 16 54 14" fill="none" stroke="url(#${id})" stroke-width="1.6"/><path d="M6 22 q10 -2 12 -12 q2 10 12 12 q-10 2 -12 12 q-2 -10 -12 -12z" fill="url(#${id})"/><circle cx="34" cy="34" r="3" fill="url(#${id})"/><path d="M40 8 q6 4 4 10 M8 40 q4 6 10 4" fill="none" stroke="url(#${id})" stroke-width="1.4"/>`;
+ const off=-14;return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1c2"/><stop offset=".5" stop-color="#e2b75a"/><stop offset="1" stop-color="#8a6420"/></linearGradient></defs>`+[[off,off,0],[f.w-off,off,90],[f.w-off,f.h-off,180],[off,f.h-off,270]].map(([x,y,a])=>`<g transform="translate(${x} ${y}) rotate(${a})">${art}</g>`).join('')}
+function auroraUnder(f){const id=uid('au');let h='';const steps=f.still?3:15;for(let i=0;i<steps;i++){const k=-3-1-i*2;h+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="url(#${id})" stroke-width="2" stroke-opacity="${fx(.42*Math.pow(1-i/steps,1.6))}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#46f0c0"/><stop offset=".35" stop-color="#6aa8ff"/><stop offset=".7" stop-color="#c38bff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient></defs><g class="breatheO">${h}</g>`}
+function auroraHtml(f){const o=3,D=Math.hypot(f.w,f.h)+20;return `<div style="position:absolute;left:${PAD-o}px;top:${PAD-o}px;width:${f.w+2*o}px;height:${f.h+2*o}px;border-radius:${f.R+o}px;overflow:hidden"><div class="spin" style="position:absolute;width:${D}px;height:${D}px;left:${(f.w+2*o-D)/2}px;top:${(f.h+2*o-D)/2}px;background:conic-gradient(#46f0c0,#6aa8ff,#c38bff,#ff7ad9,#46f0c0)"></div></div>`}
+function litPath(p,r){const waxing=p<.5,k=Math.cos(2*Math.PI*p),rx=Math.abs(k)*r,cres=Math.abs(p-.5)>.25;
+ return `M0 ${-r}A${r} ${r} 0 0 ${waxing?1:0} 0 ${r}A${fx(rx)} ${r} 0 0 ${waxing?(cres?0:1):(cres?1:0)} 0 ${-r}Z`}
+function moonDisc(p,r,id){return `<circle r="${r}" fill="#262c3a"/><path d="${litPath(p,r)}" fill="url(#${id})"/><circle r="${r}" fill="none" stroke="rgba(241,230,196,.35)" stroke-width=".8"/>`}
+function moonOver(f){const id=uid('mn'),p=.62;let week='';for(let i=0;i<7;i++){const q=(p-.0339*(6-i)+1)%1,t=i===6;week+=`<g transform="translate(${fx(f.w*(.12+i*.127))} ${f.h+1})">${t?`<circle r="12" fill="none" stroke="rgba(241,230,196,.6)"/>`:''}${moonDisc(q,t?8:6.5,id)}</g>`}
+ return `<defs><radialGradient id="${id}" cx=".4" cy=".35" r=".6"><stop offset="0" stop-color="#fffaf0"/><stop offset=".7" stop-color="#f1e6c4"/><stop offset="1" stop-color="#d8c99a"/></radialGradient><radialGradient id="${id}h"><stop offset="0" stop-color="#f1e6c4" stop-opacity=".43"/><stop offset="1" stop-color="#f1e6c4" stop-opacity="0"/></radialGradient></defs>
+ <path d="${openTopPath(f.w,f.h,f.R,34)}" fill="none" stroke="rgba(241,230,196,.55)" stroke-width="1.5"/><g transform="translate(${f.w/2} -2)"><circle r="44" fill="url(#${id}h)"/>${moonDisc(p,20,id)}<circle r="5" cx="-6" cy="4" fill="rgba(0,0,0,.08)"/><circle r="3" cx="7" cy="-7" fill="rgba(0,0,0,.07)"/></g>${week}`}
+function ropeOver(f){return `<path d="${ring(f,7)}" fill="none" stroke="#c99b62" stroke-width="7"/><path d="${ring(f,7)}" fill="none" stroke="#8a5f35" stroke-width="7" stroke-dasharray="6 6"/><path d="${ring(f,7)}" fill="none" stroke="#f0d3a6" stroke-opacity=".5" stroke-width="2" stroke-dasharray="6 6" stroke-dashoffset="3"/>`}
+function trainOver(f){const o=12,pid=uid('tp'),ties=spots(f,o,46).map(t=>`<rect x="${fx(t.x-1.5)}" y="${fx(t.y-6)}" width="3" height="12" rx="1" fill="#6b4a2e" transform="rotate(${fx(t.ang*180/Math.PI)} ${fx(t.x)} ${fx(t.y)})"/>`).join('');
+ const W=f.w+2*o,H=f.h+2*o,L=rrLength(W,H,f.R+o),dur=L/26;
+ const cars=[[0,'engine'],[26,'blue'],[50,'buddy']].map(([gap,k])=>{const body=k==='engine'?`<rect x="-11" y="-7" width="22" height="13" rx="3" fill="#ef6a5b"/><rect x="2" y="-12" width="8" height="7" rx="1.5" fill="#c94a3c"/><rect x="-9" y="-11" width="5" height="5" fill="#333"/>`:`<rect x="-9" y="-6" width="18" height="11" rx="2.5" fill="${k==='blue'?'#7bd3ff':'#ffd166'}"/>`+(k==='buddy'?`<g transform="translate(-7 -16) scale(.3)">${catHead(0,false,'')}</g>`:'');
+  const wheels=`<circle cx="-5" cy="6" r="2.8" fill="#222"/><circle cx="5" cy="6" r="2.8" fill="#222"/>`;
+  if(f.still){const p=rrPointAt(-o,-o,W,H,f.R+o,L*.45-gap);return `<g transform="translate(${fx(p.x)} ${fx(p.y)}) rotate(${fx(p.ang*180/Math.PI)})">${body}${wheels}</g>`}
+  return `<g>${body}${wheels}<animateMotion dur="${fx(dur)}s" begin="${-fx(dur*.45-gap/26)}s" repeatCount="indefinite" rotate="auto"><mpath href="#${pid}"/></animateMotion></g>`}).join('');
+ return `<defs><radialGradient id="CATG" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#f7b864"/><stop offset="1" stop-color="#e8963a"/></radialGradient></defs><path id="${pid}" d="${ring(f,o)}" fill="none"/>${ties}<path d="${ring(f,o+3.5)}" fill="none" stroke="#9aa3b5" stroke-width="1.6"/><path d="${ring(f,o-3.5)}" fill="none" stroke="#9aa3b5" stroke-width="1.6"/>${cars}`}
+const BULBS=['#ffd166','#ff6b9a','#7bd3ff','#9be36b','#c79bff'];
+function lightsOver(f){const q=Math.max(6,Math.min(8,f.p.total||6)),n=q*2,pins=spots(f,12,n,.5/n);let out=`<path d="${ring(f,12)}" fill="none" stroke="#6b7060" stroke-width="1.4"/>`;
+ pins.forEach((p,i)=>{const k=Math.floor(i/2),on=k<(f.p.answered||0),bx=p.x+p.nx*6,by=p.y+p.ny*6,deg=fx(p.ang*180/Math.PI),col=BULBS[k%5];
+  out+=`<line x1="${fx(p.x)}" y1="${fx(p.y)}" x2="${fx(bx)}" y2="${fx(by)}" stroke="#6b7060" stroke-width="1.2"/><rect x="${fx(p.x+p.nx*3-2.2)}" y="${fx(p.y+p.ny*3-2.2)}" width="4.4" height="4.4" rx="1" fill="#8a8f9c" transform="rotate(${deg} ${fx(p.x+p.nx*3)} ${fx(p.y+p.ny*3)})"/>`+
+  (on?`<circle cx="${fx(bx)}" cy="${fx(by)}" r="9" fill="${col}" opacity=".3"/><ellipse cx="${fx(bx)}" cy="${fx(by)}" rx="4.6" ry="6.4" transform="rotate(${deg} ${fx(bx)} ${fx(by)})" fill="${col}" stroke="#fff" stroke-width=".8"/>`:`<ellipse cx="${fx(bx)}" cy="${fx(by)}" rx="4.6" ry="6.4" transform="rotate(${deg} ${fx(bx)} ${fx(by)})" fill="#363b47" stroke="#5a606e" stroke-width=".8"/>`)});return out}
+function snowOver(f){const sx=(f.w+8)/300,cap='M0 18 Q10 6 22 14 Q34 2 48 12 Q62 0 78 12 Q92 4 108 13 Q124 2 140 12 Q156 4 172 12 Q188 0 204 12 Q220 4 236 13 Q252 2 268 12 Q284 4 300 14 L300 26 L0 26 Z';
+ const rnd=seeded(52);let fl='';if(!f.still)for(let i=0;i<22;i++){const r=.8+rnd()*2.2;fl+=`<circle class="fall" style="animation-duration:${(6+rnd()*6).toFixed(1)}s;animation-delay:${-(rnd()*10).toFixed(1)}s" cx="${fx(rnd()*f.w)}" cy="0" r="${fx(r)}" fill="${f.c.snow}" opacity="${fx(.5+r/5)}"/>`}
+ return `<path d="${ring(f,.5)}" fill="none" stroke="rgba(220,235,255,.5)"/><g transform="translate(-4 -10) scale(${fx(sx)} 1)"><path d="${cap}" fill="#f4f8ff"/><path d="M0 22 L300 22" stroke="#dbe6f5" stroke-width="2"/></g>${fl}`}
+// Closest relatives, rough redraws of art.jsx / art-living.jsx.
+const GG=`<linearGradient id="GGX" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1c2"/><stop offset=".5" stop-color="#e2b75a"/><stop offset="1" stop-color="#8a6420"/></linearGradient>`;
+function decoUnder(f){return `<defs>${GG}</defs><path d="${ring(f,10)}" fill="#0c0c0c"/>`+[9,4.5,.75].map((k,i)=>`<path d="${ring(f,k)}" fill="none" stroke="#e2b75a" stroke-width="${[2,1,1.5][i]}"/>`).join('')}
+function decoOver(f){const art=`<path d="M3 3 L50 3 A47 47 0 0 1 3 50 Z" fill="none" stroke="url(#GGX)" stroke-width="2"/><path d="M3 3 L36 3 A33 33 0 0 1 3 36 Z" fill="none" stroke="url(#GGX)" stroke-width="1.4"/><path d="M3 3 L20 3 A17 17 0 0 1 3 20 Z" fill="url(#GGX)"/>`+[15,30,45,60,75].map(a=>`<line x1="3" y1="3" x2="${fx(3+47*Math.cos(a*Math.PI/180))}" y2="${fx(3+47*Math.sin(a*Math.PI/180))}" stroke="url(#GGX)"/>`).join('');
+ const id=uid('dc');return `<defs>${GG}<clipPath id="${id}"><path d="${ring(f,10)}"/></clipPath></defs><g clip-path="url(#${id})">`+[[-16,-16,0],[f.w+16,-16,90],[f.w+16,f.h+16,180],[-16,f.h+16,270]].map(([x,y,a])=>`<g transform="translate(${x} ${y}) rotate(${a})">${art}</g>`).join('')+`</g>`}
+function marbleUnder(f){const id=uid('mb'),W=f.w+20,H=f.h+20,rnd=seeded(7);let v='';for(let i=0;i<9;i++){const y0=-10+rnd()*H,y1=y0+(rnd()-.3)*H*.7;v+=`<path d="M-14 ${fx(y0)}C${fx(W*.3)} ${fx(y0+(rnd()-.5)*120)} ${fx(W*.6)} ${fx(y1+(rnd()-.5)*120)} ${fx(W+4)} ${fx(y1)}" fill="none" stroke="#8a857c" stroke-width="${fx(.6+rnd()*1.8)}" stroke-opacity="${fx(.25+rnd()*.35)}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2f0ec"/><stop offset=".45" stop-color="#dcd8d1"/><stop offset=".7" stop-color="#ece9e4"/><stop offset="1" stop-color="#c9c4bb"/></linearGradient><clipPath id="${id}c"><path d="${ring(f,10)}"/></clipPath></defs><path d="${ring(f,10)}" fill="url(#${id})"/><g clip-path="url(#${id}c)">${v}</g>`}
+const COIN_RIM='M2 0h3v1H2zM1 1h1v1H1zM5 1h1v1H5zM0 2h1v3H0zM6 2h1v3H6zM1 5h1v1H1zM5 5h1v1H5zM2 6h3v1H2z',COIN_FACE='M2 1h3v1H2zM1 2h5v3H1zM2 5h3v1H2z',COIN_GLINT='M2 2h1v2H2zM3 2h1v1H3z';
+function pixelOver(f){const {w,h}=f;return `<rect x="-2" y="-2" width="${w+4}" height="${h+4}" rx="${f.R+2}" fill="none" stroke="${f.c.accent}" stroke-width="4"/><rect x="-6" y="-6" width="${w+12}" height="${h+12}" rx="${f.R+6}" fill="none" stroke="${f.c.card}" stroke-width="4"/><rect x="-10" y="-10" width="${w+20}" height="${h+20}" rx="${f.R+10}" fill="none" stroke="${f.c.ink}" stroke-width="4"/>`+[[-14,-14],[w-14,-14],[-14,h-14],[w-14,h-14]].map(([x,y])=>`<g transform="translate(${x} ${y}) scale(4)"><path d="${COIN_FACE}" fill="#f5c542"/><path d="${COIN_GLINT}" fill="#fff1b8"/><path d="${COIN_RIM}" fill="#9a6a12"/></g>`).join('')}
+function swipeOver(f){const id=uid('sw'),v=.6;return `<defs><linearGradient id="${id}w" x1="0" y1="0" x2="1" y2="0"><stop offset=".35" stop-color="${f.c.accent}" stop-opacity="0"/><stop offset="1" stop-color="${f.c.accent}"/></linearGradient></defs><g opacity="${.2+.8*v}"><path d="${ring(f,9)}" fill="none" stroke="url(#${id}w)" stroke-width="8" stroke-opacity=".22"/><path d="${ring(f,5)}" fill="none" stroke="url(#${id}w)" stroke-width="2.5"/></g>`}
+function notebookOver(f){let s='';for(let y=26;y<f.h-20;y+=16)s+=`<ellipse cx="-2" cy="${y}" rx="7" ry="3" fill="none" stroke="#9aa3b5" stroke-width="2"/><circle cx="6" cy="${y}" r="2" fill="${f.c.bg}"/>`;return `<path d="M30 6V${f.h-6}" stroke="#ef6a5b" stroke-opacity=".7" stroke-width="1.4"/>${s}`}
+function fireworksOver(f){const b=[[6,-10,'#ffd166',18],[f.w-8,-8,'#ff6b9a',15],[f.w/2,-18,'#8ad1ff',11]];return `<path d="${ring(f,6)}" fill="none" stroke="#f2c45a" stroke-width="3"/>`+b.map(([x,y,c,k])=>Array.from({length:10},(_,j)=>{const a=j/10*Math.PI*2;return `<line x1="${fx(x+Math.cos(a)*k*.35)}" y1="${fx(y+Math.sin(a)*k*.35)}" x2="${fx(x+Math.cos(a)*k)}" y2="${fx(y+Math.sin(a)*k)}" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`}).join('')).join('')}
+
+const FR={
+ mosaic:{name:'Mosaic',kind:'Coin · 120 coins · still',over:mosaicOver},
+ domino:{name:'Domino Run',kind:'Gem · 3 gems · living',over:dominoOver},
+ fresh:{name:'Fresh Page',kind:'Seasonal · free Jan 1 to 7 · kept after',under:freshUnder,over:freshOver},
+ gold:{name:'Gold leaf',under:goldUnder,html:goldHtml,over:goldOver},
+ aurora:{name:'Aurora',under:auroraUnder,html:auroraHtml},
+ moon:{name:"Tonight's moon",over:moonOver},
+ deco:{name:'Art Deco',under:decoUnder,over:decoOver},
+ marble:{name:'Marble',under:marbleUnder},
+ pixel:{name:'8-bit',over:pixelOver},
+ train:{name:'Buddy Train',over:trainOver},
+ swipe:{name:'Swipe Glow',over:swipeOver},
+ notebook:{name:'Notebook',over:notebookOver},
+ fireworks:{name:'Fireworks',over:fireworksOver},
+};
+
+/* ================= Page ================= */
+const LOOKS={
+ lime:{dark:{bg:'#0e1014',card:'#16191f',line:'#2b3140',on:'#c9f24d',onInk:'#101208',ink:'#f4f6fa',soft:'#99a1b0',dim:'#7c838f',miss:'#ff6f61',chip:'#242935'},
+       light:{bg:'#eef1e6',card:'#ffffff',line:'#cfd4c4',on:'#567510',onInk:'#ffffff',ink:'#1a1d16',soft:'#4a5240',dim:'#697060',miss:'#c44536',chip:'#e8ebdf'}},
+ sky:{dark:{bg:'#0a0d14',card:'#10151f',line:'#253247',on:'#4aa8ff',onInk:'#06121f',ink:'#f4f6fa',soft:'#99a1b0',dim:'#7c838f',miss:'#ff6f61',chip:'#1b2433'},
+      light:{bg:'#e7eff9',card:'#f6faff',line:'#b7cce6',on:'#1766c2',onInk:'#ffffff',ink:'#141a22',soft:'#4a5566',dim:'#6a7486',miss:'#c44536',chip:'#dbe7f5'}},
+ maple:{dark:{bg:'#140c0a',card:'#1f1410',line:'#462d26',on:'#fa774f',onInk:'#1a0904',ink:'#f8f0ec',soft:'#b3a19a',dim:'#8a7770',miss:'#ff6f61',chip:'#32211c'},
+        light:{bg:'#f9ebe7',card:'#fff8f6',line:'#e5c3b8',on:'#be411b',onInk:'#ffffff',ink:'#22140f',soft:'#5e4a42',dim:'#806a62',miss:'#c44536',chip:'#f4e1dc'}}};
+let THEME='dark',LOOK='lime';
+
+function bigCard(pal,f){const P=f.p,all=P.total>0&&P.answered>=P.total;
+ return `<div class="card" style="left:${PAD}px;top:${PAD}px;width:${f.w}px;height:${f.h}px;border-radius:${f.R}px;background:${pal.card};border:1px solid ${pal.line};color:${pal.ink};padding:22px">
+ <span class="k" style="color:${pal.on}">${all?'ALL DONE TONIGHT':`TONIGHT · ${Math.min(P.total,P.answered+(P.skipped||0)+1)} OF ${P.total}`}</span><span class="chip" style="background:${pal.chip};color:${pal.soft}">Health</span>
+ <div class="q">${all?'That was the last one. Sleep well.':P.q||'Did I take my vitamins?'}</div>
+ <div class="s" style="color:${pal.soft}">6 night streak</div>
+ ${all?'':`<div class="pills"><span class="pill" style="border:1px solid ${pal.line};color:${pal.ink}">Nope</span><span class="pill" style="background:${pal.on};color:${pal.onInk}">Did</span></div>`}</div>`}
+function miniCard(pal,f,id){const wk=[1,1,1,1,0,1,1];
+ return `<div class="card" style="left:${PAD}px;top:${PAD}px;width:${f.w}px;height:${f.h}px;border-radius:${f.R}px;background:${pal.card};border:2px solid ${pal.line}">
+ <div style="position:absolute;left:24px;top:28px;width:58px;height:10px;border-radius:5px;background:${pal.on}"></div>
+ <div style="position:absolute;left:24px;top:54px;width:160px;height:18px;border-radius:9px;background:${pal.ink}"></div>
+ <div style="position:absolute;left:24px;top:80px;width:104px;height:18px;border-radius:9px;background:${pal.ink}"></div>
+ ${id==='moon'?'':`<div style="position:absolute;left:24px;right:24px;bottom:30px;display:flex;justify-content:space-between">${wk.map(o=>`<i style="width:16px;height:16px;border-radius:50%;background:${o?pal.on:pal.miss}"></i>`).join('')}</div>`}</div>`}
+
+function framed(id,{theme=THEME,look=LOOK,zoom=1,mini=false,still=false,p={}}={}){
+ const pal=LOOKS[look][theme],light=theme==='light';
+ const w=mini?220:300,h=mini?264:340,R=mini?30:24;
+ const f={w,h,R,still,c:{light,accent:pal.on,card:pal.card,bg:pal.bg,ink:pal.ink,snow:light?pal.dim:'#ffffff'},p:{answered:2,total:4,skipped:0,evening:.5,date:{m:1,d:1},...p}};
+ const F=FR[id],svg=s=>`<svg class="lay" viewBox="${-PAD} ${-PAD} ${w+2*PAD} ${h+2*PAD}" width="${w+2*PAD}" height="${h+2*PAD}" aria-hidden="true">${s}</svg>`;
+ return `<div class="fw ${still?'still':''}" style="width:${w+2*PAD}px;height:${h+2*PAD}px;zoom:${zoom}">${F.under?svg(F.under(f)):''}${F.html?F.html(f):''}${mini?miniCard(pal,f,id):bigCard(pal,f)}${F.over?svg(F.over(f)):''}</div>`}
+function stage(id,cap,opts){const pal=LOOKS[opts.look||LOOK][opts.theme||THEME];return `<div class="stage" style="background:${pal.bg}">${framed(id,opts)}<div class="cap">${cap}</div></div>`}
+function tile(id,theme,p={},label){const pal=LOOKS[LOOK][theme];const k=.36,W=316*k,H=360*k;
+ return `<div class="tilecol"><div class="tile" style="background:${pal.bg};border:1px solid ${pal.line}"><div style="position:absolute;left:${(120-W)/2}px;top:${(144-H)/2}px">${framed(id,{theme,mini:true,still:true,zoom:k,p})}</div></div><div class="tl">${label||FR[id].name}</div></div>`}
+
+const COPY={
+ mosaic:{desc:'Small glazed tiles set by hand round your card, with a few gold ones that catch the light.',f:['Hand-set tiles in grout','Gold tiles catch the light','Stays still']},
+ domino:{desc:'A loop of dominoes stands round your card. Each answer knocks over the next run, and the star at the end lights up when tonight is done.',f:['A run falls for each answer','Not yet leaves one tipped','The star lights when you finish']},
+ fresh:{desc:'Your card as the top page of a new pad, with last year torn off and a little confetti left over.',f:['A stack of new pages','Last year torn off the top','Free January 1 to 7, yours to keep']},
+};
+const REVIEW={
+ mosaic:[['Want it?','Yes. It feels made by hand: every tile is cut a little differently, glazed, edged with light and set in real grout, and the gold tiles glint. A calm, crafted coin frame for the new year at the top price.'],
+  ['Different?','Closest are Art Deco (black slab, gold rings, corner fans), Marble (a smooth stone slab with veins) and 8-bit (three flat color rings and pixel coins). Mosaic is the only one made of many small separate pieces with grout lines, and its colors are its own.'],
+  ['Finish','Two courses of hand-cut tiles that fan round the curves, three glaze shades per color, a light edge on the side facing the light and a dark edge on the far side, a small wet glint on some tiles, gold tiles under a shifting gold gradient with a few four-point glints, a grout bed with a darker rim and a drop shadow.'],
+  ['Tile','Reads as a blue and cream tiled rim with gold flecks. The grout lines stay visible at tile size.'],
+  ['Corners and text','Inner course from 1 to 7 px out, following the card radius. The outer course runs down the sides and along the bottom to 14 px, and tapers out round the top corners so the top stays at 8 px. Nothing inside the card.'],
+  ['Looks and themes','Fixed glaze colors, no accent, so it works with every look. Grout is pale in light mode and dark grey in dark mode, so the band never glares on a dark page.'],
+  ['Motion','None. Coin frame.'],['Copy','Short, plain, no em dashes.']],
+ domino:[['Want it?','Yes. It turns answering into knocking over dominoes, which is fun to watch every night, and finishing tonight lights a star. The colored runs show how far you are at a glance.'],
+  ['Different?','Closest are Buddy Train (a train rides round the card) and Swipe Glow (the rim warms with your swipe). String Lights lights a bulb per answer; Domino Run has a physical chain reaction: whole runs topple into shingles with pips, Not yet tips one domino, and the swipe leans the next one.'],
+  ['Finish','Seen from above, on a soft mat: standing dominoes show a glossy colored top with a lit side and a dark side and cast a shadow; fallen ones lie face up in overlapping shingles with pips, a divider line, a colored side stripe and a soft shadow. The star where the run closes is pewter until tonight is done, then gold with a glow, rays and confetti dots.'],
+  ['Tile','Shows a half-fallen run: ivory shingles on two sides and colored runs still standing on the rest, with the star. Reads as dominoes at tile size.'],
+  ['Corners and text','The run sits 2 to 15 px out down the left side, along the bottom and up the right side, following the card corners. The top edge stays clear. The marble and the star sit in the side gutters by the top corners, at most 2 px above the card; burst sparkles are placed only outside the card and never more than 7 px above it.'],
+  ['Looks and themes','Ivory faces and their own section colors, no accent, so every look works. The mat and shadows are lighter in light mode; the unlit star switches to pale pewter.'],
+  ['Motion','When an answer lands, that question\'s run falls domino by domino (about 75 ms apart, a short click-clack), then rests. A Not yet tips the first domino of its run. Dragging toward Did leans the next domino. When all are in, the star bursts, then breathes while a soft glint runs along the fallen run every 6 s. Everything rests with Less motion.'],['Copy','Short, plain, no em dashes.']],
+ fresh:[['Want it?','Yes. It is free, it only comes once a year, and it says new start the first week of January. Kept after, it makes any card feel like a page from a real pad.'],
+  ['Different?','Closest seasonal one is Fireworks (gold ring and bursts, Dec 31 to Jan 2). Fresh Page is quiet paper, the morning after. Closest in look is Notebook (spiral and margin line) and Polaroid (photo border); Fresh Page is a pad: a page block, a cloth binding with grommets and a torn stub.'],
+  ['Finish','A block of seven page edges stepping down and right with a soft shadow; a red cloth binding with a lit top edge, gold stitching and two metal grommets; a ragged strip of last year\'s page under it and a bigger torn corner with a red 31; the page under the card lifting at one corner; confetti with shadows and glints.'],
+  ['Tile','A red top strip on a cream page block reads as a tear-off pad at tile size.'],
+  ['Corners and text','The binding rises 7 px above the card and reaches 2 px over its top edge; the torn stub reaches about 10 px into the card in the top-left corner, above the first line of text. The page block reaches 9 px right and 13 px down. Confetti sits outside the card.'],
+  ['Looks and themes','Paper, red cloth and confetti have their own colors, no accent. The paper is a little warmer in dark mode so it does not glare.'],
+  ['Motion','The torn corner lifts in a slow draft, the page under the card lifts and settles, gold confetti twinkles. All loop cleanly and stop with Less motion.'],['Copy','Short, plain, no em dashes.']]};
+
+function section(id,cards,tp){const C=COPY[id];return `<section class="opt"><span class="tag">${FR[id].kind}</span><h3>${FR[id].name}</h3><p>${C.desc}</p><ul class="feat">${C.f.map(x=>`<li>${x}</li>`).join('')}</ul>
+ <div class="row">${cards}</div>
+ <div class="tiles">${tile(id,'dark',tp,'Dark tile')}${tile(id,'light',tp,'Light tile')}</div>
+ <div class="review">${REVIEW[id].map(([a,b])=>`<div><b>${a}</b> ${b}</div>`).join('')}</div></section>`}
+
+const TILEP={domino:{answered:2,total:4},mosaic:{},fresh:{}};
+function render(){
+ const z=.8;
+ const out=[];
+ out.push(section('mosaic',stage('mosaic','Around the card',{zoom:z})+stage('mosaic','Other theme',{zoom:z,theme:THEME==='dark'?'light':'dark'})+stage('mosaic','Maple look',{zoom:z,look:'maple'}),TILEP.mosaic));
+ out.push(section('domino',
+  stage('domino','0 of 4 · all standing',{zoom:z,p:{answered:0,total:4}})+
+  stage('domino','2 of 4 · run 2 falling',{zoom:z,p:{answered:2,total:4,falling:true}})+
+  stage('domino','2 of 4 · 1 not yet',{zoom:z,p:{answered:2,skipped:1,total:4}})+
+  stage('domino','Dragging toward Did',{zoom:z,p:{answered:1,total:4,pull:1}})+
+  stage('domino','All 4 · star lit',{zoom:z,p:{answered:4,total:4}}),TILEP.domino));
+ out.push(section('fresh',stage('fresh','Around the card',{zoom:z})+stage('fresh','Other theme',{zoom:z,theme:THEME==='dark'?'light':'dark'})+stage('fresh','Sky look',{zoom:z,look:'sky'}),TILEP.fresh));
+ const cz=.46,sets=[['mosaic',['deco','marble','pixel'],{}],['domino',['train','swipe'],{answered:2,total:4}],['fresh',['fireworks','notebook'],{}]];
+ out.push(`<section class="opt" id="cmp"><span class="tag">Side by side</span><h3>Next to the best frames</h3><p>Each new frame next to its closest relatives and the three showpieces: Gold leaf, Aurora and Tonight's moon. Same card, same look, same theme.</p>
+ ${sets.map(([id,near,p])=>`<div class="cmp"><h4>${FR[id].name}</h4><div class="row">${[id,...near,'gold','aurora','moon'].map(k=>stage(k,FR[k].name+(near.includes(k)?' (closest)':''),{zoom:cz,p})).join('')}</div></div>`).join('')}</section>`);
+ const all=['mosaic','domino','fresh','deco','marble','pixel','train','swipe','fireworks','notebook','gold','aurora','moon'];
+ out.push(`<section class="opt" id="tiles"><span class="tag">Tiles</span><h3>All frames, still</h3><p>The shop and Collection draw a 220 by 264 mini card and scale it to the tile, with no motion. Top row dark, bottom row light.</p>
+ <div class="tiles">${all.map(k=>tile(k,'dark',TILEP[k]||{answered:4,total:4})).join('')}</div>
+ <div class="tiles">${all.map(k=>tile(k,'light',TILEP[k]||{answered:4,total:4})).join('')}</div></section>`);
+ document.getElementById('out').innerHTML=out.join('');
+}
+function seg(id,fn){const s=document.getElementById(id);s.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;s.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v);render()})}
+seg('theme',v=>{THEME=v;document.body.classList.toggle('light',v==='light')});
+seg('look',v=>LOOK=v);
+seg('motion',v=>document.body.classList.toggle('nomotion',v==='off'));
+const q=new URLSearchParams(location.search);if(q.get('theme')==='light'){THEME='light';document.body.classList.add('light');document.querySelectorAll('#theme button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v==='light'))}
+if(q.get('look')&&LOOKS[q.get('look')]){LOOK=q.get('look');document.querySelectorAll('#look button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===LOOK))}
+if(q.has('nomo'))document.body.classList.add('nomotion');
+// ?solo=domino&z=3&a=2&s=1&pull=1&fall=1&crop=x,y,w,h draws one card big, for close checks.
+if(q.get('solo')){const id=q.get('solo'),z=+(q.get('z')||2);document.querySelector('header').remove();document.querySelector('.controls').remove();
+ const opts={zoom:1,still:q.has('still'),mini:q.has('mini'),theme:q.get('theme')||'dark',p:{answered:+(q.get('a')??2),skipped:+(q.get('s')??0),total:+(q.get('t')??4),pull:+(q.get('pull')??0),falling:q.has('fall'),evening:.5,date:{m:1,d:1}}};
+ const c=(q.get('crop')||'0,0,396,436').split(',').map(Number),pal=LOOKS[LOOK][opts.theme];
+ document.body.innerHTML=`<div style="width:${c[2]*z}px;height:${c[3]*z}px;overflow:hidden;position:relative;background:${pal.bg}"><div style="position:absolute;left:0;top:0;transform-origin:0 0;transform:scale(${z}) translate(${-c[0]}px,${-c[1]}px)">${framed(id,opts)}</div></div>`}
+else render();
+// ?only=cmp or ?only=tiles keeps one section, for screenshots.
+if(q.get('only')){const keep=document.getElementById(q.get('only'));document.querySelector('header').remove();document.querySelector('.controls').remove();document.querySelector('.notes').remove();document.querySelectorAll('#out>section').forEach(s=>{if(s!==keep)s.remove()})}
+</script>
+</body></html>

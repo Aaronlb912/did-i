@@ -36,6 +36,14 @@ export function Boards({
       setTitleDraft(book.title)
       return
     }
+    if (title === book.title) return
+    // Same name as another folder: saving would merge the two.
+    if ((boards || []).some((item) => item.id !== book.id && String(item.title || '').trim().toLowerCase() === title.toLowerCase())) {
+      setAddMiss(t('boards.addSame'))
+      setTitleDraft(book.title)
+      return
+    }
+    setAddMiss('')
     onChange({ ...book, title })
   }
 

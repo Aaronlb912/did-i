@@ -10,8 +10,18 @@ import {
   graceNightIso,
   openFloorIso,
 } from './recurrence.js'
+import { noteZone, travelSkipped, withTravelSkips } from './travel.js'
 
 const CLOSE_CAP = 400
+
+// The auto-close nope is stamped at the start of its night so a real tap
+// from any device wins every newer-wins compare.
+function nightStart(dateIso) {
+  const date = parseIsoDate(dateIso)
+  if (!date) return new Date()
+  date.setHours(0, 0, 0, 0)
+  return date
+}
 
 export function nightEnd(dateIso) {
   const date = parseIsoDate(dateIso)
@@ -53,22 +63,28 @@ function closeOnceRows(book, now) {
 }
 
 // Unanswered due nights before today become nope when the day turns.
-export function closePastNights(book, now = new Date()) {
-  let next = book
-  let changed = false
+// A night skipped by flying over the date line is left alone.
+export function closePastNights(book, now = new Date(), skips = noteZone(now, undefined, undefined, book?.travelSkips)) {
+  let next = withTravelSkips(book, skips)
+  let changed = next !== book
   for (let step = 0; step < CLOSE_CAP; step += 1) {
     const grace = graceNightIso(now)
-    const rows = catchUpRows(next, now).filter((row) => row.dateIso !== grace)
+    const book = next
+    const rows = catchUpRows(book, now, (iso) => travelSkipped(book, iso)).filter((row) => row.dateIso !== grace)
     if (!rows.length) break
     for (const row of rows) {
-      next = putAnswer(next, row, 'skip', nightEnd(row.dateIso))
+      next = putAnswer(next, row, 'skip', nightStart(row.dateIso))
       changed = true
     }
   }
   for (const row of closeOnceRows(next, now)) {
-    if (row.dateIso === graceNightIso(now)) continue
+    if (row.dateIso === graceNightIso(now) || travelSkipped(next, row.dateIso)) continue
     if (answerFor(next, row.lamp.id, row.periodKey)) continue
-    next = putAnswer(next, row, 'skip', nightEnd(row.dateIso))
+    // A 'by' question spans created..due. Stamped at the window's start, a
+    // Did tapped on any earlier day in it still wins a merge.
+    const lamp = row.lamp
+    const at = lamp.onceWhen === 'by' ? String(lamp.createdOn || '').slice(0, 10) || row.dateIso : row.dateIso
+    next = putAnswer(next, row, 'skip', nightStart(at))
     changed = true
   }
   // A one-time question whose day (or due date) is behind us is done
@@ -87,9 +103,11 @@ export function closePastNights(book, now = new Date()) {
 }
 
 export function closeShelfPastNights(shelf, now = new Date()) {
+  // Skips any phone already made count toward the one-a-week limit.
+  const skips = noteZone(now, undefined, undefined, (shelf.boards || []).flatMap((book) => book.travelSkips || []))
   return {
     ...shelf,
-    boards: (shelf.boards || []).map((book) => closePastNights(book, now)),
+    boards: (shelf.boards || []).map((book) => closePastNights(book, now, skips)),
   }
 }
 

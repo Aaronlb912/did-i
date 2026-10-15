@@ -1,7 +1,6 @@
-import { accountSessionOn } from './session-id.js'
+import { accountSessionOn, readAccountUserId } from './session-id.js'
 import { readShelf, writeShelf } from './board-shelf.js'
-import { boardDate } from './recurrence.js'
-import { takeEarnedCoins, weeklyGemBump } from './purse.js'
+import { returnEarnedCoins, takeEarnedCoins, weeklyGemBump } from './purse.js'
 import { applyCoinBalanceToShelf, applyGemBalanceToShelf, creditNightCoins, grantWeeklyGem } from './wallet.js'
 
 // A tap outside the app (the home screen widget) pays the same as one inside
@@ -16,19 +15,28 @@ export function settleTapEarnings(before, after, clock = new Date(), onShelf) {
   const bumped = weeklyGemBump(after, before, clock, { accountSync: account })
   const shelf = bumped === after ? after : writeShelf(bumped)
   if (!account) return shelf
-  const fold = shelf.boards.find((book) => book.id === shelf.currentId)?.dayFoldHour ?? 0
-  const earned = takeEarnedCoins()
-  if (earned > 0) {
-    creditNightCoins(boardDate(clock, fold), earned)
+  // A reply that lands after a sign out or account switch belongs to the old account.
+  const who = readAccountUserId()
+  // Right after sign in the id is '' until the first pull lands; coins from
+  // before a sign out are still dropped by returnEarnedCoins' gen stamp.
+  const sameAccount = () => !who || readAccountUserId() === who
+  const taken = takeEarnedCoins()
+  for (const [night, earned] of Object.entries(taken)) {
+    creditNightCoins(night, earned)
       .then((balance) => {
-        if (balance == null) return
+        if (!sameAccount()) return
+        // Not paid: keep the coins for the next save to try again.
+        if (balance == null) return returnEarnedCoins(night, earned, clock, taken.gen)
         onShelf?.(writeShelf(applyCoinBalanceToShelf(readShelf(), balance)))
       })
-      .catch(() => {})
+      .catch(() => {
+        if (sameAccount()) returnEarnedCoins(night, earned, clock, taken.gen)
+      })
   }
   if (shelf.gemWeek && shelf.gemWeek !== (before?.gemWeek || '')) {
     grantWeeklyGem(shelf.gemWeek)
       .then((balance) => {
+        if (!sameAccount()) return
         // Not granted (offline, signed out): forget the week so the next
         // cleared night asks again instead of the gem being lost.
         if (balance == null) {

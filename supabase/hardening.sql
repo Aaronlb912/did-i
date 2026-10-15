@@ -128,6 +128,35 @@ drop policy if exists "keep or pass a send" on public.sends;
 create policy "keep or pass a send" on public.sends
   for update using ((select auth.uid()) = to_id) with check ((select auth.uid()) = to_id);
 
+-- The recipient only answers a send: state, nothing else. Server functions
+-- (claim_auto_sends, edit_send) run as the owner and keep their own rules.
+revoke update on public.sends from authenticated;
+grant update (state) on public.sends to authenticated;
+
+create or replace function public.guard_send_answer()
+returns trigger
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  -- current_user is the owner inside a security definer function, so this
+  -- only holds back a direct update from the app.
+  if current_user = 'authenticated' and not (
+    old.state = 'sent' and new.state in ('kept', 'passed')
+    and old.to_id = (select auth.uid())
+  ) then
+    raise exception 'that one is already answered';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists guard_send_answer on public.sends;
+create trigger guard_send_answer
+  before update on public.sends
+  for each row execute function public.guard_send_answer();
+
 drop policy if exists "take back a send" on public.sends;
 create policy "take back a send" on public.sends
   for delete using ((select auth.uid()) in (from_id, to_id));
@@ -198,7 +227,7 @@ begin
     'family_lamps|question_len|length(question) between 1 and 200',
     'family_lamps|short_len|length(short) <= 60',
     'family_lamps|once_when_ok|once_when in (''on'', ''by'')',
-    'family_answers|period_len|length(period_key) <= 24',
+    'family_answers|period_len|length(period_key) <= 72',
     'sends|question_len|length(question) <= 200',
     'sends|note_len|length(note) <= 280',
     'devices|label_len|length(device_key) <= 80 and length(label) <= 80 and length(platform) <= 40'
@@ -221,7 +250,22 @@ begin
 end;
 $$;
 
--- A nudge is a nudge. Twenty unanswered ones from the same person is not.
+-- Sends made per sender, recipient and day. Taking a send back does not
+-- lower it, so send and take back cannot loop pushes. Only cap_sends
+-- touches it: RLS on, no policies.
+create table if not exists public.send_counts (
+  from_id uuid not null references auth.users on delete cascade,
+  to_id uuid not null references auth.users on delete cascade,
+  day date not null default current_date,
+  n integer not null default 0,
+  primary key (from_id, to_id, day)
+);
+create index if not exists send_counts_to_idx on public.send_counts (to_id);
+alter table public.send_counts enable row level security;
+revoke all on public.send_counts from anon, authenticated;
+
+-- A nudge is a nudge. Twenty unanswered ones from the same person is not,
+-- and neither is thirty in a day.
 create or replace function public.cap_sends()
 returns trigger
 language plpgsql
@@ -230,6 +274,7 @@ set search_path = public
 as $$
 declare
   open_now integer;
+  made_today integer;
 begin
   select count(*) into open_now
   from public.sends
@@ -237,6 +282,17 @@ begin
   if open_now >= 20 then
     raise exception 'too many waiting for an answer';
   end if;
+  insert into public.send_counts as c (from_id, to_id, day, n)
+  values (new.from_id, new.to_id, current_date, 1)
+  on conflict (from_id, to_id, day) do update set n = c.n + 1
+  returning c.n into made_today;
+  if made_today > 30 then
+    raise exception 'too many today';
+  end if;
+  -- Yesterday and older no longer count. All of the sender's old rows go, so
+  -- a friend they stopped sending to does not leave a row behind for good.
+  delete from public.send_counts
+  where from_id = new.from_id and day < current_date;
   return new;
 end;
 $$;

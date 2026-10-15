@@ -1,26 +1,32 @@
-import { freezeState, hallHeat, shelfStreak } from './hall-feel.js'
+import { dueThatNight, freezeState, hallHeat, shelfStreak } from './hall-feel.js'
 import {
   addDaysIso,
   allClearTonight,
+  answerFor,
   boardDate,
+  countedTonightRows,
   dueTonight,
   faceReadyTonight,
   formatBoardDate,
   isDueOn,
   isEvery,
   isoDate,
+  onceDoneNight,
+  oncePastCounts,
   parseIsoDate,
   periodKeyFor,
   periodNight,
   rowDoneTonight,
+  stampMs,
   unansweredTonight,
   waitingTonight,
 } from './recurrence.js'
 import { mustSwipeDeadline, shortLabel } from './board-json.js'
-import { t } from './i18n.js'
+import { localePack, t } from './i18n.js'
 import { weNight, weOpenIds } from './we-nights.js'
-import { uses24h } from './prefs.js'
+import { readPrefs, uses24h } from './prefs.js'
 import { scopedBooks, tagOnRow } from './tags.js'
+import { travelNightState, travelSkipped, travelWe } from './travel.js'
 
 export { streakLength } from './achievements.js'
 
@@ -67,8 +73,9 @@ function noonOn(iso) {
 }
 
 // A question you added on Friday was not something you missed on Monday.
+// The streak's own rows for a night, so the calendar and the streak agree.
 function dueOnNight(book, iso, at) {
-  return dueTonight(book, at).filter((row) => !isEvery(row.lamp) && (!row.lamp.createdOn || row.lamp.createdOn <= iso))
+  return dueThatNight(book, iso, at)
 }
 
 // The first night anything happened: the oldest question's made date or the
@@ -110,15 +117,16 @@ function nightMarks(books, iso, today, tagId = '') {
   let dueCount = 0
   let clear = true
   for (const book of books) {
-    // A deadline still days away is optional, so it does not break the night.
-    const due = at ? dueOnNight(book, iso, at).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso)) : []
+    // The streak's rows: a deadline days away, an optional or every so often
+    // question, or a One Did I never break the night.
+    const due = at ? countedTonightRows(dueOnNight(book, iso, at)) : []
     dueCount += due.length
     // Only a did fills the dot, the same rule as the streak: a nope night is
     // not a cleared night.
     if (due.length && !due.every(rowDoneTonight)) clear = false
   }
   // A Did we due for you counts too, as it does for the streak.
-  const we = weNight(iso, tagId)
+  const we = travelWe(books.some((book) => travelSkipped(book, iso)), weNight(iso, tagId))
   dueCount += we.due
   if (we.due && !we.clear) clear = false
   return {
@@ -145,7 +153,7 @@ export function nightWhy(boards, iso, now = new Date(), tagId = '') {
   const at = noonOn(iso)
   let due = 0
   for (const book of books) {
-    const rows = at ? dueOnNight(book, iso, at).filter((row) => mustSwipeDeadline(row.lamp, row.dateIso)) : []
+    const rows = at ? countedTonightRows(dueOnNight(book, iso, at)) : []
     due += rows.length
     for (const row of rows) {
       if (rowDoneTonight(row)) continue
@@ -324,13 +332,18 @@ function yearIndex(book) {
   if (found) return found
   const byLamp = new Map()
   const onceDone = new Set()
+  // The answer row behind each once:<id> key, for the night it was tapped.
+  const onceAnswer = new Map()
   for (const answer of rows) {
     let nights = byLamp.get(answer.lampId)
     if (!nights) byLamp.set(answer.lampId, (nights = new Map()))
-    if (!nights.has(answer.periodKey)) nights.set(answer.periodKey, answer.status)
+    if (!nights.has(answer.periodKey)) {
+      nights.set(answer.periodKey, answer.status)
+      if (String(answer.periodKey).startsWith('once:')) onceAnswer.set(answer.lampId, answer)
+    }
     if (answer.status === 'yes' || answer.status === 'skip' || answer.status === 'late') onceDone.add(answer.lampId)
   }
-  found = { byLamp, onceDone }
+  found = { byLamp, onceDone, onceAnswer }
   yearIndexMemo.set(rows, found)
   return found
 }
@@ -339,11 +352,20 @@ function yearIndex(book) {
 // rebuilding the due list per book per night. Daily questions (most of them)
 // skip the date parse.
 function nightMarksMany(books, isos, today, tagId = '') {
-  const prepped = books.map((book) => ({
-    start: startNight(book),
-    lamps: (book.lamps || []).filter((lamp) => !lamp.archived),
-    index: yearIndex(book),
-  }))
+  const prepped = books.map((book) => {
+    const index = yearIndex(book)
+    // Answered one-time questions are archived once their day passes; their
+    // night still counts (same rule as the streak walk in hall-feel.js).
+    const lamps = []
+    const doneOn = new Map()
+    for (const lamp of book.lamps || []) {
+      const onceKey = lamp.cadence === 'once' ? `once:${lamp.id}` : ''
+      if (lamp.archived && !(onceKey && oncePastCounts(lamp, index.onceAnswer.get(lamp.id)))) continue
+      lamps.push(lamp.archived ? { ...lamp, archived: false } : lamp)
+      if (onceKey) doneOn.set(lamp.id, onceDoneNight(lamp, index.onceAnswer.get(lamp.id)))
+    }
+    return { start: startNight(book), lamps, index, doneOn, book }
+  })
   const out = new Map()
   for (const iso of isos) {
     if (iso > today) {
@@ -354,6 +376,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
     let clear = true
     for (const book of prepped) {
       if (book.start ? iso < book.start : iso !== today) continue
+      const skipped = travelSkipped(book.book, iso)
       for (const lamp of book.lamps) {
         if (lamp.createdOn && lamp.createdOn > iso) continue
         const daily = lamp.cadence === 'daily'
@@ -361,12 +384,18 @@ function nightMarksMany(books, isos, today, tagId = '') {
         const key = daily ? iso : periodKeyFor(lamp, iso)
         const status = book.index.byLamp.get(lamp.id)?.get(key)
         if (lamp.cadence === 'once' && status === undefined && book.index.onceDone.has(lamp.id)) continue
-        if (!mustSwipeDeadline(lamp, iso)) continue
+        if (skipped && travelNightState(answerFor(book.book, lamp.id, key), iso) === 'none') continue
+        // Same rows as countedTonightRows.
+        const done = status === 'yes' || status === 'late'
+        if (lamp.fromDidI) continue
+        const doneOn = done ? book.doneOn.get(lamp.id) : ''
+        if (doneOn && doneOn !== iso) continue
+        if (!done && (lamp.optional || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
         dueCount += 1
-        if (status !== 'yes' && status !== 'late') clear = false
+        if (!done) clear = false
       }
     }
-    const we = weNight(iso, tagId)
+    const we = travelWe(prepped.some((book) => travelSkipped(book.book, iso)), weNight(iso, tagId))
     dueCount += we.due
     if (we.due && !we.clear) clear = false
     out.set(iso, {
@@ -468,7 +497,7 @@ export function shelfWeekNights(boards, now = new Date(), tagId = '', days = 7) 
 export function shelfFeedRows(boards, tagId = '') {
   return scopedBooks(boards, tagId)
     .flatMap((book) => feedRows(book))
-    .sort((a, b) => String(b.answer.answeredAt).localeCompare(String(a.answer.answeredAt)))
+    .sort((a, b) => stampMs(b.answer.answeredAt) - stampMs(a.answer.answeredAt))
 }
 
 // Every note across the folders in view, newest first. Notes on deleted questions drop out.
@@ -538,8 +567,15 @@ export function isRecapNight(dateIso) {
   return Boolean(at) && at.getDay() === 0
 }
 
-export function recapShareText(recap) {
-  return t('recap.share', { cleared: recap.cleared, n: recap.nights, dids: recap.dids, best: recap.best })
+// Gentle mode hides streak numbers, so the recap line and share text leave out the best streak.
+export function recapShareText(recap, gentle = false) {
+  const values = { cleared: recap.cleared, n: recap.nights, dids: recap.dids, best: recap.best }
+  return t(gentle ? 'recap.shareGentle' : 'recap.share', values)
+}
+
+export function recapLine(recap, gentle = false) {
+  const dids = t('recap.dids', { n: recap.dids })
+  return gentle ? dids : `${dids} · ${t('recap.best', { n: recap.best })}`
 }
 
 // The Sunday that closed the week before `dateIso`. Monday gives yesterday.
@@ -577,7 +613,7 @@ export function nextStreakGoal(n) {
 export function feedRows(book) {
   const lamps = book.lamps || []
   return [...(book.answers || [])]
-    .sort((a, b) => String(b.answeredAt).localeCompare(String(a.answeredAt)))
+    .sort((a, b) => stampMs(b.answeredAt) - stampMs(a.answeredAt))
     .map((answer) => ({
       answer,
       lamp: lamps.find((item) => item.id === answer.lampId) || null,
@@ -617,6 +653,8 @@ export function bySlot(rows) {
 
 export function tapWhen(answeredAt, now = new Date()) {
   const raw = String(answeredAt || '')
+  // A zoned (UTC) time goes through the phone's clock first.
+  if (/(Z|[+-]\d\d:?\d\d)$/i.test(raw)) return stampWhen(raw, now)
   const [datePart, timePart] = raw.split('T')
   if (!datePart) return ''
   const clock = timePart ? clockWords(timePart) : ''
@@ -751,16 +789,54 @@ export function matchLamps(book, query) {
   })
 }
 
-function weekdayLong(iso) {
+// The seven names per app locale and style, worked out once and kept.
+// toLocaleDateString, not Intl.DateTimeFormat: Hermes on Android gave
+// English from a DateTimeFormat, while toLocaleDateString follows the locale.
+const weekdayNames = new Map()
+function weekdayList(locale, style) {
+  const code = locale === 'zh' ? 'zh-CN' : locale || 'en'
+  const key = `${code}:${style}`
+  let names = weekdayNames.get(key)
+  if (!names && style === 'narrow') {
+    // Hermes on Android has no CJK date names, so initials come from the
+    // locale's own short day names (hang.day.N): Mon -> M, 月 -> 月.
+    const pack = localePack(locale)
+    names = [0, 1, 2, 3, 4, 5, 6].map((day) => Array.from(String(pack[`hang.day.${day}`] || ''))[0] || '')
+    if (names.every(Boolean)) {
+      weekdayNames.set(key, names)
+      return names
+    }
+    names = null
+  }
+  if (!names) {
+    names = []
+    // 2026-10-04 is a Sunday, so index 0 is Sunday like getDay().
+    for (let day = 0; day < 7; day += 1) {
+      const at = new Date(2026, 9, 4 + day, 12)
+      try {
+        names.push(at.toLocaleDateString(code, { weekday: style }))
+      } catch {
+        names.push(at.toLocaleDateString('en', { weekday: style }))
+      }
+    }
+    weekdayNames.set(key, names)
+  }
+  return names
+}
+
+/** The weekday of `iso` in the app's language: 'long' (Monday) or 'narrow' (M). */
+export function weekdayName(iso, style = 'narrow', locale = readPrefs().locale) {
   const date = parseIsoDate(iso)
   if (!date) return ''
-  return date.toLocaleDateString('en-US', { weekday: 'long' })
+  return weekdayList(locale, style)[date.getDay()]
+}
+
+function weekdayLong(iso) {
+  return weekdayName(iso, 'long')
 }
 
 function weekdayShort(iso) {
-  const date = parseIsoDate(iso)
-  if (!date) return ''
-  return date.toLocaleDateString('en-US', { weekday: 'narrow' })
+  return weekdayName(iso, 'narrow')
 }
 
 function dayNumber(iso) {

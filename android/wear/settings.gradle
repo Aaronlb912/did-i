@@ -1,0 +1,18 @@
+// The Wear OS app is its own Gradle build, apart from the phone app's React
+// Native build in android/. Build it with: android/gradlew -p android/wear assembleDebug
+pluginManagement {
+  repositories {
+    google()
+    mavenCentral()
+    gradlePluginPortal()
+  }
+}
+
+dependencyResolutionManagement {
+  repositories {
+    google()
+    mavenCentral()
+  }
+}
+
+rootProject.name = 'did-i-wear'

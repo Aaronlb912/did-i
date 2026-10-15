@@ -89,6 +89,11 @@ export function Family({ book, onChange, now, familyId }) {
       return
     }
     const row = await readFamily(familyId)
+    if (row?.miss) {
+      setMiss(row.miss)
+      setReady(true)
+      return
+    }
     setFam(row)
     if (row) {
       const key = boardDate(new Date(), row.fold_hour)
@@ -104,12 +109,17 @@ export function Family({ book, onChange, now, familyId }) {
         listFriends().catch(() => null),
       ])
       // Friends' asks are on the Friends list; here only the rest of the family.
-      if (askRows) {
+      if (askRows && !friendRows?.miss) {
         const friendIds = new Set((friendRows?.friends || []).map((one) => one.person.user_id))
         for (const id of friendIds) askRows.delete(id)
         setCheckOns(askRows)
       }
       if (typeof serverCheers === 'number') setStock(serverCheers)
+      if (tonightRows.miss) {
+        setMiss(tonightRows.miss)
+        setReady(true)
+        return
+      }
       setLamps(tonightRows.lamps)
       setAnswers(tonightRows.answers)
       setLastDids(tonightRows.last || new Map())
@@ -154,7 +164,8 @@ export function Family({ book, onChange, now, familyId }) {
   }
 
   async function tap(lamp, status) {
-    const { miss: why } = await answerFamilyLamp(fam.id, lamp.id, night, status)
+    // The night at tap time, so a page left open past the fold answers tonight.
+    const { miss: why } = await answerFamilyLamp(fam.id, lamp.id, boardDate(new Date(), fam.fold_hour), status)
     if (why) return setMiss(why)
     return load()
   }
@@ -192,6 +203,27 @@ export function Family({ book, onChange, now, familyId }) {
   )
 
   if (!ready) return shell(<p className="di-set-note">{t('family.loading')}</p>)
+
+  // Could not read the family: say so and offer a retry, not "gone".
+  if (!fam && miss) {
+    return shell(
+      <>
+        <p className="di-set-note">{tMiss(miss)}</p>
+        <div className="di-hang-actions">
+          <button className="di-did di-did-small" type="button" onClick={() => {
+              setMiss('')
+              setReady(false)
+              load()
+            }}>
+            {t('gift.retry')}
+          </button>
+          <button className="di-key" type="button" onClick={() => goHash('/people')}>
+            {t('family.back')}
+          </button>
+        </div>
+      </>,
+    )
+  }
 
   if (!fam) {
     return shell(

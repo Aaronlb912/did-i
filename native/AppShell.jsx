@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { AppState, Linking, Platform, StyleSheet, View } from 'react-native'
+import { LayoutAnimationConfig } from 'react-native-reanimated'
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable'
 import { needsEnter } from '../src/lib/session.js'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -33,9 +34,10 @@ import { SheetHost } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
 import { lazyScreen } from './lib/lazy-screen.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
+import { resumeCheckOnStops } from './components/LampManage.jsx'
 import { FlyHost } from './components/FlyHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
-import { showToast } from './lib/toast-queue.js'
+import { showToast, undoUp, useToastQueue } from './lib/toast-queue.js'
 import { ScreenRouter } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
 import { FirstSwipe } from './components/FirstSwipe.jsx'
@@ -100,10 +102,15 @@ function useNativeRoute() {
 /** One route's page, fed the shelf the whole app shares. */
 function RouteBody({ route }) {
   const props = useContext(ScreenProps)
+  // The page itself slides in, so the blocks on it skip their own fade on
+  // that first frame; running both at once stuttered on iPhone. Anything that
+  // opens or loads in later still fades in.
   return (
-    <ScreenRoute.Provider value={route}>
-      <ScreenRouter route={route} {...props} />
-    </ScreenRoute.Provider>
+    <LayoutAnimationConfig skipEntering>
+      <ScreenRoute.Provider value={route}>
+        <ScreenRouter route={route} {...props} />
+      </ScreenRoute.Provider>
+    </LayoutAnimationConfig>
   )
 }
 
@@ -181,12 +188,14 @@ function HallScreen() {
 const HALL_OPTIONS = { headerShown: false }
 
 export function AppShell() {
-  usePrefs()
+  const prefs = usePrefs()
   const route = useNativeRoute()
   const app = useAppShelf()
   const marksHeld = useMarksHeld()
   // A new mark joins the toast line once the night's celebration is over.
-  const mark = marksHeld ? null : app.markNote
+  // It also waits while an undo is up, so a tap on Undo never lands on it.
+  const toasts = useToastQueue()
+  const mark = marksHeld || undoUp(toasts) ? null : app.markNote
   const clearMark = app.clearMark
   useEffect(() => {
     if (!mark) return
@@ -278,6 +287,22 @@ export function AppShell() {
     }
   }, [app.book, app.shelf])
 
+  // Ping text follows gentle, language and the 12/24h clock: set them again.
+  const pingWords = `${prefs.gentle}|${prefs.locale}|${prefs.clock}`
+  const [armedWords, setArmedWords] = useState(pingWords)
+  useEffect(() => {
+    if (pingWords === armedWords) return
+    setArmedWords(pingWords)
+    const shelf = readShelf()
+    if (shelf?.boards?.length) armLampPings(shelf.boards).catch(reportRejection('arm-pings'))
+  }, [armedWords, pingWords])
+
+  // Check-ons still waiting to stop when the app closed during an undo.
+  const signedIn = Boolean(account.user)
+  useEffect(() => {
+    if (signedIn && shelfReady) resumeCheckOnStops()
+  }, [signedIn, shelfReady])
+
   const pingLabel = pingButtonLabel(pingState)
 
   const locked = needsEnter(app.book)
@@ -346,6 +371,8 @@ export function AppShell() {
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <SignInScreen
           onDone={() => {
+            // A scanned code waiting on sign in stays where it is.
+            if (readRoute().path === '/people/connect') return
             const shelf = readShelf()
             const empty = shelf.boards.every(
               (item) => (item.lamps || []).filter((lamp) => !lamp.archived).length === 0,

@@ -41,19 +41,29 @@ export function CheckOnCard({ lamp, colors }) {
   useEffect(() => {
     if (!fits) return undefined
     let live = true
+    let started = false
+    setLoaded(false)
+    const read = () => {
+      if (started) return
+      started = true
+      Promise.all([readCheckOn(lamp.id), listKnownPeople().catch(() => [])])
+        .then(([mine, known]) => {
+          if (!live) return
+          setRow(mine.row)
+          setPeople(known)
+          if (mine.miss && mine.miss !== 'off' && mine.miss !== 'out') setMiss(tMiss(mine.miss))
+        })
+        .catch(() => live && setMiss(t('people.reach')))
+        .finally(() => live && setLoaded(true))
+    }
     // After the page has slid in, so the read and its redraw miss the transition.
-    const task = InteractionManager.runAfterInteractions(() => Promise.all([readCheckOn(lamp.id), listKnownPeople().catch(() => [])])
-      .then(([mine, known]) => {
-        if (!live) return
-        setRow(mine.row)
-        setPeople(known)
-        if (mine.miss && mine.miss !== 'off' && mine.miss !== 'out') setMiss(tMiss(mine.miss))
-      })
-      .catch(() => live && setMiss(t('people.reach')))
-      .finally(() => live && setLoaded(true)))
+    // A looping animation (cheer, boot) never ends interactions, so a timer backs it up.
+    const task = InteractionManager.runAfterInteractions(read)
+    const timer = setTimeout(read, 600)
     return () => {
       live = false
       task.cancel()
+      clearTimeout(timer)
     }
   }, [fits, lamp?.id])
 

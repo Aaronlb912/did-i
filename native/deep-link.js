@@ -5,7 +5,6 @@ import { holdSpoken } from '../src/lib/voice-add.js'
 import { readQrLink } from '../src/lib/qr-links.js'
 import { readDidYouLink, savePendingDidYou } from '../src/lib/did-you-links.js'
 import { matchSpoken, openTonight, spokenAnswer } from '../src/lib/voice-answer.js'
-import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
 import { t } from '../src/lib/i18n.js'
 import { showToast } from './lib/toast-queue.js'
 
@@ -15,7 +14,7 @@ export function routeFromDeepLink(url) {
   if (!url) return null
   try {
     // https://did-i.app/i/CODE through a universal link or App Link.
-    const webInvite = /^https:\/\/(?:www\.)?did-i\.app\/i\/([a-z0-9]{10})\/?$/i.exec(String(url).trim())
+    const webInvite = /^https:\/\/(?:www\.)?did-i\.app\/i\/([a-z0-9]{10})\/?$/i.exec(String(url).trim().split(/[?#]/)[0])
     if (webInvite) return { invite: webInvite[1] }
     // A Did you link: did-i.app/d/CODE, or didi://d/CODE from its page.
     const didYou = readDidYouLink(url)
@@ -85,20 +84,17 @@ export function goFromDeepLink(url) {
   return true
 }
 
-// Saves a spoken Did or Nope the way a widget tap does, then shows that card.
-// With no answer given, or no close question, Tonight opens to answer by hand.
-function answerSpoken({ said, kind }) {
+// Opens Tonight on the matched card without saving. Any app or web page can
+// open didi://answer, and the Siri intent's link carries nothing a page
+// could not copy, so the person taps Did or Not yet themselves. Saving
+// straight from Siri needs a store build where the intent writes the answer
+// natively instead of opening a link.
+function answerSpoken({ said }) {
   const row = matchSpoken(said, openTonight())
   if (!row) {
     goHash('/tonight')
     showToast({ id: 'voice-answer', kind: 'error', text: t('voice.noMatch', { said }), ms: 5200 })
     return
-  }
-  if (kind) {
-    const shelf = applyWidgetTapOnce(row.lamp.id, kind, row.periodKey)
-    if (shelf) {
-      import('./widget-sync.js').then((mod) => mod.syncTonightWidget(shelf)).catch(() => {})
-    }
   }
   goHash('/tonight', { face: row.lamp.id, tag: 'all' })
 }

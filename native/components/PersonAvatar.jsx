@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Image, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { Animated, StyleSheet, Text, View } from 'react-native'
+import { useFadeIn } from '../lib/motion.jsx'
 import { personTint } from '../../src/lib/person-tint.js'
 import { fonts } from '../theme.js'
 import { BuddyArt } from './BuddyArt.jsx'
@@ -24,7 +25,12 @@ function lettersOf(person, max = 2) {
  */
 export function PersonAvatar({ person, colors, size = 46, done = false, tint, round = false, faded = false, label = false, ring }) {
   const [broken, setBroken] = useState(false)
+  // A photo eases in over the tile when it lands, never a snap.
+  const [loaded, setLoaded] = useState(false)
+  const fade = useFadeIn(loaded)
   const rawUrl = person?.avatar_url ?? person?.avatar
+  // A new photo fades in too, not only the first one.
+  useEffect(() => setLoaded(false), [rawUrl])
   const url = !broken && typeof rawUrl === 'string' ? rawUrl.trim() : ''
   const buddy = String(person?.buddy_on ?? person?.buddy ?? '')
   const lit = tint || colors.on
@@ -50,9 +56,10 @@ export function PersonAvatar({ person, colors, size = 46, done = false, tint, ro
         ]}
       >
         {url ? (
-          <Image
+          <Animated.Image
             source={{ uri: url }}
-            style={{ width: '100%', height: '100%', borderRadius: radius - 1 }}
+            onLoad={() => setLoaded(true)}
+            style={{ width: '100%', height: '100%', borderRadius: radius - 1, opacity: fade }}
             accessibilityIgnoresInvertColors
             onError={() => setBroken(true)}
           />

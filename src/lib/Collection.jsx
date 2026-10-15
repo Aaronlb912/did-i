@@ -7,10 +7,7 @@ import { AccessoryPreview } from './ShopAccessories.jsx'
 import { KitFocus, KitTabs, KitTile, kitTabDefault } from './kit-bits.jsx'
 import { buyLookWithCoins } from './coin-shop.js'
 import {
-  BUDDIES,
-  OWNABLE_CHEERS,
   CHEER_STAGE_MAX,
-  LOOKS,
   buddyText,
   cheerText,
   lookText,
@@ -19,7 +16,10 @@ import {
   cheerPlayOf,
   cheerStageOf,
   fireCheer,
+  liveBuddies,
+  liveLooks,
   normalizePurse,
+  ownableCheers,
   wearBuddy,
   wearCheer,
   wearCheerStage,
@@ -42,9 +42,9 @@ export function Collection({ book, onChange, now, startTab }) {
   const [miss, setMiss] = useState(NO_MISS)
   const purse = normalizePurse(book)
   const coat = activeLook(book)
-  const looks = LOOKS.filter((item) => purse.looks.includes(item.id))
-  const buddies = BUDDIES.filter((item) => purse.buddies.includes(item.id))
-  const cheers = OWNABLE_CHEERS.filter((item) => purse.cheers.includes(item.id))
+  const looks = liveLooks().filter((item) => purse.looks.includes(item.id))
+  const buddies = liveBuddies().filter((item) => purse.buddies.includes(item.id))
+  const cheers = ownableCheers().filter((item) => purse.cheers.includes(item.id))
   const accessories = ACCESSORIES.filter((item) => purse.accessories.includes(item.id))
   const focusId = pick || kitTabDefault(tab, purse)
 
@@ -55,7 +55,7 @@ export function Collection({ book, onChange, now, startTab }) {
   }, [tab])
 
   async function wearLook(id) {
-    const item = LOOKS.find((row) => row.id === id)
+    const item = liveLooks().find((row) => row.id === id)
     const next =
       item && item.coins > 0 && !isGemLook(id)
         ? await buyLookWithCoins(book, id)

@@ -1,6 +1,8 @@
 import { normalizeBook, normalizeGone } from './board-json.js'
 import { normalizeShelf } from './board-shelf.js'
 import { answerStamp } from './board-ops.js'
+import { stampMs } from './recurrence.js'
+import { capSkips } from './travel.js'
 import { CHEER_STAGE_MAX, normalizePurse } from './purse.js'
 
 // Two phones can both be right. Questions and answers always combine.
@@ -22,7 +24,7 @@ function answerKey(answer) {
 function laterAnswer(a, b) {
   const left = answerStamp(a)
   const right = answerStamp(b)
-  if (left && right) return right > left ? b : a
+  if (left && right) return stampMs(right) > stampMs(left) ? b : a
   return right && !left ? b : a
 }
 
@@ -51,6 +53,8 @@ function foldPurse(winner, loser) {
     looks: unionList(win.looks, lose.looks),
     accessories: unionList(win.accessories, lose.accessories),
     worn: win.worn,
+    buddies: unionList(win.buddies, lose.buddies),
+    buddyOn: win.buddyOn || lose.buddyOn,
     frames: unionList(win.frames, lose.frames),
     frame: win.frame,
     cheerOn: win.cheerOn,
@@ -73,7 +77,10 @@ export function mergeBooks(winner, loser) {
 
   const lampsWin = byId(win.lamps)
   const lamps = win.lamps.filter((lamp) => !dead.has(lamp.id))
+  // The same kept Did you saved on two phones under two ids is one question.
+  const sendsWin = new Set(win.lamps.map((lamp) => lamp.sendId).filter(Boolean))
   for (const lamp of lose.lamps) {
+    if (lamp.sendId && sendsWin.has(lamp.sendId)) continue
     if (!lampsWin.has(lamp.id) && !dead.has(lamp.id)) lamps.push(lamp)
   }
 
@@ -92,6 +99,7 @@ export function mergeBooks(winner, loser) {
     gone,
     unlocked: unionList(win.unlocked, lose.unlocked),
     opens: unionList(win.opens, lose.opens).sort(),
+    travelSkips: capSkips([...win.travelSkips, ...lose.travelSkips]),
     ...foldPurse(win, lose),
   })
 }
@@ -121,5 +129,35 @@ export function mergeShelves(local, remote, localSavedAt = '', remoteSavedAt = '
   }
 
   // normalizeShelf folds tags that ended up with the same name on both phones.
-  return normalizeShelf({ ...winner, currentId: winner.currentId, boards, goneTags })
+  return normalizeShelf({ ...winner, currentId: winner.currentId, boards: followMovedAnswers(boards, [...winner.boards, ...loser.boards]), goneTags })
+}
+
+// A question moved to another folder on one phone is gone from the old
+// folder there. Its answers, wherever either phone kept them, go with it.
+function followMovedAnswers(boards, sources) {
+  const homeOf = new Map()
+  boards.forEach((book, index) => {
+    for (const lamp of book.lamps || []) homeOf.set(lamp.id, index)
+  })
+  const moved = new Map()
+  sources.forEach((book) => {
+    for (const answer of book.answers || []) {
+      const home = homeOf.get(answer.lampId)
+      if (home === undefined || boards[home].id === book.id) continue
+      if (!moved.has(home)) moved.set(home, [])
+      moved.get(home).push(answer)
+    }
+  })
+  if (!moved.size) return boards
+  return boards.map((book, index) => {
+    if (!moved.has(index)) return book
+    const answers = new Map()
+    for (const answer of book.answers || []) answers.set(answerKey(answer), answer)
+    for (const answer of moved.get(index)) {
+      const key = answerKey(answer)
+      const prev = answers.get(key)
+      answers.set(key, prev ? laterAnswer(prev, answer) : answer)
+    }
+    return { ...book, answers: [...answers.values()] }
+  })
 }

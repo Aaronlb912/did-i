@@ -4,7 +4,7 @@ import { requireOptionalNativeModule } from 'expo'
 import * as Linking from 'expo-linking'
 import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
-import { lampNotifyOn } from '../../src/lib/board-json.js'
+import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, askActions, askNoteData } from '../../src/lib/notify-answer.js'
 import { afterQuiet, gentleOn, pingOn } from '../../src/lib/prefs.js'
@@ -14,6 +14,7 @@ import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
+import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { readWePings } from '../../src/lib/we-widget.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
@@ -33,6 +34,8 @@ export async function bootNative() {
     .catch(() => {})
   AppState.addEventListener('change', (next) => {
     setAppForeground(next === 'active')
+    // The app may be killed in the background before the 500ms debounce fires.
+    if (next !== 'active') flushNativePings()
   })
 }
 
@@ -134,11 +137,42 @@ const PING_DAYS = 7
 // iOS keeps at most 64 pending; leave room for the streak and cheer pings.
 const PING_CAP = 60
 const CHANNEL_ID = 'did-i'
+// Same as LATE_NUDGE_HOUR in src/lib/notify.js.
+const LATE_NUDGE_HOUR = 21
+
+// Calls bunch up (a tap and armLampPings land together). The last call in
+// a 500ms window wins, and runs only after the one before it finishes, so a
+// cancel-all never lands in the middle of another run's schedule.
+let pingChain = Promise.resolve()
+let pingTimer = null
+let pingNext = null
+export function scheduleNativePings(books, now) {
+  return new Promise((resolve, reject) => {
+    const waiters = pingNext ? pingNext.waiters : []
+    waiters.push({ resolve, reject })
+    pingNext = { books, now, waiters }
+    clearTimeout(pingTimer)
+    pingTimer = setTimeout(flushNativePings, 500)
+  })
+}
+
+function flushNativePings() {
+  clearTimeout(pingTimer)
+  const job = pingNext
+  if (!job) return
+  pingNext = null
+  pingChain = pingChain
+    .then(() => schedulePingsNow(job.books, job.now || new Date()))
+    .then(
+      () => job.waiters.forEach((w) => w.resolve()),
+      (error) => job.waiters.forEach((w) => w.reject(error)),
+    )
+}
 
 // Takes one board or every board on the shelf; each tag's questions ping.
-export async function scheduleNativePings(books, now = new Date()) {
+async function schedulePingsNow(books, now = new Date()) {
+  // An empty list still runs: it clears what an old account left scheduled.
   const list = (Array.isArray(books) ? books : [books]).filter(Boolean)
-  if (!list.length) return
   try {
     const allowed = await checkNativePings()
     if (allowed !== 'granted') return
@@ -170,23 +204,41 @@ export async function scheduleNativePings(books, now = new Date()) {
       for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
         // Midday of that calendar day sits inside the right board night.
         const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
-        const rows = ahead === 0 ? waitingTonight(book, now) : dueTonight(book, day).filter((row) => !row.answer)
+        // Every open row, so a re-arm after the ask time still keeps the 21:00
+        // late note. The ask note itself only goes to rows still waiting.
+        // Not yet (status skip) is not done, so it keeps the late note too.
+        const rows = dueTonight(book, day).filter((row) => !row.answer || row.answer.status === 'skip')
+        const waiting = ahead === 0 ? new Set(waitingTonight(book, now).map((row) => `${row.lamp.id}:${row.periodKey}`)) : null
         const [year, month, date] = boardDate(day).split('-').map(Number)
         for (const row of rows) {
-          if (!reminders || !lampNotifyOn(row.lamp)) continue
+          // Low priority stays quiet, like the web (src/lib/notify.js upcomingPings).
+          if (!reminders || !lampBuzzes(row.lamp)) continue
+          // No time set: no ask note, but a high one still gets the late note.
           const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
-          if (!match) continue
-          const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
-          if (at.getTime() <= now.getTime()) continue
+          const at = match ? new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0) : null
+          const content = {
+            title: 'Did I',
+            body: row.lamp.question,
+            data: askNoteData(row),
+            categoryIdentifier: ASK_CATEGORY,
+          }
+          if (at && !row.answer && at.getTime() > now.getTime() && (!waiting || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
+            notes.push({
+              identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}`)),
+              content,
+              trigger: when(at),
+            })
+          }
+          // A high one still open gets a last call at 21:00.
+          if (!lampNudgesLate(row.lamp)) continue
+          const late = new Date(year, month - 1, date, LATE_NUDGE_HOUR, 0, 0, 0)
+          if (late.getTime() <= now.getTime() || (at && late.getTime() <= at.getTime())) continue
+          // Quiet hours would push it to morning, which is no last call.
+          if (afterQuiet(late).getTime() !== late.getTime()) continue
           notes.push({
-            identifier: String(notifyId(row.lamp.id, row.periodKey)),
-            content: {
-              title: 'Did I',
-              body: row.lamp.question,
-              data: askNoteData(row),
-              categoryIdentifier: ASK_CATEGORY,
-            },
-            trigger: when(at),
+            identifier: String(notifyId(row.lamp.id, `${row.periodKey}:late:${row.dateIso}`)),
+            content,
+            trigger: when(late),
           })
         }
       }
@@ -220,8 +272,10 @@ export async function scheduleNativePings(books, now = new Date()) {
     }
     notes.sort((a, b) => a.trigger.date - b.trigger.date)
     notes.length = Math.min(notes.length, PING_CAP)
-    const book = list[0]
-    const risk = pingOn('streakRisk') && !gentleOn() ? streakRiskFire(book, now) : null
+    // Any folder's streak can be at risk, not only the first one's.
+    const streakPings = pingOn('streakRisk') && !gentleOn()
+    const heat = streakPings ? shelfStreak(list, now) : null
+    const risk = streakPings ? list.map((item) => streakRiskFire(item, now, heat)).find(Boolean) : null
     if (risk) {
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
@@ -233,7 +287,7 @@ export async function scheduleNativePings(books, now = new Date()) {
         trigger: when(new Date(risk.at)),
       })
     }
-    const grace = pingOn('streakRisk') && !gentleOn() ? graceRiskFire(book, now) : null
+    const grace = streakPings ? list.map((item) => graceRiskFire(item, now, heat)).find(Boolean) : null
     if (grace) {
       notes.push({
         identifier: String(notifyId('streak', grace.tag)),

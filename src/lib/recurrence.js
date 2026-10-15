@@ -10,6 +10,22 @@ export function isoDate(date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
+// Answer times: new ones are UTC ("...Z"), old ones are zoneless local
+// wall clock. Date.parse reads both right, so compare and bucket by these,
+// never by the raw string.
+export function stampMs(value) {
+  const raw = String(value || '')
+  if (!/^\d{4}-\d\d-\d\dT/.test(raw)) return 0
+  const ms = Date.parse(raw)
+  return Number.isNaN(ms) ? 0 : ms
+}
+
+// The phone's local day an answer time falls on.
+export function stampDay(value) {
+  const ms = stampMs(value)
+  return ms ? isoDate(new Date(ms)) : String(value || '').slice(0, 10)
+}
+
 export function parseIsoDate(value) {
   const raw = String(value == null ? '' : value).trim()
   const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/)
@@ -295,6 +311,33 @@ export function dueTonight(book, now = new Date()) {
   return lamps
 }
 
+// A one-time question with a window (due by, or no day at all) is due every
+// night of it, but its one answer is shared by all of them. A Did counts on
+// the night it was tapped only, so it cannot clear the other nights too.
+// '' when that rule does not apply (fixed day, or not done).
+export function onceDoneNight(lamp, answer) {
+  if (lamp?.cadence !== 'once') return ''
+  if (answer?.status !== 'yes' && answer?.status !== 'late') return ''
+  if (lamp.onceWhen !== 'by' && /^\d{4}-\d{2}-\d{2}$/.test(String(lamp.onceOn || '').trim())) return ''
+  const at = new Date(String(answer.answeredAt || ''))
+  if (answer.answeredAt && !Number.isNaN(at.getTime())) {
+    const night = boardDate(at)
+    // A grace tap after the last night counts on the last night.
+    const dueBy = lamp.onceWhen === 'by' ? String(lamp.dueBy || '').trim() : ''
+    return /^\d{4}-\d{2}-\d{2}$/.test(dueBy) && night > dueBy ? dueBy : night
+  }
+  const day = String(lamp.dueBy || lamp.createdOn || '').slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : ''
+}
+
+// Whether an archived one-time question still counts on past nights: a Did,
+// or a Not yet on a fixed-day question. Shared by the streak walk and marks.
+export function oncePastCounts(lamp, answer) {
+  if (lamp?.cadence !== 'once' || !answer) return false
+  if (answer.status === 'yes' || answer.status === 'late') return true
+  return lamp.onceWhen !== 'by' && /^\d{4}-\d{2}-\d{2}$/.test(String(lamp.onceOn || '').trim())
+}
+
 export function askAfterPassed(lamp, now = new Date()) {
   const after = String(lamp?.askAfter || '').trim()
   if (!after) return true
@@ -316,12 +359,16 @@ export function previousDueDate(lamp, dateIso) {
   return ''
 }
 
-export function catchUpRows(book, now = new Date()) {
+// skipped(iso): a night to look past (one lost to travel), so the real
+// previous due night still closes.
+export function catchUpRows(book, now = new Date(), skipped = null) {
   const dateIso = boardDate(now, book.dayFoldHour)
   const rows = []
   for (const lamp of book.lamps || []) {
     if (lamp.archived || lamp.cadence === 'once' || isEvery(lamp)) continue
-    const prevIso = previousDueDate(lamp, dateIso)
+    let prevIso = previousDueDate(lamp, dateIso)
+    for (let step = 0; skipped && prevIso && skipped(prevIso) && step < 3; step += 1) prevIso = previousDueDate(lamp, prevIso)
+    if (prevIso && skipped && skipped(prevIso)) continue
     if (!prevIso) continue
     if (lamp.createdOn && prevIso < lamp.createdOn) continue
     const periodKey = periodKeyFor(lamp, prevIso)
@@ -400,11 +447,20 @@ function requiredTonightRows(rows) {
 // question before its day is the same as an optional one: it counts once
 // answered, so adding one never clears the night by itself. An every so
 // often question counts the same way: a Did helps, Not yet never holds the
-// night open.
+// night open. A due by question done on an earlier night is not due on later
+// nights of its window (as in the streak walk, dueThatNight), so it cannot
+// clear them on its own.
+function doneOtherNight(row) {
+  if (row?.lamp?.cadence !== 'once') return false
+  const done = onceDoneNight(row.lamp, row.answer)
+  return Boolean(done) && done !== row.dateIso
+}
+
 export function countedTonightRows(rows) {
   return (rows || []).filter(
     (row) =>
       !row?.lamp?.fromDidI &&
+      !doneOtherNight(row) &&
       ((!row?.lamp?.optional && !isEvery(row?.lamp)) || rowDoneTonight(row)) &&
       (mustSwipeDeadline(row.lamp, row.dateIso) || rowDoneTonight(row)),
   )
@@ -427,7 +483,7 @@ export function dueClearTonight(rows) {
 }
 
 // Dates read in the app's language, not always English.
-function dateTag() {
+export function dateTag() {
   const code = readPrefs().locale
   if (code === 'zh') return 'zh-CN'
   return !code || code === 'en' ? 'en-US' : code

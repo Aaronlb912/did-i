@@ -3,7 +3,9 @@ import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { removeAvatar } from './avatar.js'
-import { forgetAccountCaches } from './account-cache.js'
+import { forgetAccountCaches, forgetPendingLinks } from './account-cache.js'
+import { dropEarnedCoins } from './purse.js'
+import { clearGifts } from './gift-inbox.js'
 
 const DEVICE_KEY = 'did-i-device'
 
@@ -109,6 +111,7 @@ export function accountMissText(bad) {
     googleFail: 'auth.googleFail',
     googleUnavailable: 'auth.googleUnavailable',
     reviewerBad: 'auth.reviewerBad',
+    net: 'confirm.miss',
   }[bad]
   return key ? t(key) : bad
 }
@@ -149,24 +152,74 @@ export async function signInReviewer(email, password) {
   return { miss: bad === 'often' ? bad : 'reviewerBad', user: null }
 }
 
+// This device's push token, dropped before sign out. Loaded late: a static
+// import makes a cycle on the phone (Metro swaps in native/shim/push.js).
+// Capped at 3s and failures ignored, so sign out never stalls.
+export async function dropPushToken(ms = 3000) {
+  let timer
+  try {
+    await Promise.race([
+      import('./push.js').then(({ dropToken }) => dropToken()),
+      new Promise((resolve) => { timer = setTimeout(resolve, ms) }),
+    ])
+  } catch {
+    // ignore
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export async function signOutHere() {
   const db = cloud()
   if (!db) return
+  // This device's push token goes first, while the session can still write it.
+  await dropPushToken()
   // signOut() defaults to global, which would end the session on every other device.
   await db.auth.signOut({ scope: 'local' })
   // The home screen widget must not keep showing this account's people.
   saveTogetherPeople([])
   forgetAccountCaches()
+  forgetPendingLinks()
+  clearGifts()
+  // Coins queued for this account must not be credited to the next one.
+  dropEarnedCoins()
+}
+
+// Every device's push token for this account, in one update, so signed out
+// phones stop getting reminders. Capped at 3s and failures ignored.
+export async function dropAllPushTokens(ms = 3000) {
+  const db = cloud()
+  if (!db) return
+  let timer
+  try {
+    await Promise.race([
+      (async () => {
+        const { data } = await db.auth.getSession()
+        const id = data?.session?.user?.id
+        if (id) await db.from('devices').update({ push_token: null }).eq('user_id', id)
+      })(),
+      new Promise((resolve) => { timer = setTimeout(resolve, ms) }),
+    ])
+  } catch {
+    // ignore
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export async function signOutEverywhere() {
   const db = cloud()
   if (!db) return
+  await Promise.all([dropPushToken(), dropAllPushTokens()])
   // The server has to end the other sessions; if it could not, say so.
   const { error } = await db.auth.signOut({ scope: 'global' })
   if (error) throw error
   saveTogetherPeople([])
   forgetAccountCaches()
+  forgetPendingLinks()
+  clearGifts()
+  // Coins queued for this account must not be credited to the next one.
+  dropEarnedCoins()
 }
 
 export async function deleteAccount() {
@@ -179,6 +232,10 @@ export async function deleteAccount() {
   await db.auth.signOut()
   saveTogetherPeople([])
   forgetAccountCaches()
+  forgetPendingLinks()
+  clearGifts()
+  // Coins queued for this account must not be credited to the next one.
+  dropEarnedCoins()
   return { miss: '' }
 }
 

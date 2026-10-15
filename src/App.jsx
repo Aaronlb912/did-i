@@ -9,13 +9,14 @@ import {
   mergeSameTitles,
   parkEmptyTags,
   nextBoardTitle,
+  addBook,
   putBook,
   readShelf,
   selectBook,
   writeShelf,
 } from './lib/board-shelf.js'
 import { commitBook } from './lib/achievements.js'
-import { hangInto, takeDown } from './lib/board-ops.js'
+import { bulkLamps, hangInto, takeDown } from './lib/board-ops.js'
 import { blankLamp } from './lib/board-json.js'
 import { keptLamp } from './lib/send-repeat.js'
 import { boardDate, isoDate } from './lib/recurrence.js'
@@ -303,7 +304,7 @@ export default function App() {
 
   function addBoard() {
     persist(
-      putBook(shelf, {
+      addBook(shelf, {
         ...emptyBoard(),
         title: nextBoardTitle(shelf.boards),
         keeperName: live.keeperName,
@@ -522,13 +523,12 @@ export default function App() {
     pingLabel,
     onAskPings: pingLabel ? askPings : undefined,
     onImport: (next) => persist(next),
-    onStartEmpty: () =>
-      change({
-        ...emptyBoard(),
-        id: live.id,
-        title: live.title,
-        keeperName: live.keeperName,
-      }),
+    // The delete path: the shared purse stays and other phones get gone marks.
+    onStartEmpty: () => {
+      const picks = (live.lamps || []).map((lamp) => ({ boardId: live.id, lampId: lamp.id }))
+      const [cleared] = bulkLamps([live], picks, 'delete')
+      change({ ...(cleared || live), answers: [] })
+    },
     onSendCopy: sendCopy,
   }
 
@@ -621,7 +621,7 @@ export default function App() {
   } else if (path === '/family') {
     inner = <Family book={live} onChange={change} familyId={route.id} />
   } else if (path === '/inbox') {
-    inner = <Inbox book={live} onKeep={keepSent} />
+    inner = <Inbox book={live} boards={shelf.boards} onKeep={keepSent} />
   } else if (path === '/sent') {
     inner = <Sent book={live} />
   } else if (path === '/we/new') {
@@ -672,9 +672,9 @@ export default function App() {
       <Calendar book={live} boards={shelf.boards} tagId={tagId} />
     )
   } else if (path === '/streaks') {
-    inner = <Streaks book={live} />
+    inner = <Streaks book={live} boards={shelf.boards} />
   } else if (path === '/stats') {
-    inner = <StatsPage book={live} />
+    inner = <StatsPage book={live} boards={shelf.boards} />
   } else if (path === '/feed') {
     inner = <Feed book={live} />
   } else if (path === '/pings') {

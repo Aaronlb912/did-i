@@ -60,6 +60,10 @@ supabase/.temp
 # Android build output
 android/build
 android/app/.cxx
+android/wear/build
+android/wear/.gradle
+android/wear/.kotlin
+android/wear/local.properties
 
 modules/*/android/build
 build-out/

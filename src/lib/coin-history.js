@@ -2,7 +2,7 @@
 // with the same rules as coinsFor (did 2, late 1, nope 0, first PAID_TAPS
 // paid answers a night, nothing for a question made that night). Every night
 // since you started is listed, a 0 night too, with why it paid what it did.
-import { addDaysIso, boardDate } from './recurrence.js'
+import { addDaysIso, boardDate, stampMs } from './recurrence.js'
 import { t } from './i18n.js'
 import { gemWeekKey, PAID_TAPS } from './purse.js'
 
@@ -47,7 +47,7 @@ export function coinNights(shelf, now = new Date(), days = 7) {
       else taps.set(night, [answer])
     }
     for (const [night, list] of taps) {
-      list.sort((a, b) => String(a.answeredAt || '').localeCompare(String(b.answeredAt || '')))
+      list.sort((a, b) => stampMs(a.answeredAt) - stampMs(b.answeredAt))
       const paid = list.slice(0, PAID_TAPS)
       const row = at(night)
       row.coins += paid.reduce((sum, a) => sum + (a.status === 'yes' ? 2 : 1), 0)

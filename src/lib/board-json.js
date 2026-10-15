@@ -2,6 +2,7 @@ import { t } from './i18n.js'
 import { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
 import { addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
+import { capSkips } from './travel.js'
 
 export { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
 
@@ -38,6 +39,7 @@ export function slotFromAskAfter(askAfter) {
   return 'night'
 }
 const STATUSES = ['yes', 'skip', 'late']
+const SEND_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const PRIORITIES = ['high', 'normal', 'low']
 
 export function lampPriority(lamp) {
@@ -252,9 +254,16 @@ export function normalizeLamp(raw) {
     ...(asBool(lamp.fromDidYou) && asString(lamp.fromName).trim()
       ? { fromName: asString(lamp.fromName).trim().slice(0, 40) }
       : {}),
+    // The send it was kept from, so its sender can see the answers
+    // (send-answers.js); shareOff when the keeper turned that off.
+    ...(asBool(lamp.fromDidYou) && SEND_ID.test(asString(lamp.sendId)) ? { sendId: asString(lamp.sendId).toLowerCase() } : {}),
+    ...(asBool(lamp.fromDidYou) && asBool(lamp.shareOff) ? { shareOff: true } : {}),
     // Put on one night's tonight by Did I itself: answer it if you like, it
     // never counts for or against a streak.
     ...(asBool(lamp.fromDidI) ? { fromDidI: true } : {}),
+    // The starter idea it was added from (starters.js), so the idea stays
+    // taken in any language.
+    ...(/^[a-z]{1,20}$/.test(asString(lamp.idea)) ? { idea: asString(lamp.idea) } : {}),
     // Track an amount: the note sheet asks for a number too. Only set when on.
     ...(asBool(lamp.trackAmount)
       ? { trackAmount: true, ...(amountUnitOf(lamp) ? { amountUnit: amountUnitOf(lamp) } : {}) }
@@ -336,6 +345,7 @@ export function normalizeBook(raw) {
     opens: Array.isArray(book.opens)
       ? book.opens.map((day) => asString(day).trim()).filter((day) => /^\d{4}-\d{2}-\d{2}$/.test(day))
       : [],
+    travelSkips: capSkips(book.travelSkips),
     coins: purse.coins,
     gems: purse.gems,
     cheers: purse.cheers,
@@ -454,6 +464,10 @@ export function missLamp(lamp) {
       if (start && dueBy < start) return 'hang.miss.dueByBefore'
     } else if (!/^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.onceOn))) {
       return 'hang.miss.onceOn'
+    } else {
+      // A day before the question existed would never be asked.
+      const start = asString(lamp.createdOn).trim() || isoDate(new Date())
+      if (lamp.onceOn < start) return 'hang.miss.onceOn'
     }
   }
   if (lamp.cadence === 'every_n') {
@@ -500,9 +514,9 @@ export function downloadBook(book) {
   window.setTimeout(() => URL.revokeObjectURL(url), 500)
 }
 
+// UTC. Rows saved before this are zoneless local time; read them with stampMs.
 export function answeredAtIso(now = new Date()) {
-  const pad = (value) => String(value).padStart(2, '0')
-  return `${isoDate(now)}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+  return now.toISOString()
 }
 
 export function addUnlock(book, id) {
