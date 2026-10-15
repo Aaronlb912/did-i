@@ -3549,6 +3549,7 @@ export const ko = {
   'checkOn.save': '저장',
   'checkOn.pickFirst': '먼저 한 사람을 고르세요.',
   'checkOn.cap': '지금은 이게 최대예요. 먼저 하나를 끄세요.',
+  'checkOn.capToday': '오늘 새로 추가할 수 있는 최대예요. 내일 다시 해 보세요.',
   'checkOn.notFriend': '친구나 가족만 고를 수 있어요.',
   'checkOn.fromTitle': '{name}님이 확인을 부탁했어요',
   'checkOn.fromAt': '상대 시간으로 {time}까지 답하지 않으면.',

@@ -88,10 +88,14 @@ final class WatchBridge: NSObject, WCSessionDelegate {
     try? session.updateApplicationContext(["cards": json])
   }
 
-  private func handle(_ info: [String: Any]) {
+  // done runs once the tap is handed to JS, queued, or dropped as a repeat.
+  private func handle(_ info: [String: Any], done: (() -> Void)? = nil) {
     guard let id = info["id"] as? String,
           let answer = info["answer"] as? String,
-          answer == "did" || answer == "nope" else { return }
+          answer == "did" || answer == "nope" else {
+      done?()
+      return
+    }
     let tap: [String: Any] = [
       "id": id,
       "answer": answer,
@@ -101,6 +105,7 @@ final class WatchBridge: NSObject, WCSessionDelegate {
     ]
     let key = "\(id)|\(info["night"] as? String ?? "")|\(info["at"] as? Double ?? 0)"
     DispatchQueue.main.async {
+      defer { done?() }
       if self.recentTapKeys.contains(key) { return }
       self.recentTapKeys.append(key)
       if self.recentTapKeys.count > 50 { self.recentTapKeys.removeFirst() }
@@ -135,5 +140,10 @@ final class WatchBridge: NSObject, WCSessionDelegate {
 
   func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
     handle(message)
+  }
+
+  // The watch sends with a replyHandler so it knows the tap landed.
+  func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
+    handle(message) { replyHandler(["ok": true]) }
   }
 }

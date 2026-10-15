@@ -3596,6 +3596,7 @@ export const es = {
   'checkOn.save': 'Guardar',
   'checkOn.pickFirst': 'Primero elige a alguien.',
   'checkOn.cap': 'Ese es el máximo por ahora. Desactiva uno primero.',
+  'checkOn.capToday': 'Ese es el máximo de nuevos por hoy. Inténtalo de nuevo mañana.',
   'checkOn.notFriend': 'Solo puedes elegir a un amigo o a alguien de tu familia.',
   'checkOn.fromTitle': '{name} te pidió que estés pendiente de',
   'checkOn.fromAt': 'Si no responde antes de las {time}, su hora.',

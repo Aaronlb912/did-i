@@ -3539,6 +3539,7 @@ export const zh = {
   'checkOn.save': '保存',
   'checkOn.pickFirst': '请先选一个人。',
   'checkOn.cap': '目前已达上限。请先关闭一个。',
+  'checkOn.capToday': '今天新增已达上限。请明天再试。',
   'checkOn.notFriend': '只能选择朋友或家人。',
   'checkOn.fromTitle': '{name} 请你关心',
   'checkOn.fromAt': '如果到对方时间 {time} 还没回答。',

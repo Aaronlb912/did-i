@@ -5672,6 +5672,13 @@ test('social-gentle.sql: queue_check_ons handles every kind in one statement', (
   assert.match(body, /k\.sent_on is null or k\.sent_on < k\.local::date/)
 })
 
+test('check-on.js: daily limit says try tomorrow, total cap says turn one off', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const src = readFileSync(path.join(root, 'src/lib/check-on.js'), 'utf8')
+  assert.match(src, /\/too many check-ons\/i\.test\([^)]*\)\) return 'checkOn\.capToday'/)
+  assert.match(src, /\/check-on cap\/i\.test\([^)]*\)\) return 'checkOn\.cap'/)
+})
+
 test('social-gentle.sql: gentle streak hidden on the server, check_ons locked down and batched', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const sql = readFileSync(path.join(root, 'supabase/social-gentle.sql'), 'utf8').replace(/\r\n/g, '\n')
