@@ -338,7 +338,8 @@ $$;
 revoke all on function public.grant_weekly_gem(text) from public, anon;
 grant execute on function public.grant_weekly_gem(text) to authenticated;
 
--- 5. delete_me refunds unopened gifts: see drop-tonight.sql, which runs last.
+-- 5. delete_me does not refund unopened gifts.
+-- See drop-tonight.sql, which runs last, for the current delete_me.
 
 -- 6. Gifts already owned go back to the giver here, in the same
 -- transaction, and are not returned to the phone. Before, the phone had to
