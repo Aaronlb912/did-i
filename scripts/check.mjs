@@ -83,7 +83,7 @@ import { t } from '../src/lib/i18n.js'
 import { forgetAccountCaches, forgetPendingLinks } from '../src/lib/account-cache.js'
 import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
-import { cheerKinds, holdFor, popsFor } from '../src/lib/cheer-pops.js'
+import { cheerKinds, holdFor, popsFor, sunRayLayout } from '../src/lib/cheer-pops.js'
 import {
   clearLocalShelf,
   dropBook,
@@ -3811,6 +3811,25 @@ test('a quiet night sky drifts a handful of frames per second', () => {
   assert.ok(moon.x >= 0 && moon.x + 40 <= 300, 'the moon starts in full view')
   const later = moonAt(100000, 300, 40)
   assert.ok(later.x >= -40 && later.x <= 300, 'and wraps inside the sky')
+})
+
+test('sun rays sit evenly around the disc center at every stage and size', () => {
+  for (let stage = 1; stage <= 5; stage++) {
+    for (const pop of popsFor('sun', stage)) {
+      const sun = pop.bits.find((bit) => bit.sun)
+      for (const px of [8, 33.6, Number.parseFloat(sun.size) * 16]) {
+        const { count, box, rays } = sunRayLayout(px, sun.rays)
+        assert.equal(rays.length, count)
+        assert.equal(count % 2, 0, 'long and short rays alternate all the way round')
+        rays.forEach((ray, i) => {
+          assert.ok(Math.abs(ray.deg - (360 / count) * i) < 1e-9, 'even spacing')
+          assert.ok(Math.abs(ray.left + ray.w / 2 - box / 2) < 1e-9, 'ray on the center line')
+          assert.ok(ray.top + ray.len - ray.len * 1.25 >= 0, 'ray fits in its box at the 1.25 grow')
+          assert.ok(box / 2 - (ray.top + ray.len) > px / 2, 'ray starts outside the disc')
+        })
+      }
+    }
+  }
 })
 
 test('by day the sun rises left, peaks at noon and sets right', () => {
