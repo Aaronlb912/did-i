@@ -5642,6 +5642,31 @@ await testAsync('frames: who owns what, seasons, and the worn frame', async () =
   assert.deepEqual(F.keepEarnedFrames({ frames: [] }, { bestStreak: 7 }).frames, ['vine', 'gems'])
 })
 
+await testAsync('frames: a newly earned frame is announced once per device', async () => {
+  const F = await import('../src/lib/frames.js')
+  // First run (seen null): only what was just gained, not frames owned before.
+  assert.deepEqual(F.framesToAnnounce(['vine'], ['vine', 'gems'], null), ['gems'])
+  // Seen already, or not earned (bought), or nothing new: nothing.
+  assert.deepEqual(F.framesToAnnounce([], ['vine', 'gems'], ['vine']), ['gems'])
+  assert.deepEqual(F.framesToAnnounce([], ['thin'], []), [])
+  assert.deepEqual(F.framesToAnnounce(['vine'], ['vine'], []), [])
+  localStorage.removeItem('did-i-frames-toasted')
+  assert.deepEqual(F.takeFramesToAnnounce(['vine'], ['vine', 'gems']), ['gems'])
+  // The same frame again (a sync dropped and re-added it): not shown twice, old ones neither.
+  assert.deepEqual(F.takeFramesToAnnounce([], ['vine', 'gems']), [])
+})
+
+await testAsync('gifts: the arrival cheer plays once per gift on a device', async () => {
+  const G = await import('../src/lib/gift-inbox.js')
+  assert.equal(G.giftCheerFresh('g1', null), true)
+  assert.equal(G.giftCheerFresh('g1', ['g1']), false)
+  assert.equal(G.giftCheerFresh('', []), false)
+  localStorage.removeItem('did-i-gifts-cheered')
+  assert.equal(G.takeGiftCheer('g1'), true)
+  assert.equal(G.takeGiftCheer('g1'), false)
+  assert.equal(G.takeGiftCheer('g2'), true)
+})
+
 await testAsync('frames: owned lists merge across phones and server lists keep their own kind', async () => {
   const { mergePurses } = await import('../src/lib/purse.js')
   const { applyCoinCatalogToBook } = await import('../src/lib/wallet.js')

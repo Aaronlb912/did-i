@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { markLabel } from '../../src/lib/achievements.js'
+import { frameText } from '../../src/lib/frames.js'
 import { t } from '../../src/lib/i18n.js'
 import { addNotice } from '../../src/lib/notices.js'
 
@@ -11,6 +12,7 @@ import { addNotice } from '../../src/lib/notices.js'
 //                                                  sets aside any other toast
 //                                                  on screen for it
 //   kind 'mark'  { mark, ms, onGone }
+//   kind 'frame' { frameId, ms, onWear }         an earned frame, just unlocked
 //   kind 'error' { text, ms }
 //   kind 'done'  { text, ms }                    an action worked (lib/confirm.js)
 //   kind 'kit'   { name, count, ms, fly }        a buy landing in the
@@ -33,6 +35,8 @@ function keepNotice(toast) {
       .filter(Boolean)
       .join('. ')
     addNotice({ id: toast.id, kind: 'mark', title: t('marks.new'), text, go: { path: '/marks' } })
+  } else if (toast.kind === 'frame') {
+    addNotice({ id: toast.id, kind: 'frame', title: t('frames.unlocked'), text: t(frameText(toast.frameId, 'name')), go: { path: '/shop/frames' } })
   } else if (toast.kind === 'we') {
     addNotice({ id: toast.id, kind: 'we', title: t('we.title'), text: toast.text || '', go: { path: '/we', id: toast.cardId } })
   }

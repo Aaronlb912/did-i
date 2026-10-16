@@ -721,7 +721,8 @@ export async function listSentGifts() {
   if (!user) return { rows: [], miss: 'out' }
   const { data, error } = await db
     .from('cheer_gifts')
-    .select('id, to_id, kind, cheer_id, note, gems, coins, made_at, claimed_at, returned_at')
+    // * so thanked_at shows once gift-thanks.sql is in, and nothing breaks before.
+    .select('*')
     .eq('from_id', user.id)
     .order('made_at', { ascending: false })
     .limit(50)
@@ -784,6 +785,22 @@ export async function returnGift(id) {
   if (!db) return { miss: 'off' }
   const { error } = await db.rpc('return_gift', { gift: id })
   return error ? bad(error) : { miss: '' }
+}
+
+// Thanks for a gift, once (gift-thanks.sql). `thanked` false means it was already sent.
+export async function thankGift(id) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { data, error } = await db.rpc('thank_gift', { gift: id })
+  return error ? bad(error) : { thanked: Boolean(data), miss: '' }
+}
+
+// Thanks for gifts you sent that this account has not shown yet.
+export async function takeGiftThanks() {
+  const db = cloud()
+  if (!db) return []
+  const { data, error } = await db.rpc('take_gift_thanks')
+  return error || !Array.isArray(data) ? [] : data
 }
 
 export async function reportGift(id) {

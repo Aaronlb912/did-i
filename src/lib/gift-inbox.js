@@ -25,6 +25,26 @@ function write(list) {
   for (const fn of listeners) fn(list[0] || null)
 }
 
+const CHEERED_KEY = 'did-i-gifts-cheered'
+
+/** True when this gift's cheer has not played on this device; `seen` is the ids that have. */
+export function giftCheerFresh(id, seen) {
+  return Boolean(id) && !(Array.isArray(seen) && seen.includes(id))
+}
+
+/** giftCheerFresh with this device's list, which then holds `id`. */
+export function takeGiftCheer(id) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CHEERED_KEY) || '[]')
+    const seen = Array.isArray(raw) ? raw : []
+    if (!giftCheerFresh(id, seen)) return false
+    localStorage.setItem(CHEERED_KEY, JSON.stringify([...seen, id].slice(-100)))
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function queueGifts(gifts) {
   if (!gifts?.length) return
   const have = read()

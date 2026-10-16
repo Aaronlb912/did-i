@@ -14,6 +14,7 @@ import { scheduleOnRN } from 'react-native-worklets'
 import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
 import { markLabel } from '../../src/lib/achievements.js'
+import { frameText } from '../../src/lib/frames.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { goHash } from '../navigation/hash.js'
@@ -242,6 +243,12 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
       goHash('/we', { id: item.cardId })
       leave(0, FROM_Y)
     }
+  } else if (item.kind === 'frame') {
+    // A new frame opens the frames page; Wear it puts it on.
+    press = () => {
+      goHash('/shop/frames')
+      leave(0, FROM_Y)
+    }
   } else if (item.kind === 'mark') {
     // A new achievement opens the achievements page, where the rest wait too.
     press = () => {
@@ -269,6 +276,7 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
   if (item.kind === 'undo') label = `${item.label} ${item.hint}`
   else if (item.kind === 'kit') label = `${item.name}. ${t('kit.added')}`
   else if (item.kind === 'mark') label = markA11y(item.mark)
+  else if (item.kind === 'frame') label = `${t('frames.unlocked')}. ${t(frameText(item.frameId, 'name'))}`
   else if (item.kind === 'we' || item.kind === 'done' || !item.kind) label = item.text || t('confirm.done')
 
   return (
@@ -307,6 +315,16 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
                     }
                   : null
               }
+            />
+          ) : null}
+          {item.kind === 'frame' ? (
+            <FrameBody
+              item={item}
+              colors={colors}
+              onWear={() => {
+                item.onWear?.()
+                leave(0, FROM_Y)
+              }}
             />
           ) : null}
           {item.kind === 'mark' ? <MarkBody item={item} colors={colors} onOk={() => leave(0, FROM_Y)} /> : null}
@@ -406,6 +424,23 @@ function MarkBody({ item, colors, onOk }) {
         </Text>
       </View>
       <KeyButton label={t('marks.ok')} colors={colors} onPress={onOk} />
+    </>
+  )
+}
+
+// An earned frame, just unlocked: its name and a button to put it on.
+function FrameBody({ item, colors, onWear }) {
+  return (
+    <>
+      <View style={styles.copy}>
+        <Text style={[styles.kicker, { color: colors.on }]} numberOfLines={1}>
+          {t('frames.unlocked')}
+        </Text>
+        <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>
+          {t(frameText(item.frameId, 'name'))}
+        </Text>
+      </View>
+      {item.onWear ? <KeyButton label={t('frames.wearIt')} colors={colors} onPress={onWear} /> : null}
     </>
   )
 }
