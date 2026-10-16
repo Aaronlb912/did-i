@@ -4,7 +4,8 @@ import { blankLamp } from './board-json.js'
 import { hangInto } from './board-ops.js'
 import { hangStarter } from './starters.js'
 
-export const FIRST_PICKS_MAX = 3
+// Every pack question fits, so taking all packs never silently drops one.
+export const FIRST_PICKS_MAX = 12
 export const FIRST_TIME = '21:00'
 // Coaching lines show until someone has answered on this many nights.
 export const NEW_NIGHTS = 3
@@ -30,9 +31,27 @@ export function togglePick(picks, item, max = FIRST_PICKS_MAX) {
   return [...list, item]
 }
 
-// A pack fills the picks with its questions, up to the cap.
-export function pickPack(pack, max = FIRST_PICKS_MAX) {
-  return (pack?.items || []).slice(0, max)
+// How much of a pack is picked: 'all', 'some' or 'none'.
+export function packState(picks, pack) {
+  const items = pack?.items || []
+  const on = items.filter((item) => (picks || []).some((pick) => pick.question === item.question)).length
+  if (!on) return 'none'
+  return on === items.length ? 'all' : 'some'
+}
+
+// A pack tap adds its questions, or takes them all off when every one is
+// already picked. Other picks stay either way.
+export function togglePack(picks, pack, max = FIRST_PICKS_MAX) {
+  const list = picks || []
+  const items = pack?.items || []
+  if (packState(list, pack) === 'all') {
+    return list.filter((pick) => !items.some((item) => item.question === pick.question))
+  }
+  let next = list
+  for (const item of items) {
+    if (!next.some((pick) => pick.question === item.question)) next = togglePick(next, item, max)
+  }
+  return next
 }
 
 // Adds the picks (and a typed question, if any) with one reminder time.

@@ -50,9 +50,10 @@ import {
   markNightOneSeen,
   markSignInNudgeSeen,
   nightOneSeen,
-  pickPack,
+  packState,
   showSignInNudge,
   signInNudgeSeen,
+  togglePack,
   togglePick,
 } from '../src/lib/first-run.js'
 import { mergeShelves } from '../src/lib/shelf-merge.js'
@@ -3397,14 +3398,27 @@ test('first five minutes: first run can go back to Welcome, the swipe hint is on
   assert.ok(tonight.includes('markSwipeIntroSeen()'), 'the first answer clears the swipe hint')
 })
 
-test('first run picks 2 or 3, adds them with one time, face is the first', () => {
+test('first run picks questions and packs, adds them with one time, face is the first', () => {
   const starters = starterList()
   let picks = []
-  for (const item of starters.slice(0, FIRST_PICKS_MAX + 1)) picks = togglePick(picks, item)
-  assert.equal(picks.length, FIRST_PICKS_MAX, 'the cap holds')
-  picks = togglePick(picks, starters[0])
-  assert.equal(picks.length, FIRST_PICKS_MAX - 1, 'a second tap takes it off')
-  assert.equal(pickPack(PACKS[0]).length, Math.min(3, PACKS[0].items.length))
+  for (const item of starters) picks = togglePick(picks, item, 3)
+  assert.equal(picks.length, 3, 'the cap holds')
+  picks = togglePick(picks, starters[0], 3)
+  assert.equal(picks.length, 2, 'a second tap takes it off')
+  const all = packList({ lamps: [] })
+  assert.ok(all.reduce((n, pack) => n + pack.items.length, 0) <= FIRST_PICKS_MAX, 'every pack question fits under the cap')
+  const [bed, meds] = all
+  let packed = togglePack([], bed)
+  assert.equal(packState(packed, bed), 'all', 'a pack tap checks every question in it')
+  packed = togglePick(packed, bed.items[0])
+  assert.equal(packState(packed, bed), 'some', 'one question can come off a pack')
+  packed = togglePack(packed, meds)
+  packed = togglePack(packed, bed)
+  assert.equal(packState(packed, bed), 'all', 'a partly picked pack fills back up')
+  packed = togglePack(packed, bed)
+  assert.equal(packState(packed, bed), 'none', 'a second tap on a full pack clears it')
+  assert.equal(packState(packed, meds), 'all', 'clearing one pack leaves the others')
+  assert.equal(togglePack(togglePack([], meds), meds).length, 0, 'a pack can always be unpicked')
   const book = { ...emptyBoard('first-run'), lamps: [], answers: [] }
   const made = firstRunBook(book, picks, { question: 'Did I water the fern?', short: 'Fern' }, '21:00', new Date(2026, 9, 5, 15))
   const live = made.book.lamps.filter((lamp) => !lamp.archived)

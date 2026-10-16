@@ -14018,3 +14018,112 @@ button.di-we-faces {
 .di-admin-row .di-hang-actions {
   flex-wrap: wrap;
 }
+/* First run packs: a card per pack, a check row per question. */
+.di-first-packs {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1.2rem 0 1.4rem;
+}
+
+.di-first-pack {
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  border: 1px solid var(--di-line);
+  border-radius: 16px;
+  background: var(--di-panel-2);
+  overflow: hidden;
+}
+
+.di-first-pack[data-state='all'],
+.di-first-pack[data-state='some'] {
+  border-color: var(--di-on-deep);
+}
+
+.di-first-pack-head,
+.di-first-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
+  color: var(--di-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.di-first-pack-head {
+  min-height: 3.25rem;
+  border: 0;
+  background: none;
+  font: inherit;
+}
+
+.di-first-pack-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.di-first-pack-count {
+  font-family: var(--di-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--di-ink-soft);
+}
+
+.di-first-pack:not([data-state='none']) .di-first-pack-count {
+  color: var(--di-on);
+}
+
+.di-first-item {
+  position: relative;
+  border-top: 1px solid var(--di-line-soft);
+  font-size: 0.95rem;
+  color: var(--di-ink-dim);
+}
+
+.di-first-item:has(input:checked) {
+  color: var(--di-ink);
+}
+
+.di-first-item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.di-first-box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--di-line);
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.di-first-box[data-state='all'],
+.di-first-box[data-state='some'] {
+  border-color: var(--di-on);
+  background: var(--di-on);
+  color: var(--di-on-ink);
+}
+
+.di-first-box[data-state='all']::after {
+  content: '✓';
+}
+
+.di-first-box[data-state='some']::after {
+  content: '–';
+}
+
+.di-first-pack-head:focus-visible,
+.di-first-item:has(input:focus-visible) {
+  outline: 2px solid var(--di-on);
+  outline-offset: -2px;
+}
