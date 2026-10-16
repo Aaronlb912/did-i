@@ -284,7 +284,6 @@ export const zh = {
   'first.stepOf': '{n} / {total}',
   'first.timeTitle': '我们什么时候问你？',
   'first.demo': '试用演示',
-  'first.swipeLine': "今天右滑是 Did，左滑是“还没”。",
   'enter.locked': '已锁',
   'enter.thisPhone': '这部手机',
   'enter.openTitle': '打开 {board}。',
@@ -3615,7 +3614,8 @@ export const zh = {
   'sent.missWaiting': "对方已有很多待回答。等他们回答一些后再试。",
   'sent.missToday': "一天发这么多太多了。明天再试。",
   'didYouLink.askedFriend': "已加入今天。已向{name}发送好友请求。",
-  'first.packsBody': "选一个问题包，再取消不需要的。",
+  'first.packsBody': "每天在“今天”和小组件里问你。右滑是 Did，左滑是“还没”。",
+  'first.packShow': "查看{pack}里的问题",
   'first.nextCount': "用 {n} 个继续",
   'first.startEmpty': "先不加问题",
 }

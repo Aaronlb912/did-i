@@ -294,7 +294,6 @@ export const pt = {
   'first.stepOf': '{n} de {total}',
   'first.timeTitle': 'Quando devemos perguntar?',
   'first.demo': 'Experimentar demo',
-  'first.swipeLine': "Hoje você desliza para a direita para Did e para a esquerda para Ainda não.",
   'enter.locked': 'Travado',
   'enter.thisPhone': 'Este telefone',
   'enter.openTitle': 'Abrir {board}.',
@@ -3665,7 +3664,8 @@ export const pt = {
   'sent.missWaiting': "Já têm muito à espera. Tenta de novo quando responderem a alguns.",
   'sent.missToday': "É muito para um dia. Tenta de novo amanhã.",
   'didYouLink.askedFriend': "No teu Hoje. Pedido de amizade enviado a {name}.",
-  'first.packsBody': "Escolhe um pacote e desmarca o que não precisas.",
+  'first.packsBody': "Perguntamos todos os dias em Hoje e no seu widget. Deslize para a direita para Did, para a esquerda para Ainda não.",
+  'first.packShow': "Ver as perguntas de {pack}",
   'first.nextCount': "Continuar com {n}",
   'first.startEmpty': "Começar sem perguntas",
 }

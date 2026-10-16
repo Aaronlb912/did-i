@@ -284,7 +284,6 @@ export const ko = {
   'first.stepOf': '{n} / {total}',
   'first.timeTitle': '언제 물어볼까요?',
   'first.demo': '데모 해보기',
-  'first.swipeLine': "오늘 오른쪽으로 밀면 Did, 왼쪽으로 밀면 아직이에요.",
   'enter.locked': '잠김',
   'enter.thisPhone': '이 폰',
   'enter.openTitle': '{board} 열기.',
@@ -3625,7 +3624,8 @@ export const ko = {
   'sent.missWaiting': "이미 기다리는 게 많아요. 몇 개 답한 뒤에 다시 보내 주세요.",
   'sent.missToday': "하루에 너무 많아요. 내일 다시 보내 주세요.",
   'didYouLink.askedFriend': "오늘에 추가했어요. {name}님에게 친구 요청을 보냈어요.",
-  'first.packsBody': "묶음을 고르고 필요 없는 건 빼세요.",
+  'first.packsBody': "매일 오늘 화면과 위젯에서 물어봐요. 오른쪽으로 밀면 Did, 왼쪽은 아직이에요.",
+  'first.packShow': "{pack} 질문 보기",
   'first.nextCount': "{n}개로 계속",
   'first.startEmpty': "질문 없이 시작",
 }

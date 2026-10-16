@@ -9,7 +9,6 @@ import { usePrefs } from './prefs.js'
 import { firstName } from './session.js'
 import { packList } from './starters.js'
 import { HangTimeSelect } from './HangTimeSelect.jsx'
-import { SetCap, SetCard, SetRow } from './set-bits.jsx'
 
 // First run: check packs (and single questions in them), or type your own.
 // Everything checked is added at once, every day, with one time.
@@ -21,6 +20,8 @@ export function FirstNight({ book, onChange, now }) {
   const [askAfter, setAskAfter] = useState('')
   const [blank, setBlank] = useState('')
   const [picks, setPicks] = useState([])
+  // Packs start closed so the page fits; the arrow shows their questions.
+  const [open, setOpen] = useState([])
   const packs = packList(book)
   const question = didQuestion(blank)
   const ownNew = Boolean(question) && !picks.some((pick) => pick.question === question)
@@ -57,7 +58,7 @@ export function FirstNight({ book, onChange, now }) {
   const isOn = (item) => picks.some((pick) => pick.question === item.question)
 
   return (
-    <BoardShell book={book} now={clock} title={book.title} nav={false} back={false} cog={false}>
+    <BoardShell book={book} now={clock} title={t('first.kicker')} nav={false} back={false} cog={false}>
       <form className="di-page di-first" onSubmit={add}>
         <h2 className="di-page-title">
           {named ? t('first.titleNamed', { name: named }) : t('first.title')}
@@ -68,27 +69,48 @@ export function FirstNight({ book, onChange, now }) {
             {packs.map((pack) => {
               const state = packState(picks, pack)
               const on = pack.items.filter(isOn).length
+              const shown = open.includes(pack.id)
+              const listId = `di-first-pack-${pack.id}`
               return (
                 <fieldset key={pack.id} className="di-first-pack" data-state={state}>
-                  <button
-                    type="button"
-                    className="di-first-pack-head"
-                    role="checkbox"
-                    aria-label={`${pack.title}, ${t('first.stepOf', { n: on, total: pack.items.length })}`}
-                    aria-checked={state === 'all' ? 'true' : state === 'some' ? 'mixed' : 'false'}
-                    onClick={() => setPicks((list) => togglePack(list, pack))}
-                  >
-                    <span className="di-first-box" data-state={state} aria-hidden="true" />
-                    <span className="di-first-pack-title">{pack.title}</span>
-                    <span className="di-first-pack-count">{t('first.stepOf', { n: on, total: pack.items.length })}</span>
-                  </button>
-                  {pack.items.map((item) => (
-                    <label key={item.idea} className="di-first-item">
-                      <input type="checkbox" checked={isOn(item)} onChange={() => setPicks((list) => togglePick(list, item))} />
-                      <span className="di-first-box" data-state={isOn(item) ? 'all' : 'none'} aria-hidden="true" />
-                      <span>{item.question}</span>
-                    </label>
-                  ))}
+                  <div className="di-first-pack-top">
+                    <button
+                      type="button"
+                      className="di-first-pack-head"
+                      role="checkbox"
+                      aria-label={`${pack.title}, ${t('first.stepOf', { n: on, total: pack.items.length })}`}
+                      aria-checked={state === 'all' ? 'true' : state === 'some' ? 'mixed' : 'false'}
+                      onClick={() => setPicks((list) => togglePack(list, pack))}
+                    >
+                      <span className="di-first-box" data-state={state} aria-hidden="true" />
+                      <span className="di-first-pack-text">
+                        <span className="di-first-pack-title">{pack.title}</span>
+                        <span className="di-first-pack-sub">{pack.items.map((item) => item.short).join(', ')}</span>
+                      </span>
+                      <span className="di-first-pack-count">{t('first.stepOf', { n: on, total: pack.items.length })}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="di-first-pack-more"
+                      aria-expanded={shown}
+                      aria-controls={shown ? listId : undefined}
+                      aria-label={t('first.packShow', { pack: pack.title })}
+                      onClick={() => setOpen((list) => (shown ? list.filter((id) => id !== pack.id) : [...list, pack.id]))}
+                    >
+                      <span aria-hidden="true" />
+                    </button>
+                  </div>
+                  {shown ? (
+                    <div id={listId}>
+                      {pack.items.map((item) => (
+                        <label key={item.idea} className="di-first-item">
+                          <input type="checkbox" checked={isOn(item)} onChange={() => setPicks((list) => togglePick(list, item))} />
+                          <span className="di-first-box" data-state={isOn(item) ? 'all' : 'none'} aria-hidden="true" />
+                          <span>{item.question}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
                 </fieldset>
               )
             })}
@@ -107,12 +129,7 @@ export function FirstNight({ book, onChange, now }) {
             autoCapitalize="none"
             enterKeyHint="done"
           />
-          <span className="di-first-swipes">{t('first.swipeLine')}</span>
         </label>
-        <SetCap>{t('hang.secSchedule')}</SetCap>
-        <SetCard>
-          <SetRow label={t('hang.when')} value={t('hang.daily')} sub={t('first.whenLater')} />
-        </SetCard>
         <div className="di-field">
           <span>{t('hang.timeRow')}</span>
           <HangTimeSelect ariaLabel={t('hang.timeRow')} value={askAfter} onChange={setAskAfter} />
@@ -128,7 +145,7 @@ export function FirstNight({ book, onChange, now }) {
             />
           </label>
         ) : null}
-        <div className="di-hang-actions">
+        <div className="di-hang-actions di-first-bar">
           <button className="di-did" type="submit" aria-disabled={!count} aria-describedby={count ? undefined : 'di-first-add-hint'}>
             {count ? t('first.nextCount', { n: count }) : t('first.add')}
           </button>

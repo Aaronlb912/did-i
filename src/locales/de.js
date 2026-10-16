@@ -295,7 +295,6 @@ export const de = {
   'first.stepOf': '{n} von {total}',
   'first.timeTitle': 'Wann sollen wir fragen?',
   'first.demo': 'Demo ausprobieren',
-  'first.swipeLine': "Heute wischst du nach rechts für Did, nach links für Noch nicht.",
   'enter.locked': 'Gesperrt',
   'enter.thisPhone': 'Dieses Handy',
   'enter.openTitle': '{board} öffnen.',
@@ -3680,7 +3679,8 @@ export const de = {
   'sent.missWaiting': "Bei ihnen wartet schon viel. Versuch es wieder, wenn sie einiges beantwortet haben.",
   'sent.missToday': "Das ist viel für einen Tag. Versuch es morgen wieder.",
   'didYouLink.askedFriend': "Steht auf deinem Heute. {name} ist als Freund angefragt.",
-  'first.packsBody': "Wähl ein Paket und nimm raus, was du nicht brauchst.",
+  'first.packsBody': "Wir fragen sie jeden Tag unter Heute und im Widget. Nach rechts für Did, nach links für Noch nicht.",
+  'first.packShow': "Fragen in {pack} zeigen",
   'first.nextCount': "Weiter mit {n}",
   'first.startEmpty': "Ohne Fragen starten",
 }

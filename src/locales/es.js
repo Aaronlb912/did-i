@@ -295,7 +295,6 @@ export const es = {
   'first.stepOf': '{n} de {total}',
   'first.timeTitle': '¿Cuándo te preguntamos?',
   'first.demo': 'Probar una demo',
-  'first.swipeLine': "Hoy deslizarás a la derecha para Did y a la izquierda para Aún no.",
   'enter.locked': 'Cerrado',
   'enter.thisPhone': 'Este teléfono',
   'enter.openTitle': 'Abrir {board}.',
@@ -3672,7 +3671,8 @@ export const es = {
   'sent.missWaiting': "Ya tienen mucho pendiente. Vuelve a intentarlo cuando respondan algo.",
   'sent.missToday': "Es mucho para un día. Vuelve a intentarlo mañana.",
   'didYouLink.askedFriend': "En tu Hoy. Le pediste amistad a {name}.",
-  'first.packsBody': "Elige un paquete y quita lo que no necesites.",
+  'first.packsBody': "Te las preguntamos cada día en Hoy y en tu widget. Desliza a la derecha para Did, a la izquierda para Aún no.",
+  'first.packShow': "Ver las preguntas de {pack}",
   'first.nextCount': "Seguir con {n}",
   'first.startEmpty': "Empezar sin preguntas",
 }

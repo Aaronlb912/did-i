@@ -284,7 +284,6 @@ export const ja = {
   'first.stepOf': '{n} / {total}',
   'first.timeTitle': 'いつ聞けばいい？',
   'first.demo': 'デモを試す',
-  'first.swipeLine': "今日は、右にスワイプで Did、左で「まだ」です。",
   'enter.locked': 'ロック中',
   'enter.thisPhone': 'この端末',
   'enter.openTitle': '{board} を開く。',
@@ -3623,7 +3622,8 @@ export const ja = {
   'sent.missWaiting': "相手にはもうたくさん届いています。いくつか答えてから送ってください。",
   'sent.missToday': "1日にしては多すぎます。明日また送ってください。",
   'didYouLink.askedFriend': "今日に追加しました。{name}に友達リクエストを送りました。",
-  'first.packsBody': "パックを選んで、いらないものを外そう。",
+  'first.packsBody': "毎日「今日」とウィジェットで聞きます。右にスワイプで Did、左で「まだ」。",
+  'first.packShow': "{pack} の質問を見る",
   'first.nextCount': "{n} 件で続ける",
   'first.startEmpty': "質問なしで始める",
 }
