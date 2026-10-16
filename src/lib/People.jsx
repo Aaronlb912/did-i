@@ -7,6 +7,7 @@ import { keptProfileName } from './cloud-sync.js'
 import { t, tMiss } from './i18n.js'
 import {
   askByFriendId,
+  needsName,
   cleanFriendId,
   formatFriendId,
   cleanCode,
@@ -92,11 +93,27 @@ function AddFriendPop({ onClose, onAsked }) {
   const [draft, setDraft] = useState('')
   const [miss, setMiss] = useState('')
   const [busy, setBusy] = useState(false)
+  // No name yet: the request would say "Someone", so ask for one first.
+  const [needName, setNeedName] = useState(false)
+  const [name, setName] = useState('')
+  useEffect(() => {
+    let alive = true
+    needsName().then((on) => {
+      if (alive) setNeedName(on)
+    }).catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
   async function ask(event) {
     event.preventDefault()
     setBusy(true)
-    const { miss: why, person } = await askByFriendId(draft)
+    const { miss: why, person } = await askByFriendId(draft, needName ? name : '')
     setBusy(false)
+    if (why === 'needName') {
+      setNeedName(true)
+      return setMiss(t('friendAsk.nameFirst'))
+    }
     if (why === 'badId') return setMiss(t('friendId.bad'))
     if (why === 'nobody') return setMiss(t('friendId.nobody'))
     if (why === 'tooMany') return setMiss(t('friendId.tooMany'))
@@ -114,8 +131,25 @@ function AddFriendPop({ onClose, onAsked }) {
           autoComplete="off"
           onChange={(event) => setDraft(cleanFriendId(event.target.value))}
         />
-        <button className="di-did di-did-small" type="submit" disabled={busy || draft.length !== 12}>
-          {t('people.askOne')}
+        {needName ? (
+          <>
+            <p className="di-set-note">{t('friendAsk.nameFirst')}</p>
+            <SetField
+              label={t('people.name')}
+              value={name}
+              placeholder={t('people.namePh')}
+              maxLength={40}
+              autoComplete="name"
+              onChange={(event) => setName(event.target.value)}
+            />
+          </>
+        ) : null}
+        <button
+          className="di-did di-did-small"
+          type="submit"
+          disabled={busy || draft.length !== 12 || (needName && !name.trim())}
+        >
+          {needName ? t('friendAsk.saveSend') : t('people.askOne')}
         </button>
         {miss ? (
           <p className="di-miss" role="alert">

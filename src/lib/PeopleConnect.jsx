@@ -6,6 +6,7 @@ import { cloudSetUp } from './cloud.js'
 import { t, tMiss } from './i18n.js'
 import {
   askByFriendId,
+  needsName,
   cleanFriendId,
   formatFriendId,
   myFriendId,
@@ -34,6 +35,9 @@ export function PeopleConnect({ book, now }) {
   const [myId, setMyId] = useState('')
   const [idDraft, setIdDraft] = useState('')
   const [idMiss, setIdMiss] = useState('')
+  // No name yet: the request would say "Someone", so ask for one first.
+  const [needName, setNeedName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
 
   useEffect(() => {
     if (!account.user) return undefined
@@ -41,6 +45,9 @@ export function PeopleConnect({ book, now }) {
     myFriendId().then((out) => {
       if (alive) setMyId(out.id)
     })
+    needsName().then((on) => {
+      if (alive) setNeedName(on)
+    }).catch(() => {})
     return () => {
       alive = false
     }
@@ -49,12 +56,18 @@ export function PeopleConnect({ book, now }) {
   async function askById(event) {
     event?.preventDefault()
     setIdMiss('')
-    const { miss: why, person } = await askByFriendId(idDraft)
+    if (needName && !nameDraft.trim()) return setIdMiss(t('friendAsk.nameFirst'))
+    const { miss: why, person } = await askByFriendId(idDraft, needName ? nameDraft : '')
+    if (why === 'needName') {
+      setNeedName(true)
+      return setIdMiss(t('friendAsk.nameFirst'))
+    }
     if (why === 'badId') return setIdMiss(t('friendId.bad'))
     if (why === 'nobody') return setIdMiss(t('friendId.nobody'))
     if (why === 'tooMany') return setIdMiss(t('friendId.tooMany'))
     if (why) return setIdMiss(tMiss(why))
     setIdDraft('')
+    setNeedName(false)
     setSaid(t('people.asked', { name: personName(person) || t('people.someone') }))
   }
 
@@ -139,7 +152,21 @@ export function PeopleConnect({ book, now }) {
             autoComplete="off"
             onChange={(event) => setIdDraft(cleanFriendId(event.target.value))}
           />
-          <SetRow label={t('people.askOne')} onClick={askById} />
+          {needName ? (
+            <SetField
+              label={t('people.name')}
+              value={nameDraft}
+              placeholder={t('people.namePh')}
+              maxLength={40}
+              autoComplete="name"
+              onChange={(event) => setNameDraft(event.target.value)}
+            />
+          ) : null}
+          <SetRow
+            label={needName ? t('friendAsk.saveSend') : t('people.askOne')}
+            sub={needName ? t('friendAsk.nameFirst') : undefined}
+            onClick={askById}
+          />
         </SetCard>
       </form>
       {idMiss ? (

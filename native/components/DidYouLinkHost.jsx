@@ -22,6 +22,7 @@ import { readMine } from '../../src/lib/people.js'
 import { refreshWeNights } from '../../src/lib/we-nights.js'
 import { goHash } from '../navigation/hash.js'
 import { showToast } from '../lib/toast-queue.js'
+import { nameFirst } from './NameFirstSheet.jsx'
 import { publishSheet } from './SheetHost.jsx'
 
 // Shown once each: what happens after the first Did you kept from a link,
@@ -160,8 +161,10 @@ export function DidYouLinkHost({ colors, onKeep }) {
 
       if (we) {
         const name = found.name || t('weLink.someone')
-        const join = async (addFriend) => {
+        const join = async (wantsFriend) => {
           publishSheet(null)
+          // No name: ask for one, or join without the friend request.
+          const addFriend = wantsFriend && (await nameFirst(colors))
           const out = await joinWeLink(code, addFriend)
           if (out.miss) {
             showToast({ id: 'did-you-link', kind: 'error', text: t(WE_MISS[out.miss] || 'didYouLink.reach'), ms: 5200 })
@@ -193,12 +196,21 @@ export function DidYouLinkHost({ colors, onKeep }) {
 
       // A Did you. A link from Did I itself has no one to add.
       const name = found.name || 'Did I'
-      const add = (addFriend) => {
+      const add = async (wantsFriend) => {
+        // Signed in with no name: ask for one, or keep it without the request.
+        // Signed out, the request waits for sign-in and is retried until it goes.
+        const addFriend = wantsFriend && (!userId || (await nameFirst(colors)))
         const ids = keep.current({ question: found.question, person: { display_name: name } }) || []
         saveDidYouClaim(code)
         if (addFriend) {
-          if (userId) befriendByLink(code).catch(() => {})
-          else saveLinkFriend(code)
+          if (userId) {
+            // A failed ask waits with the signed-out ones and is tried again.
+            befriendByLink(code)
+              .then((out) => {
+                if (out.miss) saveLinkFriend(code)
+              })
+              .catch(() => saveLinkFriend(code))
+          } else saveLinkFriend(code)
         }
         claimPendingDidYous().catch(() => {})
         next()

@@ -19,7 +19,7 @@ begin
     (a, a || '@test.invalid', 'authenticated', 'authenticated'),
     (b, b || '@test.invalid', 'authenticated', 'authenticated'),
     (c, c || '@test.invalid', 'authenticated', 'authenticated');
-  insert into public.profiles (user_id, display_name) values (a, 'Ann')
+  insert into public.profiles (user_id, display_name) values (a, 'Ann'), (b, 'Bea'), (c, 'Cal')
   on conflict (user_id) do update set display_name = excluded.display_name;
   insert into public.we_cards (id, made_by, question) values (gen_random_uuid(), a, 'Did we walk the dog?')
   returning id into card;

@@ -35,6 +35,7 @@ import {
 } from './did-we.js'
 import { WE_LINK_MISS, joinWeLink, lookUpWeLink, saveWebWeLink } from './did-you-links.js'
 import { refreshWeNights } from './we-nights.js'
+import { needsName, saveName } from './people.js'
 import { readPrefs } from './prefs.js'
 import { weFaceRow, weRuleKey, weStatus } from './we-look.js'
 import { clockWords } from './hall-pages.js'
@@ -691,18 +692,33 @@ function WeLinkJoin({ book, code }) {
   const [found, setFound] = useState(undefined)
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
+  // No name yet: the friend request would say "Someone", so ask for one first.
+  const [needName, setNeedName] = useState(false)
+  const [myName, setMyName] = useState('')
 
   useEffect(() => {
     let alive = true
     lookUpWeLink(code).then((next) => {
       if (alive) setFound(next)
     })
+    needsName().then((on) => {
+      if (alive) setNeedName(on)
+    }).catch(() => {})
     return () => {
       alive = false
     }
   }, [code])
 
   async function join(addFriend) {
+    setMiss('')
+    if (addFriend && needName) {
+      if (!myName.trim()) return setMiss(t('friendAsk.nameFirst'))
+      setBusy(true)
+      const saved = await saveName(myName)
+      setBusy(false)
+      if (saved.miss) return setMiss(tMiss(saved.miss))
+      setNeedName(false)
+    }
     setBusy(true)
     const out = await joinWeLink(code, addFriend)
     setBusy(false)
@@ -725,6 +741,18 @@ function WeLinkJoin({ book, code }) {
           <h2 className="di-page-title">{t('weLink.asked', { name })}</h2>
           <p className="di-set-note">{found.question}</p>
           <p className="di-set-note">{t('weLink.people', { n: found.people })}</p>
+          {found.name && needName ? (
+            <SetCard>
+              <SetField
+                label={t('people.name')}
+                value={myName}
+                placeholder={t('people.namePh')}
+                maxLength={40}
+                autoComplete="name"
+                onChange={(event) => setMyName(event.target.value)}
+              />
+            </SetCard>
+          ) : null}
           <div className="di-hang-actions">
             {found.name ? (
               <button className="di-did di-did-small" type="button" disabled={busy} onClick={() => join(true)}>
