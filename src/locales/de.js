@@ -2376,6 +2376,7 @@ export const de = {
   'gift.cap': 'Das sind genug Geschenke für heute. Versuch es morgen.',
   'gift.retry': 'Erneut versuchen',
   'gift.notFriend': 'Geschenke gehen nur an Freunde und Familie.',
+  'gift.owned': '{name} hat das schon.',
   'gift.needCoins': 'Dafür brauchst du mehr Coins.',
   'gift.gone': 'Das gibt es gerade nicht im Shop.',
   'gift.gotKicker': 'Ein Geschenk von {name}',

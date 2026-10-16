@@ -70,9 +70,10 @@ begin
   end if;
 
   -- Inbound cap: five a day for b (rain, cat so far).
-  for i in 1..3 loop
-    perform public.send_gift(b, 'cheer', 'tape', '');
-  end loop;
+  -- Three different cheers: the same one twice is refused as already owned (gift-owned.sql).
+  perform public.send_gift(b, 'cheer', 'tape', '');
+  perform public.send_gift(b, 'cheer', 'stamp', '');
+  perform public.send_gift(b, 'cheer', 'paper', '');
   select gem_balance into n from public.profiles where user_id = a;
   begin
     perform public.send_gift(b, 'cheer', 'boom', '');
@@ -129,9 +130,10 @@ begin
   end if;
   perform public.return_gift(gift);
   execute 'reset role';
-  -- Rain (owned) and the two extra tape copies go back: 2 + 2 + 2 gems.
-  if (select gem_balance from public.profiles where user_id = a) <> n + 6 then
-    raise exception 'FAIL: doubles should pay back 6 gems once';
+  -- Rain (owned since it was sent) goes back: 2 gems. The same item twice
+  -- can no longer be sent (gift-owned.sql), so there are no tape copies.
+  if (select gem_balance from public.profiles where user_id = a) <> n + 2 then
+    raise exception 'FAIL: doubles should pay back 2 gems once';
   end if;
 
   -- Somebody else cannot return it.

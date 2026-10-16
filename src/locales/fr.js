@@ -2372,6 +2372,7 @@ export const fr = {
   'gift.cap': 'Assez de cadeaux pour aujourd’hui. Réessayez demain.',
   'gift.retry': 'Réessayer',
   'gift.notFriend': 'Les cadeaux ne vont qu’aux amis et à la famille.',
+  'gift.owned': '{name} l’a déjà.',
   'gift.needCoins': 'Il vous faut plus de pièces pour celui-ci.',
   'gift.gone': 'Celui-ci n’est pas en boutique en ce moment.',
   'gift.gotKicker': 'Un cadeau de {name}',

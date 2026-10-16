@@ -680,6 +680,7 @@ export async function sendGift(toId, kind, itemId, note = '') {
   if (/need gems/i.test(text)) return { miss: 'gems' }
   if (/need coins/i.test(text)) return { miss: 'coins' }
   if (/bad item/i.test(text)) return { miss: 'gone' }
+  if (/already owned/i.test(text)) return { miss: 'owned' }
   return bad(error)
 }
 
