@@ -1588,9 +1588,7 @@ export function FirstNightScreen({ book, onChange, now }) {
             {named ? t('first.titleNamed', { name: named }) : t('first.title')}
           </Title>
           <Meta colors={colors}>{t('first.packsBody')}</Meta>
-          <FirstPacks packs={packs} picks={picks} onPack={takePack} onPick={pick} colors={colors} />
-          {/* Typing is the second choice: a small cap, then the card. */}
-          <Text style={[styles.stepCap, { color: colors.inkSoft }]}>{t('first.own')}</Text>
+          {/* Typing is the main way in; packs are the shortcut below it. */}
           <View
             style={[
               ...faceCardStyle(colors),
@@ -1610,7 +1608,7 @@ export function FirstNightScreen({ book, onChange, now }) {
               placeholderTextColor={withAlpha(colors.ink, 0.45)}
               selectionColor={colors.on}
               cursorColor={colors.on}
-              accessibilityLabel={t('first.own')}
+              accessibilityLabel={t('first.typeOwn')}
               autoCapitalize="none"
               returnKeyType="done"
               blurOnSubmit
@@ -1623,6 +1621,10 @@ export function FirstNightScreen({ book, onChange, now }) {
               ]}
             />
           </View>
+          {packs.length ? (
+            <Text style={[styles.stepCap, styles.firstOr, { color: colors.inkSoft }]}>{t('first.orPack')}</Text>
+          ) : null}
+          <FirstPacks packs={packs} picks={picks} onPack={takePack} onPick={pick} colors={colors} />
         </>
       ) : null}
       {step === 1 ? (
@@ -2640,6 +2642,7 @@ const styles = StyleSheet.create({
   firstWhenSub: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
   firstTime: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14 },
   stepCap: { ...sectionLabel, marginBottom: 6 },
+  firstOr: { marginTop: 16, marginBottom: 0 },
   stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   ideaQ: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },

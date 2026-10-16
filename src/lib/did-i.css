@@ -3574,12 +3574,16 @@ button.di-refer-rung {
 .di-first-card {
   display: block;
   margin-top: 1.25rem;
-  padding: 1.35rem 1.2rem 0;
+  padding: 1.35rem 1.2rem 1.1rem;
   background: var(--di-panel);
   border: 1px solid var(--di-line);
   border-radius: var(--di-r);
   cursor: text;
   transition: border-color var(--di-move) var(--di-ease);
+}
+
+.di-first-card + .di-slot-label {
+  margin-top: 1.6rem;
 }
 
 .di-first-card:focus-within {
