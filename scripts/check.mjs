@@ -7278,7 +7278,7 @@ test('a missed due-by question is stamped at its start, so an earlier Did wins',
 
 test('pulse, sign out mid sync, and device keys keep their guards', () => {
   const people = readFileSync(path.join(checkRoot, 'src/lib/people.js'), 'utf8')
-  assert.ok(people.includes('const claimed = adder ? await addAutoSends(db, adder) : []'), 'pulseLook defines claimed')
+  assert.ok(people.includes('claimed = adder ? await addAutoSends(db, adder) : []'), 'pulseLook defines claimed')
   const sync = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
   assert.ok(sync.includes("if (run !== syncRun) throw new Error('account.signedOut')"), 'land stops after sign out')
   assert.ok(sync.includes('if (run !== syncRun) return null'), 'a dropped pull sets no miss')
@@ -7826,7 +7826,13 @@ test('the menu badge counts Did I did yous, the same as the inbox lists them', (
   const src = readFileSync(fileURLToPath(new URL('../src/lib/people.js', import.meta.url)), 'utf8')
   const look = src.slice(src.indexOf('async function pulseLook'), src.indexOf('function pulseWatch'))
   assert.match(look, /appSendsWaiting\(db, user\)/)
-  assert.match(look, /inbox: \(waiting\.count \?\? rows\.length\) \+ fromApp\.length/)
+  assert.match(look, /const inbox = \(waiting\.count \?\? \(waiting\.data \|\| \[\]\)\.length\) \+ fromApp\.length/)
+  // The badge comes in before the slower lookups, and a failed claim cannot stop it.
+  assert.ok(look.indexOf('pulseEmit({ ...pulse.state, inbox, asks })') < look.indexOf("from('cheer_gifts')"))
+  assert.ok(look.indexOf('try {') < look.indexOf('addAutoSends(db, adder)'))
+  // A hung look expires, and only the look that set busy clears it.
+  assert.match(look, /if \(pulse\.busy && Date\.now\(\) - pulse\.busyAt < PULSE_HUNG_MS\) return pulse\.busy/)
+  assert.match(look, /if \(pulse\.busy === run\) pulse\.busy = null/)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
