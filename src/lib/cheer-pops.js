@@ -1155,6 +1155,27 @@ function sunBits(pop, stage) {
   return bits
 }
 
+/**
+ * The sun's rays in px for a disc `px` wide, inside a square `box` centered
+ * on the disc. Each ray sits in its own full-size box that turns `deg` about
+ * that box's middle, so the turn point is the disc's center on every
+ * platform (a 0x0 view's pivot is not reliable on the phone).
+ */
+export function sunRayLayout(px, rays) {
+  const count = Math.max(8, Math.floor(Number(rays) || 8))
+  const size = Math.max(0, Number(px) || 0)
+  const w = Math.max(3, size * 0.11)
+  const gap = size * 0.62
+  // Room for the 1.25 grow overshoot so nothing pokes past the box.
+  const box = Math.ceil((gap + size * 0.42 * 1.25) * 2)
+  const list = Array.from({ length: count }, (_, i) => {
+    const long = i % 2 === 0
+    const len = size * (long ? 0.42 : 0.28)
+    return { deg: (360 / count) * i, long, w, len, left: box / 2 - w / 2, top: box / 2 - gap - len }
+  })
+  return { count, box, rays: list }
+}
+
 const BURST_BUILDERS = {
   lime: limeBits,
   tape: tapeBurstBits,

@@ -69,6 +69,7 @@ import {
   STAR_PATH,
   holdFor,
   popsFor,
+  sunRayLayout,
 } from '../../src/lib/cheer-pops.js'
 import { t } from '../../src/lib/i18n.js'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -1545,11 +1546,9 @@ function Glint({ delay, x, y, size, color }) {
 
 const SUN_T = [0, 0.2, 0.3, 0.38, 0.46, 0.82, 1]
 
-function SunRay({ progress, index, rays, size, colors }) {
-  const long = index % 2 === 0
-  const len = size * (long ? 0.42 : 0.28)
-  const w = Math.max(3, size * 0.11)
-  const gap = size * 0.62
+// Each ray turns inside a box as big as the whole sun, so it pivots on the
+// disc's center. A 0x0 wrapper's pivot drifted on the phone.
+function SunRay({ progress, index, rays, box, ray, colors }) {
   const t0 = 0.14 + (index / rays) * 0.12
   const scaleY = progress.interpolate({
     inputRange: [0, t0, t0 + 0.12, t0 + 0.2, 1],
@@ -1562,20 +1561,20 @@ function SunRay({ progress, index, rays, size, colors }) {
         position: 'absolute',
         left: 0,
         top: 0,
-        width: 0,
-        height: 0,
-        transform: [{ rotate: `${(360 / rays) * index}deg` }],
+        width: box,
+        height: box,
+        transform: [{ rotate: `${ray.deg}deg` }],
       }}
     >
       <Animated.View
         style={{
           position: 'absolute',
-          left: -w / 2,
-          top: -gap - len,
-          width: w,
-          height: len,
-          borderRadius: w / 2,
-          backgroundColor: long ? colors.on : colors.onDeep,
+          left: ray.left,
+          top: ray.top,
+          width: ray.w,
+          height: ray.len,
+          borderRadius: ray.w / 2,
+          backgroundColor: ray.long ? colors.on : colors.onDeep,
           transformOrigin: 'bottom center',
           transform: [{ scaleY }],
         }}
@@ -1595,7 +1594,8 @@ function Sun({ delay, size, rays, turn, colors }) {
     return () => anim.stop()
   }, [delay, progress])
   const px = remPx(size || '2')
-  const count = Math.max(8, Math.floor(Number(rays) || 8))
+  const layout = sunRayLayout(px, rays)
+  const half = layout.box / 2
   const translateY = progress.interpolate({
     inputRange: SUN_T,
     outputRange: [remPx('1.6'), -remPx('0.25'), remPx('0.06'), 0, 0, 0, -remPx('0.3')],
@@ -1609,9 +1609,11 @@ function Sun({ delay, size, rays, turn, colors }) {
   const shine = px * 0.36
   return (
     <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, opacity, transform: [{ translateY }, { scale }] }}>
-      <Animated.View style={{ position: 'absolute', left: 0, top: 0, transform: [{ rotate: spin }] }}>
-        {Array.from({ length: count }, (_, i) => (
-          <SunRay key={i} progress={progress} index={i} rays={count} size={px} colors={colors} />
+      <Animated.View
+        style={{ position: 'absolute', left: -half, top: -half, width: layout.box, height: layout.box, transform: [{ rotate: spin }] }}
+      >
+        {layout.rays.map((ray, i) => (
+          <SunRay key={i} progress={progress} index={i} rays={layout.count} box={layout.box} ray={ray} colors={colors} />
         ))}
       </Animated.View>
       <View
