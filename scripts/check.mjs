@@ -3832,6 +3832,13 @@ test('sun rays sit evenly around the disc center at every stage and size', () =>
   }
 })
 
+test('sun rays grow from their base with translates, so preview replays keep the pivot', () => {
+  const src = readFileSync(fileURLToPath(new URL('../native/components/CheerBurst.jsx', import.meta.url)), 'utf8')
+  const ray = src.slice(src.indexOf('function SunRay'), src.indexOf('function Sun('))
+  assert.ok(!ray.includes('transformOrigin'))
+  assert.ok(ray.includes('[{ translateY: ray.len / 2 }, { scaleY }, { translateY: -ray.len / 2 }]'))
+})
+
 test('by day the sun rises left, peaks at noon and sets right', () => {
   const at = (h, m = 0) => new Date(2026, 9, 14, h, m)
   assert.equal(isDaytime(at(5, 59)), false)
