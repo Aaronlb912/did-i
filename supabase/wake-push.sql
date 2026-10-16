@@ -38,6 +38,9 @@ alter table public.wake_queue drop constraint if exists wake_queue_len;
 alter table public.wake_queue add constraint wake_queue_len check (length(device_key) <= 128);
 
 create index if not exists wake_queue_due_idx on public.wake_queue (asked_at) where due;
+-- The device foreign key leads with user_id (the primary key covers it);
+-- db:audit wants every foreign key column to lead an index.
+create index if not exists wake_queue_device_idx on public.wake_queue (device_key);
 
 alter table public.wake_queue enable row level security;
 revoke all on public.wake_queue from anon, authenticated;
