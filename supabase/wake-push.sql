@@ -17,6 +17,11 @@
 -- ones held back. Needs pg_cron, pg_net and the Vault secrets project_url
 -- and service_role_key (admin-mail.sql); without them nothing is sent.
 
+-- Only builds that handle a wake say so (wake_ok, set with the push token by
+-- 1.3.6 and later). Older phones would get nothing useful, and an Android
+-- build without the handler could show an empty notification.
+alter table public.devices add column if not exists wake_ok boolean not null default false;
+
 create table if not exists public.wake_queue (
   user_id uuid not null,
   device_key text not null,
@@ -121,6 +126,7 @@ begin
   from public.devices d
   where d.user_id = any(who)
     and d.push_token is not null
+    and d.wake_ok
     and d.device_key is distinct from skip
   on conflict (user_id, device_key) do update
     set due = true, asked_at = now()
@@ -225,7 +231,7 @@ begin
   select p.user_id, p.device_key, d.push_token
   from picked p
   join public.devices d on d.user_id = p.user_id and d.device_key = p.device_key
-  where d.push_token is not null;
+  where d.push_token is not null and d.wake_ok;
 end;
 $$;
 

@@ -70,15 +70,17 @@ async function keepToken(token) {
   const { data } = await db.auth.getSession()
   const user = data?.session?.user
   if (!user) return
-  await db.from('devices').upsert(
-    {
-      user_id: user.id,
-      device_key: deviceKey(),
-      push_token: token,
-      last_seen_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id,device_key' },
-  )
+  const row = {
+    user_id: user.id,
+    device_key: deviceKey(),
+    push_token: token,
+    last_seen_at: new Date().toISOString(),
+  }
+  // wake_ok: this build handles silent wakes (supabase/wake-push.sql). Older
+  // builds never send it, so they never get one.
+  const first = await db.from('devices').upsert({ ...row, wake_ok: true }, { onConflict: 'user_id,device_key' })
+  // Before wake-push.sql is applied there is no wake_ok column.
+  if (first?.error) await db.from('devices').upsert(row, { onConflict: 'user_id,device_key' })
 }
 
 async function ensureAndroidChannel() {

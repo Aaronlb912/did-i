@@ -205,6 +205,35 @@ begin
     raise exception 'FAIL: keys outlived the account';
   end if;
 
+  -- put_answers exactly as a 1.3.5 phone calls it (src/lib/answer-log.js
+  -- rowsOf): same signature, integer back, newer stamp wins, older does not,
+  -- a row without m keeps the stored amount. B never asked for a key.
+  insert into public.devices (user_id, device_key) values (b, 'old-b') on conflict do nothing;
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  n := public.put_answers(jsonb_build_array(jsonb_build_object(
+    'b', 'bb', 'l', 'qb', 'p', tonight, 's', 'yes', 'a', '2026-01-01T10:00:00.000Z', 'n', 'note', 'e', '', 'm', 3)));
+  if n <> 1 then raise exception 'FAIL: 1.3.5 put_answers returned %', n; end if;
+  n := public.put_answers(jsonb_build_array(jsonb_build_object(
+    'b', 'bb', 'l', 'qb', 'p', tonight, 's', 'skip', 'a', '2025-12-31T10:00:00.000Z', 'n', '', 'e', '', 'm', null)));
+  if n <> 0 then raise exception 'FAIL: an older 1.3.5 answer won'; end if;
+  n := public.put_answers(jsonb_build_array(jsonb_build_object(
+    'b', 'bb', 'l', 'qb', 'p', tonight, 's', 'skip', 'a', '2026-01-02T10:00:00.000Z', 'n', '', 'e', '')));
+  if n <> 1 then raise exception 'FAIL: a newer 1.3.5 answer lost'; end if;
+  if (select amount from public.answer_log where user_id = b and lamp_id = 'qb') <> 3
+     or (select status from public.answer_log where user_id = b and lamp_id = 'qb') <> 'skip' then
+    raise exception 'FAIL: 1.3.5 merge rules changed';
+  end if;
+  -- Not signed in still fails the same way.
+  execute 'reset role';
+  perform set_config('request.jwt.claims', '', true);
+  begin
+    perform public.put_answers('[]'::jsonb);
+    raise exception 'FAIL: put_answers ran with no user';
+  exception when others then
+    if sqlerrm <> 'not signed in' then raise; end if;
+  end;
+
   raise exception 'SQL TESTS PASSED';
 end;
 $$;

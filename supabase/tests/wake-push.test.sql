@@ -20,9 +20,14 @@ begin
     on conflict (user_id) do update set zone = 'UTC';
   insert into public.shelves (user_id, doc) values (a, '{"boards":[{"id":"ba","lamps":[{"id":"qa"}]}]}')
     on conflict (user_id) do update set doc = excluded.doc;
-  insert into public.devices (user_id, device_key, push_token) values
-    (a, 'a-phone', 'tok-a-phone'), (a, 'a-pad', 'tok-a-pad'), (a, 'a-web', null),
-    (b, 'b-phone', 'tok-b-phone'), (c, 'c-phone', 'tok-c-phone');
+  insert into public.devices (user_id, device_key, push_token, wake_ok) values
+    (a, 'a-phone', 'tok-a-phone', true), (a, 'a-pad', 'tok-a-pad', true), (a, 'a-web', null, true),
+    (b, 'b-phone', 'tok-b-phone', true), (c, 'c-phone', 'tok-c-phone', true);
+  -- A phone on 1.3.5 or older: a token, but it never said it handles wakes.
+  insert into public.devices (user_id, device_key, push_token) values (a, 'a-old', 'tok-a-old');
+  if (select wake_ok from public.devices where user_id = a and device_key = 'a-old') then
+    raise exception 'FAIL: old rows default to wake_ok';
+  end if;
 
   -- Own answer from the app on a-phone (its header): a-pad wakes, a-phone does not,
   -- a device with no token does not, nobody else does.
@@ -34,7 +39,7 @@ begin
   perform set_config('request.headers', '', true);
   select count(*) into n from public.wake_queue where due and user_id = a and device_key = 'a-pad';
   if n <> 1 then raise exception 'FAIL: own other device not woken'; end if;
-  if exists (select 1 from public.wake_queue where device_key in ('a-phone', 'a-web', 'b-phone', 'c-phone')) then
+  if exists (select 1 from public.wake_queue where device_key in ('a-phone', 'a-web', 'a-old', 'b-phone', 'c-phone')) then
     raise exception 'FAIL: wrong device woken for an own answer';
   end if;
   -- Clients cannot see or touch the queue.
@@ -131,6 +136,13 @@ begin
   delete from public.devices where user_id = a and device_key = 'a-pad';
   if exists (select 1 from public.wake_queue where device_key = 'a-pad') then
     raise exception 'FAIL: wake row outlived its device';
+  end if;
+
+  -- Even a queued row for an old build is never sent.
+  delete from public.wake_queue;
+  insert into public.wake_queue (user_id, device_key) values (a, 'a-old');
+  if exists (select 1 from public.take_wake_batch(500) t where t.device_key = 'a-old') then
+    raise exception 'FAIL: an old build got a wake';
   end if;
 
   raise exception 'SQL TESTS PASSED';
