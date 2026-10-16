@@ -2852,8 +2852,11 @@ function showGift(gift, getBook, onChange, colors) {
 
 // Say thanks to the giver, once. The server refuses a second one, so a
 // thanks already sent also shows as Thanked.
+// Gifts thanked while the app is open, so a reopened pop-up starts at Thanked.
+const thankedGifts = new Set()
+
 function GiftThanks({ id, colors }) {
-  const [state, setState] = useState('')
+  const [state, setState] = useState(() => (thankedGifts.has(id) ? 'done' : ''))
   const say = async () => {
     setState('busy')
     const out = await thankGift(id).catch(() => ({ miss: 'people.reach' }))
@@ -2862,6 +2865,7 @@ function GiftThanks({ id, colors }) {
       confirmMiss(tMiss(out.miss))
       return
     }
+    thankedGifts.add(id)
     setState('done')
   }
   return (
