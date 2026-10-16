@@ -2312,6 +2312,7 @@ export const zh = {
   'gift.cap': '今天送的礼物够多了，明天再试。',
   'gift.retry': '再试一次',
   'gift.notFriend': '礼物只能送给朋友和家人。',
+  'gift.owned': '{name}已经有这个了。',
   'gift.needCoins': '这个需要更多金币。',
   'gift.gone': '商店里现在没有这个。',
   'gift.gotKicker': '来自 {name} 的礼物',

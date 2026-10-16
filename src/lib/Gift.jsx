@@ -20,7 +20,8 @@ import { useReduceMotion } from './useReduceMotion.js'
 const NOBODY_OWNS = { looks: [], cheers: [], buddies: [], accessories: [] }
 const TYPE_OF = { looks: 'look', cheers: 'cheer', buddies: 'buddy', accessories: 'accessory' }
 
-function giftMiss(why) {
+function giftMiss(why, name) {
+  if (why === 'owned') return t('gift.owned', { name })
   if (why === 'giftCap') return t('gift.cap')
   if (why === 'notFriend') return t('gift.notFriend')
   if (why === 'coins') return t('gift.needCoins')
@@ -122,7 +123,7 @@ export function Gift({ book, onChange, toId, now }) {
       setGemShort(true)
       return
     }
-    if (out.miss) return setMiss(giftMiss(out.miss))
+    if (out.miss) return setMiss(giftMiss(out.miss, name))
     setPick(null)
     onChange(stampPurse(book, { ...purse, gems: out.gems, coins: out.coins }))
     setNote('')

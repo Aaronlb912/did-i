@@ -2320,6 +2320,7 @@ export const ja = {
   'gift.cap': '今日のギフトはここまでです。明日また送れます。',
   'gift.retry': 'もう一度試す',
   'gift.notFriend': 'ギフトは友だちと家族にだけ送れます。',
+  'gift.owned': '{name}さんはもう持っています。',
   'gift.needCoins': 'これにはコインが足りません。',
   'gift.gone': 'これは今ショップにありません。',
   'gift.gotKicker': '{name} からのギフト',

@@ -2605,7 +2605,8 @@ function canAfford(item, purse) {
   return item.gems > 0 ? purse.gems >= item.gems : purse.coins >= (item.coins || 0)
 }
 
-function giftMiss(why) {
+function giftMiss(why, name) {
+  if (why === 'owned') return t('gift.owned', { name })
   if (why === 'giftCap') return t('gift.cap')
   if (why === 'notFriend') return t('gift.notFriend')
   if (why === 'coins') return t('gift.needCoins')
@@ -2675,7 +2676,7 @@ export function GiftScreen({ book, onChange, toId }) {
       return
     }
     if (out.miss) {
-      openPick(type, item, giftMiss(out.miss))
+      openPick(type, item, giftMiss(out.miss, name))
       return
     }
     publishSheet(null)
