@@ -1575,8 +1575,9 @@ function SunRay({ progress, index, rays, box, ray, colors }) {
           height: ray.len,
           borderRadius: ray.w / 2,
           backgroundColor: ray.long ? colors.on : colors.onDeep,
-          transformOrigin: 'bottom center',
-          transform: [{ scaleY }],
+          // Grows from its bottom end. Done with translates, not a transform origin:
+          // a reused native view kept a stale origin on replays (shop preview loop).
+          transform: [{ translateY: ray.len / 2 }, { scaleY }, { translateY: -ray.len / 2 }],
         }}
       />
     </View>
