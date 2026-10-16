@@ -64,6 +64,20 @@ export function FirstNight({ book, onChange, now }) {
           {named ? t('first.titleNamed', { name: named }) : t('first.title')}
         </h2>
         <p className="di-detail-meta">{t('first.packsBody')}</p>
+        <label className="di-first-card">
+          <span className="di-first-lead">{t('tonight.didI')}</span>
+          <input
+            className="di-first-blank"
+            value={blank}
+            onChange={(event) => setBlank(event.target.value)}
+            placeholder={t('first.ownHint')}
+            aria-label={t('first.typeOwn')}
+            maxLength={120}
+            autoCapitalize="none"
+            enterKeyHint="done"
+          />
+        </label>
+        {packs.length ? <p className="di-slot-label">{t('first.orPack')}</p> : null}
         {packs.length ? (
           <div className="di-first-packs">
             {packs.map((pack) => {
@@ -116,20 +130,6 @@ export function FirstNight({ book, onChange, now }) {
             })}
           </div>
         ) : null}
-        <p className="di-slot-label">{t('first.own')}</p>
-        <label className="di-first-card">
-          <span className="di-first-lead">{t('tonight.didI')}</span>
-          <input
-            className="di-first-blank"
-            value={blank}
-            onChange={(event) => setBlank(event.target.value)}
-            placeholder={t('first.ownHint')}
-            aria-label={t('first.own')}
-            maxLength={120}
-            autoCapitalize="none"
-            enterKeyHint="done"
-          />
-        </label>
         <div className="di-field">
           <span>{t('hang.timeRow')}</span>
           <HangTimeSelect ariaLabel={t('hang.timeRow')} value={askAfter} onChange={setAskAfter} />
