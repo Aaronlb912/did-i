@@ -54,12 +54,14 @@ begin
   -- 2. Gifts: a new item can not be returned; a double can.
   update public.profiles set gem_balance = 20,
     gem_cosmetics = '{"cheers": ["rain"]}'::jsonb where user_id = a;
-  update public.profiles set gem_cosmetics = '{"cheers": ["rain"]}'::jsonb where user_id = b;
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
   perform public.send_gift(b, 'cheer', 'rain', '');
   perform public.send_gift(b, 'cheer', 'tape', '');
   execute 'reset role';
+  -- b gets rain some other way after it was sent (send_gift refuses it up
+  -- front now, gift-owned.sql), so it is a double at claim.
+  update public.profiles set gem_cosmetics = '{"cheers": ["rain"]}'::jsonb where user_id = b;
   select gem_balance into bal from public.profiles where user_id = a;
 
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
