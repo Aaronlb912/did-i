@@ -2488,7 +2488,9 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
             label={row.kind === 'cheer' ? t('inbox.thanks') : t('inbox.keep')}
             onPress={() => answer(row, true)}
           />
-          {row.kind === 'todo' ? (
+          {/* Both choices on the card, so No thanks is a real button and not hidden in a menu. */}
+          {row.kind === 'todo' ? <KeyButton colors={colors} label={t('inbox.pass')} onPress={() => answer(row, false)} /> : null}
+          {row.kind === 'todo' && !row.appSend ? (
             <Pressable
               onPress={() => setMenu(row)}
               hitSlop={10}
@@ -2507,10 +2509,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
           name={menu.question}
           colors={colors}
           onClose={() => setMenu(null)}
-          items={[
-            { key: 'pass', label: t('inbox.pass'), onPress: () => answer(menu, false) },
-            ...(menu.appSend ? [] : [{ key: 'report', label: t('we.report'), danger: true, onPress: () => report(menu) }]),
-          ]}
+          items={[{ key: 'report', label: t('we.report'), danger: true, onPress: () => report(menu) }]}
         />
       ) : null}
       <Miss colors={colors}>{miss}</Miss>
