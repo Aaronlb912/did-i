@@ -14,6 +14,7 @@ import {
   answerSend,
   reportSend,
   askByFriendId,
+  needsName,
   cleanFriendId,
   editSend,
   formatFriendId,
@@ -430,6 +431,7 @@ function familyCodeMiss(why) {
   if (why === 'code') return t('people.codeShort')
   if (why === 'nofamily') return t('people.noFamily')
   if (why === 'tooMany') return t('friendId.tooMany')
+  if (why === 'needName') return t('friendAsk.nameFirst')
   return tMiss(why)
 }
 
@@ -572,25 +574,31 @@ function useFriendAsk(onAsked) {
   const [found, setFound] = useState(null)
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
+  // No name yet: the request would say "Someone", so ask for one first.
+  const [needName, setNeedName] = useState(false)
+  const [name, setName] = useState('')
   async function look(code) {
     setMiss('')
     setBusy(true)
-    const result = await lookUpFriendId(code)
+    const [result, nameless] = await Promise.all([lookUpFriendId(code), needsName().catch(() => false)])
     setBusy(false)
     if (result.miss) return setMiss(friendIdMiss(result.miss))
+    setNeedName(nameless)
     return setFound({ ...result, code })
   }
   async function send() {
     if (!found) return
     setMiss('')
     setBusy(true)
-    const { miss: why, person } = await askByFriendId(found.code)
+    const { miss: why, person } = await askByFriendId(found.code, needName ? name : '')
     setBusy(false)
+    if (why === 'needName') setNeedName(true)
     if (why) return setMiss(friendIdMiss(why))
     setFound(null)
+    setNeedName(false)
     onAsked(t('people.asked', { name: personName(person || found.person) || t('people.someone') }))
   }
-  return { found, busy, miss, look, send, cancel: () => { setFound(null); setMiss('') } }
+  return { found, busy, miss, needName, name, setName, look, send, cancel: () => { setFound(null); setMiss('') } }
 }
 
 function FriendConfirm({ ask, colors, onDone }) {
@@ -615,9 +623,28 @@ function FriendConfirm({ ask, colors, onDone }) {
         </View>
       </View>
       <Text style={[styles.confirmLine, { color: colors.inkSoft }]}>{line}</Text>
+      {state === '' && ask.needName ? (
+        <>
+          <Text style={[styles.confirmLine, { color: colors.inkSoft }]}>{t('friendAsk.nameFirst')}</Text>
+          <Field
+            colors={colors}
+            label={t('people.name')}
+            placeholder={t('people.namePh')}
+            value={ask.name}
+            onChangeText={ask.setName}
+            maxLength={40}
+            autoCapitalize="words"
+          />
+        </>
+      ) : null}
       <Miss colors={colors}>{miss}</Miss>
       {state === '' ? (
-        <DidButton colors={colors} label={t('friendAsk.send')} disabled={busy} onPress={ask.send} />
+        <DidButton
+          colors={colors}
+          label={ask.needName ? t('friendAsk.saveSend') : t('friendAsk.send')}
+          disabled={busy || (ask.needName && !ask.name.trim())}
+          onPress={ask.send}
+        />
       ) : null}
       {state === 'asksYou' ? (
         <DidButton
@@ -837,7 +864,7 @@ export function PeopleScreen({ book, onChange }) {
               actions={
                 <>
                   <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true, row.person)} />
-                  <KeyButton colors={colors} label={t('people.no')} onPress={() => askFirst(colors, t('people.noTitle', { name: personName(row.person) || t('people.someone') }), t('people.noBody'), t('people.no'), () => answerAsk(row.id, false))} />
+                  <KeyButton colors={colors} label={t('people.no')} onPress={() => askFirst(colors, t('people.noTitle', { name: friendAskTitle(row.person) || t('people.someone') }), t('people.noBody'), t('people.no'), () => answerAsk(row.id, false))} />
                 </>
               }
             />
@@ -1500,7 +1527,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
               actions={
                 <>
                   <DidButton colors={colors} small label={t('people.yes')} onPress={() => answerAsk(row.id, true, row.person)} />
-                  <KeyButton colors={colors} label={t('people.no')} onPress={() => askFirst(colors, t('people.noTitle', { name: personName(row.person) || t('people.someone') }), t('people.noBody'), t('people.no'), () => answerAsk(row.id, false))} />
+                  <KeyButton colors={colors} label={t('people.no')} onPress={() => askFirst(colors, t('people.noTitle', { name: friendAskTitle(row.person) || t('people.someone') }), t('people.noBody'), t('people.no'), () => answerAsk(row.id, false))} />
                 </>
               }
             />

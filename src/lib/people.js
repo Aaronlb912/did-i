@@ -102,9 +102,11 @@ export function friendLine(person, dateIso = isoDate(new Date())) {
   return n ? t('people.streakN', { n }) : t('people.noStreak')
 }
 
+// No name (asks sent before names were needed): their friend ID, so the
+// request still says who it is.
 export function friendAskTitle(person) {
   const name = person?.display_name?.trim()
-  return name || ''
+  return name || (person?.friend_id ? formatFriendId(person.friend_id) : '')
 }
 
 export function friendAskNote(person) {
@@ -352,16 +354,30 @@ export async function myFriendId() {
   return { id: String(data || ''), miss: '' }
 }
 
-export async function askByFriendId(value) {
+// A friend request needs your name so the person asked knows who it is.
+// The server refuses with 'need name' (supabase/friend-ask-name.sql).
+export async function needsName() {
+  const mine = await readMine()
+  return Boolean(mine) && !String(mine.display_name || '').trim()
+}
+
+// name: when given, saved first, so someone with no name asks in one step.
+export async function askByFriendId(value, name = '') {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const code = cleanFriendId(value)
   if (!/^[1-9]\d{11}$/.test(code)) return { miss: 'badId' }
+  if (name !== '') {
+    if (!cleanName(name)) return { miss: 'needName' }
+    const saved = await saveName(name)
+    if (saved.miss) return saved
+  }
   const { data, error } = await db.rpc('ask_by_friend_id', { wanted: code })
   if (!error && data?.miss === 'nobody') return { miss: 'nobody' }
   if (!error) return { miss: '', person: { user_id: data?.user_id, display_name: data?.display_name || '' } }
   if (notRunYet(error)) return { miss: 'setup' }
   const text = error.message || ''
+  if (/need name/i.test(text)) return { miss: 'needName' }
   if (/too many tries/i.test(text)) return { miss: 'tooMany' }
   if (/nobody/i.test(text)) return { miss: 'nobody' }
   if (/bad id/i.test(text)) return { miss: 'badId' }

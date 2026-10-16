@@ -65,6 +65,7 @@ const files = [
   'supabase/answer-keys.sql',
   'supabase/wake-push.sql',
   'supabase/gift-thanks.sql',
+  'supabase/friend-ask-name.sql',
   'supabase/drop-tonight.sql',
 ]
 

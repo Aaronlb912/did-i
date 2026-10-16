@@ -25,7 +25,9 @@ begin
     (a, a || '@test.invalid', 'authenticated', 'authenticated'),
     (b, b || '@test.invalid', 'authenticated', 'authenticated'),
     (c, c || '@test.invalid', 'authenticated', 'authenticated');
-  insert into public.profiles (user_id) values (a), (b) on conflict do nothing;
+  -- Ann has a name: a friend request needs one (supabase/friend-ask-name.sql).
+  insert into public.profiles (user_id, display_name) values (a, 'Ann'), (b, null)
+  on conflict (user_id) do update set display_name = excluded.display_name;
 
   -- 1. Ann can not insert a friendship straight to 'ok'.
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);

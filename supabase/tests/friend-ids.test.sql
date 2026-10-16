@@ -38,6 +38,9 @@ begin
     raise exception 'FAIL: two accounts share a friend id';
   end if;
 
+  -- Bea needs a name to ask (supabase/friend-ask-name.sql).
+  update public.profiles set display_name = 'Bea' where user_id = b;
+
   -- No phone on file, and the ask still goes through.
   out := public.ask_by_friend_id(substr(a_id, 1, 4) || ' ' || substr(a_id, 5, 4) || '-' || substr(a_id, 9));
   if out->>'display_name' <> 'Ann' then
