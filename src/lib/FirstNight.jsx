@@ -1,27 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
-import { blankLamp, didQuestion, shortFromQuestion } from './board-json.js'
-import { hangInto } from './board-ops.js'
+import { didQuestion, shortFromQuestion } from './board-json.js'
 import { BoardShell } from './BoardShell.jsx'
+import { firstRunBook, packState, togglePack, togglePick } from './first-run.js'
 import { markWelcomeSeen } from './hall-pages.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { firstName } from './session.js'
-import { hangStarter, starterBlank, unusedStarters } from './starters.js'
+import { packList } from './starters.js'
 import { HangTimeSelect } from './HangTimeSelect.jsx'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
 
-// The first question comes up every day; the only choice here is from when.
-function timed(next, question, askAfter) {
-  if (!askAfter) return next
-  const lamps = (next.lamps || []).map((lamp) => (lamp.question === question ? { ...lamp, askAfter } : lamp))
-  return { ...next, lamps }
-}
-
-const WOBBLE_FIRST = 1200
-const WOBBLE_EVERY = 4200
-
-// The first question is a sentence to finish, written on the card it becomes.
+// First run: check packs (and single questions in them), or type your own.
+// Everything checked is added at once, every day, with one time.
 export function FirstNight({ book, onChange, now }) {
   usePrefs()
   const clock = now || new Date()
@@ -29,23 +20,13 @@ export function FirstNight({ book, onChange, now }) {
   const [person, setPerson] = useState(book.keeperName || '')
   const [askAfter, setAskAfter] = useState('')
   const [blank, setBlank] = useState('')
-  const [wave, setWave] = useState(0)
-  const [wobble, setWobble] = useState(0)
-  const [typing, setTyping] = useState(false)
-  const starters = unusedStarters(book, clock, true)
+  const [picks, setPicks] = useState([])
+  const packs = packList(book)
   const question = didQuestion(blank)
-  const picked = starters.find((starter) => starter.question === question)
-  const idle = !blank.trim() && !typing
-
-  // While nothing is written, the ideas rock in turn as a "tap one" cue.
-  useEffect(() => {
-    if (!idle) return undefined
-    let timer = setTimeout(function again() {
-      setWobble((count) => count + 1)
-      timer = setTimeout(again, WOBBLE_EVERY)
-    }, WOBBLE_FIRST)
-    return () => clearTimeout(timer)
-  }, [idle])
+  const ownNew = Boolean(question) && !picks.some((pick) => pick.question === question)
+  const count = picks.length + (ownNew ? 1 : 0)
+  // A second submit before the page leaves would add the picks again.
+  const finished = useRef(false)
 
   function withName(next) {
     const keeperName = person.trim()
@@ -54,36 +35,26 @@ export function FirstNight({ book, onChange, now }) {
   }
 
   function land(next, face = '') {
+    finished.current = true
     markWelcomeSeen()
     onChange(withName(next))
     goHash('/tonight', face ? { face } : '')
   }
 
-  function pick(starter) {
-    setBlank(starterBlank(starter))
-    setWave((count) => count + 1)
-  }
-
   function add(event) {
     event?.preventDefault()
-    if (!question) {
-      setWobble((count) => count + 1)
-      return
-    }
-    if (picked) {
-      land(timed(hangStarter(book, picked, clock, true), picked.question, askAfter))
-      return
-    }
-    const lamp = {
-      ...blankLamp(clock),
-      question,
-      short: shortFromQuestion(question, 24),
-      cadence: 'daily',
-      askAfter,
-      slot: 'whenever',
-    }
-    land(hangInto(book, lamp), lamp.id)
+    if (!count || finished.current) return
+    const own = ownNew ? { question, short: shortFromQuestion(question, 24) } : null
+    const made = firstRunBook(book, picks, own, askAfter, clock)
+    land(made.book, made.faceId)
   }
+
+  function startEmpty() {
+    if (finished.current) return
+    land(book)
+  }
+
+  const isOn = (item) => picks.some((pick) => pick.question === item.question)
 
   return (
     <BoardShell book={book} now={clock} title={book.title} nav={false} back={false} cog={false}>
@@ -91,47 +62,53 @@ export function FirstNight({ book, onChange, now }) {
         <h2 className="di-page-title">
           {named ? t('first.titleNamed', { name: named }) : t('first.title')}
         </h2>
-        <p className="di-detail-meta">{t('first.body')}</p>
+        <p className="di-detail-meta">{t('first.packsBody')}</p>
+        {packs.length ? (
+          <div className="di-first-packs">
+            {packs.map((pack) => {
+              const state = packState(picks, pack)
+              const on = pack.items.filter(isOn).length
+              return (
+                <fieldset key={pack.id} className="di-first-pack" data-state={state}>
+                  <button
+                    type="button"
+                    className="di-first-pack-head"
+                    role="checkbox"
+                    aria-label={`${pack.title}, ${t('first.stepOf', { n: on, total: pack.items.length })}`}
+                    aria-checked={state === 'all' ? 'true' : state === 'some' ? 'mixed' : 'false'}
+                    onClick={() => setPicks((list) => togglePack(list, pack))}
+                  >
+                    <span className="di-first-box" data-state={state} aria-hidden="true" />
+                    <span className="di-first-pack-title">{pack.title}</span>
+                    <span className="di-first-pack-count">{t('first.stepOf', { n: on, total: pack.items.length })}</span>
+                  </button>
+                  {pack.items.map((item) => (
+                    <label key={item.idea} className="di-first-item">
+                      <input type="checkbox" checked={isOn(item)} onChange={() => setPicks((list) => togglePick(list, item))} />
+                      <span className="di-first-box" data-state={isOn(item) ? 'all' : 'none'} aria-hidden="true" />
+                      <span>{item.question}</span>
+                    </label>
+                  ))}
+                </fieldset>
+              )
+            })}
+          </div>
+        ) : null}
+        <p className="di-slot-label">{t('first.own')}</p>
         <label className="di-first-card">
-          <span key={wave} className="di-first-lead" data-wave={wave ? '' : undefined}>
-            {Array.from(t('tonight.didI')).map((char, index) => (
-              <span key={index} style={{ '--i': index }}>
-                {char}
-              </span>
-            ))}
-          </span>
+          <span className="di-first-lead">{t('tonight.didI')}</span>
           <input
             className="di-first-blank"
             value={blank}
             onChange={(event) => setBlank(event.target.value)}
-            onFocus={() => setTyping(true)}
-            onBlur={() => setTyping(false)}
             placeholder={t('first.ownHint')}
+            aria-label={t('first.own')}
             maxLength={120}
             autoCapitalize="none"
             enterKeyHint="done"
           />
           <span className="di-first-swipes">{t('first.swipeLine')}</span>
         </label>
-        {starters.length ? (
-          <div className="di-first-picks">
-            <p className="di-slot-label">{t('first.picks')}</p>
-            <div className="di-tray-files" data-wobble={wobble ? (wobble % 2 ? 'a' : 'b') : undefined}>
-              {starters.map((starter, index) => (
-                <button
-                  key={starter.short}
-                  className="di-key di-first-pick"
-                  type="button"
-                  aria-pressed={picked === starter}
-                  style={{ '--i': index }}
-                  onClick={() => pick(starter)}
-                >
-                  {starterBlank(starter)}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
         <SetCap>{t('hang.secSchedule')}</SetCap>
         <SetCard>
           <SetRow label={t('hang.when')} value={t('hang.daily')} sub={t('first.whenLater')} />
@@ -152,10 +129,13 @@ export function FirstNight({ book, onChange, now }) {
           </label>
         ) : null}
         <div className="di-hang-actions">
-          <button className="di-did" type="submit" aria-disabled={!question} aria-describedby={question ? undefined : 'di-first-add-hint'}>
-            {t('first.add')}
+          <button className="di-did" type="submit" aria-disabled={!count} aria-describedby={count ? undefined : 'di-first-add-hint'}>
+            {count ? t('first.nextCount', { n: count }) : t('first.add')}
           </button>
-          {!question ? <small id="di-first-add-hint" className="di-field-hint">{t('first.addHint')}</small> : null}
+          {!count ? <small id="di-first-add-hint" className="di-field-hint">{t('first.addHint')}</small> : null}
+          <button className="di-key" type="button" onClick={startEmpty}>
+            {t('first.startEmpty')}
+          </button>
         </div>
       </form>
     </BoardShell>
