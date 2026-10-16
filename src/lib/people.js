@@ -1521,6 +1521,7 @@ export async function setAutoAdd(friendId, on) {
 
 const PULSE_MS = 300000
 const PULSE_STALE_MS = 60000
+const PULSE_HUNG_MS = 20000
 const PULSE_ZERO = { inbox: 0, asks: 0, gifts: 0, friends: 0, families: 0, news: null }
 
 // Cloud sync is what opens gifts (claim, collection, pop-up). The pulse only
@@ -1539,6 +1540,7 @@ const pulse = {
   subs: new Set(),
   adder: null,
   busy: null,
+  busyAt: 0,
   stop: null,
 }
 
@@ -1602,17 +1604,26 @@ async function addAutoSends(db, adder) {
 }
 
 async function pulseLook() {
-  if (pulse.busy) return pulse.busy
-  pulse.busy = (async () => {
+  // A look that never settles (a hung request) must not block every later one,
+  // or the badges stay at 0 for good.
+  if (pulse.busy && Date.now() - pulse.busyAt < PULSE_HUNG_MS) return pulse.busy
+  pulse.busyAt = Date.now()
+  const run = (async () => {
     const db = cloud()
     const user = db ? await me() : null
     if (!db || !user || user.id !== pulse.userId) return
     pulse.at = Date.now()
     // Only claim while something is there to put the questions on tonight.
+    // A failed claim is tried again next look; the counts still come in.
     const adder = pulse.adder
-    const claimed = adder ? await addAutoSends(db, adder) : []
-    const fromDidI = adder ? await claimDidITonight(db, user) : []
-    if (fromDidI.length) adder(fromDidI)
+    let claimed = []
+    try {
+      claimed = adder ? await addAutoSends(db, adder) : []
+      const fromDidI = adder ? await claimDidITonight(db, user) : []
+      if (fromDidI.length) adder(fromDidI)
+    } catch {
+      claimed = []
+    }
     // Did I's own did yous sit in the inbox too (listInbox), so they count.
     const [waiting, asks, fromApp] = await Promise.all([
       db
@@ -1625,6 +1636,9 @@ async function pulseLook() {
       friendAskCount(),
       appSendsWaiting(db, user),
     ])
+    // The badges first, before the slower lookups below.
+    const inbox = (waiting.count ?? (waiting.data || []).length) + fromApp.length
+    if (user.id === pulse.userId) pulseEmit({ ...pulse.state, inbox, asks })
     const giftRows = await db
       .from('cheer_gifts')
       .select('id', { count: 'exact', head: true })
@@ -1671,13 +1685,14 @@ async function pulseLook() {
         }
       }
     }
-    pulseEmit({ inbox: (waiting.count ?? rows.length) + fromApp.length, asks, gifts, friends, families, news })
+    pulseEmit({ inbox, asks, gifts, friends, families, news })
   })()
     .catch(() => {})
     .finally(() => {
-      pulse.busy = null
+      if (pulse.busy === run) pulse.busy = null
     })
-  return pulse.busy
+  pulse.busy = run
+  return run
 }
 
 function pulseWatch(user, fn) {
