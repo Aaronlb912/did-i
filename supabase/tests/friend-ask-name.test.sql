@@ -20,7 +20,7 @@ begin
     (a, a || '@test.invalid', 'authenticated', 'authenticated'),
     (b, b || '@test.invalid', 'authenticated', 'authenticated'),
     (c, c || '@test.invalid', 'authenticated', 'authenticated');
-  insert into public.profiles (user_id, display_name) values (a, 'Ann'), (b, null), (c, null)
+  insert into public.profiles (user_id, display_name) values (a, 'Ann'), (b, ''), (c, '')
   on conflict (user_id) do update set display_name = excluded.display_name;
   update public.profiles set friend_id = public.new_friend_id() where user_id in (a, c) and friend_id is null;
   select friend_id into a_id from public.profiles where user_id = a;

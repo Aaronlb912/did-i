@@ -26,7 +26,7 @@ begin
     (b, b || '@test.invalid', 'authenticated', 'authenticated'),
     (c, c || '@test.invalid', 'authenticated', 'authenticated');
   -- Ann has a name: a friend request needs one (supabase/friend-ask-name.sql).
-  insert into public.profiles (user_id, display_name) values (a, 'Ann'), (b, null)
+  insert into public.profiles (user_id, display_name) values (a, 'Ann'), (b, '')
   on conflict (user_id) do update set display_name = excluded.display_name;
 
   -- 1. Ann can not insert a friendship straight to 'ok'.
