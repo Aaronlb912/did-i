@@ -152,7 +152,7 @@ export function SureModal({ sure, colors, onClose, onGo }) {
 }
 
 // locked: no back, menu or purse, so the screen can only be left by finishing it.
-export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false, scrollHandle }) {
+export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false, scrollHandle, footer }) {
   const live = book || currentBook(readShelf())
   return (
     <BoardShell
@@ -163,6 +163,7 @@ export function ScreenShell({ book, title, children, colors, showAdd = false, lo
       back={locked ? false : undefined}
       showCogs={!locked}
       scrollHandle={scrollHandle}
+      footer={footer}
     >
       {children}
     </BoardShell>
@@ -1545,10 +1546,29 @@ export function FirstNightScreen({ book, onChange, now }) {
     setStep(0)
   }
 
+  // Pinned under the page, so Continue is in view however long the list gets.
+  const nav = (
+    <>
+      <View style={styles.stepNav}>
+        {step > 0 || canLeave ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
+        <DidButton
+          colors={colors}
+          label={step === totalSteps - 1 ? t('first.done') : ready ? t('first.nextCount', { n: count }) : t('first.next')}
+          onPress={next}
+          dim={step === 0 && !ready}
+        />
+        {step === 0 && !ready ? (
+          <Text style={[styles.firstWhy, { color: colors.inkSoft }]}>{t('first.pickFirst')}</Text>
+        ) : null}
+      </View>
+      {step === 0 ? <KeyButton colors={colors} label={t('first.startEmpty')} onPress={startEmpty} /> : null}
+    </>
+  )
+
   return (
-    <ScreenShell book={book} title={t('first.kicker')} colors={colors} locked>
+    <ScreenShell book={book} title={t('first.kicker')} colors={colors} locked footer={nav}>
       <View style={styles.firstTop}>
-        <Text style={[styles.stepCap, { color: colors.inkDim }]}>
+        <Text style={[styles.stepCap, { color: colors.inkSoft }]}>
           {t('first.stepOf', { n: step + 1, total: totalSteps })}
         </Text>
         {step === 0 && canLeave ? (
@@ -1602,9 +1622,6 @@ export function FirstNightScreen({ book, onChange, now }) {
                 { color: colors.ink, borderBottomColor: focused ? colors.on : colors.line },
               ]}
             />
-            <View style={[styles.firstSwipes, { borderTopColor: colors.lineSoft }]}>
-              <Text style={[styles.firstSwipe, { color: colors.inkSoft }]}>{t('first.swipeLine')}</Text>
-            </View>
           </View>
         </>
       ) : null}
@@ -1622,21 +1639,6 @@ export function FirstNightScreen({ book, onChange, now }) {
             </View>
           </SetCard>
         </>
-      ) : null}
-      <View style={styles.stepNav}>
-        {step > 0 || canLeave ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
-        <DidButton
-          colors={colors}
-          label={step === totalSteps - 1 ? t('first.done') : ready ? t('first.nextCount', { n: count }) : t('first.next')}
-          onPress={next}
-          dim={step === 0 && !ready}
-        />
-        {step === 0 && !ready ? (
-          <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.pickFirst')}</Text>
-        ) : null}
-      </View>
-      {step === 0 ? (
-        <KeyButton colors={colors} label={t('first.startEmpty')} onPress={startEmpty} />
       ) : null}
       {step === totalSteps - 1 ? <AuthLegalNote colors={colors} leadKey="legal.linksLead" /> : null}
     </ScreenShell>
@@ -2630,25 +2632,15 @@ const styles = StyleSheet.create({
   block: { gap: 4 },
   blockTitle: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700', marginTop: 8 },
   slot: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
-  firstCard: { justifyContent: 'flex-start', marginTop: 8, paddingBottom: 0 },
+  firstCard: { justifyContent: 'flex-start', marginTop: 8 },
   firstBlank: { padding: 0, paddingTop: 0, paddingBottom: 6, minHeight: 32, borderBottomWidth: 2 },
   firstWhy: { flex: 1, fontFamily: fonts.ui, fontSize: 13 },
   firstWhen: { paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
   firstWhenLabel: { fontFamily: fonts.uiSemi, fontSize: 16 },
   firstWhenSub: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
-  firstSwipes: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-  },
-  firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
   firstTime: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14 },
   stepCap: { ...sectionLabel, marginBottom: 6 },
-  stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' },
+  stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   ideaQ: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },
   recentText: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },

@@ -3550,6 +3550,7 @@ button.di-refer-rung {
   flex: 0 0 auto;
   overflow: visible;
   max-height: none;
+  padding-bottom: 0;
 }
 
 .di-page.di-cal {
@@ -3563,6 +3564,10 @@ button.di-refer-rung {
 
 .di-hall:has(.di-first) .di-board {
   overflow-y: auto;
+  /* No tab bar here, and the Continue bar has to reach the bottom edge. */
+  padding-bottom: 0;
+  /* A focused field scrolls clear of the bar. */
+  scroll-padding-bottom: 11rem;
 }
 
 /* First question: "Did I ___?" written on the card it becomes. */
@@ -11921,6 +11926,10 @@ html[data-reduce-motion] .di-hall:is(
   margin-top: 1rem;
 }
 
+.di-first .di-field .di-key {
+  min-height: 2.75rem;
+}
+
 .di-first-own {
   margin-top: 1.15rem;
 }
@@ -14053,17 +14062,90 @@ button.di-we-faces {
   cursor: pointer;
 }
 
+.di-first-pack-top {
+  display: flex;
+  align-items: stretch;
+}
+
 .di-first-pack-head {
-  min-height: 3.25rem;
+  flex: 1;
+  min-width: 0;
+  min-height: 3.5rem;
+  padding-right: 0.25rem;
   border: 0;
   background: none;
   font: inherit;
 }
 
-.di-first-pack-title {
+.di-first-pack-text {
   flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.di-first-pack-title {
   font-weight: 600;
   font-size: 1.05rem;
+}
+
+.di-first-pack-sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.82rem;
+  color: var(--di-ink-soft);
+}
+
+/* Shows or hides the pack's questions. */
+.di-first-pack-more {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  min-height: 2.9rem;
+  border: 0;
+  border-left: 1px solid var(--di-line-soft);
+  background: none;
+  color: var(--di-ink-soft);
+  cursor: pointer;
+}
+
+.di-first-pack-more > span {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-25%) rotate(45deg);
+  transition: transform var(--di-move) var(--di-ease);
+}
+
+.di-first-pack-more[aria-expanded='true'] > span {
+  transform: translateY(25%) rotate(225deg);
+}
+
+[data-reduce-motion] .di-first-pack-more > span {
+  transition: none;
+}
+
+/* Pinned to the bottom of the page so Continue is always in view. */
+.di-first-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 1.2rem 0 0;
+  padding: 0.75rem 0 calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  background: var(--di-panel);
+  border-top: 1px solid var(--di-line-soft);
+}
+
+.di-first-bar .di-did {
+  flex: 1 1 100%;
+}
+
+.di-first-bar .di-key {
+  flex: 1 1 100%;
+  min-height: 2.75rem;
 }
 
 .di-first-pack-count {
@@ -14081,11 +14163,11 @@ button.di-we-faces {
   position: relative;
   border-top: 1px solid var(--di-line-soft);
   font-size: 0.95rem;
-  color: var(--di-ink-dim);
 }
 
-.di-first-item:has(input:checked) {
-  color: var(--di-ink);
+.di-first-item:has(input:focus-visible) {
+  outline: 2px solid var(--di-on);
+  outline-offset: -2px;
 }
 
 .di-first-item input {
@@ -14100,7 +14182,7 @@ button.di-we-faces {
   place-items: center;
   width: 22px;
   height: 22px;
-  border: 2px solid var(--di-line);
+  border: 2px solid var(--di-ink-soft);
   border-radius: 6px;
   font-weight: 700;
   font-size: 0.85rem;
@@ -14116,6 +14198,10 @@ button.di-we-faces {
 
 .di-first-box[data-state='all']::after {
   content: '✓';
+}
+
+.di-first-box[data-state='some']::after {
+  content: '–';
 }
 
 .di-first-box[data-state='some']::after {

@@ -38,6 +38,8 @@ export function BoardShell({
   scrollHandle,
   // Optional Animated.Value to share the scroll offset with bars pinned over the page.
   scrollY: scrollYIn,
+  // Optional bar pinned under the page (first run: Continue stays in view).
+  footer = null,
 }) {
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
@@ -124,7 +126,7 @@ export function BoardShell({
   )
 
   const body = (
-    <View style={[styles.page, { paddingBottom: bottomPad + (scroll ? END_ROOM : 0) + keyboardPad }]}>
+    <View style={[styles.page, { paddingBottom: (footer ? 0 : bottomPad) + (scroll ? END_ROOM : 0) + keyboardPad }]}>
       <TileWindow.Provider value={Boolean(scroll)}>{children}</TileWindow.Provider>
     </View>
   )
@@ -161,6 +163,16 @@ export function BoardShell({
         {noTitle ? null : <HeaderLargeTitle colors={colors} title={barTitle} onHeight={setLargeHeight} />}
         <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
       </Animated.ScrollView>
+      {footer ? (
+        <View
+          style={[
+            styles.footer,
+            { backgroundColor: colors.bg, borderTopColor: colors.lineSoft, paddingBottom: keyboardTop != null ? 12 : Math.max(bottomPad, 12) },
+          ]}
+        >
+          {footer}
+        </View>
+      ) : null}
     </KeyboardAvoidingView>
   ) : (
     <View style={[styles.content, styles.scroll, pageBg, { paddingTop: headerInset }]}>
@@ -217,4 +229,5 @@ const styles = StyleSheet.create({
   sitOn: {},
   page: { gap: 12 },
   content: { paddingHorizontal: 16, flexGrow: 1 },
+  footer: { paddingHorizontal: 16, paddingTop: 12, gap: 8, borderTopWidth: StyleSheet.hairlineWidth },
 })

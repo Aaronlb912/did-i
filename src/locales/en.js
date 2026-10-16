@@ -292,7 +292,6 @@ export const en = {
   'first.stepOf': '{n} of {total}',
   'first.timeTitle': 'When should we ask?',
   'first.demo': 'Try a demo',
-  'first.swipeLine': "Today you’ll swipe right for Did, left for Not yet.",
   'enter.locked': 'Locked',
   'enter.thisPhone': 'This phone',
   'enter.openTitle': 'Open {board}.',
@@ -3659,7 +3658,8 @@ export const en = {
   'sent.missWaiting': "They have a lot waiting already. Try again once they answer some.",
   'sent.missToday': "That is a lot for one day. Try again tomorrow.",
   'didYouLink.askedFriend': "On your Today. Asked {name} to be friends.",
-  'first.packsBody': "Pick a pack, then uncheck what you don't need.",
+  'first.packsBody': "We ask these every day on Today and your widget. Swipe right for Did, left for Not yet.",
+  'first.packShow': "Show the questions in {pack}",
   'first.nextCount': "Continue with {n}",
   'first.startEmpty': "Start with no questions",
 }

@@ -292,7 +292,6 @@ export const it = {
   'first.stepOf': '{n} di {total}',
   'first.timeTitle': 'Quando dobbiamo chiedertelo?',
   'first.demo': 'Prova demo',
-  'first.swipeLine': "Oggi scorrerai a destra per Did, a sinistra per Non ancora.",
   'enter.locked': 'Bloccato',
   'enter.thisPhone': 'Questo telefono',
   'enter.openTitle': 'Apri {board}.',
@@ -3665,7 +3664,8 @@ export const it = {
   'sent.missWaiting': "Hanno già molto in attesa. Riprova quando ne avranno risposto un po’.",
   'sent.missToday': "È tanto per un giorno. Riprova domani.",
   'didYouLink.askedFriend': "Nel tuo Oggi. Richiesta di amicizia inviata a {name}.",
-  'first.packsBody': "Scegli un pacchetto e togli quello che non ti serve.",
+  'first.packsBody': "Te le chiediamo ogni giorno in Oggi e nel widget. Scorri a destra per Did, a sinistra per Non ancora.",
+  'first.packShow': "Mostra le domande di {pack}",
   'first.nextCount': "Continua con {n}",
   'first.startEmpty': "Inizia senza domande",
 }
