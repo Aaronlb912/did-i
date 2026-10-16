@@ -3,6 +3,7 @@ package com.aaronbryant.didi.watch;
 import android.content.Context;
 import android.net.Uri;
 
+import com.aaronbryant.didi.widget.AnswerKeyPost;
 import com.aaronbryant.didi.widget.WidgetCardStore;
 import com.aaronbryant.didi.widget.WidgetTapStore;
 import com.facebook.react.ReactApplication;
@@ -74,6 +75,7 @@ public class WatchTapService extends WearableListenerService {
         }
         if (!"did".equals(answer) && !"nope".equals(answer)) return;
         if (!WidgetTapStore.commit(context, id, answer, night, at)) return;
+        AnswerKeyPost.sendLater(context, id, answer, night, at);
         try {
             WidgetCardStore.advance(context, id, answer, night);
         } catch (Exception ignored) {

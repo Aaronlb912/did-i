@@ -7,6 +7,7 @@ import { clearAuthSkip } from './auth-gate.js'
 import { forgetAccountCaches } from './account-cache.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
 import { cloud, cloudSetUp } from './cloud.js'
+import { refreshAnswerKey } from './answer-key.js'
 import { readPrefs, writePrefs } from './prefs.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'
 import { mergeShelves } from './shelf-merge.js'
@@ -721,6 +722,8 @@ export async function touchDevice() {
   const first = await db.from('devices').upsert(model ? { ...row, model } : row, { onConflict: 'user_id,device_key' })
   // Before supabase/device-names.sql is applied there is no model column.
   if (first?.error && model) await db.from('devices').upsert(row, { onConflict: 'user_id,device_key' })
+  // The device row exists now, so this phone can get its answer key.
+  await refreshAnswerKey(user.id, row.device_key)
 }
 
 // Phones seen in the last 90 days. The server removes older rows when a

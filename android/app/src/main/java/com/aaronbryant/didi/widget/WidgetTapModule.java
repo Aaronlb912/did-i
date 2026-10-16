@@ -88,4 +88,29 @@ public class WidgetTapModule extends ReactContextBaseJavaModule {
     public void loadCard(Promise promise) {
         promise.resolve(WidgetCardStore.load(getReactApplicationContext()));
     }
+
+    // This phone's answer key (AnswerKeyStore), set after sign in, gone on sign out.
+    @ReactMethod
+    public void setAnswerKey(String json, Promise promise) {
+        promise.resolve(AnswerKeyStore.save(getReactApplicationContext(), json));
+    }
+
+    @ReactMethod
+    public void clearAnswerKey(Promise promise) {
+        AnswerKeyStore.clear(getReactApplicationContext());
+        promise.resolve(true);
+    }
+
+    // A silent wake that came in while JS was not running (WakeMessagingService).
+    @ReactMethod
+    public void takeWake(Promise promise) {
+        promise.resolve(WakeMessagingService.take(getReactApplicationContext()));
+    }
+
+    // RCTDeviceEventEmitter needs these on the module that emits.
+    @ReactMethod
+    public void addListener(String eventName) {}
+
+    @ReactMethod
+    public void removeListeners(double count) {}
 }

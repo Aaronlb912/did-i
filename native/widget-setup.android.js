@@ -25,6 +25,11 @@ import {
   loadAndroidWidgetCard,
   saveAndroidWidgetCard,
 } from './widget-tap.android.js'
+import { installWake, runWake, takeAndroidWake } from './wake.js'
+
+// Here, not in installWidgetSetup: a wake can reach the headless widget task,
+// which never runs that.
+installWake({ first: applyPendingAndroidWidgetTap })
 
 async function tonightPropsForWidget(shelf) {
   let props = enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf))
@@ -57,6 +62,9 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
     }
   }
   const applied = await applyPendingAndroidWidgetTap()
+  // A silent wake while the app was closed (WakeMessagingService): pull now,
+  // after this phone's own taps are applied, so they are paid here first.
+  if (await takeAndroidWake()) await runWake()
   let clicked = null
   if (widgetAction === 'WIDGET_CLICK') {
     clicked = handleAndroidWidgetClick(clickAction, clickActionData)

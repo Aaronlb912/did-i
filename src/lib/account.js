@@ -6,6 +6,7 @@ import { removeAvatar } from './avatar.js'
 import { forgetAccountCaches, forgetPendingLinks } from './account-cache.js'
 import { dropEarnedCoins } from './purse.js'
 import { clearGifts } from './gift-inbox.js'
+import { endAnswerKeys } from './answer-key.js'
 
 const DEVICE_KEY = 'did-i-device'
 
@@ -172,8 +173,9 @@ export async function dropPushToken(ms = 3000) {
 export async function signOutHere() {
   const db = cloud()
   if (!db) return
-  // This device's push token goes first, while the session can still write it.
-  await dropPushToken()
+  // This device's push token and answer key go first, while the session can
+  // still reach the account.
+  await Promise.all([dropPushToken(), endAnswerKeys(deviceKey())])
   // signOut() defaults to global, which would end the session on every other device.
   await db.auth.signOut({ scope: 'local' })
   // The home screen widget must not keep showing this account's people.
@@ -210,7 +212,7 @@ export async function dropAllPushTokens(ms = 3000) {
 export async function signOutEverywhere() {
   const db = cloud()
   if (!db) return
-  await Promise.all([dropPushToken(), dropAllPushTokens()])
+  await Promise.all([dropPushToken(), dropAllPushTokens(), endAnswerKeys(null)])
   // The server has to end the other sessions; if it could not, say so.
   const { error } = await db.auth.signOut({ scope: 'global' })
   if (error) throw error
@@ -229,6 +231,8 @@ export async function deleteAccount() {
   await removeAvatar().catch(() => {})
   const { error } = await db.rpc('delete_me')
   if (error) return { miss: error.message }
+  // The account's keys went with it (cascade); take this phone's copy too.
+  await endAnswerKeys(null)
   await db.auth.signOut()
   saveTogetherPeople([])
   forgetAccountCaches()
