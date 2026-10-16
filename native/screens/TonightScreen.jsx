@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useNavigation } from '@react-navigation/native'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { useFrameActive } from '../components/frames/index.js'
-import { keepEarnedFrames, wornFrame } from '../../src/lib/frames.js'
+import { keepEarnedFrames, takeFramesToAnnounce, wearFrame, wornFrame } from '../../src/lib/frames.js'
 import { nightProgress } from '../../src/lib/night-progress.js'
 import { addDaysIso } from '../../src/lib/recurrence.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
@@ -324,6 +324,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
   const frameCtx = { bestStreak: Math.max(stack.streak, bestEver), streak: stack.streak, everFrozen: Boolean(frozen && frozen.size), today: stack.dateIso }
   const wornId = wornFrame(purse, frameCtx)
+  // The toast's Wear it runs later, so it reads the book as it is then.
+  const bookNow = useRef(book)
+  bookNow.current = book
+  const frameCtxNow = useRef(frameCtx)
+  frameCtxNow.current = frameCtx
+  const onChangeNow = useRef(onChange)
+  onChangeNow.current = onChange
   // Card frame: the top card animates only while this screen is in front
   // (useFrameActive holds the battery rules); cards behind stay still. Only
   // a worn frame follows focus, so no frame means no extra renders.
@@ -366,7 +373,28 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // An earned frame is kept once reached, so a streak that ends later does not take it back.
   useEffect(() => {
     const next = keepEarnedFrames(book, frameCtx)
-    if (next !== book) onChange(next)
+    if (next === book) return
+    onChange(next)
+    // A frame just earned gets a cheer and a toast, once on this phone.
+    // Frames another folder already holds are not new, only new to this folder.
+    const fresh = takeFramesToAnnounce([...(book.frames || []), ...(purse.frames || [])], next.frames)
+    if (!fresh.length) return
+    feelTap('did')
+    if (purse.cheerOn) fireCheer(purse.cheerOn, 3)
+    for (const id of fresh) {
+      showToast({
+        id: `frame:${id}`,
+        kind: 'frame',
+        frameId: id,
+        ms: 6000,
+        onWear: () => {
+          const now = bookNow.current
+          if (String(now?.frame || '') === id) return
+          const worn = wearFrame(now, id, frameCtxNow.current)
+          if (!worn.miss) onChangeNow.current(worn.book)
+        },
+      })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stack.streak, frameCtx.everFrozen])
   const { bottom: bottomPad } = useAppInsets()

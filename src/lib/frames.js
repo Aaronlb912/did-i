@@ -269,6 +269,33 @@ export function keepEarnedFrames(book, ctx = {}) {
   return { ...book, frames: normalizeFrames([...(book?.frames || []), ...add]) }
 }
 
+const FRAMES_TOASTED_KEY = 'did-i-frames-toasted'
+
+/**
+ * Earned frames to announce: the ones `after` gained over `before` that this
+ * device has not shown yet. `seen` null is the first run: nothing old is
+ * shown, only what was gained just now.
+ */
+export function framesToAnnounce(before, after, seen) {
+  const had = new Set(normalizeFrames(before))
+  const shown = new Set(Array.isArray(seen) ? seen : [])
+  return normalizeFrames(after).filter((id) => !had.has(id) && !shown.has(id) && frameById(id)?.kind === 'earned')
+}
+
+/** framesToAnnounce with this device's list, which then holds every earned frame in `after`. */
+export function takeFramesToAnnounce(before, after) {
+  try {
+    const raw = localStorage.getItem(FRAMES_TOASTED_KEY)
+    const seen = raw == null ? null : JSON.parse(raw)
+    const fresh = framesToAnnounce(before, after, seen)
+    const all = new Set([...(Array.isArray(seen) ? seen : []), ...normalizeFrames(after).filter((id) => frameById(id)?.kind === 'earned')])
+    localStorage.setItem(FRAMES_TOASTED_KEY, JSON.stringify([...all]))
+    return fresh
+  } catch {
+    return []
+  }
+}
+
 // A free claim while the season is open. Kept after.
 export function claimFrame(book, id, today) {
   const frame = frameById(id)

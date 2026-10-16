@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { recordAppError } from './app-errors.js'
 import { deviceKey, deviceLabel, deviceModel, devicePlatform, takeOldDeviceKey } from './account.js'
 import { noteAvatar } from './avatar.js'
-import { clearNotices, markNoticesSeen } from './notices.js'
+import { addNotice, clearNotices, markNoticesSeen } from './notices.js'
+import { giftThanksNotice } from './gift-history.js'
 import { clearAuthSkip } from './auth-gate.js'
 import { forgetAccountCaches } from './account-cache.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
@@ -27,7 +28,7 @@ import { pushSendAnswers } from './send-answers.js'
 import { shelfStreak } from './hall-feel.js'
 import { clearWeNights, onWeNights, weNight } from './we-nights.js'
 import { allClearTonight, boardDate, countedTonightRows, dueTonight } from './recurrence.js'
-import { claimGifts, claimInvites, onGiftsWaiting, readMine } from './people.js'
+import { claimGifts, claimInvites, onGiftsWaiting, readMine, takeGiftThanks } from './people.js'
 import { clearGifts, queueGifts } from './gift-inbox.js'
 import { applyPendingInvite } from './invite-link.js'
 import { claimGemPurchases } from './gem-claim.js'
@@ -512,6 +513,8 @@ async function pullAndMergeOnce() {
       written = land({ ...written, boards }, metaAt)
       queueGifts(fresh)
     }
+    // Thanks for gifts you sent go on Recent, once per account.
+    for (const row of await takeGiftThanks().catch(() => [])) addNotice(giftThanksNotice(row))
     await claimGemPurchases()
     // A code saved from an invite link is used here, so the claim below pays it.
     await applyPendingInvite().catch(() => {})

@@ -70,9 +70,9 @@ import { AppTextInput, DidButton, KeyButton, LateMeta, Meta } from '../component
 import { useAccount } from '../../src/lib/account.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { PersonAvatar } from '../components/PersonAvatar.jsx'
-import { listSentGifts, personName, readKnownPerson, reportGift, sendGift } from '../../src/lib/people.js'
+import { listSentGifts, personName, readKnownPerson, reportGift, sendGift, thankGift } from '../../src/lib/people.js'
 import { giftTab, sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
-import { doneGift, nextGift, onGift } from '../../src/lib/gift-inbox.js'
+import { doneGift, nextGift, onGift, takeGiftCheer } from '../../src/lib/gift-inbox.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import {
   buyAccessoryWithCoins,
@@ -2809,7 +2809,8 @@ function showGift(gift, getBook, onChange, colors) {
     title: tileName(type, gift.item_id),
     body: t('gift.gotBody'),
     quote: gift.note || '',
-    goLabel: t('gift.equip'),
+    content: <GiftThanks id={gift.id} colors={colors} />,
+    goLabel: t(type === 'cheer' ? 'gift.useIt' : type === 'buddy' ? 'gift.equip' : 'gift.wearIt'),
     onGo: () => {
       onChange(wearGift(mergeGift(getBook(), gift).book, type, gift.item_id))
       done()
@@ -2849,6 +2850,34 @@ function showGift(gift, getBook, onChange, colors) {
   })
 }
 
+// Say thanks to the giver, once. The server refuses a second one, so a
+// thanks already sent also shows as Thanked.
+// Gifts thanked while the app is open, so a reopened pop-up starts at Thanked.
+const thankedGifts = new Set()
+
+function GiftThanks({ id, colors }) {
+  const [state, setState] = useState(() => (thankedGifts.has(id) ? 'done' : ''))
+  const say = async () => {
+    setState('busy')
+    const out = await thankGift(id).catch(() => ({ miss: 'people.reach' }))
+    if (out.miss) {
+      setState('')
+      confirmMiss(tMiss(out.miss))
+      return
+    }
+    thankedGifts.add(id)
+    setState('done')
+  }
+  return (
+    <KeyButton
+      colors={colors}
+      label={state === 'done' ? t('gift.thanked') : t('gift.sayThanks')}
+      disabled={Boolean(state)}
+      onPress={say}
+    />
+  )
+}
+
 // Mounted once in the app shell. Shows waiting gifts one at a time.
 export function GiftHost({ book, onChange }) {
   const colors = useShopColors(book)
@@ -2866,6 +2895,12 @@ export function GiftHost({ book, onChange }) {
   useEffect(() => {
     if (!gift) return undefined
     const timer = setTimeout(() => {
+      // A gift that just came in gets a cheer, once on this phone: its own if it is a cheer.
+      if (takeGiftCheer(gift.id)) {
+        feelTap('did')
+        const cheer = sentGiftType(gift) === 'cheer' ? gift.item_id : normalizePurse(bookRef.current).cheerOn
+        if (cheer) fireCheer(cheer, 3)
+      }
       showGift(gift, () => bookRef.current, (next) => changeRef.current(next), colorsRef.current)
     }, 600)
     return () => clearTimeout(timer)
