@@ -62,12 +62,21 @@ begin
   -- Coalesced: taken once, then held for 10 seconds.
   select count(*) into n from public.take_wake_batch(500) t where t.user_id = a;
   if n <> 1 then raise exception 'FAIL: batch gave % rows for A, want 1', n; end if;
+  -- Ask again for every A device. a-pad was just sent, so it is held; a-phone
+  -- (the device that answered, never woken yet) has no gap to wait out and
+  -- goes now. The throttle is per device.
   perform public.wake_devices(array[a], null);
-  select count(*) into n from public.take_wake_batch(500) t where t.user_id = a;
+  select count(*) into n from public.take_wake_batch(500) t where t.user_id = a and t.device_key = 'a-pad';
   if n <> 0 then raise exception 'FAIL: woke again inside 10 seconds'; end if;
+  if not exists (select 1 from public.wake_queue where user_id = a and device_key = 'a-pad' and due) then
+    raise exception 'FAIL: a held wake was dropped instead of kept for later';
+  end if;
+  if exists (select 1 from public.wake_queue where user_id = a and device_key = 'a-phone' and due) then
+    raise exception 'FAIL: a device with no recent wake was held';
+  end if;
   update public.wake_queue set sent_at = now() - interval '11 seconds' where user_id = a;
-  select count(*) into n from public.take_wake_batch(500) t where t.user_id = a;
-  if n <> 2 then raise exception 'FAIL: held wakes not sent after the gap (%)', n; end if;
+  select count(*) into n from public.take_wake_batch(500) t where t.user_id = a and t.device_key = 'a-pad';
+  if n <> 1 then raise exception 'FAIL: held wake not sent after the gap (%)', n; end if;
   -- Hourly cap.
   update public.wake_queue set due = true, sent_at = now() - interval '1 minute', hour_sent = 20, hour_at = now() where user_id = a;
   select count(*) into n from public.take_wake_batch(500) t where t.user_id = a;
