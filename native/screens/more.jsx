@@ -96,8 +96,9 @@ import {
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import { boardDate, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
-import { packList, unusedStarters } from '../../src/lib/starters.js'
-import { FIRST_TIME, firstRunBook, isNewShelf, pickPack, togglePick } from '../../src/lib/first-run.js'
+import { packList } from '../../src/lib/starters.js'
+import { FIRST_TIME, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
+import { FirstPacks } from '../components/FirstPacks.jsx'
 import { cloudSetUp } from '../../src/lib/cloud.js'
 import { authSkipped, clearAuthSkip } from '../../src/lib/auth-gate.js'
 import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
@@ -119,7 +120,7 @@ import { AppTextInput, ChipRow, DidButton, Field, Kicker, KeyButton, Meta, Page,
 import { SetCap, SetCard, SetField, SetNote, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { SetChoice } from '../components/SetChoice.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
-import { IdeaPicks, useWobble, WaveLead } from '../components/DidLead.jsx'
+import { WaveLead } from '../components/DidLead.jsx'
 import { pressFx, Reveal } from '../lib/motion.jsx'
 import { leaveAccount } from '../lib/leave-account.js'
 import { missDot } from '../palette.js'
@@ -151,7 +152,7 @@ export function SureModal({ sure, colors, onClose, onGo }) {
 }
 
 // locked: no back, menu or purse, so the screen can only be left by finishing it.
-export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false, scrollHandle }) {
+export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false, scrollHandle, footer }) {
   const live = book || currentBook(readShelf())
   return (
     <BoardShell
@@ -162,6 +163,7 @@ export function ScreenShell({ book, title, children, colors, showAdd = false, lo
       back={locked ? false : undefined}
       showCogs={!locked}
       scrollHandle={scrollHandle}
+      footer={footer}
     >
       {children}
     </BoardShell>
@@ -1472,23 +1474,32 @@ export function FirstNightScreen({ book, onChange, now }) {
   const [wave, setWave] = useState(0)
   const [askAfter, setAskAfter] = useState(FIRST_TIME)
   const reduce = useReduceMotion()
-  const starters = unusedStarters(book, clock, true)
   const packs = packList(book)
   const question = didQuestion(blank)
-  const ready = picks.length > 0 || Boolean(question)
-  const wobble = useWobble(starters.length, !ready && !focused, reduce)
+  const ownNew = Boolean(question) && !picks.some((item) => item.question === question)
+  const count = picks.length + (ownNew ? 1 : 0)
+  const ready = count > 0
   const totalSteps = 2
 
-  function pick(starter) {
-    setPicks((list) => togglePick(list, starter))
-    setWave((count) => count + 1)
+  function pick(item) {
+    setPicks((list) => togglePick(list, item))
+    if (!reduce) setWave((n) => n + 1)
     playClick()
   }
 
   function takePack(pack) {
-    setPicks(pickPack(pack))
-    setWave((count) => count + 1)
+    setPicks((list) => togglePack(list, pack))
+    if (!reduce) setWave((n) => n + 1)
     playClick()
+  }
+
+  // No questions yet is fine: Today shows how to add one.
+  function startEmpty() {
+    if (finished.current) return
+    finished.current = true
+    playClick()
+    markWelcomeSeen()
+    goHash('/tonight')
   }
 
   // A second tap on Done before the page leaves would add the picks again.
@@ -1512,10 +1523,7 @@ export function FirstNightScreen({ book, onChange, now }) {
   function next() {
     playClick()
     if (step === 0) {
-      if (!ready) {
-        wobble.nudge()
-        return
-      }
+      if (!ready) return
       setStep(1)
       return
     }
@@ -1538,10 +1546,29 @@ export function FirstNightScreen({ book, onChange, now }) {
     setStep(0)
   }
 
+  // Pinned under the page, so Continue is in view however long the list gets.
+  const nav = (
+    <>
+      <View style={styles.stepNav}>
+        {step > 0 || canLeave ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
+        <DidButton
+          colors={colors}
+          label={step === totalSteps - 1 ? t('first.done') : ready ? t('first.nextCount', { n: count }) : t('first.next')}
+          onPress={next}
+          dim={step === 0 && !ready}
+        />
+        {step === 0 && !ready ? (
+          <Text style={[styles.firstWhy, { color: colors.inkSoft }]}>{t('first.pickFirst')}</Text>
+        ) : null}
+      </View>
+      {step === 0 ? <KeyButton colors={colors} label={t('first.startEmpty')} onPress={startEmpty} /> : null}
+    </>
+  )
+
   return (
-    <ScreenShell book={book} title={t('first.kicker')} colors={colors} locked>
+    <ScreenShell book={book} title={t('first.kicker')} colors={colors} locked footer={nav}>
       <View style={styles.firstTop}>
-        <Text style={[styles.stepCap, { color: colors.inkDim }]}>
+        <Text style={[styles.stepCap, { color: colors.inkSoft }]}>
           {t('first.stepOf', { n: step + 1, total: totalSteps })}
         </Text>
         {step === 0 && canLeave ? (
@@ -1560,28 +1587,8 @@ export function FirstNightScreen({ book, onChange, now }) {
           <Title colors={colors}>
             {named ? t('first.titleNamed', { name: named }) : t('first.title')}
           </Title>
-          <Meta colors={colors}>{t('first.pickBody')}</Meta>
-          <IdeaPicks
-            grid
-            label={t('first.pickLabel')}
-            starters={starters}
-            isOn={(starter) => picks.some((item) => item.question === starter.question)}
-            onPick={pick}
-            tilt={wobble.tilt}
-            colors={colors}
-          />
-          {packs.length ? (
-            <>
-              <Text style={[styles.stepCap, { color: colors.inkSoft }]}>{t('first.packs')}</Text>
-              <View style={styles.firstPacks}>
-                {packs.map((pack) => (
-                  <KeyButton key={pack.id} colors={colors} label={pack.title} onPress={() => takePack(pack)} />
-                ))}
-              </View>
-            </>
-          ) : null}
-          {/* Typing is the second choice: a small cap, then the card. */}
-          <Text style={[styles.stepCap, { color: colors.inkSoft }]}>{t('first.own')}</Text>
+          <Meta colors={colors}>{t('first.packsBody')}</Meta>
+          {/* Typing is the main way in; packs are the shortcut below it. */}
           <View
             style={[
               ...faceCardStyle(colors),
@@ -1601,7 +1608,7 @@ export function FirstNightScreen({ book, onChange, now }) {
               placeholderTextColor={withAlpha(colors.ink, 0.45)}
               selectionColor={colors.on}
               cursorColor={colors.on}
-              accessibilityLabel={t('first.own')}
+              accessibilityLabel={t('first.typeOwn')}
               autoCapitalize="none"
               returnKeyType="done"
               blurOnSubmit
@@ -1613,10 +1620,11 @@ export function FirstNightScreen({ book, onChange, now }) {
                 { color: colors.ink, borderBottomColor: focused ? colors.on : colors.line },
               ]}
             />
-            <View style={[styles.firstSwipes, { borderTopColor: colors.lineSoft }]}>
-              <Text style={[styles.firstSwipe, { color: colors.inkSoft }]}>{t('first.swipeLine')}</Text>
-            </View>
           </View>
+          {packs.length ? (
+            <Text style={[styles.stepCap, styles.firstOr, { color: colors.inkSoft }]}>{t('first.orPack')}</Text>
+          ) : null}
+          <FirstPacks packs={packs} picks={picks} onPack={takePack} onPick={pick} colors={colors} />
         </>
       ) : null}
       {step === 1 ? (
@@ -1634,18 +1642,6 @@ export function FirstNightScreen({ book, onChange, now }) {
           </SetCard>
         </>
       ) : null}
-      <View style={styles.stepNav}>
-        {step > 0 || canLeave ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
-        <DidButton
-          colors={colors}
-          label={step === totalSteps - 1 ? t('first.done') : t('first.next')}
-          onPress={next}
-          dim={step === 0 && !ready}
-        />
-        {step === 0 && !ready ? (
-          <Text style={[styles.firstWhy, { color: colors.inkDim }]}>{t('first.pickFirst')}</Text>
-        ) : null}
-      </View>
       {step === totalSteps - 1 ? <AuthLegalNote colors={colors} leadKey="legal.linksLead" /> : null}
     </ScreenShell>
   )
@@ -2638,26 +2634,16 @@ const styles = StyleSheet.create({
   block: { gap: 4 },
   blockTitle: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700', marginTop: 8 },
   slot: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
-  firstCard: { justifyContent: 'flex-start', marginTop: 8, paddingBottom: 0 },
+  firstCard: { justifyContent: 'flex-start', marginTop: 8 },
   firstBlank: { padding: 0, paddingTop: 0, paddingBottom: 6, minHeight: 32, borderBottomWidth: 2 },
   firstWhy: { flex: 1, fontFamily: fonts.ui, fontSize: 13 },
   firstWhen: { paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
   firstWhenLabel: { fontFamily: fonts.uiSemi, fontSize: 16 },
   firstWhenSub: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
-  firstSwipes: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-  },
-  firstSwipe: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
-  firstPacks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   firstTime: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14 },
   stepCap: { ...sectionLabel, marginBottom: 6 },
-  stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16, alignItems: 'center' },
+  firstOr: { marginTop: 16, marginBottom: 0 },
+  stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   ideaQ: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },
   recentText: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
