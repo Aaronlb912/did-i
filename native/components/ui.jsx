@@ -1,4 +1,5 @@
-import { forwardRef, useEffect, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useState } from 'react'
+import { fieldMoved, markLiftsItself } from '../lib/keyboard-follow.js'
 import { FadeScroll } from './FadeScroll.jsx'
 import { Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -11,16 +12,38 @@ import { fonts, sectionLabel } from '../theme.js'
 // blue system cursor read as unfinished on a dark app. keyboardAppearance
 // follows the resolved theme, selectionColor/cursorColor follow the hall's
 // accent, and returnKeyType stays per field since each caller knows its own.
-export const AppTextInput = forwardRef(function AppTextInput({ colors, ...props }, ref) {
+// Focus and growth tell the page (native/lib/keyboard-follow.js), so the
+// keyboard never covers the box being typed in. liftsItself: the screen
+// scrolls this box into place itself.
+export const AppTextInput = forwardRef(function AppTextInput(
+  { colors, liftsItself = false, onFocus, onContentSizeChange, ...props },
+  ref,
+) {
   const theme = useTheme()
+  const setRef = useCallback(
+    (node) => {
+      if (liftsItself) markLiftsItself(node)
+      if (typeof ref === 'function') ref(node)
+      else if (ref) ref.current = node
+    },
+    [ref, liftsItself],
+  )
   return (
     <TextInput
-      ref={ref}
+      ref={setRef}
       keyboardAppearance={theme}
       selectionColor={colors.on}
       cursorColor={colors.on}
       placeholderTextColor={colors.inkDim}
       {...props}
+      onFocus={(event) => {
+        onFocus?.(event)
+        fieldMoved()
+      }}
+      onContentSizeChange={(event) => {
+        onContentSizeChange?.(event)
+        if (props.multiline) fieldMoved()
+      }}
     />
   )
 })

@@ -17,3 +17,4 @@ twice, the fix is a test or a rule, not a note.
 | 2026-10-03 | Cancel on the Did we / Did you form opened a new page, so Back reopened the form | Cancel pushed a route instead of going back; never tapped through on a phone | Phone pass: Add, switch kind, Cancel, Back |
 | 2026-10-03 | Remove sheet said "1 Did we's" | Counted copy had no singular | Use the repo's `...One` key pattern for counts |
 | 2026-10-12 | First light frame cut off in the Collection preview | A gem look card set zIndex, so it drew over the frame layer; previews only checked on Home | CardFrame Over layer has its own zIndex and elevation; test in `scripts/check.mjs` |
+| 2026-10-17 | Keyboard covered the Topics and Details boxes on Add; no way to scroll to them | Only the Add card scrolled itself above the keyboard; every other box relied on luck | AppTextInput reports focus and growth, BoardShell scrolls the box above the keyboard; test in `scripts/check.mjs` |

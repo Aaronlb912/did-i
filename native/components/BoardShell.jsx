@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useIsFocused, useRoute } from '@react-navigation/native'
-import { Animated, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
+import { Animated, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
 import { isGemLook, mergePurses, normalizePurse } from '../../src/lib/purse.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
+import { lifts, onFieldMoved } from '../lib/keyboard-follow.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { useLookColors } from '../hooks/useHallColors.js'
@@ -70,9 +72,52 @@ export function BoardShell({
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
     const onShow = (event) => setKeyboardTop(event?.endCoordinates?.screenY ?? null)
     const onHide = () => setKeyboardTop(null)
-    const subs = [Keyboard.addListener(showEvent, onShow), Keyboard.addListener(hideEvent, onHide)]
-    return () => subs.forEach((sub) => sub.remove())
+    const subs = [
+      Keyboard.addListener(showEvent, onShow),
+      Keyboard.addListener(hideEvent, onHide),
+      // Once the keyboard is up (and the page has made room), and whenever a
+      // box gains focus or grows, scroll the box being typed in above it.
+      Keyboard.addListener('keyboardDidShow', () => followField.current()),
+    ]
+    const offField = onFieldMoved(() => followField.current())
+    return () => {
+      subs.forEach((sub) => sub.remove())
+      offField()
+      clearTimeout(followTimer.current)
+    }
   }, [scroll, focused])
+  // Scrolls just far enough that the focused box ends above the keyboard. A
+  // box on another screen, in a sheet or one its screen lifts itself fails the
+  // measureLayout against this page and is left alone. A box taller than the
+  // room left shows its foot, where the typing is.
+  const reduce = useReduceMotion()
+  const followTimer = useRef(null)
+  const followField = useRef(() => {})
+  followField.current = () => {
+    clearTimeout(followTimer.current)
+    // After the room for the keyboard lays out.
+    followTimer.current = setTimeout(() => {
+      const scroller = scrollRef.current
+      const inner = scroller?.getInnerViewRef?.()
+      const field = TextInput.State?.currentlyFocusedInput?.()
+      const keyTop = Keyboard.metrics?.()?.screenY
+      if (!Keyboard.isVisible?.() || !keyTop || !inner || !field?.measureLayout || lifts(field)) return
+      field.measureLayout(
+        inner,
+        (_x, top) => {
+          field.measureInWindow((_fx, winTop, _fw, winH) => {
+            scroller.measureInWindow?.((_sx, viewTop) => {
+              const need = winTop + winH + 16 - keyTop
+              if (need <= 0) return
+              const now = top - (winTop - viewTop)
+              scroller.scrollTo({ y: Math.max(0, now + need), animated: !reduce })
+            })
+          })
+        },
+        () => {},
+      )
+    }, 80)
+  }
   // When the page gets shorter (Select ends, rows go), the scroll view clamps
   // its offset without an onScroll event, so the small bar title could stay up
   // over the big one. Clamp our copy of the offset the same way.
@@ -95,6 +140,8 @@ export function BoardShell({
   const onScrollLayout = useCallback((event) => {
     viewH.current = event?.nativeEvent?.layout?.height || viewH.current
     scrollRef.current?.measureInWindow?.((x, y, width, height) => setScrollBottom(y + height))
+    // The page shrinks for the keyboard after it shows: follow the box again.
+    if (Keyboard.isVisible?.()) followField.current()
   }, [])
   const keyboardPad =
     scroll && keyboardTop != null && scrollBottom != null ? Math.max(0, Math.round(scrollBottom - keyboardTop)) : 0

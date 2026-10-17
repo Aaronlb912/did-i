@@ -36,6 +36,8 @@ export const HangCard = forwardRef(function HangCard(
     leadColor,
     // The schedule line's Change: { label, onPress, a11y }. Opens the When sheet.
     metaAction,
+    // The Add screen scrolls the card and the ideas under it into view itself.
+    liftsItself = false,
   },
   inputRef,
 ) {
@@ -177,6 +179,7 @@ export const HangCard = forwardRef(function HangCard(
       <AppTextInput
         colors={colors}
         ref={inputRef}
+        liftsItself={liftsItself}
         value={blank}
         onChangeText={onBlank}
         onFocus={onFocus}
