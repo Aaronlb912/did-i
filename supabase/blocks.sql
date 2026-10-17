@@ -43,6 +43,10 @@ create table if not exists public.reports (
   made_at timestamptz not null default now()
 );
 
+-- The line a report is about, when it is about one (admin.sql report_kind).
+-- It came with the old Tonight wall; a fresh database needs it here.
+alter table public.reports add column if not exists line_id uuid;
+
 create index if not exists reports_about_idx on public.reports (about_id, made_at desc);
 create index if not exists reports_from_idx on public.reports (from_id);
 

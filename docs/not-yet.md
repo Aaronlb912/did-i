@@ -5,6 +5,12 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Security read 2026-10-17 (needs SQL and a function deploy)
+
+- **Built:** `supabase/abuse-caps.sql` (3 friend asks a day per pair and 50 per asker, even if taken back; 30 pushes an hour per person; no direct answer_log writes, 200,000 answers per account; waitlist closed) and `supabase/iap-tries.sql` (30 purchase checks per account per 10 minutes). gem-iap refuses a buy with no owner made after 2026-10-18 and answers `tooMany` at the daily pack cap. Site headers in `vercel.json`; `supabase/config.toml` pins `verify_jwt`. `reports.line_id` is created in blocks.sql, so a fresh database builds.
+- **Apply:** `npm run db:apply:all`, then `supabase functions deploy gem-iap`. Until then gem-iap fails closed on `iap_try` ('store'), so deploy it only after the SQL.
+- **Not done:** refunds do not take gems back (needs App Store Server Notifications v2 and Play voided purchases); OTA updates are not code-signed; the session token is in MMKV, not the Keychain; night coins and the weekly gem are taken on the phone's word (capped); the milestone cap is shared by everyone; restrict the Firebase key in Google Cloud to the app.
+
 ## Nights lost flying west over the date line (branch `travel-skipped-nights`)
 
 - **Built:** flying west over the date line (LA to Tokyo) skips the night that was never tonight. Questions left open that night, or closed by the app on its own, are stepped over; a Did counts and a tapped Not yet stays a Not yet. At most one skip a week (`src/lib/travel.js`).
