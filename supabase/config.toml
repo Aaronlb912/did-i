@@ -1,0 +1,13 @@
+# Only what the repo pins for deploys. push and report-mail trust the token's
+# role claim, so the platform must check the token's signature first: never
+# deploy them with --no-verify-jwt.
+project_id = "did-i"
+
+[functions.push]
+verify_jwt = true
+
+[functions.report-mail]
+verify_jwt = true
+
+[functions.gem-iap]
+verify_jwt = true

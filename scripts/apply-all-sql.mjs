@@ -18,6 +18,7 @@ const files = [
   'supabase/family-summary.sql',
   'supabase/gems-social.sql',
   'supabase/gem-purchases.sql',
+  'supabase/iap-tries.sql',
   'supabase/shop-catalog.sql',
   'supabase/wallet.sql',
   'supabase/waitlist.sql',
@@ -66,6 +67,7 @@ const files = [
   'supabase/wake-push.sql',
   'supabase/gift-thanks.sql',
   'supabase/friend-ask-name.sql',
+  'supabase/abuse-caps.sql',
   'supabase/drop-tonight.sql',
 ]
 

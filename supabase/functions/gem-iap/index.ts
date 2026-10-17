@@ -36,8 +36,12 @@ const admin = createClient(
 )
 
 // owner: the account id the app set on the buy (appAccountToken / obfuscatedExternalAccountId).
-// Empty on buys made before the app set it.
-type Verified = { ok: true; ref: string; test: boolean; owner: string } | { ok: false; miss: string }
+// Empty on buys made before the app set it. boughtAt: ms since 1970, 0 when the store left it out.
+type Verified = { ok: true; ref: string; test: boolean; owner: string; boughtAt: number } | { ok: false; miss: string }
+
+// A buy with no owner could be claimed by any account that learns its id,
+// so only buys from before every build set the owner may still go without.
+const OWNERLESS_BEFORE = Date.parse('2026-10-18T00:00:00Z')
 
 function testerAllowed(userId: string) {
   return testBuyCredits(userId, {
@@ -106,7 +110,13 @@ async function verifyApple(productId: string, transactionId: string): Promise<Ve
     if (info.productId !== productId) return { ok: false, miss: 'receipt' }
     if (info.type !== 'Consumable') return { ok: false, miss: 'receipt' }
     if (info.revocationDate) return { ok: false, miss: 'refunded' }
-    return { ok: true, ref: String(info.transactionId), test: info.environment !== 'Production', owner: String(info.appAccountToken || '') }
+    return {
+      ok: true,
+      ref: String(info.transactionId),
+      test: info.environment !== 'Production',
+      owner: String(info.appAccountToken || ''),
+      boughtAt: Number(info.purchaseDate) || 0,
+    }
   }
   return { ok: false, miss: 'receipt' }
 }
@@ -157,7 +167,13 @@ async function verifyPlay(productId: string, purchaseToken: string): Promise<Ver
   // 1 is a refunded or voided buy: it never credits, and 'refunded' lets the app close it.
   if (info.purchaseState !== 0) return { ok: false, miss: info.purchaseState === 2 ? 'pending' : 'refunded' }
   // purchaseType 0 is a license tester's test buy (1 promo, 2 rewarded; absent when paid).
-  return { ok: true, ref: String(info.orderId || purchaseToken), test: info.purchaseType === 0, owner: String(info.obfuscatedExternalAccountId || '') }
+  return {
+    ok: true,
+    ref: String(info.orderId || purchaseToken),
+    test: info.purchaseType === 0,
+    owner: String(info.obfuscatedExternalAccountId || ''),
+    boughtAt: Number(info.purchaseTimeMillis) || 0,
+  }
 }
 
 Deno.serve(async (req) => {
@@ -177,6 +193,12 @@ Deno.serve(async (req) => {
   const { data: userData, error: userError } = await userClient.auth.getUser()
   if (userError || !userData?.user) return json({ miss: 'signin' }, 401)
   const userId = userData.user.id
+
+  // Each check signs a token and asks the store: 30 per account per 10 minutes
+  // (supabase/iap-tries.sql). The phone keeps the buy open and tries again later.
+  const { data: mayTry, error: tryError } = await admin.rpc('iap_try', { who: userId })
+  if (tryError) return json({ miss: 'store' }, 503)
+  if (mayTry !== true) return json({ miss: 'tooMany' }, 429)
 
   let body: Record<string, string> = {}
   try {
@@ -207,6 +229,7 @@ Deno.serve(async (req) => {
   if (!verified.ok) return json({ miss: verified.miss }, verified.miss === 'setup' || verified.miss === 'store' ? 503 : 400)
   // Bought for another account: never credit it to this one.
   if (verified.owner && verified.owner.toLowerCase() !== userId.toLowerCase()) return json({ miss: 'other' }, 403)
+  if (!verified.owner && !(verified.boughtAt > 0 && verified.boughtAt < OWNERLESS_BEFORE)) return json({ miss: 'other' }, 403)
   if (verified.test && !testerAllowed(userId)) return json({ miss: 'test' }, 403)
 
   const { error } = await admin.rpc('record_gem_purchase', {
@@ -218,6 +241,7 @@ Deno.serve(async (req) => {
     ref: verified.ref.slice(0, 128),
   })
 
-  if (error) return json({ miss: 'miss' }, 500)
+  // Twenty packs a day (cap_gem_purchases): the buy stays open on the phone for tomorrow.
+  if (error) return /gem purchase cap/.test(error.message || '') ? json({ miss: 'tooMany' }, 429) : json({ miss: 'miss' }, 500)
   return json({ ok: true, pack: packId, gems: pack.gems })
 })
