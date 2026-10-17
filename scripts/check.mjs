@@ -7867,6 +7867,23 @@ test('the menu badge counts Did I did yous, the same as the inbox lists them', (
   assert.match(look, /if \(pulse\.busy === run\) pulse\.busy = null/)
 })
 
+test('the keyboard never covers a text box: every box is AppTextInput and the page follows it', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const walk = (dir) =>
+    readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap((d) =>
+      d.isDirectory() ? walk(path.join(dir, d.name)) : /\.(jsx|tsx)$/.test(d.name) ? [path.join(dir, d.name)] : [],
+    )
+  const raw = walk('native').filter(
+    (file) => !file.endsWith(path.join('components', 'ui.jsx')) && /<TextInput\b/.test(readFileSync(path.join(root, file), 'utf8')),
+  )
+  assert.deepEqual(raw, [])
+  const ui = readFileSync(path.join(root, 'native/components/ui.jsx'), 'utf8')
+  assert.match(ui, /onFocus=\{\(event\) => \{[^}]*fieldMoved\(\)/)
+  const shell = readFileSync(path.join(root, 'native/components/BoardShell.jsx'), 'utf8')
+  assert.match(shell, /onFieldMoved\(/)
+  assert.match(shell, /keyboardDidShow', \(\) => followField\.current\(\)/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

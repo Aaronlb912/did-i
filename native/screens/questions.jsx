@@ -1744,6 +1744,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     >
       <HangCard
         ref={inputRef}
+        liftsItself
         tag={tagName}
         lead={lead}
         blank={blank}
