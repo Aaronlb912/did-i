@@ -7884,6 +7884,93 @@ test('the keyboard never covers a text box: every box is AppTextInput and the pa
   assert.match(shell, /keyboardDidShow', \(\) => followField\.current\(\)/)
 })
 
+await testAsync('the sign-in session moves into the encrypted store and never drops for want of the key', async () => {
+  const { makeAuthStorage } = await import('../native/lib/auth-store.js')
+  const mapStore = () => {
+    const m = new Map()
+    return {
+      m,
+      getItem: (k) => (m.has(k) ? m.get(k) : null),
+      setItem: (k, v) => m.set(k, String(v)),
+      removeItem: (k) => m.delete(k),
+      getString: (k) => (m.has(k) ? m.get(k) : undefined),
+      set: (k, v) => m.set(k, String(v)),
+      remove: (k) => m.delete(k),
+    }
+  }
+  const keychain = new Map()
+  let locked = false
+  let keeps = true
+  const secure = {
+    AFTER_FIRST_UNLOCK: 'after-first-unlock',
+    async getItemAsync(k) {
+      if (locked) throw new Error('locked')
+      return keychain.get(k) ?? null
+    },
+    async setItemAsync(k, v) {
+      if (keeps) keychain.set(k, v)
+    },
+  }
+  const crypto = { getRandomBytes: (n) => Uint8Array.from({ length: n }, (_, i) => i + 1) }
+  const sealedFiles = new Map()
+  const made = []
+  const mmkv = {
+    createMMKV({ id, encryptionKey, encryptionType }) {
+      made.push({ id, encryptionKey, encryptionType })
+      if (!sealedFiles.has(id)) sealedFiles.set(id, mapStore())
+      return sealedFiles.get(id)
+    },
+  }
+  const plain = mapStore()
+
+  // An old phone: the session is in plain MMKV. The first read moves it.
+  plain.setItem('did-i-auth', 'session-1')
+  let store = makeAuthStorage({ secure, crypto, mmkv, plain: () => plain })
+  assert.equal(await store.getItem('did-i-auth'), 'session-1')
+  assert.equal(plain.getItem('did-i-auth'), null)
+  assert.equal(sealedFiles.get('did-i-auth').getString('did-i-auth'), 'session-1')
+  assert.equal(made[0].encryptionType, 'AES-256')
+  assert.equal(made[0].encryptionKey.length, 32)
+
+  // A refresh writes only to the sealed file.
+  await store.setItem('did-i-auth', 'session-2')
+  assert.equal(plain.getItem('did-i-auth'), null)
+  assert.equal(await store.getItem('did-i-auth'), 'session-2')
+
+  // Keychain locked (background after a reboot): the write lands in plain MMKV,
+  // the session is not lost, and the next read with the key moves it in.
+  locked = true
+  store = makeAuthStorage({ secure, crypto, mmkv, plain: () => plain })
+  await store.setItem('did-i-auth', 'session-3')
+  assert.equal(plain.getItem('did-i-auth'), 'session-3')
+  assert.equal(await store.getItem('did-i-auth'), 'session-3')
+  locked = false
+  assert.equal(await store.getItem('did-i-auth'), 'session-3')
+  assert.equal(plain.getItem('did-i-auth'), null)
+  assert.equal(sealedFiles.get('did-i-auth').getString('did-i-auth'), 'session-3')
+
+  // Sign out clears both.
+  plain.setItem('did-i-auth', 'stray')
+  await store.removeItem('did-i-auth')
+  assert.equal(await store.getItem('did-i-auth'), null)
+
+  // A Keychain that does not keep the key: never seal with it, stay in plain.
+  keychain.clear()
+  keeps = false
+  const before = made.length
+  const fresh = mapStore()
+  store = makeAuthStorage({ secure, crypto, mmkv, plain: () => fresh })
+  await store.setItem('did-i-auth', 'session-4')
+  assert.equal(made.length, before)
+  assert.equal(fresh.getItem('did-i-auth'), 'session-4')
+
+  // A binary without the modules works as before.
+  const bare = mapStore()
+  store = makeAuthStorage({ plain: () => bare })
+  await store.setItem('did-i-auth', 'session-5')
+  assert.equal(await store.getItem('did-i-auth'), 'session-5')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

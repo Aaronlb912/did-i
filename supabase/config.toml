@@ -11,3 +11,11 @@ verify_jwt = true
 
 [functions.gem-iap]
 verify_jwt = true
+
+[functions.play-voided]
+verify_jwt = true
+
+# Apple posts refund notices with no Supabase key. The function trusts nothing
+# in the notice: it asks Apple about the transaction before acting.
+[functions.apple-notify]
+verify_jwt = false

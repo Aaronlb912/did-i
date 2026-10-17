@@ -63,10 +63,23 @@ jobs:
         if: steps.native.outputs.skip != '1'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_UPDATES_PRIVATE_KEY: ${{ secrets.EXPO_UPDATES_PRIVATE_KEY }}
         run: |
           if [ -z "$EXPO_TOKEN" ]; then
             echo "No EXPO_TOKEN secret; add one (expo.dev > Access tokens) to publish updates." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          npx eas-cli update --channel production --environment production --non-interactive --message "$(git log -1 --pretty=%s)"
+          # Signed updates (docs/native-rebuild.md): with a certificate in the repo,
+          # builds only run signed updates, so never publish without the key.
+          sign=""
+          if [ -f certs/certificate.pem ]; then
+            if [ -z "$EXPO_UPDATES_PRIVATE_KEY" ]; then
+              echo "certs/certificate.pem is in the repo but the EXPO_UPDATES_PRIVATE_KEY secret is missing; not publishing an unsigned update." >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            mkdir -p "$RUNNER_TEMP/keys"
+            printf '%s\n' "$EXPO_UPDATES_PRIVATE_KEY" > "$RUNNER_TEMP/keys/private-key.pem"
+            sign="--private-key-path $RUNNER_TEMP/keys/private-key.pem"
+          fi
+          npx eas-cli update --channel production --environment production --non-interactive $sign --message "$(git log -1 --pretty=%s)"
           echo "Published to production: $(git log -1 --pretty=%s)" >> "$GITHUB_STEP_SUMMARY"

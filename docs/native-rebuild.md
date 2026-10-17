@@ -325,6 +325,22 @@ Local: `npm run android:build` after a dev client install.
 
 Gem purchases need a dev build on a real device (not Expo Go). See `docs/iap.md`.
 
+### Signed updates
+
+A build with a certificate only runs updates signed with its private key, so a
+stolen Expo login or `EXPO_TOKEN` cannot push code to phones. Turn it on once,
+before a store build:
+
+1. `npx expo-updates codesigning:generate --key-output-directory keys --certificate-output-directory certs --certificate-validity-duration-years 10 --certificate-common-name "Did I"`
+2. `node scripts/updates-signing.mjs` (writes the certificate into the Android manifest; iOS reads it from `app.config.js` at prebuild).
+3. Commit `certs/certificate.pem` and the manifest. `keys/` is ignored: never commit it.
+4. GitHub > Settings > Secrets > Actions: `EXPO_UPDATES_PRIVATE_KEY` = the whole of `keys/private-key.pem`. Keep a copy somewhere safe; a lost key means a store build with a new certificate.
+5. Bump `version` in app.json and build both apps.
+
+From then on the ota-update workflow and `npm run update:prod` sign every
+update and refuse to publish without the key. Phones on builds from before step
+5 ignore the signature and keep taking updates.
+
 ## Web app
 
 `npm run dev` serves the Vite app at `src/App.jsx`. Native uses `index.js` and

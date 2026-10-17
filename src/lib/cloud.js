@@ -44,6 +44,8 @@ export function cloud() {
         autoRefreshToken: true,
         detectSessionInUrl: typeof document !== 'undefined' && !globalThis.__didIPlatform,
         storageKey: 'did-i-auth',
+        // The phone keeps the session encrypted (native/lib/auth-store.js); the web keeps localStorage.
+        ...(globalThis.__didIAuthStorage ? { storage: globalThis.__didIAuthStorage } : {}),
       },
       ...(globalThis.__didIPlatform === 'ios' || globalThis.__didIPlatform === 'android'
         ? { global: { fetch: fetchFromDevice } }
