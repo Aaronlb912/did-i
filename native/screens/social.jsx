@@ -111,6 +111,7 @@ import { goHash, swapHash } from '../navigation/hash.js'
 import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
 import { keptButMissing } from '../lib/kept-send.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
+import { nameFirst } from '../components/NameFirstSheet.jsx'
 import { useNoted } from '../hooks/useNoted.js'
 import { inviteLink } from '../../src/lib/invite-link.js'
 import { LOOK_IDS, fonts, radius } from '../theme.js'
@@ -561,6 +562,25 @@ function inboxTileValue(didYous, weInvites) {
   return t('people.inboxQuiet')
 }
 
+function yesNameCopy(person) {
+  return {
+    title: t('friendYes.nameTitle'),
+    body: t('friendYes.nameBody', { name: personName(person) || t('people.someone') }),
+    go: t('friendYes.save'),
+    back: t('account.stay'),
+  }
+}
+
+function nudgeNameCopy() {
+  return {
+    kicker: t('people.you'),
+    title: t('friendYes.nameTitle'),
+    body: t('people.nameNudgeSub'),
+    go: t('settings.save'),
+    back: t('account.stay'),
+  }
+}
+
 function friendIdMiss(why) {
   if (why === 'badId') return t('friendId.bad')
   if (why === 'nobody') return t('friendId.nobody')
@@ -786,6 +806,7 @@ export function PeopleScreen({ book, onChange }) {
   }
 
   async function answerAskNow(id, yes, person) {
+    if (yes && !(await nameFirst(colors, yesNameCopy(person)))) return undefined
     const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
     if (why) return setMiss(tMiss(why))
     if (yes) {
@@ -793,6 +814,10 @@ export function PeopleScreen({ book, onChange }) {
       offerWeWith(person, colors)
     } else say(t('confirm.askRemoved'))
     return load()
+  }
+
+  async function addName() {
+    if (await nameFirst(colors, nudgeNameCopy())) load()
   }
 
   if (!cloudSetUp()) return <CloudOff colors={colors} />
@@ -849,6 +874,12 @@ export function PeopleScreen({ book, onChange }) {
           colors={colors}
         />
       </View>
+
+      {tab === 'friends' && mine && !mine.display_name?.trim() && (links.friends.length || links.sent.length) ? (
+        <EmptyCard colors={colors} title={t('people.nameNudge')} body={t('people.nameNudgeSub')}>
+          <DidButton colors={colors} small label={t('people.nameNudgeGo')} onPress={addName} />
+        </EmptyCard>
+      ) : null}
 
       {tab === 'friends' && links.asked.length ? (
         <Reveal key="asks" layout={false} style={styles.tabBody}>
