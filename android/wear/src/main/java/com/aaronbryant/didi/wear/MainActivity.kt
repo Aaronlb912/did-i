@@ -180,8 +180,8 @@ fun CardView(cards: WatchCards, card: WatchCard) {
   val context = LocalContext.current
   val view = LocalView.current
   val palette = cards.palette
-  val total = cards.items.size
-  val answered = cards.answered
+  val total = cards.countTotal
+  val answered = cards.countDone
   val position = minOf(answered + 1, maxOf(total, 1))
   val count = fill(cards.countLabel, "a" to position, "b" to total) ?: stringResource(R.string.count, position, total)
   val caption = if (card.tag.isEmpty()) count else "${card.tag} · $count"

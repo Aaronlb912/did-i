@@ -130,6 +130,11 @@ struct WatchCards: Codable, Equatable {
   var streakLabel: String?
   var streakOneLabel: String?
   var cheer: [String]?
+  // Tonight's questions with no card: answered (done) and waiting on their
+  // ask time (later). Part of "2 of 4" and the ring, so the count holds all
+  // night. Optional: an older phone build leaves them out.
+  var done: Int?
+  var later: Int?
 }
 
 extension WatchCards {
@@ -479,8 +484,9 @@ struct CardView: View {
   var body: some View {
     let palette = store.palette
     let items = store.cards?.items ?? []
-    let total = items.count
-    let answered = items.filter { $0.status != "open" }.count
+    let offDone = max(store.cards?.done ?? 0, 0)
+    let total = items.count + offDone + max(store.cards?.later ?? 0, 0)
+    let answered = items.filter { $0.status != "open" }.count + offDone
     let position = min(answered + 1, max(total, 1))
     let count = fill(store.cards?.countLabel, ["a": position, "b": total]) ?? String(localized: "\(position) of \(total)")
     let caption = card.tag.isEmpty ? count : "\(card.tag) · \(count)"

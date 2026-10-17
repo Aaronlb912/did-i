@@ -51,9 +51,16 @@ data class WatchCards(
   val streakLabel: String,
   val streakOneLabel: String,
   val cheer: List<String>,
+  // Tonight's questions with no card: answered (offDone) and waiting on their
+  // ask time (offLater). Part of "2 of 4" and the ring, so the count holds
+  // all night. 0 from an older phone build.
+  val offDone: Int = 0,
+  val offLater: Int = 0,
 ) {
   val openCards: List<WatchCard> get() = items.filter { it.status == "open" }
   val answered: Int get() = items.count { it.status != "open" }
+  val countTotal: Int get() = items.size + offDone + offLater
+  val countDone: Int get() = answered + offDone
   val palette: Palette get() = Palette(colors)
   // From a past night: the newest card's dateIso is before yesterday on the
   // watch's calendar. Tonight (boardDate) is always today or, before the day
@@ -98,6 +105,8 @@ data class WatchCards(
             if (parts.isEmpty()) null else WatchBuddy(parts, parts(b.optJSONArray("behind")), parts(b.optJSONArray("front")))
           },
           streak = o.optInt("streak", 0),
+          offDone = o.optInt("done", 0).coerceAtLeast(0),
+          offLater = o.optInt("later", 0).coerceAtLeast(0),
           streakLabel = o.optString("streakLabel"),
           streakOneLabel = o.optString("streakOneLabel"),
           cheer = o.optJSONArray("cheer")?.let { a -> (0 until a.length()).map { a.optString(it) } } ?: emptyList(),

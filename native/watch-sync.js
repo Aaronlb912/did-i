@@ -4,6 +4,7 @@ import { t } from '../src/lib/i18n.js'
 import { hallColors } from './palette.js'
 import { BUDDY_PARTS } from '../src/lib/buddy-parts.js'
 import { shelfStreak } from '../src/lib/hall-feel.js'
+import { offCards } from '../src/lib/watch-count.js'
 
 // Apple Watch (modules/didi-watch, targets/watch) and Wear OS (android/wear,
 // WatchModule in android/app). The phone sends the same cards the Tonight
@@ -55,6 +56,10 @@ export function watchCardsFromProps(props, shelf = null) {
     allDoneLabel: t('watch.allDone'),
     notYetLabel: t('watch.notYet', { n: '{n}' }),
     countLabel: t('watch.count', { a: '{a}', b: '{b}' }),
+    // The cards are only what is left to answer, so the watch adds these to
+    // its "2 of 4" and ring: tonight's questions answered and off the cards,
+    // and ones still waiting on their ask time. The count then holds all night.
+    ...offCards(shelf, items),
     openPhoneLabel: t(Platform.OS === 'android' ? 'watch.openPhoneAndroid' : 'watch.openPhone'),
     colors,
     // Base shapes plus worn accessories, in the widget's part format.

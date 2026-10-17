@@ -20,6 +20,7 @@ anything that costs money or can't be undone (a store submit, deleting data).
 | Sign-in session in an encrypted MMKV file, key in Keychain/Keystore | `native/lib/auth-store.js`, `native/shim/{secure-store,crypto}-safe.cjs`, `native/bootstrap.js`, `src/lib/cloud.js` |
 | Signed OTA updates, wired, off until a certificate exists | `app.config.js`, `scripts/updates-signing.mjs`, `scripts/update-prod.mjs`, `.github/workflows/ota-update.yml` |
 | shell-quote and source-map-js pinned (npm `overrides`) | `package.json`, `package-lock.json` |
+| Watch "1 of N" and ring count every question tonight, not just the cards left | `src/lib/watch-count.js`, `native/watch-sync.js`, `targets/watch/DidIWatchApp.swift`, `android/wear/src/main/java/com/aaronbryant/didi/wear/{Cards,MainActivity}.kt` |
 | Version 1.3.7 (native deps added) | `app.json`, `android/app/build.gradle`, `android/wear/build.gradle`, `strings.xml`, `targets/*/Info.plist` |
 
 Checked in the cloud: `npm test` 343/343, lint, typecheck, `expo export`
@@ -73,6 +74,12 @@ Nothing has run on a phone or the live database.
    - A worn frame on the grace card, a Did we card, a missed-day card and a
      not-yet card.
    - Saying yes to a friend request with no name asks for the name first.
+   - Watch (Wear emulator, or Apple Watch via TestFlight with DIDI_WATCH=1):
+     with 4 questions, 2 of them set to ask after a later time, the count
+     reads "1 of 4" and stays "of 4" as you answer and when the later ones
+     come due; the ring fills a quarter per answer. Phone side:
+     `src/lib/watch-count.js` (`done` and `later` in the cards); watch side:
+     `targets/watch/DidIWatchApp.swift` and `android/wear/.../Cards.kt`.
 
 7. **Build 1.3.7.** Android: Actions > android-apk. iOS: Actions > ios-ipa
    (bumps the build number itself). Then TestFlight and Play internal.

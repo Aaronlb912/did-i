@@ -7971,6 +7971,36 @@ await testAsync('the sign-in session moves into the encrypted store and never dr
   assert.equal(await store.getItem('did-i-auth'), 'session-5')
 })
 
+await testAsync('the watch count holds "of 4" all night: answered and later questions count with the cards', async () => {
+  const { offCards } = await import('../src/lib/watch-count.js')
+  const lamps = [
+    { id: 'a', question: 'A?', cadence: 'daily', archived: false, createdOn: '2020-01-01' },
+    { id: 'b', question: 'B?', cadence: 'daily', archived: false, createdOn: '2020-01-01' },
+    { id: 'c', question: 'C?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' },
+    { id: 'd', question: 'D?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' },
+  ]
+  // What the watch draws: its cards plus the phone's done and later.
+  const count = (answers, clock) => {
+    const shelf = writeShelf({ currentId: 'w1', boards: [{ id: 'w1', title: 'Home', dayFoldHour: 0, lamps, answers }] })
+    const cards = buildTonightWidgetProps(shelf, clock)
+      .items.filter((item) => !String(item.lampId).startsWith('we:'))
+      .map((item) => ({ id: item.lampId, night: item.periodKey, status: item.status === 'open' ? 'open' : 'answered' }))
+    const off = offCards(shelf, cards, clock)
+    return {
+      total: cards.length + off.done + off.later,
+      answered: cards.filter((card) => card.status !== 'open').length + off.done,
+    }
+  }
+  const did = (id) => ({ lampId: id, periodKey: '2026-09-23', status: 'yes', answeredAt: '2026-09-23T19:30:00' })
+  assert.deepEqual(count([], new Date('2026-09-23T19:00:00')), { total: 4, answered: 0 })
+  assert.deepEqual(count([did('a')], new Date('2026-09-23T19:40:00')), { total: 4, answered: 1 })
+  assert.deepEqual(count([did('a'), did('b')], new Date('2026-09-23T20:00:00')), { total: 4, answered: 2 })
+  // The later two come due: still of 4.
+  assert.deepEqual(count([did('a'), did('b')], new Date('2026-09-23T21:05:00')), { total: 4, answered: 2 })
+  assert.deepEqual(count(['a', 'b', 'c', 'd'].map(did), new Date('2026-09-23T21:30:00')), { total: 4, answered: 4 })
+  assert.deepEqual(offCards(null, []), { done: 0, later: 0 })
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
