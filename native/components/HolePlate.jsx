@@ -4,10 +4,12 @@ import { periodLabel } from '../../src/lib/recurrence.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { DidButton, KeyButton } from './ui.jsx'
 
-export function HolePlate({ lamp, periodKey, wasSkip, colors, onLate, onSkip, onClose }) {
+// wrap: draws the card around the words; Tonight passes its own, so the card
+// wears the look and the frame like every other card.
+export function HolePlate({ lamp, periodKey, wasSkip, colors, onLate, onSkip, onClose, wrap = plainCard(colors) }) {
   if (!lamp) return null
-  return (
-    <View style={faceCardStyle(colors)}>
+  return wrap(
+    <>
       <Text style={[faceCardStyles.kicker, { color: colors.on }]}>
         {wasSkip ? t('hole.nopeKicker') : t('hole.kicker')}
       </Text>
@@ -28,8 +30,12 @@ export function HolePlate({ lamp, periodKey, wasSkip, colors, onLate, onSkip, on
           onPress={onClose}
         />
       ) : null}
-    </View>
+    </>,
   )
+}
+
+function plainCard(colors) {
+  return (body) => <View style={faceCardStyle(colors)}>{body}</View>
 }
 
 const styles = StyleSheet.create({

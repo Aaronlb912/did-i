@@ -363,7 +363,8 @@ function weKicker(card) {
 
 // The Tonight card for a Did we: swipe right for did, left for nope, the
 // other open ones stacked behind.
-export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, buddy }) {
+// frame: the worn card frame, the same as on your own cards.
+export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, buddy, frame = null }) {
   const open = weOpenForMe(cards, new Date(), { early: true })
   if (!open.length) return null
   const card = open[0]
@@ -389,6 +390,7 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
       onDid={() => onAnswer(card, 'did')}
       onNope={() => onAnswer(card, 'nope')}
       buddy={buddy}
+      frame={frame}
     >
       <View style={styles.swipeFoot}>
         <Text style={[styles.meta, { color: colors.inkSoft }]} numberOfLines={1}>

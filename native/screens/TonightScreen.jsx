@@ -404,6 +404,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const gemCard = gemPanelStyle(look, theme)
   const gemFrame = gemFrameStyle(look, theme)
   const staticCardStyle = [...faceCardStyle(colors, gemCard)]
+  // A card drawn by another component (HolePlate, WaitPlate) in the same look and frame.
+  const staticWrap = (body) => (
+    <GemFaceShell look={premium ? look : ''} theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
+      {body}
+    </GemFaceShell>
+  )
   // The question sits in the middle of the card, picked or not (owner call, 2026-10-06).
   const pickedPanel = gemCard || {}
   // Folders and topics are the first chip of the question row, not a row of their own.
@@ -552,6 +558,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
         buddy={activeBuddy(book)}
+        frame={cardFrame}
       />
     ) : null
   // After your own and Did we: family questions, then Did you asks. A swiped
@@ -654,6 +661,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         onDid={peopleTop.onDid}
         onNope={peopleTop.onNope}
         buddy={activeBuddy(book)}
+        frame={cardFrame}
       >
         {peopleTop.line ? (
           <Text style={[styles.everyLine, { color: colors.inkSoft }]}>{peopleTop.line}</Text>
@@ -704,6 +712,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       onDid={graceTop.onDid}
       onNope={graceTop.onNope}
       buddy={graceTop.buddy}
+      frame={cardFrame}
     >
       {graceTop.late ? (
         <Text style={[faceCardStyles.meta, styles.graceLate, { color: colors.inkSoft }]}>{t('tonight.graceLate')}</Text>
@@ -797,6 +806,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         panelStyle={gemCard}
         gemLook={premium ? look : ''}
         buddy={activeBuddy(book)}
+        frame={cardFrame}
       />
     )
   } else if (weSwipe && weOpenForMe(weCards, new Date(), { early: true }).length) {
@@ -1000,6 +1010,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
                 )
         }
         onClose={() => stack.closePlates()}
+        wrap={staticWrap}
       />
     )
   } else if (stack.bodyKind === 'wait' && stack.waitPick) {
@@ -1008,6 +1019,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         row={stack.waitPick}
         colors={colors}
         onDid={() => stack.mark(stack.waitPick, 'yes')}
+        wrap={staticWrap}
+        penBeside={Boolean(activeBuddy(book))}
       />
     )
   } else if (stack.bodyKind === 'pillView' && stack.pillPick) {
