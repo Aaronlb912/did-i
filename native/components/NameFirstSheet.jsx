@@ -5,7 +5,7 @@ import { needsName, saveName } from '../../src/lib/people.js'
 import { DidButton, Field } from './ui.jsx'
 import { publishSheet } from './SheetHost.jsx'
 
-function NameFirst({ colors, onSaved }) {
+function NameFirst({ colors, goLabel, onSaved }) {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [miss, setMiss] = useState('')
@@ -30,31 +30,34 @@ function NameFirst({ colors, onSaved }) {
         autoFocus
       />
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
-      <DidButton colors={colors} label={t('friendAsk.saveSend')} disabled={busy || !name.trim()} onPress={save} />
+      <DidButton colors={colors} label={goLabel} disabled={busy || !name.trim()} onPress={save} />
     </View>
   )
 }
 
 // Before a friend request: with no name the person asked only sees
 // "Someone", and the server refuses it (supabase/friend-ask-name.sql).
+// Saying yes to a request passes its own words (copy); a friend with no
+// name shows as "No name yet" on the other phone.
 // Resolves true when there is a name to send with, false when they backed out.
-export async function nameFirst(colors) {
+export async function nameFirst(colors, copy = {}) {
   if (!(await needsName().catch(() => false))) return true
   return new Promise((resolve) => {
     publishSheet({
-      kicker: t('friendAsk.kicker'),
-      title: t('friendAsk.nameTitle'),
-      body: t('friendAsk.nameFirst'),
+      kicker: copy.kicker ?? t('friendAsk.kicker'),
+      title: copy.title ?? t('friendAsk.nameTitle'),
+      body: copy.body ?? t('friendAsk.nameFirst'),
       content: (
         <NameFirst
           colors={colors}
+          goLabel={copy.go ?? t('friendAsk.saveSend')}
           onSaved={() => {
             publishSheet(null)
             resolve(true)
           }}
         />
       ),
-      closeLabel: t('friendAsk.dontSend'),
+      closeLabel: copy.back ?? t('friendAsk.dontSend'),
       colors,
       onClose: () => {
         publishSheet(null)
