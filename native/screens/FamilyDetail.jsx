@@ -673,7 +673,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       {edit ? (
       <Modal visible transparent animationType="fade" onRequestClose={() => { setEditMiss(''); setEdit(null) }}>
         <KeyboardLift>
-          <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setEdit(null)}>
+          <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => { setEditMiss(''); setEdit(null) }}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
               <Text style={[styles.cap, { color: colors.on }]}>{t('family.edit')}</Text>
               <Field
@@ -688,7 +688,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
               />
               {editMiss ? <Text style={{ color: colors.miss }}>{editMiss}</Text> : null}
               <DidButton colors={colors} label={t('family.save')} onPress={saveEdit} />
-              <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
+              <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => { setEditMiss(''); setEdit(null) }} />
             </Pressable>
           </Pressable>
         </KeyboardLift>

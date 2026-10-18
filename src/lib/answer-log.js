@@ -143,6 +143,9 @@ export function applyAnswers(shelf, rows) {
       ...(row.note_at ? { noteAt: row.note_at } : {}),
       // No amount column yet (answers.sql not applied) reads as no amount.
       ...(cleanAmount(row.amount) !== null ? { amount: cleanAmount(row.amount) } : {}),
+      // A Did here, then a Not yet from another phone: still counted as paid,
+      // so the next Did here does not pay again (purse.js payTap).
+      ...(row.status !== 'yes' && row.status !== 'late' && (mine?.paid === true || mine?.status === 'yes' || mine?.status === 'late') ? { paid: true } : {}),
     }
     if (at >= 0) book.answers[at] = next
     else book.answers.push(next)

@@ -21,11 +21,17 @@ function answerKey(answer) {
 }
 
 // A note saved later wins too (noteAt), without moving the tap time.
+// Whichever wins, a night that was once a Did on either phone stays counted
+// toward its paid taps (paid), so Did, Not yet elsewhere, Did never pays twice.
 function laterAnswer(a, b) {
   const left = answerStamp(a)
   const right = answerStamp(b)
-  if (left && right) return stampMs(right) > stampMs(left) ? b : a
-  return right && !left ? b : a
+  const won = left && right ? (stampMs(right) > stampMs(left) ? b : a) : right && !left ? b : a
+  return !onceDid(won) && (onceDid(a) || onceDid(b)) ? { ...won, paid: true } : won
+}
+
+function onceDid(answer) {
+  return answer?.paid === true || answer?.status === 'yes' || answer?.status === 'late'
 }
 
 function unionList(a, b) {

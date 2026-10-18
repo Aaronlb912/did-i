@@ -8106,6 +8106,25 @@ test('an open sheet hides the screens behind it from TalkBack, and only while it
   assert.ok(shell.indexOf('<SheetHost />', close) > close, 'SheetHost sits after the hidden screens, not inside them')
 })
 
+await testAsync('a Did on one phone and a Not yet on another still pays the night once', async () => {
+  const { mergeBooks } = await import('../src/lib/shelf-merge.js')
+  const { putAnswer } = await import('../src/lib/board-ops.js')
+  const clock = new Date('2026-10-18T21:00:00')
+  const lamp = { id: 'p', question: 'P?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }
+  const row = { lamp, periodKey: '2026-10-18', dateIso: '2026-10-18' }
+  const base = { id: 'm1', title: 'Home', dayFoldHour: 0, lamps: [lamp], answers: [], coins: 0 }
+  const phoneA = putAnswer(base, row, 'yes', clock)
+  assert.equal(phoneA.coins, 2)
+  const phoneB = { ...base, answers: [{ id: 'b1', lampId: 'p', periodKey: '2026-10-18', status: 'skip', answeredAt: '2026-10-18T21:30:00', note: '' }] }
+  // B's Not yet is newer and wins, but the night stays counted as paid.
+  const merged = mergeBooks(phoneB, phoneA)
+  const answer = merged.answers.find((a) => a.lampId === 'p')
+  assert.equal(answer.status, 'skip')
+  assert.equal(answer.paid, true)
+  const again = putAnswer({ ...merged, coins: phoneA.coins }, row, 'yes', new Date('2026-10-18T22:00:00'))
+  assert.equal(again.coins, 2, 'the second Did does not pay')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
