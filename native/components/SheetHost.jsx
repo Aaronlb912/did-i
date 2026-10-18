@@ -22,6 +22,10 @@ export function onSheetUp(fn) {
   return () => upWatchers.delete(fn)
 }
 
+export function sheetIsUp() {
+  return Boolean(current?.title)
+}
+
 export function publishSheet(next) {
   current = next
   listen?.(next)

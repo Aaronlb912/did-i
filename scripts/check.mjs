@@ -8125,6 +8125,46 @@ await testAsync('a Did on one phone and a Not yet on another still pays the nigh
   assert.equal(again.coins, 2, 'the second Did does not pay')
 })
 
+await testAsync('an invite needs no typing: the link carries it, a paste or any spelling works, a new account is asked once', async () => {
+  const { inviteFromPaste, isNewAccount } = await import('../src/lib/invite-link.js')
+  const { formatInvite, cleanInvite } = await import('../src/lib/people.js')
+  assert.equal(formatInvite('d93aq5lbs4'), 'D93AQ-5LBS4')
+  assert.equal(cleanInvite('d93aq-5lbs4 '), 'D93AQ5LBS4')
+  assert.equal(formatInvite('D93A'), 'D93A')
+  assert.equal(inviteFromPaste('Join me on Did I and we both get gems: https://did-i.app/i/D93AQ5LBS4'), 'D93AQ5LBS4')
+  assert.equal(inviteFromPaste(' d93aq-5lbs4 '), 'D93AQ5LBS4')
+  assert.equal(inviteFromPaste('hello there world'), '')
+  const now = Date.parse('2026-10-18T12:00:00Z')
+  assert.equal(isNewAccount({ created_at: '2026-10-17T12:00:00Z' }, now), true)
+  assert.equal(isNewAccount({ created_at: '2026-10-10T12:00:00Z' }, now), false)
+  assert.equal(isNewAccount({}, now), false)
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  // The shared message leads with the link in every language.
+  for (const file of readdirSync(path.join(root, 'src/locales'))) {
+    assert.match(read(`src/locales/${file}`), /'people\.inviteLine': '[^']*\{link\}'/, `${file} invite line ends with the link`)
+  }
+  // One tap to share from People and Connect; the code box on Connect, in the sign-up ask, and from a scanned invite.
+  const social = read('native/screens/social.jsx')
+  assert.equal((social.match(/<InviteCard colors=\{colors\} \/>/g) || []).length, 2)
+  assert.match(social, /<InviteCodeSection colors=\{colors\} book=\{book\} onChange=\{onChange\} hideBar hideDone \/>/)
+  assert.match(social, /<QrCode value=\{inviteLink\(invite\)\}/)
+  assert.match(read('native/screens/ScanScreen.jsx'), /swapHash\('\/people\/refer', \{ id: invite \}\)/)
+  assert.match(read('native/AppShell.jsx'), /<InviteAskHost /)
+  // The server can say whose code it is; it runs before drop-tonight like every new file.
+  const order = read('scripts/apply-all-sql.mjs')
+  assert.ok(order.indexOf('invite-owner.sql') > 0 && order.indexOf('invite-owner.sql') < order.indexOf('drop-tonight.sql'))
+})
+
+test('every screen wears the look: a glow of its colour and a bar above the first card', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const shell = readFileSync(path.join(root, 'native/components/BoardShell.jsx'), 'utf8')
+  assert.equal((shell.match(/<LookGlow colors=\{colors\} \/>/g) || []).length, 2, 'both the scrolling and the fixed page')
+  assert.match(shell, /<LookMark colors=\{colors\} \/>/)
+  // The page body is clear, so nothing paints over the glow.
+  assert.match(shell, /const shellBg = styles\.clear/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

@@ -7,6 +7,7 @@ export const ACCOUNT_CACHE_PREFIXES = ['did-i-kept:', 'did-i-we-cards:', 'did-i-
 // startup fires that too, and a link opened before sign up must survive it.
 export const PENDING_LINK_KEYS = [
   'did-i-pending-invite',
+  'did-i-invite-joined',
   'did-i-pending-did-you',
   'did-i-did-you-claims',
   'did-i-link-friends',

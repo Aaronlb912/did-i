@@ -10,6 +10,7 @@ import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { useLookColors } from '../hooks/useHallColors.js'
 import { HallAmbient } from './HallAmbient.jsx'
+import { LookGlow, LookMark } from './LookGlow.jsx'
 import { AppHeader, HeaderLargeTitle, LARGE_TITLE } from './AppHeader.jsx'
 import { MastMenuRoot } from './MastMenu.jsx'
 import { TileWindow, tileScrolled } from './frames/FramePreview.jsx'
@@ -167,13 +168,12 @@ export function BoardShell({
     () => ({ backgroundColor: washUnderBar ? 'transparent' : colors.bg }),
     [colors.bg, washUnderBar],
   )
-  const shellBg = useMemo(
-    () => (halo ? { backgroundColor: 'transparent' } : { backgroundColor: colors.bg }),
-    [colors.bg, halo],
-  )
+  // The page under it paints the background, so the look's glow shows through.
+  const shellBg = styles.clear
 
   const body = (
     <View style={[styles.page, { paddingBottom: (footer ? 0 : bottomPad) + (scroll ? END_ROOM : 0) + keyboardPad }]}>
+      {noTitle ? null : <LookMark colors={colors} />}
       <TileWindow.Provider value={Boolean(scroll)}>{children}</TileWindow.Provider>
     </View>
   )
@@ -207,6 +207,7 @@ export function BoardShell({
         scrollEventThrottle={16}
       >
         {ambient}
+        <LookGlow colors={colors} />
         {noTitle ? null : <HeaderLargeTitle colors={colors} title={barTitle} onHeight={setLargeHeight} />}
         <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
       </Animated.ScrollView>
@@ -224,6 +225,7 @@ export function BoardShell({
   ) : (
     <View style={[styles.content, styles.scroll, pageBg, { paddingTop: headerInset }]}>
       {ambient}
+      <LookGlow colors={colors} />
       <View style={[styles.shell, shellBg, feelSit === 'on' && styles.sitOn]}>{body}</View>
     </View>
   )
@@ -270,6 +272,7 @@ export function BoardShell({
 
 const styles = StyleSheet.create({
   frame: { flex: 1 },
+  clear: { backgroundColor: 'transparent' },
   ambientScroll: { position: 'absolute', top: -2000, bottom: -2000, left: 0, right: 0 },
   scroll: { flex: 1 },
   shell: { flex: 1, position: 'relative' },

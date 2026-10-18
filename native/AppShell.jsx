@@ -32,6 +32,7 @@ import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { UpdatePrompt } from './components/UpdatePrompt.jsx'
 import { SheetHost, onSheetUp } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
+import { InviteAskHost } from './components/InviteAskHost.jsx'
 import { lazyScreen } from './lib/lazy-screen.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
 import { resumeCheckOnStops } from './components/LampManage.jsx'
@@ -436,6 +437,7 @@ export function AppShell() {
         <UpdatePrompt path={route.path} colors={colors} />
         {booted && app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
         {app.book && !gated ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
+        {booted && app.book && !gated ? <InviteAskHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
         <SheetHost />
         <CheerBurstHost />
         <Slot>

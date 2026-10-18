@@ -1,4 +1,4 @@
-import { INVITE_CODE_LEN, cleanInvite, useInvite } from './people.js'
+import { INVITE_CODE_LEN, cleanInvite, inviteOwner, useInvite } from './people.js'
 
 // Invite links: did-i.app/i/CODE. The page copies the link and opens the
 // store; the app picks the code up on first launch (Play install referrer on
@@ -46,6 +46,23 @@ export function inviteFromText(text) {
   return hit ? cleanInvite(hit[1]) : ''
 }
 
+// A pasted invite: the link a friend shared (did-i.app/i/CODE), the whole
+// message it came in, or the bare code with or without its dash.
+export function inviteFromPaste(text) {
+  const raw = String(text || '')
+  const linked = inviteFromText(raw)
+  if (linked) return linked
+  const bare = /^\s*([A-Za-z0-9]{5})[\s-]?([A-Za-z0-9]{5})\s*$/.exec(raw)
+  return bare ? cleanInvite(bare[1] + bare[2]) : ''
+}
+
+// Made in the last two days: asked once whether someone invited it.
+const NEW_FOR_MS = 2 * 24 * 60 * 60 * 1000
+export function isNewAccount(user, now = Date.now()) {
+  const made = Date.parse(String(user?.created_at || ''))
+  return Number.isFinite(made) && now - made >= 0 && now - made < NEW_FOR_MS
+}
+
 export function savePendingInvite(code) {
   const clean = cleanInvite(code)
   if (clean.length !== INVITE_CODE_LEN) return false
@@ -83,5 +100,33 @@ export async function applyPendingInvite() {
   // Only the server's own answers are final; anything else is a network or auth hiccup.
   if (miss && !['used', 'self', 'nobody', 'code'].includes(miss)) return false
   clearPendingInvite()
+  if (!miss) {
+    const name = await inviteOwner(code).catch(() => null)
+    try {
+      localStorage.setItem(JOINED_KEY, JSON.stringify({ name: name || '' }))
+    } catch {
+      // The note is a nicety.
+    }
+    for (const fn of joinedWatchers) fn()
+  }
   return !miss
+}
+
+// The phone says "You joined with Aaron's invite" once a link's code is used.
+// Kept until shown, so a sync that lands before the app is up still says it.
+const JOINED_KEY = 'did-i-invite-joined'
+const joinedWatchers = new Set()
+export function onInviteJoined(fn) {
+  joinedWatchers.add(fn)
+  return () => joinedWatchers.delete(fn)
+}
+export function takeInviteJoined() {
+  try {
+    const raw = localStorage.getItem(JOINED_KEY)
+    if (!raw) return null
+    localStorage.removeItem(JOINED_KEY)
+    return { name: String(JSON.parse(raw)?.name || '') }
+  } catch {
+    return null
+  }
 }

@@ -9,7 +9,10 @@ import { repeatLabel } from '../../src/lib/send-repeat.js'
 import { sendAnswerLine } from '../../src/lib/send-answers.js'
 import { copyText, passAlong } from '../../src/lib/native.js'
 import {
+  INVITE_CODE_LEN,
   INVITE_GEMS_CAP,
+  cleanInvite,
+  formatInvite,
   invitePayoutNote,
   answerSend,
   reportSend,
@@ -87,6 +90,8 @@ import { sendLastLine } from '../../src/lib/every-copy.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { InviteCodeSection } from '../components/InviteCodeSection.jsx'
+import { InviteCard } from '../components/InviteCard.jsx'
+import { copyInviteLink, shareInvite } from '../lib/share-invite.js'
 import { WeAsks } from '../components/WeTonight.jsx'
 import { ReferLadder } from '../components/ReferLadder.jsx'
 import { activeLook } from '../../src/lib/active-look.js'
@@ -864,6 +869,8 @@ export function PeopleScreen({ book, onChange }) {
         />
       </View>
 
+      <InviteCard colors={colors} />
+
       <View style={styles.friendTabs}>
         <KitSegment
           items={[
@@ -1082,8 +1089,11 @@ export function PeopleScreen({ book, onChange }) {
   )
 }
 
-export function PeopleReferScreen({ book, onChange }) {
+export function PeopleReferScreen({ book, onChange, route }) {
   const colors = useHallColors()
+  // Opened from a scanned invite QR code: the code box comes filled in.
+  const scannedInvite = cleanInvite(route?.id || '')
+  const [showQr, setShowQr] = useState(false)
   // Frames show in your look, as on your card.
   const frameColors = useLookColors(activeLook(book))
   const account = useAccount()
@@ -1153,37 +1163,57 @@ export function PeopleReferScreen({ book, onChange }) {
       <OfflineLine colors={colors} />
       <Meta colors={colors}>{t('people.referBody')}</Meta>
 
-      <ReferLadder colors={colors} frameColors={frameColors} joined={joined} book={book} onChange={onChange} />
+      {scannedInvite.length === INVITE_CODE_LEN ? (
+        <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.on, backgroundColor: colors.panel }]}>
+          <InviteCodeSection key={scannedInvite} colors={colors} book={book} onChange={onChange} hideBar start={scannedInvite} />
+        </View>
+      ) : null}
 
-      <View style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-        <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('people.invite')}</Text>
+      <View style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.on, backgroundColor: colors.panel }]}>
+        <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('invite.yours')}</Text>
         <Text selectable style={[styles.friendId, { color: colors.ink }]}>
-          {invite || t('family.loading')}
+          {invite ? formatInvite(invite) : t('family.loading')}
         </Text>
+        <DidButton
+          colors={colors}
+          label={t('invite.send')}
+          disabled={!invite}
+          onPress={async () => {
+            const how = await shareInvite(invite)
+            if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
+            else setMiss(t('confirm.shareMiss'))
+          }}
+        />
         <View style={styles.idButtons}>
           <KeyButton
             colors={colors}
             label={t('friendId.copy')}
             disabled={!invite}
             onPress={async () => {
-              if (await copyText(invite)) confirmDone(t('people.copied'))
+              if (await copyInviteLink(invite)) confirmDone(t('people.copied'))
               else confirmMiss(t('confirm.miss'))
             }}
           />
           <KeyButton
             colors={colors}
-            label={t('people.shareCode')}
+            label={showQr ? t('qr.hideMine') : t('qr.showMine')}
             disabled={!invite}
-            onPress={async () => {
-              const how = await passAlong(t('people.inviteLine', { code: invite, link: inviteLink(invite) }), t('people.invite'))
-              if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
-              else setMiss(t('confirm.shareMiss'))
-            }}
+            onPress={() => setShowQr((on) => !on)}
           />
         </View>
+        {showQr && invite ? (
+          <Reveal style={styles.qrBox}>
+            <QrCode value={inviteLink(invite)} size={200} label={t('invite.yours')} />
+            <Meta colors={colors}>{t('invite.qrHint')}</Meta>
+          </Reveal>
+        ) : null}
       </View>
 
-      <InviteCodeSection colors={colors} book={book} onChange={onChange} gemsPaid={gemsPaid} joined={joined} hideBar />
+      <ReferLadder colors={colors} frameColors={frameColors} joined={joined} book={book} onChange={onChange} />
+
+      {scannedInvite.length === INVITE_CODE_LEN ? null : (
+        <InviteCodeSection colors={colors} book={book} onChange={onChange} gemsPaid={gemsPaid} joined={joined} hideBar />
+      )}
 
       <Miss colors={colors}>{miss}</Miss>
       {said ? <Meta colors={colors}>{said}</Meta> : null}
@@ -1191,7 +1221,7 @@ export function PeopleReferScreen({ book, onChange }) {
   )
 }
 
-export function PeopleConnectScreen({ book, route }) {
+export function PeopleConnectScreen({ book, onChange, route }) {
   const colors = useHallColors()
   const account = useAccount()
   const [famDraft, setFamDraft] = useState('')
@@ -1271,12 +1301,7 @@ export function PeopleConnectScreen({ book, route }) {
       {/* A scanned family code: the Join box comes up top so it is not missed. */}
       {scannedFamily ? <JoinFamilyCard key={scan} colors={colors} scanned={scannedFamily} /> : null}
 
-      <Row
-        colors={colors}
-        label={t('people.refer')}
-        note={t('people.referSub', { max: INVITE_GEMS_CAP })}
-        onPress={() => goHash('/people/refer')}
-      />
+      <InviteCard colors={colors} />
 
       <Cap colors={colors}>{t('people.addOne')}</Cap>
       <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -1302,6 +1327,10 @@ export function PeopleConnectScreen({ book, route }) {
         ) : null}
       </View>
       {idAsk.found ? <FriendConfirm ask={idAsk} colors={colors} /> : null}
+
+      {/* Someone who joined without their friend's link can still use the code
+          here, where they come to add that friend. Gone once one is used. */}
+      <InviteCodeSection colors={colors} book={book} onChange={onChange} hideBar hideDone />
 
       <View style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('friendId.yours')}</Text>
