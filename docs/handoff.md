@@ -1,7 +1,7 @@
 # Handoff: security pass, UX passes and 1.3.7 (from the cloud session, 2026-10-17 to 10-18)
 
 For the agent on Aaron's computer. Everything below is on branch
-`claude/friendly-turing-1ryjpc` (26 commits on top of master), not merged.
+`claude/friendly-turing-1ryjpc` (29 commits on top of master), not merged.
 Step 0 is a live bug: do it first.
 Work through it in order; each step says how to check it. Ask Aaron before
 anything that costs money or can't be undone (a store submit, deleting data).
