@@ -8199,6 +8199,15 @@ test('smooth screens: screen files warm after launch, the shelf is read once per
   assert.match(read('native/screens/frames.jsx'), /const FrameTile = memo\(/)
   assert.match(read('native/components/SetBits.jsx'), /useNativeDriver: true/)
   assert.match(read('src/lib/board-shelf.js'), /if \(raw && raw === lastRaw && lastShelf\) return lastShelf/)
+  // Long lists draw a page at a time; Did we keeps its totals; no JS-driven cheer tick or letter wave.
+  const more = read('native/screens/more.jsx')
+  assert.equal((more.match(/const page = useShown\(rows, query\)/g) || []).length, 2)
+  const we = read('native/screens/we.jsx')
+  assert.match(we, /useKept\(`we\.sums:/)
+  assert.match(we, /useKept\(`we\.early:/)
+  assert.ok(!/useNativeDriver: false/.test(read('native/components/DidLead.jsx')))
+  assert.match(read('native/components/CheerBurst.jsx'), /useAnimatedProps\(\(\) => \(\{ strokeDashoffset/)
+  assert.match(read('native/shim/reanimated-safe.cjs'), /useAnimatedProps\(fn\)/)
 })
 
 await testAsync('readShelf hands back the same shelf until storage changes, and sees a write from anywhere', async () => {

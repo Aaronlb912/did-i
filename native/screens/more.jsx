@@ -637,12 +637,27 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   )
 }
 
+// Long lists (every answer ever, every note) drew every row on open, which
+// held up the screen. The first PAGE draw; Show more adds the next.
+const PAGE = 40
+function useShown(rows, resetKey) {
+  const [count, setCount] = useState(PAGE)
+  useEffect(() => setCount(PAGE), [resetKey])
+  return { shown: rows.length > count ? rows.slice(0, count) : rows, more: Math.max(0, rows.length - count), showMore: () => setCount((n) => n + PAGE) }
+}
+
+function ShowMore({ more, onPress, colors }) {
+  if (!more) return null
+  return <KeyButton colors={colors} label={t('list.more', { n: Math.min(more, PAGE) })} onPress={onPress} />
+}
+
 export function FeedScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const clock = now || new Date()
-  const allRows = shelfFeedRows(inView(book, boards), tagId)
+  const allRows = useMemo(() => shelfFeedRows(inView(book, boards), tagId), [book, boards, tagId])
   const [query, setQuery] = useState('')
   const rows = useMemo(() => feedSearch(allRows, query), [allRows, query])
+  const page = useShown(rows, query)
 
   return (
     <ScreenShell title={t('feed.title')} colors={colors}>
@@ -658,7 +673,8 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
       ) : !rows.length ? (
         <Meta colors={colors}>{t('feed.noMatch')}</Meta>
       ) : (
-        rows.map((row) => (
+        <>
+        {page.shown.map((row) => (
           <Row
             key={row.answer.id}
             colors={colors}
@@ -668,7 +684,9 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
             }${row.answer.note ? `\n${row.answer.note}` : ''}`}
             onPress={() => row.lamp && goHash('/lamp', { id: row.lamp.id })}
           />
-        ))
+        ))}
+        <ShowMore more={page.more} onPress={page.showMore} colors={colors} />
+        </>
       )}
     </ScreenShell>
   )
@@ -680,6 +698,7 @@ export function NotesScreen({ book, boards }) {
   const allRows = useMemo(() => shelfNoteRows(inView(book, boards)), [book, boards])
   const [query, setQuery] = useState('')
   const rows = useMemo(() => feedSearch(allRows, query), [allRows, query])
+  const page = useShown(rows, query)
 
   return (
     <ScreenShell title={t('notes.title')} colors={colors}>
@@ -694,7 +713,8 @@ export function NotesScreen({ book, boards }) {
       ) : !rows.length ? (
         <Meta colors={colors}>{t('feed.noMatch')}</Meta>
       ) : (
-        rows.map((row) => {
+        <>
+        {page.shown.map((row) => {
           const night = periodLabel(row.lamp, row.answer.periodKey)
           return (
             <Row
@@ -705,7 +725,9 @@ export function NotesScreen({ book, boards }) {
               onPress={() => goHash('/lamp', { id: row.lamp.id })}
             />
           )
-        })
+        })}
+        <ShowMore more={page.more} onPress={page.showMore} colors={colors} />
+        </>
       )}
     </ScreenShell>
   )

@@ -136,6 +136,7 @@ export const pt = {
   'settings.remindersRowSub': 'Lembretes e a hora de cada pergunta',
   'pings.timesCap': 'Hora de cada pergunta',
   'pings.noTime': 'Sem hora',
+  'list.more': "Mostrar mais {n}",
   'settings.nightsRowSub': 'Modo suave, pastas, histórico',
   'settings.privacyRowSub': 'O que os outros veem, relatórios de falhas',
   'settings.helpRowSub': 'Como o Did I funciona, feedback',

@@ -136,6 +136,7 @@ export const en = {
   'settings.remindersRowSub': "Reminders and each question's time",
   'pings.timesCap': "Each question's time",
   'pings.noTime': 'No time set',
+  'list.more': "Show {n} more",
   'settings.nightsRowSub': 'Gentle mode, folders, history',
   'settings.privacyRowSub': 'What others see, crash reports',
   'settings.helpRowSub': 'How Did I works, feedback',

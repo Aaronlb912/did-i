@@ -136,6 +136,7 @@ export const ja = {
   'settings.remindersRowSub': 'リマインダーと質問ごとの時刻',
   'pings.timesCap': '質問ごとの時刻',
   'pings.noTime': '時刻なし',
+  'list.more': "さらに {n} 件表示",
   'settings.nightsRowSub': 'やさしいモード、フォルダ、記録',
   'settings.privacyRowSub': 'ほかの人に見えるもの、クラッシュレポート',
   'settings.helpRowSub': 'Did I の使い方、フィードバック',

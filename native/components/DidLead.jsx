@@ -82,13 +82,13 @@ export function WaveLead({ text, wave, colors, style }) {
             toValue: 1,
             duration: 160,
             easing: Easing.out(Easing.cubic),
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
           Animated.timing(value, {
             toValue: 0,
             duration: 520,
             easing: Easing.inOut(Easing.quad),
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
         ]),
       ),
@@ -99,21 +99,15 @@ export function WaveLead({ text, wave, colors, style }) {
 
   return (
     <View style={styles.waveRow} accessible accessibilityLabel={text}>
+      {/* Each letter is ink with a lime copy on top that fades in and out:
+          opacity runs on the native driver, a colour change cannot. */}
       {chars.map((char, index) => (
-        <Animated.Text
-          key={index}
-          style={[
-            style,
-            {
-              color: glow[index].interpolate({
-                inputRange: [0, 1],
-                outputRange: [colors.ink, colors.on],
-              }),
-            },
-          ]}
-        >
-          {char}
-        </Animated.Text>
+        <View key={index}>
+          <Text style={[style, { color: colors.ink }]}>{char}</Text>
+          <Animated.Text style={[style, styles.waveTop, { color: colors.on, opacity: glow[index] }]} aria-hidden>
+            {char}
+          </Animated.Text>
+        </View>
       ))}
     </View>
   )
@@ -169,6 +163,7 @@ export function IdeaPicks({ label, starters, picked, isOn, onPick, tilt, colors,
 }
 
 const styles = StyleSheet.create({
+  waveTop: { position: 'absolute', left: 0, top: 0 },
   waveRow: { flexDirection: 'row', flexWrap: 'wrap' },
   wrap: { gap: 8, marginTop: 12, marginBottom: 12 },
   label: { ...sectionLabel, marginBottom: 2 },

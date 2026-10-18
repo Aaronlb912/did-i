@@ -136,6 +136,7 @@ export const it = {
   'settings.remindersRowSub': 'Promemoria e orario di ogni domanda',
   'pings.timesCap': 'Orario di ogni domanda',
   'pings.noTime': 'Nessun orario',
+  'list.more': "Mostra altri {n}",
   'settings.nightsRowSub': 'Modalità gentile, cartelle, cronologia',
   'settings.privacyRowSub': 'Cosa vedono gli altri, report di arresto',
   'settings.helpRowSub': 'Come funziona Did I, feedback',

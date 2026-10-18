@@ -136,6 +136,7 @@ export const ko = {
   'settings.remindersRowSub': '알림과 질문별 시간',
   'pings.timesCap': '질문별 시간',
   'pings.noTime': '시간 없음',
+  'list.more': "{n}개 더 보기",
   'settings.nightsRowSub': '부드러운 모드, 폴더, 기록',
   'settings.privacyRowSub': '다른 사람에게 보이는 것, 오류 보고서',
   'settings.helpRowSub': 'Did I 사용법, 의견 보내기',

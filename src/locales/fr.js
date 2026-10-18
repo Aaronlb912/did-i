@@ -136,6 +136,7 @@ export const fr = {
   'settings.remindersRowSub': 'Rappels et heure de chaque question',
   'pings.timesCap': 'Heure de chaque question',
   'pings.noTime': 'Pas d’heure',
+  'list.more': "Afficher {n} de plus",
   'settings.nightsRowSub': 'Mode doux, dossiers, historique',
   'settings.privacyRowSub': 'Ce que voient les autres, rapports de plantage',
   'settings.helpRowSub': 'Fonctionnement de Did I, avis',

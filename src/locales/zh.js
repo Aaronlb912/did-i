@@ -136,6 +136,7 @@ export const zh = {
   'settings.remindersRowSub': '提醒和每个问题的时间',
   'pings.timesCap': '每个问题的时间',
   'pings.noTime': '未设时间',
+  'list.more': "再显示 {n} 条",
   'settings.nightsRowSub': '温和模式、文件夹、记录',
   'settings.privacyRowSub': '别人能看到什么、崩溃报告',
   'settings.helpRowSub': 'Did I 怎么用、反馈',

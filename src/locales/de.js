@@ -136,6 +136,7 @@ export const de = {
   'settings.remindersRowSub': 'Erinnerungen und Uhrzeit je Frage',
   'pings.timesCap': 'Uhrzeit je Frage',
   'pings.noTime': 'Keine Uhrzeit',
+  'list.more': "{n} weitere zeigen",
   'settings.nightsRowSub': 'Sanfter Modus, Ordner, Verlauf',
   'settings.privacyRowSub': 'Was andere sehen, Absturzberichte',
   'settings.helpRowSub': 'So funktioniert Did I, Feedback',

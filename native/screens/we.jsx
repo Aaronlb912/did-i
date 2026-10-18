@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { HangCard } from '../components/HangCard.jsx'
@@ -827,6 +827,7 @@ export function WeCardScreen({ book, cardId, onChange }) {
 
 function WeCardPage({ book, cardId, onChange }) {
   const colors = useHallColors(book)
+  const uid = useAccount().user?.id
   const cheer = useWeCheer(book, onChange)
   const people = usePeople()
   const [card, setCard] = useState(() => weCardKept(cardId))
@@ -855,9 +856,11 @@ function WeCardPage({ book, cardId, onChange }) {
   const [miss, setMiss] = useState('')
   const ans = useWeAnswer(() => load(), book)
   // Not asked tonight: its next asked night can be answered early.
-  const [early, setEarly] = useState(null)
+  // Both kept per card, so they are on the page as it opens, not one after
+  // the other as their reads land (each one moved the page).
+  const [early, setEarly] = useKept(`we.early:${uid}:${cardId}`, null, KEEP)
   // This week's combined amount, when the card tracks one. Missing: not tracked.
-  const [sum, setSum] = useState(null)
+  const [sum, setSum] = useKept(`we.sum:${uid}:${cardId}`, null, KEEP)
 
   async function load() {
     const out = await weTonight()
@@ -870,12 +873,18 @@ function WeCardPage({ book, cardId, onChange }) {
     setMiss('')
     const found = out.cards.find((c) => c.id === cardId) || null
     setCard(found)
-    if (found?.myState === 'in') {
-      weWeekTotals([found.id]).then((res) => setSum(res.totals.get(found.id) || null))
-    }
+    // The total and the early card read at the same time.
     const night = found && !found.due && found.myState === 'in' ? weNextNight(found) : ''
+    const totals = found?.myState === 'in' ? weWeekTotals([found.id]) : null
+    const laterAsk = night ? weTonight(night) : null
+    if (totals) {
+      totals.then((res) => {
+        if (!res.miss) setSum(res.totals.get(found.id) || null)
+      })
+    }
     if (!night) return setEarly(null)
-    const later = await weTonight(night)
+    const later = await laterAsk
+    if (later.miss) return undefined
     const then = later.cards.find((c) => c.id === cardId)
     return setEarly(then ? { night, card: then } : null)
   }
@@ -1394,14 +1403,17 @@ export function WeHomeList({ book, onChange }) {
   const cheer = useWeCheer(book, onChange)
 
   const mine =cards.filter((card) => card.myState === 'in')
-  // Combined amounts for every card on the list, in one read.
-  const [sums, setSums] = useState(() => new Map())
+  // Combined amounts for every card on the list, in one read. Kept, so the
+  // hint line under each card is there on open instead of pushing rows down
+  // a moment later; a failed read keeps the last ones.
+  const [sumRows, setSumRows] = useKept(`we.sums:${account.user?.id}`, [], KEEP)
+  const sums = useMemo(() => new Map(sumRows), [sumRows])
   const ids = mine.map((card) => card.id).join(',')
   useEffect(() => {
     if (!ids) return undefined
     let alive = true
     weWeekTotals(ids.split(',')).then((res) => {
-      if (alive) setSums(res.totals)
+      if (alive && !res.miss) setSumRows([...res.totals])
     })
     return () => {
       alive = false
