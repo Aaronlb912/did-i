@@ -1759,7 +1759,7 @@ function pulseWatch(user, fn) {
   if (!pulse.stop) {
     const timer = setInterval(pulseLook, PULSE_MS)
     // A new Did you or friend request for you, or a yes to yours: count it now.
-    const stopVisible = onVisible(pulseLook, ['ask', 'friend'])
+    const stopVisible = onVisible(pulseLook, ['ask', 'friend', 'gift', 'familyInfo', 'weMembers'])
     pulse.stop = () => {
       clearInterval(timer)
       stopVisible()
@@ -1883,7 +1883,7 @@ export function useFamilyTonight(user) {
 
   useEffect(() => {
     look()
-    return onVisible(look, ['family'])
+    return onVisible(look, ['family', 'familyInfo'])
   }, [look])
 
   return { rows, reload: look }

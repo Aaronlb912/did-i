@@ -27,7 +27,8 @@ begin
   select count(*) into n from realtime.messages
   where topic = 'didi:' || a and payload->>'kind' = 'we' and payload->>'id' = card::text;
   if n <> 1 then raise exception 'FAIL: A got % Did we broadcasts, want 1', n; end if;
-  select count(*) into n from realtime.messages where topic in ('didi:' || b, 'didi:' || c);
+  -- Answer pings only: being put on the card is its own ping (live-more.sql).
+  select count(*) into n from realtime.messages where topic in ('didi:' || b, 'didi:' || c) and payload->>'kind' = 'we';
   if n <> 0 then raise exception 'FAIL: the answerer or an outsider got a broadcast'; end if;
 
   -- The broadcast carries no answer.
@@ -74,7 +75,7 @@ begin
   select count(*) into n from realtime.messages where topic = 'didi:' || a and payload->>'kind' = 'send';
   if n <> 1 then raise exception 'FAIL: the sender got % Did you broadcasts, want 1', n; end if;
   select count(*) into n from realtime.messages where topic = 'didi:' || b;
-  if n <> 0 then raise exception 'FAIL: someone else got a Did you broadcast'; end if;
+  if n <> before then raise exception 'FAIL: someone else got a Did you broadcast'; end if;
 
   -- Blocked: no more.
   insert into public.blocks (blocker, blocked) values (c, a);

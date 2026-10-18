@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useLiveReload } from '../hooks/useLiveReload.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { useNoted } from '../hooks/useNoted.js'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -138,6 +139,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   useEffect(() => {
     load()
   }, [load])
+  useLiveReload(['family', 'familyInfo'], load)
 
   function answerFor(lampId, userId) {
     return answers.find((row) => row.lamp_id === lampId && row.user_id === userId) || null

@@ -3,6 +3,7 @@
 // so corners and gems keep the same proportions as on a real card.
 // Tiles never move (no clock, no particles), and the frame art mounts a few
 // tiles at a time after the screen has opened, so a grid of 30 opens at once.
+import { BuddyHang } from '../Cosmetic.jsx'
 import { createContext, memo, useContext, useEffect, useRef, useState } from 'react'
 import { Dimensions, InteractionManager, StyleSheet, View } from 'react-native'
 import { CardFrame } from './CardFrame.jsx'
@@ -114,13 +115,22 @@ function MiniCard({ colors, weekLit, dots = true }) {
 }
 
 // The sample streak grows Vine; still tiles never print it (Polaroid shows the date only).
-function Preview({ id, colors = {}, size = 120, weekLit = WEEK, streak = 30 }) {
+// buddy: someone else's card (a friend's) wears their buddy, plain: what
+// they have on it is not shared, and the viewer's own outfit is not theirs.
+const PLAIN = {}
+
+function Preview({ id, colors = {}, size = 120, weekLit = WEEK, streak = 30, buddy = '' }) {
   const box = useRef(null)
   const [near, onLayout] = useNear(box)
   const ready = useLazyReady(near)
   const height = Math.round(size * 1.2)
   const k = (size * 0.66) / BASE_W
-  const mini = <MiniCard colors={colors} weekLit={weekLit} dots={!OWN_ROW.has(id)} />
+  const mini = (
+    <View>
+      <MiniCard colors={colors} weekLit={weekLit} dots={!OWN_ROW.has(id)} />
+      {buddy ? <BuddyHang id={buddy} worn={PLAIN} /> : null}
+    </View>
+  )
   return (
     <View ref={box} collapsable={false} onLayout={onLayout} pointerEvents="none" style={[styles.tile, { width: size, height }]}>
       <View style={{ position: 'absolute', left: (size - BASE_W) / 2, top: (height - BASE_H) / 2, width: BASE_W, height: BASE_H, transform: [{ scale: k }] }}>
@@ -146,6 +156,7 @@ export const FramePreview = memo(
   (a, b) =>
     a.id === b.id &&
     a.size === b.size &&
+    a.buddy === b.buddy &&
     a.streak === b.streak &&
     sameWeek(a.weekLit, b.weekLit) &&
     (a.colors === b.colors || COLOR_KEYS.every((key) => a.colors?.[key] === b.colors?.[key])),

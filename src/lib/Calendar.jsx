@@ -24,9 +24,9 @@ function dowMarks(locale) {
 // Gentle mode never says missed.
 function markOf(answer, open = true, gentle = false) {
   const status = answer?.status
-  if (status === 'yes') return { key: 'yes', label: t('tonight.swipeDid') }
+  if (status === 'yes') return { key: 'yes', label: t('jewelKey.did') }
   if (status === 'late') return { key: 'late', label: t('hole.late') }
-  if (status === 'skip') return open || gentle ? { key: 'skip', label: t('tonight.swipeNope') } : { key: 'skip', label: t('later.missed') }
+  if (status === 'skip') return open || gentle ? { key: 'skip', label: t('jewelKey.nope') } : { key: 'skip', label: t('later.missed') }
   return { key: 'hole', label: t('cal.open') }
 }
 

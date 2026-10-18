@@ -24,11 +24,16 @@ class DidITileService : TileService() {
   override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> {
     val cards = CardStore.load(this)
     val palette = Palette(cards?.colors)
-    val total = cards?.items?.size ?: 0
+    // The watch app's numbers (MainActivity): Today's meter for the ring, and
+    // a Not yet is not "All done".
+    val total = cards?.countTotal ?: 0
+    val done = cards?.countDone ?: 0
     val left = cards?.openCards?.size ?: 0
+    val notYet = cards?.items?.count { it.status == "nope" } ?: 0
     val line = when {
-      cards == null || total == 0 || cards.stale -> cards?.openPhoneLabel?.orNull() ?: getString(R.string.open_phone)
+      cards == null || cards.items.isEmpty() || cards.stale -> cards?.openPhoneLabel?.orNull() ?: getString(R.string.open_phone)
       left > 0 -> fill(cards.leftLabel, "n" to left) ?: getString(R.string.left_n, left)
+      notYet > 0 -> fill(cards.notYetLabel, "n" to notYet) ?: getString(R.string.not_yet_n, notYet)
       else -> cards.allDoneLabel.orNull() ?: getString(R.string.all_done)
     }
     val open = ModifiersBuilders.Clickable.Builder()
@@ -51,7 +56,7 @@ class DidITileService : TileService() {
       .addContent(label(line, 18f, palette.accent.toArgb()))
       .build()
     val ring = CircularProgressIndicator.Builder()
-      .setProgress(if (total > 0) (total - left).toFloat() / total else 0f)
+      .setProgress(if (total > 0) done.coerceAtMost(total).toFloat() / total else 0f)
       .setCircularProgressIndicatorColors(ProgressIndicatorColors(argb(palette.accent.toArgb()), argb(palette.line.toArgb())))
       .build()
     val root = LayoutElementBuilders.Box.Builder()

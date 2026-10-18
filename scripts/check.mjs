@@ -8168,13 +8168,22 @@ test('every screen wears the look: a glow of its colour and a bar above the firs
 test('a friend request and its yes reach the other phone live, not on the 5 minute check', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const read = (file) => readFileSync(path.join(root, file), 'utf8')
-  assert.match(read('src/lib/people.js'), /onVisible\(pulseLook, \['ask', 'friend'\]\)/)
-  const sql = read('supabase/friend-live.sql')
+  assert.match(read('src/lib/people.js'), /onVisible\(pulseLook, \['ask', 'friend', 'gift', 'familyInfo', 'weMembers'\]\)/)
+  const sql = read('supabase/live-more.sql')
   assert.match(sql, /live_ping\(array\[r\.who\], 'friend', r\.id\)/)
   assert.match(sql, /after insert on public\.friend_links/)
   assert.match(sql, /after update on public\.friend_links/)
+  for (const table of ['cheer_gifts', 'we_members', 'family_members', 'family_lamps', 'families', 'sends']) {
+    assert.match(sql, new RegExp(`on public\\.${table}\\b`), `${table} pings`)
+  }
+  // Open screens read again on those pings.
+  const social = read('native/screens/social.jsx')
+  for (const kinds of ["['family', 'familyInfo']", "['send', 'sendMoved', 'friend']", "['ask', 'gift']", "['send', 'sendMoved']"]) {
+    assert.ok(social.includes(`useLiveReload(${kinds}, load)`), kinds)
+  }
+  assert.match(read('native/screens/FamilyDetail.jsx'), /useLiveReload\(\['family', 'familyInfo'\], load\)/)
   const order = read('scripts/apply-all-sql.mjs')
-  assert.ok(order.indexOf('social-live.sql') < order.indexOf('friend-live.sql') && order.indexOf('friend-live.sql') < order.indexOf('drop-tonight.sql'))
+  assert.ok(order.indexOf('social-live.sql') < order.indexOf('live-more.sql') && order.indexOf('live-more.sql') < order.indexOf('drop-tonight.sql'))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

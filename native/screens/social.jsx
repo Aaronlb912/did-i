@@ -77,6 +77,7 @@ import {
   fireCheer,
   friendCheerMissKey,
   applyInvitePayout,
+  BUDDY_IDS,
   lookText,
   normalizePurse,
 } from '../../src/lib/purse.js'
@@ -117,6 +118,7 @@ import { keptButMissing } from '../lib/kept-send.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { nameFirst } from '../components/NameFirstSheet.jsx'
 import { useNoted } from '../hooks/useNoted.js'
+import { useLiveReload } from '../hooks/useLiveReload.js'
 import { inviteLink } from '../../src/lib/invite-link.js'
 import { LOOK_IDS, fonts, radius } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
@@ -1802,6 +1804,7 @@ function FamilyListScreen({ colors }) {
   useEffect(() => {
     load()
   }, [load])
+  useLiveReload(['family', 'familyInfo'], load)
 
   if (!cloudSetUp()) return <CloudOff colors={colors} />
   if (!account.user) {
@@ -1872,7 +1875,7 @@ function FriendCardArt({ person, size }) {
   const look = LOOK_IDS.includes(person.look_on) ? person.look_on : 'lime'
   const colors = useLookColors(look)
   const frame = FRAME_IDS.has(person.frame_on) ? person.frame_on : ''
-  return <FramePreview id={frame} colors={colors} size={size} />
+  return <FramePreview id={frame} colors={colors} size={size} buddy={BUDDY_IDS.has(person.buddy_on) ? person.buddy_on : ''} />
 }
 
 // "Lime look, Frost frame": what the card in the sheet is wearing.
@@ -2088,6 +2091,7 @@ export function FriendScreen({ book, onChange, route }) {
   useEffect(() => {
     load()
   }, [load])
+  useLiveReload(['send', 'sendMoved', 'friend'], load)
 
   // Same path and limits as the Friends list: one stored cheer per tap,
   // bought five for a gem. Family members go through the family cheer.
@@ -2485,6 +2489,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
   useEffect(() => {
     load()
   }, [load])
+  useLiveReload(['ask', 'gift'], load)
 
   useEffect(() => {
     if (!fromPush || pushDone.current || !ready) return
@@ -2697,6 +2702,7 @@ export function SentScreen({ book, onChange }) {
   useEffect(() => {
     load()
   }, [load])
+  useLiveReload(['send', 'sendMoved'], load)
 
   if (!cloudSetUp()) return <CloudOff colors={colors} />
   if (!account.user) {

@@ -607,9 +607,9 @@ export function useWeTonight(user) {
     return () => watchers.delete(setState)
   }, [user])
 
-  // Someone on a card answered while this is open: read again now.
+  // Someone on a card answered, was invited, joined or left while this is open: read again now.
   useEffect(() => onSocialLive((kinds) => {
-    if (kinds.has('we')) look()
+    if (kinds.has('we') || kinds.has('weMembers')) look()
   }), [look])
 
   useEffect(() => {

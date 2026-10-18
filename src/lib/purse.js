@@ -337,7 +337,7 @@ export const CHEER_STAGE_COINS = [0, 0, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEE
 // drop day (or a gift of a new item) keeps what it has.
 const CHEER_IDS = new Set([...ALL_CHEERS, ...SPECIAL_CHEERS].map((item) => item.id))
 const LOOK_IDS = new Set(ALL_LOOKS.map((item) => item.id))
-const BUDDY_IDS = new Set(ALL_BUDDIES.map((item) => item.id))
+export const BUDDY_IDS = new Set(ALL_BUDDIES.map((item) => item.id))
 
 function asCount(value) {
   const n = Math.floor(Number(value) || 0)
