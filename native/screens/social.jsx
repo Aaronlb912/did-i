@@ -295,11 +295,12 @@ function offerWeWith(person, colors) {
   }
   const name = personName(person) || t('people.someone')
   publishSheet({
-    kicker: t('we.title'),
+    // The friend is added already; this only offers a Did we. "Never mind"
+    // read like undoing the friend, so the way out says not now.
     title: t('we.friendTitle', { name }),
-    body: t('we.friendBody'),
+    body: t('we.friendBoth'),
     goLabel: t('we.startWith', { name }),
-    closeLabel: t('settings.neverMind'),
+    closeLabel: t('we.friendLater'),
     colors,
     onClose: () => publishSheet(null),
     onGo: () => {
