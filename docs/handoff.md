@@ -183,6 +183,9 @@ Nothing has run on a phone or the live database.
 
 ## Decided, do not redo
 
+- Past answers stay locked once yesterday's grace ends (no "change to Did" on old days): Aaron, 2026-10-18.
+- An unnamed friend reads "No name yet" in lists and "Someone" in sentences; friends' IDs are not sent to show instead.
+
 - No cap on how many questions someone can have.
 - Night coins and the weekly gem stay as they are (an answer check would
   underpay; coins are asked for before the answer syncs). Milestone cap stays.
