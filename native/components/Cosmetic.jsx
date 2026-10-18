@@ -1152,7 +1152,7 @@ function useMyOutfit() {
   return { worn: book ? normalizePurse(book).worn : {}, tone: colors.on }
 }
 
-const TALL_EARS = new Set(['rabbit', 'fox', 'duck'])
+const TALL_EARS = new Set(['rabbit', 'fox', 'duck', 'reindeer'])
 
 export function BuddyHang({ id, inline = false, alive = false, worn = null, tone = '' }) {
   const life = useBuddyLife(alive)

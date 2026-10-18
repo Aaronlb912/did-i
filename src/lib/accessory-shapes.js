@@ -26,6 +26,8 @@ const AT = {
   duck: { ex: [18, 30], ey: 26, er: 3.7, crown: 17, neck: 40, side: 15 },
   axolotl: { ex: [18, 30], ey: 26, er: 4, crown: 13, neck: 38, side: 14.5 },
   turtle: { ex: [19.5, 28.5], ey: 25, er: 3.5, crown: 16, neck: 35, side: 11, back: 34 },
+  snowman: { ex: [20, 28], ey: 23, er: 3.5, crown: 15.5, neck: 33.5, side: 13 },
+  reindeer: { ex: [19.5, 28.5], ey: 27, er: 3.5, crown: 17.5, neck: 39.5, side: 14 },
 }
 
 const INK = '#2d241c'

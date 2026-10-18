@@ -80,6 +80,9 @@ export type DidITonightWidgetProps = {
   gentle?: boolean
   // What the buddy has on, as shapes (src/lib/accessory-shapes.js).
   buddyShapes?: { behind?: (string | number)[][]; front?: (string | number)[][] } | null
+  // The buddy's own shapes (src/lib/buddy-parts.js), for a buddy newer than
+  // this build's BUDDY table.
+  buddyParts?: (string | number)[][] | null
   colors?: WidgetColors
 }
 
@@ -512,6 +515,50 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       ['e', 15.8, 28.6, 2.1, 1.2, '#f59aa8', 0, 0.7],
       ['e', 32.2, 28.6, 2.1, 1.2, '#f59aa8', 0, 0.7],
     ],
+    // Antlers are lines behind the head; hats sit in front of their bases.
+    reindeer: [
+      ['l', 18, 18, 14, 9, '#c9a06a', 1.8],
+      ['l', 15.6, 12.6, 11, 11.4, '#c9a06a', 1.6],
+      ['l', 30, 18, 34, 9, '#c9a06a', 1.8],
+      ['l', 32.4, 12.6, 37, 11.4, '#c9a06a', 1.6],
+      ['e', 10.5, 23, 5, 2.6, '#a8703f', 28],
+      ['e', 37.5, 23, 5, 2.6, '#a8703f', -28],
+      ['e', 11, 23.2, 3, 1.3, '#f3d9b6', 28],
+      ['e', 37, 23.2, 3, 1.3, '#f3d9b6', -28],
+      ['e', 24, 31, 15, 14, '#a8703f'],
+      ['e', 24, 36, 9, 7, '#f0d6b0'],
+      ['e', 19.5, 27, 2.2, 2.8, '#2d241c'],
+      ['e', 28.5, 27, 2.2, 2.8, '#2d241c'],
+      ['e', 20.2, 26.1, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 29.2, 26.1, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 24, 33.2, 2.3, 1.6, '#c4525a'],
+      ['e', 14.8, 32, 2.2, 1.3, '#f59aa8', 0, 0.7],
+      ['e', 33.2, 32, 2.2, 1.3, '#f59aa8', 0, 0.7],
+      ['e', 17, 45, 4.5, 2.8, '#5a3a22'],
+      ['e', 31, 45, 4.5, 2.8, '#5a3a22'],
+    ],
+    // Two snowballs: a blue-gray one under each white one is its shade.
+    snowman: [
+      ['l', 13.5, 34, 5, 28, '#7a5a3c', 1.4],
+      ['l', 7.6, 29.8, 7, 26.6, '#7a5a3c', 1.1],
+      ['l', 34.5, 34, 43, 28, '#7a5a3c', 1.4],
+      ['l', 40.4, 29.8, 41, 26.6, '#7a5a3c', 1.1],
+      ['e', 24, 38.8, 14, 9.4, '#b9c8d8'],
+      ['e', 24, 38.2, 13.2, 8.6, '#f4f7fa'],
+      ['e', 24, 24.5, 10.4, 9.8, '#b9c8d8'],
+      ['e', 24, 24.1, 9.6, 9.1, '#f4f7fa'],
+      ['e', 20.5, 18.6, 2.4, 1.3, '#ffffff', 0, 0.8],
+      ['e', 20, 23, 2.2, 2.8, '#2d241c'],
+      ['e', 28, 23, 2.2, 2.8, '#2d241c'],
+      ['e', 20.7, 22.1, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 28.7, 22.1, 0.7, 0.9, '#ffffff', 0, 0.9],
+      ['e', 26.6, 27.4, 3.4, 1.3, '#f28c38', 12],
+      ['e', 16.8, 28.6, 2, 1.2, '#f59aa8', 0, 0.6],
+      ['e', 31.6, 28.6, 2, 1.2, '#f59aa8', 0, 0.6],
+      ['e', 24, 35, 1.1, 1.1, '#2d241c'],
+      ['e', 24, 39, 1.1, 1.1, '#2d241c'],
+      ['e', 24, 43, 1.1, 1.1, '#2d241c'],
+    ],
     // Curved stripes and antennae are paths in the SVG; bars and lines here.
     hive: [
       ['e', 11, 18, 6, 8, '#8fb8d4', -25],
@@ -611,8 +658,16 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     )
   }
 
+  // A buddy this build has no table for is drawn from the parts the app sent.
+  function buddyBody(id: string) {
+    if (!id) return null
+    if (BUDDY[id]) return BUDDY[id]
+    const sent = props?.buddyParts
+    return Array.isArray(sent) && sent.length ? sent.filter((part) => Array.isArray(part)) : null
+  }
+
   function buddyMark(id: string) {
-    const parts = BUDDY[id]
+    const parts = buddyBody(id)
     if (!parts) return null
     const w = compact ? 30 : 38
     const k = w / 48
@@ -914,7 +969,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
             spacing={compact ? 4 : 8}
             modifiers={[
               frame({ maxWidth: 10000 }),
-              padding({ trailing: BUDDY[buddyId] ? (compact ? 22 : 32) : 0 }),
+              padding({ trailing: buddyBody(buddyId) ?(compact ? 22 : 32) : 0 }),
             ]}
           >
             {nextButton}

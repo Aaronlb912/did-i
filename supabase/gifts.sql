@@ -58,6 +58,7 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from) values
   ('buddy', 'cat', 5, 0, '2026-01-01'), ('buddy', 'dog', 5, 0, '2026-01-01'),
   ('buddy', 'rabbit', 5, 0, '2026-01-01'), ('buddy', 'owl', 5, 0, '2026-01-01'),
   ('buddy', 'possum', 5, 0, '2026-01-01'), ('buddy', 'frog', 5, 0, '2026-10-09'),
+  ('buddy', 'snowman', 5, 0, '2026-01-01'),
   ('look', 'ink', 0, 30, '2026-01-01'), ('look', 'brass', 0, 30, '2026-01-01'),
   ('look', 'night', 0, 30, '2026-01-01'), ('look', 'clay', 0, 30, '2026-10-09'),
   ('look', 'moss', 2, 0, '2026-01-01'), ('look', 'plum', 2, 0, '2026-01-01'),
@@ -105,7 +106,9 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from) values
   ('cheer', 'butterfly', 2, 0, '2027-01-29'), ('cheer', 'bounce', 2, 0, '2027-01-29'),
   ('buddy', 'turtle', 5, 0, '2027-01-29'),
   ('look', 'sunset', 2, 0, '2027-01-29'), ('look', 'twilight', 2, 0, '2027-01-29'),
-  ('look', 'fog', 0, 30, '2027-01-29')
+  ('look', 'fog', 0, 30, '2027-01-29'),
+  -- Winter drop 2026-12-01.
+  ('buddy', 'reindeer', 5, 0, '2026-12-01')
 on conflict (kind, item_id) do update
   set gems = excluded.gems, coins = excluded.coins, live_from = excluded.live_from;
 
