@@ -492,7 +492,7 @@ async function pullAndMergeOnce() {
     }
 
     // Fold in every answer the account has that this phone has not seen.
-    const pulled = await pullAnswers(merged)
+    const pulled = await pullAnswers(merged, { stillCurrent: () => run === syncRun })
     if (pulled.miss) throw new Error(pulled.miss)
 
     let written = land(closeShelfPastNights(pulled.shelf), metaAt)

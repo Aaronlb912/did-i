@@ -174,7 +174,9 @@ export function dropSentAnswers(shelf, gone) {
   return { shelf: changed ? { ...shelf, boards } : shelf, changed }
 }
 
-export async function pullAnswers(shelf) {
+// stillCurrent(): false once the account signed out while this was out, so
+// the next account's first pull is not cut short by this one's stamp.
+export async function pullAnswers(shelf, { stillCurrent = () => true } = {}) {
   const db = cloud()
   if (!db) return { shelf, changed: 0, miss: '' }
   const since = read(SEEN)
@@ -210,7 +212,7 @@ export async function pullAnswers(shelf) {
     }
   }
   const next = applyAnswers(shelf, data)
-  if (data?.length) write(SEEN, data[data.length - 1].updated_at)
+  if (data?.length && stillCurrent()) write(SEEN, data[data.length - 1].updated_at)
   return { ...next, miss: '' }
 }
 

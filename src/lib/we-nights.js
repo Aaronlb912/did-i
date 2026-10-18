@@ -62,7 +62,12 @@ export function weNightStatus(nightIso, card) {
   return (index().get(nightIso) || []).find((row) => row.card === card)?.status || ''
 }
 
+// Bumped on clear (sign out), so a refresh already out drops the old
+// account's nights instead of storing them again.
+let nightsRun = 0
+
 export function clearWeNights() {
+  nightsRun += 1
   setWeNightRows([])
 }
 
@@ -120,8 +125,9 @@ export async function refreshWeNights() {
   if (!cloudSetUp()) return
   const db = cloud()
   if (!db) return
+  const run = nightsRun
   const { data, error } = await db.rpc('my_we_nights')
-  if (error || !Array.isArray(data)) return
+  if (run !== nightsRun || error || !Array.isArray(data)) return
   setWeNightRows(
     data.map((row) => ({
       card: String(row.card_id || ''),
