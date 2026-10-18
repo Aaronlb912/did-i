@@ -95,6 +95,19 @@ Did we: questions you answer together with friends or family, with a shared stre
 **What's new in 1.3.1:**
 Card frames: dress up your card with a frame. Some are free, some cost coins or gems, some you earn with a streak, and some come with the seasons. Bring friends to Did I and earn Hive, a new bee buddy, at 15 friends and the Bloom frame at 20. Swipe left now says Not yet, so you can still come back and say Did before the night ends. A wishlist in the Shop and Collection keeps track of what you want next. Undo after a swipe is easier to catch, deleted questions stay deleted, and the Shop is smoother. Frames rest in low power mode, and the launch screen matches your light or dark setting.
 
+**What's new in 1.3.7:**
+- Friends' pictures, looks and frames are back.
+- Open screens update on their own: friend requests, gifts, Did you, Did we and family changes.
+- Inviting a friend is one tap, with a link or a QR code.
+- A day that ends with no Did now reads Missed. Gentle mode keeps Not yet.
+- Your look's colour shows at the top of every screen.
+- Smoother screens and lists.
+- The watch counts every question today, the same as the app.
+- Better VoiceOver support, and forms send with Return.
+- Your sign-in is stored encrypted on your phone.
+
+Same text for the Play release notes (en-US). App Privacy labels and Play Data safety: no new data types.
+
 **App Privacy labels for 1.3.1:** no new data types. The look and card
 frame you wear are shown to friends and family (Other User Content, already
 declared).
