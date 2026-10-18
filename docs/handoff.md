@@ -43,6 +43,10 @@ Android and iOS, `vite build`, and every SQL test on a local Postgres 16 stand-i
 (readthrough-12 and social-live fail there on master too: stand-in gaps).
 Nothing has run on a phone or the live database.
 
+## Progress (2026-10-18, local agent)
+
+Done: steps 0 to 3 (full SQL re-apply live, tests and db:audit clean; merged as #311; play-voided, apple-notify and push deployed). Step 4: Apple server notification URLs set (production and sandbox). Left for Aaron: Play service account View financial data, Android key restriction in Google Cloud. Steps 5 and 7 wait for Actions budget; step 6 runs on the 1.3.7 build.
+
 ## Steps
 
 0. **First: friends lost their pictures and equipped styles (live bug,
