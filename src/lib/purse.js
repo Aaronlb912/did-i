@@ -62,6 +62,7 @@ const ALL_BUDDIES = [
   { id: 'rabbit', gems: BUDDY_GEMS },
   { id: 'owl', gems: BUDDY_GEMS },
   { id: 'possum', gems: BUDDY_GEMS },
+  { id: 'snowman', gems: BUDDY_GEMS },
   { id: 'frog', gems: BUDDY_GEMS, from: '2026-10-09' },
   { id: 'penguin', gems: BUDDY_GEMS, from: '2026-10-23' },
   { id: 'fox', gems: BUDDY_GEMS, from: '2026-11-06' },

@@ -1607,6 +1607,8 @@ export const zh = {
   'buddy.frog.line': '绿色青蛙。挂在角上。',
   'buddy.penguin.name': '企鹅',
   'buddy.penguin.line': '穿燕尾服的小企鹅。坐在角上。',
+  'buddy.snowman.name': '雪人',
+  'buddy.snowman.line': '胡萝卜鼻子的小雪人。坐在角上。',
   'look.lime.name': 'Lime',
   'look.lime.line': '一开始就有的那个。',
   'look.ink.name': 'Ink',

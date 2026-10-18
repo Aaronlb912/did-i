@@ -1639,6 +1639,8 @@ export const fr = {
   'buddy.frog.line': 'Grenouille verte. Accrochée au coin.',
   'buddy.penguin.name': 'Manchot',
   'buddy.penguin.line': 'Petit manchot en smoking. Assis au coin.',
+  'buddy.snowman.name': 'Bonhomme de neige',
+  'buddy.snowman.line': 'Petit bonhomme de neige au nez de carotte. Assis au coin.',
   'look.lime.name': 'Lime',
   'look.lime.line': 'Celui avec lequel tu commences.',
   'look.ink.name': 'Ink',

@@ -1610,6 +1610,8 @@ export const ko = {
   'buddy.frog.line': '초록 개구리. 모서리에 매달림.',
   'buddy.penguin.name': '펭귄',
   'buddy.penguin.line': '턱시도 입은 작은 펭귄. 모서리에 앉음.',
+  'buddy.snowman.name': '눈사람',
+  'buddy.snowman.line': '당근 코를 단 작은 눈사람. 모서리에 앉음.',
   'look.lime.name': 'Lime',
   'look.lime.line': '처음 시작하는 것.',
   'look.ink.name': 'Ink',

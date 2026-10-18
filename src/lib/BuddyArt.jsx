@@ -475,6 +475,39 @@ export function BuddyArt({ id, className = '' }) {
     )
   }
 
+  if (id === 'snowman') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <line x1="13.5" y1="34" x2="5" y2="28" stroke="#7a5a3c" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="7.6" y1="29.8" x2="7" y2="26.6" stroke="#7a5a3c" strokeWidth="1.1" strokeLinecap="round" />
+        <line x1="34.5" y1="34" x2="43" y2="28" stroke="#7a5a3c" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="40.4" y1="29.8" x2="41" y2="26.6" stroke="#7a5a3c" strokeWidth="1.1" strokeLinecap="round" />
+        <ellipse cx="24" cy="38.8" rx="14" ry="9.4" fill="#b9c8d8" />
+        <ellipse cx="24" cy="38.2" rx="13.2" ry="8.6" fill="#f4f7fa" />
+        <ellipse cx="24" cy="24.5" rx="10.4" ry="9.8" fill="#b9c8d8" />
+        <ellipse cx="24" cy="24.1" rx="9.6" ry="9.1" fill="#f4f7fa" />
+        <ellipse cx="20.5" cy="18.6" rx="2.4" ry="1.3" fill="#ffffff" opacity="0.8" />
+        <ellipse cx="20" cy="23" rx="2.2" ry="2.8" fill="#2d241c" />
+        <ellipse cx="28" cy="23" rx="2.2" ry="2.8" fill="#2d241c" />
+        <ellipse cx="20.7" cy="22.1" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="28.7" cy="22.1" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9" />
+        <ellipse cx="26.6" cy="27.4" rx="3.4" ry="1.3" fill="#f28c38" transform="rotate(12 26.6 27.4)" />
+        <ellipse cx="16.8" cy="28.6" rx="2" ry="1.2" fill="#f59aa8" opacity="0.6" />
+        <ellipse cx="31.6" cy="28.6" rx="2" ry="1.2" fill="#f59aa8" opacity="0.6" />
+        <ellipse cx="24" cy="35" rx="1.1" ry="1.1" fill="#2d241c" />
+        <ellipse cx="24" cy="39" rx="1.1" ry="1.1" fill="#2d241c" />
+        <ellipse cx="24" cy="43" rx="1.1" ry="1.1" fill="#2d241c" />
+      </svg>
+    )
+  }
+
   // Never sold: earned by bringing 15 friends (src/lib/purse.js REFER_BUDDY).
   if (id === 'hive') {
     return (

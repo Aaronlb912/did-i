@@ -1610,6 +1610,8 @@ export const ja = {
   'buddy.frog.line': '緑のカエル。角にぶら下がる。',
   'buddy.penguin.name': 'ペンギン',
   'buddy.penguin.line': 'タキシードの小さなペンギン。角に座る。',
+  'buddy.snowman.name': '雪だるま',
+  'buddy.snowman.line': 'にんじんの鼻の小さな雪だるま。角に座る。',
   'look.lime.name': 'Lime',
   'look.lime.line': '最初から使えるもの。',
   'look.ink.name': 'Ink',

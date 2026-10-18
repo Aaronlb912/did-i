@@ -302,6 +302,27 @@ const BUDDY_SVG = {
     <ellipse cx="15.8" cy="28.6" rx="2.1" ry="1.2" fill="#f59aa8" opacity="0.7"/>
     <ellipse cx="32.2" cy="28.6" rx="2.1" ry="1.2" fill="#f59aa8" opacity="0.7"/>
   </svg>`,
+  snowman: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
+    <line x1="13.5" y1="34" x2="5" y2="28" stroke="#7a5a3c" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="7.6" y1="29.8" x2="7" y2="26.6" stroke="#7a5a3c" stroke-width="1.1" stroke-linecap="round"/>
+    <line x1="34.5" y1="34" x2="43" y2="28" stroke="#7a5a3c" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="40.4" y1="29.8" x2="41" y2="26.6" stroke="#7a5a3c" stroke-width="1.1" stroke-linecap="round"/>
+    <ellipse cx="24" cy="38.8" rx="14" ry="9.4" fill="#b9c8d8"/>
+    <ellipse cx="24" cy="38.2" rx="13.2" ry="8.6" fill="#f4f7fa"/>
+    <ellipse cx="24" cy="24.5" rx="10.4" ry="9.8" fill="#b9c8d8"/>
+    <ellipse cx="24" cy="24.1" rx="9.6" ry="9.1" fill="#f4f7fa"/>
+    <ellipse cx="20.5" cy="18.6" rx="2.4" ry="1.3" fill="#ffffff" opacity="0.8"/>
+    <ellipse cx="20" cy="23" rx="2.2" ry="2.8" fill="#2d241c"/>
+    <ellipse cx="28" cy="23" rx="2.2" ry="2.8" fill="#2d241c"/>
+    <ellipse cx="20.7" cy="22.1" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="28.7" cy="22.1" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="26.6" cy="27.4" rx="3.4" ry="1.3" fill="#f28c38" transform="rotate(12 26.6 27.4)"/>
+    <ellipse cx="16.8" cy="28.6" rx="2" ry="1.2" fill="#f59aa8" opacity="0.6"/>
+    <ellipse cx="31.6" cy="28.6" rx="2" ry="1.2" fill="#f59aa8" opacity="0.6"/>
+    <ellipse cx="24" cy="35" rx="1.1" ry="1.1" fill="#2d241c"/>
+    <ellipse cx="24" cy="39" rx="1.1" ry="1.1" fill="#2d241c"/>
+    <ellipse cx="24" cy="43" rx="1.1" ry="1.1" fill="#2d241c"/>
+  </svg>`,
   hive: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="11" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" stroke-width="1" transform="rotate(-25 11 18)"/>
     <ellipse cx="37" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" stroke-width="1" transform="rotate(25 37 18)"/>

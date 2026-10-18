@@ -1633,6 +1633,8 @@ export const pt = {
   'buddy.frog.line': 'Sapo verde. Fica no canto.',
   'buddy.penguin.name': 'Pinguim',
   'buddy.penguin.line': 'Pinguim pequeno de smoking. Fica no canto.',
+  'buddy.snowman.name': 'Boneco de neve',
+  'buddy.snowman.line': 'Boneco de neve pequeno com nariz de cenoura. Fica no canto.',
   'look.lime.name': 'Lime',
   'look.lime.line': 'Com o que começas.',
   'look.ink.name': 'Ink',

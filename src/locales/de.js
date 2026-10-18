@@ -1644,6 +1644,8 @@ export const de = {
   'buddy.frog.line': 'Grüner Frosch. Hängt in der Ecke.',
   'buddy.penguin.name': 'Pinguin',
   'buddy.penguin.line': 'Kleiner Pinguin im Frack. Sitzt in der Ecke.',
+  'buddy.snowman.name': 'Schneemann',
+  'buddy.snowman.line': 'Kleiner Schneemann mit Karottennase. Sitzt in der Ecke.',
   'look.lime.name': 'Lime',
   'look.lime.line': 'Der, mit dem du startest.',
   'look.ink.name': 'Ink',

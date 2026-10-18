@@ -1630,6 +1630,8 @@ export const en = {
   'buddy.frog.line': 'Green frog. Sits on the corner.',
   'buddy.penguin.name': 'Penguin',
   'buddy.penguin.line': 'Small penguin in a tux. Sits on the corner.',
+  'buddy.snowman.name': 'Snowman',
+  'buddy.snowman.line': 'Small snowman with a carrot nose. Sits on the corner.',
   'look.lime.name': 'Lime',
   'look.lime.line': 'The one you start with.',
   'look.ink.name': 'Ink',

@@ -1636,6 +1636,8 @@ export const es = {
   'buddy.frog.line': 'Rana verde. Cuelga en la esquina.',
   'buddy.penguin.name': 'Pingüino',
   'buddy.penguin.line': 'Pingüino chico de esmoquin. Se sienta en la esquina.',
+  'buddy.snowman.name': 'Muñeco de nieve',
+  'buddy.snowman.line': 'Muñeco de nieve chico con nariz de zanahoria. Se sienta en la esquina.',
   'look.lime.name': 'Lime',
   'look.lime.line': 'Con el que empiezas.',
   'look.ink.name': 'Ink',
