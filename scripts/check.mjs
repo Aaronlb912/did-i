@@ -8013,6 +8013,33 @@ await testAsync('one SQL file on its own never puts an older function back over 
   assert.ok(sqlOrder().length > 50)
 })
 
+await testAsync('flipping Did and Not yet on one question pays its coins once, and the 3-tap cap still holds', async () => {
+  const { putAnswer } = await import('../src/lib/board-ops.js')
+  const { normalizeAnswer } = await import('../src/lib/board-json.js')
+  const clock = new Date('2026-10-18T21:00:00')
+  const lamps = ['a', 'b', 'c', 'd'].map((id) => ({ id, question: id + '?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }))
+  let book = { id: 'f1', title: 'Home', dayFoldHour: 0, lamps, answers: [], coins: 0 }
+  const row = (id) => ({ lamp: lamps.find((lamp) => lamp.id === id), periodKey: '2026-10-18', dateIso: '2026-10-18' })
+  for (let i = 0; i < 5; i += 1) {
+    book = putAnswer(book, row('a'), 'yes', clock)
+    book = putAnswer(book, row('a'), 'skip', clock)
+  }
+  assert.equal(book.coins, 2)
+  // The flipped one still counts: two more Dids pay, the fourth question does not.
+  book = putAnswer(book, row('b'), 'yes', clock)
+  book = putAnswer(book, row('c'), 'yes', clock)
+  book = putAnswer(book, row('d'), 'yes', clock)
+  assert.equal(book.coins, 6)
+  // A Not yet first, then a Did, still pays.
+  let fresh = { id: 'f2', title: 'Home', dayFoldHour: 0, lamps, answers: [], coins: 0 }
+  fresh = putAnswer(fresh, row('a'), 'skip', clock)
+  fresh = putAnswer(fresh, row('a'), 'yes', clock)
+  assert.equal(fresh.coins, 2)
+  // The mark survives a save.
+  assert.equal(normalizeAnswer({ lampId: 'a', periodKey: 'x', status: 'skip', paid: true }).paid, true)
+  assert.equal('paid' in normalizeAnswer({ lampId: 'a', periodKey: 'x', status: 'skip' }), false)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

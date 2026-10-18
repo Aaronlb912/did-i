@@ -109,6 +109,27 @@ $$;
 revoke all on function public.claim_gem_purchases() from public, anon;
 grant execute on function public.claim_gem_purchases() to authenticated;
 
+-- From gem-purchases.sql, plus: a buy already recorded is a repeat (the phone
+-- was closed before it finished the transaction), not a new pack. It never
+-- counts against the 20 a day, or the phone could not finish it for a day.
+create or replace function public.cap_gem_purchases()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if exists (select 1 from public.gem_purchases g where g.store = new.store and g.store_ref = new.store_ref) then
+    return new;
+  end if;
+  if (select count(*) from public.gem_purchases
+      where user_id = new.user_id and made_at > now() - interval '1 day') >= 20 then
+    raise exception 'gem purchase cap';
+  end if;
+  return new;
+end;
+$$;
+
 -- Google has no refund push without Pub/Sub, so play-voided reads its list of
 -- voided buys every hour.
 select cron.unschedule('play-voided') where exists (select 1 from cron.job where jobname = 'play-voided');

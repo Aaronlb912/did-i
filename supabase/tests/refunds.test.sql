@@ -59,6 +59,25 @@ begin
   select gem_balance into bal from public.profiles where user_id = a;
   if bal <> 10 then raise exception 'FAIL: balance % after the debt was paid, want 10', bal; end if;
 
+  -- 5. At the 20-a-day cap, a buy already recorded still goes through (the
+  -- phone retries it to finish the transaction); a new one is refused.
+  for n in 1..16 loop
+    perform public.record_gem_purchase(a, 'gems_1', 1, 100, 'play', 'cap-ref-' || lpad(n::text, 4, '0'));
+  end loop;
+  select count(*) into n from public.gem_purchases where user_id = a and made_at > now() - interval '1 day';
+  if n <> 20 then raise exception 'FAIL: set-up has % buys, want 20', n; end if;
+  begin
+    perform public.record_gem_purchase(a, 'gems_1', 1, 100, 'play', 'cap-ref-0001');
+  exception when raise_exception then
+    raise exception 'FAIL: a repeat of a recorded buy hit the daily cap';
+  end;
+  begin
+    perform public.record_gem_purchase(a, 'gems_1', 1, 100, 'play', 'cap-ref-new-1');
+    raise exception 'FAIL: a 21st new buy in a day went through';
+  exception when raise_exception then
+    if sqlerrm <> 'gem purchase cap' then raise exception 'FAIL: wrong refusal: %', sqlerrm; end if;
+  end;
+
   -- 4. Only the service role can refund.
   execute 'set local role authenticated';
   begin

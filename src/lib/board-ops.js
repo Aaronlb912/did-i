@@ -9,6 +9,9 @@ export function putAnswer(book, row, status, clock = new Date()) {
     // A past night only takes the closing nope, and only while it is empty.
     if (status !== 'skip' || answerFor(book, row.lamp.id, row.periodKey)) return book
   }
+  const prev = (book.answers || []).find((item) => item.lampId === row.lamp.id && item.periodKey === row.periodKey)
+  // Once a Did, always counted: flipping Did, Not yet, Did never pays twice.
+  const counted = status === 'yes' || status === 'late' || prev?.paid === true || prev?.status === 'yes' || prev?.status === 'late'
   const answer = {
     id: newAnswerId(),
     lampId: row.lamp.id,
@@ -16,6 +19,7 @@ export function putAnswer(book, row, status, clock = new Date()) {
     status,
     answeredAt: answeredAtIso(clock),
     note: '',
+    ...(counted ? { paid: true } : {}),
   }
   const next = {
     ...book,
