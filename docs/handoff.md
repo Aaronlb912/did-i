@@ -56,7 +56,7 @@ Done: steps 0 to 3 (full SQL re-apply live, tests and db:audit clean; merged as 
 
 Checked: a new account with 3 gems in its first week is the weekly gem, the joiner's referral gem, and (from the payout rules; not queried) one for a friend who used its code. Not an update bug; each is paid once per account.
 
-Left for Aaron: Play service account View financial data, Android key restriction in Google Cloud. Left: the phone pass on 1.3.7 once it reaches devices, step 8 (watch a week) and step 9 (tidy up). Signed OTA was skipped.
+Done 2026-10-18 by Aaron: Play service account has View financial data; the Firebase Android key is limited to com.aaronbryant.didi (Play signing, previous Play signing, upload and debug SHA-1s). Left: the phone pass on 1.3.7 once it reaches devices, step 8 (watch a week) and step 9 (tidy up). Signed OTA was skipped.
 
 ## Steps
 
