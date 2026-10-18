@@ -23,11 +23,17 @@ anything that costs money or can't be undone (a store submit, deleting data).
 | shell-quote and source-map-js pinned (npm `overrides`) | `package.json`, `package-lock.json` |
 | Watch "1 of N" and ring count every question tonight, not just the cards left | `src/lib/watch-count.js`, `native/watch-sync.js`, `targets/watch/DidIWatchApp.swift`, `android/wear/src/main/java/com/aaronbryant/didi/wear/{Cards,MainActivity}.kt` |
 | Cleanup: 9 unused files, the unused Android DynamicColor module (Match wallpaper was already gone), 20 unused strings in all 9 locales | `git show` the cleanup commit; Android needs the 1.3.7 build for the module removal |
-| Bug pass: sign-out mid-sync, Did we refresh races, Did/Not yet coin flip, recorded gem buy at the cap, every missed day saved as Not yet (`src/lib/daily.js` missedRows) | `src/lib/{answer-log,cloud-sync,we-nights,did-we,board-ops,purse,board-json,daily}.js`, `supabase/refunds.sql` |
+| Bug passes: sign-out mid-sync, Did we refresh races, Did/Not yet coin flip (also across two phones: `paid` survives a pull and a merge), recorded gem buy at the cap, every missed day is closed (`src/lib/daily.js` missedRows), family edit error clears on close | `src/lib/{answer-log,cloud-sync,we-nights,did-we,board-ops,purse,board-json,daily,shelf-merge}.js`, `native/screens/FamilyDetail.jsx`, `supabase/refunds.sql` |
+| A day that is over without a Did reads Missed (not Not yet) everywhere; gentle mode keeps Not yet | `native/components/{CalendarGrid,LampMonth,NightNotes}.jsx`, `native/screens/{more,questions}.jsx`, `src/lib/{Feed,Calendar,StatsPage}.jsx` |
+| Security round 2: refund debt comes off any gem gained (`pay_gem_debt` trigger), apple-notify checks a buy once per 15 min (`store_checked_at`), a sign-out while the Keychain is locked lands once it unlocks | `supabase/refunds.sql`, `supabase/functions/apple-notify`, `native/lib/auth-store.js` |
+| QoL: Enter submits forms, code fields take the number pad and email autofill, limits match the server (names 40, folders/families 60, family questions 200, Did you note 280, invite code 16), Use code busy state, 44pt taps on 40pt buttons | `native/screens/{SignInScreen,social,more,questions,we,shop}.jsx`, `native/components/{AuthEmailCard,InviteCodeSection,NameFirstSheet,SendDidYou,NightNotes,TagFilter,ui}.jsx`, `src/lib/useReferralCode.js`, `native/screens/FamilyDetail.jsx` |
+| Accessibility: VoiceOver hears toasts, sheets hold focus (and on Android hide the screens behind from TalkBack), week strip days read their state, the card reads its folder, answer buttons shrink to fit | `native/components/{ToastHost,SheetHost,WeekStrip,SwipeCard,CalendarGrid}.jsx`, `native/AppShell.jsx` |
+| Wording: day not night in the privacy policy (date now October 18, 2026), help, site and family / cheer pushes; no "did not" in English copy | `src/locales/*.js`, `supabase/push.sql` (server push text: lands with step 0's full run) |
+| Cleanup round 2: 126 more unused strings, 3 unused files (`src/site/link.js`, `scripts/build-pages.mjs`, `scripts/eas-patch-podfile.mjs`), old walkthroughs moved to `docs/archive/`; `npm run db:apply <file>` refuses an older file on its own | `src/locales/*.js`, `scripts/sql-order.mjs`, `scripts/apply-sql.mjs` |
 | Version 1.3.7 (native deps added) | `app.json`, `android/app/build.gradle`, `android/wear/build.gradle`, `strings.xml`, `targets/*/Info.plist` |
 
-Checked in the cloud: `npm test` 343/343, lint, typecheck, `expo export`
-Android, `vite build`, and every SQL test on a local Postgres 16 stand-in
+Checked in the cloud: `npm test` 349/349, lint, typecheck, `expo export`
+Android and iOS, `vite build`, and every SQL test on a local Postgres 16 stand-in
 (readthrough-12 and social-live fail there on master too: stand-in gaps).
 Nothing has run on a phone or the live database.
 
@@ -60,7 +66,8 @@ Nothing has run on a phone or the live database.
      it stops on an error, fix that file and run it again until it reaches
      the end; a partial run is what causes this. It also applies
      `refunds.sql` (step 2 is then done; its hourly cron gets a 404 until
-     `play-voided` is deployed, which is harmless).
+     `play-voided` is deployed, which is harmless) and the day wording in
+     `push.sql` (family summary "3 of 4 done today", "cheered you on today").
    - Check: the query above now lists `avatar_url`, `look_on`, `frame_on`;
      on Aaron's phone the Friends list shows pictures again and a friend's
      page shows their look and frame. Then `npm run db:audit` (no rows) and
@@ -114,6 +121,16 @@ Nothing has run on a phone or the live database.
    - A worn frame on the grace card, a Did we card, a missed-day card and a
      not-yet card.
    - Saying yes to a friend request with no name asks for the name first.
+   - Forms: Enter sends the sign-in email, signs in from the code and from the
+     reviewer password; the code field opens the number pad and offers the
+     emailed code. Enter also submits invite code, family join code, friend
+     ID (Android), new family, rename family, family question edit, new and
+     renamed folder, first-run name/folder, PIN (Android). Long names stop at
+     the limit instead of failing after the tap.
+   - Sign out, restart the phone, open the app before unlocking (or from a
+     widget), then unlock: still signed out.
+   - Coins, two phones on one account: Did on A (2 coins), Not yet on B, let
+     A sync, Did again on A: no second 2 coins.
    - VoiceOver (iPhone) and TalkBack: answering a card announces the undo
      toast; a sheet (shop buy, name prompt) takes focus on its title and
      VoiceOver cannot swipe onto the card behind it; the Home week strip
@@ -148,3 +165,13 @@ Nothing has run on a phone or the live database.
   underpay; coins are asked for before the answer syncs). Milestone cap stays.
 - `npm audit fix` without overrides is off the table: it bumps expo-widgets
   past `patches/expo-widgets+57.0.20.patch` and adds a second @expo/ui.
+- Missed days are stored as `skip` (the server only takes yes/skip/late) and
+  read Missed once the day closes; do not add a new status.
+- SQL functions no client calls now (`find_handle`, `my_handle`,
+  `claim_auto_sends`, `buy_coin_cosmetic`, `waitlist_count`, `shelf_gem_max`,
+  `shelf_coin_max`) stay: older phone builds may still call them.
+- About 40 unused JS exports stay (harmless; listed in the cleanup survey).
+- Pushes over 30 an hour to one person are dropped quietly; that is the cap.
+- Wording left on purpose: Night look / Night owl / Neon night and other
+  names, night-sky frame text, "date night", "Morning, noon or night",
+  "That is everything for tonight" (shown only at night).
