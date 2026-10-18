@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { hasLocaleKey, t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
@@ -356,9 +356,10 @@ export function openFramesHow(colors) {
   })
 }
 
-function FrameTile({ frame, purse, ctx, colors, onPress, style }) {
+// ownedSet: the grid works it out once; without it each tile built its own.
+const FrameTile = memo(function FrameTile({ frame, purse, ctx, colors, onPress, style, ownedSet }) {
   const name = frameTileName(frame.id)
-  const owned = framesOwned(purse, ctx).has(frame.id)
+  const owned = (ownedSet || framesOwned(purse, ctx)).has(frame.id)
   return (
     <Pressable
       onPress={() => onPress(frame.id)}
@@ -377,7 +378,7 @@ function FrameTile({ frame, purse, ctx, colors, onPress, style }) {
       </View>
     </Pressable>
   )
-}
+})
 
 // Paid frames go up by price, then by name, in the Shop row and All frames.
 const byPrice = (a, b) => (a.coins || a.gems || 0) - (b.coins || b.gems || 0) || frameName(a.id).localeCompare(frameName(b.id))
@@ -451,10 +452,14 @@ export function ShopFramesScreen({ book, onChange }) {
   useEffect(() => {
     refreshGiftsSent().then((n) => { if (typeof n === 'number') setGiftsSent(n) }).catch(() => {})
   }, [])
-  const ctx = { ...shelfCtx, giftsSent }
-  const purse = normalizePurse(book)
-  const open = (id) => openFrameSheet({ id, book, colors, ctx, onChange })
-  const lists = allFramesLists(purse, ctx)
+  // Stable between renders, so the memoized tiles only redraw when something they show changed.
+  const ctx = useMemo(() => ({ ...shelfCtx, giftsSent }), [shelfCtx, giftsSent])
+  const purse = useMemo(() => normalizePurse(book), [book])
+  const lists = useMemo(() => allFramesLists(purse, ctx), [purse, ctx])
+  const ownedSet = useMemo(() => framesOwned(purse, ctx), [purse, ctx])
+  const live = useRef(null)
+  live.current = { book, colors, ctx, onChange }
+  const open = useCallback((id) => openFrameSheet({ id, ...live.current }), [])
   return (
     <BoardShell book={book} title={t('frames.all')} date={formatBoardDate(ctx.today)} colors={colors} showPurse>
       <Meta colors={colors}>{t('frames.hint')}</Meta>
@@ -474,7 +479,7 @@ export function ShopFramesScreen({ book, onChange }) {
           {sec.kind === 'earned' ? <Meta colors={colors}>{t('frames.earnHint')}</Meta> : null}
           <View style={styles.grid}>
             {sec.list.map((frame) => (
-              <FrameTile key={frame.id} frame={frame} purse={purse} ctx={ctx} colors={colors} onPress={open} style={styles.gridTile} />
+              <FrameTile key={frame.id} frame={frame} purse={purse} ctx={ctx} colors={colors} onPress={open} style={styles.gridTile} ownedSet={ownedSet} />
             ))}
           </View>
         </View>

@@ -70,6 +70,14 @@ function buildFallback() {
       }
     },
     useAnimatedReaction() {},
+    // The fallback draws the end state, as useAnimatedStyle does.
+    useAnimatedProps(fn) {
+      try {
+        return typeof fn === 'function' ? fn() : {}
+      } catch {
+        return {}
+      }
+    },
     useAnimatedStyle(fn) {
       try {
         return typeof fn === 'function' ? fn() : {}

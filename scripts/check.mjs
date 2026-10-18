@@ -1416,7 +1416,7 @@ test('an achievement never takes the undo toast spot while an undo is up', () =>
 test('undo windows come from one place: answers 5 s, deletes 7 s', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const times = readFileSync(path.join(root, 'src/lib/undo-times.js'), 'utf8')
-  assert.ok(/ANSWER_UNDO_MS = 5000/.test(times) && /DELETE_UNDO_MS = 7000/.test(times))
+  assert.ok(/ANSWER_UNDO_MS = 8000/.test(times) && /DELETE_UNDO_MS = 7000/.test(times))
   for (const file of ['src/lib/useTonightStack.js', 'src/lib/AllLamps.jsx', 'native/screens/questions.jsx', 'native/components/LampManage.jsx', 'native/components/NightNotes.jsx', 'native/screens/more.jsx']) {
     const src = readFileSync(path.join(root, file), 'utf8')
     assert.ok(src.includes('undo-times.js'), `${file} reads undo-times.js`)
@@ -3453,6 +3453,8 @@ test('night one and the sign-in card show once', () => {
   assert.equal(showSignInNudge({ ...base, cloud: false }), false)
   markSignInNudgeSeen()
   assert.equal(showSignInNudge({ ...base, dismissed: signInNudgeSeen() }), false)
+  // Later is a week, not for good.
+  assert.equal(signInNudgeSeen(Date.now() + 8 * 24 * 60 * 60 * 1000), false)
   localStorage.removeItem('did-i-night-one')
   localStorage.removeItem('did-i-sign-in-nudge')
 })
@@ -7882,6 +7884,344 @@ test('the keyboard never covers a text box: every box is AppTextInput and the pa
   const shell = readFileSync(path.join(root, 'native/components/BoardShell.jsx'), 'utf8')
   assert.match(shell, /onFieldMoved\(/)
   assert.match(shell, /keyboardDidShow', \(\) => followField\.current\(\)/)
+})
+
+await testAsync('the sign-in session moves into the encrypted store and never drops for want of the key', async () => {
+  const { makeAuthStorage } = await import('../native/lib/auth-store.js')
+  const mapStore = () => {
+    const m = new Map()
+    return {
+      m,
+      getItem: (k) => (m.has(k) ? m.get(k) : null),
+      setItem: (k, v) => m.set(k, String(v)),
+      removeItem: (k) => m.delete(k),
+      getString: (k) => (m.has(k) ? m.get(k) : undefined),
+      set: (k, v) => m.set(k, String(v)),
+      remove: (k) => m.delete(k),
+    }
+  }
+  const keychain = new Map()
+  let locked = false
+  let keeps = true
+  const secure = {
+    AFTER_FIRST_UNLOCK: 'after-first-unlock',
+    async getItemAsync(k) {
+      if (locked) throw new Error('locked')
+      return keychain.get(k) ?? null
+    },
+    async setItemAsync(k, v) {
+      if (keeps) keychain.set(k, v)
+    },
+  }
+  const crypto = { getRandomBytes: (n) => Uint8Array.from({ length: n }, (_, i) => i + 1) }
+  const sealedFiles = new Map()
+  const made = []
+  const mmkv = {
+    createMMKV({ id, encryptionKey, encryptionType }) {
+      made.push({ id, encryptionKey, encryptionType })
+      if (!sealedFiles.has(id)) sealedFiles.set(id, mapStore())
+      return sealedFiles.get(id)
+    },
+  }
+  const plain = mapStore()
+
+  // An old phone: the session is in plain MMKV. The first read moves it.
+  plain.setItem('did-i-auth', 'session-1')
+  let store = makeAuthStorage({ secure, crypto, mmkv, plain: () => plain })
+  assert.equal(await store.getItem('did-i-auth'), 'session-1')
+  assert.equal(plain.getItem('did-i-auth'), null)
+  assert.equal(sealedFiles.get('did-i-auth').getString('did-i-auth'), 'session-1')
+  assert.equal(made[0].encryptionType, 'AES-256')
+  assert.equal(made[0].encryptionKey.length, 32)
+
+  // A refresh writes only to the sealed file.
+  await store.setItem('did-i-auth', 'session-2')
+  assert.equal(plain.getItem('did-i-auth'), null)
+  assert.equal(await store.getItem('did-i-auth'), 'session-2')
+
+  // Keychain locked (background after a reboot): the write lands in plain MMKV,
+  // the session is not lost, and the next read with the key moves it in.
+  locked = true
+  store = makeAuthStorage({ secure, crypto, mmkv, plain: () => plain })
+  await store.setItem('did-i-auth', 'session-3')
+  assert.equal(plain.getItem('did-i-auth'), 'session-3')
+  assert.equal(await store.getItem('did-i-auth'), 'session-3')
+  locked = false
+  assert.equal(await store.getItem('did-i-auth'), 'session-3')
+  assert.equal(plain.getItem('did-i-auth'), null)
+  assert.equal(sealedFiles.get('did-i-auth').getString('did-i-auth'), 'session-3')
+
+  // Sign out clears both.
+  plain.setItem('did-i-auth', 'stray')
+  await store.removeItem('did-i-auth')
+  assert.equal(await store.getItem('did-i-auth'), null)
+
+  // Sign out while the Keychain is locked: once it unlocks, the sealed copy
+  // goes too, so the person is not signed back in.
+  await store.setItem('did-i-auth', 'session-old')
+  locked = true
+  store = makeAuthStorage({ secure, crypto, mmkv, plain: () => plain })
+  await store.removeItem('did-i-auth')
+  locked = false
+  assert.equal(await store.getItem('did-i-auth'), null)
+  assert.equal(sealedFiles.get('did-i-auth').getString('did-i-auth'), undefined)
+  // Out and back in while locked: the new sign-in wins once it unlocks.
+  await store.setItem('did-i-auth', 'session-a')
+  locked = true
+  store = makeAuthStorage({ secure, crypto, mmkv, plain: () => plain })
+  await store.removeItem('did-i-auth')
+  await store.setItem('did-i-auth', 'session-b')
+  locked = false
+  assert.equal(await store.getItem('did-i-auth'), 'session-b')
+  await store.removeItem('did-i-auth')
+
+  // A Keychain that does not keep the key: never seal with it, stay in plain.
+  keychain.clear()
+  keeps = false
+  const before = made.length
+  const fresh = mapStore()
+  store = makeAuthStorage({ secure, crypto, mmkv, plain: () => fresh })
+  await store.setItem('did-i-auth', 'session-4')
+  assert.equal(made.length, before)
+  assert.equal(fresh.getItem('did-i-auth'), 'session-4')
+
+  // A binary without the modules works as before.
+  const bare = mapStore()
+  store = makeAuthStorage({ plain: () => bare })
+  await store.setItem('did-i-auth', 'session-5')
+  assert.equal(await store.getItem('did-i-auth'), 'session-5')
+})
+
+await testAsync('the watch count matches Today: every counted question, Did only, no grace cards', async () => {
+  const { watchCount } = await import('../src/lib/watch-count.js')
+  const { nightProgress } = await import('../src/lib/night-progress.js')
+  const { dueTonight } = await import('../src/lib/recurrence.js')
+  const lamps = [
+    { id: 'a', question: 'A?', cadence: 'daily', archived: false, createdOn: '2020-01-01' },
+    { id: 'b', question: 'B?', cadence: 'daily', archived: false, createdOn: '2020-01-01' },
+    { id: 'c', question: 'C?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' },
+    { id: 'd', question: 'D?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' },
+  ]
+  // What the watch draws, the way DidIWatchApp.swift / Cards.kt count it.
+  const count = (answers, clock) => {
+    const book = { id: 'w1', title: 'Home', dayFoldHour: 0, lamps, answers }
+    const shelf = writeShelf({ currentId: 'w1', boards: [book] })
+    const cards = buildTonightWidgetProps(shelf, clock)
+      .items.filter((item) => !String(item.lampId).startsWith('we:'))
+      .map((item) => ({ id: item.lampId, night: item.periodKey, status: item.status === 'yes' ? 'did' : item.status === 'skip' ? 'nope' : 'open' }))
+    const { counted, done, later } = watchCount(shelf, cards, clock)
+    const mine = cards.filter((card) => counted.has(`${card.id}|${card.night}`))
+    const watch = { total: mine.length + done + later, answered: mine.filter((card) => card.status === 'did').length + done }
+    const today = nightProgress(dueTonight(book, clock))
+    assert.deepEqual(watch, { total: today.total, answered: today.answered }, `at ${clock.toISOString()}`)
+    return watch
+  }
+  const on = (id, status, night = '2026-09-23') => ({ lampId: id, periodKey: night, status, answeredAt: `${night}T19:30:00` })
+  assert.deepEqual(count([], new Date('2026-09-23T19:00:00')), { total: 4, answered: 0 })
+  assert.deepEqual(count([on('a', 'yes')], new Date('2026-09-23T19:40:00')), { total: 4, answered: 1 })
+  // A Not yet does not move the count, the same as Today's meter.
+  assert.deepEqual(count([on('a', 'yes'), on('b', 'skip')], new Date('2026-09-23T20:00:00')), { total: 4, answered: 1 })
+  assert.deepEqual(count([on('a', 'yes'), on('b', 'yes')], new Date('2026-09-23T21:05:00')), { total: 4, answered: 2 })
+  assert.deepEqual(count(['a', 'b', 'c', 'd'].map((id) => on(id, 'yes')), new Date('2026-09-23T21:30:00')), { total: 4, answered: 4 })
+  // After midnight, last night's open cards are on the watch but not in the count.
+  assert.deepEqual(count([], new Date('2026-09-24T01:00:00')), { total: 4, answered: 0 })
+  assert.equal(watchCount(null, []).done, 0)
+})
+
+await testAsync('one SQL file on its own never puts an older function back over a newer one', async () => {
+  const { laterRedefinitions, sqlOrder } = await import('./sql-order.mjs')
+  // known_people from blocks.sql over readthrough-12's dropped friends' pictures and looks.
+  assert.ok(laterRedefinitions('supabase/blocks.sql').some((f) => f.name === 'known_people'))
+  assert.deepEqual(laterRedefinitions('supabase/readthrough-12.sql').filter((f) => f.name === 'known_people'), [])
+  const apply = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'apply-sql.mjs'), 'utf8')
+  assert.match(apply, /laterRedefinitions\(file\)/)
+  const all = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'apply-all-sql.mjs'), 'utf8')
+  assert.match(all, /'--in-order'/)
+  assert.ok(sqlOrder().length > 50)
+})
+
+await testAsync('flipping Did and Not yet on one question pays its coins once, and the 3-tap cap still holds', async () => {
+  const { putAnswer } = await import('../src/lib/board-ops.js')
+  const { normalizeAnswer } = await import('../src/lib/board-json.js')
+  const clock = new Date('2026-10-18T21:00:00')
+  const lamps = ['a', 'b', 'c', 'd'].map((id) => ({ id, question: id + '?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }))
+  let book = { id: 'f1', title: 'Home', dayFoldHour: 0, lamps, answers: [], coins: 0 }
+  const row = (id) => ({ lamp: lamps.find((lamp) => lamp.id === id), periodKey: '2026-10-18', dateIso: '2026-10-18' })
+  for (let i = 0; i < 5; i += 1) {
+    book = putAnswer(book, row('a'), 'yes', clock)
+    book = putAnswer(book, row('a'), 'skip', clock)
+  }
+  assert.equal(book.coins, 2)
+  // The flipped one still counts: two more Dids pay, the fourth question does not.
+  book = putAnswer(book, row('b'), 'yes', clock)
+  book = putAnswer(book, row('c'), 'yes', clock)
+  book = putAnswer(book, row('d'), 'yes', clock)
+  assert.equal(book.coins, 6)
+  // A Not yet first, then a Did, still pays.
+  let fresh = { id: 'f2', title: 'Home', dayFoldHour: 0, lamps, answers: [], coins: 0 }
+  fresh = putAnswer(fresh, row('a'), 'skip', clock)
+  fresh = putAnswer(fresh, row('a'), 'yes', clock)
+  assert.equal(fresh.coins, 2)
+  // The mark survives a save.
+  assert.equal(normalizeAnswer({ lampId: 'a', periodKey: 'x', status: 'skip', paid: true }).paid, true)
+  assert.equal('paid' in normalizeAnswer({ lampId: 'a', periodKey: 'x', status: 'skip' }), false)
+})
+
+test('every missed day is saved as Not yet, not just yesterday', () => {
+  const lamp = { id: 'm', question: 'M?', cadence: 'daily', archived: false, createdOn: '2026-10-01' }
+  const nopes = (book) => book.answers.filter((a) => a.lampId === 'm' && a.status === 'skip').map((a) => a.periodKey).sort()
+  const days = (from, to) => {
+    const out = []
+    for (let d = new Date(`${from}T12:00:00`); d <= new Date(`${to}T12:00:00`); d.setDate(d.getDate() + 1)) out.push(d.toISOString().slice(0, 10))
+    return out
+  }
+  // Opened at noon on the 18th after 17 days away: the 1st to the 17th close.
+  const away = closePastNights({ id: 'b', title: 'A', dayFoldHour: 0, lamps: [lamp], answers: [] }, new Date(2026, 9, 18, 12), [])
+  assert.deepEqual(nopes(away), days('2026-10-01', '2026-10-17'))
+  // An answered day stops the walk: what is older was closed back then.
+  const did = { id: 'x', lampId: 'm', periodKey: '2026-10-10', status: 'yes', answeredAt: '2026-10-10T21:00:00', note: '' }
+  const back = closePastNights({ id: 'b', title: 'A', dayFoldHour: 0, lamps: [lamp], answers: [did] }, new Date(2026, 9, 18, 12), [])
+  assert.deepEqual(nopes(back), days('2026-10-11', '2026-10-17'))
+  // Before 9am last night is still open (grace); the days before it close.
+  const early = closePastNights({ id: 'b', title: 'A', dayFoldHour: 0, lamps: [lamp], answers: [did] }, new Date(2026, 9, 18, 7), [])
+  assert.deepEqual(nopes(early), days('2026-10-11', '2026-10-16'))
+  // No createdOn and no answers: only last night, never hundreds of nopes.
+  const old = closePastNights({ id: 'b', title: 'A', dayFoldHour: 0, lamps: [{ ...lamp, createdOn: undefined }], answers: [] }, new Date(2026, 9, 18, 12), [])
+  assert.deepEqual(nopes(old), ['2026-10-17'])
+  // Running it again adds nothing.
+  assert.equal(closePastNights(away, new Date(2026, 9, 18, 12), []), away)
+})
+
+test('an open sheet hides the screens behind it from TalkBack, and only while it is up', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const host = readFileSync(path.join(root, 'native/components/SheetHost.jsx'), 'utf8')
+  const shell = readFileSync(path.join(root, 'native/AppShell.jsx'), 'utf8')
+  // Every publish tells the shell, closing (null) included.
+  assert.match(host, /export function publishSheet\(next\) \{[^}]*upWatchers\.forEach/)
+  assert.match(host, /accessibilityViewIsModal/)
+  assert.match(shell, /onSheetUp\(setSheetUp\)/)
+  assert.match(shell, /importantForAccessibility=\{Platform\.OS === 'android' && sheetUp \? 'no-hide-descendants' : 'auto'\}/)
+  // The sheet layer itself is outside the hidden part.
+  const hidden = shell.indexOf("no-hide-descendants")
+  const close = shell.indexOf('</ScreenProps.Provider>\n      </View>', hidden)
+  assert.ok(hidden > 0 && close > hidden, 'the screens wrapper closes after the stack')
+  assert.ok(shell.indexOf('<SheetHost />', close) > close, 'SheetHost sits after the hidden screens, not inside them')
+})
+
+await testAsync('a Did on one phone and a Not yet on another still pays the night once', async () => {
+  const { mergeBooks } = await import('../src/lib/shelf-merge.js')
+  const { putAnswer } = await import('../src/lib/board-ops.js')
+  const clock = new Date('2026-10-18T21:00:00')
+  const lamp = { id: 'p', question: 'P?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }
+  const row = { lamp, periodKey: '2026-10-18', dateIso: '2026-10-18' }
+  const base = { id: 'm1', title: 'Home', dayFoldHour: 0, lamps: [lamp], answers: [], coins: 0 }
+  const phoneA = putAnswer(base, row, 'yes', clock)
+  assert.equal(phoneA.coins, 2)
+  const phoneB = { ...base, answers: [{ id: 'b1', lampId: 'p', periodKey: '2026-10-18', status: 'skip', answeredAt: '2026-10-18T21:30:00', note: '' }] }
+  // B's Not yet is newer and wins, but the night stays counted as paid.
+  const merged = mergeBooks(phoneB, phoneA)
+  const answer = merged.answers.find((a) => a.lampId === 'p')
+  assert.equal(answer.status, 'skip')
+  assert.equal(answer.paid, true)
+  const again = putAnswer({ ...merged, coins: phoneA.coins }, row, 'yes', new Date('2026-10-18T22:00:00'))
+  assert.equal(again.coins, 2, 'the second Did does not pay')
+})
+
+await testAsync('an invite needs no typing: the link carries it, a paste or any spelling works, a new account is asked once', async () => {
+  const { inviteFromPaste, isNewAccount } = await import('../src/lib/invite-link.js')
+  const { formatInvite, cleanInvite } = await import('../src/lib/people.js')
+  assert.equal(formatInvite('d93aq5lbs4'), 'D93AQ-5LBS4')
+  assert.equal(cleanInvite('d93aq-5lbs4 '), 'D93AQ5LBS4')
+  assert.equal(formatInvite('D93A'), 'D93A')
+  assert.equal(inviteFromPaste('Join me on Did I and we both get gems: https://did-i.app/i/D93AQ5LBS4'), 'D93AQ5LBS4')
+  assert.equal(inviteFromPaste(' d93aq-5lbs4 '), 'D93AQ5LBS4')
+  assert.equal(inviteFromPaste('hello there world'), '')
+  const now = Date.parse('2026-10-18T12:00:00Z')
+  assert.equal(isNewAccount({ created_at: '2026-10-17T12:00:00Z' }, now), true)
+  assert.equal(isNewAccount({ created_at: '2026-10-10T12:00:00Z' }, now), false)
+  assert.equal(isNewAccount({}, now), false)
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  // The shared message leads with the link in every language.
+  for (const file of readdirSync(path.join(root, 'src/locales'))) {
+    assert.match(read(`src/locales/${file}`), /'people\.inviteLine': '[^']*\{link\}'/, `${file} invite line ends with the link`)
+  }
+  // One tap to share from People and Connect; the code box on Connect, in the sign-up ask, and from a scanned invite.
+  const social = read('native/screens/social.jsx')
+  assert.equal((social.match(/<InviteCard colors=\{colors\} \/>/g) || []).length, 2)
+  assert.match(social, /<InviteCodeSection colors=\{colors\} book=\{book\} onChange=\{onChange\} hideBar hideDone \/>/)
+  assert.match(social, /<QrCode value=\{inviteLink\(invite\)\}/)
+  assert.match(read('native/screens/ScanScreen.jsx'), /swapHash\('\/people\/refer', \{ id: invite \}\)/)
+  assert.match(read('native/AppShell.jsx'), /<InviteAskHost /)
+  // The server can say whose code it is; it runs before drop-tonight like every new file.
+  const order = read('scripts/apply-all-sql.mjs')
+  assert.ok(order.indexOf('invite-owner.sql') > 0 && order.indexOf('invite-owner.sql') < order.indexOf('drop-tonight.sql'))
+})
+
+test('every screen wears the look: a glow of its colour and a bar above the first card', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const shell = readFileSync(path.join(root, 'native/components/BoardShell.jsx'), 'utf8')
+  assert.equal((shell.match(/<LookGlow colors=\{colors\} \/>/g) || []).length, 2, 'both the scrolling and the fixed page')
+  assert.match(shell, /<LookMark colors=\{colors\} \/>/)
+  // The page body is clear, so nothing paints over the glow.
+  assert.match(shell, /const shellBg = styles\.clear/)
+})
+
+test('a friend request and its yes reach the other phone live, not on the 5 minute check', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  assert.match(read('src/lib/people.js'), /onVisible\(pulseLook, \['ask', 'friend', 'gift', 'familyInfo', 'weMembers'\]\)/)
+  const sql = read('supabase/live-more.sql')
+  assert.match(sql, /live_ping\(array\[r\.who\], 'friend', r\.id\)/)
+  assert.match(sql, /after insert on public\.friend_links/)
+  assert.match(sql, /after update on public\.friend_links/)
+  for (const table of ['cheer_gifts', 'we_members', 'family_members', 'family_lamps', 'families', 'sends']) {
+    assert.match(sql, new RegExp(`on public\\.${table}\\b`), `${table} pings`)
+  }
+  // Open screens read again on those pings.
+  const social = read('native/screens/social.jsx')
+  for (const kinds of ["['family', 'familyInfo']", "['send', 'sendMoved', 'friend']", "['ask', 'gift']", "['send', 'sendMoved']"]) {
+    assert.ok(social.includes(`useLiveReload(${kinds}, load)`), kinds)
+  }
+  assert.match(read('native/screens/FamilyDetail.jsx'), /useLiveReload\(\['family', 'familyInfo'\], load\)/)
+  const order = read('scripts/apply-all-sql.mjs')
+  assert.ok(order.indexOf('social-live.sql') < order.indexOf('live-more.sql') && order.indexOf('live-more.sql') < order.indexOf('drop-tonight.sql'))
+})
+
+test('smooth screens: screen files warm after launch, the shelf is read once per change, lists do not redraw on every tap', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  assert.match(read('native/AppShell.jsx'), /setBooted\(true\)\s*\n\s*warmScreens\(\)/)
+  assert.match(read('native/screens/ScreenRouter.jsx'), /export function warmScreens\(\)/)
+  const cosmetic = read('native/components/Cosmetic.jsx')
+  assert.match(cosmetic, /export const LookChip = memo\(LookChipArt\)/)
+  assert.match(cosmetic, /export const CheerChip = memo\(CheerChipArt\)/)
+  assert.match(read('native/screens/frames.jsx'), /const FrameTile = memo\(/)
+  assert.match(read('native/components/SetBits.jsx'), /useNativeDriver: true/)
+  assert.match(read('src/lib/board-shelf.js'), /if \(raw && raw === lastRaw && lastShelf\) return lastShelf/)
+  // Long lists draw a page at a time; Did we keeps its totals; no JS-driven cheer tick or letter wave.
+  const more = read('native/screens/more.jsx')
+  assert.equal((more.match(/const page = useShown\(rows, query\)/g) || []).length, 2)
+  const we = read('native/screens/we.jsx')
+  assert.match(we, /useKept\(`we\.sums:/)
+  assert.match(we, /useKept\(`we\.early:/)
+  assert.ok(!/useNativeDriver: false/.test(read('native/components/DidLead.jsx')))
+  assert.match(read('native/components/CheerBurst.jsx'), /useAnimatedProps\(\(\) => \(\{ strokeDashoffset/)
+  assert.match(read('native/shim/reanimated-safe.cjs'), /useAnimatedProps\(fn\)/)
+})
+
+await testAsync('readShelf hands back the same shelf until storage changes, and sees a write from anywhere', async () => {
+  const { readShelf, writeShelf } = await import('../src/lib/board-shelf.js')
+  const first = readShelf()
+  assert.equal(readShelf(), first, 'unchanged storage: the same object, no reparse')
+  const next = writeShelf({ ...first, boards: first.boards.map((b, i) => (i ? b : { ...b, title: 'Changed here' })) })
+  assert.equal(readShelf(), next)
+  assert.equal(readShelf().boards[0].title, 'Changed here')
+  // Something else writes the key directly (a widget task, another sync path).
+  const raw = JSON.parse(localStorage.getItem('did-i-shelf'))
+  raw.boards[0].title = 'Changed elsewhere'
+  localStorage.setItem('did-i-shelf', JSON.stringify(raw))
+  assert.equal(readShelf().boards[0].title, 'Changed elsewhere')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

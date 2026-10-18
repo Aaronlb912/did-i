@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Animated, Dimensions, Easing, StyleSheet, Text, View } from 'react-native'
+import Reanimated, {
+  Easing as ReEasing,
+  cancelAnimation,
+  interpolate,
+  useAnimatedProps,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { svgParts } from '../lib/svg-parts.js'
 import { takeCheerAim } from '../lib/cheer-origin.js'
@@ -678,34 +688,35 @@ const TICK_LEN = Math.hypot(16, 16) + Math.hypot(36, 34)
 
 function Tick({ delay, color, scale }) {
   const parts = svgParts()
-  const draw = useMemo(() => new Animated.Value(0), [])
-  const AnimatedPath = useMemo(() => (parts ? Animated.createAnimatedComponent(parts.Path) : null), [parts])
+  // On the UI thread (Reanimated), stroke included: the old Animated version
+  // drew the stroke from JS, so a busy render mid-cheer made the tick stutter.
+  const draw = useSharedValue(0)
+  const AnimatedPath = useMemo(() => (parts ? Reanimated.createAnimatedComponent(parts.Path) : null), [parts])
   useEffect(() => {
-    // SVG props cannot run on the native driver.
-    const anim = Animated.sequence([
-      Animated.delay(delay),
-      Animated.timing(draw, { toValue: 1, duration: 550, easing: Easing.out(Easing.ease), useNativeDriver: false }),
-    ])
-    anim.start()
-    return () => anim.stop()
+    draw.value = withDelay(delay, withTiming(1, { duration: 550, easing: ReEasing.out(ReEasing.ease) }))
+    return () => cancelAnimation(draw)
   }, [delay, draw])
   const boxW = remPx('7.2') * (scale || 1)
   const boxH = remPx('5') * (scale || 1)
-  const opacity = draw.interpolate({ inputRange: [0, 0.02, 1], outputRange: [0, 1, 1] })
-  const pop = draw.interpolate({ inputRange: [0, 0.8, 0.92, 1], outputRange: [0.92, 1, 1.14, 1] })
-  const frame = {
-    transform: [{ scale: pop }],
-    position: 'absolute',
-    left: -boxW / 2,
-    top: -boxH / 2,
-    width: boxW,
-    height: boxH,
-    opacity,
-  }
+  const frameMotion = useAnimatedStyle(() => ({
+    opacity: interpolate(draw.value, [0, 0.02, 1], [0, 1, 1]),
+    transform: [{ scale: interpolate(draw.value, [0, 0.8, 0.92, 1], [0.92, 1, 1.14, 1]) }],
+  }))
+  const pathMotion = useAnimatedProps(() => ({ strokeDashoffset: TICK_LEN * (1 - draw.value) }))
+  const frame = [
+    {
+      position: 'absolute',
+      left: -boxW / 2,
+      top: -boxH / 2,
+      width: boxW,
+      height: boxH,
+    },
+    frameMotion,
+  ]
   if (!AnimatedPath) {
     const thick = Math.max(4, boxH * 0.12)
     return (
-      <Animated.View pointerEvents="none" style={frame}>
+      <Reanimated.View pointerEvents="none" style={frame}>
         <View
           style={{
             position: 'absolute',
@@ -730,13 +741,12 @@ function Tick({ delay, color, scale }) {
             transform: [{ rotate: '-48deg' }],
           }}
         />
-      </Animated.View>
+      </Reanimated.View>
     )
   }
   const { Svg } = parts
-  const dashOffset = draw.interpolate({ inputRange: [0, 1], outputRange: [TICK_LEN, 0] })
   return (
-    <Animated.View pointerEvents="none" style={frame}>
+    <Reanimated.View pointerEvents="none" style={frame}>
       <Svg width={boxW} height={boxH} viewBox="0 0 72 50">
         <AnimatedPath
           d="M10 27 L26 43 L62 9"
@@ -745,11 +755,11 @@ function Tick({ delay, color, scale }) {
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeDasharray={[TICK_LEN, TICK_LEN]}
-          strokeDashoffset={dashOffset}
+          animatedProps={pathMotion}
           fill="none"
         />
       </Svg>
-    </Animated.View>
+    </Reanimated.View>
   )
 }
 

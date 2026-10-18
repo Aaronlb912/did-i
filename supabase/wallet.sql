@@ -681,26 +681,10 @@ begin
 end;
 $$;
 
--- Backfill balance from existing shelves once.
-update public.profiles p
-set gem_balance = least(
-  greatest(p.gem_balance, coalesce(public.shelf_gem_max(s.doc), 0)),
-  9999
-)
-from public.shelves s
-where s.user_id = p.user_id
-  and p.gem_balance = 0
-  and public.shelf_gem_max(s.doc) > 0;
-
-update public.profiles p
-set coin_balance = least(
-  greatest(p.coin_balance, coalesce(public.shelf_coin_max(s.doc), 0)),
-  9999
-)
-from public.shelves s
-where s.user_id = p.user_id
-  and p.coin_balance = 0
-  and public.shelf_coin_max(s.doc) > 0;
+-- The one-time backfill from shelves (balances read from the phone's own
+-- document) ran when wallets moved to the server. It is gone: on every
+-- re-run it raised a zero balance to whatever a shelf claimed, which a
+-- client can write, and it would undo a refund that took gems to zero.
 
 -- Balances only move through the functions above (they run as the owner) or the
 -- gem-iap function (service role). A signed-in user writing their own profile row

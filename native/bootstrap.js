@@ -8,6 +8,7 @@ import { AccessibilityInfo, Appearance, AppState, Platform } from 'react-native'
 import { hookErrorReport } from '../src/lib/report.js'
 import { devServerUrl, makeLocation } from './location-shim.js'
 import { phoneMatchMedia } from './lib/reduce-media.js'
+import { authStorage } from './lib/auth-store.js'
 
 // Hermes has no document. Shared web code checks typeof document, but some
 // paths still touch document.documentElement after the guard.
@@ -174,6 +175,8 @@ function kv(prefix) {
 }
 
 if (!global.localStorage) global.localStorage = kv('ls:')
+// The sign-in session goes to its own encrypted store (native/lib/auth-store.js).
+globalThis.__didIAuthStorage = authStorage
 // Nothing stored yet means a new install (native/invite-capture.js).
 global.__didIFreshInstall =
   global.localStorage.getItem('did-i-shelf') == null && global.localStorage.getItem('did-i-prefs') == null

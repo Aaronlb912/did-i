@@ -38,7 +38,7 @@ export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false) {
     } else if (iso <= dateIso && (!made || iso >= made) && isDueOn(shown, iso)) {
       const status = answerFor(book, lamp.id, periodKeyFor(lamp, iso))?.status
       state =
-        status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'
+        status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? (gentle || nightOpen(iso) ? 'nope' : 'missed') : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'
     }
     cells.push({ iso, day: d, state })
   }
@@ -169,7 +169,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
         {[
           { id: 'did', color: colors.on, label: t('jewelKey.did') },
           { id: 'late', color: colors.late || colors.on, label: t('jewelKey.late') },
-          { id: 'nope', color: colors.skip || colors.inkDim, label: t('jewelKey.nope') },
+          { id: 'nope', color: colors.skip || colors.inkDim, label: t(gentle ? 'jewelKey.nope' : 'jewelKey.notYet') },
           ...(gentle ? [] : [{ id: 'missed', color: colors.miss, label: t('later.missed') }]),
         ].map((item) => (
           <View key={item.id} style={styles.keyItem}>

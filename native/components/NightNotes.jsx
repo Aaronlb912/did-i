@@ -5,6 +5,7 @@ import { shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { lampNights } from '../../src/lib/lamp-record.js'
 import { nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { gentleOn } from '../../src/lib/prefs.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { noteShared, noteSharedNow, setNoteShared } from '../../src/lib/social-amounts.js'
 import { MenuIcon } from './MenuIcon.jsx'
@@ -68,10 +69,12 @@ function removeNote(book, lampId, periodKey, note, onChange) {
 const PICKS = 7
 const NOTES_SHOWN = 3
 
-// A skip reads Not yet while its night is open, Nope after.
+// A skip reads Not yet while its day is open. Once the day is over it is
+// Missed, like a day never answered: Not yet is only for today. Gentle mode
+// never says missed, so there it stays Not yet.
 function statusWord(status, open = false) {
   if (status === 'late') return t('jewelKey.late')
-  if (status === 'skip') return t(open ? 'jewelKey.notYet' : 'jewelKey.nope')
+  if (status === 'skip') return t(open ? 'jewelKey.notYet' : gentleOn() ? 'jewelKey.nope' : 'later.missed')
   return t('jewelKey.did')
 }
 
@@ -136,6 +139,7 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
         placeholder={t('note.ph')}
         maxLength={NOTE_MAX}
         autoFocus
+        returnKeyType="done"
         onSubmitEditing={save}
       />
       {amount ? (

@@ -12,9 +12,12 @@ struct CountEntry: TimelineEntry {
 }
 
 private struct StoredCards: Decodable {
-  struct Item: Decodable { let status: String; let dateIso: String? }
+  struct Item: Decodable { let status: String; let dateIso: String?; let counted: Bool? }
   let items: [Item]
   let countLabel: String?
+  // Today's meter from the phone (native/watch-sync.js); nil from an older build.
+  let done: Int?
+  let later: Int?
 
   // Same check as WatchCards.stale in targets/watch: the newest card is from
   // before yesterday on the watch's calendar.
@@ -40,8 +43,15 @@ private func readCount() -> CountEntry {
     return CountEntry(date: Date(), answered: 0, total: 0)
   }
   if cards.stale { return CountEntry(date: Date(), answered: 0, total: 0) }
-  let answered = cards.items.filter { $0.status != "open" }.count
-  return CountEntry(date: Date(), answered: answered, total: cards.items.count, countLabel: cards.countLabel)
+  // The same count as the watch app's card (CardView) and Today's meter: Did
+  // only, counted cards plus the ones already off the stack. An older phone
+  // build sends no done; then every card and every answer, the old way.
+  let todays = cards.done != nil
+  let mine = todays ? cards.items.filter { $0.counted ?? true } : cards.items
+  let offDone = max(cards.done ?? 0, 0)
+  let total = mine.count + offDone + max(cards.later ?? 0, 0)
+  let answered = todays ? mine.filter { $0.status == "did" }.count + offDone : cards.items.filter { $0.status != "open" }.count
+  return CountEntry(date: Date(), answered: answered, total: total, countLabel: cards.countLabel)
 }
 
 struct CountProvider: TimelineProvider {

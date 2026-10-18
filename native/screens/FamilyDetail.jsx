@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLiveReload } from '../hooks/useLiveReload.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { useNoted } from '../hooks/useNoted.js'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -70,6 +71,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const purse = normalizePurse(book)
   const clock = new Date()
   const [fam, setFam] = useKept(`fam:${account.user?.id}:${familyId}`, null, KEEP)
+  // The kept family, for load() without making it rerun whenever fam changes.
+  const famRef = useRef(fam)
+  famRef.current = fam
   const [lamps, setLamps] = useKept(`fam.lamps:${account.user?.id}:${familyId}`, [], KEEP)
   const noted = useNoted(account.user?.id)
   const [answers, setAnswers] = useKept(`fam.answers:${account.user?.id}:${familyId}`, [], KEEP)
@@ -86,6 +90,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const howWords = t((HOW_OFTEN.find((item) => item.id === howOften) || HOW_OFTEN[0]).labelKey)
   const [lastDids, setLastDids] = useState(() => new Map())
   const [miss, setMiss] = useState('')
+  const [editMiss, setEditMiss] = useState('')
   const [said, setSaid] = useState('')
   const [stock, setStock] = useState(null)
   const [codeOpen, setCodeOpen] = useState(false)
@@ -102,6 +107,19 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       setReady(true)
       return
     }
+    // One round trip, not two: the family's day comes from the kept copy
+    // when there is one, so its questions and week load alongside it. A
+    // different day once the family arrives (its fold hour moved) reads again.
+    const weekOf = (key) => {
+      const back = []
+      for (let step = 6; step >= 0; step -= 1) back.push(addDaysIso(key, -step))
+      return back
+    }
+    const readDay = (key) => Promise.all([listFamilyLamps(familyId, key), familyHistory(familyId, weekOf(key))])
+    const keptFold = famRef.current?.id === familyId ? famRef.current.fold_hour : null
+    const guessKey = keptFold == null ? '' : boardDate(new Date(), keptFold)
+    const cheersAsk = readFriendCheers().catch(() => null)
+    const guessAsk = guessKey ? readDay(guessKey).catch(() => null) : null
     const row = await readFamily(familyId)
     if (row?.miss) {
       setMiss(row.miss)
@@ -112,14 +130,11 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     if (row) {
       const key = boardDate(new Date(), row.fold_hour)
       setNight(key)
-      const back = []
-      for (let step = 6; step >= 0; step -= 1) back.push(addDaysIso(key, -step))
+      const back = weekOf(key)
       setNights(back)
-      const [tonightRows, pastRows, serverCheers] = await Promise.all([
-        listFamilyLamps(familyId, key),
-        familyHistory(familyId, back),
-        readFriendCheers(),
-      ])
+      const day = (key === guessKey && (await guessAsk)) || (await readDay(key))
+      const [tonightRows, pastRows] = day
+      const serverCheers = await cheersAsk
       if (typeof serverCheers === 'number') setStock(serverCheers)
       if (tonightRows.miss) {
         setMiss(tonightRows.miss)
@@ -137,6 +152,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   useEffect(() => {
     load()
   }, [load])
+  useLiveReload(['family', 'familyInfo'], load)
 
   function answerFor(lampId, userId) {
     return answers.find((row) => row.lamp_id === lampId && row.user_id === userId) || null
@@ -265,6 +281,30 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     return items
   }
 
+  function saveRename() {
+    return once('fam-rename', async () => {
+      const { miss: why } = await renameFamily(fam.id, naming)
+      if (why) return setMiss(why)
+      setMiss('')
+      setNaming(null)
+      confirmDone(t('confirm.familyRenamed'))
+      return load()
+    })
+  }
+
+  // A miss keeps the edit open and says why there, instead of closing on it.
+  function saveEdit() {
+    return once('fam-edit', async () => {
+      const { miss: why } = await editFamilyLamp(edit.id, edit.text)
+      if (why === 'blank') return setEditMiss(t('family.blank'))
+      if (why) return setEditMiss(tMiss(why))
+      setEditMiss('')
+      setEdit(null)
+      confirmDone(t('confirm.questionSaved'))
+      return load()
+    })
+  }
+
   return (
     <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
       <View style={[styles.head, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -289,22 +329,13 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         ) : null}
         {naming != null ? (
           <>
-            <Field colors={colors} label={t('family.rename')} value={naming} onChangeText={setNaming} maxLength={60} autoFocus />
+            <Field colors={colors} label={t('family.rename')} value={naming} onChangeText={setNaming} maxLength={60} autoFocus autoCapitalize="words" returnKeyType="done" onSubmitEditing={saveRename} />
             <View style={styles.rowActions}>
               <DidButton
                 small
                 colors={colors}
                 label={t('settings.save')}
-                onPress={() =>
-                  once('fam-rename', async () => {
-                    const { miss: why } = await renameFamily(fam.id, naming)
-                    if (why) return setMiss(why)
-                    setMiss('')
-                    setNaming(null)
-                    confirmDone(t('confirm.familyRenamed'))
-                    return load()
-                  })
-                }
+                onPress={saveRename}
               />
               <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setNaming(null)} />
             </View>
@@ -655,24 +686,24 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       ) : null}
 
       {edit ? (
-      <Modal visible transparent animationType="fade" onRequestClose={() => setEdit(null)}>
+      <Modal visible transparent animationType="fade" onRequestClose={() => { setEditMiss(''); setEdit(null) }}>
         <KeyboardLift>
-          <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setEdit(null)}>
+          <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => { setEditMiss(''); setEdit(null) }}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
               <Text style={[styles.cap, { color: colors.on }]}>{t('family.edit')}</Text>
-              <Field colors={colors} label={t('family.what')} value={edit?.text || ''} onChangeText={(text) => setEdit((prev) => ({ ...prev, text }))} />
-              <DidButton
+              <Field
                 colors={colors}
-                label={t('family.save')}
-                onPress={async () => {
-                  const { miss: why } = await editFamilyLamp(edit.id, edit.text)
-                  if (why === 'blank') return setMiss(t('family.blank'))
-                  if (why) setMiss(why)
-                  setEdit(null)
-                  load()
-                }}
+                label={t('family.what')}
+                value={edit?.text || ''}
+                onChangeText={(text) => setEdit((prev) => ({ ...prev, text }))}
+                // The server takes up to 200 characters (hardening.sql).
+                maxLength={200}
+                returnKeyType="done"
+                onSubmitEditing={saveEdit}
               />
-              <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
+              {editMiss ? <Text style={{ color: colors.miss }}>{editMiss}</Text> : null}
+              <DidButton colors={colors} label={t('family.save')} onPress={saveEdit} />
+              <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => { setEditMiss(''); setEdit(null) }} />
             </Pressable>
           </Pressable>
         </KeyboardLift>

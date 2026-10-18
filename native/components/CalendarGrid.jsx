@@ -18,8 +18,9 @@ function dateLocale(code) {
   return code || 'en'
 }
 
-// What a screen reader hears for one day: "October 1, Cleared".
-function dayLabel(night, locale, gentle = false) {
+// What a screen reader hears for one day: "October 1, Cleared". The week
+// strip on Home reads its days the same way.
+export function dayLabel(night, locale, gentle = false) {
   const date = new Date(`${night.iso}T12:00:00`).toLocaleDateString(locale, { month: 'long', day: 'numeric' })
   const state = night.empty
     ? ''
@@ -48,7 +49,11 @@ function markOf(answer, when = 0, open = when === 0) {
   const status = answer?.status
   if (status === 'yes') return { key: 'yes', label: t('widget.tonight.did') }
   if (status === 'late') return { key: 'late', label: upFirst(t('hole.late')) }
-  if (status === 'skip') return { key: 'skip', label: t(open ? 'jewelKey.notYet' : 'jewelKey.nope') }
+  // A Not yet on a day that is over is a missed day; Not yet is only for today.
+  if (status === 'skip') {
+    if (open || gentleOn()) return { key: 'skip', label: t(open ? 'jewelKey.notYet' : 'jewelKey.nope') }
+    return { key: 'miss', label: t('cal.notAnswered') }
+  }
   if (when > 0) return { key: 'hole', label: t('cal.ahead') }
   // Gentle mode: a past night with no answer is not called missed.
   if (when < 0) return { key: 'miss', label: t(gentleOn() ? 'jewelKey.open' : 'cal.notAnswered') }

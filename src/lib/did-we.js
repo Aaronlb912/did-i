@@ -401,6 +401,8 @@ export function saveWeWidgetLine(cards, night = tonightIso()) {
 const EMPTY = { cards: [], miss: '' }
 let shared = EMPTY
 let inflight = null
+// The account the load in flight is for.
+let inflightFor = ''
 let loadedAt = 0
 const watchers = new Set()
 
@@ -536,8 +538,12 @@ export function takeWeBoth(cards, night = tonightIso()) {
 
 function loadShared(force, userId) {
   sharedFor_(userId)
+  // A load already out started before a write (force) or for another
+  // account: wait for it, then read again, so the answer just saved shows.
+  if (inflight && (force || inflightFor !== userId)) return inflight.catch(() => {}).then(() => loadShared(force, userId))
   if (inflight) return inflight
   if (!force && Date.now() - loadedAt < 3000) return Promise.resolve(shared)
+  inflightFor = userId
   inflight = Promise.all([weTonight(), refreshWeNights().catch(() => {})])
     .then(([got]) => {
       if (sharedFor !== userId) return EMPTY
@@ -601,9 +607,9 @@ export function useWeTonight(user) {
     return () => watchers.delete(setState)
   }, [user])
 
-  // Someone on a card answered while this is open: read again now.
+  // Someone on a card answered, was invited, joined or left while this is open: read again now.
   useEffect(() => onSocialLive((kinds) => {
-    if (kinds.has('we')) look()
+    if (kinds.has('we') || kinds.has('weMembers')) look()
   }), [look])
 
   useEffect(() => {

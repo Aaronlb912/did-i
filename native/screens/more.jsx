@@ -80,7 +80,7 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
+import { PING_KINDS, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
 import { syncLine } from '../../src/lib/sync-line.js'
@@ -177,11 +177,13 @@ function foldClock(at) {
   return clockWords(`${pad(date.getHours())}:${pad(date.getMinutes())}`)
 }
 
-// A skip reads Not yet while its night is open, Nope once it closed.
+// A skip reads Not yet while its day is open. Once the day is over it is
+// Missed, like a day never answered: Not yet is only for today. Gentle mode
+// never says missed, so there it stays Not yet.
 function statusWord(status, open = false) {
   if (status === 'yes') return t('feed.status.did')
   if (status === 'late') return t('feed.status.late')
-  if (status === 'skip') return t(open ? 'jewelKey.notYet' : 'feed.status.nope')
+  if (status === 'skip') return t(open ? 'jewelKey.notYet' : gentleOn() ? 'feed.status.nope' : 'later.missed')
   return status
 }
 
@@ -274,6 +276,8 @@ function HelpFold({ colors, title, children }) {
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen((was) => !was)}
+        // 32 tall; the slop gives the 44pt tap.
+        hitSlop={{ top: 6, bottom: 6 }}
         style={styles.foldHead}
       >
         <Text style={[styles.cardTitle, { color: colors.ink }]}>{title}</Text>
@@ -610,7 +614,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
       <View style={styles.tiles}>
         <NumberTile third colors={colors} label={t('stats.did')} n={recap.dids - recap.late} />
         <NumberTile third colors={colors} label={t('stats.late')} n={recap.late} />
-        <NumberTile third colors={colors} label={t('stats.nope')} n={recap.nopes} />
+        <NumberTile third colors={colors} label={t(gentle ? 'stats.nope' : 'later.missed')} n={recap.nopes} />
       </View>
       <KeyButton colors={colors} label={t('recap.shareBtn')} onPress={() => shareRecap(recap)} />
 
@@ -618,7 +622,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
       <View style={styles.tiles}>
         <NumberTile third colors={colors} label={t('stats.did')} n={counts.did} />
         <NumberTile third colors={colors} label={t('stats.late')} n={counts.late} />
-        <NumberTile third colors={colors} label={t('stats.nope')} n={counts.skip} />
+        <NumberTile third colors={colors} label={t(gentle ? 'stats.nope' : 'later.missed')} n={counts.skip} />
         <NumberTile half={!gentle} colors={colors} label={t('stats.questions')} n={counts.hung} />
         {gentle ? null : <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />}
       </View>
@@ -633,12 +637,27 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   )
 }
 
+// Long lists (every answer ever, every note) drew every row on open, which
+// held up the screen. The first PAGE draw; Show more adds the next.
+const PAGE = 40
+function useShown(rows, resetKey) {
+  const [count, setCount] = useState(PAGE)
+  useEffect(() => setCount(PAGE), [resetKey])
+  return { shown: rows.length > count ? rows.slice(0, count) : rows, more: Math.max(0, rows.length - count), showMore: () => setCount((n) => n + PAGE) }
+}
+
+function ShowMore({ more, onPress, colors }) {
+  if (!more) return null
+  return <KeyButton colors={colors} label={t('list.more', { n: Math.min(more, PAGE) })} onPress={onPress} />
+}
+
 export function FeedScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const clock = now || new Date()
-  const allRows = shelfFeedRows(inView(book, boards), tagId)
+  const allRows = useMemo(() => shelfFeedRows(inView(book, boards), tagId), [book, boards, tagId])
   const [query, setQuery] = useState('')
-  const rows = feedSearch(allRows, query)
+  const rows = useMemo(() => feedSearch(allRows, query), [allRows, query])
+  const page = useShown(rows, query)
 
   return (
     <ScreenShell title={t('feed.title')} colors={colors}>
@@ -654,7 +673,8 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
       ) : !rows.length ? (
         <Meta colors={colors}>{t('feed.noMatch')}</Meta>
       ) : (
-        rows.map((row) => (
+        <>
+        {page.shown.map((row) => (
           <Row
             key={row.answer.id}
             colors={colors}
@@ -664,7 +684,9 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
             }${row.answer.note ? `\n${row.answer.note}` : ''}`}
             onPress={() => row.lamp && goHash('/lamp', { id: row.lamp.id })}
           />
-        ))
+        ))}
+        <ShowMore more={page.more} onPress={page.showMore} colors={colors} />
+        </>
       )}
     </ScreenShell>
   )
@@ -675,7 +697,8 @@ export function NotesScreen({ book, boards }) {
   const colors = useHallColors()
   const allRows = useMemo(() => shelfNoteRows(inView(book, boards)), [book, boards])
   const [query, setQuery] = useState('')
-  const rows = feedSearch(allRows, query)
+  const rows = useMemo(() => feedSearch(allRows, query), [allRows, query])
+  const page = useShown(rows, query)
 
   return (
     <ScreenShell title={t('notes.title')} colors={colors}>
@@ -690,7 +713,8 @@ export function NotesScreen({ book, boards }) {
       ) : !rows.length ? (
         <Meta colors={colors}>{t('feed.noMatch')}</Meta>
       ) : (
-        rows.map((row) => {
+        <>
+        {page.shown.map((row) => {
           const night = periodLabel(row.lamp, row.answer.periodKey)
           return (
             <Row
@@ -701,7 +725,9 @@ export function NotesScreen({ book, boards }) {
               onPress={() => goHash('/lamp', { id: row.lamp.id })}
             />
           )
-        })
+        })}
+        <ShowMore more={page.more} onPress={page.showMore} colors={colors} />
+        </>
       )}
     </ScreenShell>
   )
@@ -774,12 +800,16 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors(book)
   const clock = now || new Date()
   const gentle = usePrefs().gentle === true
-  const shelf = inView(book, boards)
-  const nights = shelfWeekNights(shelf, clock, tagId, 7)
-  const lamps = weekLamps(nights)
-  // Same night rule as the Home dots and So far: every question and every Did
-  // we due that night answered Did (or late).
-  const strip = weekStripNights(shelf, clock, tagId)
+  // The week's walks once per shelf, folder and minute, not every render.
+  const minute = Math.floor(clock.getTime() / 60000)
+  const { nights, lamps, strip } = useMemo(() => {
+    const at = new Date(minute * 60000)
+    const shelf = inView(book, boards)
+    const nights = shelfWeekNights(shelf, at, tagId, 7)
+    // Same night rule as the Home dots and So far: every question and every Did
+    // we due that night answered Did (or late).
+    return { nights, lamps: weekLamps(nights), strip: weekStripNights(shelf, at, tagId) }
+  }, [book, boards, tagId, minute])
   const cleared = new Set(strip.filter((night) => night.on).map((night) => night.iso))
   const doneNights = cleared.size
   const frozen = new Set(strip.filter((night) => night.freeze).map((night) => night.iso))
@@ -819,10 +849,12 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   }
 
   function openNight(night) {
-    openNightWhy({ colors, boards: shelf, iso: night.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })
+    openNightWhy({ colors, boards: inView(book, boards), iso: night.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })
   }
 
-  function cell(night, state) {
+  function cell(night, nightState) {
+    // A Not yet on a day that is over is a missed day (gentle: stays Not yet).
+    const state = nightState === 'skip' && !gentle && !nightOpen(night.iso, clock) ? 'hole' : nightState
     return (
       <Pressable
         key={night.iso}
@@ -843,7 +875,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const legend = [
     ['yes', t('later.did')],
     ['late', t('later.late')],
-    ['skip', t('later.nope')],
+    ['skip', t(gentle ? 'later.nope' : 'jewelKey.notYet')],
     ...(gentle ? [] : [['hole', t('later.missed')]]),
     ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
     ['open', t('jewelKey.open')],
@@ -938,16 +970,24 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const gentle = usePrefs().gentle === true
   const clock = now || new Date()
-  const books = scopedBooks(inView(book, boards), tagId)
-  const heat = books.length ? shelfStreak(books, clock) : 0
-  // Freezes belong to the overall streak, whatever tag is picked.
-  const freezes = freezeState(inView(book, boards), clock)
+  // Multi-night walks: once per shelf, folder and minute, not every render.
+  const minute = Math.floor(clock.getTime() / 60000)
+  const { books, heat, freezes, rows } = useMemo(() => {
+    const at = new Date(minute * 60000)
+    const books = scopedBooks(inView(book, boards), tagId)
+    return {
+      books,
+      heat: books.length ? shelfStreak(books, at) : 0,
+      // Freezes belong to the overall streak, whatever tag is picked.
+      freezes: freezeState(inView(book, boards), at),
+      rows: books
+        .flatMap((one) =>
+          (one.lamps || []).filter((lamp) => !lamp.archived && !isEvery(lamp)).map((lamp) => ({ lamp, n: streakLength(one, lamp, at) })),
+        )
+        .sort((a, b) => b.n - a.n),
+    }
+  }, [book, boards, tagId, minute])
   const goal = nextStreakGoal(heat)
-  const rows = books
-    .flatMap((one) =>
-      (one.lamps || []).filter((lamp) => !lamp.archived && !isEvery(lamp)).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
-    )
-    .sort((a, b) => b.n - a.n)
   // A question's run can be longer than the overall one: say which night broke it.
   const longest = rows.length ? rows[0].n : 0
   const breakNight = useMemo(
@@ -1142,6 +1182,8 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
                 onChangeText={setTitleDraft}
                 onSubmitEditing={saveName}
                 returnKeyType="done"
+                maxLength={60}
+                autoCapitalize="words"
               />
               <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={saveName} />
               </View>
@@ -1190,6 +1232,8 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
             }}
             onSubmitEditing={addFolder}
             returnKeyType="done"
+            maxLength={60}
+            autoCapitalize="words"
             autoFocus
           />
           {/* Side by side, so the keyboard does not cover them. */}
@@ -1395,11 +1439,11 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
       <SetCard colors={colors}>
         <View style={styles.enterFields}>
           {locked ? (
-            <Field colors={colors} label={t('enter.pin')} value={pin} onChangeText={setPinDraft} keyboardType="number-pad" secureTextEntry maxLength={8} autoFocus />
+            <Field colors={colors} label={t('enter.pin')} value={pin} onChangeText={setPinDraft} keyboardType="number-pad" secureTextEntry maxLength={8} autoFocus returnKeyType="go" onSubmitEditing={openNamed} />
           ) : (
             <>
-              <Field colors={colors} label={t('enter.name')} value={person} onChangeText={setPerson} />
-              <Field colors={colors} label={t('enter.board')} value={title} onChangeText={setTitle} />
+              <Field colors={colors} label={t('enter.name')} value={person} onChangeText={setPerson} autoCapitalize="words" maxLength={40} returnKeyType="next" />
+              <Field colors={colors} label={t('enter.board')} value={title} onChangeText={setTitle} maxLength={60} returnKeyType="go" onSubmitEditing={openNamed} />
             </>
           )}
         </View>
@@ -1422,9 +1466,13 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
               colors={colors}
               label={t('account.code')}
               value={code}
-              onChangeText={setCode}
+              onChangeText={(value) => setCode(String(value).replace(/\D/g, ''))}
               keyboardType="number-pad"
+              textContentType="oneTimeCode"
+              autoComplete="one-time-code"
               maxLength={8}
+              returnKeyType="go"
+              onSubmitEditing={busy ? undefined : removeWithCode}
             />
             <DidButton colors={colors} label={t('enter.forgotGo')} onPress={removeWithCode} disabled={busy} />
             <KeyButton colors={colors} label={t('enter.forgotResend')} onPress={sendForgotCode} disabled={busy} />
@@ -1861,6 +1909,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
   }
   const fires = [...rows.values()].sort((a, b) => a.at - b.at)
   const bookOf = (id) => books.find((one) => (one.lamps || []).some((lamp) => lamp.id === id))
+  const timed = books.flatMap((one) => (one.lamps || []).filter((lamp) => !lamp.archived))
 
   function flipOne(fire) {
     const home = bookOf(fire.id)
@@ -1922,6 +1971,26 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
           ))}
         </SetCard>
       )}
+      {/* Times live on each question; list them all here, so Settings leads to them. */}
+      {timed.length ? (
+        <>
+          <SetCap colors={colors}>{t('pings.timesCap')}</SetCap>
+          <SetCard colors={colors}>
+            {timed.map((lamp, at) => (
+              <SetRow
+                key={lamp.id}
+                colors={colors}
+                icon="clock"
+                label={shortFromQuestion(lamp.question) || t('lamp.unnamed')}
+                sub={lamp.askAfter ? clockWords(lamp.askAfter) : t('pings.noTime')}
+                chevron
+                last={at === timed.length - 1}
+                onPress={() => goHash('/hang', { id: lamp.id })}
+              />
+            ))}
+          </SetCard>
+        </>
+      ) : null}
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="clock" label={t('pings.comingUp')} sub={t('pings.comingUpSub')} chevron onPress={() => goHash('/later')} />
         <SetRow colors={colors} icon="help" label={t('pings.help')} sub={t('pings.helpSub')} chevron last onPress={() => goHash('/help')} />
@@ -1962,6 +2031,8 @@ function PhoneLockSection({ colors }) {
         keyboardType="number-pad"
         secureTextEntry
         maxLength={8}
+        returnKeyType="done"
+        onSubmitEditing={saveLock}
       />
       <View style={{ gap: 8 }}>
       <KeyButton colors={colors} label={locked ? t('settings.changeNumber') : t('settings.lockPhone')} onPress={saveLock} />

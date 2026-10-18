@@ -22,6 +22,9 @@ struct WatchCard: Codable, Identifiable, Equatable {
   var question: String
   var tag: String
   var status: String
+  // Counted in Today's meter (last night's grace cards are not). nil from an
+  // older phone build: then every card counts, the old way.
+  var counted: Bool?
 }
 
 // The look's dark colours (native/watch-sync.js). Each one is optional.
@@ -130,6 +133,12 @@ struct WatchCards: Codable, Equatable {
   var streakLabel: String?
   var streakOneLabel: String?
   var cheer: [String]?
+  // Today's counted questions with no card on the watch: done (Did or late)
+  // and later (still to come, Did wes included). With them and each card's
+  // counted, "2 of 4" and the ring match Today's meter. Optional: an older
+  // phone build leaves them out.
+  var done: Int?
+  var later: Int?
 }
 
 extension WatchCards {
@@ -479,8 +488,13 @@ struct CardView: View {
   var body: some View {
     let palette = store.palette
     let items = store.cards?.items ?? []
-    let total = items.count
-    let answered = items.filter { $0.status != "open" }.count
+    // Today's meter when the phone sends it (done is set); otherwise the old
+    // count, every card and every answer.
+    let todays = store.cards?.done != nil
+    let mine = todays ? items.filter { $0.counted ?? true } : items
+    let offDone = max(store.cards?.done ?? 0, 0)
+    let total = mine.count + offDone + max(store.cards?.later ?? 0, 0)
+    let answered = todays ? mine.filter { $0.status == "did" }.count + offDone : items.filter { $0.status != "open" }.count
     let position = min(answered + 1, max(total, 1))
     let count = fill(store.cards?.countLabel, ["a": position, "b": total]) ?? String(localized: "\(position) of \(total)")
     let caption = card.tag.isEmpty ? count : "\(card.tag) · \(count)"

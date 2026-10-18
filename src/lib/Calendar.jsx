@@ -5,7 +5,7 @@ import { monthStripNights, nightDueRows, nightWhy } from './hall-pages.js'
 import { nightWhyLines } from './night-why.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
-import { boardDate, formatBoardDate } from './recurrence.js'
+import { boardDate, formatBoardDate, nightOpen } from './recurrence.js'
 import { useReduceMotion } from './useReduceMotion.js'
 
 function dateLocale(code) {
@@ -20,11 +20,13 @@ function dowMarks(locale) {
   })
 }
 
-function markOf(answer) {
+// A Not yet on a day that is over reads Missed: Not yet is only for today.
+// Gentle mode never says missed.
+function markOf(answer, open = true, gentle = false) {
   const status = answer?.status
-  if (status === 'yes') return { key: 'yes', label: t('tonight.swipeDid') }
+  if (status === 'yes') return { key: 'yes', label: t('jewelKey.did') }
   if (status === 'late') return { key: 'late', label: t('hole.late') }
-  if (status === 'skip') return { key: 'skip', label: t('tonight.swipeNope') }
+  if (status === 'skip') return open || gentle ? { key: 'skip', label: t('jewelKey.nope') } : { key: 'skip', label: t('later.missed') }
   return { key: 'hole', label: t('cal.open') }
 }
 
@@ -148,7 +150,7 @@ export function Calendar({ book, boards = [], tagId = '', now }) {
             {nightRows.length ? (
               <ul className="di-mark-list">
                 {nightRows.map((row) => {
-                  const mark = markOf(row.answer)
+                  const mark = markOf(row.answer, nightOpen(picked, clock), prefs.gentle === true)
                   return (
                     <li className={`is-${mark.key}`} key={`${row.boardId}-${row.lamp.id}`}>
                       <i className="di-mark-pip" aria-hidden="true" />

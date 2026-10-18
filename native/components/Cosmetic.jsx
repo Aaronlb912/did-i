@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { memo, useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Animated, {
   Easing,
@@ -166,7 +166,7 @@ function chipShell(colors, bg, glow, chipShadow, borderless = false) {
 }
 
 // plain: no glow or ring, for a tile that is not selected (a glow reads as selected).
-export function LookChip({ id, colors, plain = false }) {
+function LookChipArt({ id, colors, plain = false }) {
   const theme = useTheme()
   const premium = isGemLook(id)
   const lookColors = useLookColors(id)
@@ -953,7 +953,7 @@ function DefaultChip({ n, on }) {
   )
 }
 
-export function CheerChip({ id, stage = 1, colors }) {
+function CheerChipArt({ id, stage = 1, colors }) {
   const on = colors?.on || '#c9f24d'
   const ink = colors?.ink || '#f4f6fa'
   const onDeep = colors?.onDeep || on
@@ -1286,3 +1286,8 @@ const styles = StyleSheet.create({
   // A hanging buddy sways from its top.
   buddySway: { transformOrigin: 'top' },
 })
+
+// A shop or Collection list draws dozens of these; a tap elsewhere on the
+// screen (a sheet, a peek) must not redraw them all.
+export const LookChip = memo(LookChipArt)
+export const CheerChip = memo(CheerChipArt)

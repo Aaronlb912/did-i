@@ -5,12 +5,15 @@ import { shortLabel } from './board-json.js'
 import { feedRows, feedSearch, tapWhen } from './hall-pages.js'
 import { t } from './i18n.js'
 import { boardDate, formatBoardDate, nightOpen, periodNight } from './recurrence.js'
+import { gentleOn } from './prefs.js'
 
-// A skip reads Not yet while its night is open, Nope once it closed.
+// A skip reads Not yet while its day is open. Once the day is over it is
+// Missed, like a day never answered: Not yet is only for today. Gentle mode
+// never says missed, so there it stays Not yet.
 function statusWord(status, open = false) {
   if (status === 'yes') return t('feed.status.did')
   if (status === 'late') return t('feed.status.late')
-  if (status === 'skip') return t(open ? 'jewelKey.notYet' : 'feed.status.nope')
+  if (status === 'skip') return t(open ? 'jewelKey.notYet' : gentleOn() ? 'feed.status.nope' : 'later.missed')
   return status
 }
 

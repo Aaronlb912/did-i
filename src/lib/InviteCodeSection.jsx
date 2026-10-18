@@ -1,4 +1,5 @@
 import { t, tMiss } from './i18n.js'
+import { INVITE_CODE_LEN, formatInvite } from './people.js'
 import { InviteRewardBar } from './InviteRewardBar.jsx'
 import { useReferralCode } from './useReferralCode.js'
 import { SetCard, SetField, SetRow } from './set-bits.jsx'
@@ -18,12 +19,17 @@ export function InviteCodeSection({ book, onChange, gemsPaid, joined, hideBar = 
       <SetCard>
         <SetField
           label={t('people.gotCode')}
-          value={ref.draft}
+          value={formatInvite(ref.draft)}
           placeholder={t('people.gotCodePh')}
           autoCapitalize="characters"
           autoCorrect="off"
           onChange={(event) => ref.setDraft(event.target.value)}
         />
+        {ref.draft.length === INVITE_CODE_LEN && ref.owner != null ? (
+          <p className="di-set-note" aria-live="polite">
+            {ref.owner ? t('invite.found', { name: ref.owner }) : t('invite.foundAny')}
+          </p>
+        ) : null}
         <SetRow label={t('people.useCode')} onClick={ref.redeem} />
       </SetCard>
       ) : null}

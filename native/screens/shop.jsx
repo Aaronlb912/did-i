@@ -913,6 +913,9 @@ function useTileTap(book, onChange, colors, coat, purse) {
         name: tileName(type, item.id),
         count: kitCount(normalizePurse(next.book)),
       })
+    } else if (type === 'look' || type === 'buddy' || type === 'frame') {
+      // Put on: the sheet closes, so say it took.
+      confirmDone(t('confirm.wearing', { name: tileName(type, item.id) }))
     }
     onChange(next.book)
   }
@@ -2623,7 +2626,8 @@ export function GiftScreen({ book, onChange, toId }) {
   const purse = normalizePurse(book)
   const [tab, setTab] = useState('looks')
   const [note, setNote] = useState('')
-  const [person, setPerson] = useState(undefined)
+  // Kept: the person shows at once on a second gift, and refreshes quietly.
+  const [person, setPerson] = useKept(`gift.person:${account.user?.id}:${toId}`, undefined, KEEP)
   const [lost, setLost] = useState(false)
   const [tries, setTries] = useState(0)
   const [sent, setSent] = useState('')
@@ -2685,6 +2689,7 @@ export function GiftScreen({ book, onChange, toId }) {
     if (live) onChange(stampPurse(live, { ...normalizePurse(live), gems: out.gems, coins: out.coins }))
     setNote('')
     setSent(t('gift.sent', { item: tileName(type, item.id), name }))
+    confirmDone(t('gift.sent', { item: tileName(type, item.id), name }))
   }
 
   // Short on coins or gems: the same need-more line as the Shop sheet, and
@@ -2764,6 +2769,7 @@ export function GiftScreen({ book, onChange, toId }) {
           accessibilityLabel={t('gift.noteLabel')}
           style={[giftStyles.input, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.panel2 }]}
           returnKeyType="done"
+          blurOnSubmit
         />
         <Text style={[giftStyles.count, { color: colors.inkDim }]}>{note.length}/60</Text>
       </View>

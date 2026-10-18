@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Animated, BackHandler, Keyboard, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { AccessibilityInfo, Animated, BackHandler, Keyboard, PanResponder, Pressable, ScrollView, StyleSheet, Text, View, findNodeHandle } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { t } from '../../src/lib/i18n.js'
 import { FRIEND_CHEER_GEMS, FRIEND_CHEERS_PER_GEM } from '../../src/lib/purse.js'
@@ -13,9 +13,24 @@ import { KeyboardLift } from './KeyboardLift.jsx'
 let listen = null
 let current = null
 
+// Whether a sheet is up, for the app shell: on Android it hides the screens
+// behind from TalkBack while one is (iOS uses accessibilityViewIsModal).
+const upWatchers = new Set()
+export function onSheetUp(fn) {
+  upWatchers.add(fn)
+  fn(Boolean(current?.title))
+  return () => upWatchers.delete(fn)
+}
+
+export function sheetIsUp() {
+  return Boolean(current?.title)
+}
+
 export function publishSheet(next) {
   current = next
   listen?.(next)
+  const up = Boolean(next?.title)
+  upWatchers.forEach((fn) => fn(up))
 }
 
 // Every spend asks first: coins and gems do not come back.
@@ -83,6 +98,8 @@ export function SheetHost() {
   // The last sheet stays drawn while it slides out, then unmounts.
   const [sheet, setShown] = useState(current)
   const fade = useRef(new Animated.Value(0)).current
+  // A screen reader starts on the title when a sheet opens.
+  const titleRef = useRef(null)
   const insets = useSafeAreaInsets()
   const wasOpen = useRef(false)
   // A sheet acts on its first Done or close only. A second quick tap lands
@@ -154,6 +171,17 @@ export function SheetHost() {
     return () => sub.remove()
   }, [next])
 
+  // Before the early return below, so the hooks run the same every render.
+  const opened = sheet?.title || ''
+  useEffect(() => {
+    if (!opened) return undefined
+    const id = setTimeout(() => {
+      const node = titleRef.current && findNodeHandle(titleRef.current)
+      if (node) AccessibilityInfo.setAccessibilityFocus(node)
+    }, 120)
+    return () => clearTimeout(id)
+  }, [opened])
+
   if (!sheet?.title || !sheet.colors) return null
   const colors = sheet.colors
   const closing = !next?.title
@@ -176,6 +204,8 @@ export function SheetHost() {
       {/* A sheet with a text box (a note) rises over the keyboard, buttons and all. */}
       <KeyboardLift pointerEvents="box-none" style={sheet.bottom ? styles.liftBottom : styles.lift}>
       <Animated.View
+        // VoiceOver stays in the sheet, not on the card behind the veil.
+        accessibilityViewIsModal
         style={[
           styles.pop,
           sheet.center && styles.popCenter,
@@ -186,7 +216,7 @@ export function SheetHost() {
         {sheet.bottom ? <Grabber colors={colors} onDown={() => once(sheet, sheet.onClose)} /> : null}
         {sheet.preview ? <View style={styles.preview}>{sheet.preview}</View> : null}
         {sheet.kicker ? <Text style={[styles.kicker, sheet.center && styles.mid, { color: colors.on }]}>{sheet.kicker}</Text> : null}
-        <Text style={[styles.title, sheet.center && styles.mid, { color: colors.ink }]}>{sheet.title}</Text>
+        <Text ref={titleRef} accessibilityRole="header" style={[styles.title, sheet.center && styles.mid, { color: colors.ink }]}>{sheet.title}</Text>
         {sheet.body ? <Text style={[styles.body, sheet.center && styles.mid, { color: colors.inkSoft }]}>{sheet.body}</Text> : null}
         {sheet.content ? <ScrollView ref={sheet.scrollRef} style={sheet.bottom ? styles.contentBottom : styles.content} keyboardShouldPersistTaps="handled">{sheet.content}</ScrollView> : null}
         {sheet.quote ? (

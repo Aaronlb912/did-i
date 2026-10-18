@@ -64,6 +64,13 @@ export function cleanInvite(value) {
   return cleanCode(value, INVITE_CODE_LEN)
 }
 
+// An invite code as people read it aloud: two groups of five (D93AQ-5LBS4).
+// Typing takes it with or without the dash, spaces, any case.
+export function formatInvite(value) {
+  const code = cleanInvite(value)
+  return code.length > 5 ? `${code.slice(0, 5)}-${code.slice(5)}` : code
+}
+
 export function personName(row) {
   if (!row) return ''
   return row.display_name || ''
@@ -1128,6 +1135,17 @@ export async function myInvite() {
   return data || ''
 }
 
+// Whose code this is: their name ('' when they have none yet), or null for
+// no such code, no connection, or a server without supabase/invite-owner.sql.
+export async function inviteOwner(code) {
+  const db = cloud()
+  const want = cleanInvite(code)
+  if (!db || want.length !== INVITE_CODE_LEN) return null
+  const { data, error } = await db.rpc('invite_owner', { want_code: want })
+  if (error || data == null) return null
+  return String(data)
+}
+
 export async function useInvite(code) {
   const db = cloud()
   if (!db) return { miss: 'off' }
@@ -1740,8 +1758,8 @@ function pulseWatch(user, fn) {
   fn(pulse.state)
   if (!pulse.stop) {
     const timer = setInterval(pulseLook, PULSE_MS)
-    // A new Did you ask for you: the badge counts it now.
-    const stopVisible = onVisible(pulseLook, ['ask'])
+    // A new Did you or friend request for you, or a yes to yours: count it now.
+    const stopVisible = onVisible(pulseLook, ['ask', 'friend', 'gift', 'familyInfo', 'weMembers'])
     pulse.stop = () => {
       clearInterval(timer)
       stopVisible()
@@ -1865,7 +1883,7 @@ export function useFamilyTonight(user) {
 
   useEffect(() => {
     look()
-    return onVisible(look, ['family'])
+    return onVisible(look, ['family', 'familyInfo'])
   }, [look])
 
   return { rows, reload: look }

@@ -4,6 +4,7 @@ import { t } from '../src/lib/i18n.js'
 import { hallColors } from './palette.js'
 import { BUDDY_PARTS } from '../src/lib/buddy-parts.js'
 import { shelfStreak } from '../src/lib/hall-feel.js'
+import { watchCount } from '../src/lib/watch-count.js'
 
 // Apple Watch (modules/didi-watch, targets/watch) and Wear OS (android/wear,
 // WatchModule in android/app). The phone sends the same cards the Tonight
@@ -34,7 +35,7 @@ export function watchCardsFromProps(props, shelf = null) {
   }
   const parts = BUDDY_PARTS[String(props?.buddyId || '')] || null
   const shapes = parts ? props?.buddyShapes : null
-  const items = (Array.isArray(props?.items) ? props.items : [])
+  const cards = (Array.isArray(props?.items) ? props.items : [])
     .filter((item) => item?.lampId && !String(item.lampId).startsWith('we:'))
     .map((item) => ({
       id: String(item.lampId),
@@ -44,6 +45,10 @@ export function watchCardsFromProps(props, shelf = null) {
       tag: String(item.tag || ''),
       status: item.status === 'yes' ? 'did' : item.status === 'skip' ? 'nope' : 'open',
     }))
+  // The count matches Today's meter (src/lib/watch-count.js): each card says
+  // whether it counts, and done / later carry the counted ones with no card.
+  const count = watchCount(shelf, cards)
+  const items = shelf ? cards.map((card) => ({ ...card, counted: count.counted.has(`${card.id}|${card.night}`) })) : cards
   return {
     items,
     didLabel: String(props?.didLabel || ''),
@@ -55,6 +60,7 @@ export function watchCardsFromProps(props, shelf = null) {
     allDoneLabel: t('watch.allDone'),
     notYetLabel: t('watch.notYet', { n: '{n}' }),
     countLabel: t('watch.count', { a: '{a}', b: '{b}' }),
+    ...(shelf ? { done: count.done, later: count.later } : {}),
     openPhoneLabel: t(Platform.OS === 'android' ? 'watch.openPhoneAndroid' : 'watch.openPhone'),
     colors,
     // Base shapes plus worn accessories, in the widget's part format.

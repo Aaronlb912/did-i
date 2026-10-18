@@ -68,6 +68,9 @@ const files = [
   'supabase/gift-thanks.sql',
   'supabase/friend-ask-name.sql',
   'supabase/abuse-caps.sql',
+  'supabase/refunds.sql',
+  'supabase/invite-owner.sql',
+  'supabase/live-more.sql',
   'supabase/drop-tonight.sql',
 ]
 
@@ -75,7 +78,7 @@ const apply = resolve('scripts/apply-sql.mjs')
 
 for (const file of files) {
   console.log(`\n--- ${file} ---`)
-  const out = spawnSync(process.execPath, [apply, file], { stdio: 'inherit' })
+  const out = spawnSync(process.execPath, [apply, file, '--in-order'], { stdio: 'inherit' })
   if (out.status !== 0) {
     console.error(`stopped at ${file}`)
     process.exit(out.status || 1)

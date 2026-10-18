@@ -94,6 +94,8 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
       <Pressable
         ref={button}
         onPress={toggle}
+        // 32 tall (40 inline); the slop gives the 44pt tap.
+        hitSlop={{ top: inline ? 2 : 6, bottom: inline ? 2 : 6 }}
         android_ripple={ripple(colors.panel3)}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}

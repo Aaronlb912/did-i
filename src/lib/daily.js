@@ -3,7 +3,8 @@ import {
   addDaysIso,
   answerFor,
   boardDate,
-  catchUpRows,
+  isEvery,
+  previousDueDate,
   parseIsoDate,
   periodKeyFor,
   periodPassed,
@@ -62,20 +63,54 @@ function closeOnceRows(book, now) {
   return rows
 }
 
-// Unanswered due nights before today become nope when the day turns.
-// A night skipped by flying over the date line is left alone.
+// Every unanswered due night before today, newest first, back to the first
+// one with an answer (older ones were closed then) or the day the question
+// was made, at most CLOSE_CAP each. Last night stays open in the grace
+// period; a night lost to the date line is stepped over.
+function firstAnswerNight(book, lampId) {
+  let first = ''
+  for (const answer of book.answers || []) {
+    if (answer.lampId !== lampId) continue
+    const night = String(answer.periodKey || '').slice(0, 10)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(night) && (!first || night < first)) first = night
+  }
+  return first
+}
+
+function missedRows(book, now, skipped) {
+  const today = boardDate(now, book.dayFoldHour)
+  const grace = graceNightIso(now)
+  const rows = []
+  for (const lamp of book.lamps || []) {
+    if (lamp.archived || lamp.cadence === 'once' || isEvery(lamp)) continue
+    const seen = new Set()
+    // An old question with no createdOn: back to its first answer, or only
+    // last night when it has none, so a missing date never makes 400 nopes.
+    const floor = String(lamp.createdOn || '').slice(0, 10) || firstAnswerNight(book, lamp.id)
+    let iso = previousDueDate(lamp, today)
+    for (let step = 0; iso && step < CLOSE_CAP; step += 1, iso = previousDueDate(lamp, iso)) {
+      if (floor ? iso < floor : step > 0) break
+      if (iso === grace || skipped(iso)) continue
+      const periodKey = periodKeyFor(lamp, iso)
+      if (seen.has(periodKey)) continue
+      if (answerFor(book, lamp.id, periodKey)) break
+      seen.add(periodKey)
+      rows.push({ lamp, dateIso: iso, periodKey, answer: null })
+    }
+  }
+  return rows
+}
+
+// Unanswered due nights before today become nope when the day turns, every
+// one of them, not just last night. A night skipped by flying over the date
+// line is left alone.
 export function closePastNights(book, now = new Date(), skips = noteZone(now, undefined, undefined, book?.travelSkips)) {
   let next = withTravelSkips(book, skips)
   let changed = next !== book
-  for (let step = 0; step < CLOSE_CAP; step += 1) {
-    const grace = graceNightIso(now)
-    const book = next
-    const rows = catchUpRows(book, now, (iso) => travelSkipped(book, iso)).filter((row) => row.dateIso !== grace)
-    if (!rows.length) break
-    for (const row of rows) {
-      next = putAnswer(next, row, 'skip', nightStart(row.dateIso))
-      changed = true
-    }
+  const travelled = next
+  for (const row of missedRows(travelled, now, (iso) => travelSkipped(travelled, iso))) {
+    next = putAnswer(next, row, 'skip', nightStart(row.dateIso))
+    changed = true
   }
   for (const row of closeOnceRows(next, now)) {
     if (row.dateIso === graceNightIso(now) || travelSkipped(next, row.dateIso)) continue

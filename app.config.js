@@ -15,6 +15,11 @@ const googleIosUrlScheme = googleIosClientId
   ? 'com.googleusercontent.apps.' + googleIosClientId.replace(/\.apps\.googleusercontent\.com$/, '')
   : ''
 
+// Signed updates: once certs/certificate.pem exists (docs/native-rebuild.md,
+// Signed updates), a build only runs updates signed with its private key.
+const updatesCert = './certs/certificate.pem'
+const signedUpdates = existsSync(updatesCert)
+
 const buildProfile = process.env.EAS_BUILD_PROFILE || ''
 // DIDI_DEV=1: a separate "Did I Dev" app (its own bundle id) that sits next to
 // the store app and loads code from npm run expo:dev. No widgets, Apple sign-in
@@ -112,6 +117,9 @@ export default ({ config }) => ({
     // GitHub builds are not EAS builds, so nothing else sets the channel.
     // EAS builds replace this with the channel from eas.json.
     requestHeaders: { 'expo-channel-name': 'production' },
+    ...(signedUpdates
+      ? { codeSigningCertificate: updatesCert, codeSigningMetadata: { keyid: 'main', alg: 'rsa-v1_5-sha256' } }
+      : {}),
   },
   plugins: [
     ...(config.plugins || []),

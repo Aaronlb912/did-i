@@ -7,6 +7,7 @@ import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
 import { missDot } from '../palette.js'
+import { dayLabel } from './CalendarGrid.jsx'
 
 export function WeekStrip({ boards = [], tagId = '', now, colors }) {
   const clock = now || new Date()
@@ -43,7 +44,8 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
       </View>
       <Reveal key={`w${weekShift}`} style={styles.days} exiting={undefined} layout={false}>
         {nights.map((night) => (
-          <View key={night.iso} style={styles.day}>
+          // Each day says its date and how it went, not just a coloured dot.
+          <View key={night.iso} style={styles.day} accessible accessibilityLabel={dayLabel(night, locale, gentle)}>
             <Text style={[styles.dayLabel, { color: night.isToday ? colors.on : colors.inkDim }]}>{weekdayName(night.iso, 'narrow', locale)}</Text>
             <View style={styles.dotWrap}>
               {night.isToday && night.on ? (

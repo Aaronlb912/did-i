@@ -1,4 +1,4 @@
--- Nightly family summary push: "The Smiths: 3 of 4 done tonight."
+-- Nightly family summary push: "The Smiths: 3 of 4 done today."
 -- Run after push.sql. At 9pm (or profiles.family_hour) in each person's own time zone, one push per
 -- family they are in. Only members who share their streak are counted, so
 -- someone with sharing off is never shown as not done. Turned off with the

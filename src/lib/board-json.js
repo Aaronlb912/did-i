@@ -303,6 +303,9 @@ export function normalizeAnswer(raw) {
     // When the note was last saved; answeredAt stays the tap.
     ...(asString(answer.noteAt) ? { noteAt: asString(answer.noteAt) } : {}),
     ...(cleanAmount(answer.amount) !== null ? { amount: cleanAmount(answer.amount) } : {}),
+    // This night was a Did once, so it counts toward the night's paid taps
+    // even after it turns into a Not yet (purse.js payTap).
+    ...(answer.paid === true ? { paid: true } : {}),
   }
 }
 

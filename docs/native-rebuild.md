@@ -44,13 +44,9 @@ zIndex, so keep `BoardShell`'s scroll view first and its wrappers unpainted
 and without a zIndex, or the large title stops collapsing. Settings pickers
 (`native/components/SetChoice.jsx`) are `@expo/ui` menus and sheets.
 
-Android keeps the brand with Material 3 chrome: rows ripple (`native/lib/ripple.js`),
-switches are native M3 switches, and the optional **Match wallpaper** look
-(Settings, `matchWallpaper` pref) reads the Material You palette through the
-`DynamicColor` native module (`native/lib/dynamic-color.js`; hidden on iOS and
-before Android 12). Both platforms share one menu list,
-`native/components/mast-menu-items.js`. `DynamicColor` is native code, so
-shipping it needs a build, not an OTA.
+Android keeps the brand with Material 3 chrome: rows ripple (`native/lib/ripple.js`)
+and switches are native M3 switches. Both platforms share one menu list,
+`native/components/mast-menu-items.js`.
 
 ## Visual parity
 
@@ -324,6 +320,22 @@ Builds 55 and older ignore them.
 Local: `npm run android:build` after a dev client install.
 
 Gem purchases need a dev build on a real device (not Expo Go). See `docs/iap.md`.
+
+### Signed updates
+
+A build with a certificate only runs updates signed with its private key, so a
+stolen Expo login or `EXPO_TOKEN` cannot push code to phones. Turn it on once,
+before a store build:
+
+1. `npx expo-updates codesigning:generate --key-output-directory keys --certificate-output-directory certs --certificate-validity-duration-years 10 --certificate-common-name "Did I"`
+2. `node scripts/updates-signing.mjs` (writes the certificate into the Android manifest; iOS reads it from `app.config.js` at prebuild).
+3. Commit `certs/certificate.pem` and the manifest. `keys/` is ignored: never commit it.
+4. GitHub > Settings > Secrets > Actions: `EXPO_UPDATES_PRIVATE_KEY` = the whole of `keys/private-key.pem`. Keep a copy somewhere safe; a lost key means a store build with a new certificate.
+5. Bump `version` in app.json and build both apps.
+
+From then on the ota-update workflow and `npm run update:prod` sign every
+update and refuse to publish without the key. Phones on builds from before step
+5 ignore the signature and keep taking updates.
 
 ## Web app
 

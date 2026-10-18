@@ -135,8 +135,24 @@ function writeFlag(key) {
 
 export const nightOneSeen = () => readFlag(NIGHT_ONE_KEY)
 export const markNightOneSeen = () => writeFlag(NIGHT_ONE_KEY)
-export const signInNudgeSeen = () => readFlag(SIGN_IN_NUDGE_KEY)
-export const markSignInNudgeSeen = () => writeFlag(SIGN_IN_NUDGE_KEY)
+// Later snoozes the sign-in card for a week, not for good: an account is what
+// keeps the questions if the phone is lost. (An old '1' counts as long ago.)
+const SIGN_IN_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000
+export function signInNudgeSeen(now = Date.now()) {
+  try {
+    const at = Number(localStorage.getItem(SIGN_IN_NUDGE_KEY))
+    return at > 1 && now - at < SIGN_IN_SNOOZE_MS
+  } catch {
+    return true
+  }
+}
+export function markSignInNudgeSeen(now = Date.now()) {
+  try {
+    localStorage.setItem(SIGN_IN_NUDGE_KEY, String(now))
+  } catch {
+    // Shows again next time; harmless.
+  }
+}
 
 // The sign-in card: after a cleared night, not signed in, not dismissed.
 export function showSignInNudge({ signedIn, cloud, nightDone, dismissed }) {

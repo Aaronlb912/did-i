@@ -143,6 +143,9 @@ export function applyAnswers(shelf, rows) {
       ...(row.note_at ? { noteAt: row.note_at } : {}),
       // No amount column yet (answers.sql not applied) reads as no amount.
       ...(cleanAmount(row.amount) !== null ? { amount: cleanAmount(row.amount) } : {}),
+      // A Did here, then a Not yet from another phone: still counted as paid,
+      // so the next Did here does not pay again (purse.js payTap).
+      ...(row.status !== 'yes' && row.status !== 'late' && (mine?.paid === true || mine?.status === 'yes' || mine?.status === 'late') ? { paid: true } : {}),
     }
     if (at >= 0) book.answers[at] = next
     else book.answers.push(next)
@@ -174,7 +177,9 @@ export function dropSentAnswers(shelf, gone) {
   return { shelf: changed ? { ...shelf, boards } : shelf, changed }
 }
 
-export async function pullAnswers(shelf) {
+// stillCurrent(): false once the account signed out while this was out, so
+// the next account's first pull is not cut short by this one's stamp.
+export async function pullAnswers(shelf, { stillCurrent = () => true } = {}) {
   const db = cloud()
   if (!db) return { shelf, changed: 0, miss: '' }
   const since = read(SEEN)
@@ -210,7 +215,7 @@ export async function pullAnswers(shelf) {
     }
   }
   const next = applyAnswers(shelf, data)
-  if (data?.length) write(SEEN, data[data.length - 1].updated_at)
+  if (data?.length && stillCurrent()) write(SEEN, data[data.length - 1].updated_at)
   return { ...next, miss: '' }
 }
 

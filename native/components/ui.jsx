@@ -98,12 +98,17 @@ export function LateMeta({ children, colors }) {
 }
 
 // `dim` looks disabled but still takes the press, so the screen can say why.
+// 40-tall buttons reach the 44pt minimum tap with this, without changing layout.
+const TAP_SLOP = { top: 2, bottom: 2 }
+
 export function DidButton({ label, onPress, colors, small, disabled, dim, danger }) {
   const off = disabled || dim
   return (
     <Pressable
       disabled={disabled}
       onPress={onPress}
+      // A small one is 40 tall: the slop makes its tap the 44 a finger needs.
+      hitSlop={small ? TAP_SLOP : undefined}
       android_ripple={ripple(`${colors.bg}40`)}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -126,6 +131,7 @@ export function KeyButton({ label, onPress, colors, picked, disabled, danger }) 
     <Pressable
       disabled={disabled}
       onPress={onPress}
+      hitSlop={TAP_SLOP}
       android_ripple={ripple(`${colors.on}33`)}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -194,6 +200,7 @@ export function Field({
   autoFocus,
   textContentType,
   autoComplete,
+  autoCorrect,
 }) {
   return (
     <View style={styles.field}>
@@ -213,6 +220,7 @@ export function Field({
         autoFocus={autoFocus}
         textContentType={textContentType}
         autoComplete={autoComplete}
+        autoCorrect={autoCorrect}
         blurOnSubmit={blurOnSubmit}
         returnKeyType={returnKeyType ?? (onSubmitEditing ? 'done' : undefined)}
         style={[

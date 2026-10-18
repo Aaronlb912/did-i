@@ -9,7 +9,9 @@ import { repeatLabel } from '../../src/lib/send-repeat.js'
 import { sendAnswerLine } from '../../src/lib/send-answers.js'
 import { copyText, passAlong } from '../../src/lib/native.js'
 import {
-  INVITE_GEMS_CAP,
+  INVITE_CODE_LEN,
+  cleanInvite,
+  formatInvite,
   invitePayoutNote,
   answerSend,
   reportSend,
@@ -75,6 +77,7 @@ import {
   fireCheer,
   friendCheerMissKey,
   applyInvitePayout,
+  BUDDY_IDS,
   lookText,
   normalizePurse,
 } from '../../src/lib/purse.js'
@@ -87,6 +90,8 @@ import { sendLastLine } from '../../src/lib/every-copy.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
 import { InviteCodeSection } from '../components/InviteCodeSection.jsx'
+import { InviteCard } from '../components/InviteCard.jsx'
+import { copyInviteLink, shareInvite } from '../lib/share-invite.js'
 import { WeAsks } from '../components/WeTonight.jsx'
 import { ReferLadder } from '../components/ReferLadder.jsx'
 import { activeLook } from '../../src/lib/active-look.js'
@@ -113,6 +118,7 @@ import { keptButMissing } from '../lib/kept-send.js'
 import { FamilyDetailScreen } from './FamilyDetail.jsx'
 import { nameFirst } from '../components/NameFirstSheet.jsx'
 import { useNoted } from '../hooks/useNoted.js'
+import { useLiveReload } from '../hooks/useLiveReload.js'
 import { inviteLink } from '../../src/lib/invite-link.js'
 import { LOOK_IDS, fonts, radius } from '../theme.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
@@ -122,7 +128,8 @@ import { useWeTonight, weAskCount, weQuestion } from '../../src/lib/did-we.js'
 import { didYouAsk } from '../../src/lib/link-preview.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { QrCode } from '../components/QrCode.jsx'
-import { friendQrLink, savePendingScan } from '../../src/lib/qr-links.js'
+import { friendQrLink, savePendingScan, scanFromText } from '../../src/lib/qr-links.js'
+import * as Clipboard from 'expo-clipboard'
 import { canScan } from './ScanScreen.jsx'
 import { WeHomeList } from './we.jsx'
 import { Reveal, pressFx } from '../lib/motion.jsx'
@@ -135,6 +142,18 @@ function ScreenShell({ book, title, children, colors }) {
       {children}
     </BoardShell>
   )
+}
+
+// Paste: a friend ID or family code as copied, or the did-i.app link it came
+// in (did-i.app/f/ID, /j/CODE), so nobody retypes it.
+async function pastedCode(kind) {
+  const text = await Clipboard.getStringAsync().catch(() => '')
+  const found = scanFromText(text)
+  if (kind === 'friend') return /^friend:(\d{12})$/.exec(found)?.[1] || (cleanFriendId(text).length === 12 ? cleanFriendId(text) : '')
+  const family = /^family:([A-Z0-9]{6})$/.exec(found)?.[1]
+  if (family) return family
+  const bare = String(text || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+  return bare.length === FAMILY_CODE_LEN ? bare : ''
 }
 
 function Cap({ children, colors }) {
@@ -276,11 +295,12 @@ function offerWeWith(person, colors) {
   }
   const name = personName(person) || t('people.someone')
   publishSheet({
-    kicker: t('we.title'),
+    // The friend is added already; this only offers a Did we. "Never mind"
+    // read like undoing the friend, so the way out says not now.
     title: t('we.friendTitle', { name }),
-    body: t('we.friendBody'),
+    body: t('we.friendBoth'),
     goLabel: t('we.startWith', { name }),
-    closeLabel: t('settings.neverMind'),
+    closeLabel: t('we.friendLater'),
     colors,
     onClose: () => publishSheet(null),
     onGo: () => {
@@ -509,6 +529,9 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
           value={code}
           onChangeText={(value) => setCode(cleanCode(value))}
           autoCapitalize="characters"
+          autoCorrect={false}
+          returnKeyType="search"
+          onSubmitEditing={() => !busy && code.length === FAMILY_CODE_LEN && look()}
         />
         <Miss colors={colors}>{miss}</Miss>
       </View>
@@ -519,6 +542,16 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
         disabled={busy || code.length !== FAMILY_CODE_LEN}
         onPress={() => look()}
       />
+      {code.length === FAMILY_CODE_LEN ? null : (
+        <KeyButton
+          colors={colors}
+          label={t('invite.paste')}
+          onPress={async () => {
+            const pasted = await pastedCode('family')
+            if (pasted) setCode(pasted)
+          }}
+        />
+      )}
       {canScan() ? (
         <KeyButton
           colors={colors}
@@ -724,6 +757,8 @@ function AddFriendPop({ colors, onClose, onAsked }) {
         value={formatFriendId(draft)}
         onChangeText={(value) => setDraft(cleanFriendId(value))}
         keyboardType="number-pad"
+        returnKeyType="search"
+        onSubmitEditing={() => !ask.busy && draft.length === 12 && ask.look(draft)}
       />
       <Miss colors={colors}>{ask.miss}</Miss>
       <DidButton
@@ -732,6 +767,18 @@ function AddFriendPop({ colors, onClose, onAsked }) {
         disabled={ask.busy || draft.length !== 12}
         onPress={() => ask.look(draft)}
       />
+      {draft.length === 12 ? null : (
+        <KeyButton
+          colors={colors}
+          label={t('invite.paste')}
+          onPress={async () => {
+            const id = await pastedCode('friend')
+            if (!id) return
+            setDraft(id)
+            ask.look(id)
+          }}
+        />
+      )}
       {canScan() ? (
         <KeyButton
           colors={colors}
@@ -777,7 +824,9 @@ export function PeopleScreen({ book, onChange }) {
         weAskCount().catch(() => 0),
       ])
       setMine(who)
-      await syncDisplayName(book.keeperName)
+      // Not awaited: it only fills a missing name, and waiting on it held the
+      // lists back by a whole round trip.
+      syncDisplayName(book.keeperName).catch(() => {})
       // A failed list keeps the rows we had and says so.
       if (!friendRows.miss) setLinks(friendRows)
       if (!famRows.miss) setFamilies(famRows)
@@ -859,6 +908,8 @@ export function PeopleScreen({ book, onChange }) {
         />
       </View>
 
+      <InviteCard colors={colors} />
+
       <View style={styles.friendTabs}>
         <KitSegment
           items={[
@@ -911,7 +962,7 @@ export function PeopleScreen({ book, onChange }) {
         count={links.friends.length || null}
         link={t('people.seeAll')}
         onLink={() => goHash('/friends')}
-        onAdd={links.friends.length ? () => setSheet({ kind: 'friend' }) : undefined}
+        onAdd={() => setSheet({ kind: 'friend' })}
         addLabel={t('people.addOne')}
       />
       {links.friends.length ? (
@@ -945,7 +996,7 @@ export function PeopleScreen({ book, onChange }) {
         </>
       ) : (
         <EmptyCard colors={colors} title={t('people.noFriendsTitle')} body={t('people.noFriendsBody')}>
-          <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
+          <DidButton colors={colors} small label={t('people.addOne')} onPress={() => setSheet({ kind: 'friend' })} />
         </EmptyCard>
       )}
         </Reveal>
@@ -1077,8 +1128,11 @@ export function PeopleScreen({ book, onChange }) {
   )
 }
 
-export function PeopleReferScreen({ book, onChange }) {
+export function PeopleReferScreen({ book, onChange, route }) {
   const colors = useHallColors()
+  // Opened from a scanned invite QR code: the code box comes filled in.
+  const scannedInvite = cleanInvite(route?.id || '')
+  const [showQr, setShowQr] = useState(false)
   // Frames show in your look, as on your card.
   const frameColors = useLookColors(activeLook(book))
   const account = useAccount()
@@ -1148,37 +1202,57 @@ export function PeopleReferScreen({ book, onChange }) {
       <OfflineLine colors={colors} />
       <Meta colors={colors}>{t('people.referBody')}</Meta>
 
-      <ReferLadder colors={colors} frameColors={frameColors} joined={joined} book={book} onChange={onChange} />
+      {scannedInvite.length === INVITE_CODE_LEN ? (
+        <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.on, backgroundColor: colors.panel }]}>
+          <InviteCodeSection key={scannedInvite} colors={colors} book={book} onChange={onChange} hideBar start={scannedInvite} />
+        </View>
+      ) : null}
 
-      <View style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-        <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('people.invite')}</Text>
+      <View style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.on, backgroundColor: colors.panel }]}>
+        <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('invite.yours')}</Text>
         <Text selectable style={[styles.friendId, { color: colors.ink }]}>
-          {invite || t('family.loading')}
+          {invite ? formatInvite(invite) : t('family.loading')}
         </Text>
+        <DidButton
+          colors={colors}
+          label={t('invite.send')}
+          disabled={!invite}
+          onPress={async () => {
+            const how = await shareInvite(invite)
+            if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
+            else setMiss(t('confirm.shareMiss'))
+          }}
+        />
         <View style={styles.idButtons}>
           <KeyButton
             colors={colors}
             label={t('friendId.copy')}
             disabled={!invite}
             onPress={async () => {
-              if (await copyText(invite)) confirmDone(t('people.copied'))
+              if (await copyInviteLink(invite)) confirmDone(t('people.copied'))
               else confirmMiss(t('confirm.miss'))
             }}
           />
           <KeyButton
             colors={colors}
-            label={t('people.shareCode')}
+            label={showQr ? t('qr.hideMine') : t('qr.showMine')}
             disabled={!invite}
-            onPress={async () => {
-              const how = await passAlong(t('people.inviteLine', { code: invite, link: inviteLink(invite) }), t('people.invite'))
-              if (how) say(t(how === 'copied' ? 'people.copied' : 'people.shared'))
-              else setMiss(t('confirm.shareMiss'))
-            }}
+            onPress={() => setShowQr((on) => !on)}
           />
         </View>
+        {showQr && invite ? (
+          <Reveal style={styles.qrBox}>
+            <QrCode value={inviteLink(invite)} size={200} label={t('invite.yours')} />
+            <Meta colors={colors}>{t('invite.qrHint')}</Meta>
+          </Reveal>
+        ) : null}
       </View>
 
-      <InviteCodeSection colors={colors} book={book} onChange={onChange} gemsPaid={gemsPaid} joined={joined} hideBar />
+      <ReferLadder colors={colors} frameColors={frameColors} joined={joined} book={book} onChange={onChange} />
+
+      {scannedInvite.length === INVITE_CODE_LEN ? null : (
+        <InviteCodeSection colors={colors} book={book} onChange={onChange} gemsPaid={gemsPaid} joined={joined} hideBar />
+      )}
 
       <Miss colors={colors}>{miss}</Miss>
       {said ? <Meta colors={colors}>{said}</Meta> : null}
@@ -1186,7 +1260,7 @@ export function PeopleReferScreen({ book, onChange }) {
   )
 }
 
-export function PeopleConnectScreen({ book, route }) {
+export function PeopleConnectScreen({ book, onChange, route }) {
   const colors = useHallColors()
   const account = useAccount()
   const [famDraft, setFamDraft] = useState('')
@@ -1266,12 +1340,7 @@ export function PeopleConnectScreen({ book, route }) {
       {/* A scanned family code: the Join box comes up top so it is not missed. */}
       {scannedFamily ? <JoinFamilyCard key={scan} colors={colors} scanned={scannedFamily} /> : null}
 
-      <Row
-        colors={colors}
-        label={t('people.refer')}
-        note={t('people.referSub', { max: INVITE_GEMS_CAP })}
-        onPress={() => goHash('/people/refer')}
-      />
+      <InviteCard colors={colors} />
 
       <Cap colors={colors}>{t('people.addOne')}</Cap>
       <View style={[styles.groupCard, styles.groupPad, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -1282,6 +1351,8 @@ export function PeopleConnectScreen({ book, route }) {
           value={formatFriendId(idDraft)}
           onChangeText={(value) => setIdDraft(cleanFriendId(value))}
           keyboardType="number-pad"
+          returnKeyType="search"
+          onSubmitEditing={() => !idAsk.busy && idDraft.length === 12 && idAsk.look(idDraft)}
         />
         <Miss colors={colors}>{idAsk.found ? '' : idAsk.miss}</Miss>
         <DidButton
@@ -1290,11 +1361,27 @@ export function PeopleConnectScreen({ book, route }) {
           disabled={idAsk.busy || idDraft.length !== 12}
           onPress={() => idAsk.look(idDraft)}
         />
+        {idDraft.length === 12 ? null : (
+          <KeyButton
+            colors={colors}
+            label={t('invite.paste')}
+            onPress={async () => {
+              const id = await pastedCode('friend')
+              if (!id) return
+              setIdDraft(id)
+              idAsk.look(id)
+            }}
+          />
+        )}
         {canScan() ? (
           <KeyButton colors={colors} label={t('qr.scan')} onPress={() => goHash('/scan')} />
         ) : null}
       </View>
       {idAsk.found ? <FriendConfirm ask={idAsk} colors={colors} /> : null}
+
+      {/* Someone who joined without their friend's link can still use the code
+          here, where they come to add that friend. Gone once one is used. */}
+      <InviteCodeSection colors={colors} book={book} onChange={onChange} hideBar hideDone />
 
       <View style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('friendId.yours')}</Text>
@@ -1321,7 +1408,17 @@ export function PeopleConnectScreen({ book, route }) {
       </View>
 
       <Cap colors={colors}>{t('people.startFamily')}</Cap>
-      <Field colors={colors} label={t('people.newFamily')} value={famDraft} onChangeText={setFamDraft} />
+      <Field
+        colors={colors}
+        label={t('people.newFamily')}
+        value={famDraft}
+        onChangeText={setFamDraft}
+        // The server takes 1 to 60 characters (hardening.sql).
+        maxLength={60}
+        autoCapitalize="words"
+        returnKeyType="done"
+        onSubmitEditing={() => once('make-family', newFamily)}
+      />
       <DidButton colors={colors} label={t('people.makeFamily')} onPress={() => once('make-family', newFamily)} />
       <JoinFamilyCard colors={colors} bare />
 
@@ -1464,7 +1561,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     setStock(normalizePurse(sent.book).friendCheers)
     if (onChange) onChange(sent.book)
     fireCheer(purse.cheerOn, 1)
-    return say(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
+    return confirmDone(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
   }
 
   function gift(person) {
@@ -1494,7 +1591,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     if (bought.miss) return setMiss(tMiss(bought.miss))
     setStock(normalizePurse(bought.book).friendCheers)
     if (onChange) onChange(bought.book)
-    say(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
+    confirmDone(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
   }
 
   if (!cloudSetUp()) return <CloudOff colors={colors} />
@@ -1757,6 +1854,7 @@ function FamilyListScreen({ colors }) {
   useEffect(() => {
     load()
   }, [load])
+  useLiveReload(['family', 'familyInfo'], load)
 
   if (!cloudSetUp()) return <CloudOff colors={colors} />
   if (!account.user) {
@@ -1827,7 +1925,7 @@ function FriendCardArt({ person, size }) {
   const look = LOOK_IDS.includes(person.look_on) ? person.look_on : 'lime'
   const colors = useLookColors(look)
   const frame = FRAME_IDS.has(person.frame_on) ? person.frame_on : ''
-  return <FramePreview id={frame} colors={colors} size={size} />
+  return <FramePreview id={frame} colors={colors} size={size} buddy={BUDDY_IDS.has(person.buddy_on) ? person.buddy_on : ''} />
 }
 
 // "Lime look, Frost frame": what the card in the sheet is wearing.
@@ -2043,15 +2141,19 @@ export function FriendScreen({ book, onChange, route }) {
   useEffect(() => {
     load()
   }, [load])
+  useLiveReload(['send', 'sendMoved', 'friend'], load)
 
   // Same path and limits as the Friends list: one stored cheer per tap,
   // bought five for a gem. Family members go through the family cheer.
   // `about` is a shared note's question when the cheer is for that note.
   function cheer(about) {
     if (cheersLeft < 1) {
-      if (cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return
+      if (cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return confirmMiss(t('friends.cheerCap', { n: FRIEND_CHEER_CAP }))
       if (purse.gems < FRIEND_CHEER_GEMS) return offerMoreGems(colors)
-      return confirmFriendCheers(colors, () => once('buy-cheers', buyCheersNow))
+      // Buying is for this cheer: once the five land, this one goes.
+      return confirmFriendCheers(colors, () => once('buy-cheers', async () => {
+        if (await buyCheersNow()) await cheerNow(typeof about === 'string' ? about : '')
+      }))
     }
     return once(`cheer:${otherId}`, () => cheerNow(typeof about === 'string' ? about : ''))
   }
@@ -2065,18 +2167,25 @@ export function FriendScreen({ book, onChange, route }) {
     setStock(normalizePurse(sent.book).friendCheers)
     if (onChange) onChange(sent.book)
     fireCheer(purse.cheerOn, 1)
-    return setSaid(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
+    setSaid('')
+    return confirmDone(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
   }
 
+  // True once the five cheers are bought.
   async function buyCheersNow() {
     const bought = await buyCheers(book)
-    if (bought.miss === 'gems') return offerMoreGems(colors)
+    if (bought.miss === 'gems') {
+      offerMoreGems(colors)
+      return false
+    }
     const known = friendCheerMissKey(bought.miss)
-    if (known) return setSaid(t(known.key, known.vars))
-    if (bought.miss) return setSaid(tMiss(bought.miss))
+    if (known || bought.miss) {
+      setSaid(known ? t(known.key, known.vars) : tMiss(bought.miss))
+      return false
+    }
     setStock(normalizePurse(bought.book).friendCheers)
     if (onChange) onChange(bought.book)
-    return setSaid(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
+    return true
   }
 
   if (!account.user) return <NeedAccount kicker={t('people.friends')} title={t('people.outTitle')} colors={colors} />
@@ -2440,6 +2549,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
   useEffect(() => {
     load()
   }, [load])
+  useLiveReload(['ask', 'gift'], load)
 
   useEffect(() => {
     if (!fromPush || pushDone.current || !ready) return
@@ -2652,6 +2762,7 @@ export function SentScreen({ book, onChange }) {
   useEffect(() => {
     load()
   }, [load])
+  useLiveReload(['send', 'sendMoved'], load)
 
   if (!cloudSetUp()) return <CloudOff colors={colors} />
   if (!account.user) {
@@ -2792,6 +2903,8 @@ export function SentScreen({ book, onChange }) {
                   maxLength={200}
                   autoFocus
                   onChangeText={(text) => setEditing({ ...editing, text })}
+                  returnKeyType="done"
+                  onSubmitEditing={busy ? undefined : saveEdit}
                 />
                 <View style={styles.personActions}>
                   <DidButton colors={colors} small label={t('sent.editSave')} disabled={busy} onPress={saveEdit} />

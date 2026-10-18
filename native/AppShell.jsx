@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { AppState, Linking, Platform, StyleSheet, View } from 'react-native'
 import { LayoutAnimationConfig } from 'react-native-reanimated'
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable'
@@ -30,15 +30,16 @@ import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { UpdatePrompt } from './components/UpdatePrompt.jsx'
-import { SheetHost } from './components/SheetHost.jsx'
+import { SheetHost, onSheetUp } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
+import { InviteAskHost } from './components/InviteAskHost.jsx'
 import { lazyScreen } from './lib/lazy-screen.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
 import { resumeCheckOnStops } from './components/LampManage.jsx'
 import { FlyHost } from './components/FlyHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
 import { showToast, undoUp, useToastQueue } from './lib/toast-queue.js'
-import { ScreenRouter } from './screens/ScreenRouter.jsx'
+import { ScreenRouter, warmScreens } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
 import { FirstSwipe } from './components/FirstSwipe.jsx'
 import { LegalPlain } from './screens/LegalScreen.jsx'
@@ -115,8 +116,19 @@ function RouteBody({ route }) {
 }
 
 /** A tab or a pushed screen: the route its navigator gave it. */
+// The same route object while nothing in it changed (the folder filter too,
+// which is not a navigator param), so context readers and memoized screens
+// do not redraw on every shell render.
+function useScreenRoute(route) {
+  const next = routeFromScreen(route)
+  const kept = useRef(next)
+  const was = kept.current
+  if (Object.keys(next).some((key) => next[key] !== was[key])) kept.current = next
+  return kept.current
+}
+
 function RouteScreen({ route }) {
-  return <RouteBody route={routeFromScreen(route)} />
+  return <RouteBody route={useScreenRoute(route)} />
 }
 
 // The two tabs, in bar order, so a switch slides in from the side you moved to.
@@ -124,7 +136,7 @@ const TAB_ORDER = ['/tonight', '/lamps']
 function TabRouteScreen({ route }) {
   return (
     <TabSlide index={TAB_ORDER.indexOf(route.name)}>
-      <RouteBody route={routeFromScreen(route)} />
+      <RouteBody route={useScreenRoute(route)} />
     </TabSlide>
   )
 }
@@ -261,7 +273,10 @@ export function AppShell() {
     let warm = null
     afterNativeBridgeReady(() => {
       // Connect the gem store in the background so the gem page has prices ready.
-      if (alive) setBooted(true)
+      if (alive) {
+        setBooted(true)
+        warmScreens()
+      }
       warm = setTimeout(() => initGemIap().catch(() => {}), 3000)
       captureInviteOnFirstLaunch()
       checkPings()
@@ -290,6 +305,14 @@ export function AppShell() {
   // Ping text follows gentle, language and the 12/24h clock: set them again.
   const pingWords = `${prefs.gentle}|${prefs.locale}|${prefs.clock}`
   const [armedWords, setArmedWords] = useState(pingWords)
+  // An open sheet hides the screens behind it from TalkBack (Android).
+  const [sheetUp, setSheetUp] = useState(false)
+  useEffect(() => {
+    const stop = onSheetUp(setSheetUp)
+    return () => {
+      stop()
+    }
+  }, [])
   useEffect(() => {
     if (pingWords === armedWords) return
     setArmedWords(pingWords)
@@ -388,6 +411,15 @@ export function AppShell() {
   return (
     // Any touch wakes a sleeping frame (battery rules in useFrameActive).
     <View style={{ flex: 1, backgroundColor: colors.bg }} onTouchStart={noteFrameTouch}>
+      {/* TalkBack stays in an open sheet: the screens behind leave the tree
+          while one is up (VoiceOver: accessibilityViewIsModal in SheetHost). */}
+      {/* On iOS it stays a layout-only view that Fabric flattens away, so the
+          native stack sits exactly where it did. */}
+      <View
+        style={styles.screens}
+        collapsable={Platform.OS === 'android' ? false : undefined}
+        importantForAccessibility={Platform.OS === 'android' && sheetUp ? 'no-hide-descendants' : 'auto'}
+      >
       <ScreenProps.Provider value={screenProps}>
         <Stack.Navigator screenOptions={screenOptions}>
           <Stack.Screen name={HALL} component={HallScreen} options={HALL_OPTIONS} />
@@ -410,6 +442,7 @@ export function AppShell() {
           ))}
         </Stack.Navigator>
       </ScreenProps.Provider>
+      </View>
       <Slot>
         <ToastHost colors={colors} />
       </Slot>
@@ -418,6 +451,7 @@ export function AppShell() {
         <UpdatePrompt path={route.path} colors={colors} />
         {booted && app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
         {app.book && !gated ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
+        {booted && app.book && !gated ? <InviteAskHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
         <SheetHost />
         <CheerBurstHost />
         <Slot>
@@ -429,6 +463,7 @@ export function AppShell() {
 }
 
 const styles = StyleSheet.create({
+  screens: { flex: 1 },
   overlayLayer: {
     ...StyleSheet.absoluteFill,
     zIndex: 200,

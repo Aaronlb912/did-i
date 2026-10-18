@@ -67,3 +67,6 @@ android/wear/local.properties
 
 modules/*/android/build
 build-out/
+
+# Signed updates private key (docs/native-rebuild.md). Never commit it.
+keys/

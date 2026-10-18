@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Linking, StyleSheet, View } from 'react-native'
 import { requireOptionalNativeModule } from 'expo'
 import { t } from '../../src/lib/i18n.js'
+import { inviteFromText } from '../../src/lib/invite-link.js'
 import { readQrLink } from '../../src/lib/qr-links.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
@@ -41,6 +42,13 @@ export function ScanScreen() {
 
   function onScan({ data }) {
     if (done.current) return
+    // An invite QR code (did-i.app/i/CODE) opens Refer with the code filled in.
+    const invite = /^https:\/\/(?:www\.)?did-i\.app\/i\//i.test(String(data || '').trim()) ? inviteFromText(data) : ''
+    if (invite) {
+      done.current = true
+      swapHash('/people/refer', { id: invite })
+      return
+    }
     const found = readQrLink(data)
     if (!found) {
       setMiss(t('qr.notOurs'))

@@ -70,9 +70,24 @@ export function SignInScreen({ onDone }) {
           textContentType="emailAddress"
           autoComplete="email"
           autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType={auth.step === 'start' ? 'send' : 'next'}
+          onSubmitEditing={auth.step === 'start' && !auth.busy ? auth.askEmail : undefined}
         />
         {auth.step === 'code' ? (
-          <Field colors={colors} label={t('account.code')} value={auth.code} onChangeText={auth.setCode} />
+          <Field
+            colors={colors}
+            label={t('account.code')}
+            value={auth.code}
+            // Digits only, from the keyboard or the code iOS and Android offer from the email.
+            onChangeText={(value) => auth.setCode(String(value).replace(/\D/g, ''))}
+            keyboardType="number-pad"
+            textContentType="oneTimeCode"
+            autoComplete="one-time-code"
+            maxLength={8}
+            returnKeyType="go"
+            onSubmitEditing={auth.busy ? undefined : auth.openEmail}
+          />
         ) : null}
         {auth.step === 'code' && !auth.miss ? (
           <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.sent', { email: auth.email })}</Text>
@@ -87,6 +102,8 @@ export function SignInScreen({ onDone }) {
             textContentType="password"
             autoComplete="current-password"
             autoCapitalize="none"
+            returnKeyType="go"
+            onSubmitEditing={auth.busy ? undefined : auth.openReviewer}
           />
         ) : null}
 

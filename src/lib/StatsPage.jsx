@@ -39,7 +39,7 @@ export function StatsPage({ book, boards, now }) {
             <dd>{counts.late}</dd>
           </div>
           <div>
-            <dt>{t('stats.nope')}</dt>
+            <dt>{t(gentle ? 'stats.nope' : 'later.missed')}</dt>
             <dd>{counts.skip}</dd>
           </div>
           {gentle ? null : (

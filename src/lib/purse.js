@@ -337,7 +337,7 @@ export const CHEER_STAGE_COINS = [0, 0, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEE
 // drop day (or a gift of a new item) keeps what it has.
 const CHEER_IDS = new Set([...ALL_CHEERS, ...SPECIAL_CHEERS].map((item) => item.id))
 const LOOK_IDS = new Set(ALL_LOOKS.map((item) => item.id))
-const BUDDY_IDS = new Set(ALL_BUDDIES.map((item) => item.id))
+export const BUDDY_IDS = new Set(ALL_BUDDIES.map((item) => item.id))
 
 function asCount(value) {
   const n = Math.floor(Number(value) || 0)
@@ -542,7 +542,7 @@ export function coinsFor(status, book, row, clock = new Date()) {
 function tapsPaidTonight(book, clock) {
   const today = boardDate(clock, book.dayFoldHour)
   return (book.answers || []).filter((answer) => {
-    if (answer.status !== 'yes' && answer.status !== 'late') return false
+    if (answer.status !== 'yes' && answer.status !== 'late' && answer.paid !== true) return false
     const period = String(answer.periodKey || '')
     const at = stampDay(answer.answeredAt)
     return period === today || period.startsWith(today) || at.startsWith(today)
@@ -679,7 +679,7 @@ export function payTap(before, after, row, status, clock = new Date()) {
   const prev = (before.answers || []).find(
     (item) => item.lampId === row?.lamp?.id && item.periodKey === row?.periodKey,
   )
-  const paid = prev && (prev.status === 'yes' || prev.status === 'late')
+  const paid = prev && (prev.paid === true || prev.status === 'yes' || prev.status === 'late')
   let coins = purse.coins
   if (!paid) {
     const earned = coinsFor(status, before, row, clock)

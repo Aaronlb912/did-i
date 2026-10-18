@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { onSocialLive } from './social-live.js'
 import { goHash } from '../site/hash.js'
 import { useAccount } from './account.js'
 import { BoardShell } from './BoardShell.jsx'
@@ -42,6 +43,10 @@ export function Inbox({ book, boards, now, onKeep }) {
   useEffect(() => {
     load()
   }, [load])
+  // A Did you sent, edited or taken back while this is open (supabase/live-more.sql).
+  useEffect(() => onSocialLive((kinds) => {
+    if (kinds.has('ask')) load()
+  }), [load])
 
   async function answer(row, keep) {
     const { miss: why, already, state } = await answerSend(row.id, keep)
