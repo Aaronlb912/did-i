@@ -25,8 +25,12 @@ export function InviteCodeSection({ colors, book, onChange, gemsPaid, joined, hi
             placeholder={t('people.gotCodePh')}
             onChangeText={ref.setDraft}
             autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={16}
+            returnKeyType="go"
+            onSubmitEditing={String(ref.draft || '').trim() && !ref.busy ? ref.redeem : undefined}
           />
-          <DidButton colors={colors} label={t('people.useCode')} disabled={!String(ref.draft || '').trim()} onPress={ref.redeem} />
+          <DidButton colors={colors} label={t('people.useCode')} disabled={!String(ref.draft || '').trim() || ref.busy} onPress={ref.redeem} />
         </>
       ) : null}
       {ref.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(ref.miss)}</Text> : null}

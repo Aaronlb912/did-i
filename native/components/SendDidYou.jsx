@@ -271,6 +271,8 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                   value={note}
                   onChangeText={setNote}
                   placeholder={t("people.sendNotePh")}
+                  // The server takes up to 280 characters (hardening.sql).
+                  maxLength={280}
                 />
               </>
             )}

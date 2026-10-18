@@ -86,6 +86,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const howWords = t((HOW_OFTEN.find((item) => item.id === howOften) || HOW_OFTEN[0]).labelKey)
   const [lastDids, setLastDids] = useState(() => new Map())
   const [miss, setMiss] = useState('')
+  const [editMiss, setEditMiss] = useState('')
   const [said, setSaid] = useState('')
   const [stock, setStock] = useState(null)
   const [codeOpen, setCodeOpen] = useState(false)
@@ -265,6 +266,30 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     return items
   }
 
+  function saveRename() {
+    return once('fam-rename', async () => {
+      const { miss: why } = await renameFamily(fam.id, naming)
+      if (why) return setMiss(why)
+      setMiss('')
+      setNaming(null)
+      confirmDone(t('confirm.familyRenamed'))
+      return load()
+    })
+  }
+
+  // A miss keeps the edit open and says why there, instead of closing on it.
+  function saveEdit() {
+    return once('fam-edit', async () => {
+      const { miss: why } = await editFamilyLamp(edit.id, edit.text)
+      if (why === 'blank') return setEditMiss(t('family.blank'))
+      if (why) return setEditMiss(tMiss(why))
+      setEditMiss('')
+      setEdit(null)
+      confirmDone(t('confirm.questionSaved'))
+      return load()
+    })
+  }
+
   return (
     <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
       <View style={[styles.head, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -289,22 +314,13 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         ) : null}
         {naming != null ? (
           <>
-            <Field colors={colors} label={t('family.rename')} value={naming} onChangeText={setNaming} maxLength={60} autoFocus />
+            <Field colors={colors} label={t('family.rename')} value={naming} onChangeText={setNaming} maxLength={60} autoFocus autoCapitalize="words" returnKeyType="done" onSubmitEditing={saveRename} />
             <View style={styles.rowActions}>
               <DidButton
                 small
                 colors={colors}
                 label={t('settings.save')}
-                onPress={() =>
-                  once('fam-rename', async () => {
-                    const { miss: why } = await renameFamily(fam.id, naming)
-                    if (why) return setMiss(why)
-                    setMiss('')
-                    setNaming(null)
-                    confirmDone(t('confirm.familyRenamed'))
-                    return load()
-                  })
-                }
+                onPress={saveRename}
               />
               <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setNaming(null)} />
             </View>
@@ -655,23 +671,23 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       ) : null}
 
       {edit ? (
-      <Modal visible transparent animationType="fade" onRequestClose={() => setEdit(null)}>
+      <Modal visible transparent animationType="fade" onRequestClose={() => { setEditMiss(''); setEdit(null) }}>
         <KeyboardLift>
           <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setEdit(null)}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
               <Text style={[styles.cap, { color: colors.on }]}>{t('family.edit')}</Text>
-              <Field colors={colors} label={t('family.what')} value={edit?.text || ''} onChangeText={(text) => setEdit((prev) => ({ ...prev, text }))} />
-              <DidButton
+              <Field
                 colors={colors}
-                label={t('family.save')}
-                onPress={async () => {
-                  const { miss: why } = await editFamilyLamp(edit.id, edit.text)
-                  if (why === 'blank') return setMiss(t('family.blank'))
-                  if (why) setMiss(why)
-                  setEdit(null)
-                  load()
-                }}
+                label={t('family.what')}
+                value={edit?.text || ''}
+                onChangeText={(text) => setEdit((prev) => ({ ...prev, text }))}
+                // The server takes up to 200 characters (hardening.sql).
+                maxLength={200}
+                returnKeyType="done"
+                onSubmitEditing={saveEdit}
               />
+              {editMiss ? <Text style={{ color: colors.miss }}>{editMiss}</Text> : null}
+              <DidButton colors={colors} label={t('family.save')} onPress={saveEdit} />
               <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
             </Pressable>
           </Pressable>

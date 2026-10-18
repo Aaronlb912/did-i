@@ -194,6 +194,7 @@ export function Field({
   autoFocus,
   textContentType,
   autoComplete,
+  autoCorrect,
 }) {
   return (
     <View style={styles.field}>
@@ -213,6 +214,7 @@ export function Field({
         autoFocus={autoFocus}
         textContentType={textContentType}
         autoComplete={autoComplete}
+        autoCorrect={autoCorrect}
         blurOnSubmit={blurOnSubmit}
         returnKeyType={returnKeyType ?? (onSubmitEditing ? 'done' : undefined)}
         style={[

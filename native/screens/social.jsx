@@ -509,6 +509,9 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
           value={code}
           onChangeText={(value) => setCode(cleanCode(value))}
           autoCapitalize="characters"
+          autoCorrect={false}
+          returnKeyType="search"
+          onSubmitEditing={() => !busy && code.length === FAMILY_CODE_LEN && look()}
         />
         <Miss colors={colors}>{miss}</Miss>
       </View>
@@ -724,6 +727,8 @@ function AddFriendPop({ colors, onClose, onAsked }) {
         value={formatFriendId(draft)}
         onChangeText={(value) => setDraft(cleanFriendId(value))}
         keyboardType="number-pad"
+        returnKeyType="search"
+        onSubmitEditing={() => !ask.busy && draft.length === 12 && ask.look(draft)}
       />
       <Miss colors={colors}>{ask.miss}</Miss>
       <DidButton
@@ -1282,6 +1287,8 @@ export function PeopleConnectScreen({ book, route }) {
           value={formatFriendId(idDraft)}
           onChangeText={(value) => setIdDraft(cleanFriendId(value))}
           keyboardType="number-pad"
+          returnKeyType="search"
+          onSubmitEditing={() => !idAsk.busy && idDraft.length === 12 && idAsk.look(idDraft)}
         />
         <Miss colors={colors}>{idAsk.found ? '' : idAsk.miss}</Miss>
         <DidButton
@@ -1321,7 +1328,17 @@ export function PeopleConnectScreen({ book, route }) {
       </View>
 
       <Cap colors={colors}>{t('people.startFamily')}</Cap>
-      <Field colors={colors} label={t('people.newFamily')} value={famDraft} onChangeText={setFamDraft} />
+      <Field
+        colors={colors}
+        label={t('people.newFamily')}
+        value={famDraft}
+        onChangeText={setFamDraft}
+        // The server takes 1 to 60 characters (hardening.sql).
+        maxLength={60}
+        autoCapitalize="words"
+        returnKeyType="done"
+        onSubmitEditing={() => once('make-family', newFamily)}
+      />
       <DidButton colors={colors} label={t('people.makeFamily')} onPress={() => once('make-family', newFamily)} />
       <JoinFamilyCard colors={colors} bare />
 
@@ -2792,6 +2809,8 @@ export function SentScreen({ book, onChange }) {
                   maxLength={200}
                   autoFocus
                   onChangeText={(text) => setEditing({ ...editing, text })}
+                  returnKeyType="done"
+                  onSubmitEditing={busy ? undefined : saveEdit}
                 />
                 <View style={styles.personActions}>
                   <DidButton colors={colors} small label={t('sent.editSave')} disabled={busy} onPress={saveEdit} />

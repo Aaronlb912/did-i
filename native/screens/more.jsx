@@ -1426,9 +1426,13 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
               colors={colors}
               label={t('account.code')}
               value={code}
-              onChangeText={setCode}
+              onChangeText={(value) => setCode(String(value).replace(/\D/g, ''))}
               keyboardType="number-pad"
+              textContentType="oneTimeCode"
+              autoComplete="one-time-code"
               maxLength={8}
+              returnKeyType="go"
+              onSubmitEditing={busy ? undefined : removeWithCode}
             />
             <DidButton colors={colors} label={t('enter.forgotGo')} onPress={removeWithCode} disabled={busy} />
             <KeyButton colors={colors} label={t('enter.forgotResend')} onPress={sendForgotCode} disabled={busy} />

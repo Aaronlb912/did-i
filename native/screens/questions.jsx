@@ -993,7 +993,16 @@ export function SearchScreen({ book }) {
 
   return (
     <BoardShell book={book} title={t('search.title')} date={shellDate(book)} colors={colors}>
-      <Field colors={colors} label={t('search.label')} value={query} onChangeText={setQuery} placeholder={t('search.ph')} />
+      <Field
+        colors={colors}
+        label={t('search.label')}
+        value={query}
+        onChangeText={setQuery}
+        placeholder={t('search.ph')}
+        autoCorrect={false}
+        returnKeyType="search"
+        blurOnSubmit
+      />
       {!hits.length ? (
         <Meta colors={colors}>{query.trim() ? t('search.empty') : t('search.type')}</Meta>
       ) : (

@@ -10,6 +10,8 @@ export function useReferralCode({ book, onChange }) {
   const [locked, setLocked] = useState(null)
   const [gemsPaid, setGemsPaid] = useState(0)
   const [joined, setJoined] = useState(0)
+  // While a code is being checked, so a second tap does not send it twice.
+  const [busy, setBusy] = useState(false)
 
   const refresh = useCallback(async () => {
     const who = await readMine()
@@ -34,6 +36,16 @@ export function useReferralCode({ book, onChange }) {
   }
 
   async function redeem() {
+    if (busy) return
+    setBusy(true)
+    try {
+      await redeemNow()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function redeemNow() {
     const { miss: why } = await useInvite(draft)
     if (why === 'code') return setMiss(t('people.inviteShort'))
     if (why === 'nobody') return setMiss(t('people.noInvite'))
@@ -61,6 +73,7 @@ export function useReferralCode({ book, onChange }) {
     locked,
     gemsPaid,
     joined,
+    busy,
     redeem,
     refresh,
     note,

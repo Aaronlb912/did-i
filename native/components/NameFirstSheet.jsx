@@ -28,6 +28,8 @@ function NameFirst({ colors, goLabel, onSaved }) {
         maxLength={40}
         autoCapitalize="words"
         autoFocus
+        returnKeyType="done"
+        onSubmitEditing={busy || !name.trim() ? undefined : save}
       />
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
       <DidButton colors={colors} label={goLabel} disabled={busy || !name.trim()} onPress={save} />
