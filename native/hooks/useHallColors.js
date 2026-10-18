@@ -12,8 +12,7 @@ export function useHallColors(book) {
   return useLookColors(look || activeLook(currentBook(readShelf())))
 }
 
-// The colors for one look id. "Match wallpaper" is gone (2026-10-02): an old
-// matchWallpaper pref is ignored, so everyone sees the look itself.
+// The colors for one look id.
 export function useLookColors(look) {
   const theme = useTheme()
   return useMemo(() => hallColors(look, theme), [look, theme])

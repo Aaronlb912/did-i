@@ -44,13 +44,9 @@ zIndex, so keep `BoardShell`'s scroll view first and its wrappers unpainted
 and without a zIndex, or the large title stops collapsing. Settings pickers
 (`native/components/SetChoice.jsx`) are `@expo/ui` menus and sheets.
 
-Android keeps the brand with Material 3 chrome: rows ripple (`native/lib/ripple.js`),
-switches are native M3 switches, and the optional **Match wallpaper** look
-(Settings, `matchWallpaper` pref) reads the Material You palette through the
-`DynamicColor` native module (`native/lib/dynamic-color.js`; hidden on iOS and
-before Android 12). Both platforms share one menu list,
-`native/components/mast-menu-items.js`. `DynamicColor` is native code, so
-shipping it needs a build, not an OTA.
+Android keeps the brand with Material 3 chrome: rows ripple (`native/lib/ripple.js`)
+and switches are native M3 switches. Both platforms share one menu list,
+`native/components/mast-menu-items.js`.
 
 ## Visual parity
 

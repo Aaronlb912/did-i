@@ -1,6 +1,5 @@
 -- Safe to run again. Also in people.sql; use this alone if people.sql
 -- already ran before handle safety landed.
--- Keep fragments in sync with src/lib/handle-safe.js.
 
 create or replace function public.handle_safe(raw text)
 returns boolean

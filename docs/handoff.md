@@ -22,6 +22,7 @@ anything that costs money or can't be undone (a store submit, deleting data).
 | Signed OTA updates, wired, off until a certificate exists | `app.config.js`, `scripts/updates-signing.mjs`, `scripts/update-prod.mjs`, `.github/workflows/ota-update.yml` |
 | shell-quote and source-map-js pinned (npm `overrides`) | `package.json`, `package-lock.json` |
 | Watch "1 of N" and ring count every question tonight, not just the cards left | `src/lib/watch-count.js`, `native/watch-sync.js`, `targets/watch/DidIWatchApp.swift`, `android/wear/src/main/java/com/aaronbryant/didi/wear/{Cards,MainActivity}.kt` |
+| Cleanup: 9 unused files, the unused Android DynamicColor module (Match wallpaper was already gone), 20 unused strings in all 9 locales | `git show` the cleanup commit; Android needs the 1.3.7 build for the module removal |
 | Version 1.3.7 (native deps added) | `app.json`, `android/app/build.gradle`, `android/wear/build.gradle`, `strings.xml`, `targets/*/Info.plist` |
 
 Checked in the cloud: `npm test` 343/343, lint, typecheck, `expo export`

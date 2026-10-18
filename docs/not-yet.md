@@ -495,7 +495,7 @@ cheer skip under reduce-motion.
 - Partial locale parity (fr, de, pt, it, zh, ja, ko). Workflow:
   `docs/locales.md`. Ship quality is `en` + `es`; `npm test` guards Spanish.
 - Marks, achievements toast, Feed, Search, About, Ideas, PingPlate,
-  WaitPlate, site pages, AppMap, cadence lines, device labels, and home
+  WaitPlate, site pages, cadence lines, device labels, and home
   line copy through `t()` in all eight locales.
 - Shop cheers and looks (names, lines, buy errors), push channel label,
   StarterPicks default, and people network miss through `t()` / `tMiss()`.

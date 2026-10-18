@@ -37,7 +37,6 @@ alter table public.profiles drop constraint if exists profiles_handle_shape;
 alter table public.profiles add constraint profiles_handle_shape
   check (handle is null or handle ~ '^[a-z0-9_]{3,20}$');
 
--- Keep fragments in sync with src/lib/handle-safe.js.
 create or replace function public.handle_safe(raw text)
 returns boolean
 language plpgsql
