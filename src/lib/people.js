@@ -1758,8 +1758,8 @@ function pulseWatch(user, fn) {
   fn(pulse.state)
   if (!pulse.stop) {
     const timer = setInterval(pulseLook, PULSE_MS)
-    // A new Did you ask for you: the badge counts it now.
-    const stopVisible = onVisible(pulseLook, ['ask'])
+    // A new Did you or friend request for you, or a yes to yours: count it now.
+    const stopVisible = onVisible(pulseLook, ['ask', 'friend'])
     pulse.stop = () => {
       clearInterval(timer)
       stopVisible()

@@ -8165,6 +8165,18 @@ test('every screen wears the look: a glow of its colour and a bar above the firs
   assert.match(shell, /const shellBg = styles\.clear/)
 })
 
+test('a friend request and its yes reach the other phone live, not on the 5 minute check', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  assert.match(read('src/lib/people.js'), /onVisible\(pulseLook, \['ask', 'friend'\]\)/)
+  const sql = read('supabase/friend-live.sql')
+  assert.match(sql, /live_ping\(array\[r\.who\], 'friend', r\.id\)/)
+  assert.match(sql, /after insert on public\.friend_links/)
+  assert.match(sql, /after update on public\.friend_links/)
+  const order = read('scripts/apply-all-sql.mjs')
+  assert.ok(order.indexOf('social-live.sql') < order.indexOf('friend-live.sql') && order.indexOf('friend-live.sql') < order.indexOf('drop-tonight.sql'))
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

@@ -31,6 +31,7 @@ anything that costs money or can't be undone (a store submit, deleting data).
 | Wording: day not night in the privacy policy (date now October 18, 2026), help, site and family / cheer pushes; no "did not" in English copy | `src/locales/*.js`, `supabase/push.sql` (server push text: lands with step 0's full run) |
 | Cleanup round 2: 126 more unused strings, 3 unused files (`src/site/link.js`, `scripts/build-pages.mjs`, `scripts/eas-patch-podfile.mjs`), old walkthroughs moved to `docs/archive/`; `npm run db:apply <file>` refuses an older file on its own | `src/locales/*.js`, `scripts/sql-order.mjs`, `scripts/apply-sql.mjs` |
 | Referrals made easy: Send invite on People and Connect (one tap, link-first message), grouped code with Paste and "Aaron's code ✓", invite QR on Refer (the in-app scanner reads it), code box on Connect, a new account asked once on Today, "You joined with Aaron's invite" after a link | `native/components/{InviteCard,InviteCodeSection,InviteAskHost}.jsx`, `native/lib/share-invite.js`, `native/screens/{social,ScanScreen}.jsx`, `src/lib/{invite-link,people,useReferralCode}.js`, `supabase/invite-owner.sql` (new, in the apply-all order before drop-tonight; until it is live the name check just stays quiet) |
+| A friend request shows on the other phone right away (and a yes on the asker's): a live ping like Did yous already had, instead of the 5 minute check | `supabase/friend-live.sql` (new, in the apply-all order), `src/lib/people.js` |
 | Every screen wears the look: a glow of the look's colour behind the top of the page and a short bar of it above the first card | `native/components/{LookGlow,BoardShell}.jsx` |
 | Version 1.3.7 (native deps added) | `app.json`, `android/app/build.gradle`, `android/wear/build.gradle`, `strings.xml`, `targets/*/Info.plist` |
 
@@ -136,6 +137,8 @@ Nothing has run on a phone or the live database.
      A brand-new account sees "Did someone invite you?" once on Today; Paste
      fills a copied link or code; a whole code shows the owner's name. A
      fresh install from an invite link says whose invite it joined with.
+   - Friend request, two phones with People open on B: send from A; B shows
+     the request within a couple of seconds. Say yes on B; A's list updates.
    - Looks: switch between three looks (one gem look) and open Settings,
      People, Shop and a question: each shows the look's glow and bar, in
      dark and light. Nothing covers the iOS large title.
