@@ -107,7 +107,8 @@ grant execute on function public.known_people() to authenticated;
 
 -- Name and photo of people waiting on your yes. Only rows asked of you,
 -- and nothing else about them (no streak), until you say yes.
-create or replace function public.friend_askers()
+drop function if exists public.friend_askers();
+create function public.friend_askers()
 returns table (user_id uuid, handle text, display_name text, avatar_url text)
 language sql
 security definer
