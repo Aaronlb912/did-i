@@ -42,11 +42,17 @@ Deno.serve(async (req) => {
   // Only buys we credited are worth a call to Apple.
   const { data: buy } = await admin
     .from('gem_purchases')
-    .select('id, refunded_at')
+    .select('id, refunded_at, store_checked_at')
     .eq('store', 'apple')
     .eq('store_ref', transactionId)
     .maybeSingle()
   if (!buy || buy.refunded_at) return new Response('ok')
+  // One check with Apple per buy per 15 minutes (forged notices repeat). Not
+  // 200: Apple retries a notice it was not answered 200, so a real refund that
+  // lands in the wait is checked on a retry, never dropped.
+  const last = Date.parse(String(buy.store_checked_at || ''))
+  if (last && Date.now() - last < 15 * 60 * 1000) return new Response('later', { status: 503 })
+  await admin.from('gem_purchases').update({ store_checked_at: new Date().toISOString() }).eq('id', buy.id)
 
   let info: Record<string, unknown> | null = null
   try {

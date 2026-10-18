@@ -9,6 +9,9 @@
 
 alter table public.gem_purchases add column if not exists refunded_at timestamptz;
 alter table public.gem_purchases add column if not exists gems_owed integer not null default 0;
+-- When apple-notify last asked Apple about this buy: one check per 15 minutes,
+-- so forged notices for a real transaction id cannot make us call Apple in a loop.
+alter table public.gem_purchases add column if not exists store_checked_at timestamptz;
 alter table public.gem_purchases drop constraint if exists gem_purchases_owed_rng;
 alter table public.gem_purchases add constraint gem_purchases_owed_rng check (gems_owed between 0 and 100);
 
@@ -108,6 +111,47 @@ $$;
 
 revoke all on function public.claim_gem_purchases() from public, anon;
 grant execute on function public.claim_gem_purchases() to authenticated;
+
+-- Gems owed from a refund come off every gem that lands, not only new packs:
+-- the weekly gem, a gift sent back, invite rewards. Without this, spending or
+-- gifting the gems before refunding kept them. Runs after guard_profile_wallet
+-- (trigger names sort), so it sees the balance the server really set.
+create or replace function public.pay_gem_debt()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  gain integer := coalesce(new.gem_balance, 0) - coalesce(old.gem_balance, 0);
+  owe record;
+  paid integer;
+begin
+  if gain < 1 then
+    return new;
+  end if;
+  for owe in
+    select id, gems_owed from public.gem_purchases
+    where user_id = new.user_id and gems_owed > 0
+    order by refunded_at
+    for update
+  loop
+    exit when gain < 1;
+    paid := least(gain, owe.gems_owed);
+    update public.gem_purchases set gems_owed = gems_owed - paid where id = owe.id;
+    gain := gain - paid;
+    new.gem_balance := new.gem_balance - paid;
+  end loop;
+  return new;
+end;
+$$;
+
+revoke all on function public.pay_gem_debt() from public, anon, authenticated;
+
+drop trigger if exists pay_gem_debt on public.profiles;
+create trigger pay_gem_debt
+  before update of gem_balance on public.profiles
+  for each row execute function public.pay_gem_debt();
 
 -- From gem-purchases.sql, plus: a buy already recorded is a repeat (the phone
 -- was closed before it finished the transaction), not a new pack. It never

@@ -63,12 +63,23 @@ export function makeAuthStorage({ secure: Secure, crypto: Crypto, mmkv, plain = 
     return opening
   }
 
+  // A sign-out while the key could not be read leaves this mark in plain
+  // MMKV, so the sealed copy is dropped once the key reads again instead of
+  // signing the person back in.
+  const goneKey = (name) => `${name}:gone`
+  function settleGone(sealed, name) {
+    if (plain()?.getItem(goneKey(name)) == null) return
+    sealed.remove(name)
+    plain()?.removeItem(goneKey(name))
+  }
+
   // The storage Supabase auth reads and writes (src/lib/cloud.js).
   return {
     async getItem(name) {
       const sealed = await box()
       const loose = plain()?.getItem(name) ?? null
       if (!sealed) return loose
+      settleGone(sealed, name)
       // Anything still in plain MMKV is newer than the sealed copy: it is only
       // written there when the key could not be read. Move it in.
       if (loose != null) {
@@ -84,12 +95,15 @@ export function makeAuthStorage({ secure: Secure, crypto: Crypto, mmkv, plain = 
         plain()?.setItem(name, value)
         return
       }
+      // A new sign-in replaces any sign-out still waiting to land.
+      plain()?.removeItem(goneKey(name))
       sealed.set(name, value)
       plain()?.removeItem(name)
     },
     async removeItem(name) {
       const sealed = await box()
-      sealed?.remove(name)
+      if (sealed) sealed.remove(name)
+      else plain()?.setItem(goneKey(name), '1')
       plain()?.removeItem(name)
     },
   }

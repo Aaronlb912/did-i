@@ -78,6 +78,25 @@ begin
     if sqlerrm <> 'gem purchase cap' then raise exception 'FAIL: wrong refusal: %', sqlerrm; end if;
   end;
 
+  -- 6. Spent before the refund: any gem that lands later pays the debt, not
+  -- only a new pack (here the weekly gem, set the way the server sets it).
+  -- Step 5 filled today's 20; these count as two days ago.
+  update public.gem_purchases set made_at = now() - interval '2 days' where user_id = a;
+  perform public.record_gem_purchase(a, 'gems_5', 6, 500, 'apple', 'ref-spent-55555');
+  execute 'set local role authenticated';
+  perform public.claim_gem_purchases();
+  execute 'reset role';
+  update public.profiles set gem_balance = 0 where user_id = a; -- all spent
+  perform public.refund_gem_purchase('apple', 'ref-spent-55555');
+  update public.profiles set gem_balance = gem_balance + 1 where user_id = a;
+  select gem_balance into bal from public.profiles where user_id = a;
+  if bal <> 0 then raise exception 'FAIL: a weekly gem paid % while gems were owed', bal; end if;
+  select gems_owed into n from public.gem_purchases where store_ref = 'ref-spent-55555';
+  if n <> 5 then raise exception 'FAIL: owed % after the weekly gem, want 5', n; end if;
+  update public.profiles set gem_balance = gem_balance + 9 where user_id = a;
+  select gem_balance into bal from public.profiles where user_id = a;
+  if bal <> 4 then raise exception 'FAIL: balance % once the debt was paid, want 4', bal; end if;
+
   -- 4. Only the service role can refund.
   execute 'set local role authenticated';
   begin

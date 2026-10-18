@@ -7954,6 +7954,25 @@ await testAsync('the sign-in session moves into the encrypted store and never dr
   await store.removeItem('did-i-auth')
   assert.equal(await store.getItem('did-i-auth'), null)
 
+  // Sign out while the Keychain is locked: once it unlocks, the sealed copy
+  // goes too, so the person is not signed back in.
+  await store.setItem('did-i-auth', 'session-old')
+  locked = true
+  store = makeAuthStorage({ secure, crypto, mmkv, plain: () => plain })
+  await store.removeItem('did-i-auth')
+  locked = false
+  assert.equal(await store.getItem('did-i-auth'), null)
+  assert.equal(sealedFiles.get('did-i-auth').getString('did-i-auth'), undefined)
+  // Out and back in while locked: the new sign-in wins once it unlocks.
+  await store.setItem('did-i-auth', 'session-a')
+  locked = true
+  store = makeAuthStorage({ secure, crypto, mmkv, plain: () => plain })
+  await store.removeItem('did-i-auth')
+  await store.setItem('did-i-auth', 'session-b')
+  locked = false
+  assert.equal(await store.getItem('did-i-auth'), 'session-b')
+  await store.removeItem('did-i-auth')
+
   // A Keychain that does not keep the key: never seal with it, stay in plain.
   keychain.clear()
   keeps = false
