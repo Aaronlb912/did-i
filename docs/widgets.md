@@ -127,6 +127,16 @@ The iOS layout is not compiled into the widget extension. `createWidget` hands t
 - `android/.../widget/WidgetCardStore.java` — next question from the last snapshot, at tap time
 - `native/deep-link.js` — `didi://tonight` → `/tonight`
 
+## Widget tip (in app)
+
+`native/lib/widget-pin.js` `showWidgetTip`, run from Tonight. From the 2nd
+distinct day the app is opened (with a question), when no other sheet is up
+and not on night one. At most twice: the second only after Not now, 3+ days
+later. Done ends it. Android skips it when `getWidgetInfo(WIDGET_NAME)` finds
+a placed widget; iOS has no check, so Done counts as placed. Rules and the
+`did-i-widget-tip` key: `shouldShowWidgetTip` in `src/lib/first-run.js`.
+Profile still has the full steps (`showWidgetHow`).
+
 ## Settings (in app)
 
 **Settings → Widget** (`did-i-prefs`):

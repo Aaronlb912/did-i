@@ -52,6 +52,8 @@ import {
   nightOneSeen,
   packState,
   showSignInNudge,
+  shouldShowWidgetTip,
+  countWidgetTipDay,
   signInNudgeSeen,
   togglePack,
   togglePick,
@@ -3457,6 +3459,26 @@ test('night one and the sign-in card show once', () => {
   assert.equal(signInNudgeSeen(Date.now() + 8 * 24 * 60 * 60 * 1000), false)
   localStorage.removeItem('did-i-night-one')
   localStorage.removeItem('did-i-sign-in-nudge')
+})
+
+test('widget tip shows from day 2, never with a widget, at most twice, 3 days apart', () => {
+  const ask = (state, today, more = {}) =>
+    shouldShowWidgetTip({ state, today, hasQuestion: true, widgetPlaced: false, busy: false, ...more })
+  let tip = countWidgetTipDay({}, '2026-10-01')
+  assert.equal(countWidgetTipDay(tip, '2026-10-01'), tip)
+  assert.equal(ask(tip, '2026-10-01'), false)
+  tip = countWidgetTipDay(tip, '2026-10-02')
+  assert.equal(tip.days, 2)
+  assert.equal(ask(tip, '2026-10-02'), true)
+  assert.equal(ask(tip, '2026-10-02', { widgetPlaced: true }), false)
+  assert.equal(ask(tip, '2026-10-02', { hasQuestion: false }), false)
+  assert.equal(ask(tip, '2026-10-02', { busy: true }), false)
+  assert.equal(ask({ ...tip, done: true }, '2026-10-02'), false)
+  tip = { ...tip, shown: 1, shownDay: '2026-10-02' }
+  assert.equal(ask(tip, '2026-10-04'), false)
+  assert.equal(ask(tip, '2026-10-05'), true)
+  tip = { ...tip, shown: 2, shownDay: '2026-10-05' }
+  assert.equal(ask(tip, '2026-12-01'), false)
 })
 
 test('a still phone does not undo, a shake does', () => {
@@ -8222,6 +8244,45 @@ await testAsync('readShelf hands back the same shelf until storage changes, and 
   raw.boards[0].title = 'Changed elsewhere'
   localStorage.setItem('did-i-shelf', JSON.stringify(raw))
   assert.equal(readShelf().boards[0].title, 'Changed elsewhere')
+})
+
+await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an hour clear of reminders, under the iOS cap', async () => {
+  const { dayNudges, DAY_NUDGE_TIMES } = await import('../src/lib/day-nudges.js')
+  const { PING_KINDS } = await import('../src/lib/prefs.js')
+  const { quietEnd } = await import('../src/lib/quiet.js')
+  assert.deepEqual(DAY_NUDGE_TIMES, ['09:00', '13:30'])
+  assert.ok(PING_KINDS.includes('day'), 'a switch in Settings, on unless turned off')
+  const q = (id) => ({ id, question: id, cadence: 'daily', createdOn: '2026-10-01', archived: false })
+  const book = { id: 'b', dayFoldHour: 0, lamps: [q('a'), q('b')], answers: [] }
+  const now = new Date(2026, 9, 14, 8, 0)
+  const all = dayNudges(book, now)
+  assert.equal(all.length, 14, 'two a day for a week')
+  assert.deepEqual([all[0].at.getHours(), all[0].at.getMinutes(), all[1].at.getHours(), all[1].at.getMinutes()], [9, 0, 13, 30])
+  assert.ok(all.every((n) => n.line >= 1 && n.line <= 4))
+  assert.ok(new Set(all.slice(0, 4).map((n) => n.line)).size > 1, 'the lines rotate')
+  // Past 9:00 only the afternoon one is left today.
+  assert.equal(dayNudges(book, new Date(2026, 9, 14, 10, 0))[0].at.getHours(), 13)
+  // Every question Did today: no nudge today, the rest of the week stays.
+  const done = { ...book, answers: ['a', 'b'].map((lampId) => ({ lampId, periodKey: '2026-10-14', status: 'yes' })) }
+  const left = dayNudges(done, now)
+  assert.equal(left.length, 12)
+  assert.ok(left.every((n) => n.at.getDate() !== 14))
+  // Not yet is not done, so it still nudges.
+  const notYet = { ...book, answers: [{ lampId: 'a', periodKey: '2026-10-14', status: 'yes' }, { lampId: 'b', periodKey: '2026-10-14', status: 'skip' }] }
+  assert.equal(dayNudges(notYet, now).length, 14)
+  // No questions at all: nothing to nudge about.
+  assert.equal(dayNudges({ ...book, lamps: [] }, now).length, 0)
+  // A reminder at 9:45 keeps 9:00 quiet; one at 14:30 sits exactly an hour out, so 13:30 stays.
+  const near = dayNudges(book, now, { days: 1, reminders: [new Date(2026, 9, 14, 9, 45), new Date(2026, 9, 14, 14, 30)] })
+  assert.deepEqual(near.map((n) => n.at.getHours()), [13])
+  // Quiet hours that cover the morning drop the 9:00 one instead of moving it.
+  const quiet = { quietOn: true, quietFrom: '22:00', quietTo: '10:00' }
+  assert.deepEqual(dayNudges(book, now, { days: 1, shift: (at) => quietEnd(at, quiet) }).map((n) => n.at.getHours()), [13])
+  // A week of nudges plus question reminders still fits the 60 the phone keeps (iOS holds 64).
+  const native = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
+  assert.match(native, /const PING_CAP = 60/)
+  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: PING_DAYS, reminders, shift: afterQuiet \}\)[\s\S]*notes\.length = Math\.min\(notes\.length, PING_CAP\)/)
+  assert.ok(all.length <= 60)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

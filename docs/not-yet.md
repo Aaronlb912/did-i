@@ -5,6 +5,15 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Day nudges (OTA, not tried on a phone)
+
+- **Built:** two local nudges a day, 9:00 and 13:30, for the next 7 days (`src/lib/day-nudges.js`, scheduled with the rest in `native/shim/native.js`). None on a day with every question Did, none within an hour of a question's own reminder, dropped in quiet hours. Re-armed on every answer. On for everyone; switch `Day reminders` (`pingsOff: 'day'`) in Notifications. A second permission ask after a first Did, once, for people who said Not now.
+- **Not done:** the two times are fixed (no time picker on that row yet). The first-run primer copy still talks about reminders and friends, not the day. Gentle mode does not change them. Not tried on a phone: the ask after a first Did, a nudge at 9:00, no nudge after all Did, tap opens Tonight.
+## Widget tip (branch `widget-tip`, OTA)
+
+- **Built:** from the 2nd day Did I is opened with a question, Tonight shows one sheet: "Want your questions on your home screen?" with the steps. Android's button pins the widget (steps if the launcher cannot); iPhone's button is Done. Not now brings it back once, 3 or more days later. State in `did-i-widget-tip` (`src/lib/first-run.js`).
+- **Not done:** iPhone cannot tell if the widget is placed without native code (WidgetCenter), so the tip can show to someone who already added it; Done ends it. Days are counted only while Tonight is open. Not tried on a phone.
+
 ## Snowman buddy (needs SQL and a store build)
 
 - **Built:** `snowman`, 5 gems, always in the shop, drawn on the website, phone, Android widget, iPhone widget and watch. The iPhone widget now also takes the buddy's shapes from the app (`buddyParts`), so a later buddy draws on an older widget build.

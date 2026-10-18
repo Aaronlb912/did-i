@@ -7,6 +7,9 @@ import { publishSheet } from '../components/SheetHost.jsx'
 import { offerExactAlarms } from './exact-alarms.js'
 
 const KEY = 'did-i-ping-primer'
+// The one later ask, after a first Did, for people who said Not now.
+const AGAIN_KEY = 'did-i-ping-primer-again'
+let shownThisRun = false
 
 // AppShell holds the permission state the Notifications screen shows; a
 // primer answered anywhere has to reach it.
@@ -18,17 +21,17 @@ export function onPingState(fn) {
   }
 }
 
-function primerShown() {
+function primerShown(key = KEY) {
   try {
-    return localStorage.getItem(KEY) === '1'
+    return localStorage.getItem(key) === '1'
   } catch {
     return false
   }
 }
 
-function markPrimerShown() {
+function markPrimerShown(key = KEY) {
   try {
-    localStorage.setItem(KEY, '1')
+    localStorage.setItem(key, '1')
   } catch {
     // ok
   }
@@ -36,10 +39,11 @@ function markPrimerShown() {
 
 // The phone lets an app ask once, so a primer frames the OS prompt instead of
 // firing it cold. At most once per phone, and only while it has not been asked.
-async function showPrimer({ title, body, colors }) {
-  if (primerShown()) return
+async function showPrimer({ title, body, colors, key = KEY }) {
+  if (primerShown(key)) return
   if ((await checkPings().catch(() => 'missing')) !== 'default') return
-  markPrimerShown()
+  markPrimerShown(key)
+  shownThisRun = true
   publishSheet({
     kicker: t('notify.primerKicker'),
     title,
@@ -76,6 +80,13 @@ export async function offerPingPrimer(askAfter, colors) {
 // First run, just past sign-in, so nobody has to go looking for it.
 export function offerFirstPingPrimer(colors) {
   return showPrimer({ title: t('notify.firstTitle'), body: t('notify.firstBody'), colors })
+}
+
+// One more ask, after a Did, if the first was Not now. Never in the same
+// run as the first, and never again after this.
+export function offerPingPrimerAgain(colors) {
+  if (shownThisRun || !primerShown() || primerShown(AGAIN_KEY)) return Promise.resolve()
+  return showPrimer({ title: t('notify.againTitle'), body: t('notify.againBody'), colors, key: AGAIN_KEY })
 }
 
 // A Turn on tap where the phone has notifications off. Asks if it still can;

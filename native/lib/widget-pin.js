@@ -29,3 +29,37 @@ export async function pinWidget(colors) {
   }
   if (!asked) showWidgetHow(colors)
 }
+
+// Whether a Tonight widget is on the home screen. Android asks the launcher;
+// iOS cannot tell without native code, so it says no.
+export async function widgetPlaced() {
+  if (Platform.OS !== 'android') return false
+  try {
+    const mod = await import('react-native-android-widget')
+    if (typeof mod?.getWidgetInfo !== 'function') return false
+    const list = await mod.getWidgetInfo(WIDGET_NAME)
+    return Array.isArray(list) && list.length > 0
+  } catch {
+    return false
+  }
+}
+
+// The one-time widget tip. On Android the button pins it (or shows the steps
+// if the launcher cannot); on iOS the steps are in the sheet and the button is
+// Done. Not now (or a swipe away) lets it come back once, later.
+export function showWidgetTip(colors, onDone) {
+  const ios = Platform.OS === 'ios'
+  publishSheet({
+    title: t('widgetTip.title'),
+    body: `${t('widgetTip.body')}\n\n${t(ios ? 'widget.settings.howAddIos' : 'widget.settings.howAddAndroid')}`,
+    goLabel: t(ios ? 'widgetTip.done' : 'widgetTip.add'),
+    closeLabel: t('widgetTip.later'),
+    colors,
+    onClose: () => publishSheet(null),
+    onGo: () => {
+      publishSheet(null)
+      onDone()
+      if (!ios) pinWidget(colors)
+    },
+  })
+}

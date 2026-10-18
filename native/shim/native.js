@@ -14,6 +14,7 @@ import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
+import { dayNudges } from '../../src/lib/day-nudges.js'
 import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { readWePings } from '../../src/lib/we-widget.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
@@ -268,6 +269,20 @@ async function schedulePingsNow(books, now = new Date()) {
             trigger: when(at),
           })
         }
+      }
+    }
+    // Day nudges at 9:00 and 13:30 while something is still open, kept an
+    // hour clear of any question's own reminder. Re-armed on every answer.
+    if (pingOn('day')) {
+      const reminders = notes.map((note) => note.trigger.date)
+      // Only the room the cap leaves, so a nudge never crowds out a question.
+      const room = PING_CAP - notes.length
+      for (const nudge of dayNudges(list, now, { days: PING_DAYS, reminders, shift: afterQuiet }).slice(0, Math.max(0, room))) {
+        notes.push({
+          identifier: String(notifyId('day', nudge.at.toISOString())),
+          content: { title: 'Did I', body: t(`pings.day.${nudge.line}`), data: { go: '/tonight' } },
+          trigger: when(nudge.at),
+        })
       }
     }
     notes.sort((a, b) => a.trigger.date - b.trigger.date)
