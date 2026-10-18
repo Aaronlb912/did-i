@@ -5,6 +5,11 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Snowman buddy (needs SQL and a store build)
+
+- **Built:** `snowman`, 5 gems, always in the shop, drawn on the website, phone, Android widget, iPhone widget and watch. The iPhone widget now also takes the buddy's shapes from the app (`buddyParts`), so a later buddy draws on an older widget build.
+- **Not done:** apply `supabase/gifts.sql` before anyone can buy it (the server price list). Until the next store build, iPhone widgets on 1.3.7 and older show no buddy for a worn snowman (an OTA does not change the widget). Not tried on a phone.
+
 ## Security read 2026-10-17 (needs SQL and a function deploy)
 
 - **Built:** `supabase/abuse-caps.sql` (3 friend asks a day per pair and 50 per asker, even if taken back; 30 pushes an hour per person; no direct answer_log writes, 200,000 answers per account; waitlist closed) and `supabase/iap-tries.sql` (30 purchase checks per account per 10 minutes). gem-iap refuses a buy with no owner made after 2026-10-18 and answers `tooMany` at the daily pack cap. Site headers in `vercel.json`; `supabase/config.toml` pins `verify_jwt`. `reports.line_id` is created in blocks.sql, so a fresh database builds.
@@ -12,6 +17,13 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 - **Refunds (built, needs setup):** `supabase/refunds.sql` (refunded packs never pay; claimed gems come off the balance and what was spent is owed from the next packs), `functions/apple-notify` (App Store Server Notifications V2; asks Apple before acting) and `functions/play-voided` (hourly cron reads Play's voided purchases). Apply refunds.sql, deploy `apple-notify` with `--no-verify-jwt` and `play-voided`, then set the App Store Server Notifications URL (Version 2, production and sandbox) to `https://<project>.supabase.co/functions/v1/apple-notify`. The Play service account needs View financial data. Refunds from before the setup are not caught.
 - **1.3.7 build (native):** the sign-in session moves to an encrypted MMKV file whose key is in the Keychain / Keystore (`native/lib/auth-store.js`, expo-secure-store and expo-crypto); signed updates are wired but off until the certificate exists (docs/native-rebuild.md, Signed updates). Not tried on a phone: sign in, kill the app, reopen still signed in; widget tap after a reboot before the first unlock (session stays in plain MMKV until the key reads, then moves); sign out.
 - **Not done:** restrict the Firebase key in Google Cloud to the app; night coins and the weekly gem are taken on the phone's word (capped at 6 coins a day; an answer check would underpay, since coins are asked for before the answer syncs); build tools still flagged by npm audit (braces, node-forge, an old @xmldom/xmldom) have no fixed version or only reach prebuild, not the app.
+
+## Reindeer buddy, winter drop (branch `reindeer-buddy`)
+
+- **Built:** a reindeer buddy (`reindeer`) on sale from 2026-12-01 for 5 gems, drawn the same on web, phone, both widgets and the watch. Hats sit between its antlers.
+- **Placeholders:** the date 2026-12-01 and the 5 gem price are not confirmed. 2026-12-01 is its own drop day, three days before the 2026-12-04 drop.
+- **Supabase not applied yet.** `supabase/gifts.sql` (server price and date) and `supabase/shop-drops.sql` (drop push day), both in `db:apply:all`. Until then a gem buy of the reindeer fails on the server.
+- **Not done:** not seen on a phone, a widget or a watch.
 
 ## Nights lost flying west over the date line (branch `travel-skipped-nights`)
 

@@ -12,6 +12,7 @@ const COAT = {
   possum: { body: '#9b98a3', belly: '#f4f1ec', ear: '#f2a7b4' },
   penguin: { body: '#344157', belly: '#f7f5f0', ear: '#344157' },
   fox: { body: '#e8743b', belly: '#fff6ea', ear: '#e8743b' },
+  snowman: { body: '#f4f7fa', belly: '#b9c8d8', ear: '#7a5a3c' },
   hive: { body: '#f6c443', belly: '#2b2018', ear: '#dff3ff' },
   otter: { body: '#a06a40', belly: '#f1dcc0', ear: '#8a5a36' },
   hedgehog: { body: '#8f6a52', belly: '#f3d9b6', ear: '#7a5a46' },
@@ -19,6 +20,7 @@ const COAT = {
   duck: { body: '#ffd34d', belly: '#fff1b8', ear: '#ff9a3c' },
   axolotl: { body: '#ffc2d4', belly: '#ffe6ee', ear: '#ff6f91' },
   turtle: { body: '#9edb86', belly: '#a0753e', ear: '#8fd27a' },
+  reindeer: { body: '#a8703f', belly: '#f0d6b0', ear: '#c9a06a' },
 }
 
 function spot(box, x, y, w, h, color, radius) {
@@ -171,6 +173,32 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
       </View>
     )
   }
+  if (id === 'reindeer') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 9, 17, 30, 28, coat.body)} />
+        <View style={spot(box, 15, 29, 18, 14, coat.belly)} />
+        <View style={spot(box, 17.3, 24.2, 4.4, 5.6, pupil)} />
+        <View style={spot(box, 26.3, 24.2, 4.4, 5.6, pupil)} />
+        <View style={spot(box, 21.7, 31.6, 4.6, 3.2, '#c4525a')} />
+        <View style={spot(box, 12.5, 42.2, 9, 5.6, '#5a3a22')} />
+        <View style={spot(box, 26.5, 42.2, 9, 5.6, '#5a3a22')} />
+      </View>
+    )
+  }
+  if (id === 'snowman') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 10, 29.4, 28, 18.8, coat.belly)} />
+        <View style={spot(box, 10.8, 29.6, 26.4, 17.2, coat.body)} />
+        <View style={spot(box, 13.6, 14.7, 20.8, 19.6, coat.belly)} />
+        <View style={spot(box, 14.4, 15, 19.2, 18.2, coat.body)} />
+        <View style={spot(box, 17.8, 20.2, 4.4, 5.6, pupil)} />
+        <View style={spot(box, 25.8, 20.2, 4.4, 5.6, pupil)} />
+        <View style={spot(box, 23.2, 26.1, 6.8, 2.6, '#f28c38', 1.3)} />
+      </View>
+    )
+  }
   if (id === 'hive') {
     return (
       <View style={{ width, height }}>
@@ -277,6 +305,10 @@ const EYES = {
     [[19.8, 27.5, 2.2, 2.8, DARK], [20.5, 26.6, 0.7, 0.9, ...SHINE]],
     [[28.2, 27.5, 2.2, 2.8, DARK], [28.9, 26.6, 0.7, 0.9, ...SHINE]],
   ],
+  snowman: [
+    [[20, 23, 2.2, 2.8, DARK], [20.7, 22.1, 0.7, 0.9, ...SHINE]],
+    [[28, 23, 2.2, 2.8, DARK], [28.7, 22.1, 0.7, 0.9, ...SHINE]],
+  ],
   hive: [
     [[18, 27, 2.3, 3.1, DARK], [18.8, 26, 0.7, 0.9, ...SHINE]],
     [[30, 27, 2.3, 3.1, DARK], [30.8, 26, 0.7, 0.9, ...SHINE]],
@@ -305,6 +337,10 @@ const EYES = {
   turtle: [
     [[19.5, 25, 2.2, 2.8, DARK], [20.2, 24.1, 0.7, 0.9, ...SHINE]],
     [[28.5, 25, 2.2, 2.8, DARK], [29.2, 24.1, 0.7, 0.9, ...SHINE]],
+  ],
+  reindeer: [
+    [[19.5, 27, 2.2, 2.8, DARK], [20.2, 26.1, 0.7, 0.9, ...SHINE]],
+    [[28.5, 27, 2.2, 2.8, DARK], [29.2, 26.1, 0.7, 0.9, ...SHINE]],
   ],
 }
 
@@ -679,6 +715,52 @@ function BuddyDrawing({ id, width, height, eyes }) {
         <Path d="M21.8 29.4 Q24 31.2 26.2 29.4" fill="none" stroke="#2f5a28" strokeWidth="1" strokeLinecap="round" />
         <Ellipse cx="15.8" cy="28.6" rx="2.1" ry="1.2" fill="#f59aa8" opacity="0.7" />
         <Ellipse cx="32.2" cy="28.6" rx="2.1" ry="1.2" fill="#f59aa8" opacity="0.7" />
+      </Svg>
+    )
+  }
+
+  if (id === 'reindeer') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Line x1="18" y1="18" x2="14" y2="9" stroke="#c9a06a" strokeWidth="1.8" strokeLinecap="round" />
+        <Line x1="15.6" y1="12.6" x2="11" y2="11.4" stroke="#c9a06a" strokeWidth="1.6" strokeLinecap="round" />
+        <Line x1="30" y1="18" x2="34" y2="9" stroke="#c9a06a" strokeWidth="1.8" strokeLinecap="round" />
+        <Line x1="32.4" y1="12.6" x2="37" y2="11.4" stroke="#c9a06a" strokeWidth="1.6" strokeLinecap="round" />
+        <Ellipse cx="10.5" cy="23" rx="5" ry="2.6" fill="#a8703f" transform="rotate(28 10.5 23)" />
+        <Ellipse cx="37.5" cy="23" rx="5" ry="2.6" fill="#a8703f" transform="rotate(-28 37.5 23)" />
+        <Ellipse cx="11" cy="23.2" rx="3" ry="1.3" fill="#f3d9b6" transform="rotate(28 11 23.2)" />
+        <Ellipse cx="37" cy="23.2" rx="3" ry="1.3" fill="#f3d9b6" transform="rotate(-28 37 23.2)" />
+        <Ellipse cx="24" cy="31" rx="15" ry="14" fill="#a8703f" />
+        <Ellipse cx="24" cy="36" rx="9" ry="7" fill="#f0d6b0" />
+        {eyes ? <EyesInline parts={parts} id="reindeer" /> : null}
+        <Ellipse cx="24" cy="33.2" rx="2.3" ry="1.6" fill="#c4525a" />
+        <Ellipse cx="14.8" cy="32" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="33.2" cy="32" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#5a3a22" />
+        <Ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#5a3a22" />
+      </Svg>
+    )
+  }
+
+  if (id === 'snowman') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Line x1="13.5" y1="34" x2="5" y2="28" stroke="#7a5a3c" strokeWidth="1.4" strokeLinecap="round" />
+        <Line x1="7.6" y1="29.8" x2="7" y2="26.6" stroke="#7a5a3c" strokeWidth="1.1" strokeLinecap="round" />
+        <Line x1="34.5" y1="34" x2="43" y2="28" stroke="#7a5a3c" strokeWidth="1.4" strokeLinecap="round" />
+        <Line x1="40.4" y1="29.8" x2="41" y2="26.6" stroke="#7a5a3c" strokeWidth="1.1" strokeLinecap="round" />
+        <Ellipse cx="24" cy="38.8" rx="14" ry="9.4" fill="#b9c8d8" />
+        <Ellipse cx="24" cy="38.2" rx="13.2" ry="8.6" fill="#f4f7fa" />
+        <Ellipse cx="24" cy="24.5" rx="10.4" ry="9.8" fill="#b9c8d8" />
+        <Ellipse cx="24" cy="24.1" rx="9.6" ry="9.1" fill="#f4f7fa" />
+        <Ellipse cx="20.5" cy="18.6" rx="2.4" ry="1.3" fill="#ffffff" opacity="0.8" />
+        {eyes ? <EyesInline parts={parts} id="snowman" /> : null}
+        <Ellipse cx="26.6" cy="27.4" rx="3.4" ry="1.3" fill="#f28c38" transform="rotate(12 26.6 27.4)" />
+        <Ellipse cx="16.8" cy="28.6" rx="2" ry="1.2" fill="#f59aa8" opacity="0.6" />
+        <Ellipse cx="31.6" cy="28.6" rx="2" ry="1.2" fill="#f59aa8" opacity="0.6" />
+        <Ellipse cx="24" cy="35" rx="1.1" ry="1.1" fill="#2d241c" />
+        <Ellipse cx="24" cy="39" rx="1.1" ry="1.1" fill="#2d241c" />
+        <Ellipse cx="24" cy="43" rx="1.1" ry="1.1" fill="#2d241c" />
       </Svg>
     )
   }

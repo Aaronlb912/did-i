@@ -6,6 +6,7 @@ import { buildTonightWidgetProps, mergeWidgetPropsIntoShelf, tonightWidgetKey, W
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { hallColors } from './palette.js'
 import { wornShapes } from '../src/lib/accessory-shapes.js'
+import { BUDDY_PARTS } from '../src/lib/buddy-parts.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { boardDate } from '../src/lib/recurrence.js'
 import { recordAppError } from '../src/lib/app-errors.js'
@@ -55,7 +56,9 @@ export function enrichTonightWidgetProps(shelf, props) {
   // The iPhone widget cannot draw the accessory paths, so it gets them as
   // simple shapes (accessory-shapes.js), in the look's colour.
   const buddyShapes = props.buddyId ? wornShapes(props.buddyWorn, props.buddyId, colors.on) : null
-  return { ...props, colors, buddyShapes }
+  // The buddy's own shapes too, so a widget built before this buddy still draws it.
+  const buddyParts = BUDDY_PARTS[String(props.buddyId || '')] || null
+  return { ...props, colors, buddyShapes, buddyParts }
 }
 
 // Answers that came in from another phone (sync) or a shelf that changed

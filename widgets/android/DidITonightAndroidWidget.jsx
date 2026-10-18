@@ -302,6 +302,48 @@ const BUDDY_SVG = {
     <ellipse cx="15.8" cy="28.6" rx="2.1" ry="1.2" fill="#f59aa8" opacity="0.7"/>
     <ellipse cx="32.2" cy="28.6" rx="2.1" ry="1.2" fill="#f59aa8" opacity="0.7"/>
   </svg>`,
+  reindeer: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
+    <line x1="18" y1="18" x2="14" y2="9" stroke="#c9a06a" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="15.6" y1="12.6" x2="11" y2="11.4" stroke="#c9a06a" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="30" y1="18" x2="34" y2="9" stroke="#c9a06a" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="32.4" y1="12.6" x2="37" y2="11.4" stroke="#c9a06a" stroke-width="1.6" stroke-linecap="round"/>
+    <ellipse cx="10.5" cy="23" rx="5" ry="2.6" fill="#a8703f" transform="rotate(28 10.5 23)"/>
+    <ellipse cx="37.5" cy="23" rx="5" ry="2.6" fill="#a8703f" transform="rotate(-28 37.5 23)"/>
+    <ellipse cx="11" cy="23.2" rx="3" ry="1.3" fill="#f3d9b6" transform="rotate(28 11 23.2)"/>
+    <ellipse cx="37" cy="23.2" rx="3" ry="1.3" fill="#f3d9b6" transform="rotate(-28 37 23.2)"/>
+    <ellipse cx="24" cy="31" rx="15" ry="14" fill="#a8703f"/>
+    <ellipse cx="24" cy="36" rx="9" ry="7" fill="#f0d6b0"/>
+    <ellipse cx="19.5" cy="27" rx="2.2" ry="2.8" fill="#2d241c"/>
+    <ellipse cx="28.5" cy="27" rx="2.2" ry="2.8" fill="#2d241c"/>
+    <ellipse cx="20.2" cy="26.1" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="29.2" cy="26.1" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="24" cy="33.2" rx="2.3" ry="1.6" fill="#c4525a"/>
+    <ellipse cx="14.8" cy="32" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7"/>
+    <ellipse cx="33.2" cy="32" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7"/>
+    <ellipse cx="17" cy="45" rx="4.5" ry="2.8" fill="#5a3a22"/>
+    <ellipse cx="31" cy="45" rx="4.5" ry="2.8" fill="#5a3a22"/>
+  </svg>`,
+  snowman: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
+    <line x1="13.5" y1="34" x2="5" y2="28" stroke="#7a5a3c" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="7.6" y1="29.8" x2="7" y2="26.6" stroke="#7a5a3c" stroke-width="1.1" stroke-linecap="round"/>
+    <line x1="34.5" y1="34" x2="43" y2="28" stroke="#7a5a3c" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="40.4" y1="29.8" x2="41" y2="26.6" stroke="#7a5a3c" stroke-width="1.1" stroke-linecap="round"/>
+    <ellipse cx="24" cy="38.8" rx="14" ry="9.4" fill="#b9c8d8"/>
+    <ellipse cx="24" cy="38.2" rx="13.2" ry="8.6" fill="#f4f7fa"/>
+    <ellipse cx="24" cy="24.5" rx="10.4" ry="9.8" fill="#b9c8d8"/>
+    <ellipse cx="24" cy="24.1" rx="9.6" ry="9.1" fill="#f4f7fa"/>
+    <ellipse cx="20.5" cy="18.6" rx="2.4" ry="1.3" fill="#ffffff" opacity="0.8"/>
+    <ellipse cx="20" cy="23" rx="2.2" ry="2.8" fill="#2d241c"/>
+    <ellipse cx="28" cy="23" rx="2.2" ry="2.8" fill="#2d241c"/>
+    <ellipse cx="20.7" cy="22.1" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="28.7" cy="22.1" rx="0.7" ry="0.9" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="26.6" cy="27.4" rx="3.4" ry="1.3" fill="#f28c38" transform="rotate(12 26.6 27.4)"/>
+    <ellipse cx="16.8" cy="28.6" rx="2" ry="1.2" fill="#f59aa8" opacity="0.6"/>
+    <ellipse cx="31.6" cy="28.6" rx="2" ry="1.2" fill="#f59aa8" opacity="0.6"/>
+    <ellipse cx="24" cy="35" rx="1.1" ry="1.1" fill="#2d241c"/>
+    <ellipse cx="24" cy="39" rx="1.1" ry="1.1" fill="#2d241c"/>
+    <ellipse cx="24" cy="43" rx="1.1" ry="1.1" fill="#2d241c"/>
+  </svg>`,
   hive: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="11" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" stroke-width="1" transform="rotate(-25 11 18)"/>
     <ellipse cx="37" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" stroke-width="1" transform="rotate(25 37 18)"/>
