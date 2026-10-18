@@ -14,6 +14,9 @@ data class WatchCard(
   val question: String,
   val tag: String,
   val status: String,
+  // Counted in Today's meter (last night's grace cards are not). True from an
+  // older phone build, so every card counts the old way.
+  val counted: Boolean = true,
 )
 
 // One shape in the widget's part format: a kind letter, then numbers and
@@ -51,16 +54,19 @@ data class WatchCards(
   val streakLabel: String,
   val streakOneLabel: String,
   val cheer: List<String>,
-  // Tonight's questions with no card: answered (offDone) and waiting on their
-  // ask time (offLater). Part of "2 of 4" and the ring, so the count holds
-  // all night. 0 from an older phone build.
-  val offDone: Int = 0,
+  // Today's counted questions with no card on the watch: done (Did or late)
+  // and later (still to come, Did wes included). null from an older phone
+  // build, which counts every card and every answer the old way.
+  val offDone: Int? = null,
   val offLater: Int = 0,
 ) {
   val openCards: List<WatchCard> get() = items.filter { it.status == "open" }
   val answered: Int get() = items.count { it.status != "open" }
-  val countTotal: Int get() = items.size + offDone + offLater
-  val countDone: Int get() = answered + offDone
+  // "2 of 4" and the ring: Today's meter when the phone sends it.
+  private val counted: List<WatchCard> get() = if (offDone == null) items else items.filter { it.counted }
+  val countTotal: Int get() = counted.size + (offDone ?: 0) + offLater
+  val countDone: Int get() =
+    if (offDone == null) answered else counted.count { it.status == "did" } + offDone
   val palette: Palette get() = Palette(colors)
   // From a past night: the newest card's dateIso is before yesterday on the
   // watch's calendar. Tonight (boardDate) is always today or, before the day
@@ -86,6 +92,7 @@ data class WatchCards(
             question = it.optString("question"),
             tag = it.optString("tag"),
             status = it.optString("status", "open"),
+            counted = it.optBoolean("counted", true),
           )
         }.filter { it.id.isNotEmpty() }
         WatchCards(
@@ -105,7 +112,7 @@ data class WatchCards(
             if (parts.isEmpty()) null else WatchBuddy(parts, parts(b.optJSONArray("behind")), parts(b.optJSONArray("front")))
           },
           streak = o.optInt("streak", 0),
-          offDone = o.optInt("done", 0).coerceAtLeast(0),
+          offDone = if (o.has("done")) o.optInt("done", 0).coerceAtLeast(0) else null,
           offLater = o.optInt("later", 0).coerceAtLeast(0),
           streakLabel = o.optString("streakLabel"),
           streakOneLabel = o.optString("streakOneLabel"),

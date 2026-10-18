@@ -7971,34 +7971,40 @@ await testAsync('the sign-in session moves into the encrypted store and never dr
   assert.equal(await store.getItem('did-i-auth'), 'session-5')
 })
 
-await testAsync('the watch count holds "of 4" all night: answered and later questions count with the cards', async () => {
-  const { offCards } = await import('../src/lib/watch-count.js')
+await testAsync('the watch count matches Today: every counted question, Did only, no grace cards', async () => {
+  const { watchCount } = await import('../src/lib/watch-count.js')
+  const { nightProgress } = await import('../src/lib/night-progress.js')
+  const { dueTonight } = await import('../src/lib/recurrence.js')
   const lamps = [
     { id: 'a', question: 'A?', cadence: 'daily', archived: false, createdOn: '2020-01-01' },
     { id: 'b', question: 'B?', cadence: 'daily', archived: false, createdOn: '2020-01-01' },
     { id: 'c', question: 'C?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' },
     { id: 'd', question: 'D?', cadence: 'daily', archived: false, createdOn: '2020-01-01', askAfter: '21:00' },
   ]
-  // What the watch draws: its cards plus the phone's done and later.
+  // What the watch draws, the way DidIWatchApp.swift / Cards.kt count it.
   const count = (answers, clock) => {
-    const shelf = writeShelf({ currentId: 'w1', boards: [{ id: 'w1', title: 'Home', dayFoldHour: 0, lamps, answers }] })
+    const book = { id: 'w1', title: 'Home', dayFoldHour: 0, lamps, answers }
+    const shelf = writeShelf({ currentId: 'w1', boards: [book] })
     const cards = buildTonightWidgetProps(shelf, clock)
       .items.filter((item) => !String(item.lampId).startsWith('we:'))
-      .map((item) => ({ id: item.lampId, night: item.periodKey, status: item.status === 'open' ? 'open' : 'answered' }))
-    const off = offCards(shelf, cards, clock)
-    return {
-      total: cards.length + off.done + off.later,
-      answered: cards.filter((card) => card.status !== 'open').length + off.done,
-    }
+      .map((item) => ({ id: item.lampId, night: item.periodKey, status: item.status === 'yes' ? 'did' : item.status === 'skip' ? 'nope' : 'open' }))
+    const { counted, done, later } = watchCount(shelf, cards, clock)
+    const mine = cards.filter((card) => counted.has(`${card.id}|${card.night}`))
+    const watch = { total: mine.length + done + later, answered: mine.filter((card) => card.status === 'did').length + done }
+    const today = nightProgress(dueTonight(book, clock))
+    assert.deepEqual(watch, { total: today.total, answered: today.answered }, `at ${clock.toISOString()}`)
+    return watch
   }
-  const did = (id) => ({ lampId: id, periodKey: '2026-09-23', status: 'yes', answeredAt: '2026-09-23T19:30:00' })
+  const on = (id, status, night = '2026-09-23') => ({ lampId: id, periodKey: night, status, answeredAt: `${night}T19:30:00` })
   assert.deepEqual(count([], new Date('2026-09-23T19:00:00')), { total: 4, answered: 0 })
-  assert.deepEqual(count([did('a')], new Date('2026-09-23T19:40:00')), { total: 4, answered: 1 })
-  assert.deepEqual(count([did('a'), did('b')], new Date('2026-09-23T20:00:00')), { total: 4, answered: 2 })
-  // The later two come due: still of 4.
-  assert.deepEqual(count([did('a'), did('b')], new Date('2026-09-23T21:05:00')), { total: 4, answered: 2 })
-  assert.deepEqual(count(['a', 'b', 'c', 'd'].map(did), new Date('2026-09-23T21:30:00')), { total: 4, answered: 4 })
-  assert.deepEqual(offCards(null, []), { done: 0, later: 0 })
+  assert.deepEqual(count([on('a', 'yes')], new Date('2026-09-23T19:40:00')), { total: 4, answered: 1 })
+  // A Not yet does not move the count, the same as Today's meter.
+  assert.deepEqual(count([on('a', 'yes'), on('b', 'skip')], new Date('2026-09-23T20:00:00')), { total: 4, answered: 1 })
+  assert.deepEqual(count([on('a', 'yes'), on('b', 'yes')], new Date('2026-09-23T21:05:00')), { total: 4, answered: 2 })
+  assert.deepEqual(count(['a', 'b', 'c', 'd'].map((id) => on(id, 'yes')), new Date('2026-09-23T21:30:00')), { total: 4, answered: 4 })
+  // After midnight, last night's open cards are on the watch but not in the count.
+  assert.deepEqual(count([], new Date('2026-09-24T01:00:00')), { total: 4, answered: 0 })
+  assert.equal(watchCount(null, []).done, 0)
 })
 
 await testAsync('one SQL file on its own never puts an older function back over a newer one', async () => {
@@ -8038,6 +8044,31 @@ await testAsync('flipping Did and Not yet on one question pays its coins once, a
   // The mark survives a save.
   assert.equal(normalizeAnswer({ lampId: 'a', periodKey: 'x', status: 'skip', paid: true }).paid, true)
   assert.equal('paid' in normalizeAnswer({ lampId: 'a', periodKey: 'x', status: 'skip' }), false)
+})
+
+test('every missed day is saved as Not yet, not just yesterday', () => {
+  const lamp = { id: 'm', question: 'M?', cadence: 'daily', archived: false, createdOn: '2026-10-01' }
+  const nopes = (book) => book.answers.filter((a) => a.lampId === 'm' && a.status === 'skip').map((a) => a.periodKey).sort()
+  const days = (from, to) => {
+    const out = []
+    for (let d = new Date(`${from}T12:00:00`); d <= new Date(`${to}T12:00:00`); d.setDate(d.getDate() + 1)) out.push(d.toISOString().slice(0, 10))
+    return out
+  }
+  // Opened at noon on the 18th after 17 days away: the 1st to the 17th close.
+  const away = closePastNights({ id: 'b', title: 'A', dayFoldHour: 0, lamps: [lamp], answers: [] }, new Date(2026, 9, 18, 12), [])
+  assert.deepEqual(nopes(away), days('2026-10-01', '2026-10-17'))
+  // An answered day stops the walk: what is older was closed back then.
+  const did = { id: 'x', lampId: 'm', periodKey: '2026-10-10', status: 'yes', answeredAt: '2026-10-10T21:00:00', note: '' }
+  const back = closePastNights({ id: 'b', title: 'A', dayFoldHour: 0, lamps: [lamp], answers: [did] }, new Date(2026, 9, 18, 12), [])
+  assert.deepEqual(nopes(back), days('2026-10-11', '2026-10-17'))
+  // Before 9am last night is still open (grace); the days before it close.
+  const early = closePastNights({ id: 'b', title: 'A', dayFoldHour: 0, lamps: [lamp], answers: [did] }, new Date(2026, 9, 18, 7), [])
+  assert.deepEqual(nopes(early), days('2026-10-11', '2026-10-16'))
+  // No createdOn and no answers: only last night, never hundreds of nopes.
+  const old = closePastNights({ id: 'b', title: 'A', dayFoldHour: 0, lamps: [{ ...lamp, createdOn: undefined }], answers: [] }, new Date(2026, 9, 18, 12), [])
+  assert.deepEqual(nopes(old), ['2026-10-17'])
+  // Running it again adds nothing.
+  assert.equal(closePastNights(away, new Date(2026, 9, 18, 12), []), away)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

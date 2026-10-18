@@ -23,6 +23,7 @@ anything that costs money or can't be undone (a store submit, deleting data).
 | shell-quote and source-map-js pinned (npm `overrides`) | `package.json`, `package-lock.json` |
 | Watch "1 of N" and ring count every question tonight, not just the cards left | `src/lib/watch-count.js`, `native/watch-sync.js`, `targets/watch/DidIWatchApp.swift`, `android/wear/src/main/java/com/aaronbryant/didi/wear/{Cards,MainActivity}.kt` |
 | Cleanup: 9 unused files, the unused Android DynamicColor module (Match wallpaper was already gone), 20 unused strings in all 9 locales | `git show` the cleanup commit; Android needs the 1.3.7 build for the module removal |
+| Bug pass: sign-out mid-sync, Did we refresh races, Did/Not yet coin flip, recorded gem buy at the cap, every missed day saved as Not yet (`src/lib/daily.js` missedRows) | `src/lib/{answer-log,cloud-sync,we-nights,did-we,board-ops,purse,board-json,daily}.js`, `supabase/refunds.sql` |
 | Version 1.3.7 (native deps added) | `app.json`, `android/app/build.gradle`, `android/wear/build.gradle`, `strings.xml`, `targets/*/Info.plist` |
 
 Checked in the cloud: `npm test` 343/343, lint, typecheck, `expo export`
@@ -116,7 +117,9 @@ Nothing has run on a phone or the live database.
    - Watch (Wear emulator, or Apple Watch via TestFlight with DIDI_WATCH=1):
      with 4 questions, 2 of them set to ask after a later time, the count
      reads "1 of 4" and stays "of 4" as you answer and when the later ones
-     come due; the ring fills a quarter per answer. Phone side:
+     come due; it matches Today's meter at every step: a Did moves it, a Not
+     yet does not, Did wes count, and after midnight last night's grace cards
+     show but are not in the count. Phone side:
      `src/lib/watch-count.js` (`done` and `later` in the cards); watch side:
      `targets/watch/DidIWatchApp.swift` and `android/wear/.../Cards.kt`.
 
