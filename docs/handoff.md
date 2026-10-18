@@ -1,7 +1,8 @@
 # Handoff: security pass and 1.3.7 (from the cloud session, 2026-10-17)
 
 For the agent on Aaron's computer. Everything below is on branch
-`claude/friendly-turing-1ryjpc` (one commit on top of master), not merged.
+`claude/friendly-turing-1ryjpc` (a few commits on top of master), not merged.
+Step 0 is a live bug: do it first.
 Work through it in order; each step says how to check it. Ask Aaron before
 anything that costs money or can't be undone (a store submit, deleting data).
 
@@ -30,13 +31,50 @@ Nothing has run on a phone or the live database.
 
 ## Steps
 
+0. **First: friends lost their pictures and equipped styles (live bug,
+   found 2026-10-17).** Aaron sees no profile pictures, looks or frames on
+   his friends. `known_people()` returns them, and only its last definition
+   (`supabase/readthrough-12.sql`, also `social-gentle.sql`) includes
+   `avatar_url`, `look_on` and `frame_on`; the copies in `hardening.sql` and
+   `blocks.sql` return none of them. Most likely one of those (or a
+   `db:apply:all` that stopped partway) re-ran on the live database without
+   the files after it. Nothing in the profile rows is lost.
+   - Before anything else, look at the local working tree: it has
+     uncommitted changes in `docs/posts.md` and `src/lib/people.js`, and
+     untracked `.github/workflows/ios-watch-check.yml` and `docs/watch.md`.
+     Do not stash, discard or overwrite them; ask Aaron what they are. If
+     `people.js` changed how friends load, that may be part of this bug.
+   - Confirm (read-only, SQL Editor):
+     `select pg_get_function_result('public.known_people'::regproc);`.
+     No `avatar_url` / `look_on` in it confirms the cause. Also check one
+     friend's row still has a picture:
+     `select handle, display_name, avatar_url, look_on, frame_on from public.profiles where handle ilike '%cobaltlily%' or display_name ilike '%cobaltlily%';`
+   - Fix: re-apply everything in order from this branch (master's
+     `wallet.sql` still has the balance backfill this branch removes), in a
+     second worktree so the local changes stay put:
+     `git worktree add ..\did-i-fix origin/claude/friendly-turing-1ryjpc`,
+     `Copy-Item .env.local ..\did-i-fix\`, `cd ..\did-i-fix`,
+     `node scripts/apply-all-sql.mjs`. Every file is safe to run again. If
+     it stops on an error, fix that file and run it again until it reaches
+     the end; a partial run is what causes this. It also applies
+     `refunds.sql` (step 2 is then done; its hourly cron gets a 404 until
+     `play-voided` is deployed, which is harmless).
+   - Check: the query above now lists `avatar_url`, `look_on`, `frame_on`;
+     on Aaron's phone the Friends list shows pictures again and a friend's
+     page shows their look and frame. Then `npm run db:audit` (no rows) and
+     `git worktree remove ..\did-i-fix --force`.
+   - Find out what re-ran the old file (shell history, Supabase SQL Editor
+     history) and add the lesson to docs/lessons.md, with a check that stops
+     it: for example a test in scripts/check.mjs that every function defined
+     in more than one SQL file has its last definition in apply order
+     carrying the same columns as the one the app reads.
+
 1. **Merge.** `git fetch origin`, open a PR from `claude/friendly-turing-1ryjpc`
    to master, wait for CI, merge. The ota-update workflow skips it (native
    files changed), so phones get nothing yet.
 
-2. **Refund SQL.** `npm run db:apply supabase/refunds.sql`, then
+2. **Refund SQL.** Applied by step 0's full run. Check it with
    `npm run db:test supabase/tests/refunds.test.sql` (ends "SQL TESTS PASSED").
-   Do not run `db:apply:all` just for this.
 
 3. **Refund functions.** `supabase functions deploy play-voided`, then
    `supabase functions deploy apple-notify --no-verify-jwt` (Apple sends no
