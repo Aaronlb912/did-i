@@ -10,7 +10,6 @@ import { sendAnswerLine } from '../../src/lib/send-answers.js'
 import { copyText, passAlong } from '../../src/lib/native.js'
 import {
   INVITE_CODE_LEN,
-  INVITE_GEMS_CAP,
   cleanInvite,
   formatInvite,
   invitePayoutNote,
