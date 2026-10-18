@@ -1148,6 +1148,8 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
                 onChangeText={setTitleDraft}
                 onSubmitEditing={saveName}
                 returnKeyType="done"
+                maxLength={60}
+                autoCapitalize="words"
               />
               <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={saveName} />
               </View>
@@ -1196,6 +1198,8 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
             }}
             onSubmitEditing={addFolder}
             returnKeyType="done"
+            maxLength={60}
+            autoCapitalize="words"
             autoFocus
           />
           {/* Side by side, so the keyboard does not cover them. */}
@@ -1401,11 +1405,11 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
       <SetCard colors={colors}>
         <View style={styles.enterFields}>
           {locked ? (
-            <Field colors={colors} label={t('enter.pin')} value={pin} onChangeText={setPinDraft} keyboardType="number-pad" secureTextEntry maxLength={8} autoFocus />
+            <Field colors={colors} label={t('enter.pin')} value={pin} onChangeText={setPinDraft} keyboardType="number-pad" secureTextEntry maxLength={8} autoFocus returnKeyType="go" onSubmitEditing={openNamed} />
           ) : (
             <>
-              <Field colors={colors} label={t('enter.name')} value={person} onChangeText={setPerson} />
-              <Field colors={colors} label={t('enter.board')} value={title} onChangeText={setTitle} />
+              <Field colors={colors} label={t('enter.name')} value={person} onChangeText={setPerson} autoCapitalize="words" maxLength={40} returnKeyType="next" />
+              <Field colors={colors} label={t('enter.board')} value={title} onChangeText={setTitle} maxLength={60} returnKeyType="go" onSubmitEditing={openNamed} />
             </>
           )}
         </View>
@@ -1972,6 +1976,8 @@ function PhoneLockSection({ colors }) {
         keyboardType="number-pad"
         secureTextEntry
         maxLength={8}
+        returnKeyType="done"
+        onSubmitEditing={saveLock}
       />
       <View style={{ gap: 8 }}>
       <KeyButton colors={colors} label={locked ? t('settings.changeNumber') : t('settings.lockPhone')} onPress={saveLock} />

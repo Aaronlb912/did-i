@@ -139,6 +139,7 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
         placeholder={t('note.ph')}
         maxLength={NOTE_MAX}
         autoFocus
+        returnKeyType="done"
         onSubmitEditing={save}
       />
       {amount ? (

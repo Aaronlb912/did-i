@@ -2764,6 +2764,7 @@ export function GiftScreen({ book, onChange, toId }) {
           accessibilityLabel={t('gift.noteLabel')}
           style={[giftStyles.input, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.panel2 }]}
           returnKeyType="done"
+          blurOnSubmit
         />
         <Text style={[giftStyles.count, { color: colors.inkDim }]}>{note.length}/60</Text>
       </View>

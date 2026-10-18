@@ -167,6 +167,9 @@ function FilingFolds({ folder, topics, onFolder, onTopics, open, fold, last, col
             placeholder={t('hang.tagPh')}
             maxLength={60}
             autoFocus
+            autoCapitalize="words"
+            returnKeyType="done"
+            blurOnSubmit
             accessibilityLabel={t('hang.tagNew')}
             style={[styles.lineInput, { color: colors.ink, borderColor: colors.line, backgroundColor: colors.bg }]}
           />
@@ -672,6 +675,9 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
                 onChangeText={setUnit}
                 placeholder={t('weAmount.unitPh')}
                 maxLength={24}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
               />
             ) : null}
           </Reveal>
