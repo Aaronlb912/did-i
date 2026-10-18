@@ -1416,7 +1416,7 @@ test('an achievement never takes the undo toast spot while an undo is up', () =>
 test('undo windows come from one place: answers 5 s, deletes 7 s', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const times = readFileSync(path.join(root, 'src/lib/undo-times.js'), 'utf8')
-  assert.ok(/ANSWER_UNDO_MS = 5000/.test(times) && /DELETE_UNDO_MS = 7000/.test(times))
+  assert.ok(/ANSWER_UNDO_MS = 8000/.test(times) && /DELETE_UNDO_MS = 7000/.test(times))
   for (const file of ['src/lib/useTonightStack.js', 'src/lib/AllLamps.jsx', 'native/screens/questions.jsx', 'native/components/LampManage.jsx', 'native/components/NightNotes.jsx', 'native/screens/more.jsx']) {
     const src = readFileSync(path.join(root, file), 'utf8')
     assert.ok(src.includes('undo-times.js'), `${file} reads undo-times.js`)
@@ -3453,6 +3453,8 @@ test('night one and the sign-in card show once', () => {
   assert.equal(showSignInNudge({ ...base, cloud: false }), false)
   markSignInNudgeSeen()
   assert.equal(showSignInNudge({ ...base, dismissed: signInNudgeSeen() }), false)
+  // Later is a week, not for good.
+  assert.equal(signInNudgeSeen(Date.now() + 8 * 24 * 60 * 60 * 1000), false)
   localStorage.removeItem('did-i-night-one')
   localStorage.removeItem('did-i-sign-in-nudge')
 })

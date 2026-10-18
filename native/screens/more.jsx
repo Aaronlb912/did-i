@@ -1875,6 +1875,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
   }
   const fires = [...rows.values()].sort((a, b) => a.at - b.at)
   const bookOf = (id) => books.find((one) => (one.lamps || []).some((lamp) => lamp.id === id))
+  const timed = books.flatMap((one) => (one.lamps || []).filter((lamp) => !lamp.archived))
 
   function flipOne(fire) {
     const home = bookOf(fire.id)
@@ -1936,6 +1937,26 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
           ))}
         </SetCard>
       )}
+      {/* Times live on each question; list them all here, so Settings leads to them. */}
+      {timed.length ? (
+        <>
+          <SetCap colors={colors}>{t('pings.timesCap')}</SetCap>
+          <SetCard colors={colors}>
+            {timed.map((lamp, at) => (
+              <SetRow
+                key={lamp.id}
+                colors={colors}
+                icon="clock"
+                label={shortFromQuestion(lamp.question) || t('lamp.unnamed')}
+                sub={lamp.askAfter ? clockWords(lamp.askAfter) : t('pings.noTime')}
+                chevron
+                last={at === timed.length - 1}
+                onPress={() => goHash('/hang', { id: lamp.id })}
+              />
+            ))}
+          </SetCard>
+        </>
+      ) : null}
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="clock" label={t('pings.comingUp')} sub={t('pings.comingUpSub')} chevron onPress={() => goHash('/later')} />
         <SetRow colors={colors} icon="help" label={t('pings.help')} sub={t('pings.helpSub')} chevron last onPress={() => goHash('/help')} />

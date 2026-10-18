@@ -623,7 +623,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
             ) : (
               <>
                 <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.noPeople')}</Text>
-                <Pill label={t('we.findPeople')} onPress={() => goHash('/people')} colors={colors} />
+                <Pill label={t('people.addOne')} onPress={() => goHash('/people/connect')} colors={colors} />
               </>
             )}
           </HangFold>

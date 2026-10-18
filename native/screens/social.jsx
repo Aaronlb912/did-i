@@ -128,7 +128,8 @@ import { useWeTonight, weAskCount, weQuestion } from '../../src/lib/did-we.js'
 import { didYouAsk } from '../../src/lib/link-preview.js'
 import { AuthEmailCard } from '../components/AuthEmailCard.jsx'
 import { QrCode } from '../components/QrCode.jsx'
-import { friendQrLink, savePendingScan } from '../../src/lib/qr-links.js'
+import { friendQrLink, savePendingScan, scanFromText } from '../../src/lib/qr-links.js'
+import * as Clipboard from 'expo-clipboard'
 import { canScan } from './ScanScreen.jsx'
 import { WeHomeList } from './we.jsx'
 import { Reveal, pressFx } from '../lib/motion.jsx'
@@ -141,6 +142,18 @@ function ScreenShell({ book, title, children, colors }) {
       {children}
     </BoardShell>
   )
+}
+
+// Paste: a friend ID or family code as copied, or the did-i.app link it came
+// in (did-i.app/f/ID, /j/CODE), so nobody retypes it.
+async function pastedCode(kind) {
+  const text = await Clipboard.getStringAsync().catch(() => '')
+  const found = scanFromText(text)
+  if (kind === 'friend') return /^friend:(\d{12})$/.exec(found)?.[1] || (cleanFriendId(text).length === 12 ? cleanFriendId(text) : '')
+  const family = /^family:([A-Z0-9]{6})$/.exec(found)?.[1]
+  if (family) return family
+  const bare = String(text || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+  return bare.length === FAMILY_CODE_LEN ? bare : ''
 }
 
 function Cap({ children, colors }) {
@@ -528,6 +541,16 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
         disabled={busy || code.length !== FAMILY_CODE_LEN}
         onPress={() => look()}
       />
+      {code.length === FAMILY_CODE_LEN ? null : (
+        <KeyButton
+          colors={colors}
+          label={t('invite.paste')}
+          onPress={async () => {
+            const pasted = await pastedCode('family')
+            if (pasted) setCode(pasted)
+          }}
+        />
+      )}
       {canScan() ? (
         <KeyButton
           colors={colors}
@@ -743,6 +766,18 @@ function AddFriendPop({ colors, onClose, onAsked }) {
         disabled={ask.busy || draft.length !== 12}
         onPress={() => ask.look(draft)}
       />
+      {draft.length === 12 ? null : (
+        <KeyButton
+          colors={colors}
+          label={t('invite.paste')}
+          onPress={async () => {
+            const id = await pastedCode('friend')
+            if (!id) return
+            setDraft(id)
+            ask.look(id)
+          }}
+        />
+      )}
       {canScan() ? (
         <KeyButton
           colors={colors}
@@ -924,7 +959,7 @@ export function PeopleScreen({ book, onChange }) {
         count={links.friends.length || null}
         link={t('people.seeAll')}
         onLink={() => goHash('/friends')}
-        onAdd={links.friends.length ? () => setSheet({ kind: 'friend' }) : undefined}
+        onAdd={() => setSheet({ kind: 'friend' })}
         addLabel={t('people.addOne')}
       />
       {links.friends.length ? (
@@ -958,7 +993,7 @@ export function PeopleScreen({ book, onChange }) {
         </>
       ) : (
         <EmptyCard colors={colors} title={t('people.noFriendsTitle')} body={t('people.noFriendsBody')}>
-          <DidButton colors={colors} small label={t('people.connect')} onPress={() => goHash('/people/connect')} />
+          <DidButton colors={colors} small label={t('people.addOne')} onPress={() => setSheet({ kind: 'friend' })} />
         </EmptyCard>
       )}
         </Reveal>
@@ -1323,6 +1358,18 @@ export function PeopleConnectScreen({ book, onChange, route }) {
           disabled={idAsk.busy || idDraft.length !== 12}
           onPress={() => idAsk.look(idDraft)}
         />
+        {idDraft.length === 12 ? null : (
+          <KeyButton
+            colors={colors}
+            label={t('invite.paste')}
+            onPress={async () => {
+              const id = await pastedCode('friend')
+              if (!id) return
+              setIdDraft(id)
+              idAsk.look(id)
+            }}
+          />
+        )}
         {canScan() ? (
           <KeyButton colors={colors} label={t('qr.scan')} onPress={() => goHash('/scan')} />
         ) : null}
@@ -1511,7 +1558,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     setStock(normalizePurse(sent.book).friendCheers)
     if (onChange) onChange(sent.book)
     fireCheer(purse.cheerOn, 1)
-    return say(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
+    return confirmDone(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
   }
 
   function gift(person) {
@@ -1541,7 +1588,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     if (bought.miss) return setMiss(tMiss(bought.miss))
     setStock(normalizePurse(bought.book).friendCheers)
     if (onChange) onChange(bought.book)
-    say(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
+    confirmDone(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
   }
 
   if (!cloudSetUp()) return <CloudOff colors={colors} />
@@ -2098,9 +2145,12 @@ export function FriendScreen({ book, onChange, route }) {
   // `about` is a shared note's question when the cheer is for that note.
   function cheer(about) {
     if (cheersLeft < 1) {
-      if (cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return
+      if (cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return confirmMiss(t('friends.cheerCap', { n: FRIEND_CHEER_CAP }))
       if (purse.gems < FRIEND_CHEER_GEMS) return offerMoreGems(colors)
-      return confirmFriendCheers(colors, () => once('buy-cheers', buyCheersNow))
+      // Buying is for this cheer: once the five land, this one goes.
+      return confirmFriendCheers(colors, () => once('buy-cheers', async () => {
+        if (await buyCheersNow()) await cheerNow(typeof about === 'string' ? about : '')
+      }))
     }
     return once(`cheer:${otherId}`, () => cheerNow(typeof about === 'string' ? about : ''))
   }
@@ -2114,18 +2164,25 @@ export function FriendScreen({ book, onChange, route }) {
     setStock(normalizePurse(sent.book).friendCheers)
     if (onChange) onChange(sent.book)
     fireCheer(purse.cheerOn, 1)
-    return setSaid(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
+    setSaid('')
+    return confirmDone(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
   }
 
+  // True once the five cheers are bought.
   async function buyCheersNow() {
     const bought = await buyCheers(book)
-    if (bought.miss === 'gems') return offerMoreGems(colors)
+    if (bought.miss === 'gems') {
+      offerMoreGems(colors)
+      return false
+    }
     const known = friendCheerMissKey(bought.miss)
-    if (known) return setSaid(t(known.key, known.vars))
-    if (bought.miss) return setSaid(tMiss(bought.miss))
+    if (known || bought.miss) {
+      setSaid(known ? t(known.key, known.vars) : tMiss(bought.miss))
+      return false
+    }
     setStock(normalizePurse(bought.book).friendCheers)
     if (onChange) onChange(bought.book)
-    return setSaid(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
+    return true
   }
 
   if (!account.user) return <NeedAccount kicker={t('people.friends')} title={t('people.outTitle')} colors={colors} />

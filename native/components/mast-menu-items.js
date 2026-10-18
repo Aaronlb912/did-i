@@ -30,9 +30,11 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
   const waiting = signedIn ? inbox + asks + we : asks
   // Home always leads, so every row stays in the same place on every screen.
   const home = [{ key: 'home', path: '/tonight', label: t('nav.home'), on: path === '/tonight' || path === '/', icon: 'home', stroke: true }]
-  // Top: Shop, Friends and family, Settings. Rarer rows sit under "More".
+  // Top: Add (the thing people come to do), Shop, Friends and family,
+  // Settings. Rarer rows sit under "More".
   return [
     ...home,
+    { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
     { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
     {
       key: 'people',
@@ -53,7 +55,6 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
       icon: 'settings',
     },
     { key: 'more', section: true, label: t('mast.menu') },
-    { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
     // Recent: achievements and Did we moments, in full. Its count is the unseen ones,
     // plus Did you asks still in the inbox so the row is not blank while they wait.
     { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent + (signedIn ? inbox : 0), icon: 'bell' },
