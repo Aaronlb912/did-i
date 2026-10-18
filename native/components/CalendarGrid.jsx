@@ -18,8 +18,9 @@ function dateLocale(code) {
   return code || 'en'
 }
 
-// What a screen reader hears for one day: "October 1, Cleared".
-function dayLabel(night, locale, gentle = false) {
+// What a screen reader hears for one day: "October 1, Cleared". The week
+// strip on Home reads its days the same way.
+export function dayLabel(night, locale, gentle = false) {
   const date = new Date(`${night.iso}T12:00:00`).toLocaleDateString(locale, { month: 'long', day: 'numeric' })
   const state = night.empty
     ? ''

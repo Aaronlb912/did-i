@@ -229,7 +229,8 @@ export function SwipeCard({
           blockNope={blockNope}
           onAnswer={answer}
           accessible={!demo}
-          accessibilityLabel={title}
+          // The folder above the question is read too, as it is shown.
+          accessibilityLabel={[kicker, title].filter(Boolean).join(', ')}
           accessibilityActions={demo ? undefined : actions}
           onAccessibilityAction={demo ? undefined : onAction}
           {...cardProps}
@@ -247,7 +248,7 @@ export function SwipeCard({
               { borderColor: colors.line, backgroundColor: colors.panel2, opacity: blockNope ? 0.4 : pressed ? 0.8 : 1 },
             ]}
           >
-            <Text style={[styles.answerText, { color: colors.ink }]} numberOfLines={1}>
+            <Text style={[styles.answerText, { color: colors.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {nopeLabel || stampNope}
             </Text>
           </Pressable>
@@ -261,7 +262,7 @@ export function SwipeCard({
               { borderColor: colors.on, backgroundColor: colors.on, opacity: blockDid ? 0.4 : pressed ? 0.85 : 1 },
             ]}
           >
-            <Text style={[styles.answerText, { color: colors.bg }]} numberOfLines={1}>
+            <Text style={[styles.answerText, { color: colors.bg }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {didLabel || stampDid}
             </Text>
           </Pressable>

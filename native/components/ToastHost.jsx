@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
@@ -278,6 +278,13 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
   else if (item.kind === 'mark') label = markA11y(item.mark)
   else if (item.kind === 'frame') label = `${t('frames.unlocked')}. ${t(frameText(item.frameId, 'name'))}`
   else if (item.kind === 'we' || item.kind === 'done' || !item.kind) label = item.text || t('confirm.done')
+  const spoken = label || item.text || ''
+  // accessibilityLiveRegion below is Android only. VoiceOver hears a toast,
+  // the undo after an answer included, only when it is announced.
+  useEffect(() => {
+    if (Platform.OS === 'ios' && spoken) AccessibilityInfo.announceForAccessibility(spoken)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id])
 
   return (
     <GestureDetector gesture={pan}>
