@@ -2626,7 +2626,8 @@ export function GiftScreen({ book, onChange, toId }) {
   const purse = normalizePurse(book)
   const [tab, setTab] = useState('looks')
   const [note, setNote] = useState('')
-  const [person, setPerson] = useState(undefined)
+  // Kept: the person shows at once on a second gift, and refreshes quietly.
+  const [person, setPerson] = useKept(`gift.person:${account.user?.id}:${toId}`, undefined, KEEP)
   const [lost, setLost] = useState(false)
   const [tries, setTries] = useState(0)
   const [sent, setSent] = useState('')

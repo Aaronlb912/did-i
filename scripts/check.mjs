@@ -8188,6 +8188,33 @@ test('a friend request and its yes reach the other phone live, not on the 5 minu
   assert.ok(order.indexOf('social-live.sql') < order.indexOf('live-more.sql') && order.indexOf('live-more.sql') < order.indexOf('drop-tonight.sql'))
 })
 
+test('smooth screens: screen files warm after launch, the shelf is read once per change, lists do not redraw on every tap', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  assert.match(read('native/AppShell.jsx'), /setBooted\(true\)\s*\n\s*warmScreens\(\)/)
+  assert.match(read('native/screens/ScreenRouter.jsx'), /export function warmScreens\(\)/)
+  const cosmetic = read('native/components/Cosmetic.jsx')
+  assert.match(cosmetic, /export const LookChip = memo\(LookChipArt\)/)
+  assert.match(cosmetic, /export const CheerChip = memo\(CheerChipArt\)/)
+  assert.match(read('native/screens/frames.jsx'), /const FrameTile = memo\(/)
+  assert.match(read('native/components/SetBits.jsx'), /useNativeDriver: true/)
+  assert.match(read('src/lib/board-shelf.js'), /if \(raw && raw === lastRaw && lastShelf\) return lastShelf/)
+})
+
+await testAsync('readShelf hands back the same shelf until storage changes, and sees a write from anywhere', async () => {
+  const { readShelf, writeShelf } = await import('../src/lib/board-shelf.js')
+  const first = readShelf()
+  assert.equal(readShelf(), first, 'unchanged storage: the same object, no reparse')
+  const next = writeShelf({ ...first, boards: first.boards.map((b, i) => (i ? b : { ...b, title: 'Changed here' })) })
+  assert.equal(readShelf(), next)
+  assert.equal(readShelf().boards[0].title, 'Changed here')
+  // Something else writes the key directly (a widget task, another sync path).
+  const raw = JSON.parse(localStorage.getItem('did-i-shelf'))
+  raw.boards[0].title = 'Changed elsewhere'
+  localStorage.setItem('did-i-shelf', JSON.stringify(raw))
+  assert.equal(readShelf().boards[0].title, 'Changed elsewhere')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

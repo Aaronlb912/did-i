@@ -824,7 +824,9 @@ export function PeopleScreen({ book, onChange }) {
         weAskCount().catch(() => 0),
       ])
       setMine(who)
-      await syncDisplayName(book.keeperName)
+      // Not awaited: it only fills a missing name, and waiting on it held the
+      // lists back by a whole round trip.
+      syncDisplayName(book.keeperName).catch(() => {})
       // A failed list keeps the rows we had and says so.
       if (!friendRows.miss) setLinks(friendRows)
       if (!famRows.miss) setFamilies(famRows)

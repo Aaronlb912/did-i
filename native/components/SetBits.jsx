@@ -126,11 +126,13 @@ function M3Switch({ on, onPress, label, colors }) {
       move.setValue(on ? 1 : 0)
       return
     }
-    Animated.timing(move, { toValue: on ? 1 : 0, duration: 150, useNativeDriver: false }).start()
+    // Transform only, so it runs on the UI thread and never waits on a render.
+    Animated.timing(move, { toValue: on ? 1 : 0, duration: 150, useNativeDriver: true }).start()
   }, [on, reduce, move])
-  const size = move.interpolate({ inputRange: [0, 1], outputRange: [16, 24] })
-  const left = move.interpolate({ inputRange: [0, 1], outputRange: [6, 22] })
-  const top = move.interpolate({ inputRange: [0, 1], outputRange: [6, 2] })
+  // The same path as before (a 16 thumb at 6,6 grows to 24 at 22,2): a 24
+  // thumb whose centre slides 20 and scales from 16/24.
+  const shift = move.interpolate({ inputRange: [0, 1], outputRange: [0, 20] })
+  const scale = move.interpolate({ inputRange: [0, 1], outputRange: [16 / 24, 1] })
   return (
     <Pressable
       accessibilityRole="switch"
@@ -149,7 +151,7 @@ function M3Switch({ on, onPress, label, colors }) {
       <Animated.View
         style={[
           styles.m3Thumb,
-          { width: size, height: size, left, top, backgroundColor: on ? colors.bg : colors.openRing || colors.inkDim },
+          { width: 24, height: 24, left: 2, top: 2, transform: [{ translateX: shift }, { scale }], backgroundColor: on ? colors.bg : colors.openRing || colors.inkDim },
         ]}
       />
     </Pressable>

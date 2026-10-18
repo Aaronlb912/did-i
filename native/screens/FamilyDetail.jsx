@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLiveReload } from '../hooks/useLiveReload.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { useNoted } from '../hooks/useNoted.js'
@@ -71,6 +71,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const purse = normalizePurse(book)
   const clock = new Date()
   const [fam, setFam] = useKept(`fam:${account.user?.id}:${familyId}`, null, KEEP)
+  // The kept family, for load() without making it rerun whenever fam changes.
+  const famRef = useRef(fam)
+  famRef.current = fam
   const [lamps, setLamps] = useKept(`fam.lamps:${account.user?.id}:${familyId}`, [], KEEP)
   const noted = useNoted(account.user?.id)
   const [answers, setAnswers] = useKept(`fam.answers:${account.user?.id}:${familyId}`, [], KEEP)
@@ -104,6 +107,19 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       setReady(true)
       return
     }
+    // One round trip, not two: the family's day comes from the kept copy
+    // when there is one, so its questions and week load alongside it. A
+    // different day once the family arrives (its fold hour moved) reads again.
+    const weekOf = (key) => {
+      const back = []
+      for (let step = 6; step >= 0; step -= 1) back.push(addDaysIso(key, -step))
+      return back
+    }
+    const readDay = (key) => Promise.all([listFamilyLamps(familyId, key), familyHistory(familyId, weekOf(key))])
+    const keptFold = famRef.current?.id === familyId ? famRef.current.fold_hour : null
+    const guessKey = keptFold == null ? '' : boardDate(new Date(), keptFold)
+    const cheersAsk = readFriendCheers().catch(() => null)
+    const guessAsk = guessKey ? readDay(guessKey).catch(() => null) : null
     const row = await readFamily(familyId)
     if (row?.miss) {
       setMiss(row.miss)
@@ -114,14 +130,11 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     if (row) {
       const key = boardDate(new Date(), row.fold_hour)
       setNight(key)
-      const back = []
-      for (let step = 6; step >= 0; step -= 1) back.push(addDaysIso(key, -step))
+      const back = weekOf(key)
       setNights(back)
-      const [tonightRows, pastRows, serverCheers] = await Promise.all([
-        listFamilyLamps(familyId, key),
-        familyHistory(familyId, back),
-        readFriendCheers(),
-      ])
+      const day = (key === guessKey && (await guessAsk)) || (await readDay(key))
+      const [tonightRows, pastRows] = day
+      const serverCheers = await cheersAsk
       if (typeof serverCheers === 'number') setStock(serverCheers)
       if (tonightRows.miss) {
         setMiss(tonightRows.miss)

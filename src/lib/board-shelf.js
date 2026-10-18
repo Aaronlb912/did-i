@@ -113,6 +113,8 @@ export function writeShelf(shelf, savedAt) {
   } catch {
     // Board still runs if storage is blocked.
   }
+  lastRaw = text
+  lastShelf = next
   if (savedAt) stampSavedAt(savedAt)
   else if (changed || !readSavedAt()) stampSavedAt()
   saveBoardForSw(currentBook(next))
@@ -133,10 +135,26 @@ export function downloadShelf(shelf) {
   window.setTimeout(() => URL.revokeObjectURL(url), 500)
 }
 
+// The last shelf read, by the exact text it came from. readShelf runs on
+// most screens and renders; parsing, normalizing and writing the whole shelf
+// back each time held up screen opens. Same text in storage: same shelf
+// (nothing changes a shelf in place; every edit makes a new one). Anything
+// that writes storage, here or not, changes the text and so the answer.
+let lastRaw = null
+let lastShelf = null
+
 export function readShelf() {
   try {
     const raw = localStorage.getItem(SHELF_KEY)
-    if (raw) return writeShelf(normalizeShelf(JSON.parse(raw)))
+    if (raw && raw === lastRaw && lastShelf) return lastShelf
+    if (raw) {
+      const next = normalizeShelf(JSON.parse(raw))
+      // Already in its saved shape: nothing to write back.
+      const shelf = JSON.stringify(next) === raw ? next : writeShelf(next)
+      lastRaw = localStorage.getItem(SHELF_KEY)
+      lastShelf = shelf
+      return shelf
+    }
   } catch {
     // fall through
   }

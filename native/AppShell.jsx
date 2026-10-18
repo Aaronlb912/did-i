@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { AppState, Linking, Platform, StyleSheet, View } from 'react-native'
 import { LayoutAnimationConfig } from 'react-native-reanimated'
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable'
@@ -39,7 +39,7 @@ import { resumeCheckOnStops } from './components/LampManage.jsx'
 import { FlyHost } from './components/FlyHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
 import { showToast, undoUp, useToastQueue } from './lib/toast-queue.js'
-import { ScreenRouter } from './screens/ScreenRouter.jsx'
+import { ScreenRouter, warmScreens } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
 import { FirstSwipe } from './components/FirstSwipe.jsx'
 import { LegalPlain } from './screens/LegalScreen.jsx'
@@ -116,8 +116,19 @@ function RouteBody({ route }) {
 }
 
 /** A tab or a pushed screen: the route its navigator gave it. */
+// The same route object while nothing in it changed (the folder filter too,
+// which is not a navigator param), so context readers and memoized screens
+// do not redraw on every shell render.
+function useScreenRoute(route) {
+  const next = routeFromScreen(route)
+  const kept = useRef(next)
+  const was = kept.current
+  if (Object.keys(next).some((key) => next[key] !== was[key])) kept.current = next
+  return kept.current
+}
+
 function RouteScreen({ route }) {
-  return <RouteBody route={routeFromScreen(route)} />
+  return <RouteBody route={useScreenRoute(route)} />
 }
 
 // The two tabs, in bar order, so a switch slides in from the side you moved to.
@@ -125,7 +136,7 @@ const TAB_ORDER = ['/tonight', '/lamps']
 function TabRouteScreen({ route }) {
   return (
     <TabSlide index={TAB_ORDER.indexOf(route.name)}>
-      <RouteBody route={routeFromScreen(route)} />
+      <RouteBody route={useScreenRoute(route)} />
     </TabSlide>
   )
 }
@@ -262,7 +273,10 @@ export function AppShell() {
     let warm = null
     afterNativeBridgeReady(() => {
       // Connect the gem store in the background so the gem page has prices ready.
-      if (alive) setBooted(true)
+      if (alive) {
+        setBooted(true)
+        warmScreens()
+      }
       warm = setTimeout(() => initGemIap().catch(() => {}), 3000)
       captureInviteOnFirstLaunch()
       checkPings()

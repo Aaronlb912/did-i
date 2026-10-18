@@ -4,6 +4,7 @@ import { welcomeSeen } from '../../src/lib/hall-pages.js'
 import { needsEnter } from '../../src/lib/session.js'
 import { goHash, redirectFrom } from '../navigation/hash.js'
 import { lazyScreen } from '../lib/lazy-screen.jsx'
+import { afterIdle } from '../lib/launch-ready.js'
 import { LegalScreen } from './LegalScreen.jsx'
 import { LampScreen, QuestionsScreen, SearchScreen } from './questions.jsx'
 import { TonightScreen } from './TonightScreen.jsx'
@@ -57,6 +58,29 @@ const PeopleReferScreen = lazyScreen(social, 'PeopleReferScreen')
 const PeopleScreen = lazyScreen(social, 'PeopleScreen')
 const SentScreen = lazyScreen(social, 'SentScreen')
 const ScanScreen = lazyScreen(() => require('./ScanScreen.jsx'), 'ScanScreen')
+
+// Each screen file runs the first time it is required, and a big one (more,
+// shop, social are ~3000 lines with their imports) held up the first open of
+// any screen in it, so the push started late. After launch, require them one
+// per idle slot, most used first, so every first open is already warm.
+const WARM = [social, more, shop, profile, we, () => require('./AddScreen.jsx'), () => require('./frames.jsx'), () => require('./ScanScreen.jsx')]
+let warmed = false
+export function warmScreens() {
+  if (warmed) return
+  warmed = true
+  const next = (at) => {
+    if (at >= WARM.length) return
+    afterIdle(() => {
+      try {
+        WARM[at]()
+      } catch {
+        // Opening the screen will show the same error, where it can be handled.
+      }
+      setTimeout(() => next(at + 1), 120)
+    })
+  }
+  setTimeout(() => next(0), 1500)
+}
 
 const HALL = new Set(['/', '/home', '/tonight'])
 

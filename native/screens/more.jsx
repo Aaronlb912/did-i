@@ -642,7 +642,7 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
   const clock = now || new Date()
   const allRows = shelfFeedRows(inView(book, boards), tagId)
   const [query, setQuery] = useState('')
-  const rows = feedSearch(allRows, query)
+  const rows = useMemo(() => feedSearch(allRows, query), [allRows, query])
 
   return (
     <ScreenShell title={t('feed.title')} colors={colors}>
@@ -679,7 +679,7 @@ export function NotesScreen({ book, boards }) {
   const colors = useHallColors()
   const allRows = useMemo(() => shelfNoteRows(inView(book, boards)), [book, boards])
   const [query, setQuery] = useState('')
-  const rows = feedSearch(allRows, query)
+  const rows = useMemo(() => feedSearch(allRows, query), [allRows, query])
 
   return (
     <ScreenShell title={t('notes.title')} colors={colors}>
@@ -778,12 +778,16 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors(book)
   const clock = now || new Date()
   const gentle = usePrefs().gentle === true
-  const shelf = inView(book, boards)
-  const nights = shelfWeekNights(shelf, clock, tagId, 7)
-  const lamps = weekLamps(nights)
-  // Same night rule as the Home dots and So far: every question and every Did
-  // we due that night answered Did (or late).
-  const strip = weekStripNights(shelf, clock, tagId)
+  // The week's walks once per shelf, folder and minute, not every render.
+  const minute = Math.floor(clock.getTime() / 60000)
+  const { nights, lamps, strip } = useMemo(() => {
+    const at = new Date(minute * 60000)
+    const shelf = inView(book, boards)
+    const nights = shelfWeekNights(shelf, at, tagId, 7)
+    // Same night rule as the Home dots and So far: every question and every Did
+    // we due that night answered Did (or late).
+    return { nights, lamps: weekLamps(nights), strip: weekStripNights(shelf, at, tagId) }
+  }, [book, boards, tagId, minute])
   const cleared = new Set(strip.filter((night) => night.on).map((night) => night.iso))
   const doneNights = cleared.size
   const frozen = new Set(strip.filter((night) => night.freeze).map((night) => night.iso))
@@ -823,7 +827,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   }
 
   function openNight(night) {
-    openNightWhy({ colors, boards: shelf, iso: night.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })
+    openNightWhy({ colors, boards: inView(book, boards), iso: night.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })
   }
 
   function cell(night, nightState) {
@@ -944,16 +948,24 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const gentle = usePrefs().gentle === true
   const clock = now || new Date()
-  const books = scopedBooks(inView(book, boards), tagId)
-  const heat = books.length ? shelfStreak(books, clock) : 0
-  // Freezes belong to the overall streak, whatever tag is picked.
-  const freezes = freezeState(inView(book, boards), clock)
+  // Multi-night walks: once per shelf, folder and minute, not every render.
+  const minute = Math.floor(clock.getTime() / 60000)
+  const { books, heat, freezes, rows } = useMemo(() => {
+    const at = new Date(minute * 60000)
+    const books = scopedBooks(inView(book, boards), tagId)
+    return {
+      books,
+      heat: books.length ? shelfStreak(books, at) : 0,
+      // Freezes belong to the overall streak, whatever tag is picked.
+      freezes: freezeState(inView(book, boards), at),
+      rows: books
+        .flatMap((one) =>
+          (one.lamps || []).filter((lamp) => !lamp.archived && !isEvery(lamp)).map((lamp) => ({ lamp, n: streakLength(one, lamp, at) })),
+        )
+        .sort((a, b) => b.n - a.n),
+    }
+  }, [book, boards, tagId, minute])
   const goal = nextStreakGoal(heat)
-  const rows = books
-    .flatMap((one) =>
-      (one.lamps || []).filter((lamp) => !lamp.archived && !isEvery(lamp)).map((lamp) => ({ lamp, n: streakLength(one, lamp, clock) })),
-    )
-    .sort((a, b) => b.n - a.n)
   // A question's run can be longer than the overall one: say which night broke it.
   const longest = rows.length ? rows[0].n : 0
   const breakNight = useMemo(
