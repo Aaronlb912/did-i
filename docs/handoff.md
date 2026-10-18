@@ -1,7 +1,7 @@
-# Handoff: security pass and 1.3.7 (from the cloud session, 2026-10-17)
+# Handoff: security pass, UX passes and 1.3.7 (from the cloud session, 2026-10-17 to 10-18)
 
 For the agent on Aaron's computer. Everything below is on branch
-`claude/friendly-turing-1ryjpc` (a few commits on top of master), not merged.
+`claude/friendly-turing-1ryjpc` (26 commits on top of master), not merged.
 Step 0 is a live bug: do it first.
 Work through it in order; each step says how to check it. Ask Aaron before
 anything that costs money or can't be undone (a store submit, deleting data).
@@ -33,7 +33,7 @@ anything that costs money or can't be undone (a store submit, deleting data).
 | Referrals made easy: Send invite on People and Connect (one tap, link-first message), grouped code with Paste and "Aaron's code ✓", invite QR on Refer (the in-app scanner reads it), code box on Connect, a new account asked once on Today, "You joined with Aaron's invite" after a link | `native/components/{InviteCard,InviteCodeSection,InviteAskHost}.jsx`, `native/lib/share-invite.js`, `native/screens/{social,ScanScreen}.jsx`, `src/lib/{invite-link,people,useReferralCode}.js`, `supabase/invite-owner.sql` (new, in the apply-all order before drop-tonight; until it is live the name check just stays quiet) |
 | Open screens update live: friend requests (new, yes, removed), cheer gifts, Did we invites/joins/leaves, family joins/leaves/renames/questions, a Did you edited/taken back/answered. Inbox, Sent, Friend, Families and Family detail read again on the ping. New kinds (weMembers, familyInfo, sendMoved) so no extra silent pushes | `supabase/live-more.sql` (new, in the apply-all order), `native/hooks/useLiveReload.js`, `native/screens/{social,FamilyDetail}.jsx`, `src/lib/{people,did-we,Inbox}.js*` |
 | Matches: the watch-face complication counts like the watch app and Today (Did only); the Wear tile says "1 not yet" instead of "All done" and its ring uses Today's count; a friend's card shows their buddy; web calendar says "Did"/"Not yet" | `targets/watch-widget/DidIWatchWidget.swift`, `android/wear/.../DidITileService.kt` (both need the 1.3.7 build), `native/components/frames/FramePreview.jsx`, `src/lib/Calendar.jsx` |
-| Fewer steps: Add a friend from zero friends (People), Paste on friend ID and family code, one tap buys cheers and sends the cheer, cheer/gift/Use show a toast, Did we with no friends goes to Add a friend, Notifications lists each question's time (tap to change), sign-in card's Later snoozes a week, answer undo 8s, Add moved to the top of the menu, Settings "Look" is "Appearance" | `native/screens/{social,shop,we,more}.jsx`, `native/components/mast-menu-items.js`, `src/lib/{first-run,undo-times}.js`, `src/locales/*.js` |
+| Fewer steps: Add a friend from zero friends (People), Paste on friend ID and family code, one tap buys cheers and sends the cheer, cheer/gift/Use show a toast, Did we with no friends goes to Add a friend, Notifications lists each question's time (tap to change), sign-in card's Later snoozes a week, answer undo 8s, Add moved to the top of the menu, Settings "Look" is "Appearance", the Did we offer after adding a friend says "Not now" and "you're friends either way" | `native/screens/{social,shop,we,more}.jsx`, `native/components/mast-menu-items.js`, `src/lib/{first-run,undo-times}.js`, `src/locales/*.js` |
 | Every screen wears the look: a glow of the look's colour behind the top of the page and a short bar of it above the first card | `native/components/{LookGlow,BoardShell}.jsx` |
 | Version 1.3.7 (native deps added) | `app.json`, `android/app/build.gradle`, `android/wear/build.gradle`, `strings.xml`, `targets/*/Info.plist` |
 
@@ -72,11 +72,19 @@ Nothing has run on a phone or the live database.
      the end; a partial run is what causes this. It also applies
      `refunds.sql` (step 2 is then done; its hourly cron gets a 404 until
      `play-voided` is deployed, which is harmless) and the day wording in
-     `push.sql` (family summary "3 of 4 done today", "cheered you on today").
+     `push.sql` (family summary "3 of 4 done today", "cheered you on today"),
+     plus two new files: `invite-owner.sql` ("Aaron's code ✓" on the invite
+     code box) and `live-more.sql` (live updates for friend requests, gifts,
+     Did we members, family changes, Did yous edited/taken back/answered).
    - Check: the query above now lists `avatar_url`, `look_on`, `frame_on`;
      on Aaron's phone the Friends list shows pictures again and a friend's
      page shows their look and frame. Then `npm run db:audit` (no rows) and
      `git worktree remove ..\did-i-fix --force`.
+   - Also check the two new files (from the worktree, before removing it):
+     `npm run db:test supabase/tests/invite-owner.test.sql` and
+     `npm run db:test supabase/tests/live-more.test.sql`, each ending
+     "SQL TESTS PASSED". Without them the app still works: no owner name
+     on a code, and screens update on the 5 minute check instead of live.
    - Find out what re-ran the old file (shell history, Supabase SQL Editor
      history) and add the lesson to docs/lessons.md. The check is already
      on the branch: `npm run db:apply <file>` now refuses a file whose
@@ -149,6 +157,7 @@ Nothing has run on a phone or the live database.
      copy a friend ID or did-i.app/f link, Paste finds them. Cheer with 0
      cheers left: one confirm buys and cheers. Shop → Use a look: "Wearing …".
      Settings → Notifications lists each question's time; a tap edits it.
+     Accept a friend: the Did we offer's way out reads "Not now".
    - Looks: switch between three looks (one gem look) and open Settings,
      People, Shop and a question: each shows the look's glow and bar, in
      dark and light. Nothing covers the iOS large title.
@@ -176,8 +185,23 @@ Nothing has run on a phone or the live database.
 
 7. **Build 1.3.7.** Android: Actions > android-apk. iOS: Actions > ios-ipa
    (bumps the build number itself). Then TestFlight and Play internal.
+   - These builds are the first compile of the watch changes: the cloud
+     session could not build Swift or Kotlin. Watch them go green; a failure
+     in `targets/watch-widget/DidIWatchWidget.swift` (complication count) or
+     `android/wear/.../DidITileService.kt` (tile count, "1 not yet") is a
+     small fix there, not a reason to back the rest out.
+   - On the watch: Not yet on one of three questions; the complication, the
+     watch app and Today all say 0 of 3, and the Wear tile says "1 not yet".
+   - After the build, the JS changes reach older installs by OTA only once
+     1.3.7 is what they run (runtimeVersion is the app version).
 
-8. **Tidy up.** Move what landed out of docs/not-yet.md ("Security read
+8. **Watch for a week after it ships:** the look glow on pale looks in
+   light mode (Chalk, Lemon), set by reasoning, never seen on a screen;
+   push counts (the new live pings use their own kinds so they send no
+   silent wakes, so a jump means something is off); the new-account invite
+   prompt on Today should not land on top of the first-day intro.
+
+9. **Tidy up.** Move what landed out of docs/not-yet.md ("Security read
    2026-10-17" section), add anything Aaron finds to docs/lessons.md, and
    delete this file.
 
