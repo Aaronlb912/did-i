@@ -65,10 +65,10 @@ Nothing has run on a phone or the live database.
      page shows their look and frame. Then `npm run db:audit` (no rows) and
      `git worktree remove ..\did-i-fix --force`.
    - Find out what re-ran the old file (shell history, Supabase SQL Editor
-     history) and add the lesson to docs/lessons.md, with a check that stops
-     it: for example a test in scripts/check.mjs that every function defined
-     in more than one SQL file has its last definition in apply order
-     carrying the same columns as the one the app reads.
+     history) and add the lesson to docs/lessons.md. The check is already
+     on the branch: `npm run db:apply <file>` now refuses a file whose
+     functions a later file redefines (`scripts/sql-order.mjs`, test in
+     scripts/check.mjs), and AGENTS.md says the same for the SQL Editor.
 
 1. **Merge.** `git fetch origin`, open a PR from `claude/friendly-turing-1ryjpc`
    to master, wait for CI, merge. The ota-update workflow skips it (native

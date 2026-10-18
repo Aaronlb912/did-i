@@ -62,7 +62,12 @@ Supabase:
 npm run db:apply:all         # apply schema from supabase/*.sql
 npm run db:audit             # scripts/audit-sql.mjs — must return no rows before calling backend work done
 npm run db:test <file>       # scripts/test-sql.mjs — rolled-back SQL checks, e.g. supabase/tests/auto-add.test.sql
+npm run db:apply <file>      # one file; refused if a later file redefines its functions (scripts/sql-order.mjs)
 ```
+Never apply an older SQL file on its own, in the CLI or the dashboard SQL
+Editor: it puts back older copies of functions later files replaced (that is
+how friends lost their pictures and looks). New files at the end of the order
+are fine alone; anything else goes through `db:apply:all`.
 
 There is no single-test runner; `scripts/check.mjs` runs the full suite.
 

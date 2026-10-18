@@ -8001,6 +8001,18 @@ await testAsync('the watch count holds "of 4" all night: answered and later ques
   assert.deepEqual(offCards(null, []), { done: 0, later: 0 })
 })
 
+await testAsync('one SQL file on its own never puts an older function back over a newer one', async () => {
+  const { laterRedefinitions, sqlOrder } = await import('./sql-order.mjs')
+  // known_people from blocks.sql over readthrough-12's dropped friends' pictures and looks.
+  assert.ok(laterRedefinitions('supabase/blocks.sql').some((f) => f.name === 'known_people'))
+  assert.deepEqual(laterRedefinitions('supabase/readthrough-12.sql').filter((f) => f.name === 'known_people'), [])
+  const apply = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'apply-sql.mjs'), 'utf8')
+  assert.match(apply, /laterRedefinitions\(file\)/)
+  const all = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'apply-all-sql.mjs'), 'utf8')
+  assert.match(all, /'--in-order'/)
+  assert.ok(sqlOrder().length > 50)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

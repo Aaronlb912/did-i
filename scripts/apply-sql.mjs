@@ -1,9 +1,15 @@
 // Apply one SQL file through the Supabase Management API.
 // Usage: set SUPABASE_ACCESS_TOKEN=sbp_... then
 //   node scripts/apply-sql.mjs supabase/drop-tonight.sql
+//
+// A file whose functions a later file in apply order defines again is
+// refused: on its own it would put the older functions back (scripts/
+// sql-order.mjs). Run npm run db:apply:all instead, or pass --force when
+// you really mean it.
 
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { laterRedefinitions } from './sql-order.mjs'
 
 function loadEnvLocal() {
   const path = resolve('.env.local')
@@ -26,7 +32,11 @@ const ref =
   process.env.SUPABASE_PROJECT_REF ||
   (process.env.VITE_SUPABASE_URL || '').match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] ||
   'lsvvxslgizihbktqoybt'
-const file = process.argv[2]
+const args = process.argv.slice(2)
+const force = args.includes('--force')
+// apply-all-sql.mjs runs every file in order, so nothing older wins there.
+const inOrder = args.includes('--in-order')
+const file = args.find((arg) => !arg.startsWith('--'))
 
 if (!token) {
   console.error('Set SUPABASE_ACCESS_TOKEN or SB_PAT')
@@ -35,6 +45,16 @@ if (!token) {
 if (!file) {
   console.error('Usage: node scripts/apply-sql.mjs <path-to.sql>')
   process.exit(1)
+}
+
+if (!force && !inOrder) {
+  const later = laterRedefinitions(file)
+  if (later.length) {
+    console.error(`Not applying ${file} on its own: these functions are defined again later, and this would put the older version back:`)
+    for (const { name, later: by } of later) console.error(`  ${name}  (newer in ${by})`)
+    console.error('Run npm run db:apply:all, which applies every file in order, or pass --force.')
+    process.exit(1)
+  }
 }
 
 const sql = readFileSync(resolve(file), 'utf8')
