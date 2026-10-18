@@ -80,7 +80,7 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { PING_KINDS, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
+import { PING_KINDS, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
 import { syncLine } from '../../src/lib/sync-line.js'
@@ -177,11 +177,13 @@ function foldClock(at) {
   return clockWords(`${pad(date.getHours())}:${pad(date.getMinutes())}`)
 }
 
-// A skip reads Not yet while its night is open, Nope once it closed.
+// A skip reads Not yet while its day is open. Once the day is over it is
+// Missed, like a day never answered: Not yet is only for today. Gentle mode
+// never says missed, so there it stays Not yet.
 function statusWord(status, open = false) {
   if (status === 'yes') return t('feed.status.did')
   if (status === 'late') return t('feed.status.late')
-  if (status === 'skip') return t(open ? 'jewelKey.notYet' : 'feed.status.nope')
+  if (status === 'skip') return t(open ? 'jewelKey.notYet' : gentleOn() ? 'feed.status.nope' : 'later.missed')
   return status
 }
 
@@ -610,7 +612,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
       <View style={styles.tiles}>
         <NumberTile third colors={colors} label={t('stats.did')} n={recap.dids - recap.late} />
         <NumberTile third colors={colors} label={t('stats.late')} n={recap.late} />
-        <NumberTile third colors={colors} label={t('stats.nope')} n={recap.nopes} />
+        <NumberTile third colors={colors} label={t(gentle ? 'stats.nope' : 'later.missed')} n={recap.nopes} />
       </View>
       <KeyButton colors={colors} label={t('recap.shareBtn')} onPress={() => shareRecap(recap)} />
 
@@ -618,7 +620,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
       <View style={styles.tiles}>
         <NumberTile third colors={colors} label={t('stats.did')} n={counts.did} />
         <NumberTile third colors={colors} label={t('stats.late')} n={counts.late} />
-        <NumberTile third colors={colors} label={t('stats.nope')} n={counts.skip} />
+        <NumberTile third colors={colors} label={t(gentle ? 'stats.nope' : 'later.missed')} n={counts.skip} />
         <NumberTile half={!gentle} colors={colors} label={t('stats.questions')} n={counts.hung} />
         {gentle ? null : <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />}
       </View>
@@ -822,7 +824,9 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     openNightWhy({ colors, boards: shelf, iso: night.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })
   }
 
-  function cell(night, state) {
+  function cell(night, nightState) {
+    // A Not yet on a day that is over is a missed day (gentle: stays Not yet).
+    const state = nightState === 'skip' && !gentle && !nightOpen(night.iso, clock) ? 'hole' : nightState
     return (
       <Pressable
         key={night.iso}
@@ -843,7 +847,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const legend = [
     ['yes', t('later.did')],
     ['late', t('later.late')],
-    ['skip', t('later.nope')],
+    ['skip', t(gentle ? 'later.nope' : 'jewelKey.notYet')],
     ...(gentle ? [] : [['hole', t('later.missed')]]),
     ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
     ['open', t('jewelKey.open')],

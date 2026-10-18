@@ -237,7 +237,7 @@ function earlierStates(rows, gentle = false) {
       const id = `${boardId}:${answer.lampId}`
       if (!ids.has(id)) continue
       const status = answer.status
-      states.set(id, status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'pastNope' : missed)
+      states.set(id, status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? (gentle ? 'pastNope' : 'missed') : missed)
     }
   }
   return states

@@ -114,6 +114,10 @@ Nothing has run on a phone or the live database.
    - A worn frame on the grace card, a Did we card, a missed-day card and a
      not-yet card.
    - Saying yes to a friend request with no name asks for the name first.
+   - A day that is over with no Did reads Missed (red) everywhere: calendar,
+     a question's month and Earlier nights, Your history / Feed, the 7-day
+     grid, the Missed tile on Stats. Today, and yesterday until 9am, still
+     say Not yet. Gentle mode never says Missed.
    - Watch (Wear emulator, or Apple Watch via TestFlight with DIDI_WATCH=1):
      with 4 questions, 2 of them set to ask after a later time, the count
      reads "1 of 4" and stays "of 4" as you answer and when the later ones
