@@ -13,9 +13,20 @@ import { KeyboardLift } from './KeyboardLift.jsx'
 let listen = null
 let current = null
 
+// Whether a sheet is up, for the app shell: on Android it hides the screens
+// behind from TalkBack while one is (iOS uses accessibilityViewIsModal).
+const upWatchers = new Set()
+export function onSheetUp(fn) {
+  upWatchers.add(fn)
+  fn(Boolean(current?.title))
+  return () => upWatchers.delete(fn)
+}
+
 export function publishSheet(next) {
   current = next
   listen?.(next)
+  const up = Boolean(next?.title)
+  upWatchers.forEach((fn) => fn(up))
 }
 
 // Every spend asks first: coins and gems do not come back.

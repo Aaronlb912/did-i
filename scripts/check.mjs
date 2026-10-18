@@ -8071,6 +8071,22 @@ test('every missed day is saved as Not yet, not just yesterday', () => {
   assert.equal(closePastNights(away, new Date(2026, 9, 18, 12), []), away)
 })
 
+test('an open sheet hides the screens behind it from TalkBack, and only while it is up', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const host = readFileSync(path.join(root, 'native/components/SheetHost.jsx'), 'utf8')
+  const shell = readFileSync(path.join(root, 'native/AppShell.jsx'), 'utf8')
+  // Every publish tells the shell, closing (null) included.
+  assert.match(host, /export function publishSheet\(next\) \{[^}]*upWatchers\.forEach/)
+  assert.match(host, /accessibilityViewIsModal/)
+  assert.match(shell, /onSheetUp\(setSheetUp\)/)
+  assert.match(shell, /importantForAccessibility=\{Platform\.OS === 'android' && sheetUp \? 'no-hide-descendants' : 'auto'\}/)
+  // The sheet layer itself is outside the hidden part.
+  const hidden = shell.indexOf("no-hide-descendants")
+  const close = shell.indexOf('</ScreenProps.Provider>\n      </View>', hidden)
+  assert.ok(hidden > 0 && close > hidden, 'the screens wrapper closes after the stack')
+  assert.ok(shell.indexOf('<SheetHost />', close) > close, 'SheetHost sits after the hidden screens, not inside them')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

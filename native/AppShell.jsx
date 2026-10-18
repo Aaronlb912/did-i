@@ -30,7 +30,7 @@ import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { UpdatePrompt } from './components/UpdatePrompt.jsx'
-import { SheetHost } from './components/SheetHost.jsx'
+import { SheetHost, onSheetUp } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
 import { lazyScreen } from './lib/lazy-screen.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
@@ -290,6 +290,14 @@ export function AppShell() {
   // Ping text follows gentle, language and the 12/24h clock: set them again.
   const pingWords = `${prefs.gentle}|${prefs.locale}|${prefs.clock}`
   const [armedWords, setArmedWords] = useState(pingWords)
+  // An open sheet hides the screens behind it from TalkBack (Android).
+  const [sheetUp, setSheetUp] = useState(false)
+  useEffect(() => {
+    const stop = onSheetUp(setSheetUp)
+    return () => {
+      stop()
+    }
+  }, [])
   useEffect(() => {
     if (pingWords === armedWords) return
     setArmedWords(pingWords)
@@ -388,6 +396,15 @@ export function AppShell() {
   return (
     // Any touch wakes a sleeping frame (battery rules in useFrameActive).
     <View style={{ flex: 1, backgroundColor: colors.bg }} onTouchStart={noteFrameTouch}>
+      {/* TalkBack stays in an open sheet: the screens behind leave the tree
+          while one is up (VoiceOver: accessibilityViewIsModal in SheetHost). */}
+      {/* On iOS it stays a layout-only view that Fabric flattens away, so the
+          native stack sits exactly where it did. */}
+      <View
+        style={styles.screens}
+        collapsable={Platform.OS === 'android' ? false : undefined}
+        importantForAccessibility={Platform.OS === 'android' && sheetUp ? 'no-hide-descendants' : 'auto'}
+      >
       <ScreenProps.Provider value={screenProps}>
         <Stack.Navigator screenOptions={screenOptions}>
           <Stack.Screen name={HALL} component={HallScreen} options={HALL_OPTIONS} />
@@ -410,6 +427,7 @@ export function AppShell() {
           ))}
         </Stack.Navigator>
       </ScreenProps.Provider>
+      </View>
       <Slot>
         <ToastHost colors={colors} />
       </Slot>
@@ -429,6 +447,7 @@ export function AppShell() {
 }
 
 const styles = StyleSheet.create({
+  screens: { flex: 1 },
   overlayLayer: {
     ...StyleSheet.absoluteFill,
     zIndex: 200,

@@ -118,6 +118,9 @@ Nothing has run on a phone or the live database.
      toast; a sheet (shop buy, name prompt) takes focus on its title and
      VoiceOver cannot swipe onto the card behind it; the Home week strip
      reads each day ("October 3, Cleared"); the card reads its folder first.
+     Android TalkBack: with a sheet open, swiping never reaches the screen
+     behind it, and after closing it the screen is readable again. Also check
+     nothing moved on screen (iPhone large titles, Android pages).
    - A day that is over with no Did reads Missed (red) everywhere: calendar,
      a question's month and Earlier nights, Your history / Feed, the 7-day
      grid, the Missed tile on Stats. Today, and yesterday until 9am, still
