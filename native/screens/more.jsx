@@ -276,6 +276,8 @@ function HelpFold({ colors, title, children }) {
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen((was) => !was)}
+        // 32 tall; the slop gives the 44pt tap.
+        hitSlop={{ top: 6, bottom: 6 }}
         style={styles.foldHead}
       >
         <Text style={[styles.cardTitle, { color: colors.ink }]}>{title}</Text>
