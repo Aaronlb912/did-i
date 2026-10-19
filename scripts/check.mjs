@@ -8306,6 +8306,7 @@ await testAsync('morning ask: one-day questions for today, capped, never cut a s
   assert.ok(isTodayOnce(one.lamp, '2026-10-18'))
   assert.ok(normalizeLamp(one.lamp).morning && normalizeLamp(one.lamp).optional, 'the flags survive a save')
   assert.equal(addMorning(one.book, [one.book], 'call the  dentist?', morning).error, 'dupe')
+  assert.equal(addMorning(one.book, [one.book], 'Call the dentist', morning).error, 'dupe', 'a missing ? is the same question')
   let full = base
   for (let i = 0; i < MORNING_CAP; i += 1) full = addMorning(full, [full], `Thing ${i}?`, morning).book
   assert.equal(morningCount([full], '2026-10-18'), MORNING_CAP)

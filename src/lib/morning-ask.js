@@ -34,7 +34,7 @@ export function morningCount(boards, iso) {
   return n
 }
 
-const plain = (text) => String(text || '').trim().replace(/\s+/g, ' ').toLowerCase()
+const plain = (text) => String(text || '').trim().replace(/[?!.]+$/, '').trim().replace(/\s+/g, ' ').toLowerCase()
 
 // Adds one to `book`. { book } on success, or { error: 'empty' | 'dupe' | 'full' | 'past' }.
 // `boards` is the whole shelf, for the cap and duplicates. `at` ('HH:MM',
