@@ -16,11 +16,12 @@ import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { SetCap, SetCard } from '../components/SetBits.jsx'
 import { AppTextInput, DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
-import { canGoBack, goBack, goHash, swapHash } from '../navigation/hash.js'
+import { goHash, swapHash } from '../navigation/hash.js'
 import { confirmDone } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { Pill, useAddFeel } from './questions.jsx'
+import { useLeaveAsk } from '../hooks/useLeaveAsk.js'
 import { usePeople } from './we.jsx'
 
 // Did you: ask a friend or someone in your family if they did something.
@@ -64,6 +65,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
   const person = (people || []).find((p) => p.id === to)
   const repeat = repeatFrom(cadence, days)
   const ready = Boolean(question) && Boolean(to) && !busy && !done
+  const leave = useLeaveAsk((blank.trim() !== start.trim() || Boolean(note.trim())) && !done, colors, '/people')
 
   function fold(id) {
     feel.ease()
@@ -136,7 +138,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
       date={feel.date}
       colors={colors}
       back={false}
-      leftAction={{ label: t('hang.cancel'), onPress: () => (canGoBack() ? goBack() : goHash('/people')) }}
+      leftAction={{ label: t('hang.cancel'), onPress: leave }}
       rightAction={{ label: t('we.sendShort'), onPress: send, disabled: !ready }}
     >
       <HangCard
@@ -149,6 +151,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
           onBlankChange?.(value)
         }}
         onLeadPress={onLeadPress}
+        onSubmit={send}
         placeholder={t('lead.youHint')}
         meta={whenWords}
         metaAction={{ label: t('checkOn.change'), a11y: `${t('we.when')}: ${whenWords}`, onPress: () => setSheet(true) }}

@@ -10,6 +10,7 @@ import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { Pill, TopicPick, useAddFeel } from './questions.jsx'
+import { useLeaveAsk } from '../hooks/useLeaveAsk.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { shelfTopics } from '../../src/lib/board-json.js'
 import { useAccount } from '../../src/lib/account.js'
@@ -51,7 +52,7 @@ import { boardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
-import { canGoBack, goBack, goHash, swapHash } from '../navigation/hash.js'
+import { goHash, swapHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { useWeCheer } from '../../src/lib/we-cheer.js'
@@ -495,6 +496,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
   const question = blank.trim() ? `${lead} ${blank.trim()}` : ''
   const names = (people || []).filter((p) => picked.includes(p.id)).map((p) => p.name)
   const ready = Boolean(question) && picked.length > 0 && !busy
+  const leave = useLeaveAsk((blank.trim() !== start.trim() || Boolean(draft.note.trim())) && !feel.stamp, colors, '/we')
 
   function fold(id) {
     feel.ease()
@@ -563,7 +565,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       date={feel.date}
       colors={colors}
       back={false}
-      leftAction={{ label: t('hang.cancel'), onPress: () => (canGoBack() ? goBack() : goHash('/we')) }}
+      leftAction={{ label: t('hang.cancel'), onPress: leave }}
       rightAction={{ label: t('we.sendShort'), onPress: () => make(false), disabled: !ready }}
     >
       <HangCard
@@ -576,6 +578,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
           onBlankChange?.(value)
         }}
         onLeadPress={onLeadPress}
+        onSubmit={() => make(false)}
         leadColor={colors.we}
         placeholder={t('we.blankHint')}
         meta={weWhenWords(draft)}

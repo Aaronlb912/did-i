@@ -104,6 +104,10 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     // Sign in is still loading: wait instead of showing the family as gone.
     if (!account.ready) return
     if (!familyId || !account.user) {
+      setFam(null)
+      setLamps([])
+      setAnswers([])
+      setPast([])
       setReady(true)
       return
     }

@@ -298,7 +298,8 @@ async function schedulePingsNow(books, now = new Date()) {
     const streakPings = pingOn('streakRisk') && !gentleOn()
     const heat = streakPings ? shelfStreak(list, now) : null
     const risk = streakPings ? list.map((item) => streakRiskFire(item, now, heat)).find(Boolean) : null
-    if (risk) {
+    // Quiet hours would move it onto the grace ping.
+    if (risk && afterQuiet(new Date(risk.at)).getTime() === new Date(risk.at).getTime()) {
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
         content: {

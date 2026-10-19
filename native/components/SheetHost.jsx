@@ -206,6 +206,9 @@ export function SheetHost() {
       <Animated.View
         // VoiceOver stays in the sheet, not on the card behind the veil.
         accessibilityViewIsModal
+        onAccessibilityEscape={() => {
+          if (live) once(sheet, sheet.onClose)
+        }}
         style={[
           styles.pop,
           sheet.center && styles.popCenter,

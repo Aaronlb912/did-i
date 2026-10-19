@@ -153,7 +153,7 @@ export function SureModal({ sure, colors, onClose, onGo }) {
 }
 
 // locked: no back, menu or purse, so the screen can only be left by finishing it.
-export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false, scrollHandle, footer }) {
+export function ScreenShell({ book, title, children, colors, showAdd = false, locked = false, scrollHandle, footer, onRefresh }) {
   const live = book || currentBook(readShelf())
   return (
     <BoardShell
@@ -165,6 +165,7 @@ export function ScreenShell({ book, title, children, colors, showAdd = false, lo
       showCogs={!locked}
       scrollHandle={scrollHandle}
       footer={footer}
+      onRefresh={onRefresh}
     >
       {children}
     </BoardShell>
@@ -1072,6 +1073,12 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   const scrollHandle = useRef(null)
   const addRef = useRef(null)
   const renameDirty = Boolean(titleDraft.trim()) && titleDraft.trim() !== (book?.title || '')
+  const [removed, setRemoved] = useState(null)
+  // Remove has an undo: the folder comes back with its questions and answers.
+  useUndoToast('folders', removed, () => {
+    if (removed?.book) onChange?.(removed.book)
+    setRemoved(null)
+  }, DELETE_UNDO_MS, t('tonight.undoTap'))
 
   function saveName() {
     const title = titleDraft.trim()
@@ -1290,8 +1297,8 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
               onClose: () => publishSheet(null),
               onGo: () => {
                 publishSheet(null)
+                setRemoved({ id: Date.now(), label: t('confirm.folderRemoved', { title: book.title }), book })
                 onRemove?.(book.id)
-                confirmDone(t('confirm.folderRemoved', { title: book.title }))
               },
             })
           }
@@ -1599,7 +1606,7 @@ export function FirstNightScreen({ book, onChange, now }) {
   const nav = (
     <>
       <View style={styles.stepNav}>
-        {step > 0 || canLeave ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
+        {step > 0 ? <KeyButton colors={colors} label={t('first.back')} onPress={back} /> : null}
         <DidButton
           colors={colors}
           label={step === totalSteps - 1 ? t('first.done') : ready ? t('first.nextCount', { n: count }) : t('first.next')}
@@ -1611,6 +1618,8 @@ export function FirstNightScreen({ book, onChange, now }) {
         ) : null}
       </View>
       {step === 0 ? <KeyButton colors={colors} label={t('first.startEmpty')} onPress={startEmpty} /> : null}
+      {/* Back to the welcome screen to sign in instead. */}
+      {step === 0 && canLeave ? <KeyButton colors={colors} label={t('first.haveAccount')} onPress={toWelcome} /> : null}
     </>
   )
 
@@ -1620,16 +1629,6 @@ export function FirstNightScreen({ book, onChange, now }) {
         <Text style={[styles.stepCap, { color: colors.inkSoft }]}>
           {t('first.stepOf', { n: step + 1, total: totalSteps })}
         </Text>
-        {step === 0 && canLeave ? (
-          // Back to the welcome screen to sign in instead.
-          <Pressable
-            onPress={toWelcome}
-            accessibilityRole="button"
-            hitSlop={10}
-          >
-            <Text style={[styles.firstSignIn, { color: colors.on }]}>{t('first.haveAccount')}</Text>
-          </Pressable>
-        ) : null}
       </View>
       {step === 0 ? (
         <>
@@ -2654,7 +2653,6 @@ export function AccountScreen({ book, onChange }) {
 
 const styles = StyleSheet.create({
   firstTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  firstSignIn: { fontFamily: fonts.uiBold, fontSize: 14 },
   heroNumRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   calKey: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   calDot: { width: 8, height: 8, borderRadius: 4 },

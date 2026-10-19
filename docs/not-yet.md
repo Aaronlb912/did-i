@@ -5,6 +5,11 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## App sweep 2026-10-19 (branch `sweep-fixes`, needs SQL and a store build)
+
+- **Built:** accessibility, QoL, usability, security and bug passes. Undo only puts back the one answer; Did, Undo, Did pays once; widget and watch repeat taps no longer reach the server; family wrong-code cap shared by every account; invites only for accounts under 7 days; one nudge per sender a night; `supabase/sweep-guards.sql`.
+- **Not done:** family codes are still 6 characters. The app from 1.3.8 accepts 6 or 10 (1.3.7 and older take only 6); once most phones run 1.3.8, make `new_family_code` return 10. Did, Undo, Did can still pay twice if the app is closed inside the 8 seconds (the paid list is in memory). Join a family still needs no parent yes. Not tried with VoiceOver or TalkBack.
+
 ## Morning ask (branch `morning-today`, needs SQL, OTA)
 
 - **Built:** before noon Tonight shows "Anything to remember today?" with a field, an optional time and Add (`native/components/MorningAsk.jsx`, `src/lib/morning-ask.js`). Each add is a one-day question on today (`cadence: 'once'`, `optional`, `morning`), so a Not yet never cuts a streak and a Did pays coins. A time only sets its reminder (askAfter; morning questions skip the wait), shown as "Today, 3:00 PM". Not today hides it for the day; after an add it stays until Tonight is left. 10 a day in the UI; `supabase/morning-cap.sql` drops past 30 a day as an abuse guard. The 9:00 day nudge asks "What do you want to remember today?" and focuses the field. "Today" label on Tonight pills, cards and the questions list; the past day's sheet lists them with Did / Not yet. Switch `Morning ask` under Day reminders.

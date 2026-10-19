@@ -74,7 +74,7 @@ public class WatchTapService extends WearableListenerService {
             return;
         }
         if (!"did".equals(answer) && !"nope".equals(answer)) return;
-        if (!WidgetTapStore.commit(context, id, answer, night, at)) return;
+        if (WidgetTapStore.commit(context, id, answer, night, at) != WidgetTapStore.WROTE) return;
         AnswerKeyPost.sendLater(context, id, answer, night, at);
         try {
             WidgetCardStore.advance(context, id, answer, night);

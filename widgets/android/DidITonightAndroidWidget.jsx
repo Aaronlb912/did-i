@@ -740,10 +740,16 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 flexDirection: 'column',
                 justifyContent: 'flex-start',
                 alignItems: 'flex-start',
-                paddingTop: panelPadV + ringPad - 3,
-                paddingLeft: panelPadH + ringPad - 4,
+                // The tap box below is 48dp tall around a pill about 18dp tall.
+                paddingTop: Math.max(0, panelPadV + ringPad - 3 - 15),
+                paddingLeft: Math.max(0, panelPadH + ringPad - 4 - 8),
               }}
             >
+              <FlexWidget
+                style={{ height: 48, justifyContent: 'center', alignItems: 'flex-start', paddingHorizontal: 8 }}
+                clickAction="PEEK"
+                clickActionData={{ dir: 'next' }}
+              >
               <FlexWidget
                 style={{
                   flexDirection: 'row',
@@ -755,14 +761,13 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                   paddingHorizontal: compact ? 7 : 9,
                   paddingVertical: compact ? 2 : 3,
                 }}
-                clickAction="PEEK"
-                clickActionData={{ dir: 'next' }}
               >
                 <TextWidget
                   text={`${p.nextLabel || 'Next'} ›`}
                   style={{ fontSize: compact ? 10 : 11, fontWeight: '700', color: C.on }}
                   maxLines={1}
                 />
+              </FlexWidget>
               </FlexWidget>
             </FlexWidget>
           ) : null}

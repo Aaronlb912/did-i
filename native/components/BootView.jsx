@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Animated, Easing, Image, View } from 'react-native'
 import { useTheme } from '../../src/lib/prefs.js'
 import { hallColors } from '../palette.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { motionOff } from '../lib/motion.jsx'
 
 const ICON = require('../../public/icon-512.png')
@@ -11,10 +12,11 @@ const ICON = require('../../public/icon-512.png')
 export function BootView() {
   const theme = useTheme()
   const colors = hallColors('lime', theme === 'light' ? 'light' : 'dark')
+  const reduce = useReduceMotion()
   const pulse = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
-    if (motionOff()) return undefined
+    if (reduce || motionOff()) return undefined
     const ease = Easing.inOut(Easing.quad)
     const loop = Animated.loop(
       Animated.sequence([
@@ -24,7 +26,7 @@ export function BootView() {
     )
     loop.start()
     return () => loop.stop()
-  }, [pulse])
+  }, [pulse, reduce])
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>

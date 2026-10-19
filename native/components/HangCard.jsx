@@ -26,6 +26,8 @@ export const HangCard = forwardRef(function HangCard(
     focused,
     onFocus,
     onBlur,
+    // Done on the keyboard sends the card when the screen gives this.
+    onSubmit,
     autoFocus,
     colors,
     // A Did we card leads with "Did we" instead.
@@ -184,6 +186,7 @@ export const HangCard = forwardRef(function HangCard(
         onChangeText={onBlank}
         onFocus={onFocus}
         onBlur={onBlur}
+        onSubmitEditing={onSubmit}
         editable={!landed}
         autoFocus={autoFocus}
         placeholder={placeholder || (lead ? t('first.ownHint') : t('hang.questionPh'))}

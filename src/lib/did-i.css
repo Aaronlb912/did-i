@@ -17,7 +17,7 @@
   --di-line-soft: #21262f;
   --di-ink: #f4f6fa;
   --di-ink-soft: #99a1b0;
-  --di-ink-dim: #7c838f;
+  --di-ink-dim: #848b97;
   --di-on: #c9f24d;
   --di-on-deep: #8fae2c;
   /* Text on a --di-on fill (Did buttons). */
@@ -1136,7 +1136,7 @@ html[data-theme='light'] .di-hall,
   --di-skip: #6a7164;
   --di-open: #d5d9cc;
   --di-open-ring: #8a9180;
-  --di-miss: #c44536;
+  --di-miss: #bd4031;
   --di-freeze: #2a86a8;
   --di-we: #6b4fc8;
   --di-we-deep: #4f3799;

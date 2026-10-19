@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { t, tMiss } from "../../src/lib/i18n.js";
 import { listFriends, personName, sendDidI, sendMiss } from "../../src/lib/people.js";
 import { repeatFrom, repeatLabel, senderLastDid } from "../../src/lib/send-repeat.js";
@@ -56,6 +56,9 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
   const [question, setQuestion] = useState(initialQuestion);
   const [note, setNote] = useState("");
   const [miss, setMiss] = useState("");
+  useEffect(() => {
+    if (miss) AccessibilityInfo.announceForAccessibility(miss);
+  }, [miss]);
   const [busy, setBusy] = useState(false);
   // State lags a fast double tap; this does not, so one tap sends once.
   const inFlight = useRef(false);
