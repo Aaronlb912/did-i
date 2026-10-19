@@ -244,6 +244,7 @@ export function SwipeCard({
             onPress={() => tap(-1)}
             disabled={blockNope}
             accessibilityRole="button"
+            accessibilityLabel={`${nopeLabel || stampNope}: ${title}`}
             accessibilityState={{ disabled: blockNope }}
             style={({ pressed }) => [
               styles.answer,
@@ -258,6 +259,7 @@ export function SwipeCard({
             onPress={() => tap(1)}
             disabled={blockDid}
             accessibilityRole="button"
+            accessibilityLabel={`${didLabel || stampDid}: ${title}`}
             accessibilityState={{ disabled: blockDid }}
             style={({ pressed }) => [
               styles.answer,

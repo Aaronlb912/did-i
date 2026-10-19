@@ -185,7 +185,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             label={t('settings.sendCsv')}
             sub={t('settings.sendCsvSub')}
             chevron
-            onPress={() => shareCsv(answersCsv(readShelf())).catch(() => {})}
+            onPress={() => shareCsv(answersCsv(readShelf())).catch(() => confirmMiss(t('confirm.shareMiss')))}
             last
           />
         </SetCard>

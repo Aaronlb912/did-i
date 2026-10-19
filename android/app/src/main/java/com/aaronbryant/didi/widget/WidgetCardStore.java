@@ -119,7 +119,7 @@ public final class WidgetCardStore {
             JSONObject copy = new JSONObject(item.toString());
             boolean isLead = id.equals(copy.optString("lampId"))
                 && leadNight.equals(copy.optString("periodKey"))
-                && "open".equals(copy.optString("status"));
+                && lead.optString("status").equals(copy.optString("status"));
             if (isLead) copy.put("status", mark);
             nextItems.put(copy);
         }

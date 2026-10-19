@@ -41,6 +41,7 @@ function CoinHistory({ colors }) {
   const shelf = readShelf()
   const fold = shelf?.boards?.[0]?.dayFoldHour ?? 0
   const [server, setServer] = useState(null)
+  const [serverMiss, setServerMiss] = useState(false)
   const [, setTick] = useState(0)
 
   // Signed in, the server's record is the real one. Keep the local one if it fails.
@@ -49,9 +50,13 @@ function CoinHistory({ colors }) {
     let live = true
     readCoinHistory()
       .then((next) => {
-        if (live && next) setServer(next)
+        if (!live) return
+        if (next) setServer(next)
+        else setServerMiss(true)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (live) setServerMiss(true)
+      })
     return () => {
       live = false
     }
@@ -83,6 +88,7 @@ function CoinHistory({ colors }) {
       ) : (
         <Text style={[styles.line, ink]}>{t('coins.none')}</Text>
       )}
+      {serverMiss && !server ? <Text style={[styles.line, ink]}>{t('coins.localOnly')}</Text> : null}
       <Text style={[styles.line, ink]}>{gemThisWeek(hist.gemWeek, new Date(), fold) ? t('coins.gemYes') : t('coins.gemNot')}</Text>
     </View>
   )

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
+import { readReduceMotion } from '../../src/lib/useReduceMotion.js'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
 
 // Things that fly across the app above every screen: a bought item into the
@@ -22,6 +23,10 @@ function emit() {
 
 export function launchFlight(flight) {
   const id = nextId++
+  if (readReduceMotion()) {
+    flight.onLand?.()
+    return id
+  }
   flights = [...flights, { ...flight, id }]
   emit()
   return id

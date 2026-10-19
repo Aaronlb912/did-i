@@ -22,6 +22,9 @@ begin
     values (f, f || '@test.invalid', 'authenticated', 'authenticated');
     insert into public.profiles (user_id, invited_by) values (f, a)
     on conflict (user_id) do update set invited_by = excluded.invited_by;
+    -- A join counts after 3 nights of answers (sweep2-guards.sql).
+    insert into public.answer_log (user_id, lamp_id, period_key, status)
+    select f, 'q', d, 'yes' from unnest(array['2026-10-01', '2026-10-02', '2026-10-03']) d;
   end loop;
   perform set_config('did_i.invite_write', '', true);
 
@@ -47,6 +50,9 @@ begin
   insert into auth.users (id, email, aud, role) values (f, f || '@test.invalid', 'authenticated', 'authenticated');
   insert into public.profiles (user_id, invited_by) values (f, a)
   on conflict (user_id) do update set invited_by = excluded.invited_by;
+  -- A join counts after 3 nights of answers (sweep2-guards.sql).
+  insert into public.answer_log (user_id, lamp_id, period_key, status)
+  select f, 'q', d, 'yes' from unnest(array['2026-10-01', '2026-10-02', '2026-10-03']) d;
   perform set_config('did_i.invite_write', '', true);
   execute 'set local role authenticated';
 
@@ -68,6 +74,9 @@ begin
     insert into auth.users (id, email, aud, role) values (f, f || '@test.invalid', 'authenticated', 'authenticated');
     insert into public.profiles (user_id, invited_by) values (f, a)
     on conflict (user_id) do update set invited_by = excluded.invited_by;
+    -- A join counts after 3 nights of answers (sweep2-guards.sql).
+    insert into public.answer_log (user_id, lamp_id, period_key, status)
+    select f, 'q', d, 'yes' from unnest(array['2026-10-01', '2026-10-02', '2026-10-03']) d;
   end loop;
   perform set_config('did_i.invite_write', '', true);
   execute 'set local role authenticated';

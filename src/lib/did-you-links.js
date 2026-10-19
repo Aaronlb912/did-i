@@ -324,7 +324,7 @@ export async function endWeLinks(card) {
 export async function myWeLink(card) {
   const db = cloud()
   if (!db) return ''
-  const { data } = await db
+  const { data, error } = await db
     .from('we_links')
     .select('code, ends_at')
     .eq('card_id', card)
@@ -332,5 +332,6 @@ export async function myWeLink(card) {
     .gt('ends_at', new Date().toISOString())
     .order('made_at', { ascending: false })
     .limit(1)
+  if (error) throw error
   return cleanCode(data?.[0]?.code)
 }
