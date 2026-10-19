@@ -658,6 +658,7 @@ export function takeEarnedCoins() {
 export function dropEarnedCoins() {
   earnedGen += 1
   earnedForServer = {}
+  paidOnAccount.clear()
   // Not saveEarned: it leaves storage alone while the id is ''.
   try {
     localStorage.removeItem(EARNED_KEY)
@@ -677,16 +678,22 @@ export function returnEarnedCoins(night, n, clock = new Date(), gen) {
   saveEarned()
 }
 
+// Signed in, a Did pays through the server. Undo drops the answer but not those
+// coins, so the next Did on the same question must not pay again.
+const paidOnAccount = new Set()
+
 export function payTap(before, after, row, status, clock = new Date()) {
   const purse = normalizePurse(after)
   const prev = (before.answers || []).find(
     (item) => item.lampId === row?.lamp?.id && item.periodKey === row?.periodKey,
   )
-  const paid = prev && (prev.paid === true || prev.status === 'yes' || prev.status === 'late')
+  const paidKey = `${before.id}:${row?.lamp?.id}:${row?.periodKey}`
+  const paid = (prev && (prev.paid === true || prev.status === 'yes' || prev.status === 'late')) || paidOnAccount.has(paidKey)
   let coins = purse.coins
   if (!paid) {
     const earned = coinsFor(status, before, row, clock)
     if (accountSessionOn()) {
+      if (earned > 0) paidOnAccount.add(paidKey)
       // The server takes yesterday or today; a week or month key maps further back.
       const today = boardDate(clock)
       const night = periodNight(row?.lamp, row?.periodKey)

@@ -1273,7 +1273,18 @@ function EveryNStep({ draft, dateIso, onChange, colors }) {
   return (
     <View style={styles.stepWrap}>
       <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.everyNDays')}</Text>
-      <View style={styles.stepRow}>
+      <View
+        style={styles.stepRow}
+        accessible
+        accessibilityRole="adjustable"
+        accessibilityLabel={t('hang.everyNDays')}
+        accessibilityValue={{ min: 2, max: EVERY_N_MAX, now: n || 2 }}
+        accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+        onAccessibilityAction={(event) => {
+          if (event.nativeEvent.actionName === 'increment' && n < EVERY_N_MAX) step(1)
+          if (event.nativeEvent.actionName === 'decrement' && n > 2) step(-1)
+        }}
+      >
         <Pressable
           onPress={() => step(-1)}
           disabled={n <= 2}
@@ -1346,7 +1357,7 @@ function newFolderTitle(boards, book, tagId) {
   return (shownOne || live[0] || book).title
 }
 
-export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initialBlank = '', onBlankChange, onLeadPress, below = null }) {
+export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initialBlank = '', onBlankChange, onLeadPress, onAnother, below = null }) {
   const { colors, clock, dateIso } = useHall(book)
   const reduce = useReduceMotion()
   const lampId = route?.id || ''
@@ -1641,7 +1652,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     }
   }
 
-  function save() {
+  // another: Add another saves, then starts a blank question on the same screen.
+  function save(another = false) {
     if (stamp) return
     const built = hang.buildLamp()
     const problem = built.problem
@@ -1673,6 +1685,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     // A check-on follows the question's new words and schedule.
     if (existing) followCheckOn(existing, next).catch(() => {})
     const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
+    if (another === true && onAnother && !hang.editing) {
+      playClick()
+      confirmDone(t('confirm.questionAdded'))
+      offerPingPrimer(newTime, colors)
+      onAnother()
+      return
+    }
     if (hang.editing) {
       playClick()
       confirmDone(t('confirm.questionSaved'))
@@ -1771,6 +1790,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           setOpen('')
         }}
         onBlur={() => setFocused(false)}
+        onSubmit={() => save()}
         autoFocus={fresh && !start && !spoken && !initialBlank}
         onLeadPress={fresh && lead ? onLeadPress : undefined}
         colors={colors}
@@ -2175,6 +2195,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
           {t(hang.miss)}
         </Text>
+      ) : null}
+
+      {fresh && onAnother && ready && !stamp ? (
+        <KeyButton colors={colors} label={t('hang.addAnother')} onPress={() => save(true)} />
       ) : null}
 
       {existing && sourceBook && !stamp ? (

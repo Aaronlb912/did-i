@@ -1826,7 +1826,7 @@ export function GemShopScreen({ book }) {
     publishSheet({
       title: t('gems.title'),
       body,
-      closeLabel: t('settings.neverMind'),
+      closeLabel: t('settings.close'),
       colors,
       onClose: () => publishSheet(null),
     })
@@ -1860,8 +1860,7 @@ export function GemShopScreen({ book }) {
     if (out.miss === 'signin') {
       stream.dropBuy()
       setBanner('')
-      publishSheet(null)
-      goHash('/account')
+      askSignIn(colors)
       return
     }
     if (out.miss) {

@@ -33,7 +33,7 @@ import {
   inboxCount,
   joinFamily,
   lookUpFamily,
-  FAMILY_CODE_LEN,
+  familyCodeOk,
   listBlocks,
   listFamilies,
   listFriends,
@@ -150,19 +150,24 @@ async function pastedCode(kind) {
   const text = await Clipboard.getStringAsync().catch(() => '')
   const found = scanFromText(text)
   if (kind === 'friend') return /^friend:(\d{12})$/.exec(found)?.[1] || (cleanFriendId(text).length === 12 ? cleanFriendId(text) : '')
-  const family = /^family:([A-Z0-9]{6})$/.exec(found)?.[1]
+  const family = /^family:([A-Z0-9]{6}|[A-Z0-9]{10})$/.exec(found)?.[1]
   if (family) return family
   const bare = String(text || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
-  return bare.length === FAMILY_CODE_LEN ? bare : ''
+  return familyCodeOk(bare) ? bare : ''
 }
 
 function Cap({ children, colors }) {
   return <Text style={[styles.cap, { color: colors.inkDim }]}>{children}</Text>
 }
 
-function Miss({ children, colors }) {
+function Miss({ children, colors, onRetry }) {
   if (!children) return null
-  return <Text style={[styles.miss, { color: colors.miss }]}>{children}</Text>
+  return (
+    <>
+      <Text style={[styles.miss, { color: colors.miss }]}>{children}</Text>
+      {onRetry ? <KeyButton colors={colors} label={t('gift.retry')} onPress={onRetry} /> : null}
+    </>
+  )
 }
 
 function OfflineLine({ colors }) {
@@ -531,7 +536,7 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
           autoCapitalize="characters"
           autoCorrect={false}
           returnKeyType="search"
-          onSubmitEditing={() => !busy && code.length === FAMILY_CODE_LEN && look()}
+          onSubmitEditing={() => !busy && familyCodeOk(code) && look()}
         />
         <Miss colors={colors}>{miss}</Miss>
       </View>
@@ -539,10 +544,10 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
         colors={colors}
         small
         label={t('friendId.find')}
-        disabled={busy || code.length !== FAMILY_CODE_LEN}
+        disabled={busy || !familyCodeOk(code)}
         onPress={() => look()}
       />
-      {code.length === FAMILY_CODE_LEN ? null : (
+      {familyCodeOk(code) ? null : (
         <KeyButton
           colors={colors}
           label={t('invite.paste')}
@@ -1277,7 +1282,7 @@ export function PeopleConnectScreen({ book, onChange, route }) {
   // Opened from a scanned QR code: route.id is friend:123456789012 or family:ABC123.
   const scan = String(route?.id || '')
   const scannedFriend = /^friend:(\d{12})$/.exec(scan)?.[1] || ''
-  const scannedFamily = /^family:([A-Z0-9]{6})$/i.exec(scan)?.[1] || ''
+  const scannedFamily = /^family:([A-Z0-9]{6}|[A-Z0-9]{10})$/i.exec(scan)?.[1] || ''
 
   // Signed out: keep the scan, and the first signed-in open comes back here.
   useEffect(() => {
@@ -2620,14 +2625,20 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       </ScreenShell>
     )
   }
+  if (!rows.length && miss) {
+    return (
+      <ScreenShell title={t('inbox.title')} colors={colors} onRefresh={load}>
+        <Miss colors={colors} onRetry={load}>{miss}</Miss>
+      </ScreenShell>
+    )
+  }
   if (!rows.length) {
     return (
-      <ScreenShell title={t('inbox.emptyTitle')} colors={colors}>
+      <ScreenShell title={t('inbox.emptyTitle')} colors={colors} onRefresh={load}>
         <WeAsks colors={colors} />
         <Meta colors={colors}>{t('inbox.emptyBody')}</Meta>
         <Meta colors={colors}>{t('inbox.autoNote')}</Meta>
         <DidButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSending(true)} />
-        {miss ? <Miss colors={colors}>{miss}</Miss> : null}
         {sending ? (
           <SendSheet book={book} person={null} pick colors={colors} onClose={() => setSending(false)} onSent={(words) => confirmDone(words)} />
         ) : null}
@@ -2636,7 +2647,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
   }
 
   return (
-    <ScreenShell title={t('inbox.title')} colors={colors}>
+    <ScreenShell title={t('inbox.title')} colors={colors} onRefresh={load}>
       <OfflineLine colors={colors} />
       <WeAsks colors={colors} />
       <Meta colors={colors}>{t('inbox.hintAll')}</Meta>
@@ -2680,7 +2691,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
           items={[{ key: 'report', label: t('we.report'), danger: true, onPress: () => report(menu) }]}
         />
       ) : null}
-      <Miss colors={colors}>{miss}</Miss>
+      <Miss colors={colors} onRetry={load}>{miss}</Miss>
     </ScreenShell>
   )
 }
@@ -2770,14 +2781,14 @@ export function SentScreen({ book, onChange }) {
   }
   if (!ready) {
     return (
-      <ScreenShell title={t('sent.title')} colors={colors}>
+      <ScreenShell title={t('sent.title')} colors={colors} onRefresh={load}>
         <LateMeta colors={colors}>{t('family.loading')}</LateMeta>
       </ScreenShell>
     )
   }
   if (!shownRows.length && !shownLinks.length) {
     return (
-      <ScreenShell title={t('sent.title')} colors={colors}>
+      <ScreenShell title={t('sent.title')} colors={colors} onRefresh={load}>
         <View style={styles.sentTop}>
           <KeyButton colors={colors} label={t('didYouLink.textTitle')} onPress={() => setTexting(true)} />
         </View>
@@ -2787,6 +2798,7 @@ export function SentScreen({ book, onChange }) {
             <KeyButton colors={colors} label={t('sent.bringBack', { n: clearedCount })} onPress={() => setHiddenKept([])} />
           ) : null}
         </EmptyCard>
+        <Miss colors={colors} onRetry={load}>{miss}</Miss>
         {texting ? (
           <SendSheet book={book} person={null} colors={colors} onClose={() => { setTexting(false); load() }} onSent={(words) => confirmDone(words)} />
         ) : null}
@@ -2795,7 +2807,7 @@ export function SentScreen({ book, onChange }) {
   }
 
   return (
-    <ScreenShell title={t('sent.title')} colors={colors}>
+    <ScreenShell title={t('sent.title')} colors={colors} onRefresh={load}>
       <OfflineLine colors={colors} />
       <View style={styles.sentTop}>
         <KeyButton colors={colors} label={t('didYouLink.textTitle')} onPress={() => setTexting(true)} />

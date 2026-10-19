@@ -298,6 +298,8 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
         <Pressable
           onPress={press}
           disabled={!press}
+          // Toasts with their own buttons: the outer one would swallow them.
+          accessible={!(item.kind === 'frame' || item.kind === 'mark' || (item.kind === 'undo' && item.extra))}
           accessibilityRole={press ? 'button' : undefined}
           accessibilityLabel={label}
           accessibilityLiveRegion="polite"

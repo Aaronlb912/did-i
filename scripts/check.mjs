@@ -1607,8 +1607,9 @@ test('an answer for a question this phone knows lands on the right tag', () => {
   assert.equal(out.shelf.boards[1].answers.length, 1)
 })
 
-test('a family code is six and an invite code is ten', () => {
-  assert.equal(cleanCode('abc-234 xx'), 'ABC234')
+test('a family code is six or ten and an invite code is ten', () => {
+  assert.equal(cleanCode('abc-234 xx'), 'ABC234XX')
+  assert.equal(cleanCode('abc-234 xxyyz'), 'ABC234XXYY')
   assert.equal(cleanInvite('d93aq5lbs4zzz'), 'D93AQ5LBS4')
   assert.equal(cleanInvite('D93AQ5LBS4').length, 10)
 })
@@ -3393,8 +3394,8 @@ test('first five minutes: first run can go back to Welcome, the swipe hint is on
   const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
   const intro = readFileSync(path.join(root, 'native/components/SwipeIntro.jsx'), 'utf8')
   const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
-  assert.ok(more.includes('step > 0 || canLeave'), 'step one of the first run has Back')
-  assert.ok(more.includes("t('first.haveAccount')"), 'the first run keeps the I have an account link')
+  assert.ok(more.includes('{step > 0 ? <KeyButton') && more.includes("t('first.back')"), 'Back shows after step one, not on it')
+  assert.ok(more.includes("t('first.haveAccount')"), 'step one keeps I have an account as a full button')
   assert.ok(!intro.includes('<Modal'), 'the swipe hint is not a popup')
   assert.ok(intro.includes("t('swipeIntro.line')"), 'the swipe hint is one line')
   assert.ok(tonight.includes('markSwipeIntroSeen()'), 'the first answer clears the swipe hint')
@@ -8117,7 +8118,8 @@ test('every missed day is saved as Not yet, not just yesterday', () => {
 test('an open sheet hides the screens behind it from TalkBack, and only while it is up', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const host = readFileSync(path.join(root, 'native/components/SheetHost.jsx'), 'utf8')
-  const shell = readFileSync(path.join(root, 'native/AppShell.jsx'), 'utf8')
+  // A Windows checkout has CRLF; the order check below looks for '\n'.
+  const shell = readFileSync(path.join(root, 'native/AppShell.jsx'), 'utf8').replace(/\r\n/g, '\n')
   // Every publish tells the shell, closing (null) included.
   assert.match(host, /export function publishSheet\(next\) \{[^}]*upWatchers\.forEach/)
   assert.match(host, /accessibilityViewIsModal/)
@@ -8373,6 +8375,67 @@ await testAsync('morning ask: one-day questions for today, capped, never cut a s
   // A plain timed question still waits for its time.
   const plainTimed = { ...base, lamps: [{ ...daily, id: 'w', question: 'Late?', askAfter: '20:00' }] }
   assert.ok(waitingTonight(plainTimed, morning).some((row) => row.lamp.id === 'w'))
+})
+
+test('undo puts back one answer on the live folder and keeps the rest', async () => {
+  const { undoneBook } = await import('../src/lib/useTonightStack.js?undo-live')
+  const lamp = (id) => ({ id, question: id, cadence: 'daily', archived: false, createdOn: '2024-01-01' })
+  const old = { id: 'b', coins: 4, lamps: [lamp('a'), lamp('c')], answers: [] }
+  const live = {
+    ...old,
+    coins: 6,
+    answers: [
+      { id: 'x', lampId: 'a', periodKey: '2026-10-02', status: 'yes', paid: true },
+      { id: 'y', lampId: 'c', periodKey: '2026-10-02', status: 'yes', paid: true },
+    ],
+  }
+  const back = undoneBook(live, { book: old, after: { ...old, coins: 5 }, lampId: 'a', periodKey: '2026-10-02' })
+  assert.deepEqual(back.answers.map((item) => item.lampId), ['c'], 'the other answer survives')
+  assert.equal(back.coins, 5, 'only the undone tap coin goes; the other answer coin stays')
+  const none = undoneBook({ ...live, coins: 0 }, { book: old, after: { ...old, coins: 9 }, lampId: 'a', periodKey: '2026-10-02' })
+  assert.equal(none.coins, 0, 'never below zero')
+  const kept = { id: 'z', lampId: 'a', periodKey: '2026-10-02', status: 'skip' }
+  const was = undoneBook(live, { book: { ...old, answers: [kept] }, lampId: 'a', periodKey: '2026-10-02' })
+  assert.deepEqual(was.answers.map((item) => item.id), ['y', 'z'], 'a nope before the did comes back')
+})
+
+test('signed in, did then undo then did pays once; signed out undo takes the coins back', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const url = (file) => pathToFileURL(path.join(root, file)).href
+  const script = `
+    const store = new Map([['did-i-last-user', 'user-a']])
+    globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) }
+    globalThis.window = { dispatchEvent() {} }
+    const { putAnswer } = await import(${JSON.stringify(url('src/lib/board-ops.js'))})
+    const { takeEarnedCoins } = await import(${JSON.stringify(url('src/lib/purse.js'))})
+    const book = { id: 'b', lamps: [{ id: 'a', question: 'a', cadence: 'daily', archived: false, createdOn: '2024-01-01' }], answers: [], coins: 0 }
+    const row = { lamp: book.lamps[0], periodKey: '2026-10-02' }
+    const clock = new Date(2026, 9, 2, 20)
+    putAnswer(book, row, 'yes', clock)
+    putAnswer(book, row, 'yes', clock)
+    console.log(JSON.stringify(takeEarnedCoins()))
+  `
+  const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'test' },
+  })
+  assert.equal(run.status, 0, run.stderr)
+  assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { '2026-10-02': 2 })
+})
+
+test('the streak-risk ping is skipped when quiet hours move it', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const native = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
+  assert.match(native, /if \(risk && afterQuiet\(new Date\(risk\.at\)\)\.getTime\(\) === new Date\(risk\.at\)\.getTime\(\)\)/)
+})
+
+test('family codes: six or ten pass, seven does not, ten is not cut', async () => {
+  const { cleanCode, familyCodeOk } = await import('../src/lib/people.js?family-codes')
+  assert.equal(cleanCode('abcd-efgh-23'), 'ABCDEFGH23')
+  assert.ok(familyCodeOk(cleanCode('ABC234')))
+  assert.ok(familyCodeOk(cleanCode('abcdefgh23')))
+  assert.ok(!familyCodeOk(cleanCode('ABC2345')))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

@@ -16,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
 import { SWIPE_THRESHOLD, SWIPE_WAKE } from '../../src/lib/swipe-face.js'
+import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { feelTap } from '../../src/lib/native.js'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -231,6 +232,7 @@ export function SwipeCard({
           accessible={!demo}
           // The folder above the question is read too, as it is shown.
           accessibilityLabel={[kicker, title].filter(Boolean).join(', ')}
+          accessibilityHint={demo ? undefined : t('a11y.swipeHint')}
           accessibilityActions={demo ? undefined : actions}
           onAccessibilityAction={demo ? undefined : onAction}
           {...cardProps}

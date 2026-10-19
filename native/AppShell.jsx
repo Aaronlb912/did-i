@@ -433,6 +433,7 @@ export function AppShell() {
         style={styles.screens}
         collapsable={Platform.OS === 'android' ? false : undefined}
         importantForAccessibility={Platform.OS === 'android' && sheetUp ? 'no-hide-descendants' : 'auto'}
+        accessibilityElementsHidden={Platform.OS === 'ios' && sheetUp ? true : undefined}
       >
       <ScreenProps.Provider value={screenProps}>
         <Stack.Navigator screenOptions={screenOptions}>

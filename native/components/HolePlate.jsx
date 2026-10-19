@@ -18,14 +18,14 @@ export function HolePlate({ lamp, periodKey, wasSkip, colors, onLate, onSkip, on
         {wasSkip ? t('hole.nopeBody') : periodLabel(lamp, periodKey)}
       </Text>
       <View style={styles.actions}>
-        <DidButton label={t('hole.late')} colors={colors} small onPress={onLate} />
+        <DidButton label={t('hole.markLate')} colors={colors} small onPress={onLate} />
         {!wasSkip && onSkip ? (
           <KeyButton label={t('tonight.swipeNope')} colors={colors} onPress={onSkip} />
         ) : null}
       </View>
       {onClose ? (
         <KeyButton
-          label={wasSkip ? t('settings.neverMind') : t('hole.leave')}
+          label={wasSkip ? t('settings.close') : t('hole.leave')}
           colors={colors}
           onPress={onClose}
         />

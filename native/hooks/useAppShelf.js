@@ -258,7 +258,9 @@ export function useAppShelf() {
       const now = readRoute()
       if (tagIdsOf(now.tag).includes(id)) {
         const rest = joinTagIds(tagIdsOf(now.tag).filter((other) => other !== id))
-        goHash(now.path === '/lamps' ? '/lamps' : '/', { tag: rest || 'all' })
+        // Stay on the folders page: leaving it would drop its Undo toast.
+        const stay = now.path === '/lamps' || now.path === '/me'
+        goHash(stay ? now.path : '/', { tag: rest || 'all' })
       }
     },
     [persist],

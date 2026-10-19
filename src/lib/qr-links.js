@@ -14,7 +14,7 @@ export function friendQrLink(friendId) {
 
 export function familyQrLink(code) {
   const clean = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-  return clean.length === 6 ? `${SCAN_URL}j/${clean}` : ''
+  return clean.length === 6 || clean.length === 10 ? `${SCAN_URL}j/${clean}` : ''
 }
 
 // { friend: '123456789012' }, { family: 'ABC123' }, or null. Reads the page
@@ -23,7 +23,7 @@ export function readQrLink(text) {
   const raw = String(text || '').trim().split(/[?#]/)[0]
   const friend = /^(?:https:\/\/(?:www\.)?did-i\.app\/f\/|didi(?:-dev)?:\/\/friend\/)(\d{12})\/?$/i.exec(raw)
   if (friend) return { friend: friend[1] }
-  const family = /^(?:https:\/\/(?:www\.)?did-i\.app\/j\/|didi(?:-dev)?:\/\/family\/)([a-z0-9]{6})\/?$/i.exec(raw)
+  const family = /^(?:https:\/\/(?:www\.)?did-i\.app\/j\/|didi(?:-dev)?:\/\/family\/)([a-z0-9]{6}|[a-z0-9]{10})\/?$/i.exec(raw)
   if (family) return { family: family[1].toUpperCase() }
   return null
 }
@@ -48,7 +48,7 @@ export function scanFromText(text) {
 }
 
 export function savePendingScan(routeId) {
-  if (!/^(friend:\d{12}|family:[A-Z0-9]{6})$/.test(String(routeId || ''))) return false
+  if (!/^(friend:\d{12}|family:[A-Z0-9]{6}|family:[A-Z0-9]{10})$/.test(String(routeId || ''))) return false
   try {
     localStorage.setItem(KEY, routeId)
     return true
