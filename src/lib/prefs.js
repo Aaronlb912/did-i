@@ -47,6 +47,8 @@ function blankPrefs() {
     // Hour of the family summary push on the person's clock. The server reads
     // profiles.family_hour (supabase/family-summary.sql); this mirrors it.
     familyHour: 21,
+    // The morning ask card on Tonight (morning-ask.js).
+    morningAsk: true,
   }
 }
 
@@ -131,6 +133,7 @@ function cleanPrefs(raw) {
   if (QUIET_TIME.test(raw?.quietFrom || '')) next.quietFrom = raw.quietFrom
   if (QUIET_TIME.test(raw?.quietTo || '')) next.quietTo = raw.quietTo
   if (raw?.dropPings === true) next.dropPings = true
+  if (raw?.morningAsk === false) next.morningAsk = false
   if (Number.isInteger(raw?.familyHour) && raw.familyHour >= 0 && raw.familyHour <= 23) next.familyHour = raw.familyHour
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true

@@ -55,7 +55,7 @@ export function upcomingPings(book, now = new Date()) {
     // No time set: no ask note, but a high one still gets the late note.
     const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
     const at = match ? new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0) : null
-    if (at && !row.answer && at.getTime() > now.getTime() && waiting.has(`${row.lamp.id}:${row.periodKey}`)) {
+    if (at && !row.answer && at.getTime() > now.getTime() && (row.lamp.morning || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
       fires.push({
         id: row.lamp.id,
         tag: `${row.lamp.id}:${row.periodKey}`,

@@ -102,12 +102,19 @@ import {
   markNightOneSeen,
   markSignInNudgeSeen,
   nightOneSeen,
+  readMorningAsk,
   readWidgetTip,
+  shouldShowMorningAsk,
   shouldShowWidgetTip,
   showSignInNudge,
   signInNudgeSeen,
+  takeMorningFocus,
+  writeMorningAsk,
   writeWidgetTip,
 } from '../../src/lib/first-run.js'
+import { addMorning, isTodayOnce, morningCount, morningOpen, todayLabel } from '../../src/lib/morning-ask.js'
+import { commitBook } from '../../src/lib/achievements.js'
+import { MorningAsk } from '../components/MorningAsk.jsx'
 import { pinWidget, showWidgetTip, widgetPlaced } from '../lib/widget-pin.js'
 
 // Where the stack has no card of your own to swipe, so a Did we can have it.
@@ -116,8 +123,9 @@ const WE_SWIPE_OVER = new Set(['hall', 'finish', 'rest', 'off', 'waiting'])
 // A kept did you says who sent it next to its tag.
 function cardKicker(row, fallback) {
   const from = row.lamp?.fromName ? t('inbox.from', { name: row.lamp.fromName }) : ''
-  const tag = row.tag || (from ? '' : fallback)
-  return [tag, from].filter(Boolean).join(' · ')
+  const today = isTodayOnce(row.lamp, row.dateIso) ? todayLabel(row.lamp) : ''
+  const tag = row.tag || (from || today ? '' : fallback)
+  return [today, tag, from].filter(Boolean).join(' · ')
 }
 
 function useMinuteNow() {
@@ -494,6 +502,63 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasQuestion])
+  // The morning ask: before noon, a card to add one-day questions for today.
+  // After an add it stays until Tonight is left; Not today hides it for the day.
+  const morningOn = usePrefs().morningAsk !== false
+  const [morningState, setMorningState] = useState(readMorningAsk)
+  const [morningHere, setMorningHere] = useState(false)
+  const [morningFocus, setMorningFocus] = useState(() => (takeMorningFocus() ? 1 : 0))
+  useEffect(() => {
+    const look = () => {
+      setMorningState(readMorningAsk())
+      if (takeMorningFocus()) setMorningFocus((n) => n + 1)
+    }
+    const offFocus = navigation.addListener('focus', look)
+    const offBlur = navigation.addListener('blur', () => {
+      setMorningHere(false)
+      setMorningFocus(0)
+    })
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') look()
+      else setMorningHere(false)
+    })
+    return () => {
+      offFocus()
+      offBlur()
+      sub.remove()
+    }
+  }, [navigation])
+  const showMorning = shouldShowMorningAsk({
+    state: morningState,
+    today: stack.dateIso,
+    on: morningOn,
+    open: morningOpen(now),
+    busy: nightOne || !hasQuestion,
+    addedHere: morningHere,
+  })
+  const morningN = showMorning ? morningCount(stack.shelf || [book], stack.dateIso) : 0
+  const addMorningQuestion = (text, at) => {
+    // The shelf's copy holds a Did tapped a moment ago that the prop may not have yet.
+    const live = (stack.shelf || []).find((item) => item.id === book.id) || book
+    const out = addMorning(live, stack.shelf || [book], text, new Date(), at)
+    if (out.error) return out.error === 'empty' ? '' : out.error
+    try {
+      onChange(commitBook(out.book, new Date()))
+    } catch {
+      return 'failed'
+    }
+    const next = { ...readMorningAsk(), addedDay: stack.dateIso }
+    writeMorningAsk(next)
+    setMorningState(next)
+    setMorningHere(true)
+    return ''
+  }
+  const morningNotToday = () => {
+    const next = { ...readMorningAsk(), offDay: stack.dateIso }
+    writeMorningAsk(next)
+    setMorningState(next)
+    setMorningHere(false)
+  }
   // After a cleared night, one card asks to sign in. Dismissed stays dismissed.
   const [nudgeGone, setNudgeGone] = useState(signInNudgeSeen)
   const signInNudge = showSignInNudge({
@@ -1201,6 +1266,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.nightDone} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} waiting={peopleWaitingLine(peopleItems)} />
       </Slot>
 
+      {showMorning ? (
+        <MorningAsk colors={colors} count={morningN} focus={morningFocus} onAdd={addMorningQuestion} onOff={morningNotToday} />
+      ) : null}
+
       {showChips ? (
         <FadeScroll scrollRef={pillScroll} fade={colors.bg} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
           <Slot>{tagFilter}</Slot>
@@ -1223,7 +1292,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               <Jewel
                 key={stack.rowKey(row)}
                 label={stack.shortLabel(row.lamp)}
-                tag={row.tag && tagsMixed ? row.tag : ''}
+                tag={isTodayOnce(row.lamp, row.dateIso) ? todayLabel(row.lamp) : row.tag && tagsMixed ? row.tag : ''}
                 on={on}
                 skip={skip}
                 late={late}
