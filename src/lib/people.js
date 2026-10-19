@@ -49,11 +49,17 @@ export function sendMiss(error) {
   return 'people.reach'
 }
 
-// A family join code is six. An invite code is ten. Same alphabet.
+// A family join code is ten (old families keep six). An invite code is ten.
+// Same alphabet.
 export const FAMILY_CODE_LEN = 6
 export const INVITE_CODE_LEN = 10
 
-export function cleanCode(value, len = FAMILY_CODE_LEN) {
+// Six or ten characters.
+export function familyCodeOk(code) {
+  return code.length === FAMILY_CODE_LEN || code.length === INVITE_CODE_LEN
+}
+
+export function cleanCode(value, len = INVITE_CODE_LEN) {
   return String(value || '')
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '')
@@ -1209,7 +1215,7 @@ export async function joinFamily(code) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const want = cleanCode(code)
-  if (want.length !== FAMILY_CODE_LEN) return { miss: 'code' }
+  if (!familyCodeOk(want)) return { miss: 'code' }
   const { data, error } = await db.rpc('join_family', { want_code: want })
   if (error) {
     if (/too many tries/i.test(error.message)) return { miss: 'tooMany' }
@@ -1225,7 +1231,7 @@ export async function lookUpFamily(code) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const want = cleanCode(code)
-  if (want.length !== FAMILY_CODE_LEN) return { miss: 'code' }
+  if (!familyCodeOk(want)) return { miss: 'code' }
   const { data, error } = await db.rpc('look_up_family', { want_code: want })
   if (error) {
     if (notRunYet(error)) return { miss: 'setup' }

@@ -20,20 +20,25 @@ public final class WidgetTapStore {
     // A card holds far fewer questions than this. It only stops a runaway queue.
     private static final int MAX_ROWS = 40;
 
+    /** commit() results: not saved, an earlier mark was kept, or this tap was saved. */
+    public static final int FAILED = 0;
+    public static final int KEPT = 1;
+    public static final int WROTE = 2;
+
     private WidgetTapStore() {}
 
-    public static synchronized boolean commit(Context context, String lampId, String kind, String night) {
+    public static synchronized int commit(Context context, String lampId, String kind, String night) {
         return commit(context, lampId, kind, night, 0L);
     }
 
     // at: when the tap happened (ms), for taps that arrive late (a watch
     // reconnecting). 0 or a future time means now.
-    public static synchronized boolean commit(Context context, String lampId, String kind, String night, long at) {
+    public static synchronized int commit(Context context, String lampId, String kind, String night, long at) {
         long now = System.currentTimeMillis();
         long tappedAt = at > 0 && at <= now ? at : now;
         String lamp = clip(lampId);
         String mark = "did".equals(kind) || "nope".equals(kind) ? kind : "";
-        if (lamp.isEmpty() || mark.isEmpty()) return false;
+        if (lamp.isEmpty() || mark.isEmpty()) return FAILED;
         String storedNight = clip(night);
         try {
             JSONArray rows = rows(prefs(context).getString(KEY, ""));
@@ -42,10 +47,10 @@ public final class WidgetTapStore {
                 if (existing == null) continue;
                 if (lamp.equals(existing.optString("lampId")) && storedNight.equals(clip(existing.optString("night")))) {
                     // Did after Not yet wins; anything else keeps the first mark.
-                    if (!"did".equals(mark) || !"nope".equals(existing.optString("kind"))) return true;
+                    if (!"did".equals(mark) || !"nope".equals(existing.optString("kind"))) return KEPT;
                     existing.put("kind", mark);
                     existing.put("at", tappedAt);
-                    return prefs(context).edit().putString(KEY, rows.toString()).commit();
+                    return prefs(context).edit().putString(KEY, rows.toString()).commit() ? WROTE : FAILED;
                 }
             }
             // Full: drop the oldest so the newest tap still counts.
@@ -57,9 +62,9 @@ public final class WidgetTapStore {
             // When it was tapped, so JS can drop a tap on a card whose night already turned.
             row.put("at", tappedAt);
             rows.put(row);
-            return prefs(context).edit().putString(KEY, rows.toString()).commit();
+            return prefs(context).edit().putString(KEY, rows.toString()).commit() ? WROTE : FAILED;
         } catch (JSONException error) {
-            return false;
+            return FAILED;
         }
     }
 

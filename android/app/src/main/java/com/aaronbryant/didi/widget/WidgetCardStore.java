@@ -126,11 +126,25 @@ public final class WidgetCardStore {
 
         JSONObject nextLead = null;
         int left = 0;
+        JSONObject firstSkip = null;
+        int skips = 0;
         for (int i = 0; i < nextItems.length(); i++) {
             JSONObject item = nextItems.optJSONObject(i);
-            if (item == null || !"open".equals(item.optString("status"))) continue;
+            if (item == null) continue;
+            String status = item.optString("status");
+            if ("skip".equals(status)) {
+                skips += 1;
+                if (firstSkip == null) firstSkip = item;
+                continue;
+            }
+            if (!"open".equals(status)) continue;
             left += 1;
             if (nextLead == null) nextLead = item;
+        }
+        // Same as widgetLeadFromItems: no open question, fall back to skips.
+        if (nextLead == null && firstSkip != null) {
+            nextLead = firstSkip;
+            left = skips;
         }
 
         String footer = card.optString("footer");

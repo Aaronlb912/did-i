@@ -19,6 +19,8 @@ export function AddScreen({ book, boards, onChange, onSaveTo, route, mode: start
   const editing = Boolean(route?.id) && startMode === 'i'
   const [mode, setMode] = useState(startMode)
   const [picking, setPicking] = useState(false)
+  // Add another starts over with a blank question on the same screen.
+  const [round, setRound] = useState(0)
   const words = useRef(startMode === 'i' ? '' : route?.start || '')
   // Did I words that sound shared offer Did we, once, without switching.
   const [together, setTogether] = useState(false)
@@ -47,13 +49,18 @@ export function AddScreen({ book, boards, onChange, onSaveTo, route, mode: start
         <DidYouScreen key="you" book={book} start={words.current} withId={withId} {...shared} />
       ) : (
         <HangScreen
-          key="i"
+          key={`i${round}`}
           book={book}
           boards={boards}
           onChange={onChange}
           onSaveTo={onSaveTo}
           route={route}
           initialBlank={words.current}
+          onAnother={() => {
+            words.current = ''
+            setTogether(false)
+            setRound((n) => n + 1)
+          }}
           below={
             together && account.user ? (
               <Pill

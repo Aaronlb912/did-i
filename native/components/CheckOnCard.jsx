@@ -148,7 +148,18 @@ export function CheckOnCard({ lamp, colors }) {
             </View>
           )}
           <Text style={[styles.cap, { color: colors.inkDim }]}>{t('checkOn.timeLabel')}</Text>
-          <View style={styles.keys}>
+          <View
+            style={styles.keys}
+            accessible
+            accessibilityRole="adjustable"
+            accessibilityLabel={t('checkOn.timeLabel')}
+            accessibilityValue={{ text: minuteClock(at) }}
+            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+            onAccessibilityAction={(event) => {
+              const by = event.nativeEvent.actionName === 'increment' ? 30 : event.nativeEvent.actionName === 'decrement' ? -30 : 0
+              if (by) setAt((m) => cleanMinute(m + by))
+            }}
+          >
             <KeyButton colors={colors} label="-30" onPress={() => setAt((m) => cleanMinute(m - 30))} />
             <Text style={[styles.time, { color: colors.ink }]} accessibilityLiveRegion="polite">
               {minuteClock(at)}

@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { useEffect } from 'react'
+import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { fonts, radius } from '../theme.js'
 import { AuthLegalNote } from './AuthLegalNote.jsx'
@@ -13,6 +14,10 @@ export function AuthEmailCard({
   showLegal = true,
   footer = null,
 }) {
+  // A sign-in error shows in red text; VoiceOver and TalkBack only hear it announced.
+  useEffect(() => {
+    if (auth.miss) AccessibilityInfo.announceForAccessibility(auth.miss)
+  }, [auth.miss])
   const heading = title ?? t('auth.title')
   const lead = body ?? t('auth.body')
 

@@ -4,6 +4,7 @@ import { topicLabel } from '../../src/lib/board-json.js'
 import { joinTagIds, leftoverOn, tagIdsOf } from '../../src/lib/tags.js'
 import { t } from '../../src/lib/i18n.js'
 import { ripple } from '../lib/ripple.js'
+import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 
 // One filter popup for folders and, where the screen passes them, topics.
@@ -182,6 +183,17 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
                 </>
               ) : null}
             </ScrollView>
+            <Pressable
+              accessibilityRole="button"
+              style={[styles.done, { borderTopColor: colors.line }]}
+              onPress={() => {
+                setOpen(false)
+                goHash('/me')
+              }}
+              android_ripple={ripple(colors.panel3)}
+            >
+              <Text style={[styles.doneText, { color: colors.ink }]}>{t('tags.edit')}</Text>
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               style={[styles.done, { borderTopColor: colors.line }]}

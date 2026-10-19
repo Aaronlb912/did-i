@@ -91,12 +91,13 @@ begin
       perform public.we_nudge(other, c, night);
       n := n + 1;
     exception when raise_exception then
-      if sqlerrm <> 'enough nudges tonight' then raise; end if;
+      if sqlerrm not in ('enough nudges tonight', 'already nudged tonight') then raise; end if;
     end;
   end loop;
   execute 'reset role';
-  if n <> public.we_max_nudges_nightly() then
-    raise exception 'FAIL: % nudges got through in a night', n;
+  -- One sender gets one nudge per person per night (sweep-guards.sql).
+  if n <> 1 then
+    raise exception 'FAIL: % nudges from one sender got through in a night', n;
   end if;
 
   -- Blocking leaves shared cards -------------------------------------------

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { t } from '../../src/lib/i18n.js'
 import { fonts, radius } from '../theme.js'
 
 export function HangSelect({ value, onChange, options, ariaLabel, colors, open: openIn, onOpenChange }) {
@@ -21,7 +22,8 @@ export function HangSelect({ value, onChange, options, ariaLabel, colors, open: 
     <View style={styles.shell}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={ariaLabel}
+        accessibilityLabel={current?.label ? `${ariaLabel}, ${current.label}` : ariaLabel}
+        accessibilityHint={t('a11y.pickHint')}
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen(!open)}
         style={[

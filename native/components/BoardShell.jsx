@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useIsFocused, useRoute } from '@react-navigation/native'
-import { Animated, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native'
+import { Animated, Keyboard, KeyboardAvoidingView, Platform, RefreshControl, StyleSheet, TextInput, View } from 'react-native'
 import { activeLook } from '../../src/lib/active-look.js'
 import { hallHour } from '../../src/lib/hall-feel.js'
 import { isGemLook, mergePurses, normalizePurse } from '../../src/lib/purse.js'
@@ -43,6 +43,8 @@ export function BoardShell({
   scrollY: scrollYIn,
   // Optional bar pinned under the page (first run: Continue stays in view).
   footer = null,
+  // Optional async reload: pull down to run it.
+  onRefresh = null,
 }) {
   const { bottom: bottomPad } = useAppInsets()
   const headerInset = useHeaderInset()
@@ -53,6 +55,7 @@ export function BoardShell({
   // adds scroll room for whatever part of the scroll view the keyboard still
   // covers once KeyboardAvoidingView has done its share.
   const scrollRef = useRef(null)
+  const [refreshing, setRefreshing] = useState(false)
   const [keyboardTop, setKeyboardTop] = useState(null)
   const [scrollBottom, setScrollBottom] = useState(null)
   const focused = useIsFocused()
@@ -202,6 +205,17 @@ export function BoardShell({
         style={[styles.scroll, pageBg]}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true)
+                Promise.resolve(onRefresh()).catch(() => {}).finally(() => setRefreshing(false))
+              }}
+            />
+          ) : undefined
+        }
         keyboardShouldPersistTaps="handled"
         onScroll={onScroll}
         scrollEventThrottle={16}

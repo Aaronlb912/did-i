@@ -79,7 +79,7 @@ export function DidYouLinkHost({ colors, onKeep }) {
     if (!code) return undefined
     const we = isWeLinkCode(code)
     if (we && !userId) {
-      // Kept until they sign in. Asked once; Not now lets the link go.
+      // Kept until they sign in. Asked once; Not now only closes the sheet, the link still runs after sign-in.
       if (askedSignIn.current === code) return undefined
       askedSignIn.current = code
       publishSheet({
@@ -88,10 +88,7 @@ export function DidYouLinkHost({ colors, onKeep }) {
         goLabel: t('we.signIn'),
         closeLabel: t('account.stay'),
         colors,
-        onClose: () => {
-          publishSheet(null)
-          dropPendingDidYou(code)
-        },
+        onClose: () => publishSheet(null),
         onGo: () => {
           publishSheet(null)
           goHash('/account')

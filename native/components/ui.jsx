@@ -208,6 +208,7 @@ export function Field({
       <AppTextInput
         colors={colors}
         value={value}
+        accessibilityLabel={label || placeholder}
         onChangeText={onChangeText}
         multiline={multiline}
         placeholder={placeholder}

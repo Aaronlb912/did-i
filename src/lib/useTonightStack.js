@@ -37,6 +37,25 @@ export const UNDO_MS = ANSWER_UNDO_MS
 
 export const FINISH_FACE = '__finish__'
 
+// Undo puts back only the one answer (and what the tap paid) on the live
+// folder, so nothing answered elsewhere in the window is lost.
+export function undoneBook(live, undo) {
+  const old = undo.book
+  // What the tap itself added; other taps in the window stay.
+  const gone = (key) => Math.max(0, (Number(undo.after?.[key]) || 0) - (Number(old[key]) || 0))
+  const lessened = (key) => Math.max(0, (Number(live[key]) || 0) - gone(key))
+  const untouched = !undo.after || (undo.after.cheerUses ?? 0) === (live.cheerUses ?? 0)
+  const same = (item) => item.lampId === undo.lampId && item.periodKey === undo.periodKey
+  const before = (old.answers || []).find(same)
+  return {
+    ...live,
+    answers: [...(live.answers || []).filter((item) => !same(item)), ...(before ? [before] : [])],
+    coins: lessened('coins'),
+    cheerUses: lessened('cheerUses'),
+    ...(untouched ? { cheerStages: old.cheerStages, cheerStage: old.cheerStage } : {}),
+  }
+}
+
 export function useTonightStack({
   value,
   boards = [],
@@ -132,7 +151,7 @@ export function useTonightStack({
     const next = putAnswer(book, row, finalStatus, clock)
     setOverlay(next)
     change(next)
-    armUndo({ book, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
+    armUndo({ book, after: next, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
     feelTap(finalStatus === 'skip' ? 'skip' : 'did')
   }
   const hallOn = dueClearTonight(due)
@@ -288,8 +307,9 @@ export function useTonightStack({
 
   function applyUndo() {
     if (!undo) return
-    setOverlay(undo.book)
-    change(undo.book)
+    const next = undoneBook(shelf.find((item) => item.id === undo.book.id) || undo.book, undo)
+    setOverlay(next)
+    change(next)
     // The tap may already be on the account; without this the next pull brings it back.
     takeBackAnswer(undo.book, undo.lampId, undo.periodKey).catch(reportRejection('undo-answer'))
     setUndo(null)
@@ -343,7 +363,7 @@ export function useTonightStack({
     setWaitPick(null)
     // A picked card stays open in its answered state, with its note.
     if (!pillPick || rowKey(pillPick) !== rowKey(row)) setPillPick(null)
-    armUndo({ book, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
+    armUndo({ book, after: next, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
     const clears = !wasClear && allClearTonight(next, clock)
     // One success when the night clears, not a Did and then a second one.
     if (finalStatus === 'skip') feelTap('skip')
