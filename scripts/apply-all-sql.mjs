@@ -71,6 +71,7 @@ const files = [
   'supabase/refunds.sql',
   'supabase/invite-owner.sql',
   'supabase/live-more.sql',
+  'supabase/morning-cap.sql',
   'supabase/drop-tonight.sql',
 ]
 

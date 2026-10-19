@@ -5,6 +5,11 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Morning ask (branch `morning-today`, needs SQL, OTA)
+
+- **Built:** before noon Tonight shows "Anything to remember today?" with a field, an optional time and Add (`native/components/MorningAsk.jsx`, `src/lib/morning-ask.js`). Each add is a one-day question on today (`cadence: 'once'`, `optional`, `morning`), so a Not yet never cuts a streak and a Did pays coins. A time is the question's own reminder (askAfter), so the card also waits until then. Not today hides it for the day; after an add it stays until Tonight is left. 10 a day, in the UI and `supabase/morning-cap.sql` (drops extras on save). The 9:00 day nudge asks "What do you want to remember today?" and focuses the field. "Today" label on Tonight pills, cards and the questions list; the past day's sheet lists them with Did / Not yet. Switch `Morning ask` under Day reminders.
+- **Not done:** apply `supabase/morning-cap.sql` (in `db:apply:all`), then `npm run db:test supabase/tests/morning-cap.test.sql`. Phone only; the website has no card. Not tried on a phone. Two phones over the cap offline keep their extras locally until the next pull. The nudge only focuses the card when it is showing (not after Not today or past noon).
+
 ## Day nudges (OTA, not tried on a phone)
 
 - **Built:** two local nudges a day, 9:00 and 13:30, for the next 7 days (`src/lib/day-nudges.js`, scheduled with the rest in `native/shim/native.js`). None on a day with every question Did, none within an hour of a question's own reminder, dropped in quiet hours. Re-armed on every answer. On for everyone; switch `Day reminders` (`pingsOff: 'day'`) in Notifications. A second permission ask after a first Did, once, for people who said Not now.

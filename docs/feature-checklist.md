@@ -62,3 +62,19 @@ check that missed it (test, rule, or this checklist), not only the code.
 | Which push goes out, and its switch? | None from the server. Local, under Day reminders. |
 | What happens to data when it ends? | Turning the switch off cancels them on the next arm. |
 | Success / failure / destructive / double tap messages? | Not now closes the card; denied shows Open phone settings. |
+
+## Example: morning ask (one-day questions for today)
+
+| Question | Answer |
+|---|---|
+| Already friends? / Not friends? / Blocked? / Same family? / They leave? | n/a: your own questions only. |
+| Signed out? | Works; stays on the phone. |
+| Brand new install? | Hidden until there is a question (set-up first) and after night one. |
+| Offline? | Saved like any add; syncs later. |
+| Full or capped? | 10 a day. The card says the day is full. The server drops extras. |
+| Expired? | Card gone at noon. The question leaves Tonight after its day; the day's sheet keeps it. |
+| What does the other person see? | Nothing new. |
+| What does the widget show? | The question, like any due today. |
+| Which push goes out, and its switch? | 9:00 day nudge asks for today (Day reminders, Morning ask). A picked time reminds like any question (Reminders). |
+| What happens to data when it ends? | Put away after its day with its answer. |
+| Messages? | Empty: nothing. Same question today: refused. Time passed: refused. Failed save: says so. |

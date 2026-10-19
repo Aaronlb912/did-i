@@ -204,3 +204,51 @@ export function writeWidgetTip(state) {
     // Shows again next time; harmless.
   }
 }
+
+// The morning ask card: offDay is a Not today, addedDay a day something was
+// added from it. Either hides it for the rest of that day (an add only once
+// Tonight is left, so more can be added right away).
+const MORNING_KEY = 'did-i-morning-ask'
+const MORNING_FOCUS_KEY = 'did-i-morning-focus'
+
+export function shouldShowMorningAsk({ state, today, on, open, busy, addedHere }) {
+  const day = state || {}
+  if (!on || !open || busy || day.offDay === today) return false
+  return day.addedDay !== today || Boolean(addedHere)
+}
+
+export function readMorningAsk() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(MORNING_KEY) || '{}')
+    return raw && typeof raw === 'object' ? raw : {}
+  } catch {
+    return {}
+  }
+}
+
+export function writeMorningAsk(state) {
+  try {
+    localStorage.setItem(MORNING_KEY, JSON.stringify(state))
+  } catch {
+    // Shows again next time; harmless.
+  }
+}
+
+// The 9:00 nudge asks Tonight to focus the card's field once.
+export function askMorningFocus() {
+  try {
+    localStorage.setItem(MORNING_FOCUS_KEY, '1')
+  } catch {
+    // The card still shows; only the focus is lost.
+  }
+}
+
+export function takeMorningFocus() {
+  try {
+    const on = localStorage.getItem(MORNING_FOCUS_KEY) === '1'
+    if (on) localStorage.removeItem(MORNING_FOCUS_KEY)
+    return on
+  } catch {
+    return false
+  }
+}

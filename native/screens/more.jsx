@@ -1806,6 +1806,19 @@ function PingKinds({ colors, on }) {
               on={!prefs.pingsOff.includes(kind)}
               onPress={() => flip(kind)}
             />
+            {kind === 'day' ? (
+              <SetSwitch
+                colors={colors}
+                label={t('morning.toggle')}
+                sub={t('morning.toggleSub')}
+                on={prefs.morningAsk !== false}
+                onPress={() => {
+                  writePrefs({ morningAsk: prefs.morningAsk === false })
+                  // The 9:00 nudge's words follow this switch.
+                  armLampPings(readShelf().boards).catch(() => {})
+                }}
+              />
+            ) : null}
             {kind === 'family' && !prefs.pingsOff.includes('family') ? (
               <SetChoice
                 colors={colors}

@@ -9,6 +9,7 @@ import {
   verifyNotificationPermission,
 } from '../lib/notification-perms.js'
 import { isNativeHall } from './native.js'
+import { askMorningFocus } from '../../src/lib/first-run.js'
 
 const CHANNEL_ID = 'did-i'
 const SEND_CATEGORY = 'did-i-send'
@@ -133,7 +134,10 @@ async function bindResponseListener(handlers = {}) {
       } else if (answer?.kind === 'lamp' && typeof handlers.onAnswer === 'function') {
         handlers.onAnswer(answer.id, answer.action, answer.night, answer.at)
       } else if (lampId && typeof onLamp === 'function') onLamp(lampId)
-      else if (go && typeof onGo === 'function') onGo(go)
+      else if (go && typeof onGo === 'function') {
+        if (data.morning) askMorningFocus()
+        onGo(go)
+      }
     }
     Notifications.addNotificationResponseReceivedListener(handle)
     // The tap that launched the app came before this listener existed.

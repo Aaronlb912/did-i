@@ -7,7 +7,7 @@ import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, askActions, askNoteData } from '../../src/lib/notify-answer.js'
-import { afterQuiet, gentleOn, pingOn } from '../../src/lib/prefs.js'
+import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
@@ -277,10 +277,17 @@ async function schedulePingsNow(books, now = new Date()) {
       const reminders = notes.map((note) => note.trigger.date)
       // Only the room the cap leaves, so a nudge never crowds out a question.
       const room = PING_CAP - notes.length
+      // The 9:00 one asks for today's questions and opens the morning card.
+      const morning = readPrefs().morningAsk
       for (const nudge of dayNudges(list, now, { days: PING_DAYS, reminders, shift: afterQuiet }).slice(0, Math.max(0, room))) {
+        const ask = morning && nudge.slot === 0
         notes.push({
           identifier: String(notifyId('day', nudge.at.toISOString())),
-          content: { title: 'Did I', body: t(`pings.day.${nudge.line}`), data: { go: '/tonight' } },
+          content: {
+            title: 'Did I',
+            body: ask ? t('pings.day.morning') : t(`pings.day.${nudge.line}`),
+            data: ask ? { go: '/tonight', morning: true } : { go: '/tonight' },
+          },
           trigger: when(nudge.at),
         })
       }
