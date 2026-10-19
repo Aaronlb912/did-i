@@ -8285,6 +8285,76 @@ await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an ho
   assert.ok(all.length <= 60)
 })
 
+await testAsync('morning ask: one-day questions for today, capped, never cut a streak, kept on the past day', async () => {
+  const { addMorning, isTodayOnce, morningCount, morningOpen, MORNING_CAP } = await import('../src/lib/morning-ask.js')
+  const { shouldShowMorningAsk } = await import('../src/lib/first-run.js')
+  const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
+  const { nightWhy } = await import('../src/lib/hall-pages.js')
+  const { coinsFor } = await import('../src/lib/purse.js')
+  const { normalizeLamp } = await import('../src/lib/board-json.js')
+  const morning = new Date(2026, 9, 18, 8, 30)
+  const yes = (lampId, periodKey) => ({ lampId, periodKey, status: 'yes', answeredAt: `${periodKey}T21:00:00` })
+  const daily = { id: 'd', question: 'Walk?', cadence: 'daily', createdOn: '2026-10-10', archived: false }
+  const base = { id: 'b', dayFoldHour: 0, lamps: [daily], answers: ['2026-10-16', '2026-10-17'].map((iso) => yes('d', iso)) }
+  assert.equal(morningOpen(morning), true)
+  assert.equal(morningOpen(new Date(2026, 9, 18, 12, 0)), false)
+  assert.equal(addMorning(base, [base], '   ', morning).error, 'empty')
+  assert.equal(addMorning(base, [base], 'walk?', morning).error, 'dupe', 'same words as a question already asked')
+  const one = addMorning(base, [base], 'Call the dentist?', morning)
+  assert.equal(one.lamp.cadence, 'once')
+  assert.equal(one.lamp.onceOn, '2026-10-18')
+  assert.ok(isTodayOnce(one.lamp, '2026-10-18'))
+  assert.ok(normalizeLamp(one.lamp).morning && normalizeLamp(one.lamp).optional, 'the flags survive a save')
+  assert.equal(addMorning(one.book, [one.book], 'call the  dentist?', morning).error, 'dupe')
+  let full = base
+  for (let i = 0; i < MORNING_CAP; i += 1) full = addMorning(full, [full], `Thing ${i}?`, morning).book
+  assert.equal(morningCount([full], '2026-10-18'), MORNING_CAP)
+  assert.equal(addMorning(full, [full], 'One more?', morning).error, 'full')
+  // The card: Not today hides it for the day; an add hides it once Tonight is left.
+  const ask = (state, more = {}) => shouldShowMorningAsk({ state, today: '2026-10-18', on: true, open: true, busy: false, addedHere: false, ...more })
+  assert.equal(ask({}), true)
+  assert.equal(ask({ offDay: '2026-10-18' }), false)
+  assert.equal(ask({ offDay: '2026-10-17' }), true)
+  assert.equal(ask({ addedDay: '2026-10-18' }), false)
+  assert.equal(ask({ addedDay: '2026-10-18' }, { addedHere: true }), true)
+  assert.equal(ask({}, { on: false }), false)
+  assert.equal(ask({}, { open: false }), false)
+  assert.equal(ask({}, { busy: true }), false)
+  // Streak: an open, a Not yet and a Did one-day question never lower it.
+  const night = new Date(2026, 9, 18, 21, 30)
+  const before = streakOf([base], night)
+  assert.equal(streakOf([one.book], night), before, 'open today')
+  const doneToday = { ...one.book, answers: [...one.book.answers, yes('d', '2026-10-18')] }
+  assert.equal(streakOf([doneToday], night), streakOf([{ ...base, answers: doneToday.answers }], night), 'the daily one alone clears the night')
+  // Next day: yesterday's one-day question closed as Not yet and put away.
+  const tomorrow = new Date(2026, 9, 19, 9, 0)
+  const closed = closePastNights(doneToday, tomorrow)
+  assert.ok(closed.lamps.find((l) => l.id === one.lamp.id).archived)
+  assert.equal(streakOf([closed], tomorrow), streakOf([closePastNights({ ...base, answers: doneToday.answers }, tomorrow)], tomorrow), 'a Not yet on it does not break the streak')
+  const why = nightWhy([closed], '2026-10-18', tomorrow)
+  assert.equal(why.state, 'clear')
+  assert.deepEqual(why.extras.map((row) => [row.lamp.id, row.answer?.status]), [[one.lamp.id, 'skip']], 'the past day keeps it with its Not yet')
+  // A Did on it pays coins and shows as Did on that day.
+  const did = putAnswer(doneToday, { lamp: one.lamp, periodKey: `once:${one.lamp.id}`, dateIso: '2026-10-18' }, 'yes', night)
+  assert.ok(coinsFor('yes', doneToday, { lamp: one.lamp }, night) > 0)
+  const later = closePastNights(did, tomorrow)
+  assert.equal(nightWhy([later], '2026-10-18', tomorrow).extras[0].answer.status, 'yes')
+  assert.ok(nightWhyLines(nightWhy([later], '2026-10-18', tomorrow)).some((line) => line.includes('Call the dentist')))
+  assert.equal(streakOf([later], tomorrow), streakOf([closed], tomorrow))
+  // The 9:00 nudge asks for today and opens the card; 13:30 is unchanged.
+  const native = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
+  assert.match(native, /morning && nudge.slot === 0/)
+  // A time reminds once today, through the same reminders as any question; a past time is refused.
+  const { upcomingPings } = await import('../src/lib/notify.js')
+  assert.equal(addMorning(base, [base], 'Pills?', morning, '08:00').error, 'past')
+  const timed = addMorning(base, [base], 'Pills?', morning, '10:15')
+  assert.equal(timed.lamp.askAfter, '10:15')
+  const fires = upcomingPings(timed.book, morning).filter((fire) => fire.id === timed.lamp.id)
+  assert.equal(fires.length, 1, 'exactly one reminder today')
+  assert.equal(new Date(fires[0].at).getHours(), 10)
+  assert.equal(upcomingPings(one.book, morning).filter((fire) => fire.id === one.lamp.id).length, 0, 'no time, no reminder')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

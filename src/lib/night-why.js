@@ -3,7 +3,7 @@ import { shortLabel } from './board-json.js'
 import { weCardShort } from './did-we.js'
 import { t } from './i18n.js'
 import { gentleOn } from './prefs.js'
-import { nightOpen } from './recurrence.js'
+import { nightOpen, rowDoneTonight } from './recurrence.js'
 
 const list = (items) => items.join(', ')
 
@@ -17,6 +17,11 @@ export function nightWhyLines(why, { itemsShown = false, now = new Date() } = {}
   if (why.noped.length) lines.push(t(nopeKey, { list: list(why.noped.map((row) => shortLabel(row.lamp))) }))
   if (why.unanswered.length) lines.push(t('why.unanswered', { list: list(why.unanswered.map((row) => shortLabel(row.lamp))) }))
   if (why.weOpen.length) lines.push(t('why.weOpen', { list: list(why.weOpen.map((id) => weCardShort(id) || t('we.title'))) }))
+  const extras = why.extras || []
+  const did = extras.filter(rowDoneTonight)
+  const notYet = extras.filter((row) => !rowDoneTonight(row))
+  if (did.length) lines.push(t('why.todayDid', { list: list(did.map((row) => shortLabel(row.lamp))) }))
+  if (notYet.length) lines.push(t('why.todayNotYet', { list: list(notYet.map((row) => shortLabel(row.lamp))) }))
   return lines
 }
 

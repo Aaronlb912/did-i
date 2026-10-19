@@ -39,6 +39,7 @@ import {
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
 import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
@@ -273,6 +274,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
           const urgency = dueByUrgency(row.lamp, dateIso)
           const on = Boolean(picking && picked?.has(rowKey(row)))
           const meta = [
+            isTodayOnce(row.lamp, dateIso) ? t('morning.label') : '',
             row.lamp.fromName ? t('inbox.from', { name: row.lamp.fromName }) : '',
             shelf.length > 1 ? row.tag : '',
             cadenceLine(row.lamp),

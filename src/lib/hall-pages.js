@@ -140,11 +140,13 @@ function nightMarks(books, iso, today, tagId = '') {
 // Why a night did or did not clear, with the same rules as nightMarks.
 // state: ahead | none | clear | open (tonight, not done yet) | missed.
 // noped and unanswered are question rows; weOpen is Did we card ids.
+// extras: the day's one-day questions from the morning ask, with their
+// answers. They never count for the streak, but the day keeps them.
 export function nightWhy(boards, iso, now = new Date(), tagId = '') {
   const scoped = scopedBooks(boards, tagId)
   const fold = (scoped[0] || boards?.[0])?.dayFoldHour
   const today = boardDate(now, fold)
-  const out = { iso, state: 'none', noped: [], unanswered: [], weOpen: [] }
+  const out = { iso, state: 'none', noped: [], unanswered: [], weOpen: [], extras: [] }
   if (iso > today) return { ...out, state: 'ahead' }
   const books = scoped.filter((book) => {
     const start = startNight(book)
@@ -153,7 +155,9 @@ export function nightWhy(boards, iso, now = new Date(), tagId = '') {
   const at = noonOn(iso)
   let due = 0
   for (const book of books) {
-    const rows = at ? countedTonightRows(dueOnNight(book, iso, at)) : []
+    const all = at ? dueOnNight(book, iso, at) : []
+    for (const row of all) if (row.lamp.morning) out.extras.push(row)
+    const rows = countedTonightRows(all)
     due += rows.length
     for (const row of rows) {
       if (rowDoneTonight(row)) continue
