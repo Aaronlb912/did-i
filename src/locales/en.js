@@ -1304,6 +1304,7 @@ export const en = {
   'morning.failed': "Couldn't add that. Try again.",
   'morning.past': "That time has passed today. Pick a later one.",
   'morning.label': "Today",
+  'morning.labelAt': "Today, {time}",
   'morning.toggle': "Morning ask",
   'morning.toggleSub': "Before noon, a card asks what to remember today.",
   'why.todayDid': "Today, Did: {list}",

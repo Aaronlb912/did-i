@@ -71,7 +71,7 @@ check that missed it (test, rule, or this checklist), not only the code.
 | Signed out? | Works; stays on the phone. |
 | Brand new install? | Hidden until there is a question (set-up first) and after night one. |
 | Offline? | Saved like any add; syncs later. |
-| Full or capped? | 10 a day. The card says the day is full. The server drops extras. |
+| Full or capped? | 10 a day. The card says the day is full. The server drops past 30, an abuse guard. |
 | Expired? | Card gone at noon. The question leaves Tonight after its day; the day's sheet keeps it. |
 | What does the other person see? | Nothing new. |
 | What does the widget show? | The question, like any due today. |

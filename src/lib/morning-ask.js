@@ -5,10 +5,12 @@ import { blankLamp, shortFromQuestion } from './board-json.js'
 import { hangInto } from './board-ops.js'
 import { boardDate } from './recurrence.js'
 import { wallClock } from './zone.js'
+import { clockWords } from './hall-pages.js'
+import { t } from './i18n.js'
 
 export const MORNING_CAP = 10
 export const MORNING_END_HOUR = 12
-// The server drops any past the cap (supabase/morning-cap.sql).
+// The server only drops past 30 a day, an abuse guard (supabase/morning-cap.sql).
 
 export function morningOpen(now = new Date()) {
   return wallClock(now).getHours() < MORNING_END_HOUR
@@ -17,6 +19,11 @@ export function morningOpen(now = new Date()) {
 // A one-day question on this day (the "Today" label).
 export function isTodayOnce(lamp, iso) {
   return lamp?.cadence === 'once' && lamp.onceWhen !== 'by' && String(lamp.onceOn || '') === iso
+}
+
+// "Today", or "Today, 3:00 PM" for a morning question with a reminder.
+export function todayLabel(lamp) {
+  return lamp?.morning && lamp.askAfter ? t('morning.labelAt', { time: clockWords(lamp.askAfter) }) : t('morning.label')
 }
 
 export function morningCount(boards, iso) {

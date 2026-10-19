@@ -249,7 +249,7 @@ export function normalizeLamp(raw) {
     // friend you allow): a did counts, a nope or no answer does not count
     // against you. Only set when true, so other questions are unchanged.
     ...(asBool(lamp.optional) ? { optional: true } : {}),
-    // Added from the morning ask (morning-ask.js); the server keeps 10 a day.
+    // Added from the morning ask (morning-ask.js); the server keeps 30 a day.
     ...(asBool(lamp.morning) && cadence === 'once' ? { morning: true } : {}),
     // Kept from a did you; fromName is who sent it, when known.
     ...(asBool(lamp.fromDidYou) ? { fromDidYou: true } : {}),

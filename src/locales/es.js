@@ -1307,6 +1307,7 @@ export const es = {
   'morning.failed': "No se pudo añadir. Inténtalo de nuevo.",
   'morning.past': "Esa hora ya pasó hoy. Elige una más tarde.",
   'morning.label': "Hoy",
+  'morning.labelAt': "Hoy, {time}",
   'morning.toggle': "Pregunta de la mañana",
   'morning.toggleSub': "Antes del mediodía, una tarjeta pregunta qué recordar hoy.",
   'why.todayDid': "Hoy, Did: {list}",

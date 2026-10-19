@@ -1292,6 +1292,7 @@ export const ja = {
   'morning.failed': "追加できませんでした。もう一度試してください。",
   'morning.past': "その時間は今日もう過ぎています。もっと後の時間を選んでください。",
   'morning.label': "今日",
+  'morning.labelAt': "今日 {time}",
   'morning.toggle': "朝の質問",
   'morning.toggleSub': "正午まで、カードで今日覚えておくことを聞きます。",
   'why.todayDid': "今日、Did：{list}",

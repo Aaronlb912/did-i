@@ -1307,6 +1307,7 @@ export const it = {
   'morning.failed': "Impossibile aggiungere. Riprova.",
   'morning.past': "Quell'ora è già passata oggi. Scegline una più tardi.",
   'morning.label': "Oggi",
+  'morning.labelAt': "Oggi, {time}",
   'morning.toggle': "Domanda del mattino",
   'morning.toggleSub': "Prima di mezzogiorno, una scheda chiede cosa ricordare oggi.",
   'why.todayDid': "Oggi, Did: {list}",

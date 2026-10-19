@@ -112,7 +112,7 @@ import {
   writeMorningAsk,
   writeWidgetTip,
 } from '../../src/lib/first-run.js'
-import { addMorning, isTodayOnce, morningCount, morningOpen } from '../../src/lib/morning-ask.js'
+import { addMorning, isTodayOnce, morningCount, morningOpen, todayLabel } from '../../src/lib/morning-ask.js'
 import { commitBook } from '../../src/lib/achievements.js'
 import { MorningAsk } from '../components/MorningAsk.jsx'
 import { pinWidget, showWidgetTip, widgetPlaced } from '../lib/widget-pin.js'
@@ -123,7 +123,7 @@ const WE_SWIPE_OVER = new Set(['hall', 'finish', 'rest', 'off', 'waiting'])
 // A kept did you says who sent it next to its tag.
 function cardKicker(row, fallback) {
   const from = row.lamp?.fromName ? t('inbox.from', { name: row.lamp.fromName }) : ''
-  const today = isTodayOnce(row.lamp, row.dateIso) ? t('morning.label') : ''
+  const today = isTodayOnce(row.lamp, row.dateIso) ? todayLabel(row.lamp) : ''
   const tag = row.tag || (from || today ? '' : fallback)
   return [today, tag, from].filter(Boolean).join(' · ')
 }
@@ -514,7 +514,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       if (takeMorningFocus()) setMorningFocus((n) => n + 1)
     }
     const offFocus = navigation.addListener('focus', look)
-    const offBlur = navigation.addListener('blur', () => setMorningHere(false))
+    const offBlur = navigation.addListener('blur', () => {
+      setMorningHere(false)
+      setMorningFocus(0)
+    })
     const sub = AppState.addEventListener('change', (next) => {
       if (next === 'active') look()
       else setMorningHere(false)
@@ -535,7 +538,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   })
   const morningN = showMorning ? morningCount(stack.shelf || [book], stack.dateIso) : 0
   const addMorningQuestion = (text, at) => {
-    const out = addMorning(book, stack.shelf || [book], text, new Date(), at)
+    // The shelf's copy holds a Did tapped a moment ago that the prop may not have yet.
+    const live = (stack.shelf || []).find((item) => item.id === book.id) || book
+    const out = addMorning(live, stack.shelf || [book], text, new Date(), at)
     if (out.error) return out.error === 'empty' ? '' : out.error
     try {
       onChange(commitBook(out.book, new Date()))
@@ -1287,7 +1292,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               <Jewel
                 key={stack.rowKey(row)}
                 label={stack.shortLabel(row.lamp)}
-                tag={isTodayOnce(row.lamp, row.dateIso) ? t('morning.label') : row.tag && tagsMixed ? row.tag : ''}
+                tag={isTodayOnce(row.lamp, row.dateIso) ? todayLabel(row.lamp) : row.tag && tagsMixed ? row.tag : ''}
                 on={on}
                 skip={skip}
                 late={late}

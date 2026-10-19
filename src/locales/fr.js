@@ -1309,6 +1309,7 @@ export const fr = {
   'morning.failed': "Impossible d'ajouter. Réessaie.",
   'morning.past': "Cette heure est passée aujourd'hui. Choisis plus tard.",
   'morning.label': "Aujourd'hui",
+  'morning.labelAt': "Aujourd'hui, {time}",
   'morning.toggle': "Question du matin",
   'morning.toggleSub': "Avant midi, une carte demande quoi retenir aujourd'hui.",
   'why.todayDid': "Aujourd'hui, Did : {list}",

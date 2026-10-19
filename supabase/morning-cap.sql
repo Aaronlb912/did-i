@@ -1,5 +1,5 @@
--- At most 10 morning one-day questions per day on a shelf (src/lib/morning-ask.js
--- MORNING_CAP). Questions live in shelves.doc (boards[].lamps[]); a lamp from
+-- Abuse guard: at most 30 morning one-day questions per day on a shelf. The
+-- app stops at 10 (src/lib/morning-ask.js MORNING_CAP), so no real one is dropped. Questions live in shelves.doc (boards[].lamps[]); a lamp from
 -- the morning ask has morning = true and onceOn = its day.
 -- Past the cap the extra ones (last in the doc) are dropped instead of the
 -- save being refused: two phones merging 6 + 6 must not stop sync for good.
@@ -22,7 +22,7 @@ begin
          jsonb_array_elements(case when jsonb_typeof(b->'lamps') = 'array' then b->'lamps' else '[]'::jsonb end) l
     where l->>'morning' = 'true'
     group by l->>'onceOn'
-    having count(*) > 10
+    having count(*) > 30
   ) then
     return NEW;
   end if;
@@ -38,7 +38,7 @@ begin
     select coalesce(jsonb_agg(
       case when jsonb_typeof(board->'lamps') = 'array'
         then jsonb_set(board, '{lamps}', coalesce((
-          select jsonb_agg(k.l order by k.li) from lamps k where k.bi = b.bi and (k.rank is null or k.rank <= 10)
+          select jsonb_agg(k.l order by k.li) from lamps k where k.bi = b.bi and (k.rank is null or k.rank <= 30)
         ), '[]'::jsonb))
         else board
       end order by b.bi), '[]'::jsonb)

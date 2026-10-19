@@ -1315,6 +1315,7 @@ export const de = {
   'morning.failed': "Hinzufügen fehlgeschlagen. Versuch es noch mal.",
   'morning.past': "Diese Uhrzeit ist heute vorbei. Wähle eine spätere.",
   'morning.label': "Heute",
+  'morning.labelAt': "Heute, {time}",
   'morning.toggle': "Morgenfrage",
   'morning.toggleSub': "Vor Mittag fragt eine Karte, woran du heute denken willst.",
   'why.todayDid': "Heute, Did: {list}",
