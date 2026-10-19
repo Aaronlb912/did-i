@@ -158,3 +158,49 @@ export function markSignInNudgeSeen(now = Date.now()) {
 export function showSignInNudge({ signedIn, cloud, nightDone, dismissed }) {
   return Boolean(cloud && nightDone && !signedIn && !dismissed)
 }
+
+// The widget tip: one sheet from the 2nd day the app is opened, once there is
+// a question. Not now brings it back once, 3 or more days later. Done, or a
+// widget already on the home screen, ends it.
+const WIDGET_TIP_KEY = 'did-i-widget-tip'
+export const WIDGET_TIP_MAX = 2
+export const WIDGET_TIP_GAP_DAYS = 3
+
+function dayNumber(iso) {
+  return DATE_KEY.test(iso || '') ? Math.round(Date.parse(`${iso}T00:00:00Z`) / 86400000) : NaN
+}
+
+// Counts distinct days opened. The same day again changes nothing.
+export function countWidgetTipDay(state, today) {
+  const tip = state || {}
+  if (!DATE_KEY.test(today || '') || tip.lastDay === today) return tip
+  return { ...tip, days: (tip.days || 0) + 1, lastDay: today }
+}
+
+export function shouldShowWidgetTip({ state, today, hasQuestion, widgetPlaced, busy }) {
+  const tip = state || {}
+  if (tip.done || widgetPlaced || !hasQuestion || busy) return false
+  if ((tip.days || 0) < 2) return false
+  const shown = tip.shown || 0
+  if (shown >= WIDGET_TIP_MAX) return false
+  if (shown === 0) return true
+  return dayNumber(today) - dayNumber(tip.shownDay) >= WIDGET_TIP_GAP_DAYS
+}
+
+export function readWidgetTip() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(WIDGET_TIP_KEY) || '{}')
+    return raw && typeof raw === 'object' ? raw : {}
+  } catch {
+    // No storage: count it as done so nothing nags.
+    return { done: true }
+  }
+}
+
+export function writeWidgetTip(state) {
+  try {
+    localStorage.setItem(WIDGET_TIP_KEY, JSON.stringify(state))
+  } catch {
+    // Shows again next time; harmless.
+  }
+}

@@ -47,7 +47,7 @@ import { captureInviteOnFirstLaunch } from './invite-capture.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
 import { reportRejection } from '../src/lib/report.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
-import { offerFirstPingPrimer, onPingState } from './lib/ping-primer.js'
+import { offerFirstPingPrimer, offerPingPrimerAgain, onPingState } from './lib/ping-primer.js'
 import { syncPushTokenIfAllowed } from '../src/lib/push.js'
 import { fonts } from './theme.js'
 import { noteFrameTouch } from './components/frames/index.js'
@@ -267,6 +267,20 @@ export function AppShell() {
     return () => clearTimeout(timer)
     // colors only styles the sheet; a theme change should not re-arm the ask.
   }, [gated, settingUp, shelfReady])
+
+  // A Did made in this run is the one later ask for a Not now.
+  const didCount = useRef(null)
+  useEffect(() => {
+    if (gated || Platform.OS === 'web' || !app.shelf?.boards) return undefined
+    let n = 0
+    for (const board of app.shelf.boards) for (const row of board.answers || []) if (row.status === 'yes' || row.status === 'late') n += 1
+    const was = didCount.current
+    didCount.current = n
+    // Not cleared on the next shelf write (sync lands right after a tap); the ask runs once anyway.
+    if (was != null && n > was) setTimeout(() => offerPingPrimerAgain(colors).catch(() => {}), 2500)
+    return undefined
+    // colors only styles the sheet.
+  }, [gated, app.shelf])
 
   useEffect(() => {
     let alive = true

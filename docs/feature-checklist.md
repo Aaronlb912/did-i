@@ -46,3 +46,19 @@ Link format: `https://did-i.app/d/` plus a 12-letter code.
 
 If Aaron reports a bug in it, add a line to `docs/lessons.md` and fix the
 check that missed it (test, rule, or this checklist), not only the code.
+
+## Example: day nudges
+
+| Question | Answer |
+|---|---|
+| Already friends? / Not friends? / Blocked? / Same family? / They leave? | n/a: local to your own phone and questions. |
+| Signed out? | Same as signed in; nudges read the shelf on this phone. |
+| Brand new install? | Asked for notifications after setup; nudges start once granted. |
+| Offline? | Local notifications, no network. |
+| Full or capped? | 14 a week, inside the 60 pending the phone keeps (iOS caps 64). |
+| Expired? | A rolling 7 days, refreshed on every answer and open. |
+| What does the other person see? | Nothing. |
+| What does the widget show? | Unchanged. |
+| Which push goes out, and its switch? | None from the server. Local, under Day reminders. |
+| What happens to data when it ends? | Turning the switch off cancels them on the next arm. |
+| Success / failure / destructive / double tap messages? | Not now closes the card; denied shows Open phone settings. |

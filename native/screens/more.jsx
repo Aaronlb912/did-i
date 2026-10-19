@@ -80,6 +80,7 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
+import { DAY_NUDGE_TIMES } from '../../src/lib/day-nudges.js'
 import { PING_KINDS, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
@@ -1795,7 +1796,13 @@ function PingKinds({ colors, on }) {
             <SetSwitch
               colors={colors}
               label={t(`pings.kind.${kind}`)}
-              sub={kind === 'family' ? t('pings.kind.familySubAt', { time: familyTime }) : t(`pings.kind.${kind}Sub`)}
+              sub={
+                kind === 'family'
+                  ? t('pings.kind.familySubAt', { time: familyTime })
+                  : kind === 'day'
+                    ? t('pings.kind.daySub', { morning: clockWords(DAY_NUDGE_TIMES[0]), afternoon: clockWords(DAY_NUDGE_TIMES[1]) })
+                    : t(`pings.kind.${kind}Sub`)
+              }
               on={!prefs.pingsOff.includes(kind)}
               onPress={() => flip(kind)}
             />

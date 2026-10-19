@@ -6,7 +6,7 @@ import { keepEarnedFrames, takeFramesToAnnounce, wearFrame, wornFrame } from '..
 import { nightProgress } from '../../src/lib/night-progress.js'
 import { addDaysIso } from '../../src/lib/recurrence.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
-import { publishSheet } from '../components/SheetHost.jsx'
+import { publishSheet, sheetIsUp } from '../components/SheetHost.jsx'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { AppState, Platform, Pressable,ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
@@ -96,15 +96,19 @@ import { readShelf } from '../../src/lib/board-shelf.js'
 import { syncTonightWidget } from '../widget-sync.js'
 import { cloudSetUp } from '../../src/lib/cloud.js'
 import {
+  countWidgetTipDay,
   isNewShelf,
   isNightOne,
   markNightOneSeen,
   markSignInNudgeSeen,
   nightOneSeen,
+  readWidgetTip,
+  shouldShowWidgetTip,
   showSignInNudge,
   signInNudgeSeen,
+  writeWidgetTip,
 } from '../../src/lib/first-run.js'
-import { pinWidget } from '../lib/widget-pin.js'
+import { pinWidget, showWidgetTip, widgetPlaced } from '../lib/widget-pin.js'
 
 // Where the stack has no card of your own to swipe, so a Did we can have it.
 const WE_SWIPE_OVER = new Set(['hall', 'finish', 'rest', 'off', 'waiting'])
@@ -456,6 +460,40 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     if (purse.cheerOn) fireCheer(purse.cheerOn, 3)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stack.nightDone, stack.dateIso])
+  // The widget tip: counts each day the app is opened, then from day 2 asks
+  // once (twice after a Not now) to put the questions on the home screen.
+  const hasQuestion = (stack.shelf || []).some((item) => (item.lamps || []).length > 0)
+  const nightOneRef = useRef(nightOne)
+  nightOneRef.current = nightOne
+  useEffect(() => {
+    if (!hasQuestion) return undefined
+    let timer
+    const check = () => {
+      clearTimeout(timer)
+      const now = new Date()
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+      writeWidgetTip(countWidgetTipDay(readWidgetTip(), today))
+      // A beat after the screen settles, so it never lands on another sheet.
+      timer = setTimeout(async () => {
+        const placed = await widgetPlaced()
+        const state = readWidgetTip()
+        if (placed && !state.done) writeWidgetTip({ ...state, done: true })
+        const busy = sheetIsUp() || nightOneRef.current || navigation.isFocused?.() === false
+        if (!shouldShowWidgetTip({ state, today, hasQuestion: true, widgetPlaced: placed, busy })) return
+        writeWidgetTip({ ...state, shown: (state.shown || 0) + 1, shownDay: today })
+        showWidgetTip(colors, () => writeWidgetTip({ ...readWidgetTip(), done: true }))
+      }, 2500)
+    }
+    check()
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') check()
+    })
+    return () => {
+      clearTimeout(timer)
+      sub.remove()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasQuestion])
   // After a cleared night, one card asks to sign in. Dismissed stays dismissed.
   const [nudgeGone, setNudgeGone] = useState(signInNudgeSeen)
   const signInNudge = showSignInNudge({
