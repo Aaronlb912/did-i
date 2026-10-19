@@ -125,6 +125,7 @@ Full details, signing secret names, and timings: `docs/native-rebuild.md`.
 ## Conventions
 
 - **Code map**: before changing a shared file, function, or table, run `node ~/.claude/skills/codemap/codemap.mjs impact <name>` (from the repo root). Before a commit or PR, run `... codemap.mjs diff master`. A post-merge hook rebuilds the map after pulls.
+- **Verify a change** (verifier agent, repo root): `npm run check` (what CI runs), `npm run build`, `npm run lint` (store copy only). `npm run typecheck` covers only `widgets/`, not the app. UI: `npm run dev` at http://127.0.0.1:48741/; phone: `npm run expo:dev`.
 - **Theme**: Dark / Light / Phone, stored in `src/lib/prefs.js`
   (`did-i-prefs`). Applied via `data-theme`. New colors go on `--di-*` custom
   properties in `src/lib/did-i.css` — no hardcoded hex on new screens. Shop
