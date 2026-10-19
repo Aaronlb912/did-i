@@ -777,17 +777,23 @@ function openAmountBox({ title, colors, ...rest }) {
 function WeWeek({ card, colors }) {
   const night = boardDate()
   const [mine, setMine] = useState(() => new Map())
+  const [weekMiss, setWeekMiss] = useState(false)
+  const [again, setAgain] = useState(0)
   useEffect(() => {
     let alive = true
     weMyWeek(card.id, night)
       .then((map) => {
-        if (alive) setMine(map)
+        if (!alive) return
+        setWeekMiss(false)
+        setMine(map)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (alive) setWeekMiss(true)
+      })
     return () => {
       alive = false
     }
-  }, [card.id, night, weMine(card)?.status])
+  }, [card.id, night, weMine(card)?.status, again])
   const days = weWeekDots(card, night, mine)
   const locale = readPrefs().locale
   const tint = colors.we || colors.on
@@ -817,6 +823,12 @@ function WeWeek({ card, colors }) {
         ))}
       </View>
       <Meta colors={colors}>{t('we.weekKey')}</Meta>
+      {weekMiss ? (
+        <>
+          <Text style={[styles.miss, { color: colors.miss }]}>{t('we.loadMiss')}</Text>
+          <KeyButton colors={colors} label={t('gift.retry')} onPress={() => setAgain((n) => n + 1)} />
+        </>
+      ) : null}
     </View>
   )
 }
@@ -841,6 +853,8 @@ function WeCardPage({ book, cardId, onChange }) {
   // Your link for this card while it works, so you can turn it off.
   const [link, setLink] = useState('')
   const [linkSaid, setLinkSaid] = useState('')
+  const [linkMiss, setLinkMiss] = useState(false)
+  const [linkTry, setLinkTry] = useState(0)
   const [fresh] = useState(() => justMade === cardId)
   useEffect(() => {
     if (justMade === cardId) justMade = ''
@@ -849,13 +863,17 @@ function WeCardPage({ book, cardId, onChange }) {
     let alive = true
     myWeLink(cardId)
       .then((code) => {
-        if (alive) setLink(code)
+        if (!alive) return
+        setLinkMiss(false)
+        setLink(code)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (alive) setLinkMiss(true)
+      })
     return () => {
       alive = false
     }
-  }, [cardId])
+  }, [cardId, linkTry])
   const [miss, setMiss] = useState('')
   const ans = useWeAnswer(() => load(), book)
   // Not asked tonight: its next asked night can be answered early.
@@ -905,15 +923,16 @@ function WeCardPage({ book, cardId, onChange }) {
 
   if (card === undefined) {
     return (
-      <ScreenShell book={book} title={t('we.title')} colors={colors}>
+      <ScreenShell book={book} title={t('we.title')} colors={colors} onRefresh={load}>
         <LateMeta colors={colors}>{t('we.loading')}</LateMeta>
       </ScreenShell>
     )
   }
   if (!card) {
     return (
-      <ScreenShell book={book} title={t('we.title')} colors={colors}>
+      <ScreenShell book={book} title={t('we.title')} colors={colors} onRefresh={load}>
         <Meta colors={colors}>{miss || t('we.gone')}</Meta>
+        {miss ? <KeyButton colors={colors} label={t('gift.retry')} onPress={load} /> : null}
         <KeyButton colors={colors} label={t('we.backTonight')} onPress={() => goHash('/tonight')} />
       </ScreenShell>
     )
@@ -1182,6 +1201,12 @@ function WeCardPage({ book, cardId, onChange }) {
       </View>
       <Meta colors={colors}>{t('weLink.hint')}</Meta>
       {linkSaid ? <Meta colors={colors}>{linkSaid}</Meta> : null}
+      {linkMiss ? (
+        <>
+          <Text style={[styles.miss, { color: colors.miss }]}>{t('we.loadMiss')}</Text>
+          <KeyButton colors={colors} label={t('gift.retry')} onPress={() => setLinkTry((n) => n + 1)} />
+        </>
+      ) : null}
     </View>
   )
 

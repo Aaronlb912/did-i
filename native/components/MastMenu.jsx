@@ -27,6 +27,7 @@ import { ripple } from '../lib/ripple.js'
 import { fonts, sectionLabel } from '../theme.js'
 import { HEADER_BUTTON, HeaderButton, headerLift, headerSurface } from './HeaderButton.jsx'
 import { menuIsOn, menuItems } from './mast-menu-items.js'
+import { openStore, useUpdateOffered } from './UpdatePrompt.jsx'
 import { MenuIcon } from './MenuIcon.jsx'
 
 const MastMenuCtx = createContext(null)
@@ -169,7 +170,10 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
   const anchor = measured && measured.y >= insets.top ? measured : fallback
   const people = useMenuPeople()
   const notices = useNotices()
+  const updateOut = useUpdateOffered()
   const items = menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we, notices.unseen)
+  // A newer version in the store: a row right under Home until it is installed.
+  if (updateOut) items.splice(1, 0, { key: 'update', label: t('update.menuRow'), icon: 'update', stroke: true, accent: 'on', action: openStore })
   const on = menuIsOn(items)
   const reduce = useReduceMotion()
   const theme = useTheme()
@@ -283,7 +287,8 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                   onPress={() => {
                     // Navigate first so the screen starts at once; a new route
                     // drops the menu, the current one shrinks it home.
-                    goFromMenu(item.path)
+                    if (item.action) item.action()
+                    else goFromMenu(item.path)
                     close()
                     feelTap()
                   }}

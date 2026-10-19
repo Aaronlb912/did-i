@@ -3,6 +3,7 @@ import { demoLampIds } from './demo-strip.js'
 import { answerStamp } from './board-ops.js'
 import { answeredAtIso, cleanAmount } from './board-json.js'
 import { stampMs } from './recurrence.js'
+import { readAccountUserId } from './session-id.js'
 
 // Answers move one at a time instead of riding along with the whole
 // shelf. Two marks in localStorage do the bookkeeping:
@@ -226,6 +227,7 @@ export async function pullAnswers(shelf, { stillCurrent = () => true } = {}) {
 export async function takeBackAnswer(book, lampId, periodKey) {
   const db = cloud()
   if (!db || !lampId || !periodKey) return
+  const user = readAccountUserId()
   const now = answeredAtIso()
   const before = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
   const row = before ? rowsOf({ boards: [{ ...book, answers: [before] }] }) : []
@@ -259,6 +261,8 @@ export async function takeBackAnswer(book, lampId, periodKey) {
   }
   await once()
   await new Promise((done) => setTimeout(done, 4000))
+  // Signed out or into another account meanwhile: the old row is not theirs.
+  if (readAccountUserId() !== user) return
   await once()
 }
 

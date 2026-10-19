@@ -316,7 +316,7 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
       <Pressable
         onPress={() => goHash('/notes')}
         accessibilityRole="link"
-        hitSlop={8}
+        accessibilityLabel={t('notes.seeAll')}
         style={({ pressed }) => [styles.seeAll, pressFx(pressed)]}
       >
         <Text style={[styles.quiet, { color: colors.inkSoft }]}>{t('notes.seeAll')} ›</Text>
@@ -432,5 +432,5 @@ const styles = StyleSheet.create({
   quiet: { fontSize: 14 },
   pen: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   noteText: { width: '100%', fontStyle: 'italic' },
-  seeAll: { alignSelf: 'flex-start', marginTop: 8 },
+  seeAll: { alignSelf: 'stretch', minHeight: 44, justifyContent: 'center', marginTop: 8 },
 })

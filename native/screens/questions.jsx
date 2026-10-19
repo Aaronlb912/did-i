@@ -7,6 +7,7 @@ import {
   BackHandler,
   Keyboard,
   LayoutAnimation,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -1159,7 +1160,7 @@ function usePhoneQuiet() {
       playClick()
       askPingsNow(colors)
         .then(setState)
-        .catch(() => {})
+        .catch(() => Linking.openSettings().catch(() => {}))
     },
   }
 }

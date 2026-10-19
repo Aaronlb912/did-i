@@ -19,3 +19,6 @@ verify_jwt = true
 # in the notice: it asks Apple about the transaction before acting.
 [functions.apple-notify]
 verify_jwt = false
+
+[functions.store-version]
+verify_jwt = true

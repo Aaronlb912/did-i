@@ -255,6 +255,7 @@ export async function weMyWeek(cardId, night = boardDate()) {
     .eq('user_id', me)
     .gte('night', addDaysIso(night, -6))
     .limit(10)
+  if (res.error) throw res.error
   return new Map((res.data || []).map((row) => [row.night, row.status]))
 }
 

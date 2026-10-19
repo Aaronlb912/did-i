@@ -724,6 +724,7 @@ function FriendConfirm({ ask, colors, onDone }) {
 function AddFriendPop({ colors, onClose, onAsked }) {
   const [draft, setDraft] = useState('')
   const [myId, setMyId] = useState('')
+  const [idMiss, setIdMiss] = useState(false)
   const [showQr, setShowQr] = useState(false)
   const ask = useFriendAsk((words) => {
     onClose()
@@ -732,8 +733,12 @@ function AddFriendPop({ colors, onClose, onAsked }) {
   useEffect(() => {
     let alive = true
     myFriendId().then((out) => {
-      if (alive) setMyId(out.id || '')
-    }).catch(() => {})
+      if (!alive) return
+      setMyId(out.id || '')
+      setIdMiss(!out.id)
+    }).catch(() => {
+      if (alive) setIdMiss(true)
+    })
     return () => {
       alive = false
     }
@@ -742,6 +747,7 @@ function AddFriendPop({ colors, onClose, onAsked }) {
   return (
     <AddPop kicker={t('people.addOne')} colors={colors} onClose={onClose}>
       {/* Side by side: they scan yours, or you type or scan theirs. */}
+      {idMiss ? <Miss colors={colors}>{t('friendId.codeMiss')}</Miss> : null}
       {myId ? (
         <KeyButton
           colors={colors}
@@ -1273,6 +1279,7 @@ export function PeopleConnectScreen({ book, onChange, route }) {
   const [said, setSaid] = useState('')
   // Everyone has a friend ID; it is the main way to add someone.
   const [myId, setMyId] = useState('')
+  const [idMiss, setIdMiss] = useState(false)
   const [idDraft, setIdDraft] = useState('')
   const [showQr, setShowQr] = useState(false)
   const idAsk = useFriendAsk((words) => {
@@ -1299,8 +1306,12 @@ export function PeopleConnectScreen({ book, onChange, route }) {
     if (!account.user) return undefined
     let alive = true
     myFriendId().then((out) => {
-      if (alive) setMyId(out.id || '')
-    }).catch(() => {})
+      if (!alive) return
+      setMyId(out.id || '')
+      setIdMiss(!out.id)
+    }).catch(() => {
+      if (alive) setIdMiss(true)
+    })
     return () => {
       alive = false
     }
@@ -1393,6 +1404,7 @@ export function PeopleConnectScreen({ book, onChange, route }) {
         <Text selectable style={[styles.friendId, { color: colors.ink }]}>
           {myId ? formatFriendId(myId) : t('family.loading')}
         </Text>
+        {idMiss ? <Miss colors={colors}>{t('friendId.codeMiss')}</Miss> : null}
         <View style={styles.idButtons}>
           <KeyButton colors={colors} label={t('friendId.copy')} disabled={!myId} onPress={copyId} />
           <KeyButton colors={colors} label={t('friendId.share')} disabled={!myId} onPress={shareId} />

@@ -29,7 +29,25 @@ function snooze() {
   }
 }
 
-function openStore() {
+// The menu shows an Update row while a newer version is out, even after Not now.
+let offered = false
+const offerWatchers = new Set()
+function setOffered(next) {
+  if (next === offered) return
+  offered = next
+  for (const fn of offerWatchers) fn(next)
+}
+export function useUpdateOffered() {
+  const [on, setOn] = useState(offered)
+  useEffect(() => {
+    offerWatchers.add(setOn)
+    setOn(offered)
+    return () => offerWatchers.delete(setOn)
+  }, [])
+  return on
+}
+
+export function openStore() {
   feelTap()
   Linking.openURL(Platform.OS === 'ios' ? APP_STORE_URL : PLAY_STORE_URL).catch(() => {})
 }
@@ -49,7 +67,10 @@ function useUpdateState() {
       last = Date.now()
       readAppVersion(Platform.OS)
         .then((row) => {
-          if (alive && row) setState(updateState(current, row))
+          if (!alive || !row) return
+          const next = updateState(current, row)
+          setState(next)
+          setOffered(next === 'offer')
         })
         .catch(() => {})
     }

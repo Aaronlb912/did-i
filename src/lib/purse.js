@@ -658,10 +658,12 @@ export function takeEarnedCoins() {
 export function dropEarnedCoins() {
   earnedGen += 1
   earnedForServer = {}
-  paidOnAccount.clear()
+  paidOnAccount = new Set()
+  paidLoaded = false
   // Not saveEarned: it leaves storage alone while the id is ''.
   try {
     localStorage.removeItem(EARNED_KEY)
+    localStorage.removeItem(PAID_KEY)
   } catch {
     // ok
   }
@@ -679,8 +681,40 @@ export function returnEarnedCoins(night, n, clock = new Date(), gen) {
 }
 
 // Signed in, a Did pays through the server. Undo drops the answer but not those
-// coins, so the next Did on the same question must not pay again.
-const paidOnAccount = new Set()
+// coins, so the next Did on the same question must not pay again. Saved per
+// user so closing the app inside the undo window cannot pay twice.
+const PAID_KEY = 'did-i-paid-taps'
+const PAID_MAX = 300
+let paidOnAccount = new Set()
+let paidLoaded = false
+
+function paidSet() {
+  if (paidLoaded) return paidOnAccount
+  try {
+    const user = readAccountUserId()
+    if (!user) return paidOnAccount
+    paidLoaded = true
+    const saved = JSON.parse(localStorage.getItem(PAID_KEY) || 'null')
+    if (saved && saved.user === user && Array.isArray(saved.keys)) {
+      for (const key of saved.keys) paidOnAccount.add(key)
+    }
+  } catch {
+    // ok
+  }
+  return paidOnAccount
+}
+
+function notePaid(key) {
+  let set = paidSet()
+  set.add(key)
+  if (set.size > PAID_MAX) paidOnAccount = set = new Set([...set].slice(-PAID_MAX))
+  try {
+    const user = readAccountUserId()
+    if (user) localStorage.setItem(PAID_KEY, JSON.stringify({ user, keys: [...set] }))
+  } catch {
+    // ok
+  }
+}
 
 export function payTap(before, after, row, status, clock = new Date()) {
   const purse = normalizePurse(after)
@@ -688,12 +722,12 @@ export function payTap(before, after, row, status, clock = new Date()) {
     (item) => item.lampId === row?.lamp?.id && item.periodKey === row?.periodKey,
   )
   const paidKey = `${before.id}:${row?.lamp?.id}:${row?.periodKey}`
-  const paid = (prev && (prev.paid === true || prev.status === 'yes' || prev.status === 'late')) || paidOnAccount.has(paidKey)
+  const paid = (prev && (prev.paid === true || prev.status === 'yes' || prev.status === 'late')) || (accountSessionOn() && paidSet().has(paidKey))
   let coins = purse.coins
   if (!paid) {
     const earned = coinsFor(status, before, row, clock)
     if (accountSessionOn()) {
-      if (earned > 0) paidOnAccount.add(paidKey)
+      if (earned > 0) notePaid(paidKey)
       // The server takes yesterday or today; a week or month key maps further back.
       const today = boardDate(clock)
       const night = periodNight(row?.lamp, row?.periodKey)

@@ -73,6 +73,8 @@ const files = [
   'supabase/live-more.sql',
   'supabase/morning-cap.sql',
   'supabase/sweep-guards.sql',
+  'supabase/sweep2-guards.sql',
+  'supabase/store-version.sql',
   'supabase/drop-tonight.sql',
 ]
 

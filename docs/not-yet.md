@@ -5,10 +5,10 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
-## App sweep 2026-10-19 (branch `sweep-fixes`, needs SQL and a store build)
+## App sweeps 2026-10-19 (#322 merged, then branch `sweep-2`; SQL applied, needs the 1.3.8 store build)
 
-- **Built:** accessibility, QoL, usability, security and bug passes. Undo only puts back the one answer; Did, Undo, Did pays once; widget and watch repeat taps no longer reach the server; family wrong-code cap shared by every account; invites only for accounts under 7 days; one nudge per sender a night; `supabase/sweep-guards.sql`.
-- **Not done:** family codes are still 6 characters. The app from 1.3.8 accepts 6 or 10 (1.3.7 and older take only 6); once most phones run 1.3.8, make `new_family_code` return 10. Did, Undo, Did can still pay twice if the app is closed inside the 8 seconds (the paid list is in memory). Join a family still needs no parent yes. Not tried with VoiceOver or TalkBack.
+- **Built:** two rounds of accessibility, QoL, usability, security and bug passes. Undo only puts back the one answer; Did, Undo, Did pays once, also across an app restart; widget and watch repeat taps stay local; family wrong-code cap shared by every account; invites only for accounts under 7 days, and invite gems only once the invited person has answered on 3 nights (`supabase/sweep2-guards.sql`); photo links pinned to the owner's folder; one nudge per sender a night; the Did button and dim text reach 4.5:1 in every look; shared question pages retry.
+- **Not done:** family codes are still 6 characters. The app from 1.3.8 accepts 6 or 10 (1.3.7 and older take only 6); once most phones run 1.3.8, make `new_family_code` return 10. An invite link applies with no ask (it can only take the invite slot now, no gems). Play gem buys are acknowledged by the phone, not the server: a buy whose phone never opens the app again within 3 days is refunded by Google. Anyone can fill the daily milestone cap (analytics only). Join a family still needs no parent yes. VoiceOver not tried.
 
 ## Morning ask (branch `morning-today`, needs SQL, OTA)
 

@@ -8424,6 +8424,35 @@ test('signed in, did then undo then did pays once; signed out undo takes the coi
   assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { '2026-10-02': 2 })
 })
 
+test('signed in, did then a restart then did still pays once', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const url = (file) => pathToFileURL(path.join(root, file)).href
+  const script = (saved) => `
+    const store = new Map(${saved})
+    globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) }
+    globalThis.window = { dispatchEvent() {} }
+    const { putAnswer } = await import(${JSON.stringify(url('src/lib/board-ops.js'))})
+    const { takeEarnedCoins } = await import(${JSON.stringify(url('src/lib/purse.js'))})
+    const book = { id: 'b', lamps: [{ id: 'a', question: 'a', cadence: 'daily', archived: false, createdOn: '2024-01-01' }], answers: [], coins: 0 }
+    putAnswer(book, { lamp: book.lamps[0], periodKey: '2026-10-02' }, 'yes', new Date(2026, 9, 2, 20))
+    console.log(JSON.stringify({ coins: takeEarnedCoins(), store: [...store] }))
+  `
+  const go = (saved) => {
+    const run = spawnSync(process.execPath, ['--input-type=module', '-e', script(saved)], {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'test' },
+    })
+    assert.equal(run.status, 0, run.stderr)
+    return JSON.parse(run.stdout.trim().split('\n').pop())
+  }
+  const first = go(JSON.stringify([['did-i-last-user', 'user-a']]))
+  assert.deepEqual(first.coins, { '2026-10-02': 2 })
+  assert.deepEqual(go(JSON.stringify(first.store)).coins, {})
+  const other = first.store.map(([k, v]) => [k, k === 'did-i-last-user' ? 'user-b' : v])
+  assert.deepEqual(go(JSON.stringify(other)).coins, { '2026-10-02': 2 })
+})
+
 test('the streak-risk ping is skipped when quiet hours move it', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const native = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
