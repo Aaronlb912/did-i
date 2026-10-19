@@ -1290,6 +1290,7 @@ export const zh = {
   'morning.failed': "添加失败。请再试一次。",
   'morning.past': "今天这个时间已经过了。请选晚一点的时间。",
   'morning.label': "今天",
+  'morning.labelAt': "今天 {time}",
   'morning.toggle': "早晨提问",
   'morning.toggleSub': "中午前，一张卡片会问你今天要记住什么。",
   'why.todayDid': "今天，Did：{list}",

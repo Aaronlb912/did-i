@@ -1291,6 +1291,7 @@ export const ko = {
   'morning.failed': "추가하지 못했어요. 다시 해 보세요.",
   'morning.past': "오늘 그 시간은 이미 지났어요. 더 늦은 시간을 골라 주세요.",
   'morning.label': "오늘",
+  'morning.labelAt': "오늘 {time}",
   'morning.toggle': "아침 질문",
   'morning.toggleSub': "정오 전에 카드가 오늘 기억할 것을 물어봐요.",
   'why.todayDid': "오늘, Did: {list}",

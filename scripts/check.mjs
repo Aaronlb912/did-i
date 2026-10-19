@@ -8343,7 +8343,11 @@ await testAsync('morning ask: one-day questions for today, capped, never cut a s
   assert.equal(streakOf([later], tomorrow), streakOf([closed], tomorrow))
   // The 9:00 nudge asks for today and opens the card; 13:30 is unchanged.
   const native = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
-  assert.match(native, /morning && nudge.slot === 0/)
+  assert.match(native, /morning && nudge\.slot === 0/)
+  // The card adds onto the live book, so a Did still in flight is not overwritten.
+  const tonightSrc = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(tonightSrc.includes('const live = (stack.shelf || []).find((item) => item.id === book.id) || book'))
+  assert.ok(tonightSrc.includes('addMorning(live, '))
   // A time reminds once today, through the same reminders as any question; a past time is refused.
   const { upcomingPings } = await import('../src/lib/notify.js')
   assert.equal(addMorning(base, [base], 'Pills?', morning, '08:00').error, 'past')
@@ -8353,6 +8357,21 @@ await testAsync('morning ask: one-day questions for today, capped, never cut a s
   assert.equal(fires.length, 1, 'exactly one reminder today')
   assert.equal(new Date(fires[0].at).getHours(), 10)
   assert.equal(upcomingPings(one.book, morning).filter((fire) => fire.id === one.lamp.id).length, 0, 'no time, no reminder')
+  // The time is only the reminder: on Tonight and the widget right away, answerable before it.
+  const { waitingTonight, askAfterPassed, dueTonight } = await import('../src/lib/recurrence.js')
+  assert.ok(askAfterPassed(timed.lamp, morning))
+  assert.equal(waitingTonight(timed.book, morning).some((row) => row.lamp.id === timed.lamp.id), false)
+  assert.ok(dueTonight(timed.book, morning).some((row) => row.lamp.id === timed.lamp.id))
+  const { todayLabel } = await import('../src/lib/morning-ask.js')
+  assert.match(todayLabel(timed.lamp), /^Today, 10:15/)
+  assert.equal(todayLabel(one.lamp), 'Today')
+  // Past its time it reminds no more; answered it reminds no more.
+  assert.equal(upcomingPings(timed.book, new Date(2026, 9, 18, 10, 30)).filter((fire) => fire.id === timed.lamp.id).length, 0)
+  const answered = putAnswer(timed.book, { lamp: timed.lamp, periodKey: `once:${timed.lamp.id}`, dateIso: '2026-10-18' }, 'yes', morning)
+  assert.equal(upcomingPings(answered, morning).filter((fire) => fire.id === timed.lamp.id).length, 0)
+  // A plain timed question still waits for its time.
+  const plainTimed = { ...base, lamps: [{ ...daily, id: 'w', question: 'Late?', askAfter: '20:00' }] }
+  assert.ok(waitingTonight(plainTimed, morning).some((row) => row.lamp.id === 'w'))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

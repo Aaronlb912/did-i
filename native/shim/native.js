@@ -223,7 +223,7 @@ async function schedulePingsNow(books, now = new Date()) {
             data: askNoteData(row),
             categoryIdentifier: ASK_CATEGORY,
           }
-          if (at && !row.answer && at.getTime() > now.getTime() && (!waiting || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
+          if (at && !row.answer && at.getTime() > now.getTime() && (!waiting || row.lamp.morning || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
             notes.push({
               identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}`)),
               content,
