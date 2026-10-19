@@ -87,6 +87,10 @@ export const HOLLY = [[-19, -9, 1, -15], [19, -3, 0.9, 20], [-17, 10, 0.8, 10]]
 export const PLANES = [[-18, -7, -22, 1.2, false], [17, -14, -22, 1, true]]
 // Party horn fringe: from (across the bell) to (spread), colour.
 export const HORN_FRINGE = [[-2.6, -4.6, '#4a9be8'], [-0.9, -1.4, '#f07ac0'], [0.9, 1.4, '#7cc65a'], [2.6, 4.6, '#4a9be8']]
+// Peacock feathers: turn from straight up, colour. Sleepy Zs: offset from the eyes, half size.
+// Both are shared with accessory-shapes.js.
+export const PEACOCK = [[-78, '#1f8f7a'], [-52, '#2aa58a'], [-26, '#1f8f7a'], [0, '#2aa58a'], [26, '#1f8f7a'], [52, '#2aa58a'], [78, '#1f8f7a']]
+export const ZZZ = [[19, -5, 2], [22, -13, 2.8], [19, -22, 3.6]]
 // A bopper's spring, zigzagging up from the band (x out from the middle, y from the band).
 export const BOPPER_SPRING = [[3.5, -2.4], [4.6, -4], [3.6, -5.2], [5, -6.6], [4, -7.8], [5.6, -9.4], [5.2, -10.6]]
 // A curly ribbon (a looped cycloid) falling along `ang` degrees.
@@ -661,6 +665,21 @@ const DRAW = {
       )
     })
   },
+  // A peacock fan behind the body: seven feathers, each tipped with an eye.
+  peacock: (h, a) => PEACOCK.flatMap(([deg, fill]) => {
+    const c = mid(a)
+    const th = (deg * Math.PI) / 180
+    const at = (r) => [24 + Math.sin(th) * r, c - Math.cos(th) * r]
+    const [fx, fy] = at(13)
+    const [ex, ey] = at(21.5)
+    const turn = (x, y) => `rotate(${deg} ${x.toFixed(2)} ${y.toFixed(2)})`
+    return [
+      h('ellipse', { cx: fx, cy: fy, rx: 3.8, ry: 12.5, fill, transform: turn(fx, fy) }),
+      h('ellipse', { cx: ex, cy: ey, rx: 3.7, ry: 4.4, fill: GOLD, transform: turn(ex, ey) }),
+      h('ellipse', { cx: ex, cy: ey + 0.3, rx: 2.6, ry: 3.2, fill: '#1fb5b0', transform: turn(ex, ey) }),
+      h('ellipse', { cx: ex, cy: ey + 0.5, rx: 1.4, ry: 1.9, fill: '#24308a', transform: turn(ex, ey) }),
+    ]
+  }),
   // Holly sprigs: two spiky leaves and three red berries each.
   holly: (h, a) => HOLLY.map(([dx, dy, k, turn]) => {
     const leaf = 'M0 0 L-1.8 -2 L-3.2 -1 L-4.8 -2.8 L-5.8 -1.2 L-7.8 -1.8 L-7 0.3 L-5.4 1.3 L-3.6 0.7 L-2.3 1.8 Z'
@@ -776,6 +795,12 @@ const DRAW = {
       ...[19, 24, 29].map((x) => h('path', { d: `M${x} ${y + 4} l-0.8 2.4`, stroke: '#4aa8ff', strokeWidth: 1.1, strokeLinecap: 'round', fill: 'none' })),
     ]
   },
+  // Sleepy Zs rising off the head, growing as they go.
+  zzz: (h, a) => ZZZ.map(([dx, dy, s]) => {
+    const x = 24 + dx
+    const y = a.ey + dy
+    return h('path', { d: `M${x - s} ${y - s} H${x + s} L${x - s} ${y + s} H${x + s}`, fill: 'none', stroke: '#b6a8ff', strokeWidth: 0.55 * s + 0.4, strokeLinecap: 'round', strokeLinejoin: 'round' })
+  }),
   notes: (h, a, t) => [[-20, -6, 1.3], [19, -12, 1.1], [19, 4, 0.95]].map(([dx, dy, k]) =>
     h('g', { transform: `translate(${24 + dx} ${a.ey + dy}) scale(${k})` },
       h('ellipse', { cx: 0, cy: 3, rx: 2, ry: 1.5, fill: t, transform: 'rotate(-20 0 3)' }),
@@ -828,6 +853,8 @@ const ALL_ACCESSORIES = [
   { id: 'glasses3d', slot: 'eyes', tier: 'rare', from: '2026-10-23' },
   { id: 'rainbow', slot: 'back', tier: 'rare', from: '2026-10-23' },
   { id: 'bubbles', slot: 'around', tier: 'common', from: '2026-10-23' },
+  { id: 'peacock', slot: 'back', tier: 'rare', from: '2026-11-06' },
+  { id: 'zzz', slot: 'around', tier: 'common', from: '2026-11-06' },
   { id: 'pinwheel', slot: 'held', tier: 'standard', from: '2026-11-20' },
   { id: 'goggles', slot: 'eyes', tier: 'rare', from: '2026-11-20' },
   { id: 'earmuffs', slot: 'head', tier: 'standard', from: '2026-12-04' },

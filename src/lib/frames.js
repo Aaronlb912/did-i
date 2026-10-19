@@ -91,6 +91,10 @@ const RAW = [
   season('leaves', '11-01', '11-30'),
   season('snow', '12-01', '12-31'),
   season('sakura', '03-15', '04-15'),
+  // Drop 2026-11-06.
+  coin('fullhouse', 110, { from: '2026-11-06' }),
+  gem('orchard', 3, { from: '2026-11-06' }),
+  earned('hundred', 'streak', 100, { from: '2026-11-06' }),
   // Drop 2026-11-20.
   coin('linked', 90, { from: '2026-11-20' }),
   gem('bedtime', 3, { from: '2026-11-20' }),

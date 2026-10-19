@@ -153,6 +153,8 @@ insert into public.gift_catalog (kind, item_id, gems, coins, live_from, live_unt
   ('accessory', 'glasses3d', 0, 40, '2026-10-23', null),
   ('accessory', 'rainbow', 0, 40, '2026-10-23', null),
   ('accessory', 'bubbles', 0, 15, '2026-10-23', null),
+  ('accessory', 'peacock', 0, 40, '2026-11-06', null),
+  ('accessory', 'zzz', 0, 15, '2026-11-06', null),
   ('accessory', 'pinwheel', 0, 25, '2026-11-20', null),
   ('accessory', 'goggles', 0, 40, '2026-11-20', null),
   ('accessory', 'earmuffs', 0, 25, '2026-12-04', null),
