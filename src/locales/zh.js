@@ -1947,6 +1947,7 @@ export const zh = {
   'didyou.dismiss': '关闭',
   'update.title': 'Did I 有新版本了',
   'update.go': '更新',
+  'update.menuRow': '更新 Did I',
   'update.later': '以后再说',
   'update.mustTitle': 'Did I 需要更新',
   'update.mustBody': '此版本已无法使用。请到商店更新后继续。',

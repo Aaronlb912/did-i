@@ -1952,6 +1952,7 @@ export const ja = {
   'didyou.dismiss': '閉じる',
   'update.title': 'Did I の新しいバージョンがあります',
   'update.go': 'アップデート',
+  'update.menuRow': 'Did I をアップデート',
   'update.later': 'あとで',
   'update.mustTitle': 'Did I のアップデートが必要です',
   'update.mustBody': 'このバージョンは使えなくなりました。ストアからアップデートしてください。',

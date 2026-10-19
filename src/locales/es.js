@@ -1980,6 +1980,7 @@ export const es = {
   'didyou.dismiss': 'Cerrar',
   'update.title': 'Hay una nueva versión de Did I',
   'update.go': 'Actualizar',
+  'update.menuRow': 'Actualizar Did I',
   'update.later': 'Ahora no',
   'update.mustTitle': 'Did I necesita actualizarse',
   'update.mustBody': 'Esta versión ya no funciona. Actualiza desde la tienda para seguir.',

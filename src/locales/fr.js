@@ -1982,6 +1982,7 @@ export const fr = {
   'didyou.dismiss': 'Fermer',
   'update.title': 'Une nouvelle version de Did I est sortie',
   'update.go': 'Mettre à jour',
+  'update.menuRow': 'Mettre à jour Did I',
   'update.later': 'Plus tard',
   'update.mustTitle': 'Did I doit être mis à jour',
   'update.mustBody': 'Cette version ne fonctionne plus. Mets à jour depuis le store pour continuer.',

@@ -1976,6 +1976,7 @@ export const en = {
   'didyou.dismiss': 'Close',
   'update.title': 'A new version of Did I is out',
   'update.go': 'Update',
+  'update.menuRow': 'Update Did I',
   'update.later': 'Not now',
   'update.mustTitle': 'Did I needs an update',
   'update.mustBody': 'This version no longer works. Update from the store to keep going.',

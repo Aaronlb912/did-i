@@ -1979,6 +1979,7 @@ export const pt = {
   'didyou.dismiss': 'Fechar',
   'update.title': 'Saiu uma nova versão do Did I',
   'update.go': 'Atualizar',
+  'update.menuRow': 'Atualizar Did I',
   'update.later': 'Agora não',
   'update.mustTitle': 'O Did I precisa de uma atualização',
   'update.mustBody': 'Esta versão não funciona mais. Atualize pela loja para continuar.',

@@ -1987,6 +1987,7 @@ export const de = {
   'didyou.dismiss': 'Schließen',
   'update.title': 'Eine neue Version von Did I ist da',
   'update.go': 'Aktualisieren',
+  'update.menuRow': 'Did I aktualisieren',
   'update.later': 'Später',
   'update.mustTitle': 'Did I braucht ein Update',
   'update.mustBody': 'Diese Version funktioniert nicht mehr. Aktualisiere im Store, um weiterzumachen.',

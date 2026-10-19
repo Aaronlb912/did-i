@@ -1954,6 +1954,7 @@ export const ko = {
   'didyou.dismiss': '닫기',
   'update.title': 'Did I 새 버전이 나왔어요',
   'update.go': '업데이트',
+  'update.menuRow': 'Did I 업데이트',
   'update.later': '나중에',
   'update.mustTitle': 'Did I 업데이트가 필요해요',
   'update.mustBody': '이 버전은 더 이상 작동하지 않아요. 스토어에서 업데이트해 주세요.',

@@ -272,9 +272,13 @@ If Windows runs out of memory (exit code 3221225794), stop the emulator before h
 ## Update prompt (app_versions)
 
 `supabase/app-version.sql` holds one row per platform: `latest` and `minimum`.
-After a store release is approved and live, set that platform's `latest` to
-the new version in the Supabase table editor. Phones on an older version see
-"A new version of Did I is out" on Tonight (Not now hides it for a day).
+`latest` keeps itself current: the `store-version` function (cron every 6
+hours, `supabase/store-version.sql`) reads the App Store lookup and the newest
+finished Play release on any track but internal testing, and only ever raises
+it. The Play release name must contain the version (`87 (1.3.8)`, Play's
+default). Phones on an older version see "A new version of Did I is out" on
+Tonight (Not now hides it for a day) and an "Update Did I" row under Home in
+the menu until they update (from the build that has it).
 Raise `minimum` only when an old version is really broken: phones below it
 get a full screen with just the Update button. Only builds from 1.2.0 on
 have the prompt.

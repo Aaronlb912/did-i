@@ -1979,6 +1979,7 @@ export const it = {
   'didyou.dismiss': 'Chiudi',
   'update.title': 'È uscita una nuova versione di Did I',
   'update.go': 'Aggiorna',
+  'update.menuRow': 'Aggiorna Did I',
   'update.later': 'Non ora',
   'update.mustTitle': 'Did I va aggiornata',
   'update.mustBody': 'Questa versione non funziona più. Aggiorna dallo store per continuare.',
