@@ -8695,3 +8695,10 @@ test('over-the-air updates load on a return to the app, only at a safe moment', 
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
+
+test('money and family SQL tests stay in the repo (run with npm run db:test)', () => {
+  for (const name of ['coins-credit', 'delete-refund', 'family-guard']) {
+    assert.ok(existsSync(path.join(checkRoot, `supabase/tests/${name}.test.sql`)), name)
+  }
+  assert.match(readFileSync(path.join(checkRoot, 'supabase/drop-tonight.sql'), 'utf8'), /Gifts waiting for you go back/)
+})
