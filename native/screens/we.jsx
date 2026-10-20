@@ -49,7 +49,7 @@ import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
-import { weNextCoinsKey, weRuleKey, weModeKey, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
+import { weNextCoinsKey, weRuleKey, weModeKey, weSlotDay, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
 import { boardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -1118,7 +1118,7 @@ function WeCardPage({ book, cardId, onChange }) {
               <Meta key={p.id} colors={colors}>
                 {p.me ? t('we.you') : p.name}
                 {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
-                {card.mode === 'turns' && card.turn === p.id ? ` · ${t(weWeekKey(card, 'we.tonightsTurn'))}` : ''}
+                {card.mode === 'turns' && card.turn === p.id ? ` · ${t(weWeekKey(card, 'we.tonightsTurn'), { day: weSlotDay(card, readPrefs().locale) })}` : ''}
               </Meta>
             ))}
           </View>

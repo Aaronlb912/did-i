@@ -17,7 +17,7 @@ import {
   wePausedCards,
   weRestart,
 } from '../../src/lib/did-we.js'
-import { weFaceFor, weFaceRow, weMissKey, wePersonKey, weRowLine, weStatus, weWeekKey } from '../../src/lib/we-look.js'
+import { weFaceFor, weFaceRow, weMissKey, wePersonKey, weRowLine, weSlotDay, weStatus, weWeekKey } from '../../src/lib/we-look.js'
 import { refreshTogether } from '../../src/lib/people.js'
 import { onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { pressFx } from '../lib/motion.jsx'
@@ -70,8 +70,8 @@ function WeFace({ person: raw, card, colors, known, size = 30 }) {
 function personLine(person, card) {
   if (person.state === 'asked') return t('we.pAsked')
   const bits = []
-  if (card.mode === 'turns' && card.turn === person.id) bits.push(t(weWeekKey(card, 'we.tonightsTurn')))
-  bits.push(t(wePersonKey(card, person.status)))
+  if (card.mode === 'turns' && card.turn === person.id) bits.push(t(weWeekKey(card, 'we.tonightsTurn'), { day: weSlotDay(card, readPrefs().locale) }))
+  bits.push(t(wePersonKey(card, person.status), { day: weSlotDay(card, readPrefs().locale) }))
   return bits.join(' · ')
 }
 
@@ -277,7 +277,7 @@ export function WeAnswered({ cards, colors, hide = '' }) {
 }
 
 export function weStatusLine(card) {
-  const { key, vars } = weStatus(card)
+  const { key, vars } = weStatus(card, readPrefs().locale)
   return t(key, vars)
 }
 

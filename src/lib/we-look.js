@@ -31,12 +31,29 @@ export function weRuleKey(mode) {
   return `we.rule.${weRule(mode)}`
 }
 
-export const isWeekly = (card) => card?.cadence === 'weekly'
+// One rule for the wording: 'daily' (a slot a day), 'weekly' (one weekday, so a
+// slot is a week) or 'multi' (several weekdays, so each due day is its own slot).
+export function weekKind(card) {
+  if (card?.cadence !== 'weekly') return 'daily'
+  return (card.weekdays || []).length >= 2 ? 'multi' : 'weekly'
+}
 
-// One person's line on a card ("Said did today" / "this week"): the i18n key.
+export const isWeekly = (card) => weekKind(card) === 'weekly'
+
+// "Monday": the weekday of the card's current slot, for multi-day cards. '' when there is none.
+export function weSlotDay(card, locale) {
+  if (!card?.slot) return ''
+  return new Date(`${card.slot}T12:00:00`).toLocaleDateString(locale || undefined, { weekday: 'long' })
+}
+
+// Keys with a Day twin that takes {day} (multi-day cards only).
+const DAY_KEYS = ['we.tonightsTurn']
+
+// One person's line on a card ("Said did today" / "this week" / "for Monday"): the i18n key.
 export function wePersonKey(card, status) {
   const base = status === 'did' ? 'we.pDid' : status === 'nope' ? 'we.pNope' : 'we.pWaiting'
-  return isWeekly(card) ? `${base}Week` : base
+  const kind = weekKind(card)
+  return kind === 'weekly' ? `${base}Week` : kind === 'multi' && card.slot ? `${base}Day` : base
 }
 
 // "Coins after N more days/weeks together": { key, vars } for t().
@@ -47,14 +64,19 @@ export function weNextCoinsKey(card, left) {
 }
 
 // Any day-worded key gets its Week twin on a weekly card: 'we.goalLine' ->
-// 'we.goalLineWeek'.
+// 'we.goalLineWeek'. Multi-day cards count days, so only the keys that name
+// the due day change ('we.tonightsTurn' -> 'we.tonightsTurnDay').
 export function weWeekKey(card, key) {
-  return isWeekly(card) ? `${key}Week` : key
+  const kind = weekKind(card)
+  if (kind === 'weekly') return `${key}Week`
+  return kind === 'multi' && card.slot && DAY_KEYS.includes(key) ? `${key}Day` : key
 }
 
 // 'we.modeNote.turns' / 'we.modeLine.turns' say "a day"; weekly cards get the Week twin.
 export function weModeKey(card, base, mode) {
-  return mode === 'turns' && isWeekly(card) ? `${base}.turnsWeek` : `${base}.${mode}`
+  if (mode !== 'turns') return `${base}.${mode}`
+  const kind = weekKind(card)
+  return kind === 'weekly' ? `${base}.turnsWeek` : kind === 'multi' ? `${base}.turnsDay` : `${base}.turns`
 }
 
 // A miss code from the server, in week words when the card is weekly.
@@ -91,15 +113,18 @@ export function weRowLine(cards) {
 
 // The one status line: { key, vars } for t(). Done reads per rule; take turns
 // names whose turn it is; anything else is "2 of 3 did it tonight".
-export function weStatus(card) {
-  const week = isWeekly(card)
-  if (card?.done) return { key: weRule(card.mode) === 'all' ? (week ? 'we.doneAllWeek' : 'we.doneAll') : 'we.doneTogether', vars: {} }
+export function weStatus(card, locale) {
+  const kind = weekKind(card)
+  const week = kind === 'weekly'
+  const day = kind === 'multi' ? weSlotDay(card, locale) : ''
+  const vars = day ? { day } : {}
+  if (card?.done) return { key: weRule(card.mode) === 'all' ? (week ? 'we.doneAllWeek' : day ? 'we.doneAllDay' : 'we.doneAll') : 'we.doneTogether', vars }
   if (card?.mode === 'turns') {
     const whose = (card.people || []).find((p) => p.id === card.turn)
-    if (whose?.me) return { key: 'we.yourTurnShort', vars: {} }
-    if (whose) return { key: week ? 'we.theirTurnWeek' : 'we.theirTurn', vars: { name: whose.name } }
+    if (whose?.me) return { key: day ? 'we.yourTurnDay' : 'we.yourTurnShort', vars }
+    if (whose) return { key: week ? 'we.theirTurnWeek' : day ? 'we.theirTurnDay' : 'we.theirTurn', vars: { ...vars, name: whose.name } }
   }
-  return { key: week ? 'we.ofDidWeek' : 'we.ofDid', vars: { n: card?.dids || 0, total: card?.total || 0 } }
+  return { key: week ? 'we.ofDidWeek' : day ? 'we.ofDidDay' : 'we.ofDid', vars: { ...vars, n: card?.dids || 0, total: card?.total || 0 } }
 }
 
 // The last 7 nights ending `night` (oldest first), each with whether it was
