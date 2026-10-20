@@ -905,6 +905,17 @@ export async function exportAll() {
   }
 }
 
+// The server hands back at most 1000 rows a read, so an export reads page by page.
+async function allPages(query, page = 1000) {
+  const data = []
+  for (let from = 0; ; from += page) {
+    const res = await query().range(from, from + page - 1)
+    if (res.error) return res
+    data.push(...(res.data || []))
+    if ((res.data || []).length < page) return { data, error: null }
+  }
+}
+
 // Your side of Did we and Did you: the cards you are on, your own rows and
 // answers, and what you sent or got. Only what the database lets you read.
 async function exportSocial() {
@@ -916,12 +927,16 @@ async function exportSocial() {
       .from('we_members')
       .select('card_id, state, turn, asked_at, joined_at, said_no_at, folder, topics')
       .eq('user_id', user.id),
-    db.from('we_answers').select('card_id, night, status, answered_at').eq('user_id', user.id).limit(5000),
-    db
-      .from('sends')
-      .select('id, from_id, to_id, kind, question, note, due_on, state, made_at, repeat')
-      .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
-      .limit(5000),
+    allPages(() =>
+      db.from('we_answers').select('card_id, night, status, answered_at').eq('user_id', user.id).order('card_id').order('night'),
+    ),
+    allPages(() =>
+      db
+        .from('sends')
+        .select('id, from_id, to_id, kind, question, note, due_on, state, made_at, repeat')
+        .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
+        .order('id'),
+    ),
   ])
   const failed = [mine, answers, sends].find((res) => res.error)
   if (failed) throw failed.error
