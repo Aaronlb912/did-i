@@ -467,6 +467,11 @@ function sharedFor_(userId) {
   return shared
 }
 
+// A card already loaded this session, by id (a reminder's answer has only the id).
+export function knownWeCard(id) {
+  return (shared?.cards || []).find((card) => card.id === id) || null
+}
+
 // Your buddy and cheer show on the Did we cards you share (your cheer plays
 // for the others when your did finishes a card). When the cards come back
 // with older ones, save what you wear now. Writes only on a change, and only

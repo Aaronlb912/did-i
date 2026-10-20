@@ -12,6 +12,8 @@ on:
       - 'docs/**'
       - '**/*.md'
       - '.github/**'
+      - 'supabase/**'
+      - 'scripts/**'
   workflow_dispatch:
 
 concurrency:

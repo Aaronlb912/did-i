@@ -1612,6 +1612,11 @@ test('a family code is six or ten and an invite code is ten', () => {
   assert.equal(cleanCode('abc-234 xxyyz'), 'ABC234XXYY')
   assert.equal(cleanInvite('d93aq5lbs4zzz'), 'D93AQ5LBS4')
   assert.equal(cleanInvite('D93AQ5LBS4').length, 10)
+  // New family codes are 10 (apps from 1.3.8); the file runs after people.sql.
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  assert.match(readFileSync(path.join(root, 'supabase/family-code-10.sql'), 'utf8'), /for i in 1\.\.10 loop/)
+  const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(order.indexOf('family-code-10.sql') > order.indexOf('people.sql'))
 })
 
 test('gem items added by editing the phone go away on sync; free and coin items stay', () => {

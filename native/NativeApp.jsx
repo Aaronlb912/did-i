@@ -110,9 +110,12 @@ export function NativeApp() {
         // (offline, card left) says so on the next look at the app.
         onWeAnswer: async (cardId, kind, night) => {
           try {
-            const { weAnswer } = await import('../src/lib/did-we.js')
+            const { knownWeCard, weAnswer } = await import('../src/lib/did-we.js')
+            const { weMissKey } = await import('../src/lib/we-look.js')
             const out = await weAnswer(cardId, kind, night || undefined)
-            if (out.miss) showToast({ id: 'we-answer', kind: 'error', text: tMiss(out.miss), ms: 5200 })
+            // A weekly card's closed slot says week; unknown cards keep the day line.
+            const miss = knownWeCard(cardId) ? weMissKey(knownWeCard(cardId), out.miss) : out.miss
+            if (out.miss) showToast({ id: 'we-answer', kind: 'error', text: tMiss(miss), ms: 5200 })
           } catch {
             showToast({ id: 'we-answer', kind: 'error', text: t('people.reach'), ms: 5200 })
           }
