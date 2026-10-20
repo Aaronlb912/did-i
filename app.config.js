@@ -189,12 +189,12 @@ export default ({ config }) => ({
       ...(includeWidgets
         ? { 'com.apple.security.application-groups': ['group.com.aaronbryant.didi'] }
         : {}),
-      // did-i.app/f, /j and /i links open the app (public/.well-known). Off
-      // until the App ID has Associated Domains, or signing fails.
-      ...(process.env.DIDI_UNIVERSAL_LINKS === '1' && !devApp
-        ? { 'com.apple.developer.associated-domains': ['applinks:did-i.app'] }
-        : {}),
     },
+    // did-i.app/f, /j, /i and /d links open the app (public/.well-known).
+    // Must be associatedDomains: Expo's entitlements mod drops the raw key.
+    ...(process.env.DIDI_UNIVERSAL_LINKS === '1' && !devApp
+      ? { associatedDomains: ['applinks:did-i.app'] }
+      : {}),
     ...(hasGoogleServicesIos && !devApp ? { googleServicesFile: googleServicesIos } : {}),
     // Apple's required-reason APIs used by React Native, Expo and MMKV. No tracking.
     privacyManifests: {
