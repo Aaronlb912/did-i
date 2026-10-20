@@ -565,11 +565,21 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const morningLive = useRef(null)
   morningLive.current = { add: addMorningQuestion, off: morningNotToday }
   const morningSheet = useRef(false)
+  // True while the morning sheet is the one showing, so leaving Tonight
+  // (or noon passing) can take it down without counting as Not today.
+  const morningUp = useRef(false)
+  const dropMorningSheet = () => {
+    if (!morningUp.current) return
+    morningUp.current = false
+    publishSheet(null)
+  }
   useEffect(() => {
+    if (!showMorning) dropMorningSheet()
     if (!showMorning || morningSheet.current) return undefined
     const timer = setTimeout(() => {
       if (sheetIsUp() || navigation.isFocused?.() === false) return
       morningSheet.current = true
+      morningUp.current = true
       let added = 0
       const open = () =>
         publishSheet({
@@ -594,6 +604,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           closeLabel: added ? t('first.done') : t('morning.off'),
           colors,
           onClose: () => {
+            morningUp.current = false
             publishSheet(null)
             if (!added) morningLive.current.off()
           },
@@ -605,6 +616,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }, [showMorning, morningFocus])
   useEffect(() => navigation.addListener('blur', () => {
     morningSheet.current = false
+    dropMorningSheet()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [navigation])
   // After a cleared night, one card asks to sign in. Dismissed stays dismissed.
   const [nudgeGone, setNudgeGone] = useState(signInNudgeSeen)
