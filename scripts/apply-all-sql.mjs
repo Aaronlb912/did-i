@@ -75,6 +75,7 @@ const files = [
   'supabase/sweep-guards.sql',
   'supabase/sweep2-guards.sql',
   'supabase/store-version.sql',
+  'supabase/we-slots.sql',
   'supabase/drop-tonight.sql',
 ]
 

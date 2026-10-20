@@ -31,6 +31,8 @@ import {
   weMine,
   weMonth,
   weNextMilestone,
+  weEarly,
+  weSlotLocked,
   weNextNight,
   weNudge,
   weQuestion,
@@ -895,8 +897,8 @@ function WeCardPage({ book, cardId, onChange }) {
     const found = out.cards.find((c) => c.id === cardId) || null
     setCard(found)
     // The total and the early card read at the same time.
-    const night = found && !found.due && found.myState === 'in' ? weNextNight(found) : ''
-    const totals = found?.myState === 'in' ? weWeekTotals([found.id]) : null
+    const night = found && weEarly(found) && found.myState === 'in' ? weNextNight(found) : ''
+    const totals = found?.myState === 'in' ? weWeekTotals([found.id], undefined, found.slot || undefined) : null
     const laterAsk = night ? weTonight(night) : null
     if (totals) {
       totals.then((res) => {
@@ -1163,7 +1165,7 @@ function WeCardPage({ book, cardId, onChange }) {
         if (Number.isNaN(amount)) return setMiss(t('weAmount.bad'))
         publishSheet(null)
         // Before 9am the did may be last night's: put the amount on that night.
-        const night = weMine(card)?.status === 'did' ? boardDate() : graceNightIso() || boardDate()
+        const night = weMine(card)?.status === 'did' ? card.slot || boardDate() : graceNightIso() || boardDate()
         const out = await wePutAmount(card.id, amount, night)
         if (out.miss) return setMiss(tMiss(out.miss))
         setMiss('')
@@ -1291,7 +1293,7 @@ function WeCardPage({ book, cardId, onChange }) {
           </>
         )
       ) : null}
-      {card.due ? (
+      {card.due && !weSlotLocked(card) ? (
         <View style={styles.acts}>
           {/* Not answered yet: Did and Nope look the same, so neither reads as picked. */}
           {mine?.status === 'did' ? (
