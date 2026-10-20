@@ -913,6 +913,7 @@ export const zh = {
   'famNight.offline': '未送达家庭。检查信号后重试。',
   'people.askOne': '发送请求',
   'people.asked': '已向 {name} 发送请求。',
+  'askCap': '今天的好友请求太多了。明天再试。',
   'people.noFriends': '还没有好友。通过好友 ID 添加一个吧。',
   'people.someone': '某人',
   'people.quiet': '未分享',

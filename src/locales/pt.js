@@ -928,6 +928,7 @@ export const pt = {
   'famNight.offline': 'Isso não chegou à tua família. Verifica o sinal e toca outra vez.',
   'people.askOne': 'Enviar pedido',
   'people.asked': 'Pedido a {name}.',
+  'askCap': 'Pedidos de amizade demais hoje. Tente de novo amanhã.',
   'people.noFriends': 'Ainda sem amigos. Adicione um pelo ID de amigo.',
   'people.someone': 'Alguém',
   'people.quiet': 'nada partilhado',

@@ -928,6 +928,7 @@ export const es = {
   'famNight.offline': 'Eso no llegó a tu familia. Revisa la señal y toca otra vez.',
   'people.askOne': 'Mandar solicitud',
   'people.asked': 'Le preguntaste a {name}.',
+  'askCap': 'Demasiadas solicitudes de amistad hoy. Inténtalo mañana.',
   'people.noFriends': 'Todavía no hay amigos. Agrega uno por su ID de amigo.',
   'people.someone': 'Alguien',
   'people.quiet': 'no comparte nada',
