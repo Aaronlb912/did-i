@@ -10,6 +10,7 @@ export { readSavedAt, stampSavedAt }
 
 const SHELF_KEY = 'did-i-shelf'
 const OLD_KEY = 'did-i-board'
+let oldKeyCleared = false
 
 // normalizeBook's empty-title fallback used to be the literal 'Did I' before
 // it became the localized General folder. A folder still carrying that old
@@ -108,8 +109,14 @@ export function writeShelf(shelf, savedAt) {
   let changed = true
   try {
     changed = localStorage.getItem(SHELF_KEY) !== text
-    localStorage.setItem(SHELF_KEY, text)
-    localStorage.setItem(OLD_KEY, JSON.stringify(currentBook(next)))
+    if (changed) localStorage.setItem(SHELF_KEY, text)
+    // The one-folder copy is only read when there is no shelf at all, and
+    // writing it doubled every save on a big account. Cleared once instead,
+    // so an old copy cannot come back over newer answers.
+    if (!oldKeyCleared) {
+      localStorage.removeItem(OLD_KEY)
+      oldKeyCleared = true
+    }
   } catch {
     // Board still runs if storage is blocked.
   }
