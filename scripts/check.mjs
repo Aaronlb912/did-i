@@ -8474,6 +8474,90 @@ test('universal links use ios.associatedDomains (Expo drops the raw entitlement)
   assert.ok(!config.includes("'com.apple.developer.associated-domains'"), 'Expo strips this key from ios.entitlements, so links open the website')
 })
 
+await testAsync('did we slots: streak, best, answer night and early for daily and weekly cards', async () => {
+  const { weSlotLocked, weBest, weDueOn, weEarly, weSlotOf, weStreak } = await import('../src/lib/did-we.js')
+  const daily = (doneNights, startsOn = '2026-10-01') => ({ cadence: 'daily', weekdays: [], startsOn, doneNights })
+  const weekly = (weekdays, doneNights, startsOn = '2026-09-01') => ({ cadence: 'weekly', weekdays, startsOn, doneNights })
+
+  // Daily: each day is its own slot, as before.
+  assert.equal(weStreak(daily(['2026-10-08', '2026-10-09', '2026-10-10']), '2026-10-11'), 3, 'tonight open does not break it')
+  assert.equal(weStreak(daily(['2026-10-08', '2026-10-09', '2026-10-10', '2026-10-11']), '2026-10-11'), 4)
+  assert.equal(weStreak(daily(['2026-10-08', '2026-10-10']), '2026-10-11'), 1, 'a missed day ends the run')
+  assert.equal(weStreak(daily(['2026-10-08']), '2026-10-11'), 0)
+  assert.equal(weSlotOf(daily([]), '2026-10-11'), '2026-10-11')
+
+  // Weekly on Sunday (2026-10-04 and 2026-10-11 are Sundays).
+  const sun = (done) => weekly([0], done)
+  assert.equal(weStreak(sun(['2026-09-27', '2026-10-04']), '2026-10-05'), 2, 'Monday after a done Sunday')
+  assert.equal(weStreak(sun(['2026-09-27', '2026-10-04']), '2026-10-10'), 2, 'Saturday, slot still Oct 4')
+  assert.equal(weStreak(sun(['2026-09-27', '2026-10-04']), '2026-10-11'), 2, 'due night open')
+  assert.equal(weStreak(sun(['2026-09-27', '2026-10-04']), '2026-10-14'), 2, 'this week open, last week done')
+  assert.equal(weStreak(sun(['2026-09-27', '2026-10-04', '2026-10-11']), '2026-10-14'), 3)
+  assert.equal(weStreak(sun(['2026-09-20', '2026-10-04']), '2026-10-05'), 1, 'a missed week ends the run')
+  assert.equal(weStreak(sun(['2026-09-27', '2026-10-11']), '2026-10-12'), 1)
+  assert.equal(weStreak(sun(['2026-09-27', '2026-10-04']), '2026-10-18'), 0, 'a slot past undone is a miss')
+  assert.equal(weSlotOf(sun([]), '2026-10-05'), '2026-10-04')
+
+  // Weekly Monday and Thursday: 2026-10-01 is a Thursday.
+  const two = (done) => weekly([1, 4], done, '2026-10-01')
+  assert.equal(weStreak(two(['2026-10-01', '2026-10-05', '2026-10-08']), '2026-10-10'), 3, 'Saturday after Thursday')
+  assert.equal(weStreak(two(['2026-10-01', '2026-10-05', '2026-10-08']), '2026-10-12'), 3, 'Monday open')
+  assert.equal(weStreak(two(['2026-10-01', '2026-10-05', '2026-10-08']), '2026-10-13'), 3, 'Tuesday, Monday slot open')
+  assert.equal(weStreak(two(['2026-10-01', '2026-10-08']), '2026-10-09'), 1, 'Monday missed')
+
+  // Before the first due night: no slot, and answering goes on the first night.
+  const late = weekly([0], [], '2026-10-11')
+  assert.equal(weStreak(late, '2026-10-08'), 0)
+  assert.equal(weSlotOf(late, '2026-10-08'), '')
+  assert.equal(weDueOn(late, '2026-10-04'), false)
+
+  // A week that crosses the end of daylight saving time (2026-11-01).
+  assert.equal(weStreak(sun(['2026-10-25', '2026-11-01', '2026-11-08']), '2026-11-11'), 3)
+  assert.equal(weSlotOf(sun([]), '2026-11-02'), '2026-11-01')
+  assert.equal(weSlotOf(sun([]), '2026-11-07'), '2026-11-01')
+
+  // The server's number wins when it sends one; the local count is the fallback.
+  assert.equal(weStreak({ ...sun(['2026-10-04']), streak: 5 }, '2026-10-05'), 5)
+  assert.equal(weStreak({ ...sun([]), streak: 0 }, '2026-10-05'), 0)
+  assert.equal(weBest({ ...sun([]), best: 9 }), 9)
+  assert.equal(weBest(sun(['2026-09-20', '2026-09-27', '2026-10-04', '2026-10-18', '2026-10-25'])), 3)
+  assert.equal(weBest(daily(['2026-10-01', '2026-10-02', '2026-10-04'])), 2)
+
+  // "Done it already" is only for a card with no open slot.
+  assert.equal(weEarly({ due: true, slot: '2026-10-11' }, '2026-10-11'), false)
+  assert.equal(weSlotLocked({ done: true, slot: '2026-10-04' }, '2026-10-08'), true, 'an older done slot is closed')
+  assert.equal(weSlotLocked({ done: true, slot: '2026-10-04' }, '2026-10-04'), false)
+  assert.equal(weSlotLocked({ done: true, slot: '2026-10-04' }, '2026-10-05'), false, 'last night can still change')
+  assert.equal(weSlotLocked({ done: false, slot: '2026-10-04' }, '2026-10-08'), false)
+  assert.equal(weEarly({ due: false }, '2026-10-05'), true, 'a server without slots')
+  assert.equal(weEarly({ due: false, slot: '2026-10-11' }, '2026-10-08'), true, 'before the first night')
+  assert.equal(weEarly({ due: false, slot: '2026-10-04', done: true }, '2026-10-08'), true, 'this week is done, so the next night can go early')
+  assert.equal(weEarly({ due: false, slot: '2026-10-04' }, '2026-10-08'), false)
+})
+
+test('did we slots: the SQL keeps one rule for answer, tonight, claim and repair', () => {
+  const read = (file) => readFileSync(path.join(checkRoot, file), 'utf8').replace(/\r\n/g, '\n')
+  const order = read('scripts/apply-all-sql.mjs')
+  assert.ok(order.indexOf('we-slots.sql') > order.indexOf('sweep-guards.sql'), 'we-slots.sql comes after the files it redefines')
+  assert.ok(!order.includes('we-slot-repair.sql'), 'the repair is run once by hand, not by apply-all')
+  const slots = read('supabase/we-slots.sql')
+  for (const name of ['we_answer', 'we_tonight', 'we_claim', 'we_resettle', 'we_streaks']) {
+    assert.match(slots, new RegExp(`function public\\.${name}\\(`))
+  }
+  assert.match(slots, /function public\.we_claim[\s\S]*we_streaks\(card, on_night\)/, 'the claim reads the same streak as tonight')
+  assert.match(slots, /'streak', c\.my_streak/)
+  assert.match(slots, /target <> on_night and target < current_date - 1 and want_status is distinct from 'did'/)
+  assert.match(slots, /revoke all on function public\.we_streaks\(uuid, date\) from public, anon, authenticated/)
+  const streaks = slots.slice(slots.indexOf('function public.we_streaks'), slots.indexOf('function public.we_resettle'))
+  assert.match(streaks, /security definer[\s\S]*set search_path = public/)
+  const repair = read('supabase/we-slot-repair.sql').replace(/--.*$/gm, '')
+  assert.ok(!/\b(delete\s+from|update|truncate|drop)\s+(table\s+)?public\./i.test(repair), 'the repair only adds rows')
+  assert.ok((repair.match(/on conflict do nothing/g) || []).length >= 4, 'every insert in the repair is idempotent')
+  assert.ok(!/select public\.we_slot_repair\(\);/.test(repair), 'nothing calls the repair on apply')
+  assert.match(repair, /b\.streak < s\.at/, 'only milestones the repair itself reached')
+  assert.match(repair, /we_slot_repair_ran[\s\S]*enable row level security/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

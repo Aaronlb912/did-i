@@ -7,7 +7,7 @@ import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
 import { refreshWeNights } from './we-nights.js'
-import { weDueOn, weNextDue, weNextLabel } from './we-next.js'
+import { weDueOn, weNextDue, weNextLabel, wePrevDue, weSlotOf } from './we-next.js'
 
 // Did we: one question two or more people answer together. The server
 // (supabase/did-we.sql) decides what counts as done and what each person may
@@ -292,7 +292,16 @@ export function weNextNight(card, night = tonightIso()) {
   return ''
 }
 
-export { weDueOn }
+export { weDueOn, weSlotOf }
+
+// Not asked tonight and no open slot either (none yet, or this slot is
+// already done), so a Did can only go on the card's next night ("done it
+// already"). A server without slots sends no
+// slot: any night it is not due counts, as before.
+export function weEarly(card, night = tonightIso()) {
+  if (card.due) return false
+  return !card.slot || card.slot > night || Boolean(card.done)
+}
 
 // "Not due tonight · Next: Sat, Oct 10", or just "Not due tonight".
 export function weNotTonightLine(card, locale, night = tonightIso()) {
@@ -300,23 +309,30 @@ export function weNotTonightLine(card, locale, night = tonightIso()) {
   return next ? t('we.notTonightNext', { day: next }) : t('we.notTonight')
 }
 
-// The run of due nights done together, ending tonight, or last night while
-// tonight is still open. Same rule as we_claim on the server.
+// A done slot older than last night cannot be taken back or changed from a
+// later day of its week: the server refuses, so the card shows as done.
+export function weSlotLocked(card, night = tonightIso()) {
+  return Boolean(card.done && card.slot && card.slot < addDays(night, -1) && card.slot !== night)
+}
+
+// The run of slots done together. It ends at the current slot when that is
+// done, else at the one before it, so a slot still open never breaks it. The
+// server counts it (card.streak); without that, count here from doneNights.
 export function weStreak(card, night = tonightIso()) {
+  if (Number.isInteger(card.streak)) return card.streak
   const done = new Set(card.doneNights || [])
-  let day = done.has(night) ? night : addDays(night, -1)
+  let slot = weSlotOf(card, night)
+  if (slot && !done.has(slot)) slot = wePrevDue(card, slot)
   let run = 0
-  for (let i = 0; i < 400 && day >= String(card.startsOn || ''); i += 1) {
-    if (weDueOn(card, day)) {
-      if (!done.has(day)) break
-      run += 1
-    }
-    day = addDays(day, -1)
+  for (let i = 0; slot && done.has(slot) && i < 400; i += 1) {
+    run += 1
+    slot = wePrevDue(card, slot)
   }
   return run
 }
 
 export function weBest(card) {
+  if (Number.isInteger(card.best)) return card.best
   const nights = [...(card.doneNights || [])].sort()
   let best = 0
   let run = 0

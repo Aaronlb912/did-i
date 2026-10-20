@@ -55,11 +55,13 @@ export function readAmount(raw) {
 }
 
 // One query for every card on screen.
-export async function weWeekTotals(cardIds, night = boardDate()) {
+// mineNight: the night your own amount is read from (a weekly card keeps it
+// on the slot's due night); the week itself is the one holding `night`.
+export async function weWeekTotals(cardIds, night = boardDate(), mineNight = night) {
   const ids = [...new Set((cardIds || []).filter(Boolean))].slice(0, 60)
   const db = cloud()
   if (!db || !ids.length) return { totals: new Map(), miss: db ? '' : 'off' }
-  const { data, error } = await db.rpc('we_week_totals', { cards: ids, week_start: weekStartIso(night), on_night: night })
+  const { data, error } = await db.rpc('we_week_totals', { cards: ids, week_start: weekStartIso(night), on_night: mineNight })
   if (error) return { totals: new Map(), ...bad(error) }
   return { totals: totalsById(data), miss: '' }
 }
