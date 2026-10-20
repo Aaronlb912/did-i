@@ -81,7 +81,7 @@ import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
-import { PING_KINDS, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
+import { PING_KINDS, afterQuiet, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
 import { syncLine } from '../../src/lib/sync-line.js'
@@ -1697,6 +1697,18 @@ export function FirstNightScreen({ book, onChange, now }) {
 
 // Pushes come from the server, which reads these switches from the synced prefs.
 const PUSH_KINDS = new Set(['sends', 'we', 'cheers', 'friends', 'family', 'didi'])
+// Morning ask times outside quiet hours: a nudge inside them never rings.
+// The picked one stays listed so the choice never looks empty.
+function morningTimes(prefs) {
+  const free = MORNING_AT_TIMES.filter((id) => {
+    const [h, m] = id.split(':').map(Number)
+    const at = new Date()
+    at.setHours(h, m, 0, 0)
+    return afterQuiet(at, prefs).getTime() === at.getTime() || id === prefs.morningAt
+  })
+  return free.length ? free : MORNING_AT_TIMES
+}
+
 const QUIET_HOURS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`)
 
 function PingKinds({ colors, on }) {
@@ -1825,7 +1837,7 @@ function PingKinds({ colors, on }) {
               <SetChoice
                 colors={colors}
                 label={t('morning.at')}
-                options={MORNING_AT_TIMES.map((id) => ({ id, label: clockWords(id) }))}
+                options={morningTimes(prefs).map((id) => ({ id, label: clockWords(id) }))}
                 selected={prefs.morningAt || MORNING_AT_DEFAULT}
                 onSelect={(id) => {
                   writePrefs({ morningAt: id })
