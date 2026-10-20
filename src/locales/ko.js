@@ -478,6 +478,7 @@ export const ko = {
   'help.version': '버전 {v} (빌드 {build})',
   'help.versionUpdate': '업데이트 {id}, {when}',
   'help.versionNoUpdate': '설치 후 업데이트 없음',
+  'update.applied': "Did I가 업데이트되었어요.",
   'help.feedback': '피드백',
   'help.feedbackP': '고장이거나 빠진 게 있나요? 기대한 것과 실제로 일어난 것을 알려주세요.',
   'feedback.send': '피드백 보내기',

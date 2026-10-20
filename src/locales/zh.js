@@ -478,6 +478,7 @@ export const zh = {
   'help.version': '版本 {v}（构建 {build}）',
   'help.versionUpdate': '更新 {id}，{when}',
   'help.versionNoUpdate': '安装后没有更新',
+  'update.applied': "Did I 已更新。",
   'help.feedback': '反馈',
   'help.feedbackP': '有坏了或缺了的地方？告诉我们你期望什么、实际发生了什么。',
   'feedback.send': '发送反馈',

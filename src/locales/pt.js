@@ -486,6 +486,7 @@ export const pt = {
   'help.version': 'Versão {v} (build {build})',
   'help.versionUpdate': 'Atualização {id}, {when}',
   'help.versionNoUpdate': 'Nenhuma atualização desde a instalação',
+  'update.applied': "O Did I foi atualizado.",
   'help.feedback': 'Opinião',
   'help.feedbackP': 'Algo quebrado ou faltando? Diga o que esperava e o que aconteceu.',
   'feedback.send': 'Enviar feedback',

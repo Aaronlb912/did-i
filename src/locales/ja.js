@@ -478,6 +478,7 @@ export const ja = {
   'help.version': 'バージョン {v}（ビルド {build}）',
   'help.versionUpdate': 'アップデート {id}、{when}',
   'help.versionNoUpdate': 'インストール後のアップデートはありません',
+  'update.applied': "Did I を更新しました。",
   'help.feedback': 'フィードバック',
   'help.feedbackP': '壊れている、足りない？期待していたことと起きたことを教えてください。',
   'feedback.send': 'フィードバックを送る',
