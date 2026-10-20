@@ -7351,6 +7351,15 @@ await testAsync('an ios widget tap on the last night card answers last night, no
   fresh()
   assert.equal(recordWidgetAnswer('door', 'did', new Date(2026, 9, 3, 10, 0), fri), null)
   assert.equal(answers().length, 0)
+  // A stale widget's Not yet keeps a Did made in the app; Not yet then Did still lands.
+  fresh()
+  recordWidgetAnswer('door', 'did', sat3am, fri)
+  assert.equal(recordWidgetAnswer('door', 'nope', sat3am, fri), null)
+  assert.notEqual(answers()[0].status, 'skip')
+  fresh()
+  recordWidgetAnswer('door', 'nope', sat3am, fri)
+  assert.ok(recordWidgetAnswer('door', 'did', sat3am, fri))
+  assert.notEqual(answers()[0].status, 'skip')
 })
 
 await testAsync('widget lead follows its night when one question shows twice', async () => {

@@ -28,12 +28,14 @@ export function installWidgetSetup() {
     const [tapLamp, tapNight] = cut < 0 ? [tapTarget, ''] : [tapTarget.slice(0, cut), tapTarget.slice(cut + 1)]
     if (did) {
       const next = recordWidgetAnswer(tapLamp, 'did', new Date(), tapNight)
-      if (next) syncTonightWidget(next)
+      // A refused tap still redraws, so a stale card shows its real answer.
+      syncTonightWidget(next || readShelf())
       return
     }
     if (nope) {
       const next = recordWidgetAnswer(tapLamp, 'nope', new Date(), tapNight)
-      if (next) syncTonightWidget(next)
+      // A refused tap still redraws, so a stale card shows its real answer.
+      syncTonightWidget(next || readShelf())
     }
   })
 

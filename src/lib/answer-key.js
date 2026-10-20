@@ -52,6 +52,17 @@ export async function refreshAnswerKey(userId, device, now = Date.now()) {
   }
 }
 
+// The session ended on its own (expired, signed out elsewhere): drop the
+// phone's copy so widget and watch taps stop posting to that account.
+export function forgetAnswerKey() {
+  write('')
+  try {
+    Promise.resolve(store?.clear()).catch(() => {})
+  } catch {
+    // ok
+  }
+}
+
 // Sign out: the key leaves the phone, and the account ends it (this device's,
 // or every device's when device is null). Call while the session still works.
 export async function endAnswerKeys(device) {

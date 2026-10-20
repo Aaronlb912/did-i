@@ -583,6 +583,9 @@ export function recordWidgetAnswer(lampId, kind, clock = new Date(), night = '')
   if (!row) return null
   // A card left over from a night that has closed must not write to it.
   if (!rows.includes(row) && periodPassed(row.lamp, row.periodKey, openFloorIso(clock))) return null
+  // A widget that had not redrawn can still show a card answered in the app:
+  // a Not yet can turn into a Did, nothing else changes a set answer.
+  if (row.answer && !(row.answer.status === 'skip' && status === 'yes')) return null
   const finalStatus = status === 'yes' ? didStatusForRow(row) : status
   const nextBook = putAnswer(book, row, finalStatus, clock)
   if (nextBook === book) return null
