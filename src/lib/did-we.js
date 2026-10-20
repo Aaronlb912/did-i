@@ -306,6 +306,10 @@ export function weEarly(card, night = tonightIso()) {
 // "Not due tonight · Next: Sat, Oct 10", or just "Not due tonight".
 export function weNotTonightLine(card, locale, night = tonightIso()) {
   const next = weNextLabel(weNextDue(card, night), locale)
+  if (card.cadence === 'weekly') {
+    if (card.slot && card.slot <= night) return next ? t('we.notTonightWeekNext', { day: next }) : t('we.notTonightWeekDone')
+    return next ? t('we.notTonightWeekStarts', { day: next }) : t('we.notTonightWeek')
+  }
   return next ? t('we.notTonightNext', { day: next }) : t('we.notTonight')
 }
 

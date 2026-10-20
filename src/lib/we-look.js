@@ -46,6 +46,22 @@ export function weNextCoinsKey(card, left) {
   return { key: one ? 'we.nextCoinsOne' : 'we.nextCoins', vars: { n: left } }
 }
 
+// Any day-worded key gets its Week twin on a weekly card: 'we.goalLine' ->
+// 'we.goalLineWeek'.
+export function weWeekKey(card, key) {
+  return isWeekly(card) ? `${key}Week` : key
+}
+
+// 'we.modeNote.turns' / 'we.modeLine.turns' say "a day"; weekly cards get the Week twin.
+export function weModeKey(card, base, mode) {
+  return mode === 'turns' && isWeekly(card) ? `${base}.turnsWeek` : `${base}.${mode}`
+}
+
+// A miss code from the server, in week words when the card is weekly.
+export function weMissKey(card, miss) {
+  return miss === 'we.missClosed' ? weWeekKey(card, miss) : miss
+}
+
 // A card person with the photo and buddy from the people you know. Cards can
 // lack them; the Friends list has them. known: Map of id -> { avatar, buddy }.
 export function weFaceFor(person, known) {
@@ -81,7 +97,7 @@ export function weStatus(card) {
   if (card?.mode === 'turns') {
     const whose = (card.people || []).find((p) => p.id === card.turn)
     if (whose?.me) return { key: 'we.yourTurnShort', vars: {} }
-    if (whose) return { key: 'we.theirTurn', vars: { name: whose.name } }
+    if (whose) return { key: week ? 'we.theirTurnWeek' : 'we.theirTurn', vars: { name: whose.name } }
   }
   return { key: week ? 'we.ofDidWeek' : 'we.ofDid', vars: { n: card?.dids || 0, total: card?.total || 0 } }
 }

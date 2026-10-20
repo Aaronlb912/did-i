@@ -49,7 +49,7 @@ import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
-import { weNextCoinsKey, weRuleKey, weWeekDots } from '../../src/lib/we-look.js'
+import { weNextCoinsKey, weRuleKey, weModeKey, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
 import { boardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -211,7 +211,7 @@ function ruleParts({ draft, setDraft, open, fold, colors }) {
                 <Pill key={id} label={t(`we.mode.${id}`)} on={draft.mode === id} onPress={() => set('mode')(id)} colors={colors} radio />
               ))}
             </View>
-            <Text style={[styles.hint, { color: colors.inkDim }]}>{t(`we.modeNote.${draft.mode}`)}</Text>
+            <Text style={[styles.hint, { color: colors.inkDim }]}>{t(weModeKey(draft, 'we.modeNote', draft.mode))}</Text>
           </HangFold>
     ),
     shows: (last) => (
@@ -388,7 +388,7 @@ function WeSheets({ draft, setDraft, sheet, setSheet, colors }) {
               <ScheduleTile key={id} accent={colors.we} label={t(`we.mode.${id}`)} on={draft.mode === id} onPress={() => set('mode')(id)} colors={colors} />
             ))}
           </ScheduleTiles>
-          <Text style={[styles.hint, { color: colors.inkDim }]}>{t(`we.modeNote.${draft.mode}`)}</Text>
+          <Text style={[styles.hint, { color: colors.inkDim }]}>{t(weModeKey(draft, 'we.modeNote', draft.mode))}</Text>
           <Text style={[styles.hint, { color: colors.inkSoft }]}>{t('we.whatShows')}</Text>
           <View style={styles.pillRow}>
             {['waiting', 'all', 'count'].map((id) => (
@@ -1101,16 +1101,16 @@ function WeCardPage({ book, cardId, onChange }) {
       content: (
         <View>
           <Meta colors={colors}>
-            {t(`we.modeLine.${card.mode}`)} {t(`we.showsLine.${card.shows}`)}
+            {t(weModeKey(card, 'we.modeLine', card.mode))} {t(`we.showsLine.${card.shows}`)}
             {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
           </Meta>
           {goal ? (
             <Meta colors={colors}>
-              {goal.finished ? t('we.goalDone', { goal: goal.goal }) : t('we.goalLine', { n: goal.done, goal: goal.goal })}
+              {goal.finished ? t(weWeekKey(card, 'we.goalDone'), { goal: goal.goal }) : t(weWeekKey(card, 'we.goalLine'), { n: goal.done, goal: goal.goal })}
             </Meta>
           ) : null}
-          <Meta colors={colors}>{t(month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth', { n: month.done, due: month.due })}</Meta>
-          {last.due ? <Meta colors={colors}>{t('we.lastMonth', { n: last.done, due: last.due })}</Meta> : null}
+          <Meta colors={colors}>{t(weWeekKey(card, month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth'), { n: month.done, due: month.due })}</Meta>
+          {last.due ? <Meta colors={colors}>{t(weWeekKey(card, 'we.lastMonth'), { n: last.done, due: last.due })}</Meta> : null}
           {card.shows === 'count' ? <Meta colors={colors}>{t('we.countOnly', { total: card.total })}</Meta> : null}
           <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
             <Cap colors={colors}>{t('we.people')}</Cap>
@@ -1118,7 +1118,7 @@ function WeCardPage({ book, cardId, onChange }) {
               <Meta key={p.id} colors={colors}>
                 {p.me ? t('we.you') : p.name}
                 {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
-                {card.mode === 'turns' && card.turn === p.id ? ` · ${t('we.tonightsTurn')}` : ''}
+                {card.mode === 'turns' && card.turn === p.id ? ` · ${t(weWeekKey(card, 'we.tonightsTurn'))}` : ''}
               </Meta>
             ))}
           </View>
@@ -1538,7 +1538,7 @@ export function WeHomeList({ book, onChange }) {
           <Cap colors={colors}>{t('we.monthTogether')}</Cap>
           <Text style={[styles.big, { color: colors.we }]}>{t(nightsTogether === 1 ? 'we.nightsDoneOne' : 'we.nightsDone', { n: nightsTogether })}</Text>
           {longest?.streak ? (
-            <Meta colors={colors}>{t(longest.streak === 1 ? 'we.longestOne' : 'we.longest', { question: longest.card.question, n: longest.streak })}</Meta>
+            <Meta colors={colors}>{t(weWeekKey(longest.card, longest.streak === 1 ? 'we.longestOne' : 'we.longest'), { question: longest.card.question, n: longest.streak })}</Meta>
           ) : null}
         </View>
       ) : null}

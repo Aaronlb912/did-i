@@ -7120,7 +7120,7 @@ await testAsync('did we look: status line, face overflow, done rule, dots', asyn
 })
 
 await testAsync('did we weekly wording, face lookup and slim Tonight row', async () => {
-  const { weFaceFor, weNextCoinsKey, wePersonKey, weRowLine, weStatus } = await import('../src/lib/we-look.js')
+  const { weFaceFor, weMissKey, weModeKey, weNextCoinsKey, wePersonKey, weRowLine, weStatus, weWeekKey } = await import('../src/lib/we-look.js')
   const people = [{ id: 'me', name: 'Me', me: true, state: 'in', status: 'did' }, { id: 'jo', name: 'Jo', state: 'in', status: null }]
   assert.equal(weStatus({ cadence: 'weekly', mode: 'all', people, dids: 1, total: 2 }).key, 'we.ofDidWeek')
   assert.equal(weStatus({ cadence: 'daily', mode: 'all', people, dids: 1, total: 2 }).key, 'we.ofDid')
@@ -7131,6 +7131,22 @@ await testAsync('did we weekly wording, face lookup and slim Tonight row', async
   assert.equal(weNextCoinsKey({}, 6).key, 'we.nextCoins')
   assert.equal(wePersonKey({ cadence: 'weekly' }, 'did'), 'we.pDidWeek')
   assert.equal(wePersonKey({}, null), 'we.pWaiting')
+  assert.equal(weWeekKey({ cadence: 'weekly' }, 'we.goalLine'), 'we.goalLineWeek')
+  assert.equal(weWeekKey({ cadence: 'daily' }, 'we.goalLine'), 'we.goalLine')
+  assert.equal(weMissKey({ cadence: 'weekly' }, 'we.missClosed'), 'we.missClosedWeek')
+  assert.equal(weMissKey({ cadence: 'weekly' }, 'we.missNudged'), 'we.missNudged')
+  assert.equal(weMissKey({}, 'we.missClosed'), 'we.missClosed')
+  assert.equal(weModeKey({ cadence: 'weekly' }, 'we.modeNote', 'turns'), 'we.modeNote.turnsWeek')
+  assert.equal(weModeKey({ cadence: 'weekly' }, 'we.modeLine', 'all'), 'we.modeLine.all')
+  assert.equal(weModeKey({}, 'we.modeLine', 'turns'), 'we.modeLine.turns')
+  const turns = { cadence: 'weekly', mode: 'turns', turn: 'jo', people }
+  assert.equal(weStatus(turns).key, 'we.theirTurnWeek')
+  assert.equal(weStatus({ ...turns, cadence: 'daily' }).key, 'we.theirTurn')
+  const { weNotTonightLine } = await import('../src/lib/did-we.js')
+  const wk = { cadence: 'weekly', weekdays: [6], startsOn: '2026-01-01', slot: '2026-10-03' }
+  assert.match(weNotTonightLine({ ...wk, done: true }, 'en', '2026-10-05'), /^Done for this week · Next:/)
+  assert.match(weNotTonightLine({ ...wk, slot: '', startsOn: '2026-10-01' }, 'en', '2026-09-30'), /^Starts /)
+  assert.equal(weNotTonightLine({ cadence: 'daily', weekdays: [], startsOn: '2026-01-01' }, 'en', '2026-10-05'), 'Not due today · Next: ' + weNotTonightLine({ cadence: 'daily', startsOn: '2026-01-01' }, 'en', '2026-10-05').split('Next: ')[1])
   const known = new Map([['jo', { avatar: 'https://x/jo.png', buddy: 'frog' }]])
   assert.equal(weFaceFor(people[1], known).avatar, 'https://x/jo.png')
   assert.equal(weFaceFor(people[1], known).buddy, 'frog')
