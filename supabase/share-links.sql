@@ -75,7 +75,8 @@ declare
 begin
   if (select auth.uid()) is null then return false; end if;
   select l.made_by into maker from public.did_you_links l
-  where l.code = lower(btrim(coalesce(befriend_by_link.code, ''))) and not l.ended;
+  where l.code = lower(btrim(coalesce(befriend_by_link.code, ''))) and not l.ended
+    and public.did_you_link_open(l.made_by, l.made_at);
   return public.link_ask_friend(maker);
 end;
 $$;
