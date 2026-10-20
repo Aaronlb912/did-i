@@ -668,7 +668,8 @@ export async function pushNow(shelf) {
       const row = await db.from('shelves').select('saved_at').eq('user_id', user.id).maybeSingle()
       if (row.error) throw row.error
       const at = row.data?.saved_at || ''
-      if (at && at !== readSeenAt()) {
+      // Compared as times: the server sends +00:00 where JS wrote Z.
+      if (at && Date.parse(at) !== Date.parse(readSeenAt())) {
         await pullAndMerge()
         return
       }
