@@ -14,6 +14,7 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 
 - **Built:** weekly Did we cards use slots: a Did any day from the due night to the day before the next one counts for that due night, so two people answering on different days still finish the week (`supabase/we-slots.sql`). The server counts streak and best (`we_streaks`, also used by `we_claim`); the app falls back to its own count on an older server. A done week older than yesterday can't be undone by take back, Not yet, a join or a leave. A one-time repair ran (`supabase/we-slot-repair.sql`, marker table, added 0). Did you: the sender sees the last 7 days, not the newest 7 rows; once and "by" answers are dated the night they were given; links stop working after 7 days (`did_you_link_open`). Tests: `supabase/tests/did-we-slots.test.sql`, `did-you-flow.test.sql`.
 - **Not done:** phones on 1.3.7 count weekly streaks the old way until they update. The repair can't know time zones, so a late-evening answer near a due night may not have been recovered. Translations of the new privacy lines not checked by native speakers. Not tried on a phone.
+- **Did we members who are not your friends** (joined by link) show a letter, not a photo or buddy, unless the card carries their photo. Faces come from your friends list.
 
 ## Updates on return (OTA)
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { PersonAvatar } from './PersonAvatar.jsx'
 import { useAccount } from '../../src/lib/account.js'
@@ -16,7 +16,10 @@ import {
   wePausedCards,
   weRestart,
 } from '../../src/lib/did-we.js'
-import { weFaceRow, weStatus } from '../../src/lib/we-look.js'
+import { weFaceFor, weFaceRow, wePersonKey, weRowLine, weStatus } from '../../src/lib/we-look.js'
+import { refreshTogether } from '../../src/lib/people.js'
+import { onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
+import { pressFx } from '../lib/motion.jsx'
 import { SwipeCardHost } from './SwipeCardHost.jsx'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -32,7 +35,19 @@ const FACES_SHOWN = 5
 
 // One person: their buddy if they wear one, else their initials. The ring
 // lights up on a did and marks whose turn it is; someone only asked is faded.
-function WeFace({ person, card, colors, size = 30 }) {
+// The people you know carry the photo and buddy that a card's people may lack
+// (the same list the Friends row reads, kept by the Together widget).
+function useKnownFaces() {
+  const [people, setPeople] = useState(() => readTogetherPeople())
+  useEffect(() => {
+    refreshTogether().catch(() => {})
+    return onTogetherSaved(() => setPeople(readTogetherPeople()))
+  }, [])
+  return useMemo(() => new Map(people.map((p) => [String(p.id || ''), p])), [people])
+}
+
+function WeFace({ person: raw, card, colors, known, size = 30 }) {
+  const person = weFaceFor(raw, known)
   const lit = person.status === 'did'
   const turn = card.mode === 'turns' && card.turn === person.id
   const tint = colors.we || colors.on
@@ -54,9 +69,7 @@ function personLine(person, card) {
   if (person.state === 'asked') return t('we.pAsked')
   const bits = []
   if (card.mode === 'turns' && card.turn === person.id) bits.push(t('we.tonightsTurn'))
-  if (person.status === 'did') bits.push(t('we.pDid'))
-  else if (person.status === 'nope') bits.push(t('we.pNope'))
-  else bits.push(t('we.pWaiting'))
+  bits.push(t(wePersonKey(card, person.status)))
   return bits.join(' · ')
 }
 
@@ -82,6 +95,7 @@ function WeDot({ dot, colors }) {
 
 export function WeFaces({ card, colors, cheer, dots = true }) {
   const [open, setOpen] = useState(false)
+  const known = useKnownFaces()
   const { shown, more } = weFaceRow(card, FACES_SHOWN)
   const listed = card.people || []
   const showDots = dots && card.due
@@ -96,7 +110,7 @@ export function WeFaces({ card, colors, cheer, dots = true }) {
       >
         {shown.map(({ person, dot }) => (
           <View key={person.id} style={styles.slot}>
-            <WeFace person={person} card={card} colors={colors} />
+            <WeFace person={person} card={card} colors={colors} known={known} />
             {showDots ? <WeDot dot={dot} colors={colors} /> : null}
           </View>
         ))}
@@ -123,7 +137,7 @@ export function WeFaces({ card, colors, cheer, dots = true }) {
               <ScrollView style={styles.popList}>
                 {listed.map((person) => (
                   <View key={person.id} style={[styles.popRow, { borderTopColor: colors.line }]}>
-                    <WeFace person={person} card={card} colors={colors} size={40} />
+                    <WeFace person={person} card={card} colors={colors} known={known} size={40} />
                     <View style={styles.popCopy}>
                       <Text style={[styles.question, { color: colors.ink }]}>{person.me ? t('we.you') : person.name}</Text>
                       <Text style={[styles.meta, { color: colors.inkDim }]}>{personLine(person, card)}</Text>
@@ -167,6 +181,7 @@ export function WeFaces({ card, colors, cheer, dots = true }) {
 const STATE_KEY = { did: 'we.did', nope: 'we.nope', waiting: 'we.a.waiting' }
 
 export function WeAnswers({ card, colors }) {
+  const known = useKnownFaces()
   const people = (card.people || []).filter((p) => p.state === 'in' && (card.shows !== 'count' || p.me))
   if (!people.length) return null
   const tint = colors.we || colors.on
@@ -188,7 +203,7 @@ export function WeAnswers({ card, colors }) {
               },
             ]}
           >
-            <WeFace person={person} card={card} colors={colors} size={18} />
+            <WeFace person={person} card={card} colors={colors} known={known} size={18} />
             <Text style={[styles.answerText, { color: state === 'waiting' ? colors.inkDim : colors.ink }]} numberOfLines={1}>
               {label}
             </Text>
@@ -204,29 +219,58 @@ export function WeAnswers({ card, colors }) {
   )
 }
 
-// Did wes you already answered tonight, for Home: who has answered and what.
-// Each opens its page. Nothing when there are none.
+// Did wes you already answered tonight, for Home: one slim row under the
+// question card, like the friends row. One Did we shows its question and
+// where it stands; several show a count. Tap opens the card, or the list.
+// Nothing when there are none.
 export function WeAnswered({ cards, colors, hide = '' }) {
+  const known = useKnownFaces()
   const done = (cards || []).filter((card) => card.myState === 'in' && card.due && weMine(card)?.status && card.id !== hide)
   if (!done.length) return null
+  const line = weRowLine(done)
+  const status = line.status.map((bit) => t(bit.key, bit.vars)).join(' · ')
+  const first = done[0]
+  const title = line.many ? t('we.rowMany', { n: line.n }) : first.question
+  const seen = []
+  for (const card of done) {
+    for (const person of card.people || []) {
+      if (person.state === 'in' && !seen.some((x) => x.person.id === person.id)) seen.push({ person, card })
+    }
+  }
+  const more = Math.max(0, seen.length - 3)
+  const tint = colors.we || colors.on
   return (
-    <View style={[styles.wrap, styles.pausedWrap, { borderColor: colors.we || colors.line, backgroundColor: colors.panel }]}>
-      {done.map((card, i) => (
-        <Pressable
-          key={card.id}
-          accessibilityRole="button"
-          onPress={() => goHash('/we', { id: card.id })}
-          style={[styles.row, i ? { borderTopColor: colors.line } : { borderTopWidth: 0 }]}
-        >
-          <View style={styles.copy}>
-            <Text style={[styles.question, { color: colors.ink }]} numberOfLines={2}>
-              {card.question}
-            </Text>
-            <WeAnswers card={card} colors={colors} />
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${t('we.title')}: ${title}, ${status}${more ? `, ${t('we.more', { n: more })}` : ''}`}
+      onPress={() => (line.many ? goHash('/we') : goHash('/we', { id: first.id }))}
+      hitSlop={6}
+      style={({ pressed }) => [styles.slim, { borderColor: tint, backgroundColor: colors.panel }, pressFx(pressed)]}
+    >
+      <View style={styles.slimFaces}>
+        {seen.slice(0, 3).map(({ person, card }) => (
+          <View key={person.id} style={styles.slimSlot}>
+            <WeFace person={person} card={card} colors={colors} known={known} size={26} />
           </View>
-        </Pressable>
-      ))}
-    </View>
+        ))}
+        {more ? (
+          <View style={[styles.slimMore, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+            <Text style={[styles.faceText, { color: colors.inkSoft }]} numberOfLines={1}>
+              {t('we.more', { n: more })}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+      <View style={styles.slimCopy}>
+        <Text style={[styles.slimQ, { color: colors.ink }]} numberOfLines={1} ellipsizeMode="tail">
+          {title}
+        </Text>
+        <Text style={[styles.slimStatus, { color: line.many || !first.done ? colors.inkSoft : tint }]} numberOfLines={1} ellipsizeMode="tail">
+          {status}
+        </Text>
+      </View>
+      <Text style={[styles.slimGo, { color: colors.inkDim }]}>›</Text>
+    </Pressable>
   )
 }
 
@@ -522,5 +566,13 @@ const styles = StyleSheet.create({
   answers: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
   answer: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 999, paddingLeft: 3, paddingRight: 9, paddingVertical: 3, maxWidth: '100%' },
   answerText: { fontFamily: fonts.uiSemi, fontSize: 12, flexShrink: 1 },
+  slim: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8, alignSelf: 'stretch' },
+  slimFaces: { flexDirection: 'row' },
+  slimMore: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  slimSlot: { marginRight: 2 },
+  slimCopy: { flex: 1, minWidth: 0 },
+  slimQ: { fontFamily: fonts.uiSemi, fontSize: 13 },
+  slimStatus: { fontFamily: fonts.ui, fontSize: 12 },
+  slimGo: { fontFamily: fonts.uiSemi, fontSize: 18 },
   answerCount: { marginLeft: 2 },
 })
