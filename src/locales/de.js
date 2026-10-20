@@ -1321,7 +1321,7 @@ export const de = {
   'morning.labelAt': "Heute, {time}",
   'morning.toggle': "Morgenfrage",
   'morning.at': "Uhrzeit der Morgenfrage",
-  'morning.toggleSub': "Vor Mittag fragt eine Karte, woran du heute denken willst.",
+  'morning.toggleSub': "Vor Mittag fragt ein Fenster, woran du heute denken willst.",
   'why.todayDid': "Heute, Did: {list}",
   'why.todayNotYet': "Heute, noch nicht: {list}",
   'pings.day.2': 'Schon etwas zum Abhaken heute?',
