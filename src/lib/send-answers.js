@@ -26,16 +26,21 @@ export function sharesAnswers(lamp) {
 // a week ago. Pure, so the sync and the tests read the same thing.
 export function sendAnswerRows(shelf, now = new Date()) {
   const since = addDaysIso(boardDate(now), -WINDOW)
-  const ids = []
+  const found = []
   const rows = []
   for (const book of shelf?.boards || []) {
     const lamps = new Map((book.lamps || []).filter(sharesAnswers).map((lamp) => [lamp.id, lamp]))
     if (!lamps.size) continue
-    for (const lamp of lamps.values()) ids.push(cleanSendId(lamp.sendId))
+    for (const lamp of lamps.values()) found.push({ id: cleanSendId(lamp.sendId), made: String(lamp.createdOn || '') })
     for (const answer of book.answers || []) {
       const lamp = lamps.get(answer.lampId)
       if (!lamp || !answer.periodKey) continue
-      const night = periodNight(lamp, answer.periodKey)
+      // A one time question is dated by the night it was answered, so a
+      // "by" date or an old keep night does not hide or drop the answer.
+      const when = answer.answeredAt ? Date.parse(answer.answeredAt) : NaN
+      const night = String(answer.periodKey).startsWith('once:') && !Number.isNaN(when)
+        ? boardDate(new Date(when))
+        : periodNight(lamp, answer.periodKey)
       if (!/^\d{4}-\d{2}-\d{2}$/.test(night) || night < since) continue
       rows.push({
         send_id: cleanSendId(lamp.sendId),
@@ -47,7 +52,11 @@ export function sendAnswerRows(shelf, now = new Date()) {
     }
   }
   rows.sort((a, b) => `${a.send_id}${a.night}`.localeCompare(`${b.send_id}${b.night}`))
-  return { since, ids: [...new Set(ids)].sort().slice(0, 200), rows: rows.slice(0, 1000) }
+  // The server takes 200 sends; the oldest kept are the ones left off.
+  found.sort((a, b) => b.made.localeCompare(a.made) || a.id.localeCompare(b.id))
+  const ids = [...new Set(found.map((item) => item.id))].slice(0, 200)
+  const keep = new Set(ids)
+  return { since, ids: ids.sort(), rows: rows.filter((row) => keep.has(row.send_id)).slice(0, 1000) }
 }
 
 // Sent with each sync, only when something changed since the last one that
