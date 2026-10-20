@@ -7,6 +7,7 @@ import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
 import { refreshWeNights } from './we-nights.js'
+import { weekKind, weSlotDay } from './we-look.js'
 import { weDueOn, weNextDue, weNextLabel, wePrevDue, weSlotOf } from './we-next.js'
 
 // Did we: one question two or more people answer together. The server
@@ -306,8 +307,13 @@ export function weEarly(card, night = tonightIso()) {
 // "Not due tonight · Next: Sat, Oct 10", or just "Not due tonight".
 export function weNotTonightLine(card, locale, night = tonightIso()) {
   const next = weNextLabel(weNextDue(card, night), locale)
-  if (card.cadence === 'weekly') {
-    if (card.slot && card.slot <= night) return next ? t('we.notTonightWeekNext', { day: next }) : t('we.notTonightWeekDone')
+  const kind = weekKind(card)
+  if (kind !== 'daily') {
+    if (card.slot && card.slot <= night) {
+      if (kind === 'multi') return next ? t('we.notTonightDayNext', { day: weSlotDay(card, locale), next }) : t('we.notTonightDayDone', { day: weSlotDay(card, locale) })
+      return next ? t('we.notTonightWeekNext', { day: next }) : t('we.notTonightWeekDone')
+    }
+    if (kind === 'multi') return next ? t('we.notTonightWeekStarts', { day: next }) : t('we.notTonight')
     return next ? t('we.notTonightWeekStarts', { day: next }) : t('we.notTonightWeek')
   }
   return next ? t('we.notTonightNext', { day: next }) : t('we.notTonight')
