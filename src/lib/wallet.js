@@ -7,14 +7,14 @@ import { boardDate } from './recurrence.js'
 import { frameById, withServerFrames } from './frames.js'
 
 export function applyGemBalanceToShelf(shelf, balance) {
-  const gems = Math.max(0, Math.min(9999, Math.floor(Number(balance) || 0)))
+  const gems = Math.max(0, Math.min(999999, Math.floor(Number(balance) || 0)))
   if (!shelf?.boards?.length) return shelf
   const boards = shelf.boards.map((book) => ({ ...book, gems }))
   return { ...shelf, boards }
 }
 
 export function applyCoinBalanceToShelf(shelf, balance) {
-  const coins = Math.max(0, Math.min(9999, Math.floor(Number(balance) || 0)))
+  const coins = Math.max(0, Math.min(999999, Math.floor(Number(balance) || 0)))
   if (!shelf?.boards?.length) return shelf
   const boards = shelf.boards.map((book) => ({ ...book, coins }))
   return { ...shelf, boards }
@@ -313,4 +313,14 @@ export async function readCoinHistory() {
     .map((row) => ({ night: String(row.night || '').slice(0, 10), coins: Math.max(0, Math.floor(Number(row.coins) || 0)) }))
     .filter((row) => /^\d{4}-\d{2}-\d{2}$/.test(row.night))
   return { nights, gemWeek: String(data.gem_week || '') }
+}
+
+// A balance short enough for the header: 9999, then 12.3k, then 1.2M.
+// Rounded down, so it never shows more than the person has.
+export function shortCount(value) {
+  const n = Math.max(0, Math.floor(Number(value) || 0))
+  if (n < 10000) return String(n)
+  const [size, mark] = n < 1000000 ? [1000, 'k'] : [1000000, 'M']
+  const tenths = Math.floor((n * 10) / size) / 10
+  return `${n / size >= 100 ? Math.floor(n / size) : tenths}${mark}`
 }

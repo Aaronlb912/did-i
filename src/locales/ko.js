@@ -2738,7 +2738,7 @@ export const ko = {
   'gems.restoreMiss': '복원하지 못했어요. 다시 해 보세요.',
   'gems.creditMiss': "젬 결제는 됐지만 아직 들어오지 않았어요.",
   'gems.testMiss': "테스트 구매로는 젬이 늘지 않아요.",
-'gems.waiting': "젬은 저장돼 있어요. 9,999 아래로 자리가 생기면 들어와요.",
+'gems.waiting': "젬은 저장돼 있어요. 999,999 아래로 자리가 생기면 들어와요.",
   'admin.title': "신고",
   'admin.signIn': "신고를 보려면 로그인하세요.",
   'admin.notAllowed': "관리자 전용 페이지예요.",

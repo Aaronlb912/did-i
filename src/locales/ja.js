@@ -2736,7 +2736,7 @@ export const ja = {
   'gems.restoreMiss': '復元できませんでした。もう一度お試しください。',
   'gems.creditMiss': "ジェムの支払いは済んでいますが、まだ届いていません。",
   'gems.testMiss': "テスト購入ではジェムは増えません。",
-'gems.waiting': "ジェムは保存されています。9,999 未満に空きができたら届きます。",
+'gems.waiting': "ジェムは保存されています。999,999 未満に空きができたら届きます。",
   'admin.title': "報告",
   'admin.signIn': "報告を見るにはサインインしてください。",
   'admin.notAllowed': "このページは管理者専用です。",
