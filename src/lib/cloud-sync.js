@@ -187,16 +187,36 @@ export function sessionMissing() {
 // Structure only. Answers go through answer-log.js, one at a time,
 // because they are the part that grows without end.
 async function putShelf(db, user, shelf, savedAt) {
+  const at = savedAt || new Date().toISOString()
   const { error } = await db.from('shelves').upsert(
     {
       user_id: user.id,
       doc: shelfWithoutAnswers(shelf),
-      saved_at: savedAt || new Date().toISOString(),
+      saved_at: at,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' },
   )
+  if (!error) writeSeenAt(at)
   return error
+}
+
+// The server shelf this phone last wrote or merged. A push finds a newer one
+// when another phone wrote since: it pulls and merges instead of overwriting.
+const SEEN_KEY = 'did-i-shelf-seen'
+function readSeenAt() {
+  try {
+    return localStorage.getItem(SEEN_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+function writeSeenAt(at) {
+  try {
+    localStorage.setItem(SEEN_KEY, at)
+  } catch {
+    // The next push pulls first.
+  }
 }
 
 // The streak and the night, so friends and Did I tonight have something
@@ -629,6 +649,14 @@ export async function pushNow(shelf) {
       if (readLastUser() !== user.id) return
       // Landed: send what is on the phone now, edits made during the pull too.
       doc = readShelf()
+    } else {
+      const row = await db.from('shelves').select('saved_at').eq('user_id', user.id).maybeSingle()
+      if (row.error) throw row.error
+      const at = row.data?.saved_at || ''
+      if (at && at !== readSeenAt()) {
+        await pullAndMerge()
+        return
+      }
     }
     const uploadAt = new Date().toISOString()
     stampSavedAt(uploadAt)
