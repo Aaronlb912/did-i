@@ -10,6 +10,8 @@ declare
   b uuid := gen_random_uuid();
   c uuid := gen_random_uuid();
   code text;
+  code2 text;
+  old_code text;
   sid uuid;
   sid2 uuid;
   n integer;
@@ -106,6 +108,29 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
   if public.set_send_share(sid2, false) then raise exception 'FAIL: touched a send that is not hers'; end if;
+  execute 'reset role';
+
+  -- Seven days: 8 days old is refused and says so, 6 days old still works.
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  code := public.make_did_you_link('Did you drink water?');
+  code2 := public.make_did_you_link('Did you walk?');
+  execute 'reset role';
+  old_code := code;
+  update public.did_you_links l set made_at = now() - interval '8 days' where l.code = old_code;
+  update public.did_you_links l set made_at = now() - interval '6 days' where l.code = code2;
+  execute 'set local role anon';
+  select count(*) into n from public.look_up_did_you_link(code);
+  if n <> 0 then raise exception 'FAIL: an expired link still shows'; end if;
+  if not public.did_you_link_stopped(code) then raise exception 'FAIL: expired link not reported'; end if;
+  select count(*) into n from public.look_up_did_you_link(code2);
+  if n <> 1 then raise exception 'FAIL: a 6 day old link stopped working'; end if;
+  if public.did_you_link_stopped(code2) then raise exception 'FAIL: a 6 day old link reported stopped'; end if;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  if public.claim_did_you_link(code) then raise exception 'FAIL: claimed an expired link'; end if;
+  if not public.claim_did_you_link(code2) then raise exception 'FAIL: could not claim a 6 day old link'; end if;
   execute 'reset role';
 
   raise exception 'SQL TESTS PASSED';

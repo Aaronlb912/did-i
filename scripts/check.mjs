@@ -6852,6 +6852,13 @@ await testAsync('an ended Did you link is refused, says so, and can be reported'
   const sql = read('supabase/did-you-links.sql')
   // Ended: no lookup, no add count, and the preview and page can tell.
   assert.match(sql, /look_up_did_you_link[\s\S]*?and not l\.ended/)
+  // 7 days: lookup, claim, the stopped line and my links all use did_you_link_open.
+  assert.match(sql, /interval '7 days'/)
+  for (const fn of ['look_up_did_you_link', 'claim_did_you_link', 'did_you_link_stopped', 'my_did_you_links']) {
+    assert.match(sql, new RegExp(fn + '[\\s\\S]*?did_you_link_open\\(l\\.made_by, l\\.made_at\\)'), fn + ' checks the 7 days')
+  }
+  assert.match(read('supabase/friend-ask-name.sql'), /befriend_by_link[\s\S]*?did_you_link_open/)
+  assert.match(t('legal.privacy.social.body'), /works for 7 days/)
   assert.match(sql, /claim_did_you_link[\s\S]*?not l\.ended and l\.made_by is distinct from me/)
   assert.match(sql, /grant execute on function public\.did_you_link_stopped\(text\) to anon, authenticated/)
   assert.match(t('didYouLink.stopped'), /^This link has ended/)
