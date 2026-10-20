@@ -1294,6 +1294,7 @@ export const zh = {
   'morning.label': "今天",
   'morning.labelAt': "今天 {time}",
   'morning.toggle': "早晨提问",
+  'morning.at': "早晨提问时间",
   'morning.toggleSub': "中午前，一张卡片会问你今天要记住什么。",
   'why.todayDid': "今天，Did：{list}",
   'why.todayNotYet': "今天，还没有：{list}",

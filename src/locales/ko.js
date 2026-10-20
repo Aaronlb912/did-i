@@ -1295,6 +1295,7 @@ export const ko = {
   'morning.label': "오늘",
   'morning.labelAt': "오늘 {time}",
   'morning.toggle': "아침 질문",
+  'morning.at': "아침 질문 시간",
   'morning.toggleSub': "정오 전에 카드가 오늘 기억할 것을 물어봐요.",
   'why.todayDid': "오늘, Did: {list}",
   'why.todayNotYet': "오늘, 아직: {list}",

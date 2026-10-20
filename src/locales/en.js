@@ -1308,6 +1308,7 @@ export const en = {
   'morning.label': "Today",
   'morning.labelAt': "Today, {time}",
   'morning.toggle': "Morning ask",
+  'morning.at': "Morning ask time",
   'morning.toggleSub': "Before noon, a card asks what to remember today.",
   'why.todayDid': "Today, Did: {list}",
   'why.todayNotYet': "Today, Not yet: {list}",

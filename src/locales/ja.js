@@ -1296,6 +1296,7 @@ export const ja = {
   'morning.label': "今日",
   'morning.labelAt': "今日 {time}",
   'morning.toggle': "朝の質問",
+  'morning.at': "朝の質問の時刻",
   'morning.toggleSub': "正午まで、カードで今日覚えておくことを聞きます。",
   'why.todayDid': "今日、Did：{list}",
   'why.todayNotYet': "今日、まだ：{list}",

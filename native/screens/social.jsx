@@ -10,6 +10,7 @@ import { sendAnswerLine } from '../../src/lib/send-answers.js'
 import { copyText, passAlong } from '../../src/lib/native.js'
 import {
   INVITE_CODE_LEN,
+  INVITE_GEMS_CAP,
   cleanInvite,
   formatInvite,
   invitePayoutNote,
@@ -919,8 +920,6 @@ export function PeopleScreen({ book, onChange }) {
         />
       </View>
 
-      <InviteCard colors={colors} />
-
       <View style={styles.friendTabs}>
         <KitSegment
           items={[
@@ -1109,6 +1108,13 @@ export function PeopleScreen({ book, onChange }) {
         label={t('people.connect')}
         note={t('people.connectSub')}
         onPress={() => goHash('/people/connect')}
+      />
+      {/* Invites sit here, beside Connect, not as a card over the lists. */}
+      <Row
+        colors={colors}
+        label={t('invite.cardTitle')}
+        note={t('invite.cardBody', { max: INVITE_GEMS_CAP })}
+        onPress={() => goHash('/people/refer')}
       />
 
         </Reveal>

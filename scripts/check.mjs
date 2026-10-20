@@ -8182,9 +8182,11 @@ await testAsync('an invite needs no typing: the link carries it, a paste or any 
   for (const file of readdirSync(path.join(root, 'src/locales'))) {
     assert.match(read(`src/locales/${file}`), /'people\.inviteLine': '[^']*\{link\}'/, `${file} invite line ends with the link`)
   }
-  // One tap to share from People and Connect; the code box on Connect, in the sign-up ask, and from a scanned invite.
+  // One tap to share from Connect, an Invite friends row on People (not a card
+  // over the lists); the code box on Connect, in the sign-up ask, and from a scanned invite.
   const social = read('native/screens/social.jsx')
-  assert.equal((social.match(/<InviteCard colors=\{colors\} \/>/g) || []).length, 2)
+  assert.equal((social.match(/<InviteCard colors=\{colors\} \/>/g) || []).length, 1)
+  assert.match(social, /label=\{t\('invite\.cardTitle'\)\}[\s\S]{0,120}onPress=\{\(\) => goHash\('\/people\/refer'\)\}/)
   assert.match(social, /<InviteCodeSection colors=\{colors\} book=\{book\} onChange=\{onChange\} hideBar hideDone \/>/)
   assert.match(social, /<QrCode value=\{inviteLink\(invite\)\}/)
   assert.match(read('native/screens/ScanScreen.jsx'), /swapHash\('\/people\/refer', \{ id: invite \}\)/)
@@ -8295,7 +8297,7 @@ await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an ho
   // A week of nudges plus question reminders still fits the 60 the phone keeps (iOS holds 64).
   const native = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
   assert.match(native, /const PING_CAP = 60/)
-  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: PING_DAYS, reminders, shift: afterQuiet \}\)[\s\S]*notes\.length = Math\.min\(notes\.length, PING_CAP\)/)
+  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: PING_DAYS, reminders, shift: afterQuiet, times \}\)[\s\S]*notes\.length = Math\.min\(notes\.length, PING_CAP\)/)
   assert.ok(all.length <= 60)
 })
 
@@ -8568,6 +8570,22 @@ test('did we slots: the SQL keeps one rule for answer, tonight, claim and repair
   assert.ok(!/select public\.we_slot_repair\(\);/.test(repair), 'nothing calls the repair on apply')
   assert.match(repair, /b\.streak < s\.at/, 'only milestones the repair itself reached')
   assert.match(repair, /we_slot_repair_ran[\s\S]*enable row level security/)
+})
+
+test('morning ask time: picked time moves the first day nudge, bad values fall back', async () => {
+  const { MORNING_AT_TIMES, dayNudges } = await import('../src/lib/day-nudges.js')
+  const { readPrefs, writePrefs } = await import('../src/lib/prefs.js')
+  assert.equal(MORNING_AT_TIMES[0], '05:00')
+  assert.equal(MORNING_AT_TIMES.at(-1), '11:30')
+  const book = { id: 'b', lamps: [{ id: 'q', question: 'Stretch', cadence: 'daily' }], answers: [] }
+  const now = new Date(2026, 9, 20, 4, 0)
+  const first = dayNudges([book], now, { days: 1, times: ['06:30', '13:30'] })[0]
+  if (first) assert.equal(`${first.at.getHours()}:${first.at.getMinutes()}`, '6:30')
+  assert.equal(readPrefs().morningAt, '08:00')
+  writePrefs({ morningAt: '06:30' })
+  assert.equal(readPrefs().morningAt, '06:30')
+  writePrefs({ morningAt: '13:00' })
+  assert.equal(readPrefs().morningAt, '08:00', 'only 5:00 to 11:30 on the half hour')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

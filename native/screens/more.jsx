@@ -80,7 +80,7 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { DAY_NUDGE_TIMES } from '../../src/lib/day-nudges.js'
+import { DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
 import { PING_KINDS, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
@@ -1799,7 +1799,10 @@ function PingKinds({ colors, on }) {
                 kind === 'family'
                   ? t('pings.kind.familySubAt', { time: familyTime })
                   : kind === 'day'
-                    ? t('pings.kind.daySub', { morning: clockWords(DAY_NUDGE_TIMES[0]), afternoon: clockWords(DAY_NUDGE_TIMES[1]) })
+                    ? t('pings.kind.daySub', {
+                        morning: clockWords(prefs.morningAsk !== false ? prefs.morningAt || MORNING_AT_DEFAULT : DAY_NUDGE_TIMES[0]),
+                        afternoon: clockWords(DAY_NUDGE_TIMES[1]),
+                      })
                     : t(`pings.kind.${kind}Sub`)
               }
               on={!prefs.pingsOff.includes(kind)}
@@ -1813,7 +1816,19 @@ function PingKinds({ colors, on }) {
                 on={prefs.morningAsk !== false}
                 onPress={() => {
                   writePrefs({ morningAsk: prefs.morningAsk === false })
-                  // The 9:00 nudge's words follow this switch.
+                  // The morning nudge's time and words follow this switch.
+                  armLampPings(readShelf().boards).catch(() => {})
+                }}
+              />
+            ) : null}
+            {kind === 'day' && prefs.morningAsk !== false && !prefs.pingsOff.includes('day') ? (
+              <SetChoice
+                colors={colors}
+                label={t('morning.at')}
+                options={MORNING_AT_TIMES.map((id) => ({ id, label: clockWords(id) }))}
+                selected={prefs.morningAt || MORNING_AT_DEFAULT}
+                onSelect={(id) => {
+                  writePrefs({ morningAt: id })
                   armLampPings(readShelf().boards).catch(() => {})
                 }}
               />
