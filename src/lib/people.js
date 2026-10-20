@@ -387,7 +387,8 @@ export async function askByFriendId(value, name = '') {
   }
   const { data, error } = await db.rpc('ask_by_friend_id', { wanted: code })
   if (!error && data?.miss === 'nobody') return { miss: 'nobody' }
-  if (!error) return { miss: '', person: { user_id: data?.user_id, display_name: data?.display_name || '' } }
+  if (!error && data?.miss === 'cap') return { miss: 'askCap' }
+  if (!error) return { miss: '', friends: data?.friends === true, person: { user_id: data?.user_id, display_name: data?.display_name || '' } }
   if (notRunYet(error)) return { miss: 'setup' }
   const text = error.message || ''
   if (/need name/i.test(text)) return { miss: 'needName' }

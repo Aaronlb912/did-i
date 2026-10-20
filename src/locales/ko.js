@@ -914,6 +914,7 @@ export const ko = {
   'famNight.offline': '가족에게 전달되지 않았어요. 신호를 확인하고 다시 탭하세요.',
   'people.askOne': '요청 보내기',
   'people.asked': '{name}에게 보냈어요.',
+  'askCap': '오늘은 친구 요청이 너무 많아요. 내일 다시 해 보세요.',
   'people.noFriends': '아직 친구가 없어요. 친구 ID로 추가해 보세요.',
   'people.someone': '누군가',
   'people.quiet': '공유 없음',

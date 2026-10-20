@@ -927,6 +927,7 @@ export const en = {
   'famNight.offline': "That didn't reach your family. Check your signal and tap again.",
   'people.askOne': 'Send a request',
   'people.asked': 'Asked {name}.',
+  'askCap': 'Too many friend requests today. Try again tomorrow.',
   'people.noFriends': 'No friends yet. Add one by their friend ID.',
   'people.someone': 'Someone',
   'people.quiet': 'nothing shared',

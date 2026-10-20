@@ -933,6 +933,7 @@ export const de = {
     'Das hat deine Familie nicht erreicht. Check das Signal und tippe nochmal.',
   'people.askOne': 'Anfrage senden',
   'people.asked': 'An {name} gefragt.',
+  'askCap': 'Heute zu viele Freundschaftsanfragen. Versuch es morgen wieder.',
   'people.noFriends': 'Noch keine Freunde. Füge einen über seine Freundes-ID hinzu.',
   'people.someone': 'Jemand',
   'people.quiet': 'nichts geteilt',

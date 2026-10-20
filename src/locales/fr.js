@@ -930,6 +930,7 @@ export const fr = {
   'famNight.offline': 'Ça n’a pas atteint ta famille. Vérifie le signal et retouche.',
   'people.askOne': 'Envoyer une demande',
   'people.asked': 'Demande envoyée à {name}.',
+  'askCap': "Trop de demandes d'ami aujourd'hui. Réessaie demain.",
   'people.noFriends': 'Pas encore d’amis. Ajoute-en un par son ID ami.',
   'people.someone': 'Quelqu’un',
   'people.quiet': 'rien partagé',

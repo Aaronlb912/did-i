@@ -915,6 +915,7 @@ export const ja = {
   'famNight.offline': '家族に届かなかった。電波を確認してもう一度。',
   'people.askOne': 'リクエストを送る',
   'people.asked': '{name} に送った。',
+  'askCap': '今日は友だちリクエストが多すぎます。明日またどうぞ。',
   'people.noFriends': 'まだ友だちがいません。フレンドIDで追加しましょう。',
   'people.someone': '誰か',
   'people.quiet': '共有なし',

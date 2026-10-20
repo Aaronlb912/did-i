@@ -650,13 +650,15 @@ function useFriendAsk(onAsked) {
     if (!found) return
     setMiss('')
     setBusy(true)
-    const { miss: why, person } = await askByFriendId(found.code, needName ? name : '')
+    const { miss: why, person, friends } = await askByFriendId(found.code, needName ? name : '')
     setBusy(false)
     if (why === 'needName') setNeedName(true)
     if (why) return setMiss(friendIdMiss(why))
     setFound(null)
     setNeedName(false)
-    onAsked(t('people.asked', { name: personName(person || found.person) || t('people.someone') }))
+    const who = personName(person || found.person) || t('people.someone')
+    // They had asked you too: that is a yes, so you are friends now.
+    onAsked(friends ? t('confirm.nowFriends', { name: who }) : t('people.asked', { name: who }))
   }
   return { found, busy, miss, needName, name, setName, look, send, cancel: () => { setFound(null); setMiss('') } }
 }
