@@ -977,6 +977,7 @@ export const it = {
   'people.codeShort': 'Un codice famiglia ha sei caratteri.',
   'people.inviteShort': 'Un codice invito ha dieci caratteri.',
   'people.noFamily': 'Nessuna famiglia con quel codice.',
+  'people.familyFull': 'Questa famiglia è piena (20 persone).',
   'people.parent': 'Genitore',
   'people.kid': 'Figlio',
   'people.invite': 'Il tuo codice',

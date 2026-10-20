@@ -57,6 +57,19 @@ begin
   if me is null then
     raise exception 'not signed in';
   end if;
+  -- Gifts waiting for you go back to whoever paid for them.
+  with back as (
+    update public.cheer_gifts g
+    set returned_at = now()
+    where g.to_id = me and g.claimed_at is null and g.returned_at is null
+      and g.from_id is not null and g.from_id <> me
+    returning g.from_id, g.gems, g.coins
+  )
+  update public.profiles p
+  set gem_balance = least(p.gem_balance + s.gems, 999999),
+      coin_balance = least(p.coin_balance + s.coins, 999999)
+  from (select from_id, sum(gems) as gems, sum(coins) as coins from back group by from_id) s
+  where p.user_id = s.from_id;
   -- Hand each family to somebody else, or close it if you were the only one.
   for fam in
     select family_id from public.family_members where user_id = me and role = 'parent'

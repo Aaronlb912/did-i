@@ -964,6 +964,7 @@ export const ja = {
   'people.codeShort': '家族コードは 6 文字。',
   'people.inviteShort': '招待コードは 10 文字。',
   'people.noFamily': 'そのコードの家族はない。',
+  'people.familyFull': 'この家族は満員です（20人）。',
   'people.parent': '親',
   'people.kid': '子',
   'people.invite': 'あなたのコード',

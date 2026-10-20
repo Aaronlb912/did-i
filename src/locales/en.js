@@ -976,6 +976,7 @@ export const en = {
   'people.codeShort': 'A family code is six characters.',
   'people.inviteShort': 'An invite code is ten characters.',
   'people.noFamily': 'No family has that code.',
+  'people.familyFull': 'This family is full (20 people).',
   'people.parent': 'Parent',
   'people.kid': 'Kid',
   'people.invite': 'Your code',

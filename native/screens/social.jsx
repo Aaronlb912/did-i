@@ -457,6 +457,7 @@ function Tile({ label, value, note, lit, onPress, colors }) {
 function familyCodeMiss(why) {
   if (why === 'code') return t('people.codeShort')
   if (why === 'nofamily') return t('people.noFamily')
+  if (why === 'full') return t('people.familyFull')
   if (why === 'tooMany') return t('friendId.tooMany')
   if (why === 'needName') return t('friendAsk.nameFirst')
   return tMiss(why)
