@@ -122,15 +122,25 @@ export function applyAnswers(shelf, rows) {
     for (const item of book.gone || []) if (!item.back && !homeOf.has(item.id)) dead.add(item.id)
   }
 
+  const indexOf = new Map()
   let changed = 0
   for (const row of rows) {
     if (dead.has(row.lamp_id)) continue
     const book =
       homeOf.get(row.lamp_id) || boards.find((item) => item.id === row.board_id) || boards[0]
     if (!book) continue
-    const at = book.answers.findIndex(
-      (item) => item.lampId === row.lamp_id && item.periodKey === row.period_key,
-    )
+    // One index per book, not a findIndex per row: a big pull is thousands of rows.
+    let index = indexOf.get(book)
+    if (!index) {
+      index = new Map()
+      book.answers.forEach((item, i) => {
+        const key = `${item.lampId}|${item.periodKey}`
+        if (!index.has(key)) index.set(key, i)
+      })
+      indexOf.set(book, index)
+    }
+    const key = `${row.lamp_id}|${row.period_key}`
+    const at = index.has(key) ? index.get(key) : -1
     const mine = at >= 0 ? book.answers[at] : null
     const theirs = { answeredAt: row.answered_at || '', noteAt: row.note_at || '' }
     if (mine && stampMs(answerStamp(mine)) >= stampMs(answerStamp(theirs))) continue
@@ -149,7 +159,7 @@ export function applyAnswers(shelf, rows) {
       ...(row.status !== 'yes' && row.status !== 'late' && (mine?.paid === true || mine?.status === 'yes' || mine?.status === 'late') ? { paid: true } : {}),
     }
     if (at >= 0) book.answers[at] = next
-    else book.answers.push(next)
+    else index.set(key, book.answers.push(next) - 1)
     changed += 1
   }
   return { shelf: { ...shelf, boards }, changed }
