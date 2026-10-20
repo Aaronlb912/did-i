@@ -7220,6 +7220,18 @@ await testAsync('a kept Did you shares its last week of answers with the sender,
   const sql = readFileSync(path.join(checkRoot, 'supabase/send-answers.sql'), 'utf8')
   assert.match(sql, /revoke all on public\.send_answers from anon, authenticated;/)
   assert.ok(sql.includes('not public.blocked_with(s.to_id)') && sql.includes('not public.blocked_with(s.from_id)'), 'blocking stops both ways')
+  const onceId = '1b9a3f4e-1c2d-4e5f-8a9b-0c1d2e3f4a5b'
+  const once = normalizeLamp(keptLamp({ id: onceId, question: 'Did you file it?' }))
+  const answeredAt = new Date().toISOString()
+  const dated = (extra) => sendAnswerRows({ boards: [{ lamps: [{ ...once, ...extra }], answers: [{ lampId: once.id, periodKey: `once:${once.id}`, status: 'yes', answeredAt }] }] }).rows
+  assert.equal(dated({ onceWhen: 'by', dueBy: addDaysIso(tonight, 20) })[0]?.night, tonight, 'a by date far ahead does not move the answer')
+  assert.equal(dated({ onceOn: addDaysIso(tonight, -30), createdOn: addDaysIso(tonight, -30) })[0]?.night, tonight, 'an old once question answered now still shows')
+  const many = Array.from({ length: 205 }, (_, i) => ({ ...lamp, id: `m${i}`, sendId: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, createdOn: addDaysIso(tonight, -i) }))
+  const capped = sendAnswerRows({ boards: [{ lamps: many, answers: [] }] })
+  assert.equal(capped.ids.length, 200)
+  assert.ok(capped.ids.includes(many[0].sendId) && !capped.ids.includes(many[204].sendId), 'the oldest are left off')
+  assert.ok(sql.includes('a.night >= current_date - 8'), 'the sender reads the last week by date, not by row count')
+  assert.ok(sql.includes('a.night < current_date - 14') && !sql.includes('current_date - 60'), 'old answers are pruned within two weeks')
 })
 
 await testAsync('an ios widget tap on the last night card answers last night, not tonight', async () => {
