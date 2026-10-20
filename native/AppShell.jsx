@@ -39,6 +39,7 @@ import { resumeCheckOnStops } from './components/LampManage.jsx'
 import { FlyHost } from './components/FlyHost.jsx'
 import { useMarksHeld } from './lib/mark-hold.js'
 import { showToast, undoUp, useToastQueue } from './lib/toast-queue.js'
+import { startOtaRefresh } from './lib/ota-refresh.js'
 import { ScreenRouter, warmScreens } from './screens/ScreenRouter.jsx'
 import { SignInScreen } from './screens/SignInScreen.jsx'
 import { FirstSwipe } from './components/FirstSwipe.jsx'
@@ -237,6 +238,9 @@ export function AppShell() {
   }, [app.book, app.shelf, pingState, colors])
 
   useEffect(() => onPingState(setPingState), [])
+
+  // A new over-the-air update loads on the next return to the app, not two cold starts later.
+  useEffect(() => startOtaRefresh(), [])
 
   // Back from the phone's settings: pick up whatever changed there.
   useEffect(() => {

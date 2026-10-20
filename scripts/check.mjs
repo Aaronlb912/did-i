@@ -8588,6 +8588,17 @@ test('morning ask time: picked time moves the first day nudge, bad values fall b
   assert.equal(readPrefs().morningAt, '08:00', 'only 5:00 to 11:30 on the half hour')
 })
 
+test('over-the-air updates load on a return to the app, only at a safe moment', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  const ota = read('native/lib/ota-refresh.js')
+  assert.match(ota, /HALL_PATHS\.has\(path \|\| '\/'\)/, 'reloads only on Tonight or Home')
+  assert.match(ota, /!sheetUp/, 'never under an open sheet')
+  assert.match(ota, /Date\.now\(\) - back < FRESH_MS\) reloadIfSafe\(\)/, 'a slow download waits for the next return')
+  assert.match(ota, /!__DEV__ && Updates\.isEnabled === true/, 'off in dev builds')
+  assert.match(read('native/AppShell.jsx'), /useEffect\(\(\) => startOtaRefresh\(\), \[\]\)/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
