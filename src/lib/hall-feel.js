@@ -1,5 +1,5 @@
 import { weNight, weNightsStamp } from './we-nights.js'
-import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, isEvery, onceDoneNight, oncePastCounts, parseIsoDate } from './recurrence.js'
+import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { travelNightState, travelSkipped, travelWe } from './travel.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
@@ -19,7 +19,20 @@ export function dueThatNight(book, iso, at) {
     if (isEvery(row.lamp) || (row.lamp.createdOn && row.lamp.createdOn > iso)) return false
     const done = onceDoneNight(row.lamp, row.answer)
     return !done || done === iso
-  })
+  }).concat(archivedDids(book, iso))
+}
+
+// An archived daily or weekly question keeps the nights it was done, so
+// archiving it does not shorten the streak. Unanswered nights stay out.
+function archivedDids(book, iso) {
+  const rows = []
+  for (const lamp of book.lamps || []) {
+    if (!lamp.archived || (lamp.cadence !== 'daily' && lamp.cadence !== 'weekly')) continue
+    if (!isDueOn({ ...lamp, archived: false }, iso)) continue
+    const answer = answerFor(book, lamp.id, iso)
+    if (answer?.status === 'yes' || answer?.status === 'late') rows.push({ lamp, dateIso: iso, periodKey: iso, answer })
+  }
+  return rows
 }
 
 // The book with answered, archived one-time questions put back, so past
