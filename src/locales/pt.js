@@ -1310,6 +1310,7 @@ export const pt = {
   'morning.label': "Hoje",
   'morning.labelAt': "Hoje, {time}",
   'morning.toggle': "Pergunta da manhã",
+  'morning.at': "Horário da pergunta da manhã",
   'morning.toggleSub': "Antes do meio-dia, um cartão pergunta o que lembrar hoje.",
   'why.todayDid': "Hoje, Did: {list}",
   'why.todayNotYet': "Hoje, ainda não: {list}",

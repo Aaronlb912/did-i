@@ -559,6 +559,66 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     setMorningState(next)
     setMorningHere(false)
   }
+  // The morning ask opens as a sheet, once a visit. The sheet keeps the
+  // handlers it opened with, so they read Tonight's latest through this ref:
+  // a second add must see the first one's shelf, or it would drop it.
+  const morningLive = useRef(null)
+  morningLive.current = { add: addMorningQuestion, off: morningNotToday }
+  const morningSheet = useRef(false)
+  // True while the morning sheet is the one showing, so leaving Tonight
+  // (or noon passing) can take it down without counting as Not today.
+  const morningUp = useRef(false)
+  const dropMorningSheet = () => {
+    if (!morningUp.current) return
+    morningUp.current = false
+    publishSheet(null)
+  }
+  useEffect(() => {
+    if (!showMorning) dropMorningSheet()
+    if (!showMorning || morningSheet.current) return undefined
+    const timer = setTimeout(() => {
+      if (sheetIsUp() || navigation.isFocused?.() === false) return
+      morningSheet.current = true
+      morningUp.current = true
+      let added = 0
+      const open = () =>
+        publishSheet({
+          bottom: true,
+          title: t('morning.title'),
+          content: (
+            <MorningAsk
+              colors={colors}
+              count={morningN + added}
+              focus={morningFocus}
+              onAdd={(text, at) => {
+                const miss = morningLive.current.add(text, at)
+                if (!miss) {
+                  added += 1
+                  open()
+                }
+                return miss
+              }}
+            />
+          ),
+          // Before an add, closing is Not today. After one, it is Done.
+          closeLabel: added ? t('first.done') : t('morning.off'),
+          colors,
+          onClose: () => {
+            morningUp.current = false
+            publishSheet(null)
+            if (!added) morningLive.current.off()
+          },
+        })
+      open()
+    }, 600)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMorning, morningFocus])
+  useEffect(() => navigation.addListener('blur', () => {
+    morningSheet.current = false
+    dropMorningSheet()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [navigation])
   // After a cleared night, one card asks to sign in. Dismissed stays dismissed.
   const [nudgeGone, setNudgeGone] = useState(signInNudgeSeen)
   const signInNudge = showSignInNudge({
@@ -1265,10 +1325,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       <Slot>
         <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.nightDone} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} waiting={peopleWaitingLine(peopleItems)} />
       </Slot>
-
-      {showMorning ? (
-        <MorningAsk colors={colors} count={morningN} focus={morningFocus} onAdd={addMorningQuestion} onOff={morningNotToday} />
-      ) : null}
 
       {showChips ? (
         <FadeScroll scrollRef={pillScroll} fade={colors.bg} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>

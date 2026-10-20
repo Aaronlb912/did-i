@@ -1311,6 +1311,7 @@ export const it = {
   'morning.label': "Oggi",
   'morning.labelAt': "Oggi, {time}",
   'morning.toggle': "Domanda del mattino",
+  'morning.at': "Ora della domanda del mattino",
   'morning.toggleSub': "Prima di mezzogiorno, una scheda chiede cosa ricordare oggi.",
   'why.todayDid': "Oggi, Did: {list}",
   'why.todayNotYet': "Oggi, non ancora: {list}",

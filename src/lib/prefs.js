@@ -49,6 +49,8 @@ function blankPrefs() {
     familyHour: 21,
     // The morning ask card on Tonight (morning-ask.js).
     morningAsk: true,
+    // When its nudge comes (day-nudges.js MORNING_AT_TIMES, 5:00 to 11:30).
+    morningAt: '08:00',
   }
 }
 
@@ -134,6 +136,7 @@ function cleanPrefs(raw) {
   if (QUIET_TIME.test(raw?.quietTo || '')) next.quietTo = raw.quietTo
   if (raw?.dropPings === true) next.dropPings = true
   if (raw?.morningAsk === false) next.morningAsk = false
+  if (/^(0[5-9]|1[01]):(00|30)$/.test(raw?.morningAt || '')) next.morningAt = raw.morningAt
   if (Number.isInteger(raw?.familyHour) && raw.familyHour >= 0 && raw.familyHour <= 23) next.familyHour = raw.familyHour
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
