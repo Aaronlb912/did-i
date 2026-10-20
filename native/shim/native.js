@@ -147,6 +147,22 @@ const LATE_NUDGE_HOUR = 21
 let pingChain = Promise.resolve()
 let pingTimer = null
 let pingNext = null
+
+// The zone reminders were last set in. They are fixed instants, so after the
+// phone moves zone they keep the old times until set again.
+const PING_ZONE_KEY = 'did-i-ping-zone'
+function pingZone() {
+  return `${Intl.DateTimeFormat().resolvedOptions().timeZone}|${new Date().getTimezoneOffset()}`
+}
+export function pingZoneMoved() {
+  try {
+    const saved = localStorage.getItem(PING_ZONE_KEY)
+    return Boolean(saved) && saved !== pingZone()
+  } catch {
+    return false
+  }
+}
+
 export function scheduleNativePings(books, now) {
   return new Promise((resolve, reject) => {
     const waiters = pingNext ? pingNext.waiters : []
@@ -343,6 +359,12 @@ async function schedulePingsNow(books, now = new Date()) {
       } catch {
         // Some ROMs block exact alarms.
       }
+    }
+    // Saved only once set, so a run cut short is tried again.
+    try {
+      localStorage.setItem(PING_ZONE_KEY, pingZone())
+    } catch {
+      // ok
     }
   } catch {
     // Notifications native module not ready or misconfigured.

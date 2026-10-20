@@ -18,7 +18,7 @@ import {
 } from '../src/lib/together-widget.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { resendWatchCards, sendWatchCards } from './watch-sync.js'
-import { armNativePingsNow } from './shim/native.js'
+import { armNativePingsNow, pingZoneMoved } from './shim/native.js'
 import { widgetRedrawTimes } from '../src/lib/widget-config.js'
 import {
   applyPendingAndroidWidgetTap,
@@ -88,7 +88,9 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
   }
   if (tappedShelf) await syncTonightWidget(tappedShelf)
   // Answered with the app closed: drop that question's later reminders now.
-  if (tappedShelf || woke) await armNativePingsNow(readShelf()?.boards || []).catch(() => {})
+  // A time zone change lands here too (DidITonight.java): reminders are fixed
+  // instants, so set them again in the new zone.
+  if (tappedShelf || woke || pingZoneMoved()) await armNativePingsNow(readShelf()?.boards || []).catch(() => {})
 }
 
 // Headless widget clicks evaluate the bundle and look for this task immediately.
