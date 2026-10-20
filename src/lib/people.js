@@ -5,7 +5,7 @@ import { onSocialLive } from './social-live.js'
 import { weAskCount } from './did-we.js'
 import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
-import { boardDate, isoDate } from './recurrence.js'
+import { addDaysIso, boardDate, isoDate } from './recurrence.js'
 import { sharedEveryDue } from './every-copy.js'
 import { readSendAnswers } from './send-answers.js'
 import { saveTogetherPeople } from './together-widget.js'
@@ -920,9 +920,9 @@ export async function inboxCount() {
 // Sends from Did I for one night go straight onto tonight, once per account:
 // the answer row is written first, so a second phone or a resync skips it.
 async function claimDidITonight(db, user) {
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  const waiting = (await appSendsWaiting(db, user, 'tonight')).filter((row) => row.night >= isoDate(yesterday))
+  // The account's day, not the phone calendar, so a travelling phone matches.
+  const yesterday = addDaysIso(boardDate(), -1)
+  const waiting = (await appSendsWaiting(db, user, 'tonight')).filter((row) => row.night >= yesterday)
   if (!waiting.length) return []
   // One write; a row another phone already wrote is skipped and not returned.
   const { data, error } = await db
@@ -1057,6 +1057,17 @@ export async function answerSend(id, keep) {
   if (String(id).startsWith('app:')) {
     const user = await me()
     if (!user) return { miss: 'off' }
+    // Kept or added on another phone already: say so, so it is not added twice.
+    // (Did I questions carry no send id, so keptButMissing cannot check them.)
+    if (keep) {
+      const { data: prior } = await db
+        .from('app_send_answers')
+        .select('state')
+        .eq('app_send_id', String(id).slice(4))
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (prior?.state === 'kept' || prior?.state === 'added') return { miss: '', already: true, state: 'app' }
+    }
     // A second answer (kept, then added) updates the same row.
     const { data, error } = await db.rpc('set_app_send_answer', {
       send_id: String(id).slice(4),
