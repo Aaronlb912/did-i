@@ -7119,6 +7119,32 @@ await testAsync('did we look: status line, face overflow, done rule, dots', asyn
   for (const key of ['we.ofDid', 'we.doneAll', 'we.yourTurnShort', 'we.rule.most', 'we.emptyFriend', 'we.newButton']) assert.ok(en.includes(`'${key}':`), key)
 })
 
+await testAsync('did we weekly wording, face lookup and slim Tonight row', async () => {
+  const { weFaceFor, weNextCoinsKey, wePersonKey, weRowLine, weStatus } = await import('../src/lib/we-look.js')
+  const people = [{ id: 'me', name: 'Me', me: true, state: 'in', status: 'did' }, { id: 'jo', name: 'Jo', state: 'in', status: null }]
+  assert.equal(weStatus({ cadence: 'weekly', mode: 'all', people, dids: 1, total: 2 }).key, 'we.ofDidWeek')
+  assert.equal(weStatus({ cadence: 'daily', mode: 'all', people, dids: 1, total: 2 }).key, 'we.ofDid')
+  assert.equal(weStatus({ cadence: 'weekly', mode: 'all', done: true }).key, 'we.doneAllWeek')
+  assert.equal(weNextCoinsKey({ cadence: 'weekly' }, 6).key, 'we.nextCoinsWeeks')
+  assert.equal(weNextCoinsKey({ cadence: 'weekly' }, 1).key, 'we.nextCoinsWeek')
+  assert.equal(weNextCoinsKey({}, 1).key, 'we.nextCoinsOne')
+  assert.equal(weNextCoinsKey({}, 6).key, 'we.nextCoins')
+  assert.equal(wePersonKey({ cadence: 'weekly' }, 'did'), 'we.pDidWeek')
+  assert.equal(wePersonKey({}, null), 'we.pWaiting')
+  const known = new Map([['jo', { avatar: 'https://x/jo.png', buddy: 'frog' }]])
+  assert.equal(weFaceFor(people[1], known).avatar, 'https://x/jo.png')
+  assert.equal(weFaceFor(people[1], known).buddy, 'frog')
+  assert.equal(weFaceFor({ id: 'al' }, known).id, 'al')
+  assert.deepEqual(weRowLine([{ people }]).status.map((b) => b.key), ['we.youDid', 'we.rowWaitingOne'])
+  assert.deepEqual(weRowLine([{ done: true, people }]).status.map((b) => b.key), ['we.doneTogether'])
+  const many = weRowLine([{ done: true }, { people }])
+  assert.ok(many.many && many.n === 2)
+  assert.deepEqual(many.status[0], { key: 'we.rowManyStatus', vars: { done: 1, waiting: 1 } })
+  const src = readFileSync(path.join(checkRoot, 'native/components/WeTonight.jsx'), 'utf8')
+  assert.ok(src.includes('styles.slim') && src.includes("goHash('/we')"), 'the slim Did we row opens the list for several')
+  assert.ok(!/WeAnswered[sS]*<WeAnswers/.test(src.slice(src.indexOf('export function WeAnswered'), src.indexOf('export function weStatusLine'))), 'the chip block is gone from Tonight')
+})
+
 test('card frame art draws over a card that sets its own zIndex (First light in Collection)', () => {
   const src = readSrc('native/components/frames/CardFrame.jsx')
   assert.ok(src.includes('style={[styles.fill, styles.over]}'), 'Over layer uses styles.over')

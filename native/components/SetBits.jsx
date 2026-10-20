@@ -47,7 +47,7 @@ export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, 
       </View>
       <View style={styles.end}>
         {value ? (
-          <Text style={[styles.val, { color: valueColor }]} numberOfLines={1}>
+          <Text style={[styles.val, { color: valueColor }]} numberOfLines={1} ellipsizeMode="tail">
             {value}
           </Text>
         ) : null}
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   sub: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16 },
   // The value gives way before the label does: an email shortens with "…"
   // instead of squeezing "Account" into two lines on a narrow phone.
-  end: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, maxWidth: '45%' },
+  end: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, maxWidth: '36%' },
   val: { fontFamily: fonts.ui, fontSize: 15, maxWidth: 140, flexShrink: 1 },
   chev: { fontFamily: fonts.ui, fontSize: 22, lineHeight: 24, marginTop: -2 },
   check: { fontFamily: fonts.uiBold, fontSize: 18 },

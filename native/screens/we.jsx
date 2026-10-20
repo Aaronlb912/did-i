@@ -49,7 +49,7 @@ import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
-import { weRuleKey, weWeekDots } from '../../src/lib/we-look.js'
+import { weNextCoinsKey, weRuleKey, weWeekDots } from '../../src/lib/we-look.js'
 import { boardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -1359,7 +1359,7 @@ function WeCardPage({ book, cardId, onChange }) {
         {sum ? <Text style={[styles.hint, styles.tight, { color: colors.we }]}>{togetherLine(sum) || t('weAmount.none')}</Text> : null}
         <Meta colors={colors}>
           {t('we.best', { n: best })}
-          {next ? ` · ${(next - streak === 1 ? t('we.nextCoinsOne') : t('we.nextCoins', { n: next - streak }))}` : ''}
+          {next ? ` · ${(() => { const w = weNextCoinsKey(card, next - streak); return t(w.key, w.vars) })()}` : ''}
         </Meta>
       </View>
 
