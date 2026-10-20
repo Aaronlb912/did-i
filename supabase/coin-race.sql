@@ -26,7 +26,7 @@ begin
 
   insert into public.profiles (user_id) values (who) on conflict (user_id) do nothing;
   insert into public.coin_night_grants (user_id, night_iso, coins) values (who, iso, 0)
-  on conflict (user_id, night_iso) do nothing;
+  on conflict on constraint coin_night_grants_pkey do nothing;
 
   -- g.night_iso, not night_iso: the parameter has the same name as the column.
   select coalesce(g.coins, 0) into had

@@ -2774,7 +2774,7 @@ export const pt = {
   'gems.restoreMiss': 'Não foi possível restaurar. Tente de novo.',
   'gems.creditMiss': "As tuas gems estão pagas, mas ainda não chegaram.",
   'gems.testMiss': "Compras de teste não adicionam gems.",
-'gems.waiting': "Suas gems estão guardadas. Elas chegam quando houver espaço abaixo de 9.999.",
+'gems.waiting': "Suas gems estão guardadas. Elas chegam quando houver espaço abaixo de 999.999.",
   'admin.title': "Denúncias",
   'admin.signIn': "Inicia sessão para ver as denúncias.",
   'admin.notAllowed': "Esta página é só para admins.",

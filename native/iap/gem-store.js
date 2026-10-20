@@ -139,7 +139,7 @@ function testBuyToast() {
   showToast({ id: 'gems-test-miss', kind: 'error', text: t('gems.testMiss'), ms: 6000 })
 }
 
-// Paid, but the book is near 9,999: the server keeps the pack until there is room.
+// Paid, but the book is near 999,999: the server keeps the pack until there is room.
 function gemsWaitToast() {
   showToast({ id: 'gems-waiting', kind: 'done', text: t('gems.waiting'), ms: 6000 })
 }
@@ -283,7 +283,7 @@ async function connectStore() {
       // keeps the buy open, so the next connect retries too.
       if (out?.miss === 'test') testBuyToast()
       else if (out?.miss && out.miss !== 'other') creditMissToast()
-      else if (!out?.miss && !out?.gems && (readShelf()?.boards?.[0]?.gems || 0) > 9899) gemsWaitToast()
+      else if (!out?.miss && !out?.gems && (readShelf()?.boards?.[0]?.gems || 0) > 999899) gemsWaitToast()
     })
     errorSub = purchaseErrorListener((error) => {
       if (error?.code === ErrorCode.UserCancelled) return
