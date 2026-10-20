@@ -13,7 +13,7 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 ## App sweeps 2026-10-19 (#322 merged, then branch `sweep-2`; SQL applied, needs the 1.3.8 store build)
 
 - **Built:** two rounds of accessibility, QoL, usability, security and bug passes. Undo only puts back the one answer; Did, Undo, Did pays once, also across an app restart; widget and watch repeat taps stay local; family wrong-code cap shared by every account; invites only for accounts under 7 days, and invite gems only once the invited person has answered on 3 nights (`supabase/sweep2-guards.sql`); photo links pinned to the owner's folder; one nudge per sender a night; the Did button and dim text reach 4.5:1 in every look; shared question pages retry.
-- **Not done:** new family codes are 10 characters from 2026-10-21 (`supabase/family-code-10.sql`); families made before keep their 6. Phones still on 1.3.7 can't type a 10-character code. An invite link applies with no ask (it can only take the invite slot now, no gems). Play gem buys are acknowledged by the phone, not the server: a buy whose phone never opens the app again within 3 days is refunded by Google. Anyone can fill the daily milestone cap (analytics only). Join a family still needs no parent yes. VoiceOver not tried.
+- **Not done:** new family codes are 10 characters from 2026-10-21 (`supabase/family-code-10.sql`); families made before keep their 6. Phones still on 1.3.7 can't type a 10-character code. An invite link applies with no ask (it can only take the invite slot now, no gems). Anyone can fill the daily milestone cap (analytics only). Join a family still needs no parent yes. VoiceOver not tried.
 
 ## Social fixes (2026-10-20, SQL applied, OTA)
 
