@@ -8467,6 +8467,13 @@ test('family codes: six or ten pass, seven does not, ten is not cut', async () =
   assert.ok(!familyCodeOk(cleanCode('ABC2345')))
 })
 
+test('universal links use ios.associatedDomains (Expo drops the raw entitlement)', () => {
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const config = readFileSync(path.join(root, 'app.config.js'), 'utf8')
+  assert.ok(config.includes("associatedDomains: ['applinks:did-i.app']"))
+  assert.ok(!config.includes("'com.apple.developer.associated-domains'"), 'Expo strips this key from ios.entitlements, so links open the website')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
