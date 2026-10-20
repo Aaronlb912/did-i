@@ -1112,6 +1112,9 @@ await testAsync('a paused Did we is not asked, and "you both did it" needs two d
   assert.equal(weBothDid({ done: false, people: [me, pal] }), false)
   const paused = { id: 'c', myState: 'in', paused: true, askAfter: '20:00', question: 'Did we walk?' }
   assert.deepEqual(wePausedCards([paused, { ...paused, id: 'd', paused: false }]).map((card) => card.id), ['c'])
+  const live = { ...paused, paused: false }
+  assert.equal(weReminders([{ ...live, people: [{ ...me, status: 'nope' }] }])[0].skipNight, '', 'Not yet keeps the day reminder')
+  assert.notEqual(weReminders([{ ...live, people: [me] }])[0].skipNight, '', 'Did drops the day reminder')
   assert.equal(weReminders([paused]).length, 0, 'a paused card sets no reminder')
 })
 

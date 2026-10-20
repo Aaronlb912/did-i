@@ -18,6 +18,7 @@ import {
 } from '../src/lib/together-widget.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { resendWatchCards, sendWatchCards } from './watch-sync.js'
+import { armNativePingsNow } from './shim/native.js'
 import { widgetRedrawTimes } from '../src/lib/widget-config.js'
 import {
   applyPendingAndroidWidgetTap,
@@ -64,7 +65,8 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
   const applied = await applyPendingAndroidWidgetTap()
   // A silent wake while the app was closed (WakeMessagingService): pull now,
   // after this phone's own taps are applied, so they are paid here first.
-  if (await takeAndroidWake()) await runWake()
+  const woke = await takeAndroidWake()
+  if (woke) await runWake()
   let clicked = null
   if (widgetAction === 'WIDGET_CLICK') {
     clicked = handleAndroidWidgetClick(clickAction, clickActionData)
@@ -85,6 +87,8 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
     await armAndroidWidgetAskTimes(widgetRedrawTimes((shelf?.boards || []).filter((b) => !b.archived), new Date()))
   }
   if (tappedShelf) await syncTonightWidget(tappedShelf)
+  // Answered with the app closed: drop that question's later reminders now.
+  if (tappedShelf || woke) await armNativePingsNow(readShelf()?.boards || []).catch(() => {})
 }
 
 // Headless widget clicks evaluate the bundle and look for this task immediately.

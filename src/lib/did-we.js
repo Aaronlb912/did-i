@@ -170,7 +170,8 @@ export function weReminders(cards, night = tonightIso()) {
       cadence: card.cadence,
       weekdays: card.weekdays || [],
       startsOn: card.startsOn,
-      skipNight: card.done || weMine(card)?.status ? night : '',
+      // Not yet keeps the day's reminder, as solo questions do.
+      skipNight: card.done || weMine(card)?.status === 'did' ? night : '',
     }))
 }
 
