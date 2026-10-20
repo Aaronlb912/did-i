@@ -8,7 +8,7 @@ import { clearAuthSkip } from './auth-gate.js'
 import { forgetAccountCaches } from './account-cache.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
 import { cloud, cloudSetUp } from './cloud.js'
-import { refreshAnswerKey } from './answer-key.js'
+import { forgetAnswerKey, refreshAnswerKey } from './answer-key.js'
 import { readPrefs, writePrefs } from './prefs.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'
 import { mergeShelves } from './shelf-merge.js'
@@ -151,6 +151,7 @@ export function signedOutSync() {
   dropEarnedCoins()
   // The next person to sign in on this phone starts from nothing.
   forgetAnswerMarks()
+  forgetAnswerKey()
   clearWeNights()
   forgetTravelSkips()
   // Recent notices and your photo belong to the account that left.

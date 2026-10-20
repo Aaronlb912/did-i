@@ -129,9 +129,14 @@ export function listenForWatchTaps(onTap, onQueued) {
       // Nothing queued.
     }
     if (tap?.id) taps.push(tap)
+    // One tap that fails must not drop the rest, or tell the watch it landed.
     for (const item of taps) {
-      noteTaken(item?.at)
-      onTap(item)
+      try {
+        onTap(item)
+        noteTaken(item?.at)
+      } catch {
+        // Stays pending on the watch.
+      }
     }
   }
   const sub = mod.addListener('onWatchTap', take)

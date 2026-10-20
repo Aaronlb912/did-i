@@ -80,6 +80,7 @@ const files = [
   'supabase/gem-cap.sql',
   'supabase/keep-did.sql',
   'supabase/family-edit.sql',
+  'supabase/we-keep-done.sql',
   'supabase/drop-tonight.sql',
 ]
 

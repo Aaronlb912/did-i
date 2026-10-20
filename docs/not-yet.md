@@ -5,10 +5,10 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
-## Bug audit 2026-10-20 (branch `audit-fixes`, needs SQL, OTA)
+## Bug audit 2026-10-20 (#338 and branch `audit-2`, SQL applied, OTA)
 
-- **Built:** a widget or watch Not yet no longer replaces a Did on the server (`supabase/keep-did.sql`); a widget answer with the app closed clears that question's reminders right away; a gem pack that would pass 9999 waits instead of losing gems (`supabase/gem-cap.sql`); only a parent moves a family question onto someone else (`supabase/family-edit.sql`); a Did we Not yet keeps that day's reminder; the iOS app minimum is 1.3.8, so old JS cannot make a gem buy with no owner.
-- **Not done:** Android minimum stays 1.0.0 while 1.3.8 is beta only; an ownerless Play buy from old JS is refused until Google refunds it at 3 days. A gem pack waiting for room says nothing. Not audited: sign out, offline launch, an update mid-answer, the iOS widget write path, the Did we weekly streak SQL.
+- **Built:** a widget or watch Not yet no longer replaces a Did on the server (`supabase/keep-did.sql`); a widget answer with the app closed clears that question's reminders right away; a gem pack that would pass 9999 waits instead of losing gems (`supabase/gem-cap.sql`); only a parent moves a family question onto someone else (`supabase/family-edit.sql`); a Did we Not yet keeps that day's reminder; the iOS app minimum is 1.3.8, so old JS cannot make a gem buy with no owner. Round 2: a stale iOS widget Not yet keeps a Did and redraws; a watch tap that fails stays pending and does not drop the rest; a session that ends on its own clears the answer key; a join or leave never undoes last night's Did we (`supabase/we-keep-done.sql`). Sign out, offline launch and an update mid-answer were audited and are clean.
+- **Not done:** Android minimum stays 1.0.0 while 1.3.8 is beta only; an ownerless Play buy from old JS is refused until Google refunds it at 3 days. A gem pack waiting for room says nothing. The Supabase fetch has no timeout, so a network that never answers keeps a fresh sign in loading. Not traced: IAP listeners and the push token after a session ends on its own.
 
 ## App sweeps 2026-10-19 (#322 merged, then branch `sweep-2`; SQL applied, needs the 1.3.8 store build)
 
