@@ -1315,7 +1315,7 @@ export const fr = {
   'morning.labelAt': "Aujourd'hui, {time}",
   'morning.toggle': "Question du matin",
   'morning.at': "Heure de la question du matin",
-  'morning.toggleSub': "Avant midi, une carte demande quoi retenir aujourd'hui.",
+  'morning.toggleSub': "Avant midi, une fenêtre demande quoi retenir aujourd'hui.",
   'why.todayDid': "Aujourd'hui, Did : {list}",
   'why.todayNotYet': "Aujourd'hui, pas encore : {list}",
   'pings.day.2': 'Quelque chose à cocher déjà aujourd’hui ?',

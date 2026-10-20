@@ -1313,7 +1313,7 @@ export const it = {
   'morning.labelAt': "Oggi, {time}",
   'morning.toggle': "Domanda del mattino",
   'morning.at': "Ora della domanda del mattino",
-  'morning.toggleSub': "Prima di mezzogiorno, una scheda chiede cosa ricordare oggi.",
+  'morning.toggleSub': "Prima di mezzogiorno, una finestra chiede cosa ricordare oggi.",
   'why.todayDid': "Oggi, Did: {list}",
   'why.todayNotYet': "Oggi, non ancora: {list}",
   'pings.day.2': 'Qualcosa da spuntare già oggi?',
