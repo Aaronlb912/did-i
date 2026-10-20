@@ -247,6 +247,7 @@ async function schedulePingsNow(books, now = new Date()) {
             identifier: String(notifyId(row.lamp.id, `${row.periodKey}:late:${row.dateIso}`)),
             content,
             trigger: when(late),
+            lateCall: true,
           })
         }
       }
@@ -261,8 +262,9 @@ async function schedulePingsNow(books, now = new Date()) {
           const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
           const night = boardDate(day)
           if (night < String(we.startsOn || '') || night === we.skipNight) continue
-          if (we.cadence === 'weekly' && !(we.weekdays || []).includes(day.getDay())) continue
+          // The weekday of the app day, not the phone calendar.
           const [year, month, date] = night.split('-').map(Number)
+          if (we.cadence === 'weekly' && !(we.weekdays || []).includes(new Date(year, month - 1, date).getDay())) continue
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
           if (at.getTime() <= now.getTime()) continue
           notes.push({
@@ -301,7 +303,11 @@ async function schedulePingsNow(books, now = new Date()) {
         })
       }
     }
-    notes.sort((a, b) => a.trigger.date - b.trigger.date)
+    // Over the cap, a later day's question beats a 21:00 last call after
+    // tomorrow, so many high questions do not use up the week in three days.
+    const soon = now.getTime() + 48 * 60 * 60 * 1000
+    const spare = (note) => (note.lateCall && note.trigger.date.getTime() > soon ? 1 : 0)
+    notes.sort((a, b) => spare(a) - spare(b) || a.trigger.date - b.trigger.date)
     notes.length = Math.min(notes.length, PING_CAP)
     // Any folder's streak can be at risk, not only the first one's.
     const streakPings = pingOn('streakRisk') && !gentleOn()
@@ -333,7 +339,7 @@ async function schedulePingsNow(books, now = new Date()) {
     }
     for (const note of notes) {
       try {
-        await Notifications.scheduleNotificationAsync(note)
+        await Notifications.scheduleNotificationAsync({ identifier: note.identifier, content: note.content, trigger: note.trigger })
       } catch {
         // Some ROMs block exact alarms.
       }
