@@ -10,13 +10,14 @@ import {
   weClaim,
   weGoal,
   weMine,
+  weNotTonightLine,
   weReply,
   weStreak,
   weTimeReady,
   wePausedCards,
   weRestart,
 } from '../../src/lib/did-we.js'
-import { weFaceFor, weFaceRow, wePersonKey, weRowLine, weStatus } from '../../src/lib/we-look.js'
+import { weFaceFor, weFaceRow, weMissKey, wePersonKey, weRowLine, weStatus, weWeekKey } from '../../src/lib/we-look.js'
 import { refreshTogether } from '../../src/lib/people.js'
 import { onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { pressFx } from '../lib/motion.jsx'
@@ -28,6 +29,7 @@ import { goHash } from '../navigation/hash.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import { fonts } from '../theme.js'
+import { readPrefs } from '../../src/lib/prefs.js'
 import { DidButton, KeyButton } from './ui.jsx'
 
 
@@ -68,7 +70,7 @@ function WeFace({ person: raw, card, colors, known, size = 30 }) {
 function personLine(person, card) {
   if (person.state === 'asked') return t('we.pAsked')
   const bits = []
-  if (card.mode === 'turns' && card.turn === person.id) bits.push(t('we.tonightsTurn'))
+  if (card.mode === 'turns' && card.turn === person.id) bits.push(t(weWeekKey(card, 'we.tonightsTurn')))
   bits.push(t(wePersonKey(card, person.status)))
   return bits.join(' · ')
 }
@@ -362,7 +364,7 @@ export function useWeAnswer(reload, book) {
     const out = await run(card.id, () => weAnswer(card.id, next, night || undefined))
     // A Did we answer has no undo: it says it was saved, or that it was not.
     if (out?.miss) {
-      confirmMiss(tMiss(out.miss))
+      confirmMiss(tMiss(weMissKey(card, out.miss)))
       return
     }
     if (next) {
@@ -475,7 +477,7 @@ export function WePausedRow({ cards, colors, reload }) {
             <Text style={[styles.question, { color: colors.ink }]} numberOfLines={2}>
               {card.question}
             </Text>
-            <Text style={[styles.meta, { color: colors.inkDim }]}>{t('we.paused')}</Text>
+            <Text style={[styles.meta, { color: colors.inkDim }]}>{t(weWeekKey(card, 'we.paused'))}</Text>
           </View>
           <KeyButton colors={colors} label={t('we.restart')} disabled={busy === card.id} onPress={() => restart(card)} />
         </View>
@@ -513,11 +515,11 @@ export function WeList({ colors }) {
               <WeFaces card={card} colors={colors} />
               <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
               <Text style={[styles.status, { color: card.done && card.due ? colors.we || colors.on : colors.ink }]} numberOfLines={1}>
-                {card.paused ? t('we.paused') : card.due ? weStatusLine(card) : t('we.notTonight')}
+                {card.paused ? t(weWeekKey(card, 'we.paused')) : card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
               </Text>
               {card.folder || streak > 0 || goal ? (
                 <Text style={[styles.meta, { color: colors.inkDim }]} numberOfLines={1}>
-                  {[card.folder, streak > 0 ? t('we.streak', { n: streak }) : '', goal ? t('we.goalLine', { n: goal.done, goal: goal.goal }) : '']
+                  {[card.folder, streak > 0 ? t('we.streak', { n: streak }) : '', goal ? t(weWeekKey(card, 'we.goalLine'), { n: goal.done, goal: goal.goal }) : '']
                     .filter(Boolean)
                     .join(' · ')}
                 </Text>
