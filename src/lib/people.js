@@ -1219,6 +1219,7 @@ export async function joinFamily(code) {
   const { data, error } = await db.rpc('join_family', { want_code: want })
   if (error) {
     if (/too many tries/i.test(error.message)) return { miss: 'tooMany' }
+    if (/too many people/i.test(error.message)) return { miss: 'full' }
     return { miss: /no family/i.test(error.message) ? 'nofamily' : error.message }
   }
   // A wrong code comes back as null, so the miss still counts toward the limit.
@@ -1236,6 +1237,7 @@ export async function lookUpFamily(code) {
   if (error) {
     if (notRunYet(error)) return { miss: 'setup' }
     if (/too many tries/i.test(error.message)) return { miss: 'tooMany' }
+    if (/too many people/i.test(error.message)) return { miss: 'full' }
     return bad(error)
   }
   if (data?.miss === 'nofamily') return { miss: 'nofamily' }

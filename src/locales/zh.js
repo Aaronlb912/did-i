@@ -962,6 +962,7 @@ export const zh = {
   'people.codeShort': '家庭代码为六个字符。',
   'people.inviteShort': '邀请代码为十个字符。',
   'people.noFamily': '没有此代码的家庭。',
+  'people.familyFull': '这个家庭已满（20 人）。',
   'people.parent': '家长',
   'people.kid': '孩子',
   'people.invite': '你的代码',
