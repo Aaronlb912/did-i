@@ -77,6 +77,9 @@ const files = [
   'supabase/store-version.sql',
   'supabase/we-slots.sql',
   'supabase/family-code-10.sql',
+  'supabase/gem-cap.sql',
+  'supabase/keep-did.sql',
+  'supabase/family-edit.sql',
   'supabase/drop-tonight.sql',
 ]
 

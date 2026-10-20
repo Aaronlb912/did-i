@@ -157,6 +157,13 @@ export function scheduleNativePings(books, now) {
   })
 }
 
+// Headless tasks (widget taps) can end before the 500ms timer: run at once.
+export function armNativePingsNow(books) {
+  const done = scheduleNativePings(books)
+  flushNativePings()
+  return done
+}
+
 function flushNativePings() {
   clearTimeout(pingTimer)
   const job = pingNext
