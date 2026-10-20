@@ -45,7 +45,18 @@ Nothing has run on a phone or the live database.
 
 ## Progress (2026-10-18, local agent)
 
-Done: steps 0 to 3 (full SQL re-apply live, tests and db:audit clean; merged as #311; play-voided, apple-notify and push deployed). Step 4: Apple server notification URLs set (production and sandbox). Left for Aaron: Play service account View financial data, Android key restriction in Google Cloud. Steps 5 and 7 wait for Actions budget; step 6 runs on the 1.3.7 build.
+Done: steps 0 to 3 (full SQL re-apply live, tests and db:audit clean; merged as #311; play-voided, apple-notify and push deployed). Step 4: Apple server notification URLs set (production and sandbox). Lesson for the lost friend pictures in `docs/lessons.md` (#312).
+
+1.3.7 sent to review:
+- iOS: build 87 from `release/1.3.7` (the ruleset blocks the bump push to master while the repo is public; bump merged as #313). What's New in `docs/app-store-connect.md` (#314). Waiting for Review.
+- Android phone: Play had taken code 33, so built locally as code 37 (`builds/1.3.7-37/`). Closed testing, Beta group track. In review.
+- Android watch: Wear OS added as a form factor with its own Closed testing "Beta group" track (did-i-beta group, 178 countries). Wear AAB code 1000000037. Three Wear screenshots on the store listing (`builds/wear-shots/`, taken on the `wear-didi` emulator with seeded cards). Wear OS opted in. In review. Play warns the code is far above the last one; that is the 1,000,000,000 + code Wear scheme, accepted on purpose.
+- The same Play submission carried the listing name "Did I???" and new short and full descriptions.
+- `android-apk.yml` now uses run number + 100 for the version code (#315).
+
+Checked: a new account with 3 gems in its first week is the weekly gem, the joiner's referral gem, and (from the payout rules; not queried) one for a friend who used its code. Not an update bug; each is paid once per account.
+
+Done 2026-10-18 by Aaron: Play service account has View financial data; the Firebase Android key is limited to com.aaronbryant.didi (Play signing, previous Play signing, upload and debug SHA-1s). Left: the phone pass on 1.3.7 once it reaches devices, step 8 (watch a week) and step 9 (tidy up). Signed OTA was skipped.
 
 ## Steps
 
