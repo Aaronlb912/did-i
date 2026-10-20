@@ -2774,6 +2774,7 @@ export const it = {
   'gems.restoreMiss': 'Ripristino non riuscito. Riprova.',
   'gems.creditMiss': "Le tue gems sono pagate ma non ancora arrivate.",
   'gems.testMiss': "Gli acquisti di prova non aggiungono gems.",
+'gems.waiting': "Le tue gems sono salvate. Arrivano quando hai spazio sotto 9.999.",
   'admin.title': "Segnalazioni",
   'admin.signIn': "Accedi per vedere le segnalazioni.",
   'admin.notAllowed': "Questa pagina è solo per gli admin.",

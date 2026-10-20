@@ -21,10 +21,21 @@ function fetchFromDevice(input, init = {}) {
   } catch {
     device = ''
   }
-  if (!device) return fetch(input, init)
-  const headers = new Headers(init.headers || {})
-  headers.set('x-didi-device', device.slice(0, 128))
-  return fetch(input, { ...init, headers })
+  // A stalled request must not hang a sync for ever.
+  let timer
+  if (!init.signal && typeof AbortController === 'function') {
+    const stop = new AbortController()
+    timer = setTimeout(() => stop.abort(), 30000)
+    init = { ...init, signal: stop.signal }
+  }
+  let sent
+  if (!device) sent = fetch(input, init)
+  else {
+    const headers = new Headers(init.headers || {})
+    headers.set('x-didi-device', device.slice(0, 128))
+    sent = fetch(input, { ...init, headers })
+  }
+  return timer ? sent.finally(() => clearTimeout(timer)) : sent
 }
 
 // Where a widget or watch posts an answer with its answer key. The anon key

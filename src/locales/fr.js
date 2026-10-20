@@ -2781,6 +2781,7 @@ export const fr = {
   'gems.restoreMiss': 'Impossible de restaurer. Réessaie.',
   'gems.creditMiss': "Tes gems sont payées mais pas encore arrivées.",
   'gems.testMiss': "Les achats de test n'ajoutent pas de gems.",
+'gems.waiting': "Tes gems sont gardées. Elles arrivent dès qu'il y a de la place sous 9 999.",
   'admin.title': "Signalements",
   'admin.signIn': "Connecte-toi pour voir les signalements.",
   'admin.notAllowed': "Cette page est réservée aux admins.",

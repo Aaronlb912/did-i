@@ -2787,6 +2787,7 @@ export const de = {
   'gems.restoreMiss': 'Wiederherstellen ging nicht. Versuch es noch mal.',
   'gems.creditMiss': "Deine Gems sind bezahlt, aber noch nicht da.",
   'gems.testMiss': "Testkäufe bringen keine Gems.",
+'gems.waiting': "Deine Gems sind gespeichert. Sie kommen an, sobald unter 9.999 Platz ist.",
   'admin.title': "Meldungen",
   'admin.signIn': "Melde dich an, um Meldungen zu sehen.",
   'admin.notAllowed': "Diese Seite ist nur für Admins.",
