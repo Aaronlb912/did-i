@@ -2778,6 +2778,7 @@ export const es = {
   'gems.restoreMiss': 'No se pudo restaurar. Inténtalo de nuevo.',
   'gems.creditMiss': "Tus gemas están pagadas pero aún no han llegado.",
   'gems.testMiss': "Las compras de prueba no suman gemas.",
+'gems.waiting': "Tus gemas están guardadas. Llegan cuando tengas espacio por debajo de 9.999.",
   'admin.title': "Reportes",
   'admin.signIn': "Inicia sesión para ver los reportes.",
   'admin.notAllowed': "Esta página es solo para admins.",

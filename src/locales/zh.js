@@ -2729,6 +2729,7 @@ export const zh = {
   'gems.restoreMiss': '无法恢复，请再试一次。',
   'gems.creditMiss': "宝石已付款，但还没到账。",
   'gems.testMiss': "测试购买不会增加宝石。",
+'gems.waiting': "宝石已保存。低于 9,999 有空位时就会到账。",
   'admin.title': "举报",
   'admin.signIn': "登录后查看举报。",
   'admin.notAllowed': "此页面仅限管理员。",

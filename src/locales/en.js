@@ -2768,6 +2768,7 @@ export const en = {
   'gems.restoreMiss': 'Could not restore. Try again.',
   'gems.creditMiss': "Your gems are paid for but not in yet.",
   'gems.testMiss': "Test purchases don't add gems.",
+'gems.waiting': "Your gems are saved. They land once you have room under 9,999.",
   'admin.title': "Reports",
   'admin.signIn': "Sign in to see reports.",
   'admin.notAllowed': "This page is for admins only.",
