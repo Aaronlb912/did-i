@@ -1,9 +1,13 @@
 name: check
 
+# PRs only: the merge to master is the same code the PR run checked.
 on:
-  push:
-    branches: [master, main]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
