@@ -35,6 +35,7 @@ import { claimGemPurchases } from './gem-claim.js'
 import { applyInvitePayout, dropEarnedCoins, mergeGift, mergePurses } from './purse.js'
 import { FRAME_IDS } from './frames.js'
 import {
+  applyCoinBalanceToShelf,
   applyCoinCatalogToShelf,
   applyGemBalanceToShelf,
   applyGemOwnedToShelf,
@@ -503,12 +504,26 @@ async function pullAndMergeOnce() {
     // `next` was built from the copy saved at seenAt, so that is its stamp
     // in the compare; `at` (upload time) would let it beat newer local edits.
     let seenAt = readSavedAt()
+    const purseOf = (shelf) => `${shelf?.boards?.[0]?.gems}|${shelf?.boards?.[0]?.coins}`
+    let seenPurse = purseOf(readShelf())
     const land = (next, at) => {
       if (run !== syncRun) throw new Error('account.signedOut')
       const nowAt = readSavedAt()
-      const base = nowAt !== seenAt ? mergeShelves(readShelf(), next, nowAt, seenAt) : next
+      let base = next
+      if (nowAt !== seenAt) {
+        // A buy or an earn during the sync wrote the server's newer balance
+        // here; the merge would keep the larger, older one.
+        const local = readShelf()
+        const purse = local?.boards?.[0]
+        base = mergeShelves(local, next, nowAt, seenAt)
+        if (purseOf(local) !== seenPurse) {
+          if (Number.isFinite(purse?.gems)) base = applyGemBalanceToShelf(base, purse.gems)
+          if (Number.isFinite(purse?.coins)) base = applyCoinBalanceToShelf(base, purse.coins)
+        }
+      }
       const out = writeShelf(base, at)
       seenAt = readSavedAt()
+      seenPurse = purseOf(out)
       return out
     }
 
