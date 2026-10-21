@@ -1116,6 +1116,12 @@ test('the inbox count keeps its number offline and counts older unanswered Did I
   assert.ok(src.includes('.filter((row) => !done.has(row.id)).slice(0, 8)'), 'answered sends leave before the cap')
 })
 
+test('the together widget forgets your friends on any sign-out', () => {
+  localStorage.setItem('did-i-together-widget', JSON.stringify([{ id: 'friend', name: 'Pal' }]))
+  signedOutSync()
+  assert.equal(localStorage.getItem('did-i-together-widget'), '[]')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
