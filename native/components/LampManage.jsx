@@ -57,10 +57,16 @@ function runStops(ids) {
   }
 }
 
-export function stopCheckOns(lampIds) {
+// later: the caller runs flushCheckOnStops when its own undo window ends.
+export function stopCheckOns(lampIds, later = false) {
   const ids = [].concat(lampIds).map(String)
   writeStops([...new Set([...readStops(), ...ids])])
-  setTimeout(() => runStops(ids), DELETE_UNDO_MS + 500)
+  if (!later) setTimeout(() => runStops(ids), DELETE_UNDO_MS + 500)
+  return ids
+}
+
+export function flushCheckOnStops(ids) {
+  if (ids?.length) runStops(ids)
 }
 
 // On start, after sign in: the undo window is long over.

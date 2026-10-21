@@ -68,7 +68,7 @@ import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { useTour, useTourTarget } from '../lib/tour.js'
 import { TOUR_PARTS } from '../../src/lib/tour-steps.js'
 import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
-import { LampManage, lampActions, stopCheckOns } from '../components/LampManage.jsx'
+import { LampManage, flushCheckOnStops, lampActions, stopCheckOns } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -593,7 +593,10 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
 
   useEffect(() => {
     if (!undo) return undefined
-    const timer = setTimeout(() => setUndo(null), UNDO_MS)
+    const timer = setTimeout(() => {
+      flushCheckOnStops(undo.stops)
+      setUndo(null)
+    }, UNDO_MS)
     return () => clearTimeout(timer)
   }, [undo, undoSeen])
 
@@ -615,7 +618,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     const books = readShelf().boards || shelf
     const before = books.filter((item) => lampPicks.some((one) => one.boardId === item.id))
     onChangeBooks(bulkLamps(books, lampPicks, kind).map((item) => commitBook(item, clock)))
-    if (kind === 'delete' || kind === 'stop') stopCheckOns(lampPicks.map((one) => one.lampId))
+    const stops = kind === 'delete' || kind === 'stop' ? stopCheckOns(lampPicks.map((one) => one.lampId), true) : null
+    // A new undo replaces the old toast, so its window is over.
+    flushCheckOnStops(undo?.stops)
     const n = lampPicks.length
     const label =
       kind === 'delete'
@@ -623,7 +628,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         : kind === 'stop'
           ? t('questions.bulkStopped', { n })
           : t('questions.bulkAsked', { n })
-    setUndo({ id: Date.now(), label, before, picks: lampPicks })
+    setUndo({ id: Date.now(), label, before, picks: lampPicks, stops })
     stopPicking()
   }
 
