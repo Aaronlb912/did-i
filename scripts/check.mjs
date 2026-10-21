@@ -866,6 +866,11 @@ test('removed morning questions do not count toward the cap', async () => {
   assert.equal(morningCount([{ lamps }], '2026-10-21'), 1)
 })
 
+test('Next on the Android widget applies a waiting tap first', () => {
+  const src = readFileSync(new URL('../native/widget-setup.android.js', import.meta.url), 'utf8')
+  assert.ok(src.indexOf('applyPendingAndroidWidgetTap()') < src.indexOf("clickAction === 'PEEK'") && src.includes("'PEEK' && !applied"))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
