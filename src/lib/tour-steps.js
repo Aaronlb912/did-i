@@ -22,7 +22,7 @@ export const TOUR_PARTS = {
       { key: 'friend', path: '/people/connect', target: 'friendId', scope: 'main', scroll: true, titleKey: 'tour.friendTitle', lineKey: 'tour.friendLine' },
       { key: 'you', path: '/add', target: 'lead', scope: 'add', titleKey: 'tour.youTitle', lineKey: 'tour.youLine' },
       { key: 'we', path: '/add', target: 'lead', scope: 'add', titleKey: 'tour.weTitle', lineKey: 'tour.weLine' },
-      { key: 'cheer', path: '/people', target: 'people', scope: 'main', titleKey: 'tour.cheerTitle', lineKey: 'tour.cheerLine' },
+      { key: 'cheer', path: '/people', target: 'people', scope: 'main', scroll: true, titleKey: 'tour.cheerTitle', lineKey: 'tour.cheerLine' },
       { key: 'shop', path: '/tonight', target: 'menu', scope: 'main', titleKey: 'tour.shopTitle', lineKey: 'tour.shopLine' },
       { key: 'recent', path: '/recent', target: 'recent', scope: 'main', scroll: true, titleKey: 'tour.recentTitle', lineKey: 'tour.recentLine' },
     ],

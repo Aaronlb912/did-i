@@ -47,6 +47,10 @@ function scrollNodeUp(node, scroller) {
 async function bringUp(key) {
   const node = [...(targets.get(key) || [])].pop()
   if (!node) return
+  // Already in view: leave the page where it is.
+  const shown = await measureNode(node)
+  const { height } = Dimensions.get('window')
+  if (shown && shown.y >= 0 && shown.y + Math.min(shown.h, height * 0.5) <= height * 0.7) return
   for (const scroller of [...scrollers].reverse()) {
     if (await scrollNodeUp(node, scroller)) return
   }
