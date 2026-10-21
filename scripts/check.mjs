@@ -59,7 +59,7 @@ import {
   togglePack,
   togglePick,
 } from '../src/lib/first-run.js'
-import { mergeShelves } from '../src/lib/shelf-merge.js'
+import { mergeBackup, mergeShelves } from '../src/lib/shelf-merge.js'
 import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
@@ -1537,6 +1537,18 @@ test('a tag deleted on one phone stays deleted when an older phone syncs', () =>
     assert.deepEqual(merged.boards.map((book) => book.id), ['b1'])
     assert.equal(merged.goneTags.length, 1, 'and the delete carries on to the next phone')
   }
+})
+
+test('loading a backup keeps this phone’s coins, shop items and question settings', () => {
+  const q = { ...lamp('q'), question: 'Did I read?' }
+  const here = { currentId: 'b', boards: [{ id: 'b', title: 'General', coins: 0, gems: 1, looks: [], lamps: [{ ...q, archived: true, pausedOn: '2026-10-20' }], answers: [] }] }
+  const copy = { currentId: 'b', boards: [{ id: 'b', title: 'General', coins: 100, gems: 9, looks: ['sky'], lamps: [q], answers: [{ lampId: 'q', periodKey: '2026-10-01', status: 'yes', answeredAt: '2026-10-01T20:00:00' }] }] }
+  const book = mergeBackup(here, copy).boards[0]
+  assert.equal(book.coins, 0, 'spent coins do not come back')
+  assert.equal(book.gems, 1)
+  assert.ok(!(book.looks || []).includes('sky'), 'shop items do not come from the file')
+  assert.equal(book.lamps[0].archived, true, 'a question paused here stays paused')
+  assert.equal(book.answers.length, 1, 'the backup answers come in')
 })
 
 test('a never-answered starter the account already has does not merge in as a twin', () => {

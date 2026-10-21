@@ -11,7 +11,7 @@ import { applyWidgetPrefs } from './widget-settings.js'
 import { readShelf } from './board-shelf.js'
 import { answersCsv } from './answers-csv.js'
 import { shareCsv } from './native.js'
-import { mergeShelves } from './shelf-merge.js'
+import { mergeBackup } from './shelf-merge.js'
 import { boardDate, formatBoardDate } from './recurrence.js'
 import { zoneWords } from './zone.js'
 import { openFeedback } from './feedback.js'
@@ -71,7 +71,7 @@ export function Profile({
           return
         }
         const before = readShelf()
-        const merged = mergeShelves(before, coming, '', new Date().toISOString())
+        const merged = mergeBackup(before, coming)
         onImport(merged)
         const was = before.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
         const nowCount = merged.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
