@@ -3664,6 +3664,8 @@ export const es = {
   'tour.notNow': "Ahora no",
   'tour.next': "Siguiente",
   'tour.skip': "Omitir",
+  'tour.between': "Ya viene el siguiente paso",
+  'tour.betweenLine': "Sigues en el recorrido. Un momento.",
   'tour.stepOf': "Paso {n} de {total}",
   'tour.swipeTitle': "Desliza para responder",
   'tour.swipeLine': "¿Lo hiciste? Desliza a la derecha. ¿Aún no? A la izquierda. Los botones también sirven.",

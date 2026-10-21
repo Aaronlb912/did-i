@@ -3654,6 +3654,8 @@ export const en = {
   'tour.notNow': "Not now",
   'tour.next': "Next",
   'tour.skip': "Skip",
+  'tour.between': "Next step coming up",
+  'tour.betweenLine': "Still in the tour. One moment.",
   'tour.stepOf': "Step {n} of {total}",
   'tour.swipeTitle': "Swipe to answer",
   'tour.swipeLine': "Did it? Swipe right. Not yet? Swipe left. The buttons work too.",

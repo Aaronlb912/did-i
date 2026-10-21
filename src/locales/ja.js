@@ -3622,6 +3622,8 @@ export const ja = {
   'tour.notNow': "今はしない",
   'tour.next': "次へ",
   'tour.skip': "スキップ",
+  'tour.between': "次のステップへ",
+  'tour.betweenLine': "ツアーはまだ続きます。少々お待ちください。",
   'tour.stepOf': "ステップ {n}/{total}",
   'tour.swipeTitle': "スワイプで答える",
   'tour.swipeLine': "できた？右にスワイプ。まだなら左にスワイプ。ボタンをタップしてもOKです。",

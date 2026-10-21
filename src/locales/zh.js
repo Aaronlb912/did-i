@@ -3615,6 +3615,8 @@ export const zh = {
   'tour.notNow': "暂时不要",
   'tour.next': "下一步",
   'tour.skip': "跳过",
+  'tour.between': "马上进入下一步",
+  'tour.betweenLine': "导览还在进行，请稍等。",
   'tour.stepOf': "第 {n} 步，共 {total} 步",
   'tour.swipeTitle': "滑动来回答",
   'tour.swipeLine': "做了吗？右滑。还没？左滑。点按钮也行。",

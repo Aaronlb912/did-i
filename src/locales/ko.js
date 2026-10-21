@@ -3624,6 +3624,8 @@ export const ko = {
   'tour.notNow': "나중에",
   'tour.next': "다음",
   'tour.skip': "건너뛰기",
+  'tour.between': "다음 단계로 가는 중",
+  'tour.betweenLine': "아직 둘러보기 중이에요. 잠시만요.",
   'tour.stepOf': "{total}단계 중 {n}단계",
   'tour.swipeTitle': "밀어서 답하기",
   'tour.swipeLine': "했나요? 오른쪽으로 밀어요. 아직이면 왼쪽으로요. 버튼을 눌러도 돼요.",

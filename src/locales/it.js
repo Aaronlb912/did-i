@@ -3660,6 +3660,8 @@ export const it = {
   'tour.notNow': "Non ora",
   'tour.next': "Avanti",
   'tour.skip': "Salta",
+  'tour.between': "Arriva il prossimo passo",
+  'tour.betweenLine': "Il tour continua. Un attimo.",
   'tour.stepOf': "Passo {n} di {total}",
   'tour.swipeTitle': "Scorri per rispondere",
   'tour.swipeLine': "Fatto? Scorri a destra. Non ancora? Scorri a sinistra. Vanno bene anche i pulsanti.",

@@ -3660,6 +3660,8 @@ export const pt = {
   'tour.notNow': "Agora não",
   'tour.next': "Próximo",
   'tour.skip': "Pular",
+  'tour.between': "O próximo passo já vem",
+  'tour.betweenLine': "Você ainda está no tour. Um momento.",
   'tour.stepOf': "Passo {n} de {total}",
   'tour.swipeTitle': "Deslize para responder",
   'tour.swipeLine': "Fez? Deslize para a direita. Ainda não? Para a esquerda. Os botões também funcionam.",
