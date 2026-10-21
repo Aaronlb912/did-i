@@ -911,6 +911,8 @@ export const fr = {
   'friends.cheerBuyTitle': 'Acheter {n} encouragements pour amis ?',
   'friends.cheerBuyBody': '{cost}. Pour encourager tes amis.',
   'friends.cheerUse': 'Encourager',
+  'cheer.pickTitle': 'Encourager {name} ?',
+  'cheer.pickBody': 'Choisis l’encouragement à envoyer.',
   'friends.cheerNeed': 'Achète des encouragements d’abord.',
   'friends.cheerCap': 'Tu peux en garder {n}. Envoie-en d’abord.',
   'block.block': 'Bloquer',

@@ -896,6 +896,8 @@ export const ko = {
   'friends.cheerBuyTitle': '친구 응원 {n}개를 살까요?',
   'friends.cheerBuyBody': '{cost}. 친구를 응원할 때 써요.',
   'friends.cheerUse': '응원',
+  'cheer.pickTitle': '{name}님을 응원할까요?',
+  'cheer.pickBody': '보낼 응원을 고르세요.',
   'friends.cheerNeed': '먼저 응원을 사세요.',
   'friends.cheerCap': '응원은 {n}개까지. 먼저 보내세요.',
   'block.block': '차단',

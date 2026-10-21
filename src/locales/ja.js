@@ -897,6 +897,8 @@ export const ja = {
   'friends.cheerBuyTitle': '友だち応援を{n}個買いますか？',
   'friends.cheerBuyBody': '{cost}。友だちを応援するのに使えます。',
   'friends.cheerUse': '応援',
+  'cheer.pickTitle': '{name}さんを応援する？',
+  'cheer.pickBody': '送る応援を選んでください。',
   'friends.cheerNeed': '先に応援を買って。',
   'friends.cheerCap': '応援は {n} まで。先に送って。',
   'block.block': 'ブロック',

@@ -908,6 +908,8 @@ export const en = {
   'friends.cheerBuyTitle': 'Buy {n} friend cheers?',
   'friends.cheerBuyBody': '{cost}. Use them to cheer your friends on.',
   'friends.cheerUse': 'Cheer',
+  'cheer.pickTitle': 'Cheer {name}?',
+  'cheer.pickBody': 'Pick which cheer to send.',
   'friends.cheerNeed': 'Buy cheers first.',
   'friends.cheerCap': 'You can hold {n} cheers. Spend some first.',
   'block.block': 'Block',

@@ -920,6 +920,15 @@ test('Did on a second reminder for a question already Did does not say Not saved
   assert.ok(src.includes("if (!shelf && !alreadySaid(lampId, kind, night)) showToast({ id: 'note-answer'"))
 })
 
+test('every cheer button asks which cheer first, never sends on the tap', () => {
+  const social = readFileSync('native/screens/social.jsx', 'utf8')
+  const family = readFileSync('native/screens/FamilyDetail.jsx', 'utf8')
+  assert.equal(social.split('pickCheer(colors').length - 1, 2, 'friends list and friend page')
+  assert.ok(family.includes('pickCheer(colors'), 'family page')
+  assert.ok(!/cheerFriend\(book, [^)]*purse\.cheerOn/.test(social), 'no cheer sends the worn one without asking')
+  assert.ok(!/cheerFamily\([^)]*purse\.cheerOn/.test(family + social))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
