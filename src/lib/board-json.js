@@ -400,6 +400,7 @@ export function normalizeBook(raw) {
     frames: purse.frames,
     frame: purse.frame,
     friendCheers: purse.friendCheers,
+    wish: purse.wish,
   }
 }
 

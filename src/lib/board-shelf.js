@@ -151,8 +151,9 @@ let lastRaw = null
 let lastShelf = null
 
 export function readShelf() {
+  let raw = null
   try {
-    const raw = localStorage.getItem(SHELF_KEY)
+    raw = localStorage.getItem(SHELF_KEY)
     if (raw && raw === lastRaw && lastShelf) return lastShelf
     if (raw) {
       const next = normalizeShelf(JSON.parse(raw))
@@ -163,7 +164,17 @@ export function readShelf() {
       return shelf
     }
   } catch {
-    // fall through
+    // A cut-off or corrupt shelf is kept aside, never overwritten, and not
+    // stamped as newer: the account copy wins on the next pull.
+    if (raw) {
+      try {
+        localStorage.setItem(SHELF_KEY + '-bad', raw)
+      } catch {
+        // ok
+      }
+      const book = emptyBoard()
+      return { currentId: book.id, boards: [book] }
+    }
   }
   try {
     const raw = localStorage.getItem(OLD_KEY)
