@@ -8644,7 +8644,7 @@ await testAsync('an invite needs no typing: the link carries it, a paste or any 
   // over the lists); the code box on Connect, in the sign-up ask, and from a scanned invite.
   const social = read('native/screens/social.jsx')
   assert.equal((social.match(/<InviteCard colors=\{colors\} \/>/g) || []).length, 1)
-  assert.match(social, /label=\{t\('invite\.cardTitle'\)\}[\s\S]{0,120}onPress=\{\(\) => goHash\('\/people\/refer'\)\}/)
+  assert.match(social, /label=\{t\('people\.referRow'\)\}[\s\S]{0,140}onPress=\{\(\) => goHash\('\/people\/refer'\)\}/)
   assert.match(social, /<InviteCodeSection colors=\{colors\} book=\{book\} onChange=\{onChange\} hideBar hideDone \/>/)
   assert.match(social, /<QrCode value=\{inviteLink\(invite\)\}/)
   assert.match(read('native/screens/ScanScreen.jsx'), /swapHash\('\/people\/refer', \{ id: invite \}\)/)

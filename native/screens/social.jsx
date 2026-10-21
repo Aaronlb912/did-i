@@ -1123,8 +1123,9 @@ export function PeopleScreen({ book, onChange }) {
       {/* Invites sit here, beside Connect, not as a card over the lists. */}
       <Row
         colors={colors}
-        label={t('invite.cardTitle')}
+        label={t('people.referRow')}
         note={t('invite.cardBody', { max: INVITE_GEMS_CAP })}
+        bright
         onPress={() => goHash('/people/refer')}
       />
 

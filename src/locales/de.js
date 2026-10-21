@@ -1007,6 +1007,7 @@ export const de = {
   'invite.joinedGo': 'Freund hinzufügen',
   'invite.joinedOk': 'Super',
   'invite.cardTitle': 'Freunde einladen',
+  'people.referRow': 'Freunde und Familie werben',
   'invite.cardBody': 'Schick deinen Link. Für jeden Freund, der mitmacht, bekommst du Gems, bis zu {max}.',
   'invite.send': 'Einladung senden',
   'invite.more': 'QR-Code und mehr',

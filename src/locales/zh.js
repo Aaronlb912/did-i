@@ -987,6 +987,7 @@ export const zh = {
   'invite.joinedGo': '添加好友',
   'invite.joinedOk': '好的',
   'invite.cardTitle': '邀请好友',
+  'people.referRow': '推荐给亲友',
   'invite.cardBody': '发送你的链接。每有一位好友加入，你就能拿到 gems，最多 {max}。',
   'invite.send': '发送邀请',
   'invite.more': '二维码等',

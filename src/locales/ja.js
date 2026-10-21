@@ -989,6 +989,7 @@ export const ja = {
   'invite.joinedGo': '友だちを追加',
   'invite.joinedOk': 'OK',
   'invite.cardTitle': '友だちを招待',
+  'people.referRow': '友だちや家族を紹介',
   'invite.cardBody': 'リンクを送ろう。友だちが参加するたびに gems がもらえます（最大 {max}）。',
   'invite.send': '招待を送る',
   'invite.more': 'QRコードなど',

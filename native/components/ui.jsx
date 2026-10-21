@@ -152,7 +152,8 @@ export function KeyButton({ label, onPress, colors, picked, disabled, danger }) 
 }
 
 // children: actions that belong to this row (Copy, Share), drawn inside its card.
-export function Row({ label, note, onPress, colors, children }) {
+// bright: an accent outline, for the one row people should notice.
+export function Row({ label, note, onPress, colors, children, bright }) {
   if (children && !onPress) {
     return (
       <View style={[styles.row, styles.rowStack, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -171,7 +172,7 @@ export function Row({ label, note, onPress, colors, children }) {
       onPress={onPress}
       disabled={!onPress}
       android_ripple={onPress ? ripple(`${colors.on}33`) : undefined}
-      style={({ pressed }) => [styles.row, { borderColor: colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
+      style={({ pressed }) => [styles.row, { borderColor: bright ? colors.on : colors.line, backgroundColor: colors.panel }, bright && styles.rowBright, pressFx(pressed)]}
     >
       <View style={styles.rowText}>
         <Text style={[styles.rowLabel, { color: colors.ink }]}>{label}</Text>
@@ -275,6 +276,7 @@ const styles = StyleSheet.create({
   keyText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '500' },
   row: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
   rowText: { flex: 1, gap: 4 },
+  rowBright: { borderWidth: 1.5 },
   rowStack: { flexDirection: 'column', alignItems: 'stretch', gap: 12 },
   rowChev: { fontSize: 22, lineHeight: 24 },
   rowLabel: { fontFamily: fonts.uiSemi, fontSize: 15 },
