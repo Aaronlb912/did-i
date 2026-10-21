@@ -866,7 +866,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                       label={starter.short}
                       colors={colors}
                       onPress={() => {
-                        onChange(commitBook(hangInto(book, { ...blankLamp(clock), ...starter }), clock))
+                        const current = (readShelf().boards || []).find((item) => item.id === book.id) || book
+                        if ((current.lamps || []).some((lamp) => lamp.short === starter.short || lamp.question === starter.question)) return
+                        onChange(commitBook(hangInto(current, { ...blankLamp(clock), ...starter }), clock))
                         confirmDone(t('confirm.questionAdded'))
                       }}
                     />
