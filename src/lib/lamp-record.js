@@ -1,5 +1,5 @@
 import { t } from './i18n.js'
-import { addDaysIso, answerFor, isDueOn, isEvery, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, answerFor, graceNightIso, isDueOn, isEvery, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
 import { travelNightState, travelSkipped } from './travel.js'
 
 function didStatus(status) {
@@ -10,17 +10,19 @@ function didStatus(status) {
 // The one streak rule for a question: Did and late Did keep it going; a nope
 // or a missed night ends it. Tonight counts once answered, and an unanswered
 // tonight does not break it yet. Every per-question streak uses this.
-export function questionStreak(book, lamp, dateIso, cap = 400) {
+export function questionStreak(book, lamp, dateIso, cap = 400, now = new Date()) {
   if (!lamp || !dateIso || isEvery(lamp)) return 0
   if (lamp.cadence === 'once') return didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))?.status) ? 1 : 0
   const live = { ...lamp, archived: false }
   let cursor = isDueOn(live, dateIso) ? dateIso : previousDueDate(live, dateIso)
   if (cursor === dateIso && !answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))) cursor = previousDueDate(live, dateIso)
+  // Last night is still open until the grace hour: unanswered, it does not break the run yet.
+  const grace = openGrace(dateIso, now)
   let count = 0
   while (cursor && count < cap) {
     const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cursor))
-    // Left open on a night skipped by travel: neither counts nor breaks.
-    if (travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') {
+    // Left open on a night skipped by travel, or last night still in grace: neither counts nor breaks.
+    if ((travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') || (cursor === grace && !answer)) {
       cursor = previousDueDate(live, cursor)
       continue
     }
@@ -33,7 +35,12 @@ export function questionStreak(book, lamp, dateIso, cap = 400) {
 
 // The longest run this question ever had, same rule as questionStreak.
 // Walks due nights back to the question's first; callers memoize it.
-export function bestQuestionStreak(book, lamp, dateIso, cap = 1000) {
+function openGrace(dateIso, now) {
+  const grace = graceNightIso(now)
+  return grace && addDaysIso(grace, 1) === dateIso ? grace : ''
+}
+
+export function bestQuestionStreak(book, lamp, dateIso, cap = 1000, now = new Date()) {
   if (!lamp || !dateIso || isEvery(lamp)) return 0
   if (lamp.cadence === 'once') return questionStreak(book, lamp, dateIso)
   const live = { ...lamp, archived: false }
@@ -47,6 +54,7 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000) {
   }
   if (first && lamp.cadence === 'monthly') first = `${first.slice(0, 7)}-01`
   let cursor = isDueOn(live, dateIso) ? dateIso : previousDueDate(live, dateIso)
+  const grace = openGrace(dateIso, now)
   let best = 0
   let run = 0
   let steps = 0
@@ -60,7 +68,7 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000) {
     if (didStatus(answer?.status)) {
       run += 1
       if (run > best) best = run
-    } else if (cursor !== dateIso) {
+    } else if (cursor !== dateIso && !(cursor === grace && !answer)) {
       run = 0
     }
     steps += 1
