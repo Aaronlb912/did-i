@@ -100,9 +100,12 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const [naming, setNaming] = useState(null)
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
+  const loadRef = useRef(0)
   const load = useCallback(async () => {
     // Sign in is still loading: wait instead of showing the family as gone.
     if (!account.ready) return
+    // A newer load (another account, another family) wins over this one.
+    const mine = ++loadRef.current
     if (!familyId || !account.user) {
       setFam(null)
       setLamps([])
@@ -125,6 +128,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     const cheersAsk = readFriendCheers().catch(() => null)
     const guessAsk = guessKey ? readDay(guessKey).catch(() => null) : null
     const row = await readFamily(familyId)
+    if (mine !== loadRef.current) return
     if (row?.miss) {
       setMiss(row.miss)
       setReady(true)
@@ -139,6 +143,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       const day = (key === guessKey && (await guessAsk)) || (await readDay(key))
       const [tonightRows, pastRows] = day
       const serverCheers = await cheersAsk
+      if (mine !== loadRef.current) return
       if (typeof serverCheers === 'number') setStock(serverCheers)
       if (tonightRows.miss) {
         setMiss(tonightRows.miss)
