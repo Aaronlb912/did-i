@@ -1328,24 +1328,29 @@ export async function readFamily(familyId) {
 export async function setRole(familyId, userId, role) {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  const { error } = await db
+  const { data, error } = await db
     .from('family_members')
     .update({ role })
     .eq('family_id', familyId)
     .eq('user_id', userId)
+    .select('user_id')
   if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+  // Nothing changed: no longer a parent, or they already left. No error comes back.
+  if (!data?.length) return { miss: 'unchanged' }
   return { miss: '' }
 }
 
 export async function dropMember(familyId, userId) {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  const { error } = await db
+  const { data, error } = await db
     .from('family_members')
     .delete()
     .eq('family_id', familyId)
     .eq('user_id', userId)
+    .select('user_id')
   if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+  if (!data?.length) return { miss: 'unchanged' }
   return { miss: '' }
 }
 

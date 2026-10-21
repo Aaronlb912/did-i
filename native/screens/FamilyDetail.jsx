@@ -249,6 +249,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       onPress: () => once(`role:${row.user_id}`, async () => {
         const { miss: why } = await setRole(fam.id, row.user_id, row.role === 'parent' ? 'kid' : 'parent')
         if (why === 'lastparent') setMiss(t('family.lastParent'))
+        else if (why === 'unchanged') setMiss(t('confirm.miss'))
         else if (why) setMiss(why)
         else {
           setMiss('')
@@ -273,6 +274,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             publishSheet(null)
             const { miss: why } = (await once(`drop:${row.user_id}`, () => dropMember(fam.id, row.user_id))) || {}
             if (why === 'lastparent') setMiss(t('family.lastParent'))
+            else if (why === 'unchanged') setMiss(t('confirm.miss'))
             else if (why) setMiss(why)
             else {
               setMiss('')
