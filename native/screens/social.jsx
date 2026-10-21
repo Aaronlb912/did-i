@@ -230,20 +230,24 @@ function BlockModal({ person, colors, onClose, onDone }) {
               colors={colors}
               small
               label={t('block.yes')}
-              onPress={async () => {
-                onClose()
-                const { miss: why } = await blockPerson(person.user_id)
-                onDone(why)
-              }}
+              onPress={() =>
+                once('block:' + person.user_id, async () => {
+                  onClose()
+                  const { miss: why } = await blockPerson(person.user_id)
+                  onDone(why)
+                })
+              }
             />
             <KeyButton
               colors={colors}
               label={t('block.andReport')}
-              onPress={async () => {
-                onClose()
-                const { miss: why } = await blockPerson(person.user_id, 'reported from friends')
-                onDone(why)
-              }}
+              onPress={() =>
+                once('block:' + person.user_id, async () => {
+                  onClose()
+                  const { miss: why } = await blockPerson(person.user_id, 'reported from friends')
+                  onDone(why)
+                })
+              }
             />
             <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onClose} />
           </View>
