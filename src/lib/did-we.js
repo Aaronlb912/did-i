@@ -367,7 +367,7 @@ export function weBest(card) {
 
 // Done-together nights in a month, and how many nights it was due.
 export function weMonth(card, monthIso = tonightIso().slice(0, 7), today = tonightIso()) {
-  const done = (card.doneNights || []).filter((night) => night.startsWith(monthIso)).length
+  const done = (card.doneNights || []).filter((night) => night.startsWith(monthIso) && weDueOn(card, night)).length
   let due = 0
   for (let day = `${monthIso}-01`; day.startsWith(monthIso) && day <= today; day = addDays(day, 1)) {
     if (weDueOn(card, day)) due += 1
