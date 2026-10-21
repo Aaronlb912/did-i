@@ -264,6 +264,7 @@ export const pt = {
   'first.next': 'Continuar',
   'first.back': 'Voltar',
   'first.stepOf': '{n} de {total}',
+  'tonight.nopedStep': '{n} de {total}',
   'first.timeTitle': 'Quando devemos perguntar?',
   'enter.locked': 'Travado',
   'enter.thisPhone': 'Este telefone',

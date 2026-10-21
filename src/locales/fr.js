@@ -265,6 +265,7 @@ export const fr = {
   'first.next': 'Continuer',
   'first.back': 'Retour',
   'first.stepOf': '{n} sur {total}',
+  'tonight.nopedStep': '{n} sur {total}',
   'first.timeTitle': 'Quand doit-on te demander ?',
   'enter.locked': 'Verrouillé',
   'enter.thisPhone': 'Ce téléphone',

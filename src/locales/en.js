@@ -263,6 +263,7 @@ export const en = {
   'first.next': 'Continue',
   'first.back': 'Back',
   'first.stepOf': '{n} of {total}',
+  'tonight.nopedStep': '{n} of {total}',
   'first.timeTitle': 'When should we ask?',
   'enter.locked': 'Locked',
   'enter.thisPhone': 'This phone',

@@ -8,6 +8,8 @@ import { fonts, radius } from '../theme.js'
  * What is left after a nope: each noped question as a slim row with its own
  * way out. "Did it now" saves it as late; "Keep nope" lets the nope stand and
  * takes it off the list. Either can still change until the grace period ends.
+ * One row at a time, so a long list never runs off the card; answering one
+ * brings up the next.
  */
 export function StillOpen({ rows, rowKey, colors, onLate, onLeave }) {
   return (
@@ -22,7 +24,10 @@ export function StillOpen({ rows, rowKey, colors, onLate, onLeave }) {
         {t('tonight.nopedChange', { time: clockWords('09:00') })}
       </Text>
       <View style={styles.list}>
-        {rows.map((row) => (
+        {rows.length > 1 ? (
+          <Text style={[styles.step, { color: colors.inkDim }]}>{t('tonight.nopedStep', { n: 1, total: rows.length })}</Text>
+        ) : null}
+        {rows.slice(0, 1).map((row) => (
           <View key={rowKey(row)} style={[styles.row, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
             <View style={styles.head}>
               <View style={[styles.dot, { backgroundColor: colors.skip }]} />
@@ -76,5 +81,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   leave: { borderColor: 'transparent' },
+  step: { fontFamily: fonts.ui, fontSize: 13 },
   actionText: { fontFamily: fonts.uiBold, fontSize: 14 },
 })

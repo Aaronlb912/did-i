@@ -264,6 +264,7 @@ export const es = {
   'first.next': 'Continuar',
   'first.back': 'Atrás',
   'first.stepOf': '{n} de {total}',
+  'tonight.nopedStep': '{n} de {total}',
   'first.timeTitle': '¿Cuándo te preguntamos?',
   'enter.locked': 'Cerrado',
   'enter.thisPhone': 'Este teléfono',
