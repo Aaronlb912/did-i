@@ -735,7 +735,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       setUndo(null)
       return
     }
-    onChangeBooks(undoBulkLamps(shelf, undo.before, undo.picks))
+    onChangeBooks(undoBulkLamps(readShelf().boards || shelf, undo.before, undo.picks))
     setUndo(null)
   }
 
