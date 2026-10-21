@@ -42,9 +42,11 @@ function markPrimerShown(key = KEY) {
 async function showPrimer({ title, body, colors, key = KEY }) {
   if (primerShown(key)) return
   if ((await checkPings().catch(() => 'missing')) !== 'default') return
-  markPrimerShown(key)
   shownThisRun = true
   await whenNoSheet()
+  // Marked once it is about to show: an app closed while waiting keeps the ask.
+  if (primerShown(key)) return
+  markPrimerShown(key)
   publishSheet({
     kicker: t('notify.primerKicker'),
     title,
