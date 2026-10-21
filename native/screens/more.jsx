@@ -96,6 +96,7 @@ import {
 } from '../../src/lib/session.js'
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
+import { useDayNow } from '../hooks/useDayNow.js'
 import { boardDate, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
@@ -742,7 +743,8 @@ export function NotesScreen({ book, boards }) {
 
 export function CalendarScreen({ book, boards, tagId, now }) {
   const colors = useHallColors()
-  const clock = now || new Date()
+  const today = useDayNow()
+  const clock = now || today
   const [view, setView] = useState('month')
   const [startShift, setStartShift] = useState(0)
   const gentle = usePrefs().gentle === true
@@ -805,7 +807,8 @@ export function CalendarScreen({ book, boards, tagId, now }) {
 
 export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors(book)
-  const clock = now || new Date()
+  const today = useDayNow()
+  const clock = now || today
   const gentle = usePrefs().gentle === true
   // The week's walks once per shelf, folder and minute, not every render.
   const minute = Math.floor(clock.getTime() / 60000)
