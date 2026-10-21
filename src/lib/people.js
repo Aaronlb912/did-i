@@ -1084,6 +1084,16 @@ export async function answerSend(id, keep) {
       answer: keep ? 'kept' : 'passed',
     })
     if (error) return bad(error)
+    if (!data && keep) {
+      // Refused: kept on another phone a moment ago (app-send-keep-once.sql), or gone.
+      const { data: now } = await db
+        .from('app_send_answers')
+        .select('state')
+        .eq('app_send_id', String(id).slice(4))
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (now?.state === 'kept' || now?.state === 'added') return { miss: '', already: true, state: 'app' }
+    }
     return data ? { miss: '' } : { miss: 'sent.gone' }
   }
   const { data, error } = await db
