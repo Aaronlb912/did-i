@@ -1038,6 +1038,20 @@ test('a paused stretch never breaks a streak, monthly or after an old Not yet', 
   assert.equal(questionStreak({ id: 'b', lamps: [q], answers }, q, '2026-10-06', 400, new Date(2026, 9, 6, 22)), 3)
 })
 
+test('a folder made on two phones under one name stays deleted when one phone deletes it', () => {
+  const folder = (id, lampId) => ({ id, title: 'Work', lamps: [lamp(lampId)], answers: [] })
+  const home = { id: 'g', title: 'General', lamps: [lamp('l0')], answers: [] }
+  let a = { currentId: 'a', boards: [home, folder('a', 'la')] }
+  let b = { currentId: 'b', boards: [home, folder('b', 'lb')] }
+  a = mergeShelves(a, b, '2', '1')
+  b = mergeShelves(b, a, '3', '2')
+  assert.deepEqual(a.boards.map((book) => book.id), b.boards.map((book) => book.id), 'both phones agree on the id')
+  const work = a.boards.find((book) => book.title === 'Work').id
+  a = normalizeShelf(dropBook(a, work))
+  const after = mergeShelves(a, b, '4', '3')
+  assert.ok(!after.boards.some((book) => book.title === 'Work'), 'the deleted folder stays deleted')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
