@@ -1387,6 +1387,12 @@ test('leaving or joining a family reloads family rows on Today', () => {
   assert.ok(join.includes("noteSocialLive('familyInfo')"))
 })
 
+test('a pull still out from before a sign-out is not reused for the next account', () => {
+  const sync = readFileSync(new URL('../src/lib/cloud-sync.js', import.meta.url), 'utf8')
+  assert.ok(sync.includes('if (pulling && pullingRun === syncRun) return pulling'))
+  assert.ok(sync.includes('if (pulling !== mine) return'))
+})
+
 test('rows from a deleted folder do not land in the first folder', () => {
   const book = { id: 'b1', lamps: [{ id: 'l1' }], answers: [] }
   const row = { lamp_id: 'old', period_key: '2026-10-14', board_id: 'gone', status: 'yes', answered_at: '2026-10-14T20:00:00Z', note: '' }
