@@ -217,6 +217,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const freezesHeld = stack.shelf ? freezeState(stack.shelf, stack.clock).held : 0
   const we = useWeTonight(account.user)
   const weAns = useWeAnswer(we.reload, book)
+  // The day turned with Today open: load the new day's Did we cards, so a
+  // tap never lands yesterday's card on today.
+  const weDay = useRef(stack.dateIso)
+  useEffect(() => {
+    if (weDay.current === stack.dateIso) return
+    weDay.current = stack.dateIso
+    we.reload()
+  }, [stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
   const [graceWeLeft, setGraceWeLeft] = useState([])
   // Family questions and Did you asks from friends: cards after your own.
   const family = useFamilyTonight(account.user)
