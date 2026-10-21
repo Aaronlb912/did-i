@@ -91,6 +91,7 @@ const files = [
   'supabase/report-push.sql',
   'supabase/tour-coins.sql',
   'supabase/drop-tonight.sql',
+  'supabase/note-merge.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
