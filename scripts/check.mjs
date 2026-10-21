@@ -8801,13 +8801,13 @@ test('the Together widget keeps people still going even past 40, and counts ever
   assert.match(props.countLine, /45.*50/)
 })
 
-// Keep this last: every test above counts, and any failure exits non-zero.
-console.log(`\n${ran - failed} of ${ran} passed`)
-if (failed) process.exit(1)
-
 test('money and family SQL tests stay in the repo (run with npm run db:test)', () => {
   for (const name of ['coins-credit', 'delete-refund', 'family-guard']) {
     assert.ok(existsSync(path.join(checkRoot, `supabase/tests/${name}.test.sql`)), name)
   }
   assert.match(readFileSync(path.join(checkRoot, 'supabase/drop-tonight.sql'), 'utf8'), /Gifts waiting for you go back/)
 })
+
+// Keep this last: every test above counts, and any failure exits non-zero.
+console.log(`\n${ran - failed} of ${ran} passed`)
+if (failed) process.exit(1)
