@@ -1110,6 +1110,12 @@ test('keep and pass buttons follow a language change', () => {
   assert.ok(src.includes('setNotificationCategoryAsync(SEND_CATEGORY, sendActions(t))'), 'set again with the reminders')
 })
 
+test('the inbox count keeps its number offline and counts older unanswered Did I sends', () => {
+  const src = readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8')
+  assert.ok(src.includes('if (waiting.error || fromApp.failed || asks == null) return'), 'a failed read does not clear the badge')
+  assert.ok(src.includes('.filter((row) => !done.has(row.id)).slice(0, 8)'), 'answered sends leave before the cap')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',

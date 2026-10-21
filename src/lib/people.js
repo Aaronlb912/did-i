@@ -868,12 +868,14 @@ async function appSendsWaiting(db, user, mode = 'inbox') {
       .eq('mode', mode)
       .gte('made_at', since)
       .order('made_at', { ascending: false })
-      .limit(8),
+      .limit(50),
     db.from('app_send_answers').select('app_send_id').eq('user_id', user.id).gte('made_at', since),
   ])
-  if (sent.error || seen.error) return []
+  // failed: the pulse keeps its last count instead of showing 0.
+  if (sent.error || seen.error) return Object.assign([], { failed: true })
   const done = new Set((seen.data || []).map((row) => row.app_send_id))
-  return (sent.data || []).filter((row) => !done.has(row.id))
+  // Answered ones out before the cap, so older unanswered ones still show.
+  return (sent.data || []).filter((row) => !done.has(row.id)).slice(0, 8)
 }
 
 const DID_I_PERSON = { display_name: 'Did I' }
@@ -952,12 +954,13 @@ export async function friendAskCount() {
   if (!db) return 0
   const user = await me()
   if (!user) return 0
-  const { count } = await db
+  const { count, error } = await db
     .from('friend_links')
     .select('id', { count: 'exact', head: true })
     .eq('to_id', user.id)
     .eq('state', 'asked')
-  return count || 0
+  // null when the read failed, so the pulse keeps its last count.
+  return error ? null : count || 0
 }
 
 export async function peopleBadgeCount() {
@@ -966,7 +969,7 @@ export async function peopleBadgeCount() {
     friendAskCount(),
     weAskCount().catch(() => 0),
   ])
-  return inbox + asks + weAsks
+  return inbox + (asks || 0) + weAsks
 }
 
 // What you have sent other people, and how it went.
@@ -1737,6 +1740,8 @@ async function pulseLook() {
       appSendsWaiting(db, user),
     ])
     // The badges first, before the slower lookups below.
+    // A failed read (offline) keeps the last counts, so the badge does not clear.
+    if (waiting.error || fromApp.failed || asks == null) return
     const inbox = (waiting.count ?? (waiting.data || []).length) + fromApp.length
     if (user.id === pulse.userId) pulseEmit({ ...pulse.state, inbox, asks })
     const giftRows = await db
