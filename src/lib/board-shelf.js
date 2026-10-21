@@ -201,8 +201,15 @@ function foldBook(into, extra) {
   if (!extra || extra.id === into.id) return extra || into
   const ids = new Set((into.lamps || []).map((lamp) => lamp.id))
   const lamps = [...(into.lamps || [])]
+  // A never-answered twin (a starter picked on a new phone before sign-in,
+  // same words and schedule as one already here) is not a second question.
+  const twinOf = (lamp) => `${lamp.cadence}|${String(lamp.question || '').trim().toLowerCase()}`
+  const twins = new Set(lamps.filter((lamp) => !lamp.archived).map(twinOf))
+  const answered = new Set((extra.answers || []).map((answer) => answer.lampId))
   for (const lamp of extra.lamps || []) {
-    if (!ids.has(lamp.id)) lamps.push(lamp)
+    if (ids.has(lamp.id)) continue
+    if (!answered.has(lamp.id) && twins.has(twinOf(lamp))) continue
+    lamps.push(lamp)
   }
   const seen = new Set((into.answers || []).map((answer) => `${answer.lampId}:${answer.periodKey}`))
   const answers = [...(into.answers || [])]
