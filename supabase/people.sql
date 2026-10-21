@@ -205,6 +205,12 @@ begin
     return null;
   end if;
 
+  -- The last one out: nobody is left to make a parent, so the family closes.
+  if tg_op = 'DELETE' and not exists (select 1 from public.family_members where family_id = fam) then
+    delete from public.families where id = fam;
+    return null;
+  end if;
+
   -- The account itself is gone, so there is nobody to ask. Hand the family
   -- to whoever has been in it longest, or close it if it is empty.
   if tg_op = 'DELETE' and not exists (select 1 from auth.users where id = old.user_id) then
