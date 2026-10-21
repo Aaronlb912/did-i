@@ -310,6 +310,10 @@ export function useTonightStack({
     const next = undoneBook(shelf.find((item) => item.id === undo.book.id) || undo.book, undo)
     setOverlay(next)
     change(next)
+    // The card you took back comes to the front, not the one after it.
+    setFaceId(undo.lampId)
+    setSkipReview(false)
+    setRestNight(false)
     // The tap may already be on the account; without this the next pull brings it back.
     takeBackAnswer(undo.book, undo.lampId, undo.periodKey).catch(reportRejection('undo-answer'))
     setUndo(null)
