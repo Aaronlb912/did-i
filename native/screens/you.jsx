@@ -56,6 +56,8 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
   const [shake, setShake] = useState(0)
   const feel = useAddFeel(book, inputRef)
   const [busy, setBusy] = useState(false)
+  // State lags a frame: a double tap would send, then buzz "already sent".
+  const inFlight = useRef(false)
   const [said, setSaid] = useState('')
   // Sent: the screen is on its way out, so Send stays off.
   const [done, setDone] = useState(false)
@@ -94,9 +96,13 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
       setSheet(true)
       return
     }
+    if (inFlight.current) return
+    inFlight.current = true
     Keyboard.dismiss()
     setBusy(true)
-    const { miss: why } = await sendDidI(to, question, note, undefined, repeat)
+    // A throw (offline) must not leave the button stuck busy.
+    const { miss: why } = await sendDidI(to, question, note, undefined, repeat).catch(() => ({ miss: 'people.reach' }))
+    inFlight.current = false
     setBusy(false)
     if (why) {
       feel.buzz()
