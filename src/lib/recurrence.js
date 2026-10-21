@@ -143,7 +143,8 @@ export function scheduleAt(lamp, dateIso) {
 export function keepPastSchedule(old, next, todayIso) {
   const was = Array.isArray(old?.was) ? old.was : []
   if (!WAS_CADENCES.has(next.cadence)) return []
-  if (!old || !WAS_CADENCES.has(old.cadence)) return was
+  // Every so often has no missed days: before the edit, past days stay not due.
+  if (!old || !(WAS_CADENCES.has(old.cadence) || old.cadence === 'every')) return was
   if (!old.createdOn || old.createdOn >= todayIso) return was
   if (WAS_FIELDS.every((key) => JSON.stringify(old[key] ?? '') === JSON.stringify(next[key] ?? ''))) return was
   // Edited twice today: the first edit's old schedule is the one past days had.
