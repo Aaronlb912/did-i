@@ -1052,6 +1052,14 @@ test('a folder made on two phones under one name stays deleted when one phone de
   assert.ok(!after.boards.some((book) => book.title === 'Work'), 'the deleted folder stays deleted')
 })
 
+test('a failed account delete keeps the photo and sign out clears hidden sends', async () => {
+  const src = readFileSync(new URL('../src/lib/account.js', import.meta.url), 'utf8')
+  const body = src.slice(src.indexOf('export async function deleteAccount'))
+  assert.ok(body.indexOf("rpc('delete_me')") < body.indexOf('removeAvatar()'), 'photo goes only after delete_me')
+  const { ACCOUNT_CACHE_PREFIXES } = await import('../src/lib/account-cache.js')
+  assert.ok(ACCOUNT_CACHE_PREFIXES.includes('did-i-sent-hidden:'))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
