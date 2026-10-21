@@ -2,6 +2,7 @@ import { answeredAtIso, cleanAmount, duplicateLamp, newAnswerId } from './board-
 import { activeLook } from './active-look.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
 import { answerFor, boardDate, openFloorIso, periodPassed, stampMs } from './recurrence.js'
+import { readShelf } from './board-shelf.js'
 
 // Pausing notes the day, so the question's record stops counting there.
 function withPause(lamp, archived, clock = new Date()) {
@@ -37,7 +38,7 @@ export function putAnswer(book, row, status, clock = new Date()) {
       answer,
     ],
   }
-  const paid = payTap(book, next, row, status, clock)
+  const paid = payTap(book, next, row, status, clock, () => (readShelf().boards || []).filter((item) => item.id !== book.id))
   if (status !== 'yes' && status !== 'late') return paid
   const cheered = noteCheer(paid)
   const purse = normalizePurse(cheered)

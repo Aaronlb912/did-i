@@ -534,16 +534,18 @@ export function nextCheerStage(stage) {
   return n < CHEER_STAGE_MAX ? n + 1 : 0
 }
 
-export function coinsFor(status, book, row, clock = new Date()) {
+export function coinsFor(status, book, row, clock = new Date(), others = []) {
   if (status !== 'yes' && status !== 'late') return 0
   // A question added tonight pays too, one-night or not: the 3 paid taps a
   // night (and the server's 6 a night) stop anyone adding questions for coins.
-  if (tapsPaidTonight(book, clock) >= PAID_TAPS) return 0
+  // The purse is shared, so the cap counts every folder, not just this one.
+  const paidToday = [book, ...others].reduce((n, one) => n + tapsPaidTonight(one, clock, book.dayFoldHour), 0)
+  if (paidToday >= PAID_TAPS) return 0
   return status === 'yes' ? 2 : 1
 }
 
-function tapsPaidTonight(book, clock) {
-  const today = boardDate(clock, book.dayFoldHour)
+function tapsPaidTonight(book, clock, dayFoldHour = book.dayFoldHour) {
+  const today = boardDate(clock, dayFoldHour)
   return (book.answers || []).filter((answer) => {
     if (answer.status !== 'yes' && answer.status !== 'late' && answer.paid !== true) return false
     const period = String(answer.periodKey || '')
@@ -723,7 +725,8 @@ function notePaid(key) {
   }
 }
 
-export function payTap(before, after, row, status, clock = new Date()) {
+// otherFolders: () => the shelf's other folders, read only when signed out.
+export function payTap(before, after, row, status, clock = new Date(), otherFolders = () => []) {
   const purse = normalizePurse(after)
   const prev = (before.answers || []).find(
     (item) => item.lampId === row?.lamp?.id && item.periodKey === row?.periodKey,
@@ -732,7 +735,7 @@ export function payTap(before, after, row, status, clock = new Date()) {
   const paid = (prev && (prev.paid === true || prev.status === 'yes' || prev.status === 'late')) || (accountSessionOn() && paidSet().has(paidKey))
   let coins = purse.coins
   if (!paid) {
-    const earned = coinsFor(status, before, row, clock)
+    const earned = coinsFor(status, before, row, clock, accountSessionOn() ? [] : otherFolders())
     if (accountSessionOn()) {
       if (earned > 0) notePaid(paidKey)
       // The server takes yesterday or today; a week or month key maps further back.
