@@ -976,6 +976,28 @@ test('reminders never set count as stale, so turning notifications on later sets
   assert.ok(src.includes('return !(at > 0) || Date.now() - at > PING_REFRESH_MS'))
 })
 
+test('an old answer with a newer note never puts the answer back over a newer one', () => {
+  const did = { id: 'a', lampId: 'x', periodKey: '2026-10-20', status: 'yes', answeredAt: '2026-10-20T21:00:00.000Z' }
+  const stale = { id: 'a', lampId: 'x', periodKey: '2026-10-20', status: 'skip', answeredAt: '2026-10-20T20:00:00.000Z', note: 'tired', noteAt: '2026-10-20T22:00:00.000Z', amount: 3 }
+  const shelf = (answer) => ({ currentId: 'b1', boards: [{ id: 'b1', title: 'Home', lamps: [{ id: 'x', label: 'X' }], answers: [answer] }] })
+  for (const merged of [mergeShelves(shelf(did), shelf(stale), '2026-10-21', '2026-10-20'), mergeShelves(shelf(stale), shelf(did), '2026-10-21', '2026-10-20')]) {
+    const got = merged.boards[0].answers[0]
+    assert.equal(got.status, 'yes', 'the newer Did stays')
+    assert.equal(got.note, 'tired', 'the newer note stays')
+    assert.equal(got.amount, 3)
+  }
+  const row = { lamp_id: 'x', period_key: '2026-10-20', board_id: 'b1', status: 'skip', answered_at: stale.answeredAt, note: 'tired', note_at: stale.noteAt, amount: 3 }
+  const pulled = applyAnswers(shelf(did), [row]).shelf.boards[0].answers[0]
+  assert.equal(pulled.status, 'yes', 'a pull keeps the newer Did')
+  assert.equal(pulled.answeredAt, did.answeredAt)
+  assert.equal(pulled.note, 'tired')
+  // A newer tap with no note keeps a note made before it, on a pull too.
+  const later = { ...row, status: 'yes', answered_at: '2026-10-20T23:00:00.000Z', note: '', note_at: '' }
+  const tapped = applyAnswers(shelf(stale), [later]).shelf.boards[0].answers[0]
+  assert.equal(tapped.status, 'yes')
+  assert.equal(tapped.note, 'tired')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',

@@ -210,6 +210,25 @@ export function answerStamp(answer) {
   return stampMs(note) > stampMs(tap) ? note : tap
 }
 
+// Two copies of one answer: the tap (status, answeredAt) and the note (note,
+// noteAt, amount) each come from the copy that changed them last, so an old
+// tap with a newer note never puts back an answer another phone replaced.
+// Ties keep a.
+export function mergeAnswer(a, b) {
+  const tapB = stampMs(b?.answeredAt) > stampMs(a?.answeredAt)
+  const noteB = stampMs(b?.noteAt) > stampMs(a?.noteAt)
+  if (tapB === noteB) return tapB ? b : a
+  const tap = tapB ? b : a
+  const side = noteB ? b : a
+  const { note: _n, noteAt: _t, amount: _m, ...rest } = tap
+  return {
+    ...rest,
+    note: side.note || '',
+    ...(side.noteAt ? { noteAt: side.noteAt } : {}),
+    ...(cleanAmount(side.amount) !== null ? { amount: side.amount } : {}),
+  }
+}
+
 // amount: leave it out to keep the night's amount; '' or null clears it.
 // It travels with the note and moves noteAt the same way.
 export function setAnswerNote(book, lampId, periodKey, note, clock = new Date(), amount) {
