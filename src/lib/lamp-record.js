@@ -7,6 +7,14 @@ function didStatus(status) {
 }
 
 
+// A period left open after the question was paused was never asked: it
+// neither counts nor breaks. A month counts as paused if it ends after pausedOn.
+export function pausedOpen(lamp, key, answer) {
+  if (!lamp?.archived || !lamp.pausedOn || answer) return false
+  const night = /^d{4}-d{2}$/.test(key) ? `${key}-31` : periodNight(lamp, key)
+  return night >= lamp.pausedOn
+}
+
 // The one streak rule for a question: Did and late Did keep it going; a nope
 // or a missed night ends it. Tonight counts once answered, and an unanswered
 // tonight does not break it yet. Every per-question streak uses this.
@@ -22,7 +30,7 @@ export function questionStreak(book, lamp, dateIso, cap = 400, now = new Date())
   while (cursor && count < cap) {
     const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cursor))
     // Left open on a night skipped by travel, or last night still in grace: neither counts nor breaks.
-    if ((travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') || (cursor === grace && !answer)) {
+    if ((travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') || (cursor === grace && !answer) || pausedOpen(lamp, periodKeyFor(lamp, cursor), answer)) {
       cursor = previousDueDate(live, cursor)
       continue
     }
@@ -60,7 +68,7 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000, now = new Da
   let steps = 0
   while (cursor && steps < cap && (!first || cursor >= first)) {
     const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cursor))
-    if (travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') {
+    if ((travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') || pausedOpen(lamp, periodKeyFor(lamp, cursor), answer)) {
       steps += 1
       cursor = previousDueDate(live, cursor)
       continue
@@ -86,7 +94,7 @@ export function lampRecord(book, lamp, dateIso, days = 30) {
   // A paused question keeps its history on show, so count its nights as if live.
   const keys = recentPeriodKeys({ ...lamp, archived: false }, dateIso, days).filter((key) => key !== tonightKey || tonight)
     // Nights after it was paused were never asked.
-    .filter((key) => !(lamp.archived && lamp.pausedOn && periodNight(lamp, key) >= lamp.pausedOn && !answerFor(book, lamp.id, key)))
+    .filter((key) => !pausedOpen(lamp, key, answerFor(book, lamp.id, key)))
     // Travel days left open count neither way, same as the streak.
     .filter((key) => {
       const iso = periodNight(lamp, key)
@@ -120,7 +128,7 @@ export function lampWeeks(book, lamp, dateIso, weeks = 8) {
       if (travelSkipped(book, iso) && travelNightState(answer, iso) === 'none') continue
       const status = answer?.status || ''
       if (iso === dateIso && !status) continue
-      if (lamp.archived && lamp.pausedOn && iso >= lamp.pausedOn && !status) continue
+      if (pausedOpen(lamp, iso, answer)) continue
       due += 1
       if (didStatus(status)) did += 1
     }
