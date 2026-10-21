@@ -398,9 +398,11 @@ export function previousDueDate(lamp, dateIso) {
   // Every 90 days needs a look back of 90, not 62, including a past schedule.
   const gap = (one) => (one?.cadence === 'every_n' ? Number(one.everyN) || 0 : 0)
   const back = Math.max(62, gap(lamp), ...(lamp.was || []).map(gap))
+  // A monthly day moved later can be due twice in one month: one key, one day.
+  const month = periodKeyFor(lamp, dateIso)
   for (let i = 1; i <= back; i += 1) {
     const iso = addDaysIso(dateIso, -i)
-    if (isDueOn(lamp, iso)) return iso
+    if (isDueOn(lamp, iso) && !(month.length === 7 && iso.startsWith(month))) return iso
   }
   return ''
 }

@@ -131,6 +131,7 @@ async function bindResponseListener(handlers = {}) {
   responseBound = true
   const onGo = handlers.onGo
   const onLamp = handlers.onLamp
+  let listening = false
   try {
     const Notifications = await notifications()
     // Keep and Pass on a friend's did you (supabase/functions/push sets the
@@ -169,6 +170,7 @@ async function bindResponseListener(handlers = {}) {
       }
     }
     Notifications.addNotificationResponseReceivedListener(handle)
+    listening = true
     keepTrayNotices(Notifications)
     AppState.addEventListener('change', (state) => {
       if (state === 'active') keepTrayNotices(Notifications)
@@ -180,7 +182,8 @@ async function bindResponseListener(handlers = {}) {
       Notifications.clearLastNotificationResponse?.()
     }
   } catch {
-    // ok
+    // Never bound (the import failed): let the next start try again.
+    if (!listening) responseBound = false
   }
 }
 
