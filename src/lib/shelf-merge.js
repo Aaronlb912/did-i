@@ -1,7 +1,6 @@
 import { normalizeBook, normalizeGone } from './board-json.js'
 import { normalizeShelf } from './board-shelf.js'
-import { answerStamp } from './board-ops.js'
-import { stampMs } from './recurrence.js'
+import { mergeAnswer } from './board-ops.js'
 import { capSkips } from './travel.js'
 import { CHEER_STAGE_MAX, normalizePurse } from './purse.js'
 
@@ -24,9 +23,7 @@ function answerKey(answer) {
 // Whichever wins, a night that was once a Did on either phone stays counted
 // toward its paid taps (paid), so Did, Not yet elsewhere, Did never pays twice.
 function laterAnswer(a, b) {
-  const left = answerStamp(a)
-  const right = answerStamp(b)
-  const won = left && right ? (stampMs(right) > stampMs(left) ? b : a) : right && !left ? b : a
+  const won = mergeAnswer(a, b)
   return !onceDid(won) && (onceDid(a) || onceDid(b)) ? { ...won, paid: true } : won
 }
 

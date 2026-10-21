@@ -1,6 +1,6 @@
 import { cloud } from './cloud.js'
 import { demoLampIds } from './demo-strip.js'
-import { answerStamp } from './board-ops.js'
+import { answerStamp, mergeAnswer } from './board-ops.js'
 import { answeredAtIso, cleanAmount, normalizeGone } from './board-json.js'
 import { stampMs } from './recurrence.js'
 import { readAccountUserId } from './session-id.js'
@@ -148,9 +148,7 @@ export function applyAnswers(shelf, rows) {
     const key = `${row.lamp_id}|${row.period_key}`
     const at = index.has(key) ? index.get(key) : -1
     const mine = at >= 0 ? book.answers[at] : null
-    const theirs = { answeredAt: row.answered_at || '', noteAt: row.note_at || '' }
-    if (mine && stampMs(answerStamp(mine)) >= stampMs(answerStamp(theirs))) continue
-    const next = {
+    const pulled = {
       id: mine?.id || `ans-${row.lamp_id}-${row.period_key}`,
       lampId: row.lamp_id,
       periodKey: row.period_key,
@@ -160,9 +158,16 @@ export function applyAnswers(shelf, rows) {
       ...(row.note_at ? { noteAt: row.note_at } : {}),
       // No amount column yet (answers.sql not applied) reads as no amount.
       ...(cleanAmount(row.amount) !== null ? { amount: cleanAmount(row.amount) } : {}),
+    }
+    // The tap and the note each from the copy that changed them last.
+    const merged = mine ? mergeAnswer(mine, pulled) : pulled
+    if (mine && merged === mine) continue
+    const next = {
+      ...merged,
+      id: mine?.id || pulled.id,
       // A Did here, then a Not yet from another phone: still counted as paid,
       // so the next Did here does not pay again (purse.js payTap).
-      ...(row.status !== 'yes' && row.status !== 'late' && (mine?.paid === true || mine?.status === 'yes' || mine?.status === 'late') ? { paid: true } : {}),
+      ...(merged.status !== 'yes' && merged.status !== 'late' && (mine?.paid === true || mine?.status === 'yes' || mine?.status === 'late') ? { paid: true } : {}),
     }
     if (at >= 0) book.answers[at] = next
     else index.set(key, book.answers.push(next) - 1)
