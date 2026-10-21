@@ -63,7 +63,8 @@ export function hangInto(book, lamp, editing) {
   const ids = new Set([lamp.id])
   return {
     ...book,
-    lamps: [...(book.lamps || []), lamp],
+    // A double tap on Add another saves the same id twice; keep one.
+    lamps: [...(book.lamps || []).filter((item) => item.id !== lamp.id), lamp],
     ...(wasGone(book, ids) ? { gone: noteGone(book, ids, true) } : {}),
   }
 }
