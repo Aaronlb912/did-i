@@ -1,4 +1,4 @@
-import { readAccountUserId } from './session-id.js'
+import { noteSessionUser, readAccountUserId } from './session-id.js'
 import { useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
@@ -275,6 +275,7 @@ export function useAccount() {
     db.auth.getSession().then(
       ({ data, error }) => {
         lastUser = data?.session?.user || (error ? keep() : null)
+        noteSessionUser(lastUser?.id)
         if (alive) setState((was) => (was.ready && was.user?.id === lastUser?.id ? was : { ready: true, user: lastUser }))
       },
       () => {
@@ -284,6 +285,7 @@ export function useAccount() {
     )
     const { data: sub } = db.auth.onAuthStateChange((_event, session) => {
       lastUser = session?.user || null
+      noteSessionUser(lastUser?.id)
       if (alive) setState((was) => (was.ready && was.user?.id === lastUser?.id ? was : { ready: true, user: lastUser }))
     })
     return () => {
