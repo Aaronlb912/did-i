@@ -30,8 +30,8 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
   const waiting = signedIn ? inbox + asks + we : asks
   // Home always leads, so every row stays in the same place on every screen.
   const home = [{ key: 'home', path: '/tonight', label: t('nav.home'), on: path === '/tonight' || path === '/', icon: 'home', stroke: true }]
-  // Top: Add (the thing people come to do), Shop, Friends and family,
-  // Settings. Rarer rows sit under "More".
+  // Top: Add (the thing people come to do), Shop, Friends and family.
+  // Rarer rows, Settings last, sit under "More".
   return [
     ...home,
     { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
@@ -46,6 +46,11 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
       count: waiting,
       icon: 'people',
     },
+    { key: 'more', section: true, label: t('mast.menu') },
+    // Recent: achievements and Did we moments, in full. Its count is the unseen ones,
+    // plus Did you asks still in the inbox so the row is not blank while they wait.
+    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent + (signedIn ? inbox : 0), icon: 'bell' },
+    { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
     {
       key: 'settings',
       path: '/settings',
@@ -54,11 +59,6 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
       on: SETTINGS_ON.has(path) || HISTORY_ON.has(path),
       icon: 'settings',
     },
-    { key: 'more', section: true, label: t('mast.menu') },
-    // Recent: achievements and Did we moments, in full. Its count is the unseen ones,
-    // plus Did you asks still in the inbox so the row is not blank while they wait.
-    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent + (signedIn ? inbox : 0), icon: 'bell' },
-    { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
   ]
 }
 
