@@ -29,10 +29,14 @@ export async function askNotificationPermission() {
     const asked = await Notifications.requestPermissionsAsync({
       ios: { allowAlert: true, allowBadge: true, allowSound: true },
     })
-    lastCheck = { ok: true, status: asked.status, ios: asked.ios }
+    const canAskAgain = asked.canAskAgain !== false
+    lastCheck = { ok: true, status: asked.status, canAskAgain, ios: asked.ios }
+    // Android: a swiped-away prompt says denied but may be asked again.
+    if (asked.status === 'denied' && canAskAgain) return 'undetermined'
     return asked.status
   } catch {
-    lastCheck = { ok: false, status: 'denied' }
-    return 'denied'
+    // The module failed, not the person: not a denial.
+    lastCheck = { ok: false, status: 'undetermined' }
+    return 'missing'
   }
 }
