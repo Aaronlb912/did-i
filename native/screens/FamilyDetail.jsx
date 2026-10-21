@@ -316,6 +316,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     })
   }
 
+  // A question for someone who has left the family has no one to answer it.
+  const shownLamps = lamps.filter((lamp) => !lamp.for_id || fam.members.some((row) => row.user_id === lamp.for_id))
+
   return (
     <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
       <View style={[styles.head, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -327,7 +330,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
           {fam.members.length === 1 ? t('family.memberCountOne') : t('family.memberCount', { n: fam.members.length })} · {t('family.weekTotal', { n: weekTotal })}
         </Text>
         {/* With nothing in the family folder, no one can be done. */}
-        {lamps.length ? (
+        {shownLamps.length ? (
           <Text style={[styles.glance, { color: colors.inkSoft }]}>
             {t('family.doneOf', {
               done: fam.members.filter((row) => doneTonight(row.person, night)).length,
@@ -353,7 +356,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
           </>
         ) : null}
       </View>
-      {fam.members.length < 2 || !lamps.length ? <Meta colors={colors}>{t('family.whatFor')}</Meta> : null}
+      {fam.members.length < 2 || !shownLamps.length ? <Meta colors={colors}>{t('family.whatFor')}</Meta> : null}
 
       <SectionHead colors={colors} label={t('family.people')} />
       {fam.members.map((row) => {
@@ -442,8 +445,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       ) : null}
 
       <Cap colors={colors}>{t('family.tonight')}</Cap>
-      {lamps.length ? (
-        lamps.map((lamp) => {
+      {shownLamps.length ? (
+        shownLamps.map((lamp) => {
           const crowd = owing(lamp)
           const done = crowd.filter((row) => {
             const answer = answerFor(lamp.id, row.user_id)
