@@ -930,10 +930,11 @@ export function spendGems(book, gems) {
 export function buyLook(book, id) {
   const look = liveLooks().find((item) => item.id === id)
   const purse = normalizePurse(book)
-  if (!look) return { book, miss: 'shop.miss.lookGone' }
-  if (purse.looks.includes(id)) {
+  // A look you own stays yours to wear after its season leaves the shop.
+  if (purse.looks.includes(id) && (look || ALL_LOOKS.some((item) => item.id === id))) {
     return { book: { ...book, ...purse, lookOn: id }, miss: '' }
   }
+  if (!look) return { book, miss: 'shop.miss.lookGone' }
   const costGems = Math.max(0, Math.floor(Number(look.gems) || 0))
   const costCoins = Math.max(0, Math.floor(Number(look.coins) || 0))
   if (costGems && purse.gems < costGems) {

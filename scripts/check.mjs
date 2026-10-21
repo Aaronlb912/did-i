@@ -876,6 +876,12 @@ test('a double tap on Block sends one block', () => {
   assert.equal(src.split("once('block:' + person.user_id").length, 3)
 })
 
+test('an owned look can be worn again after it leaves the shop', () => {
+  const src = readFileSync(new URL('../src/lib/purse.js', import.meta.url), 'utf8')
+  const body = src.slice(src.indexOf('export function buyLook'))
+  assert.ok(body.indexOf('purse.looks.includes(id)') < body.indexOf("miss: 'shop.miss.lookGone'"))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
