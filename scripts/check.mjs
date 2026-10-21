@@ -8719,13 +8719,14 @@ test('every table says how people hear about it: a push, or why not', () => {
     check_ons: 'queue_check_ons',
     family_answers: 'queue_family_summaries',
     shop_drop_days: 'queue_drop_pushes',
+    report_actions: 'queue_report_removed_push',
   }
   const quiet = {
     'own data, no one else': 'admins answer_keys answer_log app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done',
     'counters, caps and logs': 'check_on_pushed family_code_misses family_miss_days family_summary_sent friend_ask_log friend_id_misses push_queue push_to_counts send_counts we_done_pushed we_slot_repair_ran report_mail_queue shop_drop_sent',
     'catalogs': 'gift_catalog shop_catalog',
     'quiet on purpose: a block, a pass or a leave would tell someone they were dropped': 'blocks send_answers app_send_answers we_turns',
-    'shown when opened, no event of its own': 'did_you_links we_links families family_lamps family_tags shared_notes we_notes reports report_actions waitlist',
+    'shown when opened, no event of its own': 'did_you_links we_links families family_lamps family_tags shared_notes we_notes reports waitlist',
   }
   for (const [table, fns] of Object.entries(pushed)) {
     for (const fn of fns.split(' ')) assert.ok(pushes(fn), `${table}: ${fn} should insert into push_queue`)
