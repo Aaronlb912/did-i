@@ -7,11 +7,13 @@ import { confirmDone } from './confirm.js'
 
 // Over-the-air updates without two restarts. The launch check only downloads;
 // the update runs on the next cold start. Here, coming back to the app after a
-// while checks and downloads too, and a downloaded update reloads right away,
+// while checks and downloads too, so does opening the app (a swipe-away and
+// reopen is a cold start, not a return), and a downloaded update reloads right away,
 // but only on Tonight or Home with no sheet up, so nothing half typed is lost.
 // Otherwise it waits for the next return.
 const AWAY_MS = 5 * 60 * 1000
 const FRESH_MS = 4000
+const OPEN_MS = 10000
 const UPDATED_KEY = 'did-i-ota-updated'
 
 let started = false
@@ -78,6 +80,12 @@ export function startOtaRefresh() {
   } catch {
     // ok
   }
+  // Opening the app: an update that lands in the first seconds reloads now,
+  // not on the next cold start. A slower one waits for a return.
+  const opened = Date.now()
+  checkAndFetch().then(() => {
+    if (Date.now() - opened < OPEN_MS) reloadIfSafe()
+  })
   AppState.addEventListener('change', (next) => {
     if (next !== 'active') {
       leftAt = leftAt || Date.now()

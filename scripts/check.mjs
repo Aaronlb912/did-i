@@ -9353,6 +9353,7 @@ test('over-the-air updates load on a return to the app, only at a safe moment', 
   assert.match(ota, /!sheetUp/, 'never under an open sheet')
   assert.match(ota, /Date\.now\(\) - back < FRESH_MS\) reloadIfSafe\(\)/, 'a slow download waits for the next return')
   assert.match(ota, /!__DEV__ && Updates\.isEnabled === true/, 'off in dev builds')
+  assert.match(ota, /Date\.now\(\) - opened < OPEN_MS\) reloadIfSafe\(\)/, 'opening the app checks too, not only a return')
   assert.match(read('native/AppShell.jsx'), /useEffect\(\(\) => startOtaRefresh\(\), \[\]\)/)
 })
 

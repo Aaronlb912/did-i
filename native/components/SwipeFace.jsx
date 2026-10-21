@@ -33,19 +33,19 @@ export function SwipeFace({ x, head, kicker, mark, title, stampDid, stampNope, b
   )
 }
 
-// The stamp in the top-left corner, with the folder name beside it. Its
+// The stamp at the top centre of the card, after the folder name. Its
 // negative margins keep the row as tall as the folder name alone, so the
 // card does not grow.
 export function MarkRow({ mark, children }) {
   return (
     <View style={styles.markRow}>
-      {mark}
       {children}
+      <View style={styles.markSpot} pointerEvents="none">{mark}</View>
     </View>
   )
 }
 
-// How a picked card is marked, as a stamp in its top-left corner, so it
+// How a picked card is marked, as a stamp at the top after the folder name, so it
 // reads at a glance. status: 'yes', 'late' or 'skip'; nothing when open.
 export function MarkStamp({ status, colors }) {
   if (status !== 'yes' && status !== 'late' && status !== 'skip') return null
@@ -83,6 +83,7 @@ const styles = StyleSheet.create({
   penBeside: { right: 47 },
   markRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   kickerInRow: { marginBottom: 0 },
+  markSpot: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' },
   mark: {
     marginVertical: -8,
     borderWidth: 2,
