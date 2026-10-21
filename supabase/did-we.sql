@@ -895,7 +895,7 @@ as $$
     and not exists (select 1 from public.we_answers a join due on due.night = a.night where a.card_id = card);
 $$;
 
-revoke all on function public.we_paused(uuid, date) from public, anon;
+revoke all on function public.we_paused(uuid, date) from public, anon, authenticated;
 
 -- Any member can restart a paused card. It asks again from tonight, the
 -- phone's night when it sends one.
