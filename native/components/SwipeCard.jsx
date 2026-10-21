@@ -123,9 +123,10 @@ export function SwipeCard({
   const answer = useCallback(
     (way, from) => {
       const now = live.current
-      if (way > 0 ? now.blockDid : now.blockNope) return
+      // A refused throw reports false, so the card springs back home.
+      if (way > 0 ? now.blockDid : now.blockNope) return false
       // The tour never answers a question.
-      if (tourActive()) return
+      if (tourActive()) return false
       const done = way > 0 ? now.onDid : now.onNope
       lastThrow = { key: cardKey, way, at: Date.now() }
       const host = fly?.host()
@@ -311,6 +312,11 @@ function StackCard({
   const grab = useSharedValue(1)
   const height = useSharedValue(0)
   const zone = useSharedValue(0)
+  const throwCard = (way, from) => {
+    if (onAnswer(way, from) !== false) return
+    x.value = withSpring(0, SPRING)
+    y.value = withSpring(0, SPRING)
+  }
   const level = useSharedValue(
     reduce ? depth : returning ? 0 : start !== undefined ? start : enter ? depth + 1 : depth,
   )
@@ -398,7 +404,7 @@ function StackCard({
       pull.value = withTiming(0, { duration: 180 })
       const way = event.canceled ? 0 : releaseWay(x.value, event.velocityX, blockDid, blockNope)
       if (way !== 0) {
-        scheduleOnRN(onAnswer, way, {
+        scheduleOnRN(throwCard, way, {
           x: x.value,
           y: y.value,
           vx: event.velocityX,
