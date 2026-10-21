@@ -256,8 +256,14 @@ export async function pullWidgetTimelineIntoShelf(shelf) {
     // Only a read that worked lets the next updateTimeline replace the taps.
     timelineRead = true
     if (!shown.length) return shelf
+    // The timeline also holds the app's own snapshots. A status the app wrote
+    // itself is no tap: merging it back would undo an undo made elsewhere.
+    const mine = new Map((readWidgetTonightProps()?.items || []).map((item) => [`${item.lampId}|${item.periodKey}`, item.status]))
+    const taps = (props) => ({ ...props, items: (props.items || []).filter((item) => mine.get(`${item.lampId}|${item.periodKey}`) !== item.status) })
+    const merged = shown.reduce((next, entry) => mergeWidgetPropsIntoShelf(next, taps(entry.props)), shelf)
+    // Only after the merge: a stored tap status would hide that tap next time.
     writeWidgetTonightProps(shown[shown.length - 1].props)
-    return shown.reduce((next, entry) => mergeWidgetPropsIntoShelf(next, entry.props), shelf)
+    return merged
   } catch {
     return shelf
   }
