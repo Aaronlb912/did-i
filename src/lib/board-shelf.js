@@ -243,6 +243,7 @@ function foldBook(into, extra) {
 export function mergeSameTitles(shelf) {
   const boards = []
   const byKey = new Map()
+  const into = new Map()
   for (const book of shelf.boards || []) {
     const key = tagKey(book.title)
     const prev = key ? byKey.get(key) : null
@@ -251,13 +252,18 @@ export function mergeSameTitles(shelf) {
       if (key) byKey.set(key, book)
       continue
     }
-    const merged = foldBook(prev, book)
+    // Every phone keeps the same id (the smaller), or a delete of one id on
+    // one phone leaves the other phone's id alive and the folder comes back.
+    const id = book.id && book.id < prev.id ? book.id : prev.id
+    const merged = { ...foldBook(prev, book), id }
+    into.set(prev.id === id ? book.id : prev.id, id)
     const index = boards.findIndex((item) => item.id === prev.id)
     boards[index] = merged
     byKey.set(key, merged)
   }
   if (!boards.length) return shelf
-  const currentId = boards.some((book) => book.id === shelf.currentId) ? shelf.currentId : boards[0].id
+  const current = into.get(shelf.currentId) || shelf.currentId
+  const currentId = boards.some((book) => book.id === current) ? current : boards[0].id
   return { ...shelf, currentId, boards }
 }
 
