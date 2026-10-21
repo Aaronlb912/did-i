@@ -90,8 +90,8 @@ const files = [
   'supabase/social-pushes.sql',
   'supabase/report-push.sql',
   'supabase/tour-coins.sql',
-  'supabase/drop-tonight.sql',
   'supabase/note-merge.sql',
+  'supabase/drop-tonight.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
