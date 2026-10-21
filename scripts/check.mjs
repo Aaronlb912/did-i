@@ -791,6 +791,12 @@ test("sign-out leaves the account's settings behind but keeps the phone's theme"
   writePrefs({ theme: 'dark' }, true)
 })
 
+test('accepting a request they took back says so and reloads', () => {
+  const src = readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8')
+  const yes = src.slice(src.indexOf('export async function sayYes'), src.indexOf('export async function sayNo'))
+  assert.ok(yes.includes("miss: 'friends.askChanged'"))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
@@ -7673,7 +7679,7 @@ test('a missed due-by question is stamped at its start, so an earlier Did wins',
 })
 
 test('pulse, sign out mid sync, and device keys keep their guards', () => {
-  const people = readFileSync(path.join(checkRoot, 'src/lib/people.js'), 'utf8')
+  const people = readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8')
   assert.ok(people.includes('claimed = adder ? await addAutoSends(db, adder) : []'), 'pulseLook defines claimed')
   const sync = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
   assert.ok(sync.includes("if (run !== syncRun) throw new Error('account.signedOut')"), 'land stops after sign out')
