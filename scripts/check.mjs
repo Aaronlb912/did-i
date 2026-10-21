@@ -1074,6 +1074,22 @@ test('switching daily and monthly keeps the answer given today', async () => {
   assert.equal(periodKeyFor(toDay, '2026-10-22'), '2026-10-22')
 })
 
+test('a comma amount in German is a decimal, not thousands', async () => {
+  const { cleanAmount } = await import('../src/lib/board-json.js')
+  const { readPrefs, writePrefs } = await import('../src/lib/prefs.js')
+  const was = readPrefs()
+  try {
+    writePrefs({ locale: 'de' })
+    assert.equal(cleanAmount('1,250'), 1.25)
+    assert.equal(cleanAmount('0,500'), 0.5)
+    assert.equal(cleanAmount('1.500,5'), 1500.5)
+    writePrefs({ locale: 'en' })
+    assert.equal(cleanAmount('1,500'), 1500)
+  } finally {
+    writePrefs({ locale: was.locale })
+  }
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
