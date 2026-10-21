@@ -1,4 +1,5 @@
 import { t } from './i18n.js'
+import { readPrefs } from './prefs.js'
 import { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
 import { WAS_KEEP, addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
@@ -308,11 +309,13 @@ export function amountUnitOf(lamp) {
 
 // A number from 0 to AMOUNT_MAX, two places at most, or null. A comma reads as a decimal point.
 // "1,500" and "1.500,5" are thousands; a lone comma otherwise is a decimal point.
+// Where the app's language writes 1,5 for one and a half, "1,250" is 1.25.
+const COMMA_DECIMAL = new Set(['de', 'es', 'fr', 'it', 'pt'])
 function decimalText(text) {
   const dot = text.lastIndexOf('.')
   const comma = text.lastIndexOf(',')
   if (dot >= 0 && comma >= 0) return dot > comma ? text.replace(/,/g, '') : text.replace(/\./g, '').replace(',', '.')
-  if (/^\d{1,3}(,\d{3})+$/.test(text)) return text.replace(/,/g, '')
+  if (/^\d{1,3}(,\d{3})+$/.test(text) && !COMMA_DECIMAL.has(readPrefs().locale)) return text.replace(/,/g, '')
   return text.replace(',', '.')
 }
 
