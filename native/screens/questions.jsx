@@ -722,7 +722,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   function takeBack() {
     if (!undo || !onChangeBooks) return
     if (undo.moved) {
-      let books = shelf
+      let books = readShelf().boards || shelf
       const back = new Set()
       for (const boardId of new Set(undo.moved.map((one) => one.boardId))) {
         const picks = undo.moved.filter((one) => one.boardId === boardId).map((one) => ({ boardId: undo.to, lampId: one.lampId }))
