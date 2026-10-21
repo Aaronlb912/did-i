@@ -516,7 +516,7 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
         {found.already ? (
           <DidButton colors={colors} small label={t('familyJoin.open')} onPress={() => goHash('/family', { id: found.id })} />
         ) : (
-          <DidButton colors={colors} small label={t('people.join')} disabled={busy} onPress={join} />
+          <DidButton colors={colors} small label={t('people.join')} disabled={busy} onPress={() => once('join-family', join)} />
         )}
         <KeyButton
           colors={colors}

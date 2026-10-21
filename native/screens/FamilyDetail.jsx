@@ -606,7 +606,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             closeLabel: t('settings.neverMind'),
             colors,
             onClose: () => publishSheet(null),
-            onGo: async () => {
+            onGo: () =>
+              once('fam-leave', async () => {
               publishSheet(null)
               const { miss: why } = await leaveFamily(fam.id)
               if (why === 'lastparent') return setMiss(t('family.lastParentLeave'))
@@ -614,7 +615,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
               confirmDone(t('confirm.leftFamily', { name: fam.name || t('people.familyOne') }))
               refreshPeople()
               swapHash('/people')
-            },
+              }),
           })
         }
       />
