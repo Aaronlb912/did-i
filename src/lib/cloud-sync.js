@@ -9,7 +9,7 @@ import { forgetAccountCaches } from './account-cache.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { forgetAnswerKey, refreshAnswerKey } from './answer-key.js'
-import { readPrefs, writePrefs } from './prefs.js'
+import { mergePrefs, readPrefs, writePrefs } from './prefs.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'
 import { mergeShelves } from './shelf-merge.js'
 import {
@@ -639,8 +639,10 @@ async function pullAndMergeOnce() {
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
 
     const remotePrefs = profileRow.data?.prefs
-    if (remotePrefs && remoteSavedAt && remoteSavedAt > localSavedAt) {
-      writePrefs(remotePrefs, true)
+    if (remotePrefs) {
+      const now = readPrefs()
+      const merged = mergePrefs(now, remotePrefs, !!remoteSavedAt && remoteSavedAt > localSavedAt)
+      if (JSON.stringify(merged) !== JSON.stringify(now)) writePrefs(merged, true)
     }
 
     const bad = (await putShelf(db, user, written, uploadAt)) || (await putPrefs(db, user, written))
