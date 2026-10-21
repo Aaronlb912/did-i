@@ -26,7 +26,10 @@ export function putAnswer(book, row, status, clock = new Date()) {
     periodKey: row.periodKey,
     status,
     answeredAt: answeredAtIso(clock),
-    note: '',
+    // Changing the answer keeps the day's note and amount.
+    note: prev?.note || '',
+    ...(prev?.note && prev.noteAt ? { noteAt: prev.noteAt } : {}),
+    ...(cleanAmount(prev?.amount) !== null ? { amount: prev.amount } : {}),
     ...(counted ? { paid: true } : {}),
   }
   const next = {
