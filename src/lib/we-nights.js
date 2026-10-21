@@ -111,6 +111,13 @@ function index() {
   return byNight
 }
 
+// The oldest night with a Did we, or '' when there are none.
+export function weFirstNight() {
+  let first = ''
+  for (const night of index().keys()) if (!first || night < first) first = night
+  return first
+}
+
 // { due, done, clear } for a night. With a tag picked, only Did wes filed
 // under it count; with none, all of them do.
 export function weNight(nightIso, tagId = '') {

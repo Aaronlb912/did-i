@@ -1,4 +1,4 @@
-import { weNight, weNightsStamp } from './we-nights.js'
+import { weFirstNight, weNight, weNightsStamp } from './we-nights.js'
 import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { travelNightState, travelSkipped, travelWe } from './travel.js'
@@ -98,7 +98,14 @@ export function shelfStreak(boards, now = new Date(), tagId = '') {
 }
 
 // The night the oldest question was made, or '' when one has no date.
+// Did wes done before the first question still count, so they move the floor back.
 function firstNight(books) {
+  const own = ownFirstNight(books)
+  const we = weFirstNight()
+  return own && we && we < own ? we : own
+}
+
+function ownFirstNight(books) {
   let first = ''
   for (const book of books) {
     for (const lamp of book.lamps || []) {
