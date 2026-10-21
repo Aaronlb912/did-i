@@ -81,8 +81,10 @@ export function savePendingDidYou(code) {
   return true
 }
 
-export function peekPendingDidYou() {
-  return readList(SHOW_KEY)[0] || ''
+// wait(code): a code that cannot run yet; the next one goes first.
+export function peekPendingDidYou(wait = null) {
+  const list = readList(SHOW_KEY)
+  return (wait && list.find((code) => !wait(code))) || list[0] || ''
 }
 
 export function dropPendingDidYou(code) {

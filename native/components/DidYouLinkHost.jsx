@@ -75,7 +75,8 @@ export function DidYouLinkHost({ colors, onKeep }) {
   useEffect(() => {
     // Until the session is read, signed in looks like signed out.
     if (!account.ready) return undefined
-    const code = peekPendingDidYou()
+    // A Did we link waits for sign-in; a Did you link behind it still opens.
+    const code = peekPendingDidYou(userId ? null : isWeLinkCode)
     if (!code) return undefined
     const we = isWeLinkCode(code)
     if (we && !userId) {
