@@ -8861,6 +8861,19 @@ test('the year view keeps the Did days of a question paused later', async () => 
   assert.equal(lampRecord({ id: 'b', lamps: [mq], answers: ans }, mq, '2026-10-31').streak, 2, 'a month paused before its day does not break the streak')
 })
 
+test('no date regex lost its backslashes (d{4} where \d{4} was meant)', () => {
+  const bad = []
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name)
+      if (statSync(full).isDirectory()) walk(full)
+      else if (/\.(js|jsx|ts|tsx)$/.test(name) && /[\/(|]d\{\d/.test(readFileSync(full, 'utf8'))) bad.push(full)
+    }
+  }
+  for (const dir of ['src', 'native', 'widgets']) walk(path.join(checkRoot, dir))
+  assert.deepEqual(bad, [])
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
