@@ -60,7 +60,10 @@ set search_path = public
 as $$
 begin
   if new.kind <> 'todo' or old.state <> 'sent' or new.state <> 'kept'
-     or not public.push_wanted(new.from_id, 'sends') then
+     or exists (select 1 from public.blocks b
+                where (b.blocker = new.from_id and b.blocked = new.to_id)
+                   or (b.blocker = new.to_id and b.blocked = new.from_id))
+     or not public.push_wanted(new.from_id, 'friends') then
     return new;
   end if;
   insert into public.push_queue (to_id, from_id, title, body, go)
@@ -137,8 +140,10 @@ create trigger queue_family_joined_push
   after insert on public.family_members
   for each row execute function public.queue_family_joined_push();
 
--- One push per thing. Named to run after the other push_queue triggers
--- (they run in name order), so it compares the words that would be sent.
+-- One push per thing. Named to run last (triggers run in name order), so it
+-- compares the row as it would be stored. Sender and link must match too, so
+-- private pushes from two friends are not taken for one. A dropped repeat
+-- gives back its slot in the hourly cap (cap_push_to counted it already).
 create or replace function public.push_once()
 returns trigger
 language plpgsql
@@ -148,7 +153,10 @@ as $$
 begin
   if exists (select 1 from public.push_queue q
       where q.to_id = new.to_id and q.sent_at is null and q.body = new.body and q.title = new.title
+        and q.from_id is not distinct from new.from_id and q.go is not distinct from new.go
         and q.made_at > now() - interval '2 minutes') then
+    update public.push_to_counts set n = n - 1
+    where to_id = new.to_id and hour = date_trunc('hour', now()) and n > 0;
     return null;
   end if;
   return new;
@@ -158,6 +166,7 @@ $$;
 revoke all on function public.push_once() from public, anon, authenticated;
 
 drop trigger if exists zz_push_once on public.push_queue;
+drop trigger if exists a_push_once on public.push_queue;
 create trigger zz_push_once
   before insert on public.push_queue
   for each row execute function public.push_once();

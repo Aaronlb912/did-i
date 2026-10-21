@@ -10,7 +10,7 @@ import {
 } from '../lib/notification-perms.js'
 import { isNativeHall } from './native.js'
 import { askMorningFocus } from '../../src/lib/first-run.js'
-import { addNotice } from '../../src/lib/notices.js'
+import { addNotice, noticesSeenAt, readNotices } from '../../src/lib/notices.js'
 
 const CHANNEL_ID = 'did-i'
 const SEND_CATEGORY = 'did-i-send'
@@ -42,7 +42,12 @@ function keepPushNotice(notification) {
 
 async function keepTrayNotices(Notifications) {
   const shown = await Notifications.getPresentedNotificationsAsync?.().catch(() => [])
-  ;(shown || []).forEach(keepPushNotice)
+  // Only ones Recent never had: a cleared or already-seen one stays gone.
+  const have = new Set(readNotices().map((item) => item.id))
+  const seenAt = noticesSeenAt()
+  ;(shown || [])
+    .filter((n) => !have.has('push:' + n?.request?.identifier) && Number(n?.date) > seenAt)
+    .forEach(keepPushNotice)
 }
 
 async function ensureNotificationHandler() {

@@ -72,6 +72,16 @@ begin
   if n <> 1 then
     raise exception 'FAIL: a repeat push was queued % times', n;
   end if;
+  select c2.n into n from public.push_to_counts c2 where c2.to_id = c and c2.hour = date_trunc('hour', now());
+  if n <> (select count(*) from public.push_queue where to_id = c) then
+    raise exception 'FAIL: a dropped repeat still counts toward the cap (%)', n;
+  end if;
+  -- Two friends with the same words both get through.
+  insert into public.push_queue (to_id, from_id, title, body, go) values (c, a, 'Did I', 'same', '/friends');
+  insert into public.push_queue (to_id, from_id, title, body, go) values (c, b, 'Did I', 'same', '/friends');
+  if (select count(*) from public.push_queue where to_id = c and body = 'same') <> 2 then
+    raise exception 'FAIL: two senders with the same words were taken for one';
+  end if;
 
   raise exception 'SQL TESTS PASSED';
 end;

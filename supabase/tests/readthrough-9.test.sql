@@ -32,7 +32,7 @@ begin
   for i in 1..5 loop
     delete from public.check_ons where owner_id = a and lamp_id = 'loop' || (i - 1);
     insert into public.check_ons (owner_id, buddy_id, lamp_id, question, at_minute)
-    values (a, b, 'loop' || i, 'walk', 0);
+    values (a, b, 'loop' || i, 'walk ' || i, 0);
     perform public.queue_check_ons();
   end loop;
   select count(*) into n from public.push_queue where to_id = b and from_id = a;
