@@ -600,6 +600,10 @@ declare
   heir uuid;
 begin
   perform pg_advisory_xact_lock(hashtext('we_card:' || card::text));
+  -- Not on the card: nothing to leave, and no turns pinned on someone else's card.
+  if not exists (select 1 from public.we_members where card_id = card and user_id = who and state = 'in') then
+    return;
+  end if;
   perform public.we_pin_turns(card, current_date - 1, current_date + 1);
   update public.we_members set state = 'left'
   where card_id = card and user_id = who and state = 'in';
