@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { PersonAvatar } from './PersonAvatar.jsx'
 import { useAccount } from '../../src/lib/account.js'
@@ -238,12 +238,17 @@ export function WeAsks({ colors }) {
   const { cards, reload } = useWeTonight(account.user)
   const [busy, setBusy] = useState('')
   const [miss, setMiss] = useState('')
+  // State lags a frame: a double tap would send twice without this.
+  const sending = useRef(false)
   const asks = cards.filter((card) => card.myState === 'asked')
   if (!asks.length) return null
 
   async function reply(card, yes) {
+    if (sending.current) return
+    sending.current = true
     setBusy(card.id)
-    const out = await weReply(card.id, yes)
+    const out = await weReply(card.id, yes).catch(() => ({ miss: 'confirm.miss' }))
+    sending.current = false
     setBusy('')
     setMiss(out.miss ? tMiss(out.miss) : '')
     if (!out.miss) confirmDone(t(yes ? 'confirm.weJoined' : 'confirm.weDeclined'))
@@ -285,6 +290,8 @@ export function useWeAnswer(reload, book) {
   const [busy, setBusy] = useState('')
   const [miss, setMiss] = useState('')
   const [note, setNote] = useState('')
+  // State lags a frame: a double tap would answer (and cheer, and claim) twice.
+  const sending = useRef(false)
 
   async function run(id, job) {
     setBusy(id)
@@ -307,7 +314,16 @@ export function useWeAnswer(reload, book) {
     // no undo, so it must not clear by accident. Taking back is explicit.
     if (!night && status && mine?.status === status) return
     // One answer at a time: a second tap while one is sending does nothing.
-    if (busy) return
+    if (busy || sending.current) return
+    sending.current = true
+    try {
+      await answerNow(card, status, night)
+    } finally {
+      sending.current = false
+    }
+  }
+
+  async function answerNow(card, status, night) {
     const next = status
     const out = await run(card.id, () => weAnswer(card.id, next, night || undefined))
     // A Did we answer has no undo: it says it was saved, or that it was not.
@@ -411,18 +427,21 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
 export function WePausedRow({ cards, colors, reload }) {
   const [busy, setBusy] = useState('')
   const [miss, setMiss] = useState('')
+  const sending = useRef(false)
   const paused = wePausedCards(cards)
   if (!paused.length) return null
 
   async function restart(card) {
+    if (sending.current) return
+    sending.current = true
     setBusy(card.id)
-    const out = await weRestart(card.id)
+    const out = await weRestart(card.id).catch(() => ({ miss: 'confirm.miss' }))
+    sending.current = false
     setBusy('')
     setMiss(out.miss ? tMiss(out.miss) : '')
-    if (!out.miss) {
-      confirmDone(t('we.restarted'))
-      reload()
-    }
+    if (!out.miss) confirmDone(t('we.restarted'))
+    // A miss may mean someone else already restarted or left it: show what is true now.
+    reload()
   }
 
   return (
