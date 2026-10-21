@@ -197,13 +197,17 @@ export function findBookHoldingLamp(boards, lampId) {
   )
 }
 
+// Everything a twin must share: same words, same schedule, same ask time.
+const TWIN_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor', 'everyDays', 'onceWhen', 'onceOn', 'dueBy', 'slot', 'askAfter']
+
 function foldBook(into, extra) {
   if (!extra || extra.id === into.id) return extra || into
   const ids = new Set((into.lamps || []).map((lamp) => lamp.id))
   const lamps = [...(into.lamps || [])]
   // A never-answered twin (a starter picked on a new phone before sign-in,
   // same words and schedule as one already here) is not a second question.
-  const twinOf = (lamp) => `${lamp.cadence}|${String(lamp.question || '').trim().toLowerCase()}`
+  const twinOf = (lamp) =>
+    JSON.stringify([String(lamp.question || '').trim().toLowerCase(), ...TWIN_FIELDS.map((key) => lamp[key] ?? '')])
   const twins = new Set(lamps.filter((lamp) => !lamp.archived).map(twinOf))
   const answered = new Set((extra.answers || []).map((answer) => answer.lampId))
   for (const lamp of extra.lamps || []) {

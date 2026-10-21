@@ -1529,11 +1529,11 @@ test('a never-answered starter the account already has does not merge in as a tw
     currentId: 'cloud',
     boards: [
       { id: 'cloud', title: 'General', lamps: [water('x')], answers: [] },
-      { id: 'phone', title: 'General', lamps: [water('s1'), { ...lamp('s2'), question: 'Did I stretch?' }, water('w', 'weekly')], answers: [] },
+      { id: 'phone', title: 'General', lamps: [water('s1'), { ...lamp('s2'), question: 'Did I stretch?' }, water('w', 'weekly'), { ...water('t'), askAfter: '07:00' }], answers: [] },
     ],
   })
   const ids = shelf.boards.flatMap((book) => book.lamps.map((one) => one.id)).sort()
-  assert.deepEqual(ids, ['s2', 'w', 'x'], 'the twin goes; a different schedule stays')
+  assert.deepEqual(ids, ['s2', 't', 'w', 'x'], 'the twin goes; a different schedule or ask time stays')
 })
 
 test('undo puts a removed folder back as itself, even when another took its name', () => {
