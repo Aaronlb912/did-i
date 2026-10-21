@@ -50,8 +50,10 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
   }
   // Browsing to another open question is display-only — it never touches
   // the shelf, so it skips the answer-tap plumbing below and renders straight
-  // from what's already on the card.
-  if (widgetAction === 'WIDGET_CLICK' && clickAction === 'PEEK') {
+  // from what's already on the card. A Did tapped just before Next is applied
+  // first, or the peek would draw that question open again.
+  const applied = await applyPendingAndroidWidgetTap()
+  if (widgetAction === 'WIDGET_CLICK' && clickAction === 'PEEK' && !applied) {
     const current = await tonightPropsForWidget(readShelf())
     const dir = clickActionData?.dir === 'prev' ? -1 : 1
     const peeked = peekNextTonightCard(current, dir)
@@ -62,7 +64,6 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
       return
     }
   }
-  const applied = await applyPendingAndroidWidgetTap()
   // A silent wake while the app was closed (WakeMessagingService): pull now,
   // after this phone's own taps are applied, so they are paid here first.
   const woke = await takeAndroidWake()
