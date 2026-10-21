@@ -915,6 +915,11 @@ test('reminders are cleared only after the new list is built', () => {
   assert.ok(body.indexOf('cancelAllScheduledNotificationsAsync') > body.indexOf('const notes = []'))
 })
 
+test('Did on a second reminder for a question already Did does not say Not saved', () => {
+  const src = readFileSync(new URL('../native/NativeApp.jsx', import.meta.url), 'utf8')
+  assert.ok(src.includes("if (!shelf && !alreadySaid(lampId, kind, night)) showToast({ id: 'note-answer'"))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
