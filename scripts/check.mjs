@@ -971,6 +971,11 @@ test('moving a monthly day later after answering counts the month once', async (
   assert.equal(bestQuestionStreak(book, next, '2026-10-25', 1000, new Date(2026, 9, 25, 12)), 3)
 })
 
+test('reminders never set count as stale, so turning notifications on later sets them', () => {
+  const src = readFileSync('native/shim/native.js', 'utf8')
+  assert.ok(src.includes('return !(at > 0) || Date.now() - at > PING_REFRESH_MS'))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
