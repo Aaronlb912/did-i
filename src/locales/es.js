@@ -3633,7 +3633,6 @@ export const es = {
   'we.rowWaitingOne': "{name} espera",
   'we.rowWaitingMany': "{n} esperan",
   'we.rowMany': "Did we: {n} activos",
-  'we.andMore': "y {n} más",
   'we.rowManyStatus': "{done} hechos · {waiting} esperan",
   'we.weekKey': "Arriba: hecho juntos. Abajo: tú.",
   'we.dot.did': "lo hizo",

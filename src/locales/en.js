@@ -3623,7 +3623,6 @@ export const en = {
   'we.rowWaitingOne': "{name} waiting",
   'we.rowWaitingMany': "{n} waiting",
   'we.rowMany': "Did we: {n}",
-  'we.andMore': "and {n} more",
   'we.rowManyStatus': "{done} done · {waiting} waiting",
   'we.weekKey': "Top: done together. Bottom: you.",
   'we.dot.did': "did",

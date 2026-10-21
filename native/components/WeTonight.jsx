@@ -17,7 +17,7 @@ import {
   wePausedCards,
   weRestart,
 } from '../../src/lib/did-we.js'
-import { weFaceFor, weFaceRow, weMissKey, wePersonKey, weRowLine, weSlotDay, weStatus, weWeekKey } from '../../src/lib/we-look.js'
+import { weFaceFor, weFaceRow, weMissKey, wePersonKey, weSlotDay, weStatus, weWeekKey } from '../../src/lib/we-look.js'
 import { refreshTogether } from '../../src/lib/people.js'
 import { onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { pressFx } from '../lib/motion.jsx'
@@ -31,6 +31,7 @@ import { feelTap } from '../../src/lib/native.js'
 import { fonts } from '../theme.js'
 import { readPrefs } from '../../src/lib/prefs.js'
 import { DidButton, KeyButton } from './ui.jsx'
+import { MarkStamp } from './SwipeFace.jsx'
 
 
 const FACES_SHOWN = 5
@@ -221,72 +222,6 @@ export function WeAnswers({ card, colors }) {
   )
 }
 
-const WE_ROWS = 3
-
-// Today's Did wes, one row each under the card: the question, the faces, where
-// it stands, and Did / Not yet while it waits on you. Waiting on you goes on
-// top; answered rows get a check and dim. Past three, a row opens the list.
-// hide: the Did we the card above is asking, so it is not asked twice.
-export function WeToday({ cards, colors, ans, hide = '' }) {
-  const known = useKnownFaces()
-  const due = (cards || []).filter((card) => card.myState === 'in' && card.due && card.id !== hide)
-  if (!due.length) return null
-  const open = new Set(weOpenForMe(due, new Date(), { early: true }).map((card) => card.id))
-  const rank = (card) => (open.has(card.id) ? 0 : card.done ? 2 : 1)
-  const sorted = [...due].sort((a, b) => rank(a) - rank(b))
-  const shown = sorted.slice(0, WE_ROWS)
-  const more = sorted.length - shown.length
-  const tint = colors.we || colors.on
-  return (
-    <View style={[styles.today, { borderColor: tint, backgroundColor: colors.panel }]}>
-      {shown.map((card, i) => {
-        const waiting = open.has(card.id)
-        const status = waiting
-          ? weTimeReady(card) ? weStatusLine(card) : t('we.asksAt', { time: clockWords(card.askAfter) })
-          : weRowLine([card]).status.map((bit) => t(bit.key, bit.vars)).join(' · ')
-        const people = (card.people || []).filter((p) => p.state === 'in').slice(0, 3)
-        return (
-          <View key={card.id} style={[styles.todayRow, i ? { borderTopColor: colors.line, borderTopWidth: 1 } : null]}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${t('we.title')}: ${card.question}, ${status}`}
-              onPress={() => goHash('/we', { id: card.id })}
-              style={({ pressed }) => [styles.todayMain, waiting ? null : styles.todayDim, pressFx(pressed)]}
-            >
-              <View style={styles.slimFaces}>
-                {people.map((person) => (
-                  <View key={person.id} style={styles.slimSlot}>
-                    <WeFace person={person} card={card} colors={colors} known={known} size={24} />
-                  </View>
-                ))}
-              </View>
-              <View style={styles.slimCopy}>
-                <Text style={[styles.slimQ, { color: colors.ink }]} numberOfLines={2}>
-                  {card.question}
-                </Text>
-                <Text style={[styles.slimStatus, { color: card.done ? tint : colors.inkSoft }]} numberOfLines={1}>
-                  {waiting ? '' : '✓ '}
-                  {status}
-                </Text>
-              </View>
-            </Pressable>
-          </View>
-        )
-      })}
-      {more > 0 ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => goHash('/we')}
-          style={({ pressed }) => [styles.todayMore, { borderTopColor: colors.line }, pressFx(pressed)]}
-        >
-          <Text style={[styles.slimQ, { color: colors.inkSoft }]}>{t('we.andMore', { n: more })} ›</Text>
-        </Pressable>
-      ) : null}
-      {ans.note ? <Text style={[styles.note, { color: colors.inkSoft }]}>{ans.note}</Text> : null}
-    </View>
-  )
-}
-
 export function weStatusLine(card) {
   const { key, vars } = weStatus(card, readPrefs().locale)
   return t(key, vars)
@@ -423,10 +358,14 @@ function weKicker(card) {
 // The Tonight card for a Did we: swipe right for did, left for nope, the
 // other open ones stacked behind.
 // frame: the worn card frame, the same as on your own cards.
-export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, buddy, frame = null }) {
-  const open = weOpenForMe(cards, new Date(), { early: true })
+// picked: a Did we tapped in the pills. It shows even once answered, with a
+// Did or Not yet stamp, and can't be answered twice.
+export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, buddy, frame = null, picked = null }) {
+  const open = picked ? [picked] : weOpenForMe(cards, new Date(), { early: true })
   if (!open.length) return null
   const card = open[0]
+  const mine = picked ? weMine(card)?.status || '' : ''
+  const locked = Boolean(mine) || Boolean(picked && card.done)
   // Did we wears its own accent, so a shared card reads apart from your own.
   const weColors = { ...colors, on: colors.we || colors.on, line: colors.we || colors.line, onDeep: colors.weDeep || colors.onDeep }
   return (
@@ -448,6 +387,9 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
       behind={open.slice(1).map((next) => ({ key: `we:${next.id}`, kicker: weKicker(next), title: next.question }))}
       onDid={() => onAnswer(card, 'did')}
       onNope={() => onAnswer(card, 'nope')}
+      blockDid={locked}
+      blockNope={locked}
+      onEdit={picked ? () => goHash('/we', { id: card.id }) : undefined}
       buddy={buddy}
       frame={frame}
     >
@@ -459,6 +401,7 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
           <Text style={[styles.meta, { color: colors.inkDim }]}>{t('we.streak', { n: weStreak(card) })}</Text>
         ) : null}
       </View>
+      <MarkStamp status={mine === 'did' ? 'yes' : mine === 'nope' ? 'skip' : ''} colors={weColors} />
     </SwipeCardHost>
   )
 }
@@ -587,9 +530,4 @@ const styles = StyleSheet.create({
   slimQ: { fontFamily: fonts.uiSemi, fontSize: 13 },
   slimStatus: { fontFamily: fonts.ui, fontSize: 12 },
   answerCount: { marginLeft: 2 },
-  today: { borderWidth: 1, borderRadius: 16, marginTop: 8, overflow: 'hidden', alignSelf: 'stretch' },
-  todayRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 },
-  todayMain: { flexDirection: 'row', alignItems: 'center', gap: 10, flexGrow: 1, flexBasis: 180, minWidth: 0 },
-  todayDim: { opacity: 0.6 },
-  todayMore: { borderTopWidth: 1, paddingHorizontal: 12, paddingVertical: 10, alignItems: 'center' },
 })

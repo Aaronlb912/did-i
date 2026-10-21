@@ -3584,7 +3584,6 @@ export const zh = {
   'we.rowWaitingOne': "{name} 在等",
   'we.rowWaitingMany': "{n} 人在等",
   'we.rowMany': "Did we：{n} 个",
-  'we.andMore': "还有 {n} 个",
   'we.rowManyStatus': "{done} 个完成 · {waiting} 个在等",
   'we.weekKey': "上：一起完成。下：你。",
   'we.dot.did': "做到了",

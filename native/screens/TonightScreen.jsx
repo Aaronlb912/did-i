@@ -83,13 +83,13 @@ import { isDaytime } from '../lib/night-sky.js'
 import { Slot } from '../components/Slot.jsx'
 import { answerFamilyLamp, answerSend, listInbox, personName, useFamilyTonight } from '../../src/lib/people.js'
 import { peopleTonightItems, peopleWaitingLine } from '../../src/lib/people-tonight.js'
-import { WePausedRow, WeSwipeCard, WeToday, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
+import { WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
 import { FriendsRow } from '../components/FriendsRow.jsx'
 import { pickSocialLine } from '../../src/lib/social-line.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { weOpenOn } from '../../src/lib/we-nights.js'
 import { didStatusForRow, graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
-import { saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weClaim, weInFilter, weStats } from '../../src/lib/did-we.js'
+import { saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weClaim, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
@@ -306,7 +306,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // Back on tonight (or back on this screen, or a pill gone): the pill row
   // starts at the left again, so the filter chip is in view.
   const pillScroll = useRef(null)
-  const pillPicked = Boolean(stack.pillPick || stack.waitPick)
+  // A Did we pill tapped: its card comes up, ahead of your own.
+  const [wePick, setWePick] = useState('')
+  const pillPicked = Boolean(stack.pillPick || stack.waitPick || wePick)
   const pillPickedNow = useRef(pillPicked)
   pillPickedNow.current = pillPicked
   const pillCount = stack.dueWithWait.length
@@ -699,6 +701,17 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     people: account.user ? buildTogetherWidgetProps(together).people : [],
     nightDone: stack.nightDone,
   })
+  // Did wes asked today that you are on, for the pills.
+  const wePills = weCards.filter((card) => card.myState === 'in' && card.due)
+  const pickedWe = wePick ? wePills.find((card) => card.id === wePick) || null : null
+  // The picked card left the list (removed, no longer due, new day) or a wait card took over: drop the pick.
+  useEffect(() => {
+    if (wePick && (!pickedWe || stack.waitPick)) setWePick('')
+  }, [wePick, pickedWe, stack.waitPick])
+  // Coins for finishing a Did we from its card; the bar that showed this is gone.
+  useEffect(() => {
+    if (weAns.note) showToast({ id: 'we-coins', kind: 'we', text: weAns.note, ms: 3600 })
+  }, [weAns.note])
   // Your own questions come first. Once none is left to swipe, an unanswered
   // Did we takes the card's place.
   const weSwipe =
@@ -951,6 +964,22 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     face = <LateMeta colors={colors}>{t('app.loading')}</LateMeta>
   } else if (graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind))) {
     face = graceTop ? withAnswerButtons(graceCard, graceTop.onDid, graceTop.onNope) : graceCard
+  } else if (pickedWe && !stack.cheer) {
+    // A picked Did we stays up after its answer, with its stamp, like your own pills.
+    const open = !weMine(pickedWe)?.status && !pickedWe.done
+    face = (
+      <WeSwipeCard
+        cards={[pickedWe]}
+        picked={pickedWe}
+        colors={colors}
+        onAnswer={weAns.answer}
+        panelStyle={gemCard}
+        gemLook={premium ? look : ''}
+        buddy={activeBuddy(book)}
+        frame={cardFrame}
+      />
+    )
+    if (open) face = withAnswerButtons(face, () => weAns.answer(pickedWe, 'did'), () => weAns.answer(pickedWe, 'nope'))
   } else if (weSwipe && weOpenForMe(weCards, new Date(), { early: true }).length) {
     // Like Did you: the open Did we is a card in the stack, with the same buttons.
     const weTop = weOpenForMe(weCards, new Date(), { early: true })[0]
@@ -1321,7 +1350,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             const on = row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
             const skip = row.answer?.status === 'skip'
             const late = row.answer?.status === 'late'
-            const isFace = stack.pillPick
+            const isFace = wePick
+              ? false
+              : stack.pillPick
               ? stack.rowKey(row) === stack.rowKey(stack.pillPick)
               : Boolean(stack.faceRow) && stack.rowKey(row) === stack.rowKey(stack.faceRow)
             const bookOf = stack.bookOf(row)
@@ -1342,7 +1373,28 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
                 sit={stack.nightDone && on}
                 filament={on ? stack.filamentLevel(bookOf, row.lamp.id) : 0}
                 colors={colors}
-                onPress={() => stack.jewelClick(row)}
+                onPress={() => {
+                  setWePick('')
+                  stack.jewelClick(row)
+                }}
+              />
+            )
+          })}
+          {wePills.map((card) => {
+            const mine = weMine(card)?.status || ''
+            return (
+              <Jewel
+                key={`we:${card.id}`}
+                label={weShort(card.question)}
+                tag={t('we.title')}
+                on={mine === 'did'}
+                skip={mine === 'nope'}
+                face={wePick === card.id}
+                colors={{ ...colors, on: colors.we || colors.on }}
+                onPress={() => {
+                  stack.closePlates()
+                  return setWePick(wePick === card.id ? '' : card.id)
+                }}
               />
             )
           })}
@@ -1360,9 +1412,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       {stack.cheer && !pickKey ? null : <DropLine colors={colors} />}
       {stack.cheer && !pickKey ? null : <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} />}
 
-      {stack.pillPick || stack.waitPick ? (
+      {stack.pillPick || stack.waitPick || pickedWe ? (
         <Pressable
-          onPress={stack.closePlates}
+          onPress={() => {
+            setWePick('')
+            stack.closePlates()
+          }}
           hitSlop={10}
           accessibilityRole="button"
           style={[styles.back, { borderColor: colors.line, backgroundColor: colors.panel2 }]}
@@ -1398,22 +1453,17 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             </View>
           </Slot>
         )}
+        {/* A picked Did we card is taller than the others; these rows would cover its foot. */}
+        {wePick ? null : (
         <Slot>
           <WePausedRow cards={weCards} colors={colors} reload={we.reload} />
         </Slot>
-        <Slot>
-          {stack.cheer ? null : (
-            <WeToday
-              cards={weCards}
-              colors={colors}
-              ans={weAns}
-              hide={weSwipe && face === weSwipe ? weOpenForMe(weCards, new Date(), { early: true })[0]?.id : ''}
-            />
-          )}
-        </Slot>
+        )}
+        {wePick ? null : (
         <Slot>
           <FriendsRow colors={colors} cheer={social?.kind === 'cheer' ? social : null} />
         </Slot>
+        )}
       </SwipeFlyHost>
       {answerBar}
       {/* Toasts show in this room, so they never cover a card and nothing jumps. */}

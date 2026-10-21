@@ -7192,7 +7192,8 @@ await testAsync('did we weekly wording, face lookup and slim Tonight row', async
   assert.ok(many.many && many.n === 2)
   assert.deepEqual(many.status[0], { key: 'we.rowManyStatus', vars: { done: 1, waiting: 1 } })
   const src = readFileSync(path.join(checkRoot, 'native/components/WeTonight.jsx'), 'utf8')
-  assert.ok(src.includes('styles.slim') && src.includes("goHash('/we')"), 'the slim Did we row opens the list for several')
+  const tonight = readFileSync(path.join(checkRoot, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(!src.includes('export function WeToday') && tonight.includes('setWePick('), 'a Did we pill opens its card in the stack, not a bar or the list')
   assert.ok(!/WeAnswered[sS]*<WeAnswers/.test(src.slice(src.indexOf('export function WeAnswered'), src.indexOf('export function weStatusLine'))), 'the chip block is gone from Tonight')
 })
 
