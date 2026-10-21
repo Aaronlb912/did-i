@@ -107,6 +107,7 @@ import { leftoverOn, scopedBooks, tagIdsOf } from '../../src/lib/tags.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
+import { startTour, useTourTarget } from '../lib/tour.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts, radius, sectionLabel, withAlpha } from '../theme.js'
 import { CalendarGrid, YearGrid } from '../components/CalendarGrid.jsx'
@@ -299,6 +300,7 @@ export function HelpScreen() {
         <KeyButton colors={colors} label={t('settings.ideas')} onPress={() => goHash('/ideas')} />
         <KeyButton colors={colors} label={t('settings.what')} onPress={() => goHash('/about')} />
       </View>
+      <KeyButton colors={colors} label={t('tour.help')} onPress={() => startTour('basics', { replay: true })} />
       <HelpFold colors={colors} title={t('help.groupDaily')}>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.tonight')}</Text>
         <Meta colors={colors}>{t('help.tonightP1')}</Meta>
@@ -462,6 +464,7 @@ export function IdeasScreen() {
 // Opening it marks them seen, which clears the menu's count.
 export function RecentScreen() {
   const colors = useHallColors()
+  const recentTour = useTourTarget('recent')
   const { list } = useNotices()
   // The menu row counts inbox asks too, so the page shows them first.
   const account = useAccount()
@@ -480,6 +483,7 @@ export function RecentScreen() {
   }
   return (
     <ScreenShell title={t('recent.title')} colors={colors}>
+      <View {...recentTour}>
       {account.user && inbox > 0 ? (
         <Pressable
           accessibilityRole="button"
@@ -510,6 +514,7 @@ export function RecentScreen() {
       ) : account.user && inbox > 0 ? null : (
         <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors} />
       )}
+      </View>
     </ScreenShell>
   )
 }

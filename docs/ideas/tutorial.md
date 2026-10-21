@@ -1,6 +1,6 @@
 # Tutorial (draft)
 
-Status: idea. Nothing built.
+Status: built as the first-run tour (native/lib/tour.js, native/components/TourHost.jsx, src/lib/tour-steps.js). Kept for history.
 
 ## Goal
 People finish their first week knowing every main feature exists and how to reach it. Today they learn swiping from FirstSwipe and the rest by luck or Help.

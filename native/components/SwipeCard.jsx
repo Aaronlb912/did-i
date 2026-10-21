@@ -17,6 +17,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets'
 import { SWIPE_THRESHOLD, SWIPE_WAKE } from '../../src/lib/swipe-face.js'
 import { t } from '../../src/lib/i18n.js'
+import { tourActive } from '../lib/tour.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { feelTap } from '../../src/lib/native.js'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -123,6 +124,8 @@ export function SwipeCard({
     (way, from) => {
       const now = live.current
       if (way > 0 ? now.blockDid : now.blockNope) return
+      // The tour never answers a question.
+      if (tourActive()) return
       const done = way > 0 ? now.onDid : now.onNope
       lastThrow = { key: cardKey, way, at: Date.now() }
       const host = fly?.host()

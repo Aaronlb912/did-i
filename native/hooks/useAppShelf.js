@@ -380,9 +380,18 @@ export function useAppShelf() {
     }
   }, [])
 
+  // A coin balance the server returned (tour coins): same steps as creditNightCoins.
+  const applyCoinBalance = useCallback((bal, who) => {
+    if (who && readAccountUserId() !== who) return
+    const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
+    setShelf(synced)
+    pushSoon(synced)
+  }, [])
+
   return {
     shelf,
     book: live,
+    applyCoinBalance,
     tagId,
     route,
     markNote: marks[0] || null,
