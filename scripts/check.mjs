@@ -8874,6 +8874,19 @@ test('no date regex lost its backslashes (d{4} where \d{4} was meant)', () => {
   assert.deepEqual(bad, [])
 })
 
+test('pausing a question does not erase its misses from the overall streak', async () => {
+  const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
+  const day = (d) => '2026-10-' + String(d).padStart(2, '0')
+  const yes = (id, d) => ({ id: id + d, lampId: id, periodKey: day(d), status: 'yes', answeredAt: day(d) + 'T20:00:00.000Z', note: '' })
+  const answers = []
+  for (let d = 1; d <= 20; d += 1) {
+    answers.push(yes('live', d))
+    if (d !== 10 && d < 15) answers.push(yes('held', d))
+  }
+  const book = { id: 'b', title: 'Home', createdOn: day(1), lamps: [{ ...lamp('live'), createdOn: day(1) }, { ...lamp('held'), createdOn: day(1), archived: true, pausedOn: day(15) }], answers }
+  assert.equal(streakOf([book], new Date(2026, 9, 20, 21)), 10, 'the miss on the 10th still ends the run')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

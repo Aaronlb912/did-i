@@ -33,6 +33,10 @@ function archivedDids(book, iso) {
     const periodKey = periodKeyFor(lamp, iso)
     const answer = answerFor(book, lamp.id, periodKey)
     if (answer?.status === 'yes' || answer?.status === 'late') rows.push({ lamp, dateIso: iso, periodKey, answer })
+    // Paused on a known day: nights before it keep their misses too, same as the year view.
+    else if (lamp.pausedOn && iso < lamp.pausedOn && !(lamp.createdOn && lamp.createdOn > iso) && !(travelSkipped(book, iso) && travelNightState(answer, iso) === 'none')) {
+      rows.push({ lamp, dateIso: iso, periodKey, answer })
+    }
   }
   return rows
 }
