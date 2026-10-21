@@ -909,6 +909,8 @@ export const es = {
   'friends.cheerBuyTitle': '¿Comprar {n} ánimos para amigos?',
   'friends.cheerBuyBody': '{cost}. Úsalos para animar a tus amigos.',
   'friends.cheerUse': 'Ánimo',
+  'cheer.pickTitle': '¿Animar a {name}?',
+  'cheer.pickBody': 'Elige qué ánimo enviar.',
   'friends.cheerNeed': 'Primero compra ánimos.',
   'friends.cheerCap': 'Puedes guardar {n} ánimos. Gasta algunos primero.',
   'block.block': 'Bloquear',

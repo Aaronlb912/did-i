@@ -895,6 +895,8 @@ export const zh = {
   'friends.cheerBuyTitle': '购买 {n} 个好友加油？',
   'friends.cheerBuyBody': '{cost}。用来给好友加油。',
   'friends.cheerUse': '加油',
+  'cheer.pickTitle': '为{name}加油？',
+  'cheer.pickBody': '选择要发送的加油。',
   'friends.cheerNeed': '先买加油。',
   'friends.cheerCap': '最多存 {n} 个加油。先送掉一些。',
   'block.block': '屏蔽',

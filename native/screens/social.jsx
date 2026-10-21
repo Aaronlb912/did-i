@@ -91,6 +91,7 @@ import { boardDate, formatBoardDate, isoDate } from '../../src/lib/recurrence.js
 import { sendLastLine } from '../../src/lib/every-copy.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
+import { pickCheer } from '../components/pickCheer.jsx'
 import { InviteCodeSection } from '../components/InviteCodeSection.jsx'
 import { InviteCard } from '../components/InviteCard.jsx'
 import { copyInviteLink, shareInvite } from '../lib/share-invite.js'
@@ -1591,14 +1592,14 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     setMiss(why === 'off' || why === 'out' ? tMiss(why) : t('friends.autoAddMiss'))
   }
 
-  async function cheer(person) {
-    const sent = await cheerFriend(book, person.user_id, purse.cheerOn)
+  async function cheer(person, cheerId) {
+    const sent = await cheerFriend(book, person.user_id, cheerId)
     const known = friendCheerMissKey(sent.miss)
     if (known) return setMiss(t(known.key, known.vars))
     if (sent.miss) return setMiss(tMiss(sent.miss))
     setStock(normalizePurse(sent.book).friendCheers)
     if (onChange) onChange(sent.book)
-    fireCheer(purse.cheerOn, 1)
+    fireCheer(cheerId, 1)
     return confirmDone(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
   }
 
@@ -1765,7 +1766,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                     colors={colors}
                     disabled={cheersLeft < 1}
                     label={t('friends.cheerUse')}
-                    onPress={() => once(`cheer:${row.person.user_id}`, () => cheer(row.person))}
+                    onPress={() => pickCheer(colors, { name: personName(row.person) || t('people.someone'), purse, onGo: (id) => once(`cheer:${row.person.user_id}`, () => cheer(row.person, id)) })}
                   />
                 </>
               }
@@ -2185,26 +2186,31 @@ export function FriendScreen({ book, onChange, route }) {
   // bought five for a gem. Family members go through the family cheer.
   // `about` is a shared note's question when the cheer is for that note.
   function cheer(about) {
+    if (cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return confirmMiss(t('friends.cheerCap', { n: FRIEND_CHEER_CAP }))
+    const name = personName(person) || t('people.someone')
+    return pickCheer(colors, { name, purse, onGo: (id) => cheerWith(about, id) })
+  }
+
+  function cheerWith(about, cheerId) {
     if (cheersLeft < 1) {
-      if (cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return confirmMiss(t('friends.cheerCap', { n: FRIEND_CHEER_CAP }))
       if (purse.gems < FRIEND_CHEER_GEMS) return offerMoreGems(colors)
       // Buying is for this cheer: once the five land, this one goes.
       return confirmFriendCheers(colors, () => once('buy-cheers', async () => {
-        if (await buyCheersNow()) await cheerNow(typeof about === 'string' ? about : '')
+        if (await buyCheersNow()) await cheerNow(typeof about === 'string' ? about : '', cheerId)
       }))
     }
-    return once(`cheer:${otherId}`, () => cheerNow(typeof about === 'string' ? about : ''))
+    return once(`cheer:${otherId}`, () => cheerNow(typeof about === 'string' ? about : '', cheerId))
   }
 
-  async function cheerNow(about = '') {
-    let sent = await cheerFriend(book, otherId, purse.cheerOn, about)
-    if (sent.miss === 'notFriend') sent = await cheerFamily(book, otherId, '', purse.cheerOn)
+  async function cheerNow(about = '', cheerId = purse.cheerOn) {
+    let sent = await cheerFriend(book, otherId, cheerId, about)
+    if (sent.miss === 'notFriend') sent = await cheerFamily(book, otherId, '', cheerId)
     const known = friendCheerMissKey(sent.miss)
     if (known) return setSaid(t(known.key, known.vars))
     if (sent.miss) return setSaid(tMiss(sent.miss))
     setStock(normalizePurse(sent.book).friendCheers)
     if (onChange) onChange(sent.book)
-    fireCheer(purse.cheerOn, 1)
+    fireCheer(cheerId, 1)
     setSaid('')
     return confirmDone(t('family.cheerSent', { name: personName(person) || t('people.someone') }))
   }

@@ -37,6 +37,7 @@ import {
 import { addDaysIso, boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { useMyAvatar } from '../../src/lib/avatar.js'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
+import { pickCheer } from '../components/pickCheer.jsx'
 import { AddPill, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { ChipRow, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
@@ -405,19 +406,19 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                       colors={colors}
                       disabled={cheersLeft < 1}
                       label={t('friends.cheerUse')}
-                      onPress={async () => {
+                      onPress={() => pickCheer(colors, { name, purse, onGo: async (cheerId) => {
                         setMiss('')
                         setSaid('')
-                        const sent = await once(`cheer:${row.user_id}`, () => cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn))
+                        const sent = await once(`cheer:${row.user_id}`, () => cheerFamily(book, row.user_id, t('family.cheerNote'), cheerId))
                         if (!sent) return undefined
                         const known = friendCheerMissKey(sent.miss)
                         if (known) return setMiss(t(known.key, known.vars))
                         if (sent.miss) return setMiss(tMiss(sent.miss))
                         setStock(normalizePurse(sent.book).friendCheers)
                         if (onChange) onChange(sent.book)
-                        fireCheer(purse.cheerOn, 1)
+                        fireCheer(cheerId, 1)
                         return setSaid(t('family.cheerSent', { name }))
-                      }}
+                      } })}
                     />
                   ) : null}
                   <Pressable

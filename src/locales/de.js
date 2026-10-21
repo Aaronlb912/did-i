@@ -913,6 +913,8 @@ export const de = {
   'friends.cheerBuyTitle': '{n} Freundes-Cheers kaufen?',
   'friends.cheerBuyBody': '{cost}. Damit feuerst du deine Freunde an.',
   'friends.cheerUse': 'Jubeln',
+  'cheer.pickTitle': '{name} anfeuern?',
+  'cheer.pickBody': 'Wähle, welchen Jubel du schickst.',
   'friends.cheerNeed': 'Kauf zuerst Jubel.',
   'friends.cheerCap': 'Du kannst {n} Jubel halten. Schick erst welche.',
   'block.block': 'Blockieren',

@@ -908,6 +908,8 @@ export const pt = {
   'friends.cheerBuyTitle': 'Comprar {n} torcidas para amigos?',
   'friends.cheerBuyBody': '{cost}. Use para torcer pelos seus amigos.',
   'friends.cheerUse': 'Ânimo',
+  'cheer.pickTitle': 'Animar {name}?',
+  'cheer.pickBody': 'Escolha qual ânimo enviar.',
   'friends.cheerNeed': 'Compra ânimos primeiro.',
   'friends.cheerCap': 'Podes guardar {n} ânimos. Gasta alguns primeiro.',
   'block.block': 'Bloquear',
