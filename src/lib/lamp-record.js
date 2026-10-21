@@ -120,6 +120,7 @@ export function lampWeeks(book, lamp, dateIso, weeks = 8) {
       if (travelSkipped(book, iso) && travelNightState(answer, iso) === 'none') continue
       const status = answer?.status || ''
       if (iso === dateIso && !status) continue
+      if (lamp.archived && lamp.pausedOn && iso >= lamp.pausedOn && !status) continue
       due += 1
       if (didStatus(status)) did += 1
     }

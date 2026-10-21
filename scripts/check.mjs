@@ -8831,6 +8831,10 @@ test('a paused question stops counting misses from the day it was paused', async
   const rec = lampRecord(paused, pq, '2026-10-31', 30)
   assert.equal(rec.asked - rec.did, 0, 'days after the pause are not misses')
   assert.equal(toggleArchive(paused, pq).lamps[0].pausedOn, undefined, 'resuming clears it')
+  const { normalizeLamp } = await import('../src/lib/board-json.js')
+  assert.equal(normalizeLamp(pq).pausedOn, '2026-10-21', 'the pause day survives a reload')
+  const weeks = lampWeeks(paused, pq, '2026-11-04', 3)
+  assert.equal(weeks.at(-1).due, 0, 'a week after the pause has nothing due')
 })
 
 test('switching to monthly does not turn old daily months into misses', async () => {
