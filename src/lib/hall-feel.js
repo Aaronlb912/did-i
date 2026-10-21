@@ -1,5 +1,5 @@
 import { weFirstNight, weNight, weNightsStamp } from './we-nights.js'
-import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor } from './recurrence.js'
+import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { travelNightState, travelSkipped, travelWe } from './travel.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
@@ -17,6 +17,7 @@ export function dueThatNight(book, iso, at) {
   return dueTonight(withPastOnce(book), at).filter((row) => {
     if (skipped && travelNightState(row.answer, iso) === 'none') return false
     if (isEvery(row.lamp) || (row.lamp.createdOn && row.lamp.createdOn > iso)) return false
+    if (row.lamp.pauses && inPause(row.lamp, iso) && row.answer?.status !== 'yes' && row.answer?.status !== 'late') return false
     const done = onceDoneNight(row.lamp, row.answer)
     return !done || done === iso
   }).concat(archivedDids(book, iso))
@@ -34,7 +35,7 @@ function archivedDids(book, iso) {
     const answer = answerFor(book, lamp.id, periodKey)
     if (answer?.status === 'yes' || answer?.status === 'late') rows.push({ lamp, dateIso: iso, periodKey, answer })
     // Paused on a known day: nights before it keep their misses too, same as the year view.
-    else if (lamp.pausedOn && iso < lamp.pausedOn && !(lamp.createdOn && lamp.createdOn > iso) && !(travelSkipped(book, iso) && travelNightState(answer, iso) === 'none')) {
+    else if (lamp.pausedOn && iso < lamp.pausedOn && !inPause(lamp, iso) && !(lamp.createdOn && lamp.createdOn > iso) && !(travelSkipped(book, iso) && travelNightState(answer, iso) === 'none')) {
       rows.push({ lamp, dateIso: iso, periodKey, answer })
     }
   }
