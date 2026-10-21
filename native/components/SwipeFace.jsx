@@ -29,16 +29,17 @@ export function SwipeFace({ x, head, kicker, title, stampDid, stampNope, buddy, 
   )
 }
 
-// How a picked card is marked, as a stamp in its bottom-right corner, so it
-// reads at a glance. status: 'yes', 'late' or 'skip'; nothing when open.
-export function MarkStamp({ status, colors }) {
+// How a picked card is marked, as a stamp in its top-right corner, left of
+// the pen (and buddy), so it is the first thing seen. status: 'yes', 'late'
+// or 'skip'; nothing when open.
+export function MarkStamp({ status, colors, beside = false }) {
   if (status !== 'yes' && status !== 'late' && status !== 'skip') return null
   const did = status !== 'skip'
   const tint = did ? colors.on : colors.skip
   return (
     <Text
       accessibilityLabel={pillStatusLabel(status)}
-      style={[styles.mark, { color: tint, borderColor: tint }]}
+      style={[styles.mark, beside && styles.markBeside, { color: tint, borderColor: tint }]}
     >
       {t(did ? 'tonight.swipeDid' : 'tonight.swipeNope')}
     </Text>
@@ -65,9 +66,12 @@ const styles = StyleSheet.create({
   // 18 + 2 * 13 padding = a 44pt target; the icon still sits 18 in from the corner.
   pen: { position: 'absolute', top: 5, right: 5, zIndex: 3, padding: 13 },
   penBeside: { right: 47 },
+  // Level with the pen; clear of it (and of a buddy beside it).
   mark: {
     alignSelf: 'flex-end',
-    marginTop: 12,
+    marginTop: -8,
+    marginBottom: 6,
+    marginRight: 30,
     borderWidth: 2,
     borderRadius: 8,
     paddingHorizontal: 10,
@@ -78,4 +82,5 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     transform: [{ rotate: '-8deg' }],
   },
+  markBeside: { marginRight: 72 },
 })

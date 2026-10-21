@@ -1234,6 +1234,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           colors={colors}
           beside={Boolean(activeBuddy(pillBook))}
         />
+        <MarkStamp status={status} colors={colors} beside={Boolean(activeBuddy(pillBook))} />
         {pillRow.tag ? <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag}</Text> : null}
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
         {status ? null : <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>}
@@ -1241,12 +1242,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         {isNew && (status === 'yes' || status === 'late') ? (
           <Text style={[faceCardStyles.meta, { color: colors.inkDim }]}>{t('pill.doneFinal')}</Text>
         ) : null}
-        {/* The stamp sits beside Add a note, so it adds no height to the card. */}
-        <View style={[styles.actions, styles.actionsStamp]}>
+        <View style={styles.actions}>
           <TonightNote rows={[pillRow]} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
-          <View style={styles.stampEnd}>
-            <MarkStamp status={status} colors={colors} />
-          </View>
         </View>
       </GemFaceShell>
     )
@@ -1271,6 +1268,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         gemLook={premium ? look : ''}
         kicker={cardKicker(pillRow, '')}
         title={pillRow.lamp.question}
+        head={<MarkStamp status={status} colors={colors} beside={Boolean(activeBuddy(pillBook))} />}
         meta={pillMeta}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
@@ -1296,7 +1294,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             onPickHole={(lamp, key) => stack.pickHole(lamp, key, pillRow)}
           />
         ) : null}
-        <MarkStamp status={status} colors={colors} />
       </SwipeCardHost>
     )
     // Picked from the pills: the same Did and Nope as the stack. A noped one
@@ -1570,8 +1567,6 @@ const styles = StyleSheet.create({
   titleHit: { alignSelf: 'flex-start', maxWidth: '100%' },
   graceLate: { marginTop: 10 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
-  actionsStamp: { alignItems: 'center' },
-  stampEnd: { marginLeft: 'auto', marginTop: -12 },
   tomorrow: { marginTop: 16 },
   tomorrowRow: { marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: 10, columnGap: 12 },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
