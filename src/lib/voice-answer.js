@@ -29,7 +29,8 @@ export function spokenAnswer(raw) {
 // `rows` is [{ lamp, ... }] from waitingTonight.
 export function matchSpoken(said, rows) {
   const want = words(said)
-  if (!want.length) return rows.length === 1 ? rows[0] : null
+  // Nothing said: fine when only one question is open (last night's copy of it too).
+  if (!want.length) return rows.length && rows.every((row) => row.lamp?.id === rows[0].lamp?.id) ? rows[0] : null
   let best = null
   let bestScore = 0
   let second = 0

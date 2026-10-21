@@ -1150,6 +1150,13 @@ test('a monthly pause resumed after the due day keeps the streak', () => {
   assert.equal(questionStreak({ id: 'b', lamps: [resumed], answers }, resumed, '2026-04-15', 400, now), 3, 'after resume')
 })
 
+test('saying nothing finds the one open question even with its grace copy', async () => {
+  const { matchSpoken } = await import('../src/lib/voice-answer.js')
+  const one = { lamp: { id: 'a', question: 'Did I stretch?' } }
+  assert.equal(matchSpoken('', [one, { ...one }])?.lamp.id, 'a')
+  assert.equal(matchSpoken('', [one, { lamp: { id: 'b', question: 'Did I read?' } }]), null)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
