@@ -274,7 +274,10 @@ function adoptOutTour(who) {
   const next = { ...(kept && typeof kept === 'object' ? kept : {}) }
   for (const [k, v] of Object.entries(from)) if (next[k] === undefined || next[k] === 'new') next[k] = v
   localStorage.setItem(tourKey(who), JSON.stringify(next))
-  localStorage.removeItem(tourKey(''))
+  // Signed out keeps its progress, so signing out does not replay the tour,
+  // but its claims went to this account and never go to another.
+  const rest = Object.fromEntries(Object.entries(from).filter(([k]) => !k.endsWith('Claim')))
+  localStorage.setItem(tourKey(''), JSON.stringify(rest))
 }
 
 export function readTour(who = tourWho()) {
