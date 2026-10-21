@@ -328,6 +328,7 @@ export const ko = {
   'tonight.emptyKicker': '아직 없음',
   'tonight.emptyTitle': '아직 질문이 없어요',
   'tonight.write': '직접 쓰기',
+  'tonight.haveAccount': "이미 계정이 있어요",
   'tonight.waitKicker': '나중에',
   'tonight.waitTitle': '지금 답할 게 없어요',
   'tonight.waitLater': "오늘 나중에 열려요.",

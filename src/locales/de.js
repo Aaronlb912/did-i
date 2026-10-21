@@ -335,6 +335,7 @@ export const de = {
   'tonight.emptyKicker': 'Noch nichts',
   'tonight.emptyTitle': 'Noch keine Fragen',
   'tonight.write': 'Schreib deine eigene',
+  'tonight.haveAccount': "Ich habe schon ein Konto",
   'tonight.waitKicker': 'Später',
   'tonight.waitTitle': 'Gerade nichts zu beantworten',
   'tonight.waitLater': "Die gehen später heute auf.",

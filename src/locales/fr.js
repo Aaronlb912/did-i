@@ -337,6 +337,7 @@ export const fr = {
   'tonight.emptyKicker': 'Rien encore',
   'tonight.emptyTitle': 'Pas encore de questions',
   'tonight.write': 'Écris la tienne',
+  'tonight.haveAccount': "J’ai déjà un compte",
   'tonight.waitKicker': 'Plus tard',
   'tonight.waitTitle': 'Rien à répondre pour l’instant',
   'tonight.waitLater': "Celles-ci s’ouvrent plus tard aujourd’hui.",

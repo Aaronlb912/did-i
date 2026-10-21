@@ -334,6 +334,7 @@ export const it = {
   'tonight.emptyKicker': 'Ancora niente',
   'tonight.emptyTitle': 'Ancora nessuna domanda',
   'tonight.write': 'Scrivi la tua',
+  'tonight.haveAccount': "Ho già un account",
   'tonight.waitKicker': 'Più tardi',
   'tonight.waitTitle': 'Niente da rispondere adesso',
   'tonight.waitLater': "Queste si aprono più tardi oggi.",

@@ -328,6 +328,7 @@ export const ja = {
   'tonight.emptyKicker': 'まだ何も',
   'tonight.emptyTitle': 'まだ質問がない',
   'tonight.write': '自分で書く',
+  'tonight.haveAccount': "アカウントを持っています",
   'tonight.waitKicker': 'あとで',
   'tonight.waitTitle': '今は答えるものがない',
   'tonight.waitLater': "これらは今日このあと開く。",
