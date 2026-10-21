@@ -201,11 +201,13 @@ export function TourHost({ scope = 'main', path = '', hasQuestion = false }) {
       collapsable={false}
       onLayout={measureRoot}
       style={styles.fill}
+      // The widget tip sheet sits under this layer: let its buttons take taps.
+      pointerEvents={tour.phase === 'tip' ? 'box-none' : 'auto'}
       accessibilityViewIsModal
       importantForAccessibility="yes"
     >
       {tour.phase === 'loading' || tour.phase === 'tip' ? (
-        <View style={[styles.fill, styles.loadFill]}>
+        <View pointerEvents="box-none" style={[styles.fill, styles.loadFill]}>
           <KeyButton colors={colors} label={t('tour.skip')} onPress={tourSkip} />
         </View>
       ) : null}
