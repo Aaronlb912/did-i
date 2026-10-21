@@ -11,7 +11,7 @@ function didStatus(status) {
 // neither counts nor breaks. A month counts as paused if it ends after pausedOn.
 export function pausedOpen(lamp, key, answer) {
   if (!lamp?.archived || !lamp.pausedOn || answer) return false
-  const night = /^d{4}-d{2}$/.test(key) ? `${key}-31` : periodNight(lamp, key)
+  const night = /^\d{4}-\d{2}$/.test(key) ? `${key}-31` : periodNight(lamp, key)
   return night >= lamp.pausedOn
 }
 

@@ -8854,7 +8854,11 @@ test('the year view keeps the Did days of a question paused later', async () => 
   const oct = yearMonths([book], 2026, new Date(2026, 9, 21, 12))[9]
   const day = (iso) => oct.nights.find((n) => n.iso === iso)
   assert.equal(day('2026-10-05').on, true, 'the Did day still shows')
-  assert.equal(day('2026-10-06').miss, false, 'unanswered paused days are not misses')
+  assert.equal(day('2026-10-12').miss, false, 'unanswered paused days are not misses')
+  assert.equal(day('2026-10-06').miss, true, 'a miss before the pause still shows')
+  const mq = { ...lamp('mo'), cadence: 'monthly', monthDay: 20, createdOn: '2026-01-01', archived: true, pausedOn: '2026-10-15' }
+  const ans = ['2026-08', '2026-09'].map((k) => ({ id: k, lampId: 'mo', periodKey: k, status: 'yes', answeredAt: k + '-20T20:00:00.000Z', note: '' }))
+  assert.equal(lampRecord({ id: 'b', lamps: [mq], answers: ans }, mq, '2026-10-31').streak, 2, 'a month paused before its day does not break the streak')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
