@@ -902,6 +902,7 @@ export const de = {
   'friends.unsendTitle': 'Anfrage an {name} zurückziehen?',
   'friends.unsendBody': 'Sie verschwindet aus den Anfragen. Du kannst später eine neue senden.',
   'friends.unsent': 'Anfrage an {name} zurückgezogen.',
+  'friends.askChanged': 'Diese Anfrage wurde schon beantwortet. Deine Liste ist jetzt aktuell.',
   'friends.manage': 'Anfragen hinzufügen oder beantworten',
   'friends.cheer': 'Cheer · {n}',
   'friends.needGems': 'Brauchst {n} Gems.',

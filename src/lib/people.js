@@ -432,8 +432,10 @@ export async function sayYes(linkId) {
 export async function sayNo(linkId) {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  const { error } = await db.from('friend_links').delete().eq('id', linkId)
-  return error ? bad(error) : { miss: '' }
+  // No row back: they took it back first, so nothing was declined.
+  const { data, error } = await db.from('friend_links').delete().eq('id', linkId).select('id')
+  if (error) return bad(error)
+  return data?.length ? { miss: '' } : { miss: 'friends.askChanged' }
 }
 
 // Take back a request you sent that has not been answered. A yes that
@@ -443,13 +445,16 @@ export async function unsendAsk(linkId) {
   if (!db) return { miss: 'off' }
   const user = await me()
   if (!user) return { miss: 'off' }
-  const { error } = await db
+  const { data, error } = await db
     .from('friend_links')
     .delete()
     .eq('id', linkId)
     .eq('from_id', user.id)
     .eq('state', 'asked')
-  return error ? bad(error) : { miss: '' }
+    .select('id')
+  if (error) return bad(error)
+  // No row back: they said yes first, so nothing was taken back.
+  return data?.length ? { miss: '' } : { miss: 'friends.askChanged' }
 }
 
 export async function dropFriend(otherId) {

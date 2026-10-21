@@ -898,6 +898,7 @@ export const es = {
   'friends.unsendTitle': '¿Cancelar tu solicitud a {name}?',
   'friends.unsendBody': 'Desaparece de sus solicitudes. Puedes enviar otra más tarde.',
   'friends.unsent': 'Cancelaste tu solicitud a {name}.',
+  'friends.askChanged': 'Esa solicitud ya tuvo respuesta. Tu lista está al día.',
   'friends.manage': 'Agregar o responder solicitudes',
   'friends.cheer': 'Ánimo · {n}',
   'friends.needGems': 'Necesitas {n} gemas.',

@@ -874,6 +874,7 @@ export function PeopleScreen({ book, onChange }) {
   async function answerAskNow(id, yes, person) {
     if (yes && !(await nameFirst(colors, yesNameCopy(person)))) return undefined
     const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
+    if (why === 'friends.askChanged') load()
     if (why) return setMiss(tMiss(why))
     if (yes) {
       say(t('confirm.nowFriends', { name: personName(person) || t('people.someone') }))
@@ -1517,6 +1518,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   async function answerAskNow(id, yes, person) {
     setMiss('')
     const { miss: why } = yes ? await sayYes(id) : await sayNo(id)
+    if (why === 'friends.askChanged') load()
     if (why) return setMiss(tMiss(why))
     if (yes) {
       say(t('confirm.nowFriends', { name: personName(person) || t('people.someone') }))
@@ -1554,6 +1556,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
         publishSheet(null)
         setMiss('')
         const { miss: why } = await unsendAsk(row.id)
+        if (why === 'friends.askChanged') load()
         if (why) return setMiss(tMiss(why))
         setSaid(t('friends.unsent', { name }))
         return load()

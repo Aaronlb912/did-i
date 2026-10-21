@@ -897,6 +897,7 @@ export const en = {
   'friends.unsendTitle': 'Unsend your request to {name}?',
   'friends.unsendBody': 'It disappears from their requests. You can send a new one later.',
   'friends.unsent': 'Took back your request to {name}.',
+  'friends.askChanged': 'That request was already answered. Your list is up to date.',
   'friends.manage': 'Add or answer requests',
   'friends.cheer': 'Cheer · {n}',
   'friends.needGems': 'Need {n} gems.',

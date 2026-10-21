@@ -884,6 +884,7 @@ export const zh = {
   'friends.unsendTitle': '撤回发给 {name} 的请求？',
   'friends.unsendBody': '它会从对方的请求里消失。以后还可以再发。',
   'friends.unsent': '已撤回发给 {name} 的请求。',
+  'friends.askChanged': '那个请求已经有回应了。你的列表已更新。',
   'friends.manage': '添加或回复请求',
   'friends.cheer': 'Cheer · {n}',
   'friends.needGems': '需要 {n} gems。',

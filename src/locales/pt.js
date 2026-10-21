@@ -897,6 +897,7 @@ export const pt = {
   'friends.unsendTitle': 'Cancelar seu pedido para {name}?',
   'friends.unsendBody': 'Ele some dos pedidos da pessoa. Você pode mandar outro depois.',
   'friends.unsent': 'Pedido para {name} cancelado.',
+  'friends.askChanged': 'Esse pedido já teve resposta. Sua lista está atualizada.',
   'friends.manage': 'Adicionar ou responder pedidos',
   'friends.cheer': 'Cheer · {n}',
   'friends.needGems': 'Precisas de {n} gems.',

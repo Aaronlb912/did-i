@@ -885,6 +885,7 @@ export const ko = {
   'friends.unsendTitle': '{name}님에게 보낸 요청을 취소할까요?',
   'friends.unsendBody': '상대의 요청 목록에서 사라져요. 나중에 다시 보낼 수 있어요.',
   'friends.unsent': '{name}님에게 보낸 요청을 취소했어요.',
+  'friends.askChanged': '그 요청에는 이미 답이 왔어요. 목록이 최신이에요.',
   'friends.manage': '추가하거나 요청 답하기',
   'friends.cheer': 'Cheer · {n}',
   'friends.needGems': 'gem {n}개 필요.',
