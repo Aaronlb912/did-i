@@ -154,6 +154,20 @@ const PING_ZONE_KEY = 'did-i-ping-zone'
 function pingZone() {
   return `${Intl.DateTimeFormat().resolvedOptions().timeZone}|${new Date().getTimezoneOffset()}`
 }
+// Reminders are set PING_DAYS ahead. Set again a day later so a week away
+// from the app never runs them out.
+const PING_AT_KEY = 'did-i-ping-at'
+const PING_REFRESH_MS = 20 * 60 * 60 * 1000
+export function pingsStale() {
+  if (pingZoneMoved()) return true
+  try {
+    const at = Number(localStorage.getItem(PING_AT_KEY))
+    return at > 0 && Date.now() - at > PING_REFRESH_MS
+  } catch {
+    return false
+  }
+}
+
 export function pingZoneMoved() {
   try {
     const saved = localStorage.getItem(PING_ZONE_KEY)
@@ -363,6 +377,7 @@ async function schedulePingsNow(books, now = new Date()) {
     // Saved only once set, so a run cut short is tried again.
     try {
       localStorage.setItem(PING_ZONE_KEY, pingZone())
+      localStorage.setItem(PING_AT_KEY, String(Date.now()))
     } catch {
       // ok
     }

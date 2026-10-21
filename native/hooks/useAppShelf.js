@@ -27,6 +27,7 @@ import {
   queueStreakMoment,
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
+import { armNativePingsNow, pingsStale } from '../shim/native.js'
 import { accountSessionOn, readAccountUserId } from '../../src/lib/session-id.js'
 import { reportRejection } from '../../src/lib/report.js'
 import {
@@ -325,6 +326,8 @@ export function useAppShelf() {
     // background is on disk (or still queued natively), so show it now
     // instead of waiting for the next cold start.
     const wake = AppState.addEventListener('change', (next) => {
+      // A new time zone or a long gap: reminders are fixed instants set a week ahead.
+      if (next === 'active' && pingsStale()) armNativePingsNow(readShelf()?.boards || []).catch(() => {})
       if (next !== 'active' || Platform.OS !== 'android') return
       applyPendingAndroidWidgetTap()
         .catch(() => null)
