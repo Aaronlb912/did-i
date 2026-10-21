@@ -9045,6 +9045,11 @@ test('a heart removed here does not come back from a folder only the cloud has',
   assert.deepEqual(merged.wish, [one])
 })
 
+test('a question page left open turns over to the new day', () => {
+  const src = readFileSync(path.join(checkRoot, 'native/screens/questions.jsx'), 'utf8')
+  assert.ok(src.includes('clearInterval(tick)') && src.includes('boardDate(now, fold) === boardDate(was, fold)'))
+})
+
 test('pausing a question does not erase its misses from the overall streak', async () => {
   const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
   const day = (d) => '2026-10-' + String(d).padStart(2, '0')

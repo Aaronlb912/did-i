@@ -110,14 +110,24 @@ const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
 function useHall(book) {
   const colors = useHallColors(book)
-  // Fresh when the app comes back, so a page left open overnight shows today.
+  // Fresh when the app comes back, and when the day turns with the page open.
   const [clock, setClock] = useState(() => new Date())
+  const fold = book.dayFoldHour
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') setClock(new Date())
     })
-    return () => sub.remove()
-  }, [])
+    const tick = setInterval(() => {
+      setClock((was) => {
+        const now = new Date()
+        return boardDate(now, fold) === boardDate(was, fold) ? was : now
+      })
+    }, 60000)
+    return () => {
+      sub.remove()
+      clearInterval(tick)
+    }
+  }, [fold])
   const dateIso = boardDate(clock, book.dayFoldHour)
   return { colors, clock, dateIso }
 }
