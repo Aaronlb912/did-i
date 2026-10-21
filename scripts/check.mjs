@@ -9050,6 +9050,11 @@ test('a question page left open turns over to the new day', () => {
   assert.ok(src.includes('clearInterval(tick)') && src.includes('boardDate(now, fold) === boardDate(was, fold)'))
 })
 
+test('Try again on a second break restarts the app instead of looping', () => {
+  const src = readFileSync(path.join(checkRoot, 'native/components/Boundary.jsx'), 'utf8')
+  assert.ok(src.includes('Updates.reloadAsync()') && src.includes('onPress={() => this.again()}'))
+})
+
 test('pausing a question does not erase its misses from the overall streak', async () => {
   const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
   const day = (d) => '2026-10-' + String(d).padStart(2, '0')
