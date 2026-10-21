@@ -9,7 +9,7 @@ import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, askActions, askNoteData } from '../../src/lib/notify-answer.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
-import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
+import { boardDate, dueTonight, nightOpen, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
@@ -248,7 +248,8 @@ async function schedulePingsNow(books, now = new Date()) {
         // Not yet (status skip) is not done, so it keeps the late note too.
         const rows = dueTonight(book, day).filter((row) => !row.answer || row.answer.status === 'skip')
         const waiting = ahead === 0 ? new Set(waitingTonight(book, now).map((row) => `${row.lamp.id}:${row.periodKey}`)) : null
-        const [year, month, date] = boardDate(day).split('-').map(Number)
+        const night = boardDate(day)
+        const [year, month, date] = night.split('-').map(Number)
         for (const row of rows) {
           // Low priority stays quiet, like the web (src/lib/notify.js upcomingPings).
           if (!reminders || !lampBuzzes(row.lamp)) continue
@@ -261,7 +262,8 @@ async function schedulePingsNow(books, now = new Date()) {
             data: askNoteData(row),
             categoryIdentifier: ASK_CATEGORY,
           }
-          if (at && !row.answer && at.getTime() > now.getTime() && (!waiting || row.lamp.morning || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
+          // Quiet hours can push it past the time that day can still be answered.
+          if (at && !row.answer && at.getTime() > now.getTime() && nightOpen(night, afterQuiet(at)) && (!waiting || row.lamp.morning || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
             notes.push({
               identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}`)),
               content,

@@ -7816,6 +7816,7 @@ await testAsync('readthrough 9: re-armed after the ask time, a high one keeps it
   const pings = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
   assert.ok(pings.includes("const rows = dueTonight(book, day).filter((row) => !row.answer || row.answer.status === 'skip')"), 'native keeps the late note after the ask time')
   assert.ok(pings.includes('if (afterQuiet(late).getTime() !== late.getTime()) continue'))
+  assert.ok(pings.includes('nightOpen(night, afterQuiet(at))'), 'an ask note quiet hours push past the grace period is dropped, so its Did never lands on a closed day')
 })
 
 await testAsync('readthrough 9: a kept Did you saved on two phones merges to one question', async () => {
