@@ -394,7 +394,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
         if (skipped && travelNightState(answerFor(book.book, lamp.id, key), iso) === 'none') continue
         // Same rows as countedTonightRows.
         const done = status === 'yes' || status === 'late'
-        if (lamp.fromDidI || (lamp.keptDids && !done)) continue
+        if (lamp.fromDidI || (lamp.keptDids && !done && (!lamp.pausedOn || iso >= lamp.pausedOn))) continue
         const doneOn = done ? book.doneOn.get(lamp.id) : ''
         if (doneOn && doneOn !== iso) continue
         if (!done && (lamp.optional || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
