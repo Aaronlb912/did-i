@@ -354,7 +354,9 @@ export function askAfterPassed(lamp, now = new Date()) {
 
 export function previousDueDate(lamp, dateIso) {
   if (!lamp || lamp.cadence === 'once' || isEvery(lamp)) return ''
-  for (let i = 1; i <= 62; i += 1) {
+  // Every 90 days needs a look back of 90, not 62.
+  const back = lamp.cadence === 'every_n' ? Math.max(62, Number(lamp.everyN) || 0) : 62
+  for (let i = 1; i <= back; i += 1) {
     const iso = addDaysIso(dateIso, -i)
     if (isDueOn(lamp, iso)) return iso
   }
