@@ -165,7 +165,9 @@ function creditMissToast() {
 // Server-side gems not yet on this phone land on the shelf.
 async function claimAndCredit() {
   const claimed = await claimGemPurchases()
-  if (claimed.gems > 0) {
+  // Refresh even when nothing new was claimed: an earlier claim may have
+  // landed on the server while this phone missed the reply.
+  {
     // The server's balance, not ours plus the pack: a sync may already have
     // landed it, and adding again shows gems the account does not have.
     const balance = await readGemBalance().catch(() => null)
@@ -288,6 +290,7 @@ async function connectStore() {
       // Paid but not credited: say so, with a tap that tries again. The store
       // keeps the buy open, so the next connect retries too.
       if (out?.miss === 'test') testBuyToast()
+      else if (out?.miss === 'pending') showToast({ id: 'gems-pending', kind: 'done', text: t('gems.pending'), ms: 4200 })
       else if (out?.miss && out.miss !== 'other') creditMissToast()
       else if (!out?.miss && !out?.gems && (readShelf()?.boards?.[0]?.gems || 0) > 999899) gemsWaitToast()
     })
