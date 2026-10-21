@@ -140,7 +140,15 @@ export function useHangDraft({
     const was = editing ? keepPastSchedule(lamp, next, boardDate(clock, book.dayFoldHour)) : []
     if (was.length) next.was = was
     else delete next.was
-    return { lamp: next, problem: missLamp(next) }
+    return { lamp: next, problem: missLamp(next) || passedDay(next) }
+  }
+
+  // A once-only day moved into the past would close as Not yet on save.
+  function passedDay(next) {
+    if (!editing || next.cadence !== 'once') return ''
+    const day = next.onceWhen === 'by' ? next.dueBy : next.onceOn
+    const was = lamp?.cadence === 'once' ? (lamp.onceWhen === 'by' ? lamp.dueBy : lamp.onceOn) : ''
+    return day !== was && day < boardDate(clock, book.dayFoldHour) ? 'hang.miss.dayPassed' : ''
   }
 
   function validate() {

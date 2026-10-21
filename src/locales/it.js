@@ -597,6 +597,7 @@ export const it = {
   'hang.miss.onceOn': "Scegli un giorno per questa domanda una tantum.",
   'hang.miss.dueBy': 'Scegli una scadenza per questa domanda.',
   'hang.miss.dueByBefore': "La scadenza non può essere prima del giorno in cui l’hai aggiunta.",
+  'hang.miss.dayPassed': 'Scegli oggi o un giorno successivo.',
   'hang.miss.everyN': 'Ogni X giorni serve un numero da 2 in su.',
   'hang.miss.everyNStart': 'Ogni X giorni serve una data di inizio.',
   'hang.miss.askAfter': 'Chiedi dopo deve essere un’ora come 20:00, o vuoto.',

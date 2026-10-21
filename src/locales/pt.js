@@ -598,6 +598,7 @@ export const pt = {
   'hang.miss.onceOn': "Escolhe um dia para esta pergunta única.",
   'hang.miss.dueBy': 'Escolhe um prazo para esta pergunta.',
   'hang.miss.dueByBefore': "O prazo não pode ser antes do dia em que a adicionaste.",
+  'hang.miss.dayPassed': 'Escolha hoje ou um dia depois.',
   'hang.miss.everyN': 'A cada X dias precisa de um número de 2 ou mais.',
   'hang.miss.everyNStart': 'A cada X dias precisa de uma data de início.',
   'hang.miss.askAfter': 'Perguntar depois tem de ser uma hora como 20:00, ou vazio.',
