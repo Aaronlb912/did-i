@@ -110,6 +110,19 @@ export function mergeBooks(winner, loser) {
   })
 }
 
+// A backup file loaded on this phone: its answers and new questions come in,
+// but this phone's question settings win, and coins, gems and shop items
+// stay as they are here, so a copy cannot bring back what was spent.
+export function mergeBackup(local, backup) {
+  const PURSE = ['coins', 'gems', 'cheers', 'looks', 'accessories', 'buddies', 'frames', 'cheerStages', 'buddyOn', 'cheerOn', 'worn', 'frame']
+  const boards = (backup?.boards || []).map((book) => {
+    const out = { ...book }
+    for (const key of PURSE) delete out[key]
+    return out
+  })
+  return mergeShelves(local, { ...backup, boards }, '', '')
+}
+
 export function mergeShelves(local, remote, localSavedAt = '', remoteSavedAt = '') {
   if (!remote || !Array.isArray(remote.boards) || !remote.boards.length) {
     return normalizeShelf(local)

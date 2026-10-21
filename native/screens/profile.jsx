@@ -26,7 +26,7 @@ import { feedbackMailto } from '../../src/lib/feedback.js'
 import { legalEmail } from '../../src/lib/legal.js'
 import { shareCsv, shareShelf } from '../../src/lib/native.js'
 import { answersCsv } from '../../src/lib/answers-csv.js'
-import { mergeShelves } from '../../src/lib/shelf-merge.js'
+import { mergeBackup } from '../../src/lib/shelf-merge.js'
 import { zoneWords } from '../../src/lib/zone.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
@@ -141,7 +141,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
         return
       }
       const before = readShelf()
-      const merged = mergeShelves(before, coming, '', new Date().toISOString())
+      const merged = mergeBackup(before, coming)
       if (onImport) onImport(merged)
       const was = before.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
       const now = merged.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
