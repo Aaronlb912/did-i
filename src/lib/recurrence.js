@@ -417,7 +417,7 @@ export function catchUpRows(book, now = new Date(), skipped = null) {
     let prevIso = previousDueDate(lamp, dateIso)
     for (let step = 0; skipped && prevIso && skipped(prevIso) && step < 3; step += 1) prevIso = previousDueDate(lamp, prevIso)
     if (prevIso && skipped && skipped(prevIso)) continue
-    if (!prevIso) continue
+    if (!prevIso || inPause(lamp, prevIso)) continue
     if (lamp.createdOn && prevIso < lamp.createdOn) continue
     const periodKey = periodKeyFor(lamp, prevIso)
     if (answerFor(book, lamp.id, periodKey)) continue
