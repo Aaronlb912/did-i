@@ -5298,6 +5298,11 @@ await testAsync('the iPhone widget timeline reaches the next nights, a card per 
     assert.ok(props.items.some((item) => item.lampId === 'late' && item.periodKey === night && item.status === 'open'), night)
   }
   assert.ok(times.some((d) => boardDate(d) === '2026-09-26'), 'the third midnight turns over too')
+  // Twelve ask times a day fill the cap during day 2: the turns still stay.
+  const many = { ...book, lamps: Array.from({ length: 12 }, (_, i) => ({ ...book.lamps[0], id: 'q' + i, askAfter: String(8 + i).padStart(2, '0') + ':00' })) }
+  const crowded = widgetTimelineTimes([many], new Date('2026-09-23T07:00:00'))
+  assert.ok(crowded.length <= 30)
+  assert.ok(crowded.some((d) => boardDate(d) === '2026-09-26'), 'many ask times never cut the third midnight')
   // The native tap patch (patches/expo-widgets) closes lampId:periodKey in
   // later entries; each later night keeps its own open card.
   const entries = times.map((date) => ({ date, props: buildTonightWidgetProps(shelf, date) }))
