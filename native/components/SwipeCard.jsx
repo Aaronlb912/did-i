@@ -109,6 +109,9 @@ export function SwipeCard({
   const [thrown, setThrown] = useState('')
   const live = useRef(null)
   live.current = { onDid, onNope, blockDid, blockNope }
+  // Two taps before the next render would both answer this card: Did then
+  // Not yet would overwrite the Did. One throw per card until it re-renders.
+  const threw = useRef({ key: '', at: 0 })
 
   // Cards that mount after the first paint come up from one row deeper.
   useEffect(() => {
@@ -127,6 +130,8 @@ export function SwipeCard({
       if (way > 0 ? now.blockDid : now.blockNope) return false
       // The tour never answers a question.
       if (tourActive()) return false
+      if (threw.current.key === cardKey && Date.now() - threw.current.at < 700) return false
+      threw.current = { key: cardKey, at: Date.now() }
       const done = way > 0 ? now.onDid : now.onNope
       lastThrow = { key: cardKey, way, at: Date.now() }
       const host = fly?.host()
