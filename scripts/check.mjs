@@ -5450,6 +5450,10 @@ await testAsync('a widget card from an earlier night does not win after midnight
   // Same night, more open on the card: the card still wins (taps saved natively).
   const sameNight = { ...built, updatedAt: new Date('2026-09-23T22:30:00').getTime() }
   assert.equal(preferStoredTonightProps(sameNight, stored).items, stored.items)
+  // Yesterday's grace card after the grace ends: the shelf has nothing open, the card goes.
+  const grace = { items: [{ lampId: 'a', periodKey: '2026-09-23', status: 'open' }], leadLampId: 'a', updatedAt: new Date('2026-09-24T08:00:00').getTime() }
+  const after = { items: [], leadLampId: '', updatedAt: new Date('2026-09-24T09:01:00').getTime() }
+  assert.equal(preferStoredTonightProps(after, grace), after)
   // The redraw key moves when an answer from another phone lands.
   const answered = { ...built, items: [{ ...built.items[0], status: 'done' }] }
   assert.notEqual(tonightWidgetKey(built), tonightWidgetKey(answered))
