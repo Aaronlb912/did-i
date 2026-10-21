@@ -257,6 +257,7 @@ export const ja = {
   'first.next': '続ける',
   'first.back': '戻る',
   'first.stepOf': '{n} / {total}',
+  'tonight.nopedStep': '{n} / {total}',
   'first.timeTitle': 'いつ聞けばいい？',
   'enter.locked': 'ロック中',
   'enter.thisPhone': 'この端末',

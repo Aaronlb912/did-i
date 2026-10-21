@@ -262,6 +262,7 @@ export const it = {
   'first.next': 'Continua',
   'first.back': 'Indietro',
   'first.stepOf': '{n} di {total}',
+  'tonight.nopedStep': '{n} di {total}',
   'first.timeTitle': 'Quando dobbiamo chiedertelo?',
   'enter.locked': 'Bloccato',
   'enter.thisPhone': 'Questo telefono',

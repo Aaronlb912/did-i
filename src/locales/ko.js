@@ -257,6 +257,7 @@ export const ko = {
   'first.next': '계속',
   'first.back': '뒤로',
   'first.stepOf': '{n} / {total}',
+  'tonight.nopedStep': '{n} / {total}',
   'first.timeTitle': '언제 물어볼까요?',
   'enter.locked': '잠김',
   'enter.thisPhone': '이 폰',

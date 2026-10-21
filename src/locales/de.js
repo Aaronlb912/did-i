@@ -263,6 +263,7 @@ export const de = {
   'first.next': 'Weiter',
   'first.back': 'Zurück',
   'first.stepOf': '{n} von {total}',
+  'tonight.nopedStep': '{n} von {total}',
   'first.timeTitle': 'Wann sollen wir fragen?',
   'enter.locked': 'Gesperrt',
   'enter.thisPhone': 'Dieses Handy',

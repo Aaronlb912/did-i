@@ -257,6 +257,7 @@ export const zh = {
   'first.next': '继续',
   'first.back': '返回',
   'first.stepOf': '{n} / {total}',
+  'tonight.nopedStep': '{n} / {total}',
   'first.timeTitle': '我们什么时候问你？',
   'enter.locked': '已锁',
   'enter.thisPhone': '这部手机',
