@@ -141,6 +141,26 @@ function writeLastUser(id) {
   writeAccountUserId(id)
 }
 
+// Whose data is on the phone, set the moment a pull lands it. Last user is
+// only set once the push succeeds, so a pull cut short would otherwise leave
+// one account's shelf looking phone-only and fold it into the next account.
+const OWNER_KEY = 'did-i-shelf-owner'
+function readShelfOwner() {
+  try {
+    return localStorage.getItem(OWNER_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+function writeShelfOwner(id) {
+  try {
+    if (id) localStorage.setItem(OWNER_KEY, id)
+    else localStorage.removeItem(OWNER_KEY)
+  } catch {
+    // ok
+  }
+}
+
 // Bumped on sign out so a pull already out drops its result instead of
 // merging the old account's shelf into the cleared one.
 let syncRun = 0
@@ -163,6 +183,7 @@ export function signedOutSync() {
   const shelf = clearLocalShelf()
   keepProfileName('')
   writeLastUser('')
+  writeShelfOwner('')
   clearAuthSkip()
   setState({ how: cloudSetUp() ? 'out' : 'off', at: '', miss: '', firstPull: false })
   if (typeof window !== 'undefined') {
@@ -176,7 +197,7 @@ export function signedOutSync() {
 // shelf never belonged to an account, and wiping it throws away the
 // questions someone just added.
 export function sessionMissing() {
-  if (readLastUser()) {
+  if (readLastUser() || readShelfOwner()) {
     signedOutSync()
     return
   }
@@ -488,7 +509,7 @@ async function pullAndMergeOnce() {
     if (shelfRow.error) throw shelfRow.error
 
     await awaitWidgetTimeline()
-    const lastUser = readLastUser()
+    const lastUser = readLastUser() || readShelfOwner()
     let local = reconcileLocalShelfFromWidget()
     let localSavedAt = readSavedAt()
     if (lastUser && lastUser !== user.id) {
@@ -536,6 +557,7 @@ async function pullAndMergeOnce() {
     const pulled = await pullAnswers(merged, { stillCurrent: () => run === syncRun })
     if (pulled.miss) throw new Error(pulled.miss)
 
+    writeShelfOwner(user.id)
     let written = land(closeShelfPastNights(pulled.shelf), metaAt)
     // The account's questions are on the phone now; Tonight can draw them.
     if (state.firstPull) setState({ firstPull: false })
