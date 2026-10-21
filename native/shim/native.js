@@ -344,8 +344,11 @@ async function schedulePingsNow(books, now = new Date()) {
     const streakPings = pingOn('streakRisk') && !gentleOn()
     const heat = streakPings ? shelfStreak(list, now) : null
     const risk = streakPings ? list.map((item) => streakRiskFire(item, now, heat)).find(Boolean) : null
-    // Quiet hours would move it onto the grace ping.
-    if (risk && afterQuiet(new Date(risk.at)).getTime() === new Date(risk.at).getTime()) {
+    // Quiet hours would move it onto the grace ping. A 21:00 last call for an
+    // open question already says it: one buzz, not two.
+    const riskAt = risk ? new Date(risk.at).getTime() : 0
+    const lateThen = notes.some((note) => note.lateCall && note.trigger.date.getTime() === riskAt)
+    if (risk && !lateThen && afterQuiet(new Date(risk.at)).getTime() === riskAt) {
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
         content: {
