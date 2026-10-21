@@ -79,6 +79,16 @@ begin
     raise exception 'FAIL: leaving a family was not pushed';
   end if;
 
+  -- A parent deleting the whole family is not a leave.
+  insert into public.family_members (family_id, user_id, role) values (fam, b, 'kid');
+  delete from public.push_queue where body like '%left your family%';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  delete from public.families where id = fam;
+  perform set_config('request.jwt.claims', '', true);
+  if exists (select 1 from public.push_queue where body like '%left your family%') then
+    raise exception 'FAIL: deleting a family was pushed as a leave';
+  end if;
+
   -- Someone using your invite code tells you, once.
   perform set_config('did_i.invite_write', '1', true);
   update public.profiles set invited_by = a where user_id = c;

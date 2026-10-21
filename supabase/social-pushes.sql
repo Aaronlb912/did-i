@@ -16,7 +16,7 @@ declare
   lang text := coalesce((select p.prefs ->> 'locale' from public.profiles p where p.user_id = who), 'en');
   words jsonb := '{
     "en": {"we_closed": "{name} ended the Did we: {q}", "family_joined": "{name} joined your family.", "family_left": "{name} left your family.", "invite_used": "{name} joined Did I with your invite code."},
-    "de": {"we_closed": "{name} hat das Did we beendet: {q}", "family_joined": "{name} ist deiner Familie beigetreten.", "family_left": "{name} hat deine Familie verlassen.", "invite_used": "{name} ist mit deinem Einladungscode bei Did I."},
+    "de": {"we_closed": "{name} hat das Did we beendet: {q}", "family_joined": "{name} ist deiner Familie beigetreten.", "family_left": "{name} hat deine Familie verlassen.", "invite_used": "{name} ist Did I mit deinem Einladungscode beigetreten."},
     "es": {"we_closed": "{name} terminó el Did we: {q}", "family_joined": "{name} se unió a tu familia.", "family_left": "{name} salió de tu familia.", "invite_used": "{name} se unió a Did I con tu código de invitación."},
     "fr": {"we_closed": "{name} a terminé le Did we : {q}", "family_joined": "{name} a rejoint ta famille.", "family_left": "{name} a quitté ta famille.", "invite_used": "{name} a rejoint Did I avec ton code d’invitation."},
     "it": {"we_closed": "{name} ha chiuso il Did we: {q}", "family_joined": "{name} è entrato nella tua famiglia.", "family_left": "{name} ha lasciato la tua famiglia.", "invite_used": "{name} è entrato in Did I con il tuo codice invito."},
@@ -142,7 +142,8 @@ create trigger queue_family_joined_push
   for each row execute function public.queue_family_joined_push();
 
 -- Leaving a family tells the people still in it. Only when you leave
--- yourself: a parent removing someone already knows.
+-- yourself: a parent removing someone already knows. Deleting your account
+-- counts as leaving, so the family knows why you are gone.
 create or replace function public.queue_family_left_push()
 returns trigger
 language plpgsql
@@ -151,6 +152,10 @@ set search_path = public
 as $$
 begin
   if old.user_id is distinct from (select auth.uid()) then
+    return old;
+  end if;
+  -- A parent deleting the whole family: the cascade is not a leave.
+  if not exists (select 1 from public.families f where f.id = old.family_id) then
     return old;
   end if;
   insert into public.push_queue (to_id, from_id, title, body, go)
