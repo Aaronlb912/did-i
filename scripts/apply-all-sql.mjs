@@ -92,6 +92,7 @@ const files = [
   'supabase/tour-coins.sql',
   'supabase/note-merge.sql',
   'supabase/answer-merge.sql',
+  'supabase/app-send-keep-once.sql',
   'supabase/drop-tonight.sql',
 ]
 
