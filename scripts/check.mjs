@@ -929,6 +929,14 @@ test('every cheer button asks which cheer first, never sends on the tap', () => 
   assert.ok(!/cheerFamily\([^)]*purse\.cheerOn/.test(family + social))
 })
 
+test('a shop buy confirmed later spends from the folder as it is now', () => {
+  const shop = readFileSync('native/screens/shop.jsx', 'utf8')
+  const frames = readFileSync('native/screens/frames.jsx', 'utf8')
+  for (const src of [shop, frames]) {
+    assert.ok(!/(buyLookWithCoins|buyWithGems|buyAccessoryWithCoins|buyCheerStageWithCoins|buyFrame)\(book,/.test(src), 'no buy from the book the sheet opened with')
+  }
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',

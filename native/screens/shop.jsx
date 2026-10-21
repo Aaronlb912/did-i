@@ -91,7 +91,7 @@ import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
 import { useIsFocused } from '@react-navigation/native'
-import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, onLiveBook, openFrameSheet } from './frames.jsx'
+import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, liveBook, onLiveBook, openFrameSheet } from './frames.jsx'
 import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
@@ -967,19 +967,19 @@ function useTileTap(book, onChange, colors, coat, purse) {
     if (type === 'look') {
       if (purse.lookOn === item.id) return null
       if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearLook(book, item.id), false) }
-      return buy(() => buyLookWithCoins(book, item.id))
+      return buy(() => buyLookWithCoins(liveBook(book), item.id))
     }
     if (type === 'buddy') {
       if (purse.buddyOn === item.id) return null
       if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearBuddy(book, item.id), false) }
-      return buy(() => buyWithGems(book, 'buddy', item.id))
+      return buy(() => buyWithGems(liveBook(book), 'buddy', item.id))
     }
     if (type === 'accessory') {
       if (tag.owned) {
         const on = purse.worn[item.slot] === item.id
         return { label: on ? t('shop.takeOff') : t('shop.use'), go: () => done(type, item, wearAccessory(book, item.id), false) }
       }
-      return buy(() => buyAccessoryWithCoins(book, item.id))
+      return buy(() => buyAccessoryWithCoins(liveBook(book), item.id))
     }
     // Cheers bought with coins come in stages, which only the cheers page shows.
     if (tag.owned || !(item.gems > 0)) {
@@ -991,7 +991,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
         },
       }
     }
-    return buy(() => buyWithGems(book, 'cheer', item.id))
+    return buy(() => buyWithGems(liveBook(book), 'cheer', item.id))
   }
 
   // The heart flips in place: save the book, then reopen the same sheet with it.
@@ -1185,7 +1185,7 @@ export function ShopLooksScreen({ book, onChange }) {
             title: t(lookText(item.id, 'name')),
             body: `${t('shop.buyLookBody', { cost })} ${leftAfter(purse, item)}`,
             go: async () => {
-              const next = await buyLookWithCoins(book, item.id)
+              const next = await buyLookWithCoins(liveBook(book), item.id)
               take(next, item.id, true)
             },
           })
@@ -1274,7 +1274,7 @@ export function ShopCheersScreen({ book, onChange }) {
           setConfirm({
             title: t(cheerText(item.id, 'name')),
             body: `${t('shop.buyCheerBody', { cost: gemLine(item.gems) })} ${leftAfter(purse, item)}`,
-            go: async () => take(await buyWithGems(book, 'cheer', item.id), item.id, true),
+            go: async () => take(await buyWithGems(liveBook(book), 'cheer', item.id), item.id, true),
           })
         }
         let disabled = false
@@ -1289,7 +1289,7 @@ export function ShopCheersScreen({ book, onChange }) {
                 title: t(cheerText(item.id, 'name')),
                 body: t('shop.buyStageBody', { n: next, cost: coinLine(CHEER_STAGE_COINS[next]) }),
                 go: async () => {
-                  const out = await buyCheerStageWithCoins(book, item.id)
+                  const out = await buyCheerStageWithCoins(liveBook(book), item.id)
                   take(out, item.id)
                   // A stage has no fly-in, so say it landed.
                   if (!out.miss) confirmDone(t('confirm.stageBought', { name: t(cheerText(item.id, 'name')), n: next }))
@@ -1408,7 +1408,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
               setConfirm({
                 title: t(buddyText(item.id, 'name')),
                 body: `${t('shop.buyBuddyBody', { cost: gemLine(item.gems) })} ${leftAfter(purse, item)}`,
-                go: async () => take(await buyWithGems(book, 'buddy', item.id), item.id, true),
+                go: async () => take(await buyWithGems(liveBook(book), 'buddy', item.id), item.id, true),
               })
             }}
           />
@@ -1572,7 +1572,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
               setConfirm({
                 title: t(`accessory.${item.id}`),
                 body: t('shop.buyAccessoryBody', { cost: coinLine(item.coins) }),
-                go: async () => take(await buyAccessoryWithCoins(book, item.id), item.id, true),
+                go: async () => take(await buyAccessoryWithCoins(liveBook(book), item.id), item.id, true),
               })
             }
             return (
