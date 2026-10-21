@@ -12,7 +12,7 @@ import {
 } from './board-json.js'
 import { findBookByTitle } from './board-shelf.js'
 import { applySchedulePick } from './hang-schedule.js'
-import { boardDate } from './recurrence.js'
+import { boardDate, keepPastSchedule } from './recurrence.js'
 import { starterList } from './starters.js'
 
 export function hasExtraFields(item) {
@@ -136,6 +136,10 @@ export function useHangDraft({
       const unit = amountUnitOf(draft)
       if (unit) next.amountUnit = unit
     }
+    // Past days keep the schedule they had, so a schedule edit never ends a streak.
+    const was = editing ? keepPastSchedule(lamp, next, boardDate(clock, book.dayFoldHour)) : []
+    if (was.length) next.was = was
+    else delete next.was
     return { lamp: next, problem: missLamp(next) }
   }
 

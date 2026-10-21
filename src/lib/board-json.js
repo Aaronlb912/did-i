@@ -1,6 +1,6 @@
 import { t } from './i18n.js'
 import { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
-import { addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
+import { WAS_KEEP, addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
 import { capSkips } from './travel.js'
 
@@ -8,6 +8,25 @@ export { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
 
 function uid(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
+const WAS_CADENCE = new Set(['daily', 'weekly', 'monthly', 'every_n'])
+
+function cleanWas(was) {
+  if (!Array.isArray(was)) return []
+  return was
+    .filter((old) => old && ISO_DAY.test(String(old.until)) && WAS_CADENCE.has(old.cadence))
+    .map((old) => ({
+      until: String(old.until),
+      cadence: old.cadence,
+      weekdays: Array.isArray(old.weekdays) ? old.weekdays.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6) : [],
+      monthDay: old.monthDay === 'last' ? 'last' : Number.isInteger(Number(old.monthDay)) && old.monthDay !== '' ? Number(old.monthDay) : '',
+      everyN: Number.isInteger(Number(old.everyN)) && old.everyN !== '' ? Number(old.everyN) : '',
+      everyNAnchor: ISO_DAY.test(String(old.everyNAnchor)) ? String(old.everyNAnchor) : '',
+    }))
+    .sort((x, y) => (x.until < y.until ? -1 : 1))
+    .slice(-WAS_KEEP)
 }
 
 export function newLampId() {
@@ -245,6 +264,8 @@ export function normalizeLamp(raw) {
       ? { order: Math.min(Number(lamp.order), 9999) }
       : {}),
     createdOn: asString(lamp.createdOn).trim() || isoDate(new Date()),
+    // Schedules it had before an edit (recurrence.js scheduleAt).
+    ...(cleanWas(lamp.was).length ? { was: cleanWas(lamp.was) } : {}),
     // Put on your tonight for you (a Did you auto-added from family or a
     // friend you allow): a did counts, a nope or no answer does not count
     // against you. Only set when true, so other questions are unchanged.
