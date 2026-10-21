@@ -383,7 +383,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
       const skipped = travelSkipped(book.book, iso)
       for (const lamp of book.lamps) {
         if (lamp.createdOn && lamp.createdOn > iso) continue
-        const daily = lamp.cadence === 'daily'
+        const daily = lamp.cadence === 'daily' && !lamp.was
         if (!daily && !isDueOn(lamp, iso)) continue
         const key = daily ? iso : periodKeyFor(lamp, iso)
         const status = book.index.byLamp.get(lamp.id)?.get(key)

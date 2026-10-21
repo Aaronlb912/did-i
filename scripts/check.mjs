@@ -316,6 +316,19 @@ test('flying LA to Tokyo skips the 15th and the streak goes on', () => {
   assert.equal(travelShelfStreak([closed], noon), 14)
 })
 
+test('changing Mondays to daily keeps the past Mondays streak', async () => {
+  const { keepPastSchedule } = await import('../src/lib/recurrence.js')
+  const mondays = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19']
+  const old = lamp('read', { cadence: 'weekly', weekdays: [1], createdOn: '2026-09-01' })
+  const next = { ...old, cadence: 'daily', weekdays: [] }
+  next.was = keepPastSchedule(old, next, '2026-10-21')
+  const answers = mondays.map((night) => ({ id: night, lampId: 'read', periodKey: night, status: 'yes' }))
+  assert.equal(questionStreak({ id: 'b', lamps: [old], answers }, old, '2026-10-21'), 7)
+  assert.equal(questionStreak({ id: 'b', lamps: [next], answers }, next, '2026-10-21'), 7)
+  // Without was, the Tuesday before reads as a miss.
+  assert.equal(questionStreak({ id: 'b', lamps: [{ ...next, was: undefined }], answers }, { ...next, was: undefined }, '2026-10-21'), 0)
+})
+
 test('flying Tokyo to LA repeats a day and marks nothing', () => {
   const next = travel.travelStep({ zone: TOKYO, night: '2026-10-16', skips: [] }, LA, new Date('2026-10-16T22:00:00Z'))
   assert.deepEqual(next.skips, [])

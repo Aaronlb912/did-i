@@ -103,6 +103,7 @@ export function lastDayOfMonth(year, monthIndex) {
 export function periodKeyFor(lamp, dateIso) {
   const date = parseIsoDate(dateIso)
   if (!date) return ''
+  lamp = scheduleAt(lamp, dateIso)
   if (lamp.cadence === 'monthly') {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`
   }
@@ -122,10 +123,39 @@ export function periodPassed(lamp, periodKey, todayIso) {
   return periodKey < todayIso
 }
 
+// A repeating question keeps the schedules it had before an edit (was), so
+// changing Mondays to daily does not make every past day a miss.
+// was is oldest first; until is the first day of the next schedule.
+export const WAS_KEEP = 4
+const WAS_CADENCES = new Set(['daily', 'weekly', 'monthly', 'every_n'])
+const WAS_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor']
+
+export function scheduleAt(lamp, dateIso) {
+  const was = lamp?.was
+  if (!was || !was.length || !(dateIso < was[was.length - 1].until)) return lamp
+  for (const old of was) if (dateIso < old.until) return { ...lamp, ...old, was: null }
+  return lamp
+}
+
+// The was list for an edit made today: old's schedule holds until today.
+export function keepPastSchedule(old, next, todayIso) {
+  const was = Array.isArray(old?.was) ? old.was : []
+  if (!WAS_CADENCES.has(next.cadence)) return []
+  if (!old || !WAS_CADENCES.has(old.cadence)) return was
+  if (!old.createdOn || old.createdOn >= todayIso) return was
+  if (WAS_FIELDS.every((key) => JSON.stringify(old[key] ?? '') === JSON.stringify(next[key] ?? ''))) return was
+  // Edited twice today: the first edit's old schedule is the one past days had.
+  if (was.length && was[was.length - 1].until >= todayIso) return was
+  const entry = { until: todayIso }
+  for (const key of WAS_FIELDS) entry[key] = old[key] ?? ''
+  return [...was, entry].slice(-WAS_KEEP)
+}
+
 export function isDueOn(lamp, dateIso) {
   if (!lamp || lamp.archived) return false
   const date = parseIsoDate(dateIso)
   if (!date) return false
+  if (lamp.was) lamp = scheduleAt(lamp, dateIso)
   switch (lamp.cadence) {
     case 'daily':
       return true
