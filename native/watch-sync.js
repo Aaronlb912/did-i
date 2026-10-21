@@ -108,6 +108,26 @@ export function sendWatchCards(props, shelf = null) {
   }
 }
 
+// takePendingTaps empties the native queue and the watch never sends a tap
+// twice, so a tap that failed to apply is kept here and tried again.
+const RETRY_KEY = 'did-i-watch-retry'
+function readRetry() {
+  try {
+    const list = JSON.parse(localStorage.getItem(RETRY_KEY) || '[]')
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+function writeRetry(list) {
+  try {
+    if (list.length) localStorage.setItem(RETRY_KEY, JSON.stringify(list.slice(-50)))
+    else localStorage.removeItem(RETRY_KEY)
+  } catch {
+    // Kept in memory for this run only.
+  }
+}
+
 // onTap({ id, answer: 'did' | 'nope', night, dateIso, at }). Returns a stop function.
 // Android: WatchTapService already saved the tap in the widget tap queue, so
 // onQueued() takes that queue instead (no tap is applied twice).
@@ -122,7 +142,7 @@ export function listenForWatchTaps(onTap, onQueued) {
   // Newer builds save every tap natively and send an empty event; older ones
   // send the tap itself. Either way, take the saved queue too.
   const take = (tap) => {
-    const taps = []
+    const taps = readRetry()
     try {
       taps.push(...(mod.takePendingTaps?.() || []))
     } catch {
@@ -130,14 +150,16 @@ export function listenForWatchTaps(onTap, onQueued) {
     }
     if (tap?.id) taps.push(tap)
     // One tap that fails must not drop the rest, or tell the watch it landed.
+    const failed = []
     for (const item of taps) {
       try {
         onTap(item)
         noteTaken(item?.at)
       } catch {
-        // Stays pending on the watch.
+        failed.push(item)
       }
     }
+    writeRetry(failed)
   }
   const sub = mod.addListener('onWatchTap', take)
   take(null)

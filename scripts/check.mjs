@@ -1098,6 +1098,13 @@ test('the weekly recap counts an early by-date Did in the week it was done', () 
   assert.equal(weekRecap([book], weekOf('2026-10-25')).dids, 0)
 })
 
+test('a watch tap that fails to apply is kept and tried again', () => {
+  const src = readFileSync(new URL('../native/watch-sync.js', import.meta.url), 'utf8')
+  const take = src.slice(src.indexOf('const take = (tap)'))
+  assert.ok(take.includes('const taps = readRetry()'), 'earlier failures are tried first')
+  assert.ok(take.includes('failed.push(item)') && take.includes('writeRetry(failed)'), 'a failed tap is kept')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
