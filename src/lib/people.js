@@ -1042,11 +1042,13 @@ export async function editSend(id, question) {
 export async function familyHistory(familyId, nights) {
   const db = cloud()
   if (!db) return []
-  const { data } = await db
+  const { data, error } = await db
     .from('family_answers')
     .select('lamp_id, user_id, status, period_key')
     .eq('family_id', familyId)
     .in('period_key', nights)
+  // A failed read is not an empty week: callers can tell by miss.
+  if (error) return Object.assign([], { miss: 'people.reach' })
   return data || []
 }
 

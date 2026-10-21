@@ -146,8 +146,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       const serverCheers = await cheersAsk
       if (mine !== loadRef.current) return
       if (typeof serverCheers === 'number') setStock(serverCheers)
-      if (tonightRows.miss) {
-        setMiss(tonightRows.miss)
+      if (tonightRows.miss || pastRows.miss) {
+        setMiss(tonightRows.miss || pastRows.miss)
         setReady(true)
         return
       }
