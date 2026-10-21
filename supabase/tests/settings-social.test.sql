@@ -43,6 +43,7 @@ begin
   update public.profiles set zone = 'UTC', prefs = '{}'::jsonb, share_streak = true, family_hour = hour_now where user_id = a;
   update public.profiles set zone = 'UTC', prefs = '{}'::jsonb, share_streak = true, family_hour = (hour_now + 1) % 24 where user_id = b;
   insert into public.devices (user_id, device_key, push_token) values (a, 'ta', 'tok-a'), (b, 'tb', 'tok-b');
+  delete from public.push_queue where go = '/people'; -- join pushes, not the summary
 
   perform public.queue_family_summaries();
   select count(*) into n from public.push_queue where to_id = a and go = '/people';
