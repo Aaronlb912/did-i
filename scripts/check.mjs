@@ -1105,6 +1105,11 @@ test('a watch tap that fails to apply is kept and tried again', () => {
   assert.ok(take.includes('failed.push(item)') && take.includes('writeRetry(failed)'), 'a failed tap is kept')
 })
 
+test('keep and pass buttons follow a language change', () => {
+  const src = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
+  assert.ok(src.includes('setNotificationCategoryAsync(SEND_CATEGORY, sendActions(t))'), 'set again with the reminders')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',

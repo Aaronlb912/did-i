@@ -6,7 +6,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { ASK_CATEGORY, askActions, askNoteData } from '../../src/lib/notify-answer.js'
+import { ASK_CATEGORY, SEND_CATEGORY, askActions, askNoteData, sendActions } from '../../src/lib/notify-answer.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, nightOpen, waitingTonight } from '../../src/lib/recurrence.js'
@@ -228,6 +228,8 @@ async function schedulePingsNow(books, now = new Date()) {
     // Did and Nope buttons on a question reminder. They answer without opening
     // the app (native/shim/push.js saves it like a widget tap).
     await Notifications.setNotificationCategoryAsync(ASK_CATEGORY, askActions(t)).catch(() => {})
+    // Keep and Pass too, so a language change reaches them without a restart.
+    await Notifications.setNotificationCategoryAsync(SEND_CATEGORY, sendActions(t)).catch(() => {})
     const when = (at) => ({
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: afterQuiet(at),

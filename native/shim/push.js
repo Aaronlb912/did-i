@@ -2,7 +2,7 @@ import { AppState, Platform } from 'react-native'
 import { cloud } from '../../src/lib/cloud.js'
 import { deviceKey } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
-import { firstResponse, notificationAnswer } from '../../src/lib/notify-answer.js'
+import { SEND_CATEGORY, firstResponse, notificationAnswer, sendActions } from '../../src/lib/notify-answer.js'
 import {
   askNotificationPermission,
   notificationPermissionGranted,
@@ -13,7 +13,6 @@ import { askMorningFocus } from '../../src/lib/first-run.js'
 import { addNotice, noticesSeenAt, readNotices } from '../../src/lib/notices.js'
 
 const CHANNEL_ID = 'did-i'
-const SEND_CATEGORY = 'did-i-send'
 
 let handlerReady = false
 let responseBound = false
@@ -138,10 +137,7 @@ async function bindResponseListener(handlers = {}) {
     // category). Both open the app; the inbox answers it.
     try {
       // Not awaited, so a slow call never holds up the listener below.
-      Notifications.setNotificationCategoryAsync(SEND_CATEGORY, [
-        { identifier: 'keep', buttonTitle: t('inbox.keep'), options: { opensAppToForeground: true } },
-        { identifier: 'pass', buttonTitle: t('inbox.pass'), options: { opensAppToForeground: true } },
-      ])?.catch?.(() => {})
+      Notifications.setNotificationCategoryAsync(SEND_CATEGORY, sendActions(t))?.catch?.(() => {})
     } catch {
       // No buttons; a tap still opens the inbox.
     }
