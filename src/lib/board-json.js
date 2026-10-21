@@ -283,9 +283,18 @@ export function amountUnitOf(lamp) {
 }
 
 // A number from 0 to AMOUNT_MAX, two places at most, or null. A comma reads as a decimal point.
+// "1,500" and "1.500,5" are thousands; a lone comma otherwise is a decimal point.
+function decimalText(text) {
+  const dot = text.lastIndexOf('.')
+  const comma = text.lastIndexOf(',')
+  if (dot >= 0 && comma >= 0) return dot > comma ? text.replace(/,/g, '') : text.replace(/\./g, '').replace(',', '.')
+  if (/^\d{1,3}(,\d{3})+$/.test(text)) return text.replace(/,/g, '')
+  return text.replace(',', '.')
+}
+
 export function cleanAmount(value) {
   if (value === null || value === undefined) return null
-  const text = typeof value === 'number' ? String(value) : String(value).trim().replace(',', '.')
+  const text = typeof value === 'number' ? String(value) : decimalText(String(value).trim())
   if (!text) return null
   const n = Number(text)
   if (!Number.isFinite(n) || n < 0 || n > AMOUNT_MAX) return null
