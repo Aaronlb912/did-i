@@ -2785,6 +2785,29 @@ test('the tonight widget can draw a question without the app', () => {
     ),
   )
   assert.ok(owl.includes('topTrailing') && owl.includes('#8b6b4a'), 'a worn owl sits in the top right')
+  // Last night's door is answered; the entry still names it. The card shows
+  // the question its buttons answer.
+  const moved = JSON.stringify(
+    fn(
+      {
+        tagTitle: 'Home',
+        question: 'Did I lock the door?',
+        leadLampId: 'door',
+        leadNight: 'old',
+        items: [
+          { lampId: 'door', label: 'Door', question: 'Did I lock the door?', periodKey: 'old', status: 'yes' },
+          { lampId: 'keys', label: 'Keys', question: 'Did I grab my keys?', periodKey: 'new', status: 'open' },
+        ],
+        left: 1,
+        footer: 'One left tonight.',
+        didLabel: 'Did',
+        nopeLabel: 'Did not',
+      },
+      { widgetFamily: 'systemMedium', widgetRenderingMode: 'fullColor' },
+    ),
+  )
+  assert.ok(moved.includes('did:keys') && moved.includes('Did I grab my keys?'), 'the text matches the buttons')
+  assert.ok(!moved.includes('Did I lock the door?'), 'an answered lead is not shown over another question')
   function findPress(node, target) {
     if (!node || typeof node !== 'object') return null
     if (node.props?.target === target && typeof node.props.onPress === 'function') return node.props.onPress
@@ -5258,7 +5281,7 @@ test('the widget lead mirror matches both widget files', () => {
     assert.ok(/items\.find\(\(item\) => item\.status === 'open'\)\s*\|\|\s*items\.find\(\(item\) => item\.status === 'skip'\)/.test(src), 'leadItem falls back open then nope')
   }
   assert.ok(ios.includes('const lead = leadItem(items, props?.leadLampId, props?.leadNight)'))
-  assert.ok(ios.includes("String(props?.question || '').trim() || lead?.label || footer"))
+  assert.ok(ios.includes("String(lead?.question || lead?.label || '') || footer"), 'iOS text follows the lead the buttons answer')
   assert.ok(ios.includes('{lead ? questionText : footer}'), 'iOS draws a question only with a lead')
   assert.ok(ios.includes('const buttons = lead ?'))
   assert.ok(android.includes("const fromLead = String(lead.question || '').trim() || String(lead.label || '').trim()"))
