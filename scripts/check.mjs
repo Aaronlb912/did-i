@@ -812,6 +812,13 @@ test('a coin buy whose reply was lost reads back what is owned', () => {
   assert.ok(buy.indexOf('readCoinCatalog()') > 0 && buy.indexOf('readCoinCatalog()') < buy.indexOf('const cat = normalizeCoinCatalog(data)'))
 })
 
+test('an offline undo waits instead of being dropped, and a clock set back resends', () => {
+  const src = readFileSync(new URL('../src/lib/answer-log.js', import.meta.url), 'utf8')
+  const pending = src.slice(src.indexOf('export async function runPendingUndos'))
+  assert.ok(pending.includes('if (!/fetch|network'), 'a network error is not a refusal')
+  assert.ok(src.includes("if (stampMs(read(MARK)) > Date.now()) write(MARK, '')"), 'a mark ahead of the clock resets')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',

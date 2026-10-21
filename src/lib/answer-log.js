@@ -82,6 +82,8 @@ function rowStamp(row) {
 export async function pushAnswers(shelf, all = false) {
   const db = cloud()
   if (!db) return { sent: 0, miss: '' }
+  // The phone clock went back past the mark: new taps would look already sent.
+  if (stampMs(read(MARK)) > Date.now()) write(MARK, '')
   const fresh = !read(ZONED)
   const rows = answersToSend(shelf, all || fresh)
   if (!rows.length) {
@@ -303,7 +305,12 @@ export async function takeBackAnswer(book, lampId, periodKey) {
   const row = before ? rowsOf({ boards: [{ ...book, answers: [before] }] }) : []
   const item = { id: lampId + '|' + periodKey + '|' + now, user, lampId, periodKey, now, row, beforeAt: before ? stampMs(answerStamp(before)) || 0 : 0 }
   write(UNDO, JSON.stringify([...readUndos(), item].slice(-50)))
-  await undoOnce(db, item)
+  try {
+    await undoOnce(db, item)
+  } catch {
+    // Offline: it waits in UNDO for the next sync.
+    return
+  }
   await new Promise((done) => setTimeout(done, 4000))
   // Signed out or into another account meanwhile: the old row is not theirs.
   if (readAccountUserId() !== user) return dropUndo(item)
@@ -325,9 +332,10 @@ export async function runPendingUndos() {
     try {
       await undoOnce(db, item, true)
       dropUndo(item)
-    } catch {
-      // Still offline: try again on the next sync.
-      failUndo(item)
+    } catch (error) {
+      // Still offline: try again on the next sync. Only a server that
+      // answered and refused counts toward giving up.
+      if (!/fetch|network|timed? ?out|abort/i.test(String(error?.message || error))) failUndo(item)
     }
   }
 }
