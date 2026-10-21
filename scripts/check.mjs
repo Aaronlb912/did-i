@@ -871,6 +871,11 @@ test('Next on the Android widget applies a waiting tap first', () => {
   assert.ok(src.indexOf('applyPendingAndroidWidgetTap()') < src.indexOf("clickAction === 'PEEK'") && src.includes("'PEEK' && !applied"))
 })
 
+test('a double tap on Block sends one block', () => {
+  const src = readFileSync(new URL('../native/screens/social.jsx', import.meta.url), 'utf8')
+  assert.equal(src.split("once('block:' + person.user_id").length, 3)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
