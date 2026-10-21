@@ -127,6 +127,7 @@ export async function requestNativePings() {
       return 'granted'
     }
     if (status === 'denied') return 'denied'
+    if (status === 'missing') return 'missing'
     return 'default'
   } catch {
     return 'denied'
