@@ -334,6 +334,15 @@ test('flying LA to Tokyo skips the 15th and the streak goes on', () => {
   assert.equal(travelShelfStreak([closed], noon), 14)
 })
 
+test('changing every so often to daily leaves past days not due', async () => {
+  const { keepPastSchedule, isDueOn } = await import('../src/lib/recurrence.js')
+  const old = lamp('gym', { cadence: 'every', everyDays: 7, createdOn: '2026-09-20' })
+  const next = { ...old, cadence: 'daily' }
+  next.was = keepPastSchedule(old, next, '2026-10-21')
+  assert.equal(isDueOn(next, '2026-10-10'), false, 'a past day is not a miss')
+  assert.equal(isDueOn(next, '2026-10-21'), true)
+})
+
 test('changing Mondays to daily keeps the past Mondays streak', async () => {
   const { keepPastSchedule } = await import('../src/lib/recurrence.js')
   const mondays = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19']
