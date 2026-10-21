@@ -262,8 +262,24 @@ export function takeMorningFocus() {
 export const tourWho = () => (accountSessionOn() ? readAccountUserId() : '')
 const tourKey = (who) => `did-i-tour:${who || 'out'}`
 
+// The signed-out tour moves to the first account that signs in here: its
+// 'sign in for coins' claim is paid there, and the tour does not play again.
+// Only fields the account has not set yet are taken.
+function adoptOutTour(who) {
+  const out = localStorage.getItem(tourKey(''))
+  if (!who || !out) return
+  const parsed = JSON.parse(out)
+  const from = parsed && typeof parsed === 'object' ? parsed : {}
+  const kept = JSON.parse(localStorage.getItem(tourKey(who)) || '{}')
+  const next = { ...(kept && typeof kept === 'object' ? kept : {}) }
+  for (const [k, v] of Object.entries(from)) if (next[k] === undefined || next[k] === 'new') next[k] = v
+  localStorage.setItem(tourKey(who), JSON.stringify(next))
+  localStorage.removeItem(tourKey(''))
+}
+
 export function readTour(who = tourWho()) {
   try {
+    adoptOutTour(who)
     const raw = JSON.parse(localStorage.getItem(tourKey(who)) || '{}')
     const tour = raw && typeof raw === 'object' ? raw : {}
     return { basics: 'new', more: 'new', ...tour }
