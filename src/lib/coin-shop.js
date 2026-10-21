@@ -31,12 +31,11 @@ async function buyFrameRaw(book, id) {
 
 async function buyLookWithCoinsRaw(book, id) {
   const look = liveLooks().find((item) => item.id === id)
-  if (!look) return { book, miss: 'shop.miss.lookGone' }
   const purse = normalizePurse(book)
-  if (purse.looks.includes(id)) {
-    return { book: { ...book, ...purse, lookOn: id }, miss: '' }
-  }
-  if (look.gems > 0) return buyWithGems(book, 'look', id)
+  if (purse.looks.includes(id)) return buyLook(book, id)
+  if (!look) return { book, miss: 'shop.miss.lookGone' }
+  // Raw: this whole buy is already counted once.
+  if (look.gems > 0) return buyWithGemsRaw(book, 'look', id)
   if (!look.coins) return buyLook(book, id)
   if (accountSessionOn()) {
     const remote = await purchaseWithCoins('look', id)
