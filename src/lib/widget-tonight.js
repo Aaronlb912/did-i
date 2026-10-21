@@ -621,5 +621,7 @@ export function handleAndroidWidgetClick(clickAction, clickActionData) {
   const kind = String(clickActionData?.kind || '').trim()
   const night = String(clickActionData?.night || '').trim()
   if (!lampId || (kind !== 'did' && kind !== 'nope')) return null
-  return applyWidgetTapOnce(lampId, kind, night, new Date(), Date.now())
+  // No tap time reaches this fallback, and the cold start can land after
+  // midnight: 0 lets tapClock place the answer on the card's own night.
+  return applyWidgetTapOnce(lampId, kind, night, new Date(), 0)
 }
