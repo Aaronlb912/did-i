@@ -8,6 +8,7 @@ import {
   dueTonight,
   faceReadyTonight,
   formatBoardDate,
+  inPause,
   isDueOn,
   isEvery,
   isoDate,
@@ -395,6 +396,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
         if (skipped && travelNightState(answerFor(book.book, lamp.id, key), iso) === 'none') continue
         // Same rows as countedTonightRows.
         const done = status === 'yes' || status === 'late'
+        if (!done && lamp.pauses && inPause(lamp, iso)) continue
         if (lamp.fromDidI || (lamp.keptDids && !done && (!lamp.pausedOn || iso >= lamp.pausedOn))) continue
         const doneOn = done ? book.doneOn.get(lamp.id) : ''
         if (doneOn && doneOn !== iso) continue

@@ -157,6 +157,11 @@ export function keepPastSchedule(old, next, todayIso) {
   return [...was, entry].slice(-WAS_KEEP)
 }
 
+// A day inside a pause since resumed ([from, until) pairs on lamp.pauses).
+export function inPause(lamp, iso) {
+  return Boolean(lamp?.pauses?.some(([from, until]) => iso >= from && iso < until))
+}
+
 export function isDueOn(lamp, dateIso) {
   if (!lamp || lamp.archived) return false
   const date = parseIsoDate(dateIso)

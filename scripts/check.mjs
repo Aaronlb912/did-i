@@ -896,6 +896,19 @@ test('resuming a paused question keeps its streak', async () => {
   assert.equal(lampRecord(book, rq, '2026-10-10', 60).streak, 21, 'the paused days neither count nor break')
 })
 
+test('a resumed pause is not a miss in days in a row or the year view', async () => {
+  const { shelfStreak } = await import('../src/lib/hall-feel.js')
+  const { yearMonths } = await import('../src/lib/hall-pages.js')
+  const did = (day) => ({ id: 'a' + day, lampId: 'p', periodKey: day, status: 'yes', answeredAt: day + 'T20:00:00.000Z', note: '' })
+  const days = ['2026-09-27', '2026-09-28', '2026-09-29', '2026-09-30', '2026-10-05', '2026-10-06']
+  const q = { ...lamp('p'), cadence: 'daily', createdOn: '2026-09-27', pauses: [['2026-10-01', '2026-10-05']] }
+  const book = { id: 'b', title: 'Home', lamps: [q], answers: days.map(did) }
+  const now = new Date(2026, 9, 6, 22)
+  assert.equal(shelfStreak([book], now), 6)
+  const oct = yearMonths([book], 2026, now)[9].nights.find((night) => night.iso === '2026-10-02')
+  assert.equal(oct.miss, false)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
