@@ -5561,9 +5561,9 @@ test('signing out clears the per-account lists kept for a fast first paint', () 
   assert.ok(boot.includes('allKeys:'), 'the phone storage shim can list keys')
 })
 
-test('sign out: Did we reminders and widget line go with the account', () => {
+test('sign out: Did we reminders, widget line and recently asked go with the account', () => {
   const was = globalThis.localStorage
-  const store = new Map([['did-i-we-pings', '[]'], ['did-i-we-widget', '{}'], ['did-i-shelf', '1']])
+  const store = new Map([['did-i-we-pings', '[]'], ['did-i-we-widget', '{}'], ['did-i-we-recent', '["x"]'], ['did-i-shelf', '1']])
   globalThis.localStorage = {
     allKeys: () => [...store.keys()],
     getItem: (k) => store.get(k) ?? null,
