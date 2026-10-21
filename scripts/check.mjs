@@ -836,6 +836,16 @@ test("sign-out clears the old account's notifications from the tray", () => {
   assert.ok(src.includes('dismissAllNotificationsAsync') && src.lastIndexOf('clearTray()') > src.lastIndexOf('signedOutSync()'))
 })
 
+test('a daily run stays due after a trip through every so often and back', async () => {
+  const { keepPastSchedule, isDueOn } = await import('../src/lib/recurrence.js')
+  const daily = { cadence: 'daily', createdOn: '2026-07-01', was: [{ until: '2026-09-01', cadence: 'weekly', weekdays: [1], monthDay: '', everyN: '', everyNAnchor: '' }] }
+  const every = { ...daily, cadence: 'every', everyDays: 3 }
+  every.was = keepPastSchedule(daily, every, '2026-10-01')
+  const back = { ...daily, was: null }
+  back.was = keepPastSchedule(every, back, '2026-10-02')
+  assert.ok(isDueOn(back, '2026-09-15'), 'September stays a daily run')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
