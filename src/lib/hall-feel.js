@@ -65,6 +65,8 @@ function noonOn(iso) {
 export function hallHeat(book, now = new Date()) {
   if (!book) return 0
   let cursor = boardDate(now, book.dayFoldHour)
+  // Last night, while it can still be answered, waits like tonight does.
+  const grace = graceNightIso(now)
   let heat = 0
   for (let step = 0; step < 40 && heat < 5; step += 1) {
     const at = noonOn(cursor)
@@ -76,7 +78,7 @@ export function hallHeat(book, now = new Date()) {
     }
     // Tonight still open is not a break yet; it just does not count.
     if (!dueClearTonight(rows)) {
-      if (step > 0) break
+      if (step > 0 && cursor !== grace) break
       cursor = addDaysIso(cursor, -1)
       continue
     }
