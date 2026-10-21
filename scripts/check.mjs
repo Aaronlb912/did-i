@@ -3,6 +3,7 @@
 // Everything here is something that broke once, or would break quietly
 // if someone changed the wrong line.
 
+import './offline-env.mjs'
 import { strict as assert } from 'node:assert'
 import { testBuyCredits } from '../supabase/functions/gem-iap/gate.js'
 import { createRequire, registerHooks } from 'node:module'
