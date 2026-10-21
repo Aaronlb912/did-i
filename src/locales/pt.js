@@ -1002,6 +1002,7 @@ export const pt = {
   'invite.joinedGo': 'Adicionar amigo',
   'invite.joinedOk': 'Boa',
   'invite.cardTitle': 'Convidar amigos',
+  'people.referRow': 'Indique amigos e família',
   'invite.cardBody': 'Envia o teu link. Cada amigo que entra dá-te gems, até {max}.',
   'invite.send': 'Enviar convite',
   'invite.more': 'Código QR e mais',

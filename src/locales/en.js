@@ -1001,6 +1001,7 @@ export const en = {
   'invite.joinedGo': 'Add a friend',
   'invite.joinedOk': 'Nice',
   'invite.cardTitle': 'Invite friends',
+  'people.referRow': 'Refer friends and family',
   'invite.cardBody': 'Send your link. Each friend who joins gets you gems, up to {max}.',
   'invite.send': 'Send invite',
   'invite.more': 'QR code and more',

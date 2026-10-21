@@ -988,6 +988,7 @@ export const ko = {
   'invite.joinedGo': '친구 추가',
   'invite.joinedOk': '좋아요',
   'invite.cardTitle': '친구 초대',
+  'people.referRow': '친구와 가족 추천하기',
   'invite.cardBody': '링크를 보내세요. 친구가 참여할 때마다 gems를 받아요(최대 {max}).',
   'invite.send': '초대 보내기',
   'invite.more': 'QR 코드 등',

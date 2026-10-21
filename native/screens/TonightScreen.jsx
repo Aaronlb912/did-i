@@ -1473,7 +1473,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         ) : (
           <Slot>
             {/* flex: 1 because the card fills this box; without it the card collapses to no height. */}
-            <View style={[styles.pickBox, pillPicked && styles.pickTop]}>
+            <View style={styles.pickBox}>
               {/* Measures the card, not the room around it, so the held height can shrink back. */}
               <View {...swipeTour} style={pickMinH ? { minHeight: pickMinH } : null}>
                 {/* Loading to the real card eases in, never a hard swap. */}
@@ -1609,8 +1609,6 @@ const styles = StyleSheet.create({
   // The height of Back to tonight (36 + its 6 below), so both cards start on one line.
   // Centered, so the cards that do not swipe (waiting, nothing right now, rest) sit mid-screen too.
   pickBox: { flexGrow: 1, flexShrink: 0, justifyContent: 'center' },
-  // A tall picked card centred in a short box ran up over Back to Today.
-  pickTop: { justifyContent: 'flex-start' },
   doneScroll: { flexGrow: 0, flexShrink: 1, position: 'relative' },
   doneFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 36 },
   doneFadeStep: { flex: 1 },
