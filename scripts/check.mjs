@@ -326,7 +326,12 @@ test('changing Mondays to daily keeps the past Mondays streak', async () => {
   assert.equal(questionStreak({ id: 'b', lamps: [old], answers }, old, '2026-10-21'), 7)
   assert.equal(questionStreak({ id: 'b', lamps: [next], answers }, next, '2026-10-21'), 7)
   // Without was, the Tuesday before reads as a miss.
-  assert.equal(questionStreak({ id: 'b', lamps: [{ ...next, was: undefined }], answers }, { ...next, was: undefined }, '2026-10-21'), 0)
+  assert.equal(questionStreak({ id: 'b', lamps: [{ ...next, was: undefined }], answers }, { ...next, was: undefined }, '2026-10-21', 400, new Date(2026, 9, 21, 12)), 0)
+  // At 1am last night is still open: unanswered, it does not break the run yet.
+  const daily = lamp('walk', { cadence: 'daily', createdOn: '2026-10-01' })
+  const did = ['2026-10-17', '2026-10-18', '2026-10-19'].map((night) => ({ id: night, lampId: 'walk', periodKey: night, status: 'yes' }))
+  assert.equal(questionStreak({ id: 'b', lamps: [daily], answers: did }, daily, '2026-10-21', 400, new Date(2026, 9, 21, 1)), 3)
+  assert.equal(questionStreak({ id: 'b', lamps: [daily], answers: did }, daily, '2026-10-21', 400, new Date(2026, 9, 21, 12)), 0)
 })
 
 test('flying Tokyo to LA repeats a day and marks nothing', () => {
