@@ -23,7 +23,7 @@ import { refreshWeNights } from '../../src/lib/we-nights.js'
 import { goHash } from '../navigation/hash.js'
 import { showToast } from '../lib/toast-queue.js'
 import { nameFirst } from './NameFirstSheet.jsx'
-import { publishSheet } from './SheetHost.jsx'
+import { publishSheet, sheetIsUp, whenNoSheet } from './SheetHost.jsx'
 
 // Shown once each: what happens after the first Did you kept from a link,
 // and after the first Did we joined from one.
@@ -78,6 +78,16 @@ export function DidYouLinkHost({ colors, onKeep }) {
     // A Did we link waits for sign-in; a Did you link behind it still opens.
     const code = peekPendingDidYou(userId ? null : isWeLinkCode)
     if (!code) return undefined
+    // Another sheet is open (an earlier link, the tour, a buy): wait for it, never replace it.
+    if (sheetIsUp()) {
+      let waiting = true
+      whenNoSheet().then(() => {
+        if (waiting) setTick((n) => n + 1)
+      })
+      return () => {
+        waiting = false
+      }
+    }
     const we = isWeLinkCode(code)
     if (we && !userId) {
       // Kept until they sign in. Asked once; Not now only closes the sheet, the link still runs after sign-in.
