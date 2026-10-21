@@ -1,3 +1,4 @@
+import { readAccountUserId } from './session-id.js'
 import { useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
@@ -267,14 +268,17 @@ export function useAccount() {
     const db = cloud()
     if (!db) return undefined
     let alive = true
+    // A failed refresh offline is not a sign out: keep the account we knew.
+    // Only SIGNED_OUT below clears it.
+    const keep = () => lastUser || (readAccountUserId() ? { id: readAccountUserId() } : null)
     db.auth.getSession().then(
-      ({ data }) => {
-        lastUser = data?.session?.user || null
+      ({ data, error }) => {
+        lastUser = data?.session?.user || (error ? keep() : null)
         if (alive) setState((was) => (was.ready && was.user?.id === lastUser?.id ? was : { ready: true, user: lastUser }))
       },
       () => {
-        lastUser = null
-        if (alive) setState({ ready: true, user: null })
+        lastUser = keep()
+        if (alive) setState({ ready: true, user: lastUser })
       },
     )
     const { data: sub } = db.auth.onAuthStateChange((_event, session) => {
