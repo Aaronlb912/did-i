@@ -26,6 +26,19 @@ export function sheetIsUp() {
   return Boolean(current?.title)
 }
 
+// Resolves once no sheet is up, a beat after the last one closes, so a sheet
+// that waits its turn never replaces one the person is reading.
+export function whenNoSheet() {
+  return new Promise((resolve) => {
+    if (!sheetIsUp()) return resolve()
+    const off = onSheetUp((up) => {
+      if (up) return
+      off()
+      setTimeout(resolve, 400)
+    })
+  })
+}
+
 export function publishSheet(next) {
   current = next
   listen?.(next)
