@@ -151,7 +151,10 @@ export function keepPastSchedule(old, next, todayIso) {
   if (WAS_FIELDS.every((key) => JSON.stringify(old[key] ?? '') === JSON.stringify(next[key] ?? ''))) return was
   // Edited twice today: the first edit's old schedule is the one past days had.
   if (was.length && was[was.length - 1].until >= todayIso) return was
-  const entry = { until: todayIso }
+  // Daily to monthly (or back) changes today's key from the day to the month,
+  // so today's answer would be left behind. Today keeps the old schedule.
+  const reshaped = (old.cadence === 'monthly') !== (next.cadence === 'monthly') && isDueOn({ ...old, archived: false }, todayIso)
+  const entry = { until: reshaped ? addDaysIso(todayIso, 1) : todayIso }
   for (const key of WAS_FIELDS) entry[key] = old[key] ?? ''
   if (old.cadence === 'once') entry.cadence = 'every'
   return [...was, entry].slice(-WAS_KEEP)

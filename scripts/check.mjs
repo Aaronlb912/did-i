@@ -1060,6 +1060,20 @@ test('a failed account delete keeps the photo and sign out clears hidden sends',
   assert.ok(ACCOUNT_CACHE_PREFIXES.includes('did-i-sent-hidden:'))
 })
 
+test('switching daily and monthly keeps the answer given today', async () => {
+  const { keepPastSchedule, periodKeyFor } = await import('../src/lib/recurrence.js')
+  const daily = lamp('a', { cadence: 'daily', createdOn: '2026-09-01' })
+  const toMonth = { ...daily, cadence: 'monthly', monthDay: 21 }
+  toMonth.was = keepPastSchedule(daily, toMonth, '2026-10-21')
+  assert.equal(periodKeyFor(toMonth, '2026-10-21'), '2026-10-21')
+  assert.equal(periodKeyFor(toMonth, '2026-11-21'), '2026-11')
+  const monthly = lamp('b', { cadence: 'monthly', monthDay: 21, createdOn: '2026-08-01' })
+  const toDay = { ...monthly, cadence: 'daily' }
+  toDay.was = keepPastSchedule(monthly, toDay, '2026-10-21')
+  assert.equal(periodKeyFor(toDay, '2026-10-21'), '2026-10')
+  assert.equal(periodKeyFor(toDay, '2026-10-22'), '2026-10-22')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
