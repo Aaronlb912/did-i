@@ -41,8 +41,8 @@ const widgetPlugins = includeWidgets
           widgets: [
             {
               name: 'DidITonight',
-              displayName: 'Did I today',
-              description: 'Today’s questions for your folder. Tap Did or Not yet from the widget.',
+              displayName: 'Did I questions',
+              description: 'Answer today’s questions with Did or Not yet.',
               ios: {
                 contentMarginsDisabled: true,
                 supportedFamilies: [
@@ -57,8 +57,8 @@ const widgetPlugins = includeWidgets
             },
             {
               name: 'DidITogether',
-              displayName: 'Did I together',
-              description: 'Your friends and family, and who is done today.',
+              displayName: 'Did I friends',
+              description: 'See which friends and family are done today. Nothing to answer here.',
               ios: {
                 contentMarginsDisabled: true,
                 supportedFamilies: ['systemSmall', 'systemMedium', 'systemLarge'],
@@ -73,8 +73,8 @@ const widgetPlugins = includeWidgets
           widgets: [
             {
               name: 'DidITonight',
-              label: 'Did I today',
-              description: 'Today’s questions for your folder. Settings → Widget.',
+              label: 'Did I questions',
+              description: 'Answer today’s questions with Did or Not yet.',
               minWidth: '110dp',
               minHeight: '110dp',
               maxResizeWidth: '400dp',
@@ -85,8 +85,8 @@ const widgetPlugins = includeWidgets
             },
             {
               name: 'DidITogether',
-              label: 'Did I together',
-              description: 'Your friends and family, and who is done today.',
+              label: 'Did I friends',
+              description: 'See which friends and family are done today. Nothing to answer here.',
               minWidth: '110dp',
               minHeight: '110dp',
               maxResizeWidth: '400dp',

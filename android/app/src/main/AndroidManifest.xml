@@ -61,7 +61,7 @@
       </intent-filter>
       <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts"/>
     </activity>
-    <receiver android:name=".widget.DidITonight" android:exported="true" android:label="Did I tonight">
+    <receiver android:name=".widget.DidITonight" android:exported="true" android:label="Did I questions">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
         <action android:name="com.aaronbryant.didi.WIDGET_CLICK"/>
@@ -75,7 +75,7 @@
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_diditonight"/>
     </receiver>
-    <receiver android:name=".widget.DidITogether" android:exported="true" android:label="Did I together">
+    <receiver android:name=".widget.DidITogether" android:exported="true" android:label="Did I friends">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
         <action android:name="com.aaronbryant.didi.WIDGET_CLICK"/>
