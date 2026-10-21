@@ -264,6 +264,11 @@ export async function purchaseWithCoins(kind, itemId) {
     const text = error.message || ''
     if (/need coins/i.test(text)) return { miss: 'shop.miss.needCoins', missN: coinCostFor(k, id) }
     if (/bad item/i.test(text)) return { miss: gone }
+    // The reply may be lost after the buy landed: read back, so the phone
+    // shows the item owned and the coins spent instead of "buy failed".
+    const list = { look: 'looks', accessory: 'accessories', frame: 'frames' }[k]
+    const back = list ? await readCoinCatalog().catch(() => null) : null
+    if (back?.[list]?.includes(id)) return { miss: '', ...back, catalog: back }
     return { miss: 'shop.miss.buyFail' }
   }
   const cat = normalizeCoinCatalog(data)

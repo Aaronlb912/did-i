@@ -806,6 +806,12 @@ test('a one-time question made daily does not turn its past days into misses', a
   assert.equal(isDueOn(lamp, '2026-10-21'), true)
 })
 
+test('a coin buy whose reply was lost reads back what is owned', () => {
+  const src = readFileSync(new URL('../src/lib/wallet.js', import.meta.url), 'utf8')
+  const buy = src.slice(src.indexOf('export async function purchaseWithCoins'))
+  assert.ok(buy.indexOf('readCoinCatalog()') > 0 && buy.indexOf('readCoinCatalog()') < buy.indexOf('const cat = normalizeCoinCatalog(data)'))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
