@@ -797,6 +797,15 @@ test('accepting a request they took back says so and reloads', () => {
   assert.ok(yes.includes("miss: 'friends.askChanged'"))
 })
 
+test('a one-time question made daily does not turn its past days into misses', async () => {
+  const { keepPastSchedule, isDueOn } = await import('../src/lib/recurrence.js')
+  const old = { id: 'q', cadence: 'once', onceWhen: 'on', onceOn: '2026-10-15', createdOn: '2026-10-14' }
+  const next = { ...old, cadence: 'daily', onceWhen: '', onceOn: '' }
+  const lamp = { ...next, was: keepPastSchedule(old, next, '2026-10-21') }
+  assert.equal(isDueOn(lamp, '2026-10-18'), false)
+  assert.equal(isDueOn(lamp, '2026-10-21'), true)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',

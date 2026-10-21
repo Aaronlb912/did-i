@@ -144,13 +144,15 @@ export function keepPastSchedule(old, next, todayIso) {
   const was = Array.isArray(old?.was) ? old.was : []
   if (!WAS_CADENCES.has(next.cadence)) return []
   // Every so often has no missed days: before the edit, past days stay not due.
-  if (!old || !(WAS_CADENCES.has(old.cadence) || old.cadence === 'every')) return was
+  // A one-time question made repeating is the same: no past day became a miss.
+  if (!old || !(WAS_CADENCES.has(old.cadence) || old.cadence === 'every' || old.cadence === 'once')) return was
   if (!old.createdOn || old.createdOn >= todayIso) return was
   if (WAS_FIELDS.every((key) => JSON.stringify(old[key] ?? '') === JSON.stringify(next[key] ?? ''))) return was
   // Edited twice today: the first edit's old schedule is the one past days had.
   if (was.length && was[was.length - 1].until >= todayIso) return was
   const entry = { until: todayIso }
   for (const key of WAS_FIELDS) entry[key] = old[key] ?? ''
+  if (old.cadence === 'once') entry.cadence = 'every'
   return [...was, entry].slice(-WAS_KEEP)
 }
 
