@@ -590,6 +590,7 @@ export const ko = {
   'hang.miss.onceOn': "한 번만 나오는 이 질문의 날을 골라 주세요.",
   'hang.miss.dueBy': '이 질문의 마감일을 골라 주세요.',
   'hang.miss.dueByBefore': "마감일은 추가한 날보다 앞설 수 없어요.",
+  'hang.miss.dayPassed': '오늘이나 그 이후 날짜를 골라 주세요.',
   'hang.miss.everyN': '며칠마다에는 2 이상의 숫자가 필요해요.',
   'hang.miss.everyNStart': '며칠마다에는 시작 날짜가 필요해요.',
   'hang.miss.askAfter': '나중에 묻기는 20:00 같은 시간으로 쓰거나 비워 두세요.',

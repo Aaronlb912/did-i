@@ -600,6 +600,7 @@ export const de = {
   'hang.miss.onceOn': "Wähle einen Tag für diese Einmal-Frage.",
   'hang.miss.dueBy': 'Wähle eine Frist für diese Frage.',
   'hang.miss.dueByBefore': "Die Frist darf nicht vor dem Tag liegen, an dem du sie hinzugefügt hast.",
+  'hang.miss.dayPassed': 'Wähle heute oder einen späteren Tag.',
   'hang.miss.everyN': 'Alle X Tage braucht eine Zahl ab 2.',
   'hang.miss.everyNStart': 'Alle X Tage braucht ein Startdatum.',
   'hang.miss.askAfter': 'Fragen nach muss eine Zeit wie 20:00 sein, oder leer.',

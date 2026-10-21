@@ -590,6 +590,7 @@ export const ja = {
   'hang.miss.onceOn': "この1回だけの質問の日を選んでください。",
   'hang.miss.dueBy': 'この質問の期限を選んでください。',
   'hang.miss.dueByBefore': "期限は追加した日より前にできません。",
+  'hang.miss.dayPassed': '今日以降の日を選んでください。',
   'hang.miss.everyN': '数日ごとには 2 以上の数字が必要。',
   'hang.miss.everyNStart': '数日ごとには開始日が必要。',
   'hang.miss.askAfter': '後で聞くは 20:00 のような時間か空。',

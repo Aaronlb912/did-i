@@ -600,6 +600,7 @@ export const fr = {
   'hang.miss.onceOn': "Choisis un jour pour cette question unique.",
   'hang.miss.dueBy': 'Choisis une date limite pour cette question.',
   'hang.miss.dueByBefore': "La date limite ne peut pas être avant le jour où tu l’as ajoutée.",
+  'hang.miss.dayPassed': 'Choisis aujourd’hui ou un jour plus tard.',
   'hang.miss.everyN': 'Tous les X jours a besoin d’un nombre de 2 ou plus.',
   'hang.miss.everyNStart': 'Tous les X jours a besoin d’une date de début.',
   'hang.miss.askAfter': 'Demander après doit être une heure comme 20:00, ou vide.',

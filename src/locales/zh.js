@@ -590,6 +590,7 @@ export const zh = {
   'hang.miss.onceOn': "为这个一次性问题选一天。",
   'hang.miss.dueBy': '为这个问题选一个截止日。',
   'hang.miss.dueByBefore': "截止日不能早于添加它的那天。",
+  'hang.miss.dayPassed': '请选择今天或之后的日期。',
   'hang.miss.everyN': '每隔几天需要 2 或更大的数字。',
   'hang.miss.everyNStart': '每隔几天需要开始日期。',
   'hang.miss.askAfter': '之后询问须为如 20:00 的时间，或留空。',

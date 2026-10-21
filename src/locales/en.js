@@ -599,6 +599,7 @@ export const en = {
   'hang.miss.onceOn': "Pick a day for this once-only question.",
   'hang.miss.dueBy': 'Pick a deadline for this question.',
   'hang.miss.dueByBefore': "Deadline cannot be before the day you added this.",
+  'hang.miss.dayPassed': 'Pick today or a later day.',
   'hang.miss.everyN': 'Every N days needs a number of 2 or more.',
   'hang.miss.everyNStart': 'Every N days needs a start date.',
   'hang.miss.askAfter': 'Ask after has to be a time like 20:00, or blank.',
