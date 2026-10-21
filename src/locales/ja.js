@@ -886,6 +886,7 @@ export const ja = {
   'friends.unsendTitle': '{name} へのリクエストを取り消しますか？',
   'friends.unsendBody': '相手のリクエスト一覧から消えます。あとでまた送れます。',
   'friends.unsent': '{name} へのリクエストを取り消しました。',
+  'friends.askChanged': 'そのリクエストにはすでに返事がありました。リストは最新です。',
   'friends.manage': '追加またはリクエストに返信',
   'friends.cheer': 'Cheer · {n}',
   'friends.needGems': '{n} gems 必要。',

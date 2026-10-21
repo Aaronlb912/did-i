@@ -900,6 +900,7 @@ export const fr = {
   'friends.unsendTitle': 'Annuler ta demande à {name} ?',
   'friends.unsendBody': 'Elle disparaît de ses demandes. Tu pourras en envoyer une autre plus tard.',
   'friends.unsent': 'Demande à {name} annulée.',
+  'friends.askChanged': 'Cette demande a déjà eu une réponse. Ta liste est à jour.',
   'friends.manage': 'Ajouter ou répondre aux demandes',
   'friends.cheer': 'Cheer · {n}',
   'friends.needGems': 'Il faut {n} gems.',
