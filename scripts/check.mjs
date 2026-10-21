@@ -1379,6 +1379,14 @@ test('two folders with one name keep both delete lists when folded', () => {
   assert.deepEqual((book.gone || []).map((item) => item.id), ['q'])
 })
 
+test('leaving or joining a family reloads family rows on Today', () => {
+  const people = readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8')
+  const leave = people.slice(people.indexOf('export async function leaveFamily'), people.indexOf('export async function leaveFamily') + 700)
+  assert.ok(leave.includes("noteSocialLive('familyInfo')"))
+  const join = people.slice(people.indexOf('export async function joinFamily'), people.indexOf('export async function joinFamily') + 900)
+  assert.ok(join.includes("noteSocialLive('familyInfo')"))
+})
+
 test('rows from a deleted folder do not land in the first folder', () => {
   const book = { id: 'b1', lamps: [{ id: 'l1' }], answers: [] }
   const row = { lamp_id: 'old', period_key: '2026-10-14', board_id: 'gone', status: 'yes', answered_at: '2026-10-14T20:00:00Z', note: '' }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
-import { onSocialLive } from './social-live.js'
+import { noteSocialLive, onSocialLive } from './social-live.js'
 import { weAskCount } from './did-we.js'
 import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
@@ -1242,6 +1242,7 @@ export async function joinFamily(code) {
   }
   // A wrong code comes back as null, so the miss still counts toward the limit.
   if (!data) return { miss: 'nofamily' }
+  noteSocialLive('familyInfo')
   return { miss: '', id: data }
 }
 
@@ -1280,6 +1281,8 @@ export async function leaveFamily(familyId) {
     .eq('family_id', familyId)
     .eq('user_id', user.id)
   if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+  // No live ping comes for your own leave: Today reloads its family rows now.
+  noteSocialLive('familyInfo')
   return { miss: '' }
 }
 
