@@ -1090,6 +1090,14 @@ test('a comma amount in German is a decimal, not thousands', async () => {
   }
 })
 
+test('the weekly recap counts an early by-date Did in the week it was done', () => {
+  const by = lamp('by', { cadence: 'once', onceWhen: 'by', dueBy: '2026-10-28', createdOn: '2026-10-15' })
+  const book = { id: 'b', lamps: [by], answers: [{ id: 'x', lampId: 'by', periodKey: 'once:by', status: 'yes', answeredAt: '2026-10-19T20:00:00' }] }
+  const weekOf = (start) => Array.from({ length: 7 }, (_, i) => ({ iso: addDaysIso(start, i), on: false }))
+  assert.equal(weekRecap([book], weekOf('2026-10-18')).dids, 1)
+  assert.equal(weekRecap([book], weekOf('2026-10-25')).dids, 0)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
