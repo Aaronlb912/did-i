@@ -943,6 +943,15 @@ test('the tour lets the widget tip sheet under it take taps', () => {
   assert.ok(host.includes("t('tour.between')"), 'between steps a card says the tour is still on')
 })
 
+test('the room stays warm at 3am while last night can still be answered', async () => {
+  const { hallHeat } = await import('../src/lib/hall-feel.js')
+  const lamp = { id: 'q', question: 'Did I run?', cadence: 'daily', createdOn: '2026-10-01' }
+  const answers = Array.from({ length: 10 }, (_, i) => ({ id: 'a' + i, lampId: 'q', periodKey: '2026-10-' + String(10 + i), status: 'yes', answeredAt: '2026-10-' + String(10 + i) + 'T20:00:00Z' }))
+  const book = { id: 'b', lamps: [lamp], answers }
+  assert.equal(hallHeat(book, new Date(2026, 9, 21, 3, 0)), 5, 'Oct 20 is still open, not a break')
+  assert.equal(hallHeat(book, new Date(2026, 9, 21, 13, 0)), 0, 'once its grace ends, the missed night breaks it')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
