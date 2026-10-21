@@ -475,7 +475,8 @@ export function mergePurses(boards) {
       ]),
     ),
     friendCheers: Math.max(...purses.map((item) => item.friendCheers)),
-    wish: [...new Set(purses.flatMap((item) => item.wish))].slice(0, WISH_MAX),
+    // The first folder holds this phone's list: a union would bring back a removed heart.
+    wish: purses[0]?.wish || [],
   }
 }
 
