@@ -177,6 +177,9 @@ let syncRun = 0
 
 export function signedOutSync() {
   syncRun += 1
+  // A send still waiting holds the last account's shelf: it never goes.
+  if (timer) window.clearTimeout(timer)
+  timer = 0
   // Every way out (here, everywhere, deleted, signed out elsewhere) lands here.
   forgetAccountCaches()
   clearGifts()
