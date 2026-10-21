@@ -2006,6 +2006,26 @@ await testAsync('the widget holds back a question until its ask time, like the s
   assert.equal(later.leadLampId, 'late')
 })
 
+await testAsync('two phones changing different settings keep both', async () => {
+  const prefs = await import('../src/lib/prefs.js')
+  assert.equal(typeof prefs.mergePrefs, 'function')
+  const a = { theme: 'light', locale: 'en', at: { theme: '2026-10-21T10:00:00.000Z' } }
+  const b = { theme: 'dark', locale: 'de', at: { locale: '2026-10-21T10:05:00.000Z' } }
+  const onB = prefs.mergePrefs(b, a, false)
+  assert.equal(onB.theme, 'light', 'the newer theme from the other phone comes in')
+  assert.equal(onB.locale, 'de', 'the newer language on this phone stays')
+  const onA = prefs.mergePrefs(a, onB, true)
+  assert.deepEqual([onA.theme, onA.locale], ['light', 'de'])
+  assert.equal(prefs.mergePrefs({ theme: 'dark' }, { theme: 'light' }, true).theme, 'light', 'unstamped settings follow the newer side')
+  const before = prefs.readPrefs()
+  try {
+    const next = prefs.writePrefs({ gentle: !before.gentle })
+    assert.ok(next.at.gentle, 'a change on this phone is stamped')
+  } finally {
+    prefs.writePrefs({ gentle: before.gentle })
+  }
+})
+
 await testAsync('the widget says all clear when tonight is done, even with open-only on', async () => {
   const { readPrefs, writePrefs } = await import('../src/lib/prefs.js')
   const before = readPrefs()
