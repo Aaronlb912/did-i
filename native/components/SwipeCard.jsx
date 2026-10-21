@@ -468,7 +468,10 @@ function StackCard({
 
 const styles = StyleSheet.create({
   host: {
-    flex: 1,
+    // Its own height, not flex: 1, so a tall card makes room instead of
+    // spilling over the pills above it.
+    flexGrow: 1,
+    flexShrink: 0,
     width: '100%',
     justifyContent: 'center',
     position: 'relative',

@@ -1318,7 +1318,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         style={[
           styles.shell,
           premium && styles.aboveHalo,
-          { paddingTop: headerInset, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
+          // Some room under the header and a look's frame bars, so the screen does not sit high.
+          { paddingTop: headerInset + 16, paddingBottom: bottomPad, backgroundColor: premium ? 'transparent' : colors.bg },
           stack.nightDone && styles.sitOn,
         ]}
       >
@@ -1432,11 +1433,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         ) : (
           <Slot>
             {/* flex: 1 because the card fills this box; without it the card collapses to no height. */}
-            <View onLayout={onPickLayout} style={[styles.pickBox, pickMinH ? { minHeight: pickMinH } : null]}>
-              {/* Loading to the real card eases in, never a hard swap. */}
-              <DoneIn key={pullWait ? 'wait' : 'card'} style={styles.pickBox}>
-                {face}
-              </DoneIn>
+            <View style={styles.pickBox}>
+              {/* Measures the card, not the room around it, so the held height can shrink back. */}
+              <View onLayout={onPickLayout} style={pickMinH ? { minHeight: pickMinH } : null}>
+                {/* Loading to the real card eases in, never a hard swap. */}
+                <DoneIn key={pullWait ? 'wait' : 'card'}>{face}</DoneIn>
+              </View>
             </View>
           </Slot>
         )}
@@ -1582,10 +1584,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
-  slot: { flex: 1, justifyContent: 'center', minHeight: 120, position: 'relative', overflow: 'visible' },
+  // Top-aligned: the card box grows to centre the card when there is room, and
+  // when there is not, the rows under it move down instead of the card riding
+  // up over the pills.
+  slot: { flex: 1, justifyContent: 'flex-start', minHeight: 120, position: 'relative', overflow: 'visible' },
   // The height of Back to tonight (36 + its 6 below), so both cards start on one line.
   // Centered, so the cards that do not swipe (waiting, nothing right now, rest) sit mid-screen too.
-  pickBox: { flex: 1, justifyContent: 'center' },
+  pickBox: { flexGrow: 1, flexShrink: 0, justifyContent: 'center' },
   doneScroll: { flexGrow: 0, flexShrink: 1, position: 'relative' },
   doneFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 36 },
   doneFadeStep: { flex: 1 },
