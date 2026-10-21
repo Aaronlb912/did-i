@@ -361,7 +361,8 @@ export function AppShell() {
   // a new phone is never shut out by a shelf that has not arrived.
   const firstAdd =
     Boolean(app.shelf?.boards) &&
-    app.shelf.boards.every((board) => !(board.lamps || []).some((lamp) => !lamp.archived)) &&
+    // Archived ones count: someone with only archived questions keeps the menu to restore them.
+    app.shelf.boards.every((board) => !(board.lamps || []).length) &&
     readTour().basics === 'new' &&
     (!account.user || (!firstPullWaiting(sync) && !sync.miss))
   const screenProps = useMemo(

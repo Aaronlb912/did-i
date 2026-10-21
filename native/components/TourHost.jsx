@@ -151,8 +151,8 @@ export function TourHost({ scope = 'main', path = '', hasQuestion = false }) {
 
   // Coins from a part finished signed out or offline are claimed once signed in.
   useEffect(() => {
-    if (main && account.user) claimPendingTour()
-  }, [main, account.user])
+    if (main && account.user && tour.phase === 'idle') claimPendingTour()
+  }, [main, account.user, tour.phase])
 
   useEffect(() => {
     if (!main || tour.phase === 'idle') return undefined
