@@ -22,6 +22,18 @@ export function useAuthSignIn({ onSignedIn }) {
   const [reviewerOn, setReviewerOn] = useState(false)
   const signedIn = useRef(onSignedIn)
   signedIn.current = onSignedIn
+  // One sign-in step at a time, through the pull after it: a second tap
+  // re-sent a used code and showed "wrong code" while sign-in went through.
+  const going = useRef(false)
+  const once = (fn) => async () => {
+    if (going.current) return
+    going.current = true
+    try {
+      await fn()
+    } finally {
+      going.current = false
+    }
+  }
 
   const finish = useCallback(async () => {
     clearAuthSkip()
@@ -155,7 +167,7 @@ export function useAuthSignIn({ onSignedIn }) {
     setCode,
     password,
     setPassword,
-    openReviewer,
+    openReviewer: once(openReviewer),
     showReviewer,
     reviewerOn,
     step,
@@ -164,12 +176,12 @@ export function useAuthSignIn({ onSignedIn }) {
     miss,
     setMiss,
     missSource,
-    askEmail,
-    openEmail,
+    askEmail: once(askEmail),
+    openEmail: once(openEmail),
     useDifferentEmail,
-    signInApple,
+    signInApple: once(signInApple),
     showApple: canShowAppleSignIn(),
-    signInGoogle,
+    signInGoogle: once(signInGoogle),
     showGoogle: canShowGoogleSignIn(),
   }
 }
