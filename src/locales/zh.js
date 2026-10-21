@@ -3622,7 +3622,7 @@ export const zh = {
   'tour.notYetTitle': "你的还没列表",
   'tour.notYetLine': "你还没做的会在这里等着。做完了，就改成 Did。",
   'tour.widgetTitle': "主屏幕小组件",
-  'tour.widgetLine': "想在主屏幕上看到今天吗？点下一步，我来教你。",
+  'tour.widgetLine': "想在主屏幕上看到今天吗？点下一步，我来教你。在那里点一下就算真正的回答。",
   'tour.endTitle': "+{n} 枚金币",
   'tour.endNone': "做得好",
   'tour.endLine': "基础就这些。接下来是好友、Did you 和 Did we。",

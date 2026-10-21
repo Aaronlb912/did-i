@@ -3661,7 +3661,7 @@ export const en = {
   'tour.notYetTitle': "Your Not yet list",
   'tour.notYetLine': "Anything you haven't done yet waits here. When you get to it, change it to Did.",
   'tour.widgetTitle': "Home screen widget",
-  'tour.widgetLine': "Want today on your home screen? Tap Next and I'll show you how.",
+  'tour.widgetLine': "Want today on your home screen? Tap Next and I'll show you how. A tap there counts as a real answer.",
   'tour.endTitle': "+{n} coins",
   'tour.endNone': "Nicely done",
   'tour.endLine': "That's the basics. Next up: friends, Did you and Did we.",

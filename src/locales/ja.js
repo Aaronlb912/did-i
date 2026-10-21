@@ -3629,7 +3629,7 @@ export const ja = {
   'tour.notYetTitle': "まだのリスト",
   'tour.notYetLine': "まだできていないことは、ここで待っています。できたらDidに変えてくださいね。",
   'tour.widgetTitle': "ホーム画面ウィジェット",
-  'tour.widgetLine': "今日の質問をホーム画面に置きたいですか？次へをタップしたら、やり方を見せますね。",
+  'tour.widgetLine': "今日の質問をホーム画面に置きたいですか？次へをタップしたら、やり方を見せますね。ウィジェットでのタップは本当の回答になります。",
   'tour.endTitle': "+{n}コイン",
   'tour.endNone': "よくできました",
   'tour.endLine': "基本はこれで完了です。次は友だち、Did you、Did we を見ていきましょう。",
