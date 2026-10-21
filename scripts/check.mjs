@@ -7113,6 +7113,24 @@ await testAsync('signed out: gem buys ask to sign in, coin buys stay on the phon
   assert.match(host, /export function askSignIn[\s\S]*?goLabel: t\('we\.signIn'\)[\s\S]*?closeLabel: t\('account\.stay'\)[\s\S]*?goHash\('\/account'\)/)
 })
 
+await testAsync('a buy reply that lands after sign-out writes nothing', async () => {
+  const { counted } = await import('../src/lib/coin-shop.js')
+  const prev = localStorage.getItem('did-i-last-user')
+  localStorage.setItem('did-i-last-user', 'u1')
+  try {
+    const buy = counted(async (book) => {
+      localStorage.removeItem('did-i-last-user')
+      return { book: { ...book, coins: 0 }, miss: '' }
+    })
+    const out = await buy({ coins: 500 })
+    assert.equal(out.book, null)
+    assert.equal(out.miss, 'shop.miss.buyFail')
+  } finally {
+    if (prev == null) localStorage.removeItem('did-i-last-user')
+    else localStorage.setItem('did-i-last-user', prev)
+  }
+})
+
 test('wishlist knows frames: buyable and seasonal, not earned; a seasonal one counts only while open', () => {
   let book = toggleWish({ coins: 0 }, 'frame', 'thin').book
   assert.deepEqual(normalizePurse(book).wish, ['frame:thin'])

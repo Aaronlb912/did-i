@@ -1,4 +1,4 @@
-import { accountSessionOn } from './session-id.js'
+import { accountSessionOn, readAccountUserId } from './session-id.js'
 import { buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, liveCheers, liveLooks, nextCheerStage, shopBuddies, normalizePurse, wearAccessory } from './purse.js'
 import { accessoryById } from './accessories.js'
 import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems, readGemOwned } from './wallet.js'
@@ -103,9 +103,10 @@ async function buyWithGemsRaw(book, kind, id) {
 
 // A buy counts as a milestone only when coins or gems actually went down,
 // so wearing something you already own does not.
-function counted(buy) {
+export function counted(buy) {
   return async (book, ...rest) => {
     const before = normalizePurse(book)
+    const who = readAccountUserId()
     let out
     try {
       out = await buy(book, ...rest)
@@ -114,6 +115,9 @@ function counted(buy) {
       // never a tap that does nothing. Nothing was spent on this phone.
       return { book, miss: 'shop.miss.buyFail' }
     }
+    // Signed out or switched while the buy was out: its purse is the old
+    // account's, so write nothing on this phone.
+    if (who && readAccountUserId() !== who) return { book: null, miss: 'shop.miss.buyFail' }
     const after = out?.book ? normalizePurse(out.book) : before
     if (!out?.miss && (after.coins < before.coins || after.gems < before.gems)) noteMilestone('bought')
     return out
