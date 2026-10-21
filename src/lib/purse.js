@@ -646,8 +646,15 @@ let earnedGen = 0
 // { nightIso: coins }. A failed credit hands its coins back with
 // returnEarnedCoins; the server caps each night, so a retry cannot double pay.
 // out.gen (not enumerable) goes back with returnEarnedCoins.
-export function takeEarnedCoins() {
-  const out = earnedQueue()
+export function takeEarnedCoins(clock = null) {
+  // Coins queued offline for a night the server no longer takes move to today,
+  // or the server would answer with the balance and they would never pay.
+  const today = clock ? boardDate(clock) : ''
+  const out = {}
+  for (const [night, n] of Object.entries(earnedQueue())) {
+    const key = today && (night < addDaysIso(today, -1) || night > today) ? today : night
+    out[key] = (out[key] || 0) + n
+  }
   earnedForServer = {}
   saveEarned()
   Object.defineProperty(out, 'gen', { value: earnedGen })

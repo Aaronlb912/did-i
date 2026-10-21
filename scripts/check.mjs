@@ -3258,7 +3258,7 @@ test('a signed-in did leaves its coins for the server, signed out pays the phone
   assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), { local: 0, server: { '2026-10-02': 2 }, after: {} })
   // The save hands what taps earned to the server.
   const shelfHook = readFileSync(path.join(root, 'native/hooks/useAppShelf.js'), 'utf8')
-  assert.match(shelfHook, /takeEarnedCoins\(\)/)
+  assert.ok(shelfHook.includes('takeEarnedCoins(new Date())'), 'the app-open send moves old offline nights to today')
   assert.match(shelfHook, /creditNightCoins\(night, earned\)/)
   // A failed credit keeps the coins for the next save.
   assert.match(shelfHook, /returnEarnedCoins\(night, earned, new Date\(\), taken\.gen\)/)
@@ -7544,6 +7544,8 @@ await testAsync('coins handed back after sign out are dropped', async () => {
   const fresh = takeEarnedCoins()
   returnEarnedCoins('2026-10-03', 1, clock, fresh.gen)
   assert.deepEqual({ ...takeEarnedCoins() }, { '2026-10-03': 1 })
+  returnEarnedCoins('2026-10-03', 4, clock)
+  assert.deepEqual({ ...takeEarnedCoins(new Date(2026, 9, 8, 12, 0)) }, { '2026-10-08': 4 }, 'coins queued offline days ago go to today, not to a night the server refuses')
 })
 
 test('a missed due-by question is stamped at its start, so an earlier Did wins', () => {

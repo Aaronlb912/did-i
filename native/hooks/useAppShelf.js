@@ -134,7 +134,7 @@ export function useAppShelf() {
     // A reply that lands after a sign out or account switch belongs to the old account.
     const who = readAccountUserId()
     const sameAccount = () => !who || readAccountUserId() === who
-    const taken = accountSessionOn() ? takeEarnedCoins() : {}
+    const taken = accountSessionOn() ? takeEarnedCoins(new Date()) : {}
     for (const [night, earned] of Object.entries(taken)) {
       creditNightCoins(night, earned).then((bal) => {
         if (!sameAccount()) return
