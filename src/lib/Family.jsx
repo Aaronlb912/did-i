@@ -394,7 +394,7 @@ export function Family({ book, onChange, now, familyId }) {
                         row.role === 'parent' ? 'kid' : 'parent',
                       )
                       if (why === 'lastparent') setMiss(t('family.lastParent'))
-                      else if (why) setMiss(why)
+                      else if (why) setMiss(why === 'unchanged' ? t('confirm.miss') : why)
                       load()
                     }}
                   >
@@ -406,7 +406,7 @@ export function Family({ book, onChange, now, familyId }) {
                     onClick={async () => {
                       const { miss: why } = await dropMember(fam.id, row.user_id)
                       if (why === 'lastparent') setMiss(t('family.lastParent'))
-                      else if (why) setMiss(why)
+                      else if (why) setMiss(why === 'unchanged' ? t('confirm.miss') : why)
                       load()
                     }}
                   >
