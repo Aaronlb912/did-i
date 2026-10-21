@@ -3667,6 +3667,8 @@ export const fr = {
   'tour.notNow': "Pas maintenant",
   'tour.next': "Suivant",
   'tour.skip': "Passer",
+  'tour.between': "L’étape suivante arrive",
+  'tour.betweenLine': "La visite continue. Un instant.",
   'tour.stepOf': "Étape {n} sur {total}",
   'tour.swipeTitle': "Glissez pour répondre",
   'tour.swipeLine': "C'est fait ? Glisse à droite. Pas encore ? Glisse à gauche. Les boutons marchent aussi.",

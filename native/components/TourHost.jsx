@@ -206,9 +206,20 @@ export function TourHost({ scope = 'main', path = '', hasQuestion = false }) {
       accessibilityViewIsModal
       importantForAccessibility="yes"
     >
-      {tour.phase === 'loading' || tour.phase === 'tip' ? (
+      {tour.phase === 'tip' ? (
         <View pointerEvents="box-none" style={[styles.fill, styles.loadFill]}>
           <KeyButton colors={colors} label={t('tour.skip')} onPress={tourSkip} />
+        </View>
+      ) : null}
+
+      {/* Between steps: say the tour is still on, so a bare screen never looks stuck. */}
+      {tour.phase === 'loading' ? (
+        <View pointerEvents="box-none" style={[styles.fill, styles.loadFill]}>
+          <Card colors={colors}>
+            <Text style={[styles.title, { color: colors.ink }]} accessibilityLiveRegion="polite">{t('tour.between')}</Text>
+            <Text style={[styles.line, { color: colors.inkSoft }]}>{t('tour.betweenLine')}</Text>
+            <KeyButton colors={colors} label={t('tour.skip')} onPress={tourSkip} />
+          </Card>
         </View>
       ) : null}
 

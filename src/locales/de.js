@@ -3672,6 +3672,8 @@ export const de = {
   'tour.notNow': "Jetzt nicht",
   'tour.next': "Weiter",
   'tour.skip': "Überspringen",
+  'tour.between': "Gleich kommt der nächste Schritt",
+  'tour.betweenLine': "Die Tour läuft noch. Einen Moment.",
   'tour.stepOf': "Schritt {n} von {total}",
   'tour.swipeTitle': "Wischen zum Antworten",
   'tour.swipeLine': "Hast du es gemacht? Wisch nach rechts. Noch nicht? Wisch nach links. Die Tasten gehen auch.",
