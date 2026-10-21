@@ -669,13 +669,19 @@ async function pullAndMergeOnce() {
   }
 }
 
+// A pull still out for the account before a sign-out is not this account's pull.
+let pullingRun = -1
+
 export function pullAndMerge() {
-  if (pulling) return pulling
-  pulling = pullAndMergeOnce().finally(() => {
+  if (pulling && pullingRun === syncRun) return pulling
+  pullingRun = syncRun
+  const mine = pullAndMergeOnce().finally(() => {
+    if (pulling !== mine) return
     pulling = null
     if (state.firstPull) setState({ firstPull: false })
   })
-  return pulling
+  pulling = mine
+  return mine
 }
 
 export async function pushNow(shelf) {
