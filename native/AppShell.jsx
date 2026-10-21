@@ -263,9 +263,10 @@ export function AppShell() {
           // on: set the alarms again so they land on the minute.
           const shelf = readShelf()
           if (state === 'granted' && shelf?.boards?.length) armLampPings(shelf.boards).catch(() => {})
-          syncTonightWidget(shelf).catch(() => {})
         })
         .catch(() => {})
+        // The widget turns the day over even when the ping check fails.
+        .finally(() => syncTonightWidget(readShelf()).catch(() => {}))
     })
     return () => sub.remove()
   }, [])
