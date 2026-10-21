@@ -163,7 +163,8 @@ export function pingsStale() {
   if (pingZoneMoved()) return true
   try {
     const at = Number(localStorage.getItem(PING_AT_KEY))
-    return at > 0 && Date.now() - at > PING_REFRESH_MS
+    // Never set (notifications were off at first) counts too: on in Settings later.
+    return !(at > 0) || Date.now() - at > PING_REFRESH_MS
   } catch {
     return false
   }
