@@ -360,7 +360,9 @@ async function schedulePingsNow(books, now = new Date()) {
       })
     }
     const grace = streakPings ? list.map((item) => graceRiskFire(item, now, heat)).find(Boolean) : null
-    if (grace) {
+    // Quiet hours can push it past 9:00, when the streak can no longer be saved.
+    const graceEnd = grace ? new Date(grace.at).setHours(9, 0, 0, 0) : 0
+    if (grace && afterQuiet(new Date(grace.at)).getTime() < graceEnd) {
       notes.push({
         identifier: String(notifyId('streak', grace.tag)),
         content: {
