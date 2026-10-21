@@ -20,6 +20,7 @@ import {
   pullAnswers,
   purgeDemoAnswers,
   pushAnswers,
+  runPendingUndos,
   shelfWithoutAnswers,
 } from './answer-log.js'
 import { stripDemoShelf } from './demo-strip.js'
@@ -527,6 +528,8 @@ async function pullAndMergeOnce() {
       return out
     }
 
+    // An undo that missed the server goes first, or the pull brings the Did back.
+    await runPendingUndos()
     // Fold in every answer the account has that this phone has not seen.
     const pulled = await pullAnswers(merged, { stillCurrent: () => run === syncRun })
     if (pulled.miss) throw new Error(pulled.miss)

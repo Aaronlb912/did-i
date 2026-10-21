@@ -36,6 +36,7 @@ function write(key, value) {
 export function forgetAnswerMarks() {
   write(MARK, '')
   write(SEEN, '')
+  write(UNDO, '')
 }
 
 function zoned(value) {
@@ -234,6 +235,62 @@ export async function pullAnswers(shelf, { stillCurrent = () => true } = {}) {
 // sent up has to go, and the answer from before the tap (if any) goes back.
 // It runs again a moment later in case the tap's own send was still on its
 // way. Only rows from before the undo go, so a new tap since then stays.
+// An undo that can't reach the server (offline, app killed) waits in UNDO and
+// runs on the next sync, before the pull that would bring the Did back.
+const UNDO = 'did-i-answers-undo'
+
+function readUndos() {
+  try {
+    const list = JSON.parse(read(UNDO) || '[]')
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+
+function dropUndo(item) {
+  write(UNDO, JSON.stringify(readUndos().filter((u) => u.id !== item.id)))
+}
+
+function failUndo(item) {
+  const tries = (item.tries || 0) + 1
+  // A server that keeps refusing it is not offline: give up after a few.
+  if (tries >= 5) return dropUndo(item)
+  write(UNDO, JSON.stringify(readUndos().map((u) => (u.id === item.id ? { ...u, tries } : u))))
+}
+
+async function undoOnce(db, item, late = false) {
+  // Stamps may be old zoneless strings or UTC ISO, so the server can't
+  // compare them as text. Read, compare in JS, then delete by key. A tap
+  // landing between the read and the delete would be lost; rare enough.
+  const { data, error: readError } = await db
+    .from('answer_log')
+    .select('answered_at, note_at')
+    .eq('lamp_id', item.lampId)
+    .eq('period_key', item.periodKey)
+    .maybeSingle()
+  if (readError) throw new Error(readError.message)
+  const restore = async () => {
+    if (!item.row.length) return
+    const { error } = await db.rpc('put_answers', { rows: item.row })
+    if (error) throw new Error(error.message)
+  }
+  // Run late, no row means something since removed it on purpose: leave it.
+  if (!data) return late ? undefined : restore()
+  const at = Math.max(stampMs(data.answered_at) || 0, stampMs(data.note_at) || 0)
+  if (at > stampMs(item.now)) return
+  // Already the answer from before the tap (the second run): leave it, so
+  // other devices do not see it go and come back.
+  if (item.beforeAt && at === item.beforeAt) return
+  const { error } = await db
+    .from('answer_log')
+    .delete()
+    .eq('lamp_id', item.lampId)
+    .eq('period_key', item.periodKey)
+  if (error) throw new Error(error.message)
+  await restore()
+}
+
 export async function takeBackAnswer(book, lampId, periodKey) {
   const db = cloud()
   if (!db || !lampId || !periodKey) return
@@ -241,39 +298,35 @@ export async function takeBackAnswer(book, lampId, periodKey) {
   const now = answeredAtIso()
   const before = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
   const row = before ? rowsOf({ boards: [{ ...book, answers: [before] }] }) : []
-  const once = async () => {
-    // Stamps may be old zoneless strings or UTC ISO, so the server can't
-    // compare them as text. Read, compare in JS, then delete by key. A tap
-    // landing between the read and the delete would be lost; rare enough.
-    const { data, error: readError } = await db
-      .from('answer_log')
-      .select('answered_at, note_at')
-      .eq('lamp_id', lampId)
-      .eq('period_key', periodKey)
-      .maybeSingle()
-    if (readError) throw new Error(readError.message)
-    if (!data) {
-      if (row.length) await db.rpc('put_answers', { rows: row })
-      return
-    }
-    const at = Math.max(stampMs(data.answered_at) || 0, stampMs(data.note_at) || 0)
-    if (at > stampMs(now)) return
-    // Already the answer from before the tap (the second run): leave it, so
-    // other devices do not see it go and come back.
-    if (before && at === stampMs(answerStamp(before))) return
-    const { error } = await db
-      .from('answer_log')
-      .delete()
-      .eq('lamp_id', lampId)
-      .eq('period_key', periodKey)
-    if (error) throw new Error(error.message)
-    if (row.length) await db.rpc('put_answers', { rows: row })
-  }
-  await once()
+  const item = { id: lampId + '|' + periodKey + '|' + now, user, lampId, periodKey, now, row, beforeAt: before ? stampMs(answerStamp(before)) || 0 : 0 }
+  write(UNDO, JSON.stringify([...readUndos(), item].slice(-50)))
+  await undoOnce(db, item)
   await new Promise((done) => setTimeout(done, 4000))
   // Signed out or into another account meanwhile: the old row is not theirs.
-  if (readAccountUserId() !== user) return
-  await once()
+  if (readAccountUserId() !== user) return dropUndo(item)
+  await undoOnce(db, item)
+  dropUndo(item)
+}
+
+// Undos that never reached the server. Each one is dropped once it runs, or
+// when it belongs to another account.
+export async function runPendingUndos() {
+  const db = cloud()
+  if (!db) return
+  const user = readAccountUserId()
+  for (const item of readUndos()) {
+    if (item.user !== user) {
+      dropUndo(item)
+      continue
+    }
+    try {
+      await undoOnce(db, item, true)
+      dropUndo(item)
+    } catch {
+      // Still offline: try again on the next sync.
+      failUndo(item)
+    }
+  }
 }
 
 // Rows the sample board left behind on a real account.
