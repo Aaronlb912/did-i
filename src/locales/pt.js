@@ -3667,7 +3667,7 @@ export const pt = {
   'tour.notYetTitle': "Sua lista Ainda não",
   'tour.notYetLine': "O que você ainda não fez espera aqui. Quando fizer, mude para Did.",
   'tour.widgetTitle': "Widget da tela inicial",
-  'tour.widgetLine': "Quer ver o dia de hoje na tela inicial? Toque em Próximo que eu mostro como.",
+  'tour.widgetLine': "Quer ver o dia de hoje na tela inicial? Toque em Próximo que eu mostro como. Um toque ali conta como resposta de verdade.",
   'tour.endTitle': "+{n} moedas",
   'tour.endNone': "Muito bem",
   'tour.endLine': "Esse é o básico. A seguir: amigos, Did you e Did we.",

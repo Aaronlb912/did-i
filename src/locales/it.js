@@ -3667,7 +3667,7 @@ export const it = {
   'tour.notYetTitle': "La tua lista Non ancora",
   'tour.notYetLine': "Quello che non hai ancora fatto aspetta qui. Quando lo fai, cambialo in Did.",
   'tour.widgetTitle': "Widget della schermata Home",
-  'tour.widgetLine': "Vuoi vedere oggi sulla schermata Home? Tocca Avanti e ti mostro come.",
+  'tour.widgetLine': "Vuoi vedere oggi sulla schermata Home? Tocca Avanti e ti mostro come. Un tocco lì conta come una risposta vera.",
   'tour.endTitle': "+{n} monete",
   'tour.endNone': "Ben fatto",
   'tour.endLine': "Queste sono le basi. Poi: amici, Did you e Did we.",

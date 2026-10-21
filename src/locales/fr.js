@@ -3674,7 +3674,7 @@ export const fr = {
   'tour.notYetTitle': "Votre liste Pas encore",
   'tour.notYetLine': "Ce que tu n'as pas encore fait attend ici. Quand c'est fait, passe-le à Did.",
   'tour.widgetTitle': "Widget d'écran d'accueil",
-  'tour.widgetLine': "Tu veux voir aujourd'hui sur ton écran d'accueil ? Touche Suivant et je te montre comment.",
+  'tour.widgetLine': "Tu veux voir aujourd'hui sur ton écran d'accueil ? Touche Suivant et je te montre comment. Un appui là-dessus compte comme une vraie réponse.",
   'tour.endTitle': "+{n} pièces",
   'tour.endNone': "Bien joué",
   'tour.endLine': "Voilà les bases. Ensuite : les amis, Did you et Did we.",

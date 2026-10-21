@@ -3679,7 +3679,7 @@ export const de = {
   'tour.notYetTitle': "Deine Liste Noch nicht",
   'tour.notYetLine': "Was du noch nicht geschafft hast, wartet hier. Wenn du dran warst, ändere es zu Did.",
   'tour.widgetTitle': "Widget für den Home-Bildschirm",
-  'tour.widgetLine': "Willst du heute auf deinem Home-Bildschirm sehen? Tippe auf Weiter, dann zeige ich dir, wie.",
+  'tour.widgetLine': "Willst du heute auf deinem Home-Bildschirm sehen? Tippe auf Weiter, dann zeige ich dir, wie. Ein Tippen dort zählt als echte Antwort.",
   'tour.endTitle': "+{n} Münzen",
   'tour.endNone': "Gut gemacht",
   'tour.endLine': "Das sind die Grundlagen. Als Nächstes: Freunde, Did you und Did we.",

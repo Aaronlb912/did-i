@@ -3631,7 +3631,7 @@ export const ko = {
   'tour.notYetTitle': "아직 목록",
   'tour.notYetLine': "아직 못 한 건 여기서 기다려요. 하고 나면 Did로 바꿔 주세요.",
   'tour.widgetTitle': "홈 화면 위젯",
-  'tour.widgetLine': "오늘을 홈 화면에서 보고 싶나요? 다음을 누르면 방법을 알려 드릴게요.",
+  'tour.widgetLine': "오늘을 홈 화면에서 보고 싶나요? 다음을 누르면 방법을 알려 드릴게요. 거기서 누르면 진짜 답으로 저장돼요.",
   'tour.endTitle': "+코인 {n}개",
   'tour.endNone': "잘했어요",
   'tour.endLine': "기본은 여기까지예요. 다음은 친구, Did you, Did we예요.",
