@@ -215,7 +215,11 @@ export async function signOutEverywhere() {
   await Promise.all([dropPushToken(), dropAllPushTokens(), endAnswerKeys(null)])
   // The server has to end the other sessions; if it could not, say so.
   const { error } = await db.auth.signOut({ scope: 'global' })
-  if (error) throw error
+  if (error) {
+    // Still signed in here: put this phone's push token back, or its pushes stop.
+    await import('./push.js').then(({ syncPushTokenIfAllowed }) => syncPushTokenIfAllowed()).catch(() => {})
+    throw error
+  }
   saveTogetherPeople([])
   forgetAccountCaches()
   forgetPendingLinks()
