@@ -56,6 +56,7 @@ import { applyPendingAndroidWidgetTap } from '../widget-tap'
 import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
 import { t, useLocale } from '../../src/lib/i18n.js'
 import { confirmMiss } from '../lib/confirm.js'
+import { stopCheckOns } from '../components/LampManage.jsx'
 
 const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
 
@@ -259,6 +260,10 @@ export function useAppShelf() {
   }, [live.keeperName, persist])
   const removeBoard = useCallback(
     (id) => {
+      // Friends' check-ons on its questions stop once the undo window ends,
+      // unless the folder came back.
+      const lampIds = (shelfRef.current.boards || []).find((book) => book.id === id)?.lamps?.map((lamp) => lamp.id) || []
+      if (lampIds.length) stopCheckOns(lampIds)
       persist(dropBook(shelfRef.current, id))
       const now = readRoute()
       if (tagIdsOf(now.tag).includes(id)) {

@@ -1523,6 +1523,16 @@ test('a tag deleted on one phone stays deleted when an older phone syncs', () =>
   }
 })
 
+test('undo puts a removed folder back as itself, even when another took its name', () => {
+  const start = { currentId: 'b1', boards: [{ id: 'b1', title: 'Home', lamps: [lamp('x')], answers: [] }, { id: 'b2', title: 'Work', lamps: [lamp('y')], answers: [] }] }
+  const removed = start.boards[1]
+  let shelf = normalizeShelf(dropBook(start, 'b2'))
+  shelf = { ...shelf, boards: shelf.boards.map((book) => (book.id === 'b1' ? { ...book, title: 'Work' } : book)) }
+  const back = putBook(shelf, removed)
+  assert.deepEqual(back.boards.map((book) => book.id).sort(), ['b1', 'b2'])
+  assert.ok(back.goneTags.some((item) => item.id === 'b2' && item.back), 'the delete marker is lifted')
+})
+
 test('every item the shop sells is in the server gift catalog at the same price and date', () => {
   // The server refuses a buy or gift of anything missing from gift_catalog, so a
   // drop added to purse.js but not gifts.sql would fail on release day.
