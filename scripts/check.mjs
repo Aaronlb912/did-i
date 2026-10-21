@@ -1367,6 +1367,15 @@ test('a note on one night rides the answer, is capped, and survives two phones s
   assert.equal(answersToSend(fresh, true)[0].a, new Date(answer.answeredAt).toISOString())
 })
 
+test('two folders with one name keep both delete lists when folded', () => {
+  const shelf = mergeSameTitles({ currentId: 'x', boards: [
+    { id: 'x', title: 'Gym', lamps: [{ id: 'a' }], answers: [] },
+    { id: 'y', title: 'Gym', lamps: [{ id: 'b' }], answers: [], gone: [{ id: 'q', at: '2026-10-14T19:00:00Z' }] },
+  ] })
+  const book = shelf.boards.find((item) => item.id === 'x')
+  assert.deepEqual((book.gone || []).map((item) => item.id), ['q'])
+})
+
 test('rows from a deleted folder do not land in the first folder', () => {
   const book = { id: 'b1', lamps: [{ id: 'l1' }], answers: [] }
   const row = { lamp_id: 'old', period_key: '2026-10-14', board_id: 'gone', status: 'yes', answered_at: '2026-10-14T20:00:00Z', note: '' }

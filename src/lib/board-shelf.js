@@ -223,7 +223,10 @@ function foldBook(into, extra) {
     seen.add(key)
     answers.push(answer)
   }
-  return { ...into, lamps, answers }
+  // Keep both delete lists, or a removed question comes back on the next merge.
+  const kept = new Set(lamps.map((lamp) => lamp.id))
+  const gone = [...(into.gone || []), ...(extra.gone || []).filter((item) => !kept.has(item.id))]
+  return { ...into, lamps, answers, ...(gone.length ? { gone } : {}) }
 }
 
 export function mergeSameTitles(shelf) {
