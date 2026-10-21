@@ -937,6 +937,11 @@ test('a shop buy confirmed later spends from the folder as it is now', () => {
   }
 })
 
+test('the tour lets the widget tip sheet under it take taps', () => {
+  const host = readFileSync('native/components/TourHost.jsx', 'utf8')
+  assert.ok(host.includes("pointerEvents={tour.phase === 'tip' ? 'box-none'"), 'Add to home screen and Not now work during the tour')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
