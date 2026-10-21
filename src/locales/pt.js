@@ -982,6 +982,7 @@ export const pt = {
   'people.inviteShort': 'Um código de convite tem dez caracteres.',
   'people.noFamily': 'Nenhuma família com esse código.',
   'people.familyFull': 'Esta família está cheia (20 pessoas).',
+  'people.tooManyFamilies': 'Você está em 20 famílias, o máximo. Saia de uma para entrar nesta.',
   'people.parent': 'Pai',
   'people.kid': 'Filho',
   'people.invite': 'O teu código',
