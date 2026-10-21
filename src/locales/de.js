@@ -3641,7 +3641,6 @@ export const de = {
   'we.rowWaitingOne': "{name} wartet",
   'we.rowWaitingMany': "{n} warten",
   'we.rowMany': "Did we: {n} aktiv",
-  'we.andMore': "und {n} weitere",
   'we.rowManyStatus': "{done} fertig · {waiting} warten",
   'we.weekKey': "Oben: gemeinsam geschafft. Unten: du.",
   'we.dot.did': "geschafft",
