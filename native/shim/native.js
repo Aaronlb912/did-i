@@ -216,11 +216,6 @@ async function schedulePingsNow(books, now = new Date()) {
     const allowed = await checkNativePings()
     if (allowed !== 'granted') return
     const Notifications = await notifications()
-    try {
-      await Notifications.cancelAllScheduledNotificationsAsync()
-    } catch {
-      // ok
-    }
     if (Platform.OS === 'android') {
       // A ping sent to a channel that does not exist yet never shows.
       await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
@@ -376,6 +371,12 @@ async function schedulePingsNow(books, now = new Date()) {
         },
         trigger: when(new Date(grace.at)),
       })
+    }
+    // Cleared only once the new list is built: a throw above keeps the old ones.
+    try {
+      await Notifications.cancelAllScheduledNotificationsAsync()
+    } catch {
+      // ok
     }
     for (const note of notes) {
       try {

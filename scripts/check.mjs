@@ -909,6 +909,12 @@ test('a resumed pause is not a miss in days in a row or the year view', async ()
   assert.equal(oct.miss, false)
 })
 
+test('reminders are cleared only after the new list is built', () => {
+  const src = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
+  const body = src.slice(src.indexOf('async function schedulePingsNow'))
+  assert.ok(body.indexOf('cancelAllScheduledNotificationsAsync') > body.indexOf('const notes = []'))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
