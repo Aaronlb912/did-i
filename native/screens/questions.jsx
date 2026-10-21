@@ -1400,6 +1400,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   // A question that does not read "Did I ..." keeps its own words, with no fixed lead.
   const [lead] = useState(() => !draft.question || /^did i\b/i.test(draft.question))
   const [blank, setBlank] = useState(() => (lead ? starterBlank(draft) : draft.question))
+  // Typing a new folder: stays open even when the name so far matches one (Work, then Workout).
+  const [newTag, setNewTag] = useState(false)
   const [open, setOpen] = useState(() => {
     const first = foldNext
     foldNext = ''
@@ -2073,16 +2075,26 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                   key={item.id}
                   label={item.title}
                   on={hang.isTagSelected(item.title)}
-                  onPress={() => hang.setTagTitle(item.title)}
+                  onPress={() => {
+                    setNewTag(false)
+                    hang.setTagTitle(item.title)
+                  }}
                   colors={colors}
                   radio
                 />
               ))}
-              {hang.knownTag ? (
-                <Pill label={`+ ${t('hang.tagNew')}`} onPress={() => hang.setTagTitle('')} colors={colors} />
+              {hang.knownTag && !newTag ? (
+                <Pill
+                  label={`+ ${t('hang.tagNew')}`}
+                  onPress={() => {
+                    setNewTag(true)
+                    hang.setTagTitle('')
+                  }}
+                  colors={colors}
+                />
               ) : null}
             </View>
-            {!hang.knownTag ? (
+            {newTag || !hang.knownTag ? (
               <FoldInput
                 label={t('hang.tagNew')}
                 value={hang.tagTitle}
@@ -2104,7 +2116,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                       key={item.id}
                       label={item.title}
                       on={hang.isTagSelected(item.title)}
-                      onPress={() => hang.setTagTitle(item.title)}
+                      onPress={() => {
+                    setNewTag(false)
+                    hang.setTagTitle(item.title)
+                  }}
                       colors={colors}
                       dim
                       radio
