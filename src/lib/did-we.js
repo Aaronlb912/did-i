@@ -254,9 +254,15 @@ export async function weKnownPeople() {
 
 export const weAsk = (card, other) => call('we_ask', { card, other })
 export const weReply = (card, yes) => call('we_reply', { card, yes })
-export const weLeave = (card) => call('we_leave', { card })
+// Leaving or ending a card drops the last load, so Today reads again and
+// does not show it for a few more seconds.
+export const weLeave = (card) => call('we_leave', { card }).then(dropLoaded)
 // Only the maker can close it; the server checks.
-export const weClose = (card) => call('we_close', { card })
+export const weClose = (card) => call('we_close', { card }).then(dropLoaded)
+function dropLoaded(out) {
+  if (!out.miss) loadedAt = 0
+  return out
+}
 // A paused card (nobody answered 3 nights) asks again from tonight.
 export const weRestart = (card) => call('we_restart', { card, want_night: tonightIso() })
 

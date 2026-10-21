@@ -1122,6 +1122,12 @@ test('the together widget forgets your friends on any sign-out', () => {
   assert.equal(localStorage.getItem('did-i-together-widget'), '[]')
 })
 
+test('leaving or ending a did we drops the cached cards', () => {
+  const src = readFileSync(new URL('../src/lib/did-we.js', import.meta.url), 'utf8')
+  assert.ok(src.includes("call('we_leave', { card }).then(dropLoaded)"))
+  assert.ok(src.includes("call('we_close', { card }).then(dropLoaded)"))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
