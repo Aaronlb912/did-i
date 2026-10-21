@@ -266,8 +266,9 @@ begin
   update public.we_links set uses = uses + 1 where we_links.code = link.code;
   -- A new member can undo a done night on an all-of-us card.
   perform public.we_resettle(link.card_id);
-  -- Tell the maker someone joined.
-  if link.made_by <> me and public.push_wanted(link.made_by, 'friends') then
+  -- Tell the maker someone joined. Someone who was asked already set off the
+  -- yes push (we-joined-push.sql), so this one would be a second copy.
+  if link.made_by <> me and was is distinct from 'asked' and public.push_wanted(link.made_by, 'friends') then
     insert into public.push_queue (to_id, title, body, go)
     select link.made_by, 'Did we',
       left(public.push_text(link.made_by, 'link_joined', jsonb_build_object(
