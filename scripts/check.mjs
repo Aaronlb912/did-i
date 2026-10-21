@@ -5093,7 +5093,7 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
         lamps: [{ id: 'l1', question: 'drink water, lots', short: 'Water' }],
         answers: [
           { lampId: 'l1', periodKey: '2026-10-02', status: 'skip', note: 'he said "no"' },
-          { lampId: 'l1', periodKey: '2026-10-01', status: 'yes', note: '' },
+          { lampId: 'l1', periodKey: '2026-10-01', status: 'yes', note: '', amount: 5 },
           { lampId: 'gone', periodKey: '2026-10-03', status: 'late' },
         ],
       },
@@ -5101,12 +5101,12 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
   }
   assert.equal(
     answersCsv(shelf),
-    'date,question,short name,answer,note\r\n' +
-      '2026-10-01,"drink water, lots",Water,did,\r\n' +
-      '2026-10-02,"drink water, lots",Water,nope,"he said ""no"""\r\n' +
-      '2026-10-03,,,late,\r\n',
+    'date,question,short name,answer,note,amount\r\n' +
+      '2026-10-01,"drink water, lots",Water,did,,5\r\n' +
+      '2026-10-02,"drink water, lots",Water,nope,"he said ""no""",\r\n' +
+      '2026-10-03,,,late,,\r\n',
   )
-  assert.equal(answersCsv({}), 'date,question,short name,answer,note\r\n')
+  assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount\r\n')
 })
 
 test('every t() key the app uses is in English', () => {

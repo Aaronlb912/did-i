@@ -22,10 +22,11 @@ export function answersCsv(shelf) {
         lamp?.short || '',
         WORDS[answer.status] || String(answer.status || ''),
         answer.note || '',
+        typeof answer.amount === 'number' ? answer.amount : '',
       ])
     }
   }
   rows.sort((a, b) => a[0].localeCompare(b[0]))
-  const head = ['date', 'question', 'short name', 'answer', 'note']
+  const head = ['date', 'question', 'short name', 'answer', 'note', 'amount']
   return [head, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
 }

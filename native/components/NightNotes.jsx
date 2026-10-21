@@ -33,12 +33,14 @@ function saveNote(book, lampId, periodKey, draft, count, onChange) {
   if (String(count ?? '').trim() && cleanAmount(count) === null) { confirmMiss(); return }
   const next = setAnswerNote(book, lampId, periodKey, draft, undefined, count)
   const there = (book?.answers || []).some((item) => item.lampId === lampId && item.periodKey === periodKey)
+  // Done with the sheet either way: there is no answer left to note.
   if (!there) {
     confirmMiss()
-    return
+    return true
   }
   if (next !== book) onChange(next)
   confirmDone(t('note.saved'))
+  return true
 }
 
 function removeNote(book, lampId, periodKey, note, onChange) {
@@ -342,9 +344,8 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
 
   const close = () => publishSheet(null)
   const save = (row, draft, count) => {
-    onChange(setAnswerNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, draft, undefined, count))
-    close()
-    confirmDone(t('note.saved'))
+    // A typo in the amount keeps the sheet open with what was typed.
+    if (saveNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, draft, count, onChange)) close()
   }
   const remove = (row) => {
     close()
