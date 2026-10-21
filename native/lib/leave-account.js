@@ -1,13 +1,16 @@
 import { saveBeforeSignOut, signedOutSync } from '../../src/lib/cloud-sync.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
+import { clearNativePings } from '../shim/native.js'
 import { confirmDone, confirmMiss } from './confirm.js'
 
 // The old account's reminders, cheers and requests already in the tray
 // would still open and act for whoever signs in next.
 function clearTray() {
   import('expo-notifications')
-    .then((Notifications) => Promise.all([Notifications.dismissAllNotificationsAsync?.(), Notifications.cancelAllScheduledNotificationsAsync?.()]))
+    .then((Notifications) => Notifications.dismissAllNotificationsAsync?.())
     .catch(() => {})
+  // Through the reminder queue, so a re-arm already going cannot land after it.
+  clearNativePings()
 }
 
 // Leaving the account: say it worked, or say what went wrong.

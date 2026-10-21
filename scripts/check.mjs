@@ -1173,6 +1173,17 @@ await testAsync('a signed-in Did pays no phone-only coins before the first sync 
   assert.equal(paid.coins, 10, 'the server pays a signed-in Did, not the phone')
 })
 
+test('sign-out cancels reminders behind any re-arm already queued or running', () => {
+  const leave = readFileSync(new URL('../native/lib/leave-account.js', import.meta.url), 'utf8')
+  const src = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
+  assert.doesNotMatch(leave, /cancelAllScheduledNotificationsAsync/)
+  assert.ok(leave.includes('clearNativePings()'))
+  const fn = src.slice(src.indexOf('export function clearNativePings'), src.indexOf('// Takes one board or every board'))
+  assert.ok(fn.includes('clearTimeout(pingTimer)'))
+  assert.match(fn, /pingNext = null/)
+  assert.match(fn, /pingChain = pingChain\.then\([^\n]*cancelAllScheduledNotificationsAsync/)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',

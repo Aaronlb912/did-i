@@ -209,6 +209,17 @@ function flushNativePings() {
     )
 }
 
+// Sign-out: drop a waiting run and cancel behind any run already going, so
+// neither can put the old account's reminders back after the cancel.
+export function clearNativePings() {
+  clearTimeout(pingTimer)
+  const job = pingNext
+  pingNext = null
+  job?.waiters.forEach((w) => w.resolve())
+  pingChain = pingChain.then(() => notifications().then((n) => n.cancelAllScheduledNotificationsAsync())).catch(() => {})
+  return pingChain
+}
+
 // Takes one board or every board on the shelf; each tag's questions ping.
 async function schedulePingsNow(books, now = new Date()) {
   // An empty list still runs: it clears what an old account left scheduled.
