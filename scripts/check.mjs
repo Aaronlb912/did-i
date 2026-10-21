@@ -4139,6 +4139,18 @@ const { streakHitCopy, streakNights } = await import('../src/lib/streak-copy.js'
 const { shelfHeat, shelfStreak } = await import('../src/lib/hall-feel.js')
 const { isAppForeground } = await import('../src/lib/app-foreground.js')
 
+await testAsync('Did we days before the first question still count in the streak', async () => {
+  const { setWeNightRows, clearWeNights } = await import('../src/lib/we-nights.js')
+  const clock = new Date(2026, 9, 10, 21, 0)
+  const book = { id: 'b1', title: 'General', dayFoldHour: 0, lamps: [{ id: 'q', question: 'Did I read?', cadence: 'daily', archived: false, createdOn: '2026-10-08' }], answers: ['2026-10-08', '2026-10-09', '2026-10-10'].map((n) => ({ lampId: 'q', periodKey: n, status: 'yes', answeredAt: n + 'T20:00:00' })) }
+  try {
+    setWeNightRows(['2026-10-06', '2026-10-07', '2026-10-08', '2026-10-09', '2026-10-10'].map((night) => ({ card: 'c1', folder: '', night, status: 'did' })))
+    assert.equal(shelfStreak([book], clock), 5, 'two Did we days before the question was made still count')
+  } finally {
+    clearWeNights()
+  }
+})
+
 await testAsync('the widget shows the open Did we once your own questions are done', async () => {
   const { setWeNightRows, clearWeNights } = await import('../src/lib/we-nights.js')
   const { saveWeOpen } = await import('../src/lib/we-widget.js')
