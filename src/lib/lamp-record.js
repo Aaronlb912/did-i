@@ -17,7 +17,9 @@ export function pausedOpen(lamp, key, answer) {
   if (paused && !answer && (month ? `${key}-31` : periodNight(lamp, key)) >= lamp.pausedOn) return true
   // An earlier pause, since resumed: those days were never asked either. A
   // Not yet there was closed by an older build on resume, not tapped.
-  return inPause(lamp, month ? monthDueDay(lamp, key) : periodNight(lamp, key))
+  // A month counts as paused the same way: the pause reached into it and ran past its due day.
+  if (month) return Boolean(lamp.pauses?.some(([from, until]) => `${key}-31` >= from && until > monthDueDay(lamp, key)))
+  return inPause(lamp, periodNight(lamp, key))
 }
 
 // The day a monthly question was due in that month.
