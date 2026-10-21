@@ -2296,6 +2296,9 @@ test('a past night is final: it closes as nope and cannot be marked later', () =
   assert.ok(periodPassed(lamp, pastKey, todayIso), 'yesterday has passed')
   assert.ok(!periodPassed(lamp, todayIso, todayIso), 'tonight has not')
   assert.ok(!periodPassed({ ...lamp, cadence: 'monthly' }, todayIso.slice(0, 7), todayIso), 'this month is still open')
+  // A day kept from before a switch to monthly stays closed, and the other way round.
+  assert.ok(periodPassed({ ...lamp, cadence: 'monthly' }, pastKey, todayIso), 'an old daily key stays passed after a switch to monthly')
+  assert.ok(!periodPassed(lamp, todayIso.slice(0, 7), todayIso), 'this month stays open after a switch to daily')
   const row = { lamp, periodKey: pastKey }
   assert.equal(putAnswer(book, row, 'late', today), book, 'no late did on a past night')
   assert.equal(putAnswer(book, row, 'yes', today), book, 'no did on a past night')
