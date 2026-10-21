@@ -1417,6 +1417,25 @@ test('signal back with the app open sends a failed push again', () => {
   assert.ok(screen.includes("if (back && account.user && sync.how === 'miss') pullAndMerge()"))
 })
 
+test('a cut-off shelf is kept aside, not overwritten; hearts survive a save', () => {
+  const before = localStorage.getItem('did-i-shelf')
+  try {
+    const bad = '{"boards":[{"lamps":[{"id":"a"}],"ans'
+    localStorage.setItem('did-i-shelf', bad)
+    const shelf = readShelf()
+    assert.equal(shelf.boards[0].lamps.length, 0)
+    assert.equal(localStorage.getItem('did-i-shelf'), bad, 'the stored text is not replaced')
+    assert.equal(localStorage.getItem('did-i-shelf-bad'), bad)
+    const book = { ...emptyBoard(), wish: ['frame:thin'] }
+    const saved = writeShelf({ currentId: book.id, boards: [book] })
+    assert.deepEqual(saved.boards[0].wish, ['frame:thin'])
+  } finally {
+    localStorage.removeItem('did-i-shelf-bad')
+    if (before == null) localStorage.removeItem('did-i-shelf')
+    else localStorage.setItem('did-i-shelf', before)
+  }
+})
+
 test('rows from a deleted folder do not land in the first folder', () => {
   const book = { id: 'b1', lamps: [{ id: 'l1' }], answers: [] }
   const row = { lamp_id: 'old', period_key: '2026-10-14', board_id: 'gone', status: 'yes', answered_at: '2026-10-14T20:00:00Z', note: '' }
