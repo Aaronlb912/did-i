@@ -328,6 +328,7 @@ export const zh = {
   'tonight.emptyKicker': '还没有',
   'tonight.emptyTitle': '还没有问题',
   'tonight.write': '自己写',
+  'tonight.haveAccount': "我已有账号",
   'tonight.waitKicker': '稍后',
   'tonight.waitTitle': '现在没什么要回答',
   'tonight.waitLater': "这些今天晚些会开。",

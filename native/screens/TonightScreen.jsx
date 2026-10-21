@@ -1164,6 +1164,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.emptyTitle')}</Text>
         <StarterPicks book={book} onChange={onChange} colors={colors} />
         <DidButton label={t('tonight.write')} colors={colors} small onPress={() => goHash('/add')} />
+        {firstAdd && !account.user ? (
+          // The menu waits for a first question, so signing in has to be here.
+          <KeyButton label={t('tonight.haveAccount')} colors={colors} onPress={() => goHash('/account')} />
+        ) : null}
       </GemFaceShell>
     )
   } else if (stack.bodyKind === 'hole' && stack.holePick) {
