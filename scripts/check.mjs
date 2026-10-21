@@ -6777,6 +6777,8 @@ test('shared notes and we amounts: sql guards', () => {
   assert.match(all, /'supabase\/social-amounts\.sql'/)
   const notes = readFileSync(path.join(root, 'native/components/NightNotes.jsx'), 'utf8')
   assert.match(notes, /useState\(\(\) => Boolean\(share && noteShared/, 'share starts off unless already shared')
+  assert.ok(notes.includes('=== true) shareAfter'), 'a note that did not save is not shared')
+  assert.ok(notes.includes('if (out) close()'), 'a typo in the amount keeps the sheet open')
   const web = readFileSync(path.join(root, 'src/lib/Tonight.jsx'), 'utf8')
   assert.match(web, /sharedNote\.toggle/)
 })

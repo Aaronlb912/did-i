@@ -36,7 +36,7 @@ function saveNote(book, lampId, periodKey, draft, count, onChange) {
   // Done with the sheet either way: there is no answer left to note.
   if (!there) {
     confirmMiss()
-    return true
+    return 'gone'
   }
   if (next !== book) onChange(next)
   confirmDone(t('note.saved'))
@@ -130,8 +130,8 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
     }
   }, [share?.lampId, share?.periodKey])
   const save = () => {
-    onSave(draft, amount ? count : undefined)
-    shareAfter(share, on, draft)
+    // Share only a note that was saved on the answer.
+    if (onSave(draft, amount ? count : undefined) === true) shareAfter(share, on, draft)
   }
   return (
     <View style={styles.edit}>
@@ -191,8 +191,10 @@ function openNoteSheet({ title, label, initial, amount = null, share = null, col
         share={share}
         colors={colors}
         onSave={(draft, count) => {
-          close()
-          onSave(draft, count)
+          // A typo in the amount keeps the sheet open with what was typed.
+          const out = onSave(draft, count)
+          if (out) close()
+          return out
         }}
         onCancel={close}
         onRemove={
@@ -225,9 +227,7 @@ export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange })
     amount: amountProps(lamp, answer),
     share: shareProps(lamp, answer),
     colors,
-    onSave: (draft, count) => {
-      saveNote(live(), lampId, periodKey, draft, count, onChange)
-    },
+    onSave: (draft, count) => saveNote(live(), lampId, periodKey, draft, count, onChange),
     onRemove: () => removeNote(live() || book, lampId, periodKey, answer.note, onChange),
   })
 }
@@ -251,9 +251,7 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
       amount: amountProps(lamp, answer),
       share: shareProps(lamp, answer),
       colors,
-      onSave: (draft, count) => {
-        saveNote(liveBook(book), lamp.id, answer.periodKey, draft, count, onChange)
-      },
+      onSave: (draft, count) => saveNote(liveBook(book), lamp.id, answer.periodKey, draft, count, onChange),
       onRemove: () => removeNote(liveBook(book), lamp.id, answer.periodKey, answer.note, onChange),
     })
   }
@@ -345,7 +343,9 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
   const close = () => publishSheet(null)
   const save = (row, draft, count) => {
     // A typo in the amount keeps the sheet open with what was typed.
-    if (saveNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, draft, count, onChange)) close()
+    const out = saveNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, draft, count, onChange)
+    if (out) close()
+    return out
   }
   const remove = (row) => {
     close()
