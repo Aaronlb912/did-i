@@ -4,7 +4,7 @@ import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { useFrameActive } from '../components/frames/index.js'
 import { keepEarnedFrames, takeFramesToAnnounce, wearFrame, wornFrame } from '../../src/lib/frames.js'
 import { nightProgress } from '../../src/lib/night-progress.js'
-import { addDaysIso } from '../../src/lib/recurrence.js'
+import { addDaysIso, boardDate } from '../../src/lib/recurrence.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { publishSheet, sheetIsUp } from '../components/SheetHost.jsx'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -770,7 +770,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       const save = (status) => () =>
         peopleAnswer(
           item.key,
-          () => answerFamilyLamp(row.family.id, row.lamp.id, row.night, status),
+          // The day at tap time: Today may have stayed open past midnight.
+          () => answerFamilyLamp(row.family.id, row.lamp.id, boardDate(), status),
           () => {
             confirmDone(t('tonight.familySaved', { name: row.family.name }))
             family.reload()
