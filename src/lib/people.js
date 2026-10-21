@@ -426,6 +426,8 @@ export async function sayYes(linkId) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const { error } = await db.rpc('say_yes', { link: linkId })
+  // They took it back first: say so, and the list reloads.
+  if (error && /no request to answer/i.test(error.message || '')) return { miss: 'friends.askChanged' }
   return error ? bad(error) : { miss: '' }
 }
 
