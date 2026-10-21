@@ -8665,6 +8665,13 @@ test('universal links use ios.associatedDomains (Expo drops the raw entitlement)
   assert.ok(!config.includes("'com.apple.developer.associated-domains'"), 'Expo strips this key from ios.entitlements, so links open the website')
 })
 
+await testAsync('a Did we month never shows more done than due after the schedule changes', async () => {
+  const { weMonth } = await import('../src/lib/did-we.js')
+  const doneNights = Array.from({ length: 10 }, (_, i) => '2026-10-' + String(i + 1).padStart(2, '0'))
+  const card = { startsOn: '2026-10-01', cadence: 'weekly', weekdays: [1], doneNights }
+  assert.deepEqual(weMonth(card, '2026-10', '2026-10-10'), { done: 1, due: 1 })
+})
+
 await testAsync('did we slots: streak, best, answer night and early for daily and weekly cards', async () => {
   const { weSlotLocked, weBest, weDueOn, weEarly, weSlotOf, weStreak } = await import('../src/lib/did-we.js')
   const daily = (doneNights, startsOn = '2026-10-01') => ({ cadence: 'daily', weekdays: [], startsOn, doneNights })
