@@ -192,9 +192,12 @@ export function useAppShelf() {
   )
 
   const saveLamp = useCallback(
-    (target, lamp, fromBook, clock = new Date()) => {
-      const source = fromBook && Array.isArray(fromBook.lamps) ? fromBook : null
+    (staleTarget, lamp, fromBook, clock = new Date()) => {
       let next = shelfRef.current
+      // The screen's copies can miss a widget tap or sync since its last render.
+      const fresh = (book) => (book && (next.boards || []).find((item) => item.id === book.id)) || book
+      const target = fresh(staleTarget)
+      const source = fromBook && Array.isArray(fromBook.lamps) ? fresh(fromBook) : null
       let dest = target
       if (source && source.id !== target.id) {
         const answers = (source.answers || []).filter((item) => item.lampId === lamp.id)
