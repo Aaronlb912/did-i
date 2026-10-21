@@ -1367,6 +1367,14 @@ test('a note on one night rides the answer, is capped, and survives two phones s
   assert.equal(answersToSend(fresh, true)[0].a, new Date(answer.answeredAt).toISOString())
 })
 
+test('rows from a deleted folder do not land in the first folder', () => {
+  const book = { id: 'b1', lamps: [{ id: 'l1' }], answers: [] }
+  const row = { lamp_id: 'old', period_key: '2026-10-14', board_id: 'gone', status: 'yes', answered_at: '2026-10-14T20:00:00Z', note: '' }
+  assert.equal(applyAnswers({ boards: [book], goneTags: [{ id: 'gone', at: '2026-10-14T19:00:00Z' }] }, [row]).changed, 0)
+  // Brought back: its rows count again.
+  assert.equal(applyAnswers({ boards: [book], goneTags: [{ id: 'gone', at: '2026-10-14T19:30:00Z', back: true }, { id: 'gone', at: '2026-10-14T19:00:00Z' }] }, [row]).changed, 1)
+})
+
 test('answer times compare by time: old zoneless rows against new UTC ones', () => {
   // An old row written at 22:00 local, and a UTC row one hour later.
   const old = new Date(2026, 9, 14, 22, 0, 0)

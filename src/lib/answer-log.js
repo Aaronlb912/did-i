@@ -1,7 +1,7 @@
 import { cloud } from './cloud.js'
 import { demoLampIds } from './demo-strip.js'
 import { answerStamp } from './board-ops.js'
-import { answeredAtIso, cleanAmount } from './board-json.js'
+import { answeredAtIso, cleanAmount, normalizeGone } from './board-json.js'
 import { stampMs } from './recurrence.js'
 import { readAccountUserId } from './session-id.js'
 
@@ -122,11 +122,14 @@ export function applyAnswers(shelf, rows) {
   for (const book of boards) {
     for (const item of book.gone || []) if (!item.back && !homeOf.has(item.id)) dead.add(item.id)
   }
+  // Same for a deleted folder: its rows must not land in the first folder.
+  const deadTags = new Set(normalizeGone(shelf.goneTags).filter((item) => !item.back).map((item) => item.id))
 
   const indexOf = new Map()
   let changed = 0
   for (const row of rows) {
     if (dead.has(row.lamp_id)) continue
+    if (!homeOf.has(row.lamp_id) && deadTags.has(row.board_id)) continue
     const book =
       homeOf.get(row.lamp_id) || boards.find((item) => item.id === row.board_id) || boards[0]
     if (!book) continue
