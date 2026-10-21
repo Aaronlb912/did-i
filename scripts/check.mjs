@@ -819,6 +819,13 @@ test('an offline undo waits instead of being dropped, and a clock set back resen
   assert.ok(src.includes("if (stampMs(read(MARK)) > Date.now()) write(MARK, '')"), 'a mark ahead of the clock resets')
 })
 
+test('joining or leaving a family by double tap sends once', () => {
+  const social = readFileSync(new URL('../native/screens/social.jsx', import.meta.url), 'utf8')
+  const fam = readFileSync(new URL('../native/screens/FamilyDetail.jsx', import.meta.url), 'utf8')
+  assert.ok(social.includes("once('join-family', join)"))
+  assert.ok(fam.includes("once('fam-leave'"))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
