@@ -74,6 +74,7 @@ export function NativeApp() {
     })
     let alive = true
     let stopWatch = () => {}
+    let offLive = () => {}
     afterNativeBridgeReady(async () => {
       installQuickActions()
       // Did or Not yet on the watch: saved like a widget tap, then the watch
@@ -130,7 +131,7 @@ export function NativeApp() {
         refreshTogether().catch(() => {})
         globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
         // Someone you are with answered while the app is open.
-        onSocialLive(() => refreshTogether().catch(() => {}))
+        offLive = onSocialLive(() => refreshTogether().catch(() => {}))
         await initWidgetsOnLaunch(readShelf()).catch(() => {})
       }
     })
@@ -138,6 +139,7 @@ export function NativeApp() {
       alive = false
       stop?.()
       stopWatch()
+      offLive()
     }
   }, [launchReady])
 
