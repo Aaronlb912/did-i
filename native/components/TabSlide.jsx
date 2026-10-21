@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { StyleSheet, useWindowDimensions } from 'react-native'
-import { useIsFocused } from '@react-navigation/native'
+import { useNavigationState, useRoute } from '@react-navigation/native'
 import * as Reanimated from 'react-native-reanimated'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 
@@ -13,7 +13,10 @@ const { Easing, useAnimatedStyle, useSharedValue, withTiming } = Reanimated
 const SLIDE_MS = 240
 
 export function TabSlide({ index, children }) {
-  const focused = useIsFocused()
+  // The selected tab, not screen focus: coming back from a pushed screen also
+  // refocuses the tab, and sliding then fought the back animation (a stutter).
+  const route = useRoute()
+  const focused = useNavigationState((state) => state?.routes?.[state.index]?.key === route.key)
   const reduce = useReduceMotion()
   const { width } = useWindowDimensions()
   // A later tab is only built the first time you open it. Android builds it
