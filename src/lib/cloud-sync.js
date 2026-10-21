@@ -6,6 +6,7 @@ import { addNotice, clearNotices, markNoticesSeen } from './notices.js'
 import { giftThanksNotice } from './gift-history.js'
 import { clearAuthSkip } from './auth-gate.js'
 import { forgetAccountCaches } from './account-cache.js'
+import { saveTogetherPeople } from './together-widget.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { forgetAnswerKey, refreshAnswerKey } from './answer-key.js'
@@ -193,6 +194,8 @@ export function signedOutSync() {
   clearNotices()
   markNoticesSeen(0)
   noteAvatar('')
+  // The Together widget's friends too, even when the session just ran out.
+  saveTogetherPeople([])
   const shelf = clearLocalShelf()
   keepProfileName('')
   writeLastUser('')
