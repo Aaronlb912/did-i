@@ -166,15 +166,11 @@ export function preferStoredTonightProps(built, stored) {
   const builtStatus = new Map(
     (built.items || []).map((item) => [`${item.lampId}|${item.periodKey}`, item.status]),
   )
-  // So is an open day-dated card from an earlier day the shelf no longer
-  // offers (yesterday's grace ended).
-  const today = boardDate(new Date(built.updatedAt || Date.now()))
+  // So is an open question the shelf no longer offers (deleted, or
+  // yesterday's grace ended).
   const stale = stored.items.some((item) => {
     if (item.status !== 'open') return false
-    const now = builtStatus.get(`${item.lampId}|${item.periodKey}`)
-    if (now) return now !== 'open'
-    const key = String(item.periodKey || '')
-    return key.length === 10 && key[4] === '-' && key < today
+    return builtStatus.get(`${item.lampId}|${item.periodKey}`) !== 'open'
   })
   if (stale || widgetOpenCount(stored) <= widgetOpenCount(built)) {
     // Keep the question the person browsed to with Next while it is still open.

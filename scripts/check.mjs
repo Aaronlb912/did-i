@@ -952,6 +952,25 @@ test('the room stays warm at 3am while last night can still be answered', async 
   assert.equal(hallHeat(book, new Date(2026, 9, 21, 13, 0)), 0, 'once its grace ends, the missed night breaks it')
 })
 
+test('a deleted question leaves the widget card at once, not at midnight', () => {
+  const built = { leadLampId: 'a', question: 'A?', items: [{ lampId: 'a', periodKey: 'n', question: 'A?', status: 'open', tag: 'Home' }] }
+  const stored = { leadLampId: 'gone', leadNight: 'n', question: 'Gone?', items: [{ lampId: 'a', periodKey: 'n', question: 'A?', status: 'open', tag: 'Home' }, { lampId: 'gone', periodKey: 'n', question: 'Gone?', status: 'open', tag: 'Home' }] }
+  const out = preferStoredTonightProps(built, stored)
+  assert.equal(out.leadLampId, 'a')
+  assert.ok(!out.items.some((item) => item.lampId === 'gone'))
+})
+
+test('moving a monthly day later after answering counts the month once', async () => {
+  const { keepPastSchedule } = await import('../src/lib/recurrence.js')
+  const old = lamp('rent', { cadence: 'monthly', monthDay: 10, createdOn: '2026-08-01' })
+  const next = { ...old, monthDay: 25 }
+  next.was = keepPastSchedule(old, next, '2026-10-15')
+  const answers = ['2026-08', '2026-09', '2026-10'].map((key) => ({ id: key, lampId: 'rent', periodKey: key, status: 'yes' }))
+  const book = { id: 'b', lamps: [next], answers }
+  assert.equal(questionStreak(book, next, '2026-10-25', 400, new Date(2026, 9, 25, 12)), 3, 'October counts once')
+  assert.equal(bestQuestionStreak(book, next, '2026-10-25', 1000, new Date(2026, 9, 25, 12)), 3)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
@@ -5663,9 +5682,9 @@ await testAsync('a widget card from an earlier night does not win after midnight
     updatedAt: new Date('2026-09-24T12:00:00').getTime(),
   }
   assert.equal(preferStoredTonightProps(built, stored), built)
-  // Same night, more open on the card: the card still wins (taps saved natively).
+  // Same night, the card has a question the shelf no longer offers (deleted): the shelf wins.
   const sameNight = { ...built, updatedAt: new Date('2026-09-23T22:30:00').getTime() }
-  assert.equal(preferStoredTonightProps(sameNight, stored).items, stored.items)
+  assert.equal(preferStoredTonightProps(sameNight, stored).items, sameNight.items)
   // Yesterday's grace card after the grace ends: the shelf has nothing open, the card goes.
   const grace = { items: [{ lampId: 'a', periodKey: '2026-09-23', status: 'open' }], leadLampId: 'a', updatedAt: new Date('2026-09-24T08:00:00').getTime() }
   const after = { items: [], leadLampId: '', updatedAt: new Date('2026-09-24T09:01:00').getTime() }
