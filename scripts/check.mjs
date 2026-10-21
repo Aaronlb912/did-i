@@ -1814,7 +1814,9 @@ test('locale placeholders match English', () => {
 test('zh, ja and ko have no stray English words', () => {
   const keep = new Set(('Did I we you coin coins gem gems cheer cheers Google Play Apple App Store Android iPhone iOS Mac Windows ' +
     'Safari Chrome Siri Watch Wear OS Assistant Supabase EAS Expo Firebase Cloud Messaging Vercel React Excel Sheets CSV PIN QR ID AM PM ' +
-    'URL JSON HTTPS IP OK D Hayes Street Jordan Hale Aaron Bryant AQ LBS').toLowerCase().split(' '))
+    'URL JSON HTTPS IP OK D Hayes Street Jordan Hale Aaron Bryant AQ LBS ' +
+    // Widget names in the phone's widget picker, which is not translated.
+    'today tonight questions together').toLowerCase().split(' '))
   const skip = (key) => /^(legal|lang|site\.into|device)\./.test(key) || /^(cheer|look)\.\w+\.name$/.test(key) ||
     key === 'site.door.title' || key === 'site.read.p5' || mayMatchEnglish(key)
   for (const [code, table] of Object.entries({ zh, ja, ko })) {
