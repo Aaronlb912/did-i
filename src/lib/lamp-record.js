@@ -77,6 +77,11 @@ export function lampRecord(book, lamp, dateIso, days = 30) {
   const tonight = answerFor(book, lamp.id, tonightKey)?.status || ''
   // A paused question keeps its history on show, so count its nights as if live.
   const keys = recentPeriodKeys({ ...lamp, archived: false }, dateIso, days).filter((key) => key !== tonightKey || tonight)
+    // Travel days left open count neither way, same as the streak.
+    .filter((key) => {
+      const iso = periodNight(lamp, key)
+      return !(travelSkipped(book, iso) && travelNightState(answerFor(book, lamp.id, key), iso) === 'none')
+    })
   let did = 0
   for (const key of keys) {
     if (didStatus(answerFor(book, lamp.id, key)?.status)) did += 1

@@ -4,6 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { answerFor, formatBoardDate, isDueOn, isEvery, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
 import { shortLabel } from '../../src/lib/board-json.js'
+import { travelNightState, travelSkipped } from '../../src/lib/travel.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
@@ -36,9 +37,13 @@ export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false) {
       const status = iso <= dateIso ? answerFor(book, lamp.id, iso)?.status : ''
       state = status === 'yes' ? 'did' : status === 'late' ? 'late' : ''
     } else if (iso <= dateIso && (!made || iso >= made) && isDueOn(shown, iso)) {
-      const status = answerFor(book, lamp.id, periodKeyFor(lamp, iso))?.status
-      state =
-        status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? (gentle || nightOpen(iso) ? 'nope' : 'missed') : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'
+      const answer = answerFor(book, lamp.id, periodKeyFor(lamp, iso))
+      const status = answer?.status
+      // A day skipped for travel and left open is not a miss, same as the streak.
+      const away = travelSkipped(book, iso) && travelNightState(answer, iso) === 'none'
+      state = away
+        ? ''
+        : status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? (gentle || nightOpen(iso) ? 'nope' : 'missed') : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'
     }
     cells.push({ iso, day: d, state })
   }
