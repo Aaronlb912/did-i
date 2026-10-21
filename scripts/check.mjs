@@ -1157,6 +1157,22 @@ test('saying nothing finds the one open question even with its grace copy', asyn
   assert.equal(matchSpoken('', [one, { lamp: { id: 'b', question: 'Did I read?' } }]), null)
 })
 
+await testAsync('a signed-in Did pays no phone-only coins before the first sync stores the account', async () => {
+  const P = await import('../src/lib/purse.js')
+  const S = await import('../src/lib/session-id.js')
+  const C = await import('../src/lib/cloud.js')
+  assert.ok(C.cloudSetUp(), 'test needs cloud set up')
+  localStorage.removeItem('did-i-last-user')
+  S.noteSessionUser?.('user-a')
+  const lamp = { id: 'di-cat', question: 'Did I feed the cat?', cadence: 'daily', archived: false, createdOn: '2026-10-01' }
+  const book = { id: 'board-a', lamps: [lamp], answers: [], coins: 10 }
+  const row = { lamp, periodKey: '2026-10-20' }
+  const after = { ...book, answers: [{ id: 'x', lampId: 'di-cat', periodKey: '2026-10-20', status: 'yes' }] }
+  const paid = P.payTap(book, after, row, 'yes', new Date(2026, 9, 20, 21))
+  S.noteSessionUser?.('')
+  assert.equal(paid.coins, 10, 'the server pays a signed-in Did, not the phone')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
