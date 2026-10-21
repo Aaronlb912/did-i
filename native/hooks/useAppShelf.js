@@ -163,7 +163,7 @@ export function useAppShelf() {
     }
     const after = currentBook(written)
     // Every board, the same as armLampPings: one board would cancel the rest.
-    if (written?.boards?.length) scheduleNativePings(written.boards).catch(reportRejection('schedule-pings'))
+    if (written?.boards) scheduleNativePings(written.boards).catch(reportRejection('schedule-pings'))
     syncTonightWidget(written).catch(() => {})
     // A mark that unlocks with nothing on screen may as well not have.
     if (after && after.id === before?.id && !after.quietMode) {
@@ -348,8 +348,9 @@ export function useAppShelf() {
       if (changed) markWidgetTimelineRead(true)
       const redraw = changed ? syncTonightWidget : syncTonightWidgetIfChanged
       redraw(event.detail).catch(() => {})
-      // Reminders are rebuilt for the new account, so the last one's Did we pings go.
-      if (changed) scheduleNativePings(event.detail.boards || []).catch(reportRejection('schedule-pings'))
+      // Rebuilt on every pull: another phone may have added, moved, deleted or
+      // answered a question. After an account change, the last one's pings go.
+      scheduleNativePings(event.detail.boards || []).catch(reportRejection('schedule-pings'))
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {

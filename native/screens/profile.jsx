@@ -234,7 +234,11 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           label={t('settings.language')}
           options={LOCALE_IDS.map((id) => ({ id, label: t(`lang.${id}`) }))}
           selected={prefs.locale}
-          onSelect={(id) => writePrefs({ locale: id })}
+          onSelect={(id) => {
+            writePrefs({ locale: id })
+            // Reminder text and buttons are in the old language until rebuilt.
+            armLampPings(readShelf().boards).catch(() => {})
+          }}
         />
         <SetSwitch
           colors={colors}

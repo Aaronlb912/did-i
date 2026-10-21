@@ -5490,7 +5490,7 @@ test('sign out: Did we reminders and widget line go with the account', () => {
   const out = sync.slice(sync.indexOf('export function signedOutSync()'))
   assert.ok(out.indexOf('forgetAccountCaches()') < out.indexOf('clearLocalShelf()'), 'every sign-out path clears them')
   const shelf = read('native/hooks/useAppShelf.js')
-  assert.match(shelf, /if \(changed\) scheduleNativePings\(event\.detail\.boards \|\| \[\]\)/, 'reminders re-arm after an account change')
+  assert.match(shelf, /\n      scheduleNativePings\(event\.detail\.boards \|\| \[\]\)/, 'reminders re-arm after every pull, account change included')
   assert.doesNotMatch(read('native/shim/native.js'), /if \(!list\.length\) return/, 'an empty shelf still clears old reminders')
 })
 
