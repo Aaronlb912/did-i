@@ -70,7 +70,7 @@ import { DropLine } from '../components/DropLine.jsx'
 import { RateCard } from '../components/RateCard.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
-import { EditPen } from '../components/SwipeFace.jsx'
+import { EditPen, MarkStamp } from '../components/SwipeFace.jsx'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { gemFrameStyle, gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
@@ -1181,11 +1181,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         />
         {pillRow.tag ? <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag}</Text> : null}
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
-        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>
+        {status ? null : <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>}
         {/* Only while new: after a few nights people know a DID stays. */}
         {isNew && (status === 'yes' || status === 'late') ? (
           <Text style={[faceCardStyles.meta, { color: colors.inkDim }]}>{t('pill.doneFinal')}</Text>
         ) : null}
+        <MarkStamp status={status} colors={colors} />
         <View style={styles.actions}>
           <TonightNote rows={[pillRow]} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
         </View>
@@ -1226,7 +1227,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         {pillMeta ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillMeta}</Text> : null}
         {/* A not yet still takes a swipe right to Did (late); say where it stands. */}
         {status === 'skip' ? (
-          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{`${pillStatusLabel(status)} · ${t('tonight.nopedChange', { time: clockWords('09:00') })}`}</Text>
+          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.nopedChange', { time: clockWords('09:00') })}</Text>
         ) : null}
         {pillHistory ? (
           <NightStrip
@@ -1237,6 +1238,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             onPickHole={(lamp, key) => stack.pickHole(lamp, key, pillRow)}
           />
         ) : null}
+        <MarkStamp status={status} colors={colors} />
       </SwipeCardHost>
     )
     // Picked from the pills: the same Did and Nope as the stack. A noped one
