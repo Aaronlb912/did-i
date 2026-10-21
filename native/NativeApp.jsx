@@ -19,6 +19,7 @@ import { refreshTogether } from '../src/lib/people.js'
 import { t, tMiss } from '../src/lib/i18n.js'
 import { showToast } from './lib/toast-queue.js'
 import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
+import { armNativePingsNow } from './shim/native.js'
 import { onSocialLive } from '../src/lib/social-live.js'
 import { hallColors } from './palette.js'
 import { BootView } from './components/BootView.jsx'
@@ -104,6 +105,9 @@ export function NativeApp() {
         onAnswer: (lampId, kind, night, at) => {
           const shelf = applyWidgetTapOnce(lampId, kind, night, new Date(), at || Date.now())
           if (shelf && nativeWidgetsEnabled()) syncTonightWidget(shelf).catch(() => {})
+          // Now, not after the debounce: iOS may suspend a background wake first,
+          // and that question's later reminders would still go off.
+          if (shelf) armNativePingsNow(shelf.boards || []).catch(() => {})
           if (!shelf) showToast({ id: 'note-answer', kind: 'error', text: t('noteAnswer.notSaved'), ms: 5200 })
         },
         // Did or Nope on a Did we reminder: saved on the server. A miss
