@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { NOTE_MAX, setAnswerNote } from '../../src/lib/board-ops.js'
-import { shortLabel } from '../../src/lib/board-json.js'
+import { cleanAmount, shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { lampNights } from '../../src/lib/lamp-record.js'
 import { nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
@@ -29,6 +29,8 @@ function liveBook(book) {
 // "Note saved" only when the note landed: the answer may have been undone
 // or removed while the sheet was open, and then nothing was written.
 function saveNote(book, lampId, periodKey, draft, count, onChange) {
+  // A typo in the amount would otherwise wipe the old amount and still say saved.
+  if (String(count ?? '').trim() && cleanAmount(count) === null) { confirmMiss(); return }
   const next = setAnswerNote(book, lampId, periodKey, draft, undefined, count)
   const there = (book?.answers || []).some((item) => item.lampId === lampId && item.periodKey === periodKey)
   if (!there) {
