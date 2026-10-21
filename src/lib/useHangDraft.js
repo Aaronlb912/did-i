@@ -136,6 +136,11 @@ export function useHangDraft({
       const unit = amountUnitOf(draft)
       if (unit) next.amountUnit = unit
     }
+    // Stopped or asked again elsewhere while the form was open: that stays.
+    if (editing) {
+      if (lamp.archived) next.archived = lamp.archived
+      else delete next.archived
+    }
     // Past days keep the schedule they had, so a schedule edit never ends a streak.
     const was = editing ? keepPastSchedule(lamp, next, boardDate(clock, book.dayFoldHour)) : []
     if (was.length) next.was = was
