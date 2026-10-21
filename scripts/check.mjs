@@ -1140,6 +1140,16 @@ test('changing weekdays after answering today keeps today', async () => {
   assert.ok(!isDueOn(fresh, '2026-10-20'), 'unanswered today leaves with the edit')
 })
 
+test('a monthly pause resumed after the due day keeps the streak', () => {
+  const rent = lamp('rent', { cadence: 'monthly', monthDay: 5, createdOn: '2026-01-01' })
+  const answers = ['2026-01', '2026-02', '2026-04'].map((key) => ({ id: key, lampId: 'rent', periodKey: key, status: 'yes' }))
+  const paused = { ...rent, archived: true, pausedOn: '2026-03-20' }
+  const resumed = { ...rent, pauses: [['2026-03-20', '2026-04-10']] }
+  const now = new Date(2026, 3, 15, 12)
+  assert.equal(questionStreak({ id: 'b', lamps: [paused], answers }, paused, '2026-04-15', 400, now), 3, 'while paused')
+  assert.equal(questionStreak({ id: 'b', lamps: [resumed], answers }, resumed, '2026-04-15', 400, now), 3, 'after resume')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
