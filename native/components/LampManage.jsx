@@ -50,7 +50,7 @@ function runStops(ids) {
   for (const id of drop) {
     dropCheckOn(id)
       .then((out) => {
-        if (out?.miss === 'people.reach') retry(id)
+        if (out?.miss === 'people.reach' || out?.miss === 'out') retry(id)
         else if (out?.miss) confirmMiss(tMiss(out.miss))
       })
       .catch(() => retry(id))
