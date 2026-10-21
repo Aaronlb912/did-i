@@ -21,7 +21,7 @@ export function onTogetherSaved(fn) {
 // people: [{ id, name, initials, shared, doneOn }]. Returns true when it changed.
 export function saveTogetherPeople(people) {
   try {
-    const next = JSON.stringify((people || []).slice(0, 40))
+    const next = JSON.stringify((people || []).slice(0, 500))
     if (localStorage.getItem(KEY) === next) return false
     localStorage.setItem(KEY, next)
   } catch {
@@ -65,7 +65,7 @@ export function buildTogetherWidgetProps(people = readTogetherPeople(), dateIso 
   rows.sort((a, b) => Number(a.done) - Number(b.done) || a.name.localeCompare(b.name))
   const done = rows.filter((r) => r.done).length
   return {
-    people: rows,
+    people: rows.slice(0, 40),
     title: say('together.widgetTitle', 'Together today'),
     // Same words as the Friends page when nobody is done yet.
     countLine: !rows.length
