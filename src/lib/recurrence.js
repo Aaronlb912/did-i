@@ -142,7 +142,8 @@ export function scheduleAt(lamp, dateIso) {
 // The was list for an edit made today: old's schedule holds until today.
 export function keepPastSchedule(old, next, todayIso) {
   const was = Array.isArray(old?.was) ? old.was : []
-  if (!WAS_CADENCES.has(next.cadence)) return []
+  // Every so often and once keep the history: an edit back must not lose it.
+  if (!WAS_CADENCES.has(next.cadence) && !was.length && !WAS_CADENCES.has(old?.cadence)) return []
   // Every so often has no missed days: before the edit, past days stay not due.
   // A one-time question made repeating is the same: no past day became a miss.
   if (!old || !(WAS_CADENCES.has(old.cadence) || old.cadence === 'every' || old.cadence === 'once')) return was
