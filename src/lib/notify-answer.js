@@ -37,7 +37,8 @@ export function notificationAnswer(response, now = Date.now()) {
 export function firstResponse(seen, response) {
   const id = response?.notification?.request?.identifier
   if (!id) return true
-  const key = `${id}|${response?.actionIdentifier || ''}`
+  // The streak note reuses its id each day; the delivery time tells the days apart.
+  const key = `${id}|${response?.notification?.date || ''}|${response?.actionIdentifier || ''}`
   if (seen.has(key)) return false
   seen.add(key)
   return true
