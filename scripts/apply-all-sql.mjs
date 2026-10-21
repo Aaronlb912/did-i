@@ -87,6 +87,7 @@ const files = [
   'supabase/friend-id-ask.sql',
   'supabase/we-wake.sql',
   'supabase/drop-tonight.sql',
+  'supabase/we-joined-push.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
