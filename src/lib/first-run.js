@@ -268,12 +268,13 @@ const tourKey = (who) => `did-i-tour:${who || 'out'}`
 function adoptOutTour(who) {
   const out = localStorage.getItem(tourKey(''))
   if (!who || !out) return
-  localStorage.removeItem(tourKey(''))
-  const from = JSON.parse(out) || {}
-  const mine = JSON.parse(localStorage.getItem(tourKey(who)) || '{}') || {}
-  const next = { ...mine }
+  const parsed = JSON.parse(out)
+  const from = parsed && typeof parsed === 'object' ? parsed : {}
+  const kept = JSON.parse(localStorage.getItem(tourKey(who)) || '{}')
+  const next = { ...(kept && typeof kept === 'object' ? kept : {}) }
   for (const [k, v] of Object.entries(from)) if (next[k] === undefined || next[k] === 'new') next[k] = v
   localStorage.setItem(tourKey(who), JSON.stringify(next))
+  localStorage.removeItem(tourKey(''))
 }
 
 export function readTour(who = tourWho()) {
