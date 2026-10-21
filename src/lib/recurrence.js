@@ -119,7 +119,9 @@ export function periodPassed(lamp, periodKey, todayIso) {
     const day = String((lamp.onceWhen === 'by' ? lamp.dueBy : lamp.onceOn) || lamp.createdOn || '').trim()
     return /^\d{4}-\d{2}-\d{2}$/.test(day) && day < todayIso
   }
-  if (lamp.cadence === 'monthly') return periodKey < todayIso.slice(0, 7)
+  // By the key's shape, not today's schedule: a day kept from before a switch
+  // to monthly is still a day, and this month's key is still open.
+  if (periodKey.length === 7) return periodKey < todayIso.slice(0, 7)
   return periodKey < todayIso
 }
 
