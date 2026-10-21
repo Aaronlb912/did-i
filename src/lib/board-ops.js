@@ -1,7 +1,14 @@
 import { answeredAtIso, cleanAmount, duplicateLamp, newAnswerId } from './board-json.js'
 import { activeLook } from './active-look.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
-import { answerFor, openFloorIso, periodPassed, stampMs } from './recurrence.js'
+import { answerFor, boardDate, openFloorIso, periodPassed, stampMs } from './recurrence.js'
+
+// Pausing notes the day, so the question's record stops counting there.
+function withPause(lamp, archived, clock = new Date()) {
+  if (Boolean(lamp.archived) === archived) return lamp
+  const { pausedOn, ...rest } = lamp
+  return archived ? { ...rest, archived, pausedOn: boardDate(clock) } : { ...rest, archived }
+}
 
 export function putAnswer(book, row, status, clock = new Date()) {
   if (!row || !row.lamp) return book
@@ -102,7 +109,7 @@ export function bulkLamps(books, picks, kind) {
       const archived = kind === 'stop'
       out.push({
         ...book,
-        lamps: (book.lamps || []).map((item) => (ids.has(item.id) ? { ...item, archived } : item)),
+        lamps: (book.lamps || []).map((item) => (ids.has(item.id) ? withPause(item, archived) : item)),
       })
     }
   }
@@ -164,12 +171,12 @@ export function moveLamps(books, picks, targetId) {
   return [...changed.values()]
 }
 
-export function toggleArchive(book, lamp) {
+export function toggleArchive(book, lamp, clock = new Date()) {
   if (!lamp) return book
   return {
     ...book,
     lamps: (book.lamps || []).map((item) =>
-      item.id === lamp.id ? { ...item, archived: !item.archived } : item,
+      item.id === lamp.id ? withPause(item, !item.archived, clock) : item,
     ),
   }
 }
