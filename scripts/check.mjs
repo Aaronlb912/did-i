@@ -998,6 +998,19 @@ test('an old answer with a newer note never puts the answer back over a newer on
   assert.equal(tapped.note, 'tired')
 })
 
+test('a Did you kept on two phones under two ids keeps the answers from both phones', () => {
+  const book = (id, answers) => ({ id: 'b1', title: 'Home', lamps: [{ id, label: 'Water', fromDidYou: true, sendId: '11111111-2222-4333-8444-555555555555' }], answers })
+  const won = mergeShelves(
+    { currentId: 'b1', boards: [book('a', [])] },
+    { currentId: 'b1', boards: [book('b', [{ id: 'x', lampId: 'b', periodKey: '2026-10-01', status: 'yes', answeredAt: '2026-10-01T20:00:00.000Z' }])] },
+    '2026-10-03',
+    '2026-10-02',
+  ).boards[0]
+  assert.deepEqual(won.lamps.map((lamp) => lamp.id), ['a'])
+  assert.ok(won.answers.some((item) => item.lampId === 'a' && item.periodKey === '2026-10-01' && item.status === 'yes'))
+  assert.ok(!won.answers.some((item) => item.lampId === 'b'))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
