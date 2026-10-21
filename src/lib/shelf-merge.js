@@ -114,7 +114,7 @@ export function mergeBooks(winner, loser) {
 // but this phone's question settings win, and coins, gems and shop items
 // stay as they are here, so a copy cannot bring back what was spent.
 export function mergeBackup(local, backup) {
-  const PURSE = ['coins', 'gems', 'cheers', 'looks', 'accessories', 'buddies', 'frames', 'cheerStages', 'buddyOn', 'cheerOn', 'worn', 'frame']
+  const PURSE = ['coins', 'gems', 'cheers', 'looks', 'accessories', 'buddies', 'frames', 'cheerStages', 'buddyOn', 'cheerOn', 'worn', 'frame', 'wish']
   const boards = (backup?.boards || []).map((book) => {
     const out = { ...book }
     for (const key of PURSE) delete out[key]

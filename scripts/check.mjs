@@ -9036,6 +9036,13 @@ test('no date regex lost its backslashes (d{4} where \d{4} was meant)', () => {
   assert.deepEqual(bad, [])
 })
 
+test('a heart removed here does not come back from a folder only the cloud has', async () => {
+  const { mergePurses } = await import('../src/lib/purse.js')
+  const [one, two] = SHOP_CALENDAR.looks.filter((item) => item.id !== 'lime').map((item) => 'look:' + item.id)
+  const merged = mergePurses([{ id: 'a', wish: [one] }, { id: 'c', wish: [one, two] }])
+  assert.deepEqual(merged.wish, [one])
+})
+
 test('pausing a question does not erase its misses from the overall streak', async () => {
   const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
   const day = (d) => '2026-10-' + String(d).padStart(2, '0')
