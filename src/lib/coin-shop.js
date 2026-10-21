@@ -1,7 +1,7 @@
 import { accountSessionOn } from './session-id.js'
 import { buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, liveCheers, liveLooks, nextCheerStage, shopBuddies, normalizePurse, wearAccessory } from './purse.js'
 import { accessoryById } from './accessories.js'
-import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems } from './wallet.js'
+import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems, readGemOwned } from './wallet.js'
 import { buyFrameLocal, frameById, frameForSale } from './frames.js'
 import { noteMilestone } from './milestones.js'
 
@@ -91,7 +91,12 @@ async function buyWithGemsRaw(book, kind, id) {
   if (!item || purse[how.owned].includes(id)) return how.local(book, id)
   if (!accountSessionOn()) return item.gems > 0 ? { book, miss: SIGN_IN_MISS } : how.local(book, id)
   if (purse.gems < item.gems) return { book, miss: 'shop.miss.needGems', missN: item.gems }
-  const remote = await purchaseWithGems(kind, id)
+  let remote = await purchaseWithGems(kind, id).catch(() => ({ miss: 'shop.miss.buyFail' }))
+  // A lost reply can hide a buy that went through: ask the server what we own.
+  if (remote.miss === 'shop.miss.buyFail') {
+    const owned = await readGemOwned().catch(() => null)
+    if (owned?.[how.owned]?.includes(id)) remote = { miss: '', owned }
+  }
   if (remote.miss) return { book, miss: remote.miss, missN: item.gems }
   return { book: applyGemOwnedToBook(book, remote.owned, { [how.on]: id }), miss: '' }
 }
