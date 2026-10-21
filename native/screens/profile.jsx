@@ -167,7 +167,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             label={t('settings.sendCopy')}
             sub={t('settings.sendCopySub')}
             chevron
-            onPress={onSendCopy || (() => shareShelf(readShelf()))}
+            onPress={onSendCopy || (() => shareShelf(readShelf()).catch(() => confirmMiss(t('confirm.shareMiss'))))}
           />
           <SetRow
             colors={colors}

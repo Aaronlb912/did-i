@@ -5103,7 +5103,7 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
     answersCsv(shelf),
     'date,question,short name,answer,note,amount\r\n' +
       '2026-10-01,"drink water, lots",Water,did,,5\r\n' +
-      '2026-10-02,"drink water, lots",Water,nope,"he said ""no""",\r\n' +
+      '2026-10-02,"drink water, lots",Water,not yet,"he said ""no""",\r\n' +
       '2026-10-03,,,late,,\r\n',
   )
   assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount\r\n')
