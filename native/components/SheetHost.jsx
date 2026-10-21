@@ -22,6 +22,11 @@ export function onSheetUp(fn) {
   return () => upWatchers.delete(fn)
 }
 
+// The sheet on screen now, so a caller can tell when another replaced its own.
+export function currentSheet() {
+  return current
+}
+
 export function sheetIsUp() {
   return Boolean(current?.title)
 }
