@@ -882,6 +882,20 @@ test('an owned look can be worn again after it leaves the shop', () => {
   assert.ok(body.indexOf('purse.looks.includes(id)') < body.indexOf("miss: 'shop.miss.lookGone'"))
 })
 
+test('resuming a paused question keeps its streak', async () => {
+  const { toggleArchive } = await import('../src/lib/board-ops.js')
+  const { normalizeLamp } = await import('../src/lib/board-json.js')
+  const q = { ...lamp('p'), cadence: 'daily', createdOn: '2026-09-01' }
+  const did = (day) => ({ id: 'a' + day, lampId: 'p', periodKey: day, status: 'yes', answeredAt: '2026-10-01T20:00:00.000Z', note: '' })
+  const answers = Array.from({ length: 20 }, (_, i) => did('2026-09-' + String(i + 11).padStart(2, '0')))
+  const paused = toggleArchive({ id: 'b', lamps: [q], answers }, q, new Date(2026, 9, 1, 12))
+  const back = toggleArchive(paused, paused.lamps[0], new Date(2026, 9, 10, 12))
+  const rq = normalizeLamp(back.lamps[0])
+  assert.deepEqual(rq.pauses, [['2026-10-01', '2026-10-10']], 'the pause survives a reload')
+  const book = { ...back, lamps: [rq], answers: [...answers, did('2026-10-10')] }
+  assert.equal(lampRecord(book, rq, '2026-10-10', 60).streak, 21, 'the paused days neither count nor break')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',

@@ -262,6 +262,7 @@ export function normalizeLamp(raw) {
     archived: asBool(lamp.archived),
     // The day it was paused, so its record stops counting from there.
     ...(asBool(lamp.archived) && /^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.pausedOn).trim()) ? { pausedOn: asString(lamp.pausedOn).trim() } : {}),
+    ...(asPauses(lamp.pauses).length ? { pauses: asPauses(lamp.pauses) } : {}),
     ...(Number.isInteger(Number(lamp.order)) && lamp.order !== '' && lamp.order != null && Number(lamp.order) >= 0
       ? { order: Math.min(Number(lamp.order), 9999) }
       : {}),
@@ -565,12 +566,20 @@ export function addUnlock(book, id) {
 // The short name field's length limit.
 export const SHORT_MAX = 24
 
+// Resumed pauses as [from, until) day pairs, newest 8.
+function asPauses(list) {
+  if (!Array.isArray(list)) return []
+  const day = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+  return list.filter((pair) => Array.isArray(pair) && day(pair[0]) && day(pair[1]) && pair[0] < pair[1]).map(([from, until]) => [from, until]).slice(-8)
+}
+
 export function duplicateLamp(lamp, now = new Date()) {
   const copy = normalizeLamp(lamp)
   copy.id = newLampId()
   copy.createdOn = isoDate(now)
   copy.archived = false
   delete copy.pausedOn
+  delete copy.pauses
   // Trim the name first so " copy" always fits inside the limit.
   const suffix = ` ${t('lamp.copySuffix')}`
   const full = shortLabel(copy)

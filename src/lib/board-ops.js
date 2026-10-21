@@ -8,7 +8,11 @@ import { readShelf } from './board-shelf.js'
 function withPause(lamp, archived, clock = new Date()) {
   if (Boolean(lamp.archived) === archived) return lamp
   const { pausedOn, ...rest } = lamp
-  return archived ? { ...rest, archived, pausedOn: boardDate(clock) } : { ...rest, archived }
+  if (archived) return { ...rest, archived, pausedOn: boardDate(clock) }
+  // Resumed: the paused days stay out of the streak, [from, until).
+  const until = boardDate(clock)
+  const pauses = pausedOn && pausedOn < until ? [...(lamp.pauses || []), [pausedOn, until]].slice(-8) : lamp.pauses
+  return { ...rest, archived, ...(pauses?.length ? { pauses } : {}) }
 }
 
 export function putAnswer(book, row, status, clock = new Date()) {
