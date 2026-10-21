@@ -143,6 +143,12 @@ const CORNER_ART = new Set(['frost'])
 // What is left after a buy, so spending the last gem is never a surprise.
 // A buy awaits the server, and the book it was handed is from the tap. Put
 // the bought purse on the folder as it is now, so answers made meanwhile stay.
+// The folder as it is now, for a buy confirmed from a sheet opened earlier:
+// coins a tap earned meanwhile must not be spent over.
+export function liveBook(book) {
+  return readShelf().boards.find((item) => item.id === book?.id) || book
+}
+
 export function onLiveBook(out) {
   if (!out?.book) return out
   const live = readShelf().boards.find((item) => item.id === out.book.id)
@@ -280,7 +286,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
             title: frameName(id),
             body: `${t('frames.buyBody', { cost: frame.coins ? t('shop.coins', { n: frame.coins }) : t('shop.gems', { n: frame.gems }) })} ${leftAfter(purse, frame)}`,
             onGo: async () => {
-              const next = onLiveBook(await buyFrame(book, id))
+              const next = onLiveBook(await buyFrame(liveBook(book), id))
               if (next.miss === 'shop.miss.needGems') return offerMoreGems(colors)
               if (next.miss === SIGN_IN_MISS) return askSignIn(colors)
               if (next.miss) return confirmMiss(frameMiss(next))
