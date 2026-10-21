@@ -263,7 +263,9 @@ async function schedulePingsNow(books, now = new Date()) {
             categoryIdentifier: ASK_CATEGORY,
           }
           // Quiet hours can push it past the time that day can still be answered.
-          if (at && !row.answer && at.getTime() > now.getTime() && nightOpen(night, afterQuiet(at)) && (!waiting || row.lamp.morning || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
+          // A note quiet hours moved to morning still lies ahead after its ask time.
+          const moved = at && afterQuiet(at).getTime() !== at.getTime()
+          if (at && !row.answer && afterQuiet(at).getTime() > now.getTime() && nightOpen(night, afterQuiet(at)) && (!waiting || row.lamp.morning || moved || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
             notes.push({
               identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}`)),
               content,
