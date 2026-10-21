@@ -553,10 +553,12 @@ export function weekRecap(boards, week, tagId = '') {
         const status = answer.status
         if (status !== 'yes' && status !== 'late' && status !== 'skip') continue
         let key = String(answer.periodKey || '')
-        // A once question counts on its own day.
+        // A once question counts on its own day; a Did on a "by" one on the
+        // day it was tapped, same as the calendar.
         if (key.startsWith('once:')) {
           lamps = lamps || new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
-          key = periodNight(lamps.get(answer.lampId), key)
+          const lamp = lamps.get(answer.lampId)
+          key = onceDoneNight(lamp, answer) || periodNight(lamp, key)
         }
         // A monthly key is the month: count it on the day it was answered.
         if (key.length === 7) key = stampDay(answer.answeredAt)
