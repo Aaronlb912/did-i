@@ -19,6 +19,14 @@ import { refreshTogether } from '../src/lib/people.js'
 import { t, tMiss } from '../src/lib/i18n.js'
 import { showToast } from './lib/toast-queue.js'
 import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
+
+// Did on a second reminder for a question already Did: nothing was lost.
+function alreadySaid(lampId, kind, night) {
+  const want = kind === 'did' ? ['yes', 'late'] : ['skip']
+  return (readShelf()?.boards || []).some((book) =>
+    (book.answers || []).some((answer) => answer.lampId === lampId && (!night || answer.periodKey === night) && want.includes(answer.status)),
+  )
+}
 import { armNativePingsNow } from './shim/native.js'
 import { onSocialLive } from '../src/lib/social-live.js'
 import { hallColors } from './palette.js'
@@ -109,7 +117,7 @@ export function NativeApp() {
           // Now, not after the debounce: iOS may suspend a background wake first,
           // and that question's later reminders would still go off.
           if (shelf) armNativePingsNow(shelf.boards || []).catch(() => {})
-          if (!shelf) showToast({ id: 'note-answer', kind: 'error', text: t('noteAnswer.notSaved'), ms: 5200 })
+          if (!shelf && !alreadySaid(lampId, kind, night)) showToast({ id: 'note-answer', kind: 'error', text: t('noteAnswer.notSaved'), ms: 5200 })
         },
         // Did or Nope on a Did we reminder: saved on the server. A miss
         // (offline, card left) says so on the next look at the app.
