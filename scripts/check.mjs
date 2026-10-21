@@ -4736,6 +4736,8 @@ test('every action that changes data on the server says so on the phone', () => 
   assert.ok(/purchaseUpdatedListener\([\s\S]{0,600}creditMissToast\(\)/.test(gemStore), 'a paid pack that does not credit says so')
   const meSrc = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
   assert.ok(/async function meOrThrow[\s\S]{0,200}if \(!data\?\.session && error\) throw error/.test(meSrc) && (meSrc.match(/await meOrThrow\(\)/g) || []).length === 2, 'an offline refresh failure never reads as signed out and wipes the shelf')
+  const widgetSync = readFileSync(path.join(checkRoot, 'native/widget-sync.js'), 'utf8')
+  assert.ok(/mine\.get\([^)]*\) !== item\.status[\s\S]{0,200}mergeWidgetPropsIntoShelf\(next, taps\(entry\.props\)\)/.test(widgetSync), 'a status the app wrote to the widget timeline is not merged back as a tap')
   assert.ok(/function creditMissToast[\s\S]{0,300}onPress/.test(gemStore), 'the credit miss toast retries on tap')
   assert.ok(/startGemPurchase\(packId\)\s*\}\s*catch/.test(readFileSync(path.join(checkRoot, 'src/lib/GemShop.jsx'), 'utf8')), 'web gem buy shows a store error')
   const tonightSrc = readFileSync(path.join(checkRoot, 'native/screens/TonightScreen.jsx'), 'utf8')
