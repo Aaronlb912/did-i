@@ -3591,6 +3591,7 @@ export const ja = {
   'we.rowWaitingOne': "{name}さんを待っています",
   'we.rowWaitingMany': "{n}人を待っています",
   'we.rowMany': "Did we：{n}件",
+  'we.andMore': "ほか{n}件",
   'we.rowManyStatus': "{done}件できた · {waiting}件待ち",
   'we.weekKey': "上：一緒にできた。下：あなた。",
   'we.dot.did': "できた",
