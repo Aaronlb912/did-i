@@ -1302,7 +1302,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
               onClose: () => publishSheet(null),
               onGo: () => {
                 publishSheet(null)
-                setRemoved({ id: Date.now(), label: t('confirm.folderRemoved', { title: book.title }), book })
+                setRemoved({ id: Date.now(), label: t('confirm.folderRemoved', { title: book.title }), book: readShelf().boards.find((item) => item.id === book.id) || book })
                 onRemove?.(book.id)
               },
             })

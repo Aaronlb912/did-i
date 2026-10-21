@@ -249,7 +249,10 @@ export function putBook(shelf, book) {
     const boards = shelf.boards.map((item) => (item.id === next.id ? next : item))
     return mergeSameTitles({ ...shelf, currentId: next.id, boards })
   }
-  const same = findBookByTitle(shelf.boards, next.title)
+  // A folder put back after a remove (undo) is no longer gone. It comes back
+  // as itself, even if another folder took its name meanwhile.
+  const gone = (shelf.goneTags || []).some((item) => item.id === next.id && !item.back)
+  const same = gone ? null : findBookByTitle(shelf.boards, next.title)
   if (same) {
     const merged = foldBook(same, next)
     return {
@@ -261,8 +264,6 @@ export function putBook(shelf, book) {
   // A new folder starts with the shelf's purse. Its empty default purse would
   // otherwise be copied onto every folder on save and wipe coins.
   const fresh = shelf.boards.length ? stampPurse(next, mergePurses(shelf.boards)) : next
-  // A folder put back after a remove (undo) is no longer gone.
-  const gone = (shelf.goneTags || []).some((item) => item.id === next.id && !item.back)
   const goneTags = gone ? [{ id: next.id, at: new Date().toISOString(), back: true }, ...shelf.goneTags] : shelf.goneTags
   return { ...shelf, currentId: next.id, boards: [...shelf.boards, fresh], ...(goneTags ? { goneTags } : {}) }
 }
