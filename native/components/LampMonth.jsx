@@ -4,6 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { answerFor, formatBoardDate, isDueOn, isEvery, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
 import { shortLabel } from '../../src/lib/board-json.js'
+import { pausedOpen } from '../../src/lib/lamp-record.js'
 import { travelNightState, travelSkipped } from '../../src/lib/travel.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
@@ -40,7 +41,7 @@ export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false) {
       const answer = answerFor(book, lamp.id, periodKeyFor(lamp, iso))
       const status = answer?.status
       // A day skipped for travel and left open is not a miss, same as the streak.
-      const away = travelSkipped(book, iso) && travelNightState(answer, iso) === 'none'
+      const away = (travelSkipped(book, iso) && travelNightState(answer, iso) === 'none') || pausedOpen(lamp, periodKeyFor(lamp, iso), answer)
       state = away
         ? ''
         : status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? (gentle || nightOpen(iso) ? 'nope' : 'missed') : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'
