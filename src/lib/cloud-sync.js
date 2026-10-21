@@ -195,6 +195,15 @@ export function signedOutSync() {
   writeLastUser('')
   writeShelfOwner('')
   clearAuthSkip()
+  // Settings go with the account; theme, language and clock stay with the
+  // phone. No stamps left, so the next account's own settings win the merge.
+  const { theme, locale, clock, lessMotion } = readPrefs()
+  try {
+    localStorage.removeItem('did-i-prefs')
+  } catch {
+    // Nothing stored.
+  }
+  writePrefs({ theme, locale, clock, lessMotion, at: {} }, true)
   setState({ how: cloudSetUp() ? 'out' : 'off', at: '', miss: '', firstPull: false })
   if (typeof window !== 'undefined') {
     accountChanged = true

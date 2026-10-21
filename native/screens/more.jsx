@@ -1770,7 +1770,8 @@ function PingKinds({ colors, on }) {
     setMiss('')
     const saved = await saveProfile({ family_hour: hour, prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      writePrefs({ familyHour: was })
+      // A newer pick made while this saved stays.
+      if (readPrefs().familyHour === hour) writePrefs({ familyHour: was })
       setMiss(t('pings.kindsMiss'))
     }
   }
@@ -1781,7 +1782,7 @@ function PingKinds({ colors, on }) {
     setMiss('')
     const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      writePrefs({ pingsPrivate: was })
+      if (readPrefs().pingsPrivate === !was) writePrefs({ pingsPrivate: was })
       setMiss(t('pings.kindsMiss'))
     }
   }
@@ -1792,7 +1793,7 @@ function PingKinds({ colors, on }) {
     writePrefs({ dropPings: next })
     const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      writePrefs({ dropPings: !next })
+      if (readPrefs().dropPings === next) writePrefs({ dropPings: !next })
       setMiss(t('pings.kindsMiss'))
     }
   }

@@ -779,6 +779,18 @@ test('sign-out clears the shelf for the next person', () => {
   assert.equal(hallEmpty(readShelf()), true)
 })
 
+test("sign-out leaves the account's settings behind but keeps the phone's theme", async () => {
+  const { readPrefs } = await import('../src/lib/prefs.js')
+  writePrefs({ theme: 'light', gentle: true, pingsPrivate: true })
+  signedOutSync()
+  const out = readPrefs()
+  assert.equal(out.theme, 'light')
+  assert.equal(out.gentle, false)
+  assert.equal(out.pingsPrivate, false)
+  assert.ok(!out.at?.gentle, 'no stamp left to beat the next account')
+  writePrefs({ theme: 'dark' }, true)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
