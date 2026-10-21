@@ -10,9 +10,13 @@ function didStatus(status) {
 // A period left open after the question was paused was never asked: it
 // neither counts nor breaks. A month counts as paused if it ends after pausedOn.
 export function pausedOpen(lamp, key, answer) {
-  if (!lamp?.archived || !lamp.pausedOn || answer) return false
+  if (!lamp || answer) return false
+  const paused = lamp.archived && lamp.pausedOn
+  if (!paused && !lamp.pauses?.length) return false
   const night = /^\d{4}-\d{2}$/.test(key) ? `${key}-31` : periodNight(lamp, key)
-  return night >= lamp.pausedOn
+  if (paused && night >= lamp.pausedOn) return true
+  // An earlier pause, since resumed: those days were never asked either.
+  return (lamp.pauses || []).some(([from, until]) => night >= from && night < until)
 }
 
 // The one streak rule for a question: Did and late Did keep it going; a nope
