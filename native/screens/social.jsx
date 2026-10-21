@@ -2569,7 +2569,13 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
   const [sending, setSending] = useState(false)
   // Keep or Pass tapped on the notification: keep:<send id> or pass:<send id>.
   const fromPush = /^(keep|pass):([0-9a-f-]{36})$/.exec(String(route?.id || ''))
-  const pushDone = useRef(false)
+  // The push answered last, so a second notification tap on an open inbox still runs.
+  const pushDone = useRef('')
+  const reloading = useRef('')
+  const routeId = useRef(route?.id)
+  routeId.current = route?.id
+  // The push whose own load finished: the rows before it can be older.
+  const [loaded, setLoaded] = useState('')
 
   const load = useCallback(async () => {
     if (!account.user) {
@@ -2588,6 +2594,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       setMiss(t('people.reach'))
     }
     setReady(true)
+    setLoaded(String(routeId.current || ''))
   }, [account.user])
 
   useEffect(() => {
@@ -2596,12 +2603,20 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
   useLiveReload(['ask', 'gift'], load)
 
   useEffect(() => {
-    if (!fromPush || pushDone.current || !ready) return
+    if (!fromPush || pushDone.current === route.id || !ready) return
     const row = rows.find((item) => item.id === fromPush[2])
-    if (!row) return
-    pushDone.current = true
-    answer(row, fromPush[1] === 'keep')
-  }, [rows, ready])
+    // Not in the inbox (added, answered on another phone, taken back): answer
+    // it anyway, so the tap says already or gone instead of nothing.
+    if (!row && loaded !== route.id) {
+      if (ready && reloading.current !== route.id) {
+        reloading.current = route.id
+        load()
+      }
+      return
+    }
+    pushDone.current = route.id
+    answer(row || { id: fromPush[2] }, fromPush[1] === 'keep')
+  }, [rows, ready, loaded, route?.id])
 
   // One answer at a time per row, so a double tap cannot keep it twice.
   const answering = useRef(new Set())
