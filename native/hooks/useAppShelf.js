@@ -78,7 +78,13 @@ function firstShelf() {
     // ok
   }
   const now = new Date()
-  const shelf = writeShelf(alignShelfPurse(absorbStoredWidgetProps(readShelf(), now)))
+  let shelf
+  try {
+    shelf = writeShelf(alignShelfPurse(absorbStoredWidgetProps(readShelf(), now)))
+  } catch {
+    // One bad step must not stop the app from opening.
+    shelf = readShelf()
+  }
   // Android applies a stored widget tap before nights close, in the open effect.
   if (Platform.OS === 'android') return shelf
   return withNightsClosed(shelf, now)
