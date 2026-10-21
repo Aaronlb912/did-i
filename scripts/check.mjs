@@ -860,6 +860,12 @@ test('changing an answer keeps its note and amount', async () => {
   assert.equal(one.amount, 5)
 })
 
+test('removed morning questions do not count toward the cap', async () => {
+  const { morningCount } = await import('../src/lib/morning-ask.js')
+  const lamps = [{ morning: true, onceOn: '2026-10-21' }, { morning: true, onceOn: '2026-10-21', archived: true }]
+  assert.equal(morningCount([{ lamps }], '2026-10-21'), 1)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',

@@ -29,7 +29,7 @@ export function todayLabel(lamp) {
 export function morningCount(boards, iso) {
   let n = 0
   for (const book of boards || []) {
-    for (const lamp of book?.lamps || []) if (lamp.morning && lamp.onceOn === iso) n += 1
+    for (const lamp of book?.lamps || []) if (lamp.morning && !lamp.archived && lamp.onceOn === iso) n += 1
   }
   return n
 }
