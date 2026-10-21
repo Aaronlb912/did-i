@@ -831,6 +831,11 @@ test('two fast taps on one card answer it once', () => {
   assert.ok(src.includes('if (threw.current.key === cardKey && Date.now() - threw.current.at < 700) return false'))
 })
 
+test("sign-out clears the old account's notifications from the tray", () => {
+  const src = readFileSync(new URL('../native/lib/leave-account.js', import.meta.url), 'utf8')
+  assert.ok(src.includes('dismissAllNotificationsAsync') && src.lastIndexOf('clearTray()') > src.lastIndexOf('signedOutSync()'))
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
