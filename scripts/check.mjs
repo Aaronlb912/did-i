@@ -225,6 +225,11 @@ test('a night pays 2 a did, 1 late, new questions too, nothing past 3 taps', () 
   const answers = paid.map((item) => ({ lampId: item.id, periodKey: '2026-10-04', status: 'yes', answeredAt: '2026-10-04T20:00:00' }))
   const fourth = lamp('w', { createdOn: '2026-10-01' })
   assert.equal(coinsFor('yes', book([...paid, fourth], answers), { lamp: fourth }, clock), 0)
+  // The purse is shared: 3 paid taps in another folder fill today's cap too.
+  const other = { ...book(paid, answers), id: 'b2' }
+  assert.equal(coinsFor('yes', book([fourth]), { lamp: fourth }, clock, [other]), 0)
+  const ops = readFileSync(new URL('../src/lib/board-ops.js', import.meta.url), 'utf8')
+  assert.ok(ops.includes('payTap(book, next, row, status, clock, () =>'), 'putAnswer hands the other folders to the cap')
 })
 
 test('tonight people cards: open family rows, then Did you asks due tonight, minus swiped ones', () => {
