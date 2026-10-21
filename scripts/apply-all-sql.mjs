@@ -88,6 +88,7 @@ const files = [
   'supabase/we-wake.sql',
   'supabase/we-joined-push.sql',
   'supabase/social-pushes.sql',
+  'supabase/report-push.sql',
   'supabase/drop-tonight.sql',
 ]
 
