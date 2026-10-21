@@ -17,6 +17,7 @@ import {
   periodKeyFor,
   periodNight,
   rowDoneTonight,
+  stampDay,
   stampMs,
   unansweredTonight,
   waitingTonight,
@@ -555,6 +556,8 @@ export function weekRecap(boards, week, tagId = '') {
           lamps = lamps || new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
           key = periodNight(lamps.get(answer.lampId), key)
         }
+        // A monthly key is the month: count it on the day it was answered.
+        if (key.length === 7) key = stampDay(answer.answeredAt)
         if (key.length !== 10 || key < from || key > to) continue
         if (status === 'skip') nopes += 1
         else {

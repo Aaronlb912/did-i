@@ -1,4 +1,4 @@
-import { stampDay } from './recurrence.js'
+import { periodNight, stampDay } from './recurrence.js'
 
 // Every answer as CSV, one row per tap, for a spreadsheet.
 const WORDS = { yes: 'did', late: 'late', skip: 'not yet' }
@@ -17,7 +17,8 @@ export function answersCsv(shelf) {
     for (const answer of book.answers || []) {
       const lamp = lamps.get(answer.lampId)
       rows.push([
-        String(answer.periodKey || stampDay(answer.answeredAt)),
+        // A once question's key is its id, not a date: write its day.
+        String((String(answer.periodKey || '').startsWith('once:') && periodNight(lamp, answer.periodKey)) || answer.periodKey || stampDay(answer.answeredAt)),
         lamp?.question || '',
         lamp?.short || '',
         WORDS[answer.status] || String(answer.status || ''),
