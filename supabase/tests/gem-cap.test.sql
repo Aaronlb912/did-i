@@ -9,7 +9,7 @@ begin
   values (a, a || '@test.invalid', 'authenticated', 'authenticated');
   insert into public.profiles (user_id, display_name) values (a, 'Ann')
   on conflict (user_id) do nothing;
-  update public.profiles set gem_balance = 9990 where user_id = a;
+  update public.profiles set gem_balance = 999990 where user_id = a;
 
   perform public.record_gem_purchase(a, 'gems_50', 80, 5000, 'apple', 'ref-cap-0001');
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
@@ -17,7 +17,7 @@ begin
   perform public.claim_gem_purchases();
   execute 'reset role';
   select gem_balance into bal from public.profiles where user_id = a;
-  if bal <> 9990 then raise exception 'FAIL: balance % after a pack that does not fit', bal; end if;
+  if bal <> 999990 then raise exception 'FAIL: balance % after a pack that does not fit', bal; end if;
   select count(*) into waiting from public.gem_purchases where user_id = a and claimed_at is null;
   if waiting <> 1 then raise exception 'FAIL: the pack that did not fit was claimed'; end if;
 

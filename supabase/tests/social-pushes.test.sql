@@ -65,6 +65,40 @@ begin
     raise exception 'FAIL: the joiner was told about their own join';
   end if;
 
+  -- A parent removing someone stays quiet; leaving yourself tells the rest.
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  delete from public.family_members where family_id = fam and user_id = b;
+  if exists (select 1 from public.push_queue where body like '%left your family%') then
+    raise exception 'FAIL: a removal was pushed as a leave';
+  end if;
+  insert into public.family_members (family_id, user_id, role) values (fam, b, 'kid');
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  delete from public.family_members where family_id = fam and user_id = b;
+  perform set_config('request.jwt.claims', '', true);
+  if not exists (select 1 from public.push_queue where to_id = a and body = 'Ben left your family.') then
+    raise exception 'FAIL: leaving a family was not pushed';
+  end if;
+
+  -- A parent deleting the whole family is not a leave.
+  insert into public.family_members (family_id, user_id, role) values (fam, b, 'kid');
+  delete from public.push_queue where body like '%left your family%';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  delete from public.families where id = fam;
+  perform set_config('request.jwt.claims', '', true);
+  if exists (select 1 from public.push_queue where body like '%left your family%') then
+    raise exception 'FAIL: deleting a family was pushed as a leave';
+  end if;
+
+  -- Someone using your invite code tells you, once.
+  perform set_config('did_i.invite_write', '1', true);
+  update public.profiles set invited_by = a where user_id = c;
+  update public.profiles set invited_by = b where user_id = c;
+  perform set_config('did_i.invite_write', '', true);
+  select count(*) into n from public.push_queue where body like '%with your invite code.';
+  if n <> 1 or not exists (select 1 from public.push_queue where to_id = a and body like '%with your invite code.') then
+    raise exception 'FAIL: invite code use gave % pushes, want 1 to the inviter', n;
+  end if;
+
   -- The same push twice in a row is sent once.
   insert into public.push_queue (to_id, title, body, go) values (c, 'Did we', 'twice', '/tonight');
   insert into public.push_queue (to_id, title, body, go) values (c, 'Did we', 'twice', '/tonight');
