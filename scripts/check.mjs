@@ -8792,6 +8792,15 @@ test('every table says how people hear about it: a push, or why not', () => {
   assert.deepEqual(missing, [], `new tables need a push or a reason in this test: ${missing.join(', ')}`)
 })
 
+test('the Together widget keeps people still going even past 40, and counts everyone', async () => {
+  const { buildTogetherWidgetProps } = await import('../src/lib/together-widget.js')
+  const people = Array.from({ length: 50 }, (_, i) => ({ id: 'p' + i, name: 'P' + String(i).padStart(2, '0'), doneOn: i < 45 ? '2026-10-21' : null }))
+  const props = buildTogetherWidgetProps(people, '2026-10-21')
+  assert.equal(props.people.length, 40)
+  assert.equal(props.people.filter((p) => !p.done).length, 5, 'all five still going are shown')
+  assert.match(props.countLine, /45.*50/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
