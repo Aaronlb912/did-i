@@ -1,5 +1,5 @@
 import { t } from './i18n.js'
-import { addDaysIso, answerFor, graceNightIso, isDueOn, isEvery, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, answerFor, graceNightIso, inPause, isDueOn, isEvery, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
 import { travelNightState, travelSkipped } from './travel.js'
 
 function didStatus(status) {
@@ -10,13 +10,24 @@ function didStatus(status) {
 // A period left open after the question was paused was never asked: it
 // neither counts nor breaks. A month counts as paused if it ends after pausedOn.
 export function pausedOpen(lamp, key, answer) {
-  if (!lamp || answer) return false
+  if (!lamp || didStatus(answer?.status)) return false
   const paused = lamp.archived && lamp.pausedOn
   if (!paused && !lamp.pauses?.length) return false
-  const night = /^\d{4}-\d{2}$/.test(key) ? `${key}-31` : periodNight(lamp, key)
-  if (paused && night >= lamp.pausedOn) return true
-  // An earlier pause, since resumed: those days were never asked either.
-  return (lamp.pauses || []).some(([from, until]) => night >= from && night < until)
+  const month = /^\d{4}-\d{2}$/.test(key)
+  if (paused && !answer && (month ? `${key}-31` : periodNight(lamp, key)) >= lamp.pausedOn) return true
+  // An earlier pause, since resumed: those days were never asked either. A
+  // Not yet there was closed by an older build on resume, not tapped.
+  return inPause(lamp, month ? monthDueDay(lamp, key) : periodNight(lamp, key))
+}
+
+// The day a monthly question was due in that month.
+function monthDueDay(lamp, key) {
+  const live = { ...lamp, archived: false }
+  for (let day = 1; day <= 31; day += 1) {
+    const iso = `${key}-${String(day).padStart(2, '0')}`
+    if (isDueOn(live, iso)) return iso
+  }
+  return `${key}-31`
 }
 
 // The one streak rule for a question: Did and late Did keep it going; a nope
