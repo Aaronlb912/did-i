@@ -968,6 +968,7 @@ export const ko = {
   'people.inviteShort': '초대 코드는 10자예요.',
   'people.noFamily': '그 코드의 가족 없음.',
   'people.familyFull': '이 가족은 가득 찼어요 (20명).',
+  'people.tooManyFamilies': '이미 가족 20개에 들어 있어서 더는 못 들어가요. 하나를 나가면 들어갈 수 있어요.',
   'people.parent': '부모',
   'people.kid': '아이',
   'people.invite': '내 코드',

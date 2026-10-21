@@ -969,6 +969,7 @@ export const ja = {
   'people.inviteShort': '招待コードは 10 文字。',
   'people.noFamily': 'そのコードの家族はない。',
   'people.familyFull': 'この家族は満員です（20人）。',
+  'people.tooManyFamilies': '家族は20までで、上限に達しています。どれかを抜けると参加できます。',
   'people.parent': '親',
   'people.kid': '子',
   'people.invite': 'あなたのコード',
