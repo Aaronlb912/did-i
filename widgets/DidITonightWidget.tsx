@@ -155,7 +155,10 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   const grow = frame({ maxWidth: 10000, maxHeight: 10000 })
 
   const lead = leadItem(items, props?.leadLampId, props?.leadNight)
-  const questionText = String(props?.question || '').trim() || lead?.label || footer
+  // The text comes from the question the buttons answer: a later timeline
+  // entry can keep an old lead whose night was already answered.
+  const sameLead = !!lead && lead.lampId === props?.leadLampId && (!props?.leadNight || String(lead.periodKey || '') === props.leadNight)
+  const questionText = (sameLead ? String(props?.question || '').trim() : '') || String(lead?.question || lead?.label || '') || footer
   const didLabel = String(props?.didLabel || 'Did')
   const nopeLabel = String(props?.nopeLabel || 'Not yet')
   const leadId = String(lead?.lampId || '')
