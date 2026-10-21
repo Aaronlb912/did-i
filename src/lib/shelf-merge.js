@@ -81,14 +81,25 @@ export function mergeBooks(winner, loser) {
   const lampsWin = byId(win.lamps)
   const lamps = win.lamps.filter((lamp) => !dead.has(lamp.id))
   // The same kept Did you saved on two phones under two ids is one question.
-  const sendsWin = new Set(win.lamps.map((lamp) => lamp.sendId).filter(Boolean))
+  // Its answers move to the copy that stays.
+  const sendsWin = new Map(win.lamps.filter((lamp) => lamp.sendId).map((lamp) => [lamp.sendId, lamp.id]))
+  const renamed = new Map()
   for (const lamp of lose.lamps) {
-    if (lamp.sendId && sendsWin.has(lamp.sendId)) continue
+    const same = lamp.sendId ? sendsWin.get(lamp.sendId) : undefined
+    if (same !== undefined) {
+      if (same !== lamp.id) renamed.set(lamp.id, same)
+      continue
+    }
     if (!lampsWin.has(lamp.id) && !dead.has(lamp.id)) lamps.push(lamp)
   }
 
   const answers = new Map()
-  for (const answer of lose.answers) answers.set(answerKey(answer), answer)
+  for (const old of lose.answers) {
+    const answer = renamed.has(old.lampId) ? { ...old, lampId: renamed.get(old.lampId) } : old
+    const key = answerKey(answer)
+    const prev = answers.get(key)
+    answers.set(key, prev ? laterAnswer(prev, answer) : answer)
+  }
   for (const answer of win.answers) {
     const key = answerKey(answer)
     const prev = answers.get(key)
