@@ -85,14 +85,8 @@ export function mergeBooks(winner, loser) {
   const lamps = win.lamps.filter((lamp) => !dead.has(lamp.id))
   // The same kept Did you saved on two phones under two ids is one question.
   const sendsWin = new Set(win.lamps.map((lamp) => lamp.sendId).filter(Boolean))
-  // A never-answered copy of a question already here (a starter picked on a
-  // new phone before sign-in) is not a second question.
-  const textOf = (lamp) => String(lamp.question || '').trim().toLowerCase()
-  const textsWin = new Set(lamps.filter((lamp) => !lamp.archived).map(textOf))
-  const answeredLose = new Set(lose.answers.map((answer) => answer.lampId))
   for (const lamp of lose.lamps) {
     if (lamp.sendId && sendsWin.has(lamp.sendId)) continue
-    if (!lampsWin.has(lamp.id) && !answeredLose.has(lamp.id) && textsWin.has(textOf(lamp))) continue
     if (!lampsWin.has(lamp.id) && !dead.has(lamp.id)) lamps.push(lamp)
   }
 

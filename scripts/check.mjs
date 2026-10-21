@@ -1523,12 +1523,17 @@ test('a tag deleted on one phone stays deleted when an older phone syncs', () =>
   }
 })
 
-test('a never-answered starter the account already has does not merge in as a twin', async () => {
-  const { mergeBooks } = await import('../src/lib/shelf-merge.js')
-  const cloud = { id: 'b1', title: 'Home', lamps: [{ ...lamp('x'), question: 'Did I drink water?' }], answers: [] }
-  const phone = { id: 'b1', title: 'Home', lamps: [{ ...lamp('s1'), question: 'Did I drink water?' }, { ...lamp('s2'), question: 'Did I stretch?' }], answers: [] }
-  const merged = mergeBooks(cloud, phone)
-  assert.deepEqual(merged.lamps.map((one) => one.id).sort(), ['s2', 'x'])
+test('a never-answered starter the account already has does not merge in as a twin', () => {
+  const water = (id, cadence = 'daily') => ({ ...lamp(id), question: 'Did I drink water?', cadence })
+  const shelf = normalizeShelf({
+    currentId: 'cloud',
+    boards: [
+      { id: 'cloud', title: 'General', lamps: [water('x')], answers: [] },
+      { id: 'phone', title: 'General', lamps: [water('s1'), { ...lamp('s2'), question: 'Did I stretch?' }, water('w', 'weekly')], answers: [] },
+    ],
+  })
+  const ids = shelf.boards.flatMap((book) => book.lamps.map((one) => one.id)).sort()
+  assert.deepEqual(ids, ['s2', 'w', 'x'], 'the twin goes; a different schedule stays')
 })
 
 test('undo puts a removed folder back as itself, even when another took its name', () => {
