@@ -510,7 +510,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const [morningFocus, setMorningFocus] = useState(() => (takeMorningFocus() ? 1 : 0))
   useEffect(() => {
     const look = () => {
-      setMorningState(readMorningAsk())
+      // Same value keeps the same object, so a return to Today does not redraw it all.
+      const next = readMorningAsk()
+      setMorningState((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
       if (takeMorningFocus()) setMorningFocus((n) => n + 1)
     }
     const offFocus = navigation.addListener('focus', look)
@@ -1447,7 +1449,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         ) : (
           <Slot>
             {/* flex: 1 because the card fills this box; without it the card collapses to no height. */}
-            <View style={styles.pickBox}>
+            <View style={[styles.pickBox, pillPicked && styles.pickTop]}>
               {/* Measures the card, not the room around it, so the held height can shrink back. */}
               <View onLayout={onPickLayout} style={pickMinH ? { minHeight: pickMinH } : null}>
                 {/* Loading to the real card eases in, never a hard swap. */}
@@ -1456,13 +1458,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             </View>
           </Slot>
         )}
-        {/* A picked Did we card is taller than the others; these rows would cover its foot. */}
-        {wePick ? null : (
+        {/* A picked card can be taller than the room; these rows would cover its foot. */}
+        {pillPicked ? null : (
         <Slot>
           <WePausedRow cards={weCards} colors={colors} reload={we.reload} />
         </Slot>
         )}
-        {wePick ? null : (
+        {pillPicked ? null : (
         <Slot>
           <FriendsRow colors={colors} cheer={social?.kind === 'cheer' ? social : null} />
         </Slot>
@@ -1572,7 +1574,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderWidth: 1.5,
     borderRadius: 999,
-    marginBottom: 6,
+    // Room for a shop frame, which draws past the card edge.
+    marginBottom: 14,
   },
   backText: { fontFamily: fonts.uiSemi, fontSize: 16 },
   // Top-aligned: the card box grows to centre the card when there is room, and
@@ -1582,6 +1585,8 @@ const styles = StyleSheet.create({
   // The height of Back to tonight (36 + its 6 below), so both cards start on one line.
   // Centered, so the cards that do not swipe (waiting, nothing right now, rest) sit mid-screen too.
   pickBox: { flexGrow: 1, flexShrink: 0, justifyContent: 'center' },
+  // A tall picked card centred in a short box ran up over Back to Today.
+  pickTop: { justifyContent: 'flex-start' },
   doneScroll: { flexGrow: 0, flexShrink: 1, position: 'relative' },
   doneFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 36 },
   doneFadeStep: { flex: 1 },
