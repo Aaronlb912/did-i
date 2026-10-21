@@ -1523,6 +1523,14 @@ test('a tag deleted on one phone stays deleted when an older phone syncs', () =>
   }
 })
 
+test('a never-answered starter the account already has does not merge in as a twin', async () => {
+  const { mergeBooks } = await import('../src/lib/shelf-merge.js')
+  const cloud = { id: 'b1', title: 'Home', lamps: [{ ...lamp('x'), question: 'Did I drink water?' }], answers: [] }
+  const phone = { id: 'b1', title: 'Home', lamps: [{ ...lamp('s1'), question: 'Did I drink water?' }, { ...lamp('s2'), question: 'Did I stretch?' }], answers: [] }
+  const merged = mergeBooks(cloud, phone)
+  assert.deepEqual(merged.lamps.map((one) => one.id).sort(), ['s2', 'x'])
+})
+
 test('undo puts a removed folder back as itself, even when another took its name', () => {
   const start = { currentId: 'b1', boards: [{ id: 'b1', title: 'Home', lamps: [lamp('x')], answers: [] }, { id: 'b2', title: 'Work', lamps: [lamp('y')], answers: [] }] }
   const removed = start.boards[1]
