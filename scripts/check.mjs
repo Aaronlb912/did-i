@@ -846,6 +846,20 @@ test('a daily run stays due after a trip through every so often and back', async
   assert.ok(isDueOn(back, '2026-09-15'), 'September stays a daily run')
 })
 
+test('changing an answer keeps its note and amount', async () => {
+  const { putAnswer } = await import('../src/lib/board-ops.js')
+  const { boardDate } = await import('../src/lib/recurrence.js')
+  const clock = new Date()
+  const day = boardDate(clock)
+  const lamp = { id: 'q', question: 'Did I run?', cadence: 'daily', createdOn: '2026-01-01' }
+  const book = { lamps: [lamp], answers: [{ id: 'a', lampId: 'q', periodKey: day, status: 'yes', answeredAt: clock.toISOString(), note: 'ran 5k', noteAt: clock.toISOString(), amount: 5 }] }
+  const flipped = putAnswer(book, { lamp, periodKey: day }, 'skip', clock)
+  const one = flipped.answers.find((item) => item.lampId === 'q')
+  assert.equal(one.status, 'skip')
+  assert.equal(one.note, 'ran 5k')
+  assert.equal(one.amount, 5)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
