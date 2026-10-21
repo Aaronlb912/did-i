@@ -493,6 +493,8 @@ async function pullAndMergeOnce() {
     let localSavedAt = readSavedAt()
     if (lastUser && lastUser !== user.id) {
       local = clearLocalShelf()
+      // The old account's answer marks would hide the new account's older answers.
+      forgetAnswerMarks()
       localSavedAt = ''
     }
     const remote = shelfRow.data?.doc || null
