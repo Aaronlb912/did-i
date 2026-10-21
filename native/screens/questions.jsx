@@ -1667,6 +1667,12 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   // another: Add another saves, then starts a blank question on the same screen.
   function save(another = false) {
     if (stamp) return
+    // Deleted somewhere else while this was open: saving would bring it back empty.
+    if (lampId && !existing) {
+      confirmMiss(t('lamp.gone'))
+      swapHash('/lamps')
+      return
+    }
     const built = hang.buildLamp()
     const problem = built.problem
     // The short name saved is the one the field showed.
