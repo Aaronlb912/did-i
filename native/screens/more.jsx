@@ -1784,9 +1784,20 @@ function PingKinds({ colors, on }) {
   }
 
   // The shop drop push. Turning it on asks for notifications first.
+  // The server reads dropPings, so save it there now like the other switches.
+  async function saveDropPings(next) {
+    writePrefs({ dropPings: next })
+    const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
+    if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
+      writePrefs({ dropPings: !next })
+      setMiss(t('pings.kindsMiss'))
+    }
+  }
+
   async function flipDropPings() {
     if (prefs.dropPings) {
-      writePrefs({ dropPings: false })
+      setMiss('')
+      await saveDropPings(false)
       return
     }
     const state = await requestPings().catch(() => 'denied')
@@ -1795,8 +1806,8 @@ function PingKinds({ colors, on }) {
       return
     }
     setMiss('')
-    writePrefs({ dropPings: true })
     syncPushTokenIfAllowed().catch(() => {})
+    await saveDropPings(true)
   }
 
   const familyId = QUIET_HOURS[prefs.familyHour] || '21:00'
