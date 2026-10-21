@@ -54,7 +54,8 @@ import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
 import { beginWidgetRefresh } from '../widget-bridge.js'
 import { applyPendingAndroidWidgetTap } from '../widget-tap'
 import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
-import { useLocale } from '../../src/lib/i18n.js'
+import { t, useLocale } from '../../src/lib/i18n.js'
+import { confirmMiss } from '../lib/confirm.js'
 
 const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
 
@@ -379,7 +380,8 @@ export function useAppShelf() {
     try {
       await shareShelf(readShelf())
     } catch {
-      // dismissed
+      // Closing the sheet resolves; a throw is a real failure.
+      confirmMiss(t('confirm.shareMiss'))
     }
   }, [])
 

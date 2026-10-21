@@ -1,7 +1,7 @@
 import { stampDay } from './recurrence.js'
 
 // Every answer as CSV, one row per tap, for a spreadsheet.
-const WORDS = { yes: 'did', late: 'late', skip: 'nope' }
+const WORDS = { yes: 'did', late: 'late', skip: 'not yet' }
 
 export function csvCell(value) {
   const text = String(value ?? '')
