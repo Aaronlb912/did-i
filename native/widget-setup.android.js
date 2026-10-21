@@ -7,7 +7,7 @@ import {
 } from '../src/lib/widget-tonight.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { renderDidITonightAndroidWidget } from '../widgets/android/DidITonightAndroidWidget.jsx'
-import { onPrefs } from '../src/lib/prefs.js'
+import { onPrefs, readPrefs } from '../src/lib/prefs.js'
 import { enrichTogetherWidgetProps, enrichTonightWidgetProps, syncTogetherWidget, syncTonightWidget } from './widget-sync.js'
 import { renderDidITogetherAndroidWidget } from '../widgets/android/DidITogetherAndroidWidget.jsx'
 import {
@@ -99,6 +99,12 @@ registerWidgetTaskHandler(handleDidITonightWidgetTask)
 
 export function installWidgetSetup() {
   onPrefs(() => {
+    syncTonightWidget(readShelf()).catch(() => {})
+    syncTogetherWidget().catch(() => {})
+  })
+  // Theme set to Phone: the system going dark changes no prefs, so redraw here too.
+  globalThis.__didIAppearance?.addChangeListener?.(() => {
+    if (readPrefs().theme !== 'phone') return
     syncTonightWidget(readShelf()).catch(() => {})
     syncTogetherWidget().catch(() => {})
   })
