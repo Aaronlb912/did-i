@@ -186,14 +186,21 @@ export function widgetRedrawTimes(boards, now) {
 // from just after that night's turn. Capped, soonest kept.
 export function widgetTimelineTimes(boards, now, nights = 3, cap = 30) {
   const all = new Map()
+  // Every night's turns are kept first: many ask times must not cut day 3.
+  const turns = new Set()
   let from = now
   for (let night = 0; night < nights; night += 1) {
-    for (const at of widgetRedrawTimes(boards, from)) all.set(at.getTime(), at)
+    const times = widgetRedrawTimes(boards, from)
+    for (const at of times) all.set(at.getTime(), at)
+    for (const at of times.slice(0, 2)) turns.add(at.getTime())
     const turn = nextChange((at) => boardDate(at), from)
     if (!turn) break
     from = new Date(turn.getTime() + 5000)
   }
-  return [...all.values()].sort((a, b) => a - b).slice(0, cap)
+  const sorted = [...all.values()].sort((a, b) => a - b)
+  const kept = sorted.filter((at) => turns.has(at.getTime())).slice(0, cap)
+  const asks = sorted.filter((at) => !turns.has(at.getTime())).slice(0, Math.max(0, cap - kept.length))
+  return [...kept, ...asks].sort((a, b) => a - b)
 }
 
 /** Open rows ready to ask now come before waiting ones; priority orders each group. */
