@@ -392,14 +392,12 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
       panelStyle={panelStyle}
       gemLook={gemLook}
       head={
-        <>
-          <MarkStamp status={mine === 'did' ? 'yes' : mine === 'nope' ? 'skip' : ''} colors={weColors} beside={Boolean(buddy)} />
         <View style={styles.swipeHead}>
           <WeFaces card={card} colors={colors} />
         </View>
-        </>
       }
       kicker={weKicker(card)}
+      mark={mine === 'did' || mine === 'nope' ? <MarkStamp status={mine === 'did' ? 'yes' : 'skip'} colors={weColors} /> : null}
       title={card.question}
       stampDid={t('tonight.swipeDid')}
       stampNope={t('tonight.swipeNope')}

@@ -70,7 +70,7 @@ import { DropLine } from '../components/DropLine.jsx'
 import { RateCard } from '../components/RateCard.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
-import { EditPen, MarkStamp } from '../components/SwipeFace.jsx'
+import { EditPen, MarkRow, MarkStamp } from '../components/SwipeFace.jsx'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { gemFrameStyle, gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
@@ -1234,8 +1234,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           colors={colors}
           beside={Boolean(activeBuddy(pillBook))}
         />
-        <MarkStamp status={status} colors={colors} beside={Boolean(activeBuddy(pillBook))} />
-        {pillRow.tag ? <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag}</Text> : null}
+        {status ? (
+          <MarkRow mark={<MarkStamp status={status} colors={colors} />}>
+            {pillRow.tag ? <Text style={[faceCardStyles.kicker, { color: colors.on, marginBottom: 0 }]}>{pillRow.tag}</Text> : null}
+          </MarkRow>
+        ) : pillRow.tag ? (
+          <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag}</Text>
+        ) : null}
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
         {status ? null : <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>}
         {/* Only while new: after a few nights people know a DID stays. */}
@@ -1268,7 +1273,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         gemLook={premium ? look : ''}
         kicker={cardKicker(pillRow, '')}
         title={pillRow.lamp.question}
-        head={<MarkStamp status={status} colors={colors} beside={Boolean(activeBuddy(pillBook))} />}
+        mark={status ? <MarkStamp status={status} colors={colors} /> : null}
         meta={pillMeta}
         stampDid={t('tonight.swipeDid')}
         stampNope={t('tonight.swipeNope')}
