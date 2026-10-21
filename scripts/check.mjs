@@ -1011,6 +1011,17 @@ test('a Did you kept on two phones under two ids keeps the answers from both pho
   assert.ok(!won.answers.some((item) => item.lampId === 'b'))
 })
 
+test('resuming a paused question does not close the paused days as Not yet', async () => {
+  const { catchUpRows } = await import('../src/lib/recurrence.js')
+  const q = lamp('a', { cadence: 'daily', createdOn: '2026-10-01', pauses: [['2026-10-10', '2026-10-21']] })
+  const answers = Array.from({ length: 9 }, (_, i) => ({ id: 'y' + i, lampId: 'a', periodKey: '2026-10-0' + (i + 1), status: 'yes', answeredAt: '2026-10-0' + (i + 1) + 'T20:00:00' }))
+  const now = new Date(2026, 9, 21, 12)
+  const closed = closePastNights({ id: 'b', lamps: [q], answers }, now, [])
+  assert.equal(closed.answers.length, 9, 'no Not yet on paused days')
+  assert.equal(questionStreak(closed, closed.lamps[0], '2026-10-21', 400, now), 9)
+  assert.equal(catchUpRows({ id: 'b', lamps: [q], answers }, now).length, 0, 'yesterday was paused: nothing to catch up')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',

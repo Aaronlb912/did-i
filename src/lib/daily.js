@@ -3,6 +3,7 @@ import {
   addDaysIso,
   answerFor,
   boardDate,
+  inPause,
   isEvery,
   previousDueDate,
   parseIsoDate,
@@ -90,7 +91,8 @@ function missedRows(book, now, skipped) {
     let iso = previousDueDate(lamp, today)
     for (let step = 0; iso && step < CLOSE_CAP; step += 1, iso = previousDueDate(lamp, iso)) {
       if (floor ? iso < floor : step > 0) break
-      if (iso === grace || skipped(iso)) continue
+      // A paused day is left out of the record, not closed as Not yet.
+      if (iso === grace || skipped(iso) || inPause(lamp, iso)) continue
       const periodKey = periodKeyFor(lamp, iso)
       if (seen.has(periodKey)) continue
       if (answerFor(book, lamp.id, periodKey)) break
