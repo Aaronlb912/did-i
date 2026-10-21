@@ -1022,6 +1022,22 @@ test('resuming a paused question does not close the paused days as Not yet', asy
   assert.equal(catchUpRows({ id: 'b', lamps: [q], answers }, now).length, 0, 'yesterday was paused: nothing to catch up')
 })
 
+test('a paused stretch never breaks a streak, monthly or after an old Not yet', async () => {
+  const { pausedOpen } = await import('../src/lib/lamp-record.js')
+  const rent = lamp('rent', { cadence: 'monthly', monthDay: 5, createdOn: '2026-03-01', pauses: [['2026-05-03', '2026-05-10']] })
+  assert.equal(pausedOpen(rent, '2026-05', null), true, 'the 5th fell in the pause')
+  const did = (id, key) => ({ id: key, lampId: id, periodKey: key, status: 'yes', answeredAt: key + 'T20:00:00' })
+  const book = { id: 'b', lamps: [rent], answers: [did('rent', '2026-04'), did('rent', '2026-06')] }
+  assert.equal(questionStreak(book, rent, '2026-06-20', 400, new Date(2026, 5, 20, 12)), 2)
+  const plain = { ...rent, pauses: undefined }
+  const three = ['2026-04', '2026-05', '2026-06'].map((key) => did('rent', key))
+  assert.equal(questionStreak({ id: 'b', lamps: [plain], answers: three }, plain, '2026-06-20', 400, new Date(2026, 5, 20, 12)), 3, 'mid-month counts this month')
+  // An older build closed paused days as Not yet on resume.
+  const q = lamp('a', { cadence: 'daily', createdOn: '2026-10-01', pauses: [['2026-10-03', '2026-10-06']] })
+  const answers = ['2026-10-01', '2026-10-02', '2026-10-06'].map((key) => did('a', key)).concat([{ id: 'n', lampId: 'a', periodKey: '2026-10-04', status: 'skip', answeredAt: '2026-10-06T09:00:00' }])
+  assert.equal(questionStreak({ id: 'b', lamps: [q], answers }, q, '2026-10-06', 400, new Date(2026, 9, 6, 22)), 3)
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
