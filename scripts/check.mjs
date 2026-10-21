@@ -1064,6 +1064,11 @@ test('So far and Every answer count every folder', () => {
   assert.equal(counts.skip, 1)
   assert.equal(counts.hung, 2)
   assert.equal(shelfStatsCounts(boards, new Date('2026-10-03T12:00:00'), 'b2').did, 0)
+  // A folder's streak in Stats is Today's folder streak: no freezes.
+  const days = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => '2026-10-' + String(from + i).padStart(2, '0'))
+  const gym = [{ id: 'g', title: 'Gym', lamps: [lamp('h', { createdOn: '2026-10-01' })], answers: [...days(1, 15), ...days(17, 20)].map((d) => ({ id: d, lampId: 'h', periodKey: d, status: 'yes', answeredAt: d + 'T20:00' })) }]
+  const at = new Date('2026-10-21T12:00:00')
+  assert.equal(shelfStatsCounts(gym, at, 'g').heat, 4, 'the Oct 16 miss is not frozen for one folder')
   assert.deepEqual(shelfFeedRows(boards).map((row) => row.answer.id), ['y', 'x'])
   assert.deepEqual(shelfNoteRows(boards), [], 'no notes, no rows')
   const noted = [{ ...boards[0], answers: [...boards[0].answers, { id: 'n1', lampId: 'a', periodKey: '2026-10-02', status: 'yes', note: 'ran', answeredAt: '2026-10-02T21:00' }, { id: 'n2', lampId: 'gone', periodKey: '2026-10-02', status: 'yes', note: 'x', answeredAt: '2026-10-02T22:00' }] }, boards[1]]

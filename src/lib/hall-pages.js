@@ -524,7 +524,7 @@ export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
     sum.late += answers.filter((answer) => answer.status === 'late').length
     sum.skip += answers.filter((answer) => answer.status === 'skip').length
   }
-  return { ...sum, heat: books.length ? shelfStreak(books, now) : 0 }
+  return { ...sum, heat: books.length ? shelfStreak(boards, now, tagId) : 0 }
 }
 
 // The week behind a night, for the Sunday recap and Stats. `week` is
