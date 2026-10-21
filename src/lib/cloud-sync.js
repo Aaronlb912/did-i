@@ -133,6 +133,16 @@ async function me() {
   return data?.session?.user || null
 }
 
+// Like me(), but a failed token refresh (offline with an old access token)
+// throws instead of reading as signed out: that path wipes the shelf.
+async function meOrThrow() {
+  const db = cloud()
+  if (!db) return null
+  const { data, error } = await db.auth.getSession()
+  if (!data?.session && error) throw error
+  return data?.session?.user || null
+}
+
 function readLastUser() {
   return readAccountUserId()
 }
@@ -496,7 +506,7 @@ async function pullAndMergeOnce() {
   if (!db) return null
   const run = syncRun
   try {
-    const user = await me()
+    const user = await meOrThrow()
     if (!user) {
       sessionMissing()
       return null
@@ -669,7 +679,13 @@ export function pullAndMerge() {
 export async function pushNow(shelf) {
   const db = cloud()
   if (!db) return
-  const user = await me()
+  let user
+  try {
+    user = await meOrThrow()
+  } catch (error) {
+    setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    return
+  }
   if (!user) {
     sessionMissing()
     return
