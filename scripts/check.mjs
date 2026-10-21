@@ -1314,6 +1314,9 @@ test('an answer night reads as a date, never the raw key, once questions include
   // The Sunday recap counts a once Did on its day.
   const week = Array.from({ length: 7 }, (_, i) => ({ iso: addDaysIso('2026-09-28', i), on: false }))
   assert.equal(weekRecap([book], week).dids, 1)
+  // A monthly Did counts on the day it was tapped.
+  const rent = { id: 'b2', lamps: [{ ...lamp('m'), cadence: 'monthly' }], answers: [{ lampId: 'm', periodKey: '2026-09', status: 'yes', answeredAt: '2026-09-30T20:00:00' }] }
+  assert.equal(weekRecap([rent], week).dids, 1)
 })
 
 test('a question page trend counts dids out of due per week, tonight only once answered', () => {
@@ -5202,11 +5205,12 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
   const shelf = {
     boards: [
       {
-        lamps: [{ id: 'l1', question: 'drink water, lots', short: 'Water' }],
+        lamps: [{ id: 'l1', question: 'drink water, lots', short: 'Water' }, { id: 'o1', question: 'Call mom', onceOn: '2026-10-04' }],
         answers: [
           { lampId: 'l1', periodKey: '2026-10-02', status: 'skip', note: 'he said "no"' },
           { lampId: 'l1', periodKey: '2026-10-01', status: 'yes', note: '', amount: 5 },
           { lampId: 'gone', periodKey: '2026-10-03', status: 'late' },
+          { lampId: 'o1', periodKey: 'once:o1', status: 'yes' },
         ],
       },
     ],
@@ -5216,7 +5220,8 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
     'date,question,short name,answer,note,amount\r\n' +
       '2026-10-01,"drink water, lots",Water,did,,5\r\n' +
       '2026-10-02,"drink water, lots",Water,not yet,"he said ""no""",\r\n' +
-      '2026-10-03,,,late,,\r\n',
+      '2026-10-03,,,late,,\r\n' +
+      '2026-10-04,Call mom,,did,,\r\n',
   )
   assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount\r\n')
 })
