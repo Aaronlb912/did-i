@@ -232,10 +232,11 @@ export async function signOutEverywhere() {
 export async function deleteAccount() {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  // Photo files live in storage, which delete_me cannot reach; take them first.
-  await removeAvatar().catch(() => {})
   const { error } = await db.rpc('delete_me')
   if (error) return { miss: error.message }
+  // Only once the delete went through: a failed delete keeps its photo.
+  // delete_me tries storage too; this catches what it missed.
+  await removeAvatar().catch(() => {})
   // The account's keys went with it (cascade); take this phone's copy too.
   await endAnswerKeys(null)
   await db.auth.signOut()
