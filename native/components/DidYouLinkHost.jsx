@@ -18,6 +18,7 @@ import {
   saveLinkFriend,
 } from '../../src/lib/did-you-links.js'
 import { t } from '../../src/lib/i18n.js'
+import { readShelf } from '../../src/lib/board-shelf.js'
 import { readMine } from '../../src/lib/people.js'
 import { refreshWeNights } from '../../src/lib/we-nights.js'
 import { goHash } from '../navigation/hash.js'
@@ -208,7 +209,10 @@ export function DidYouLinkHost({ colors, onKeep }) {
         // Signed in with no name: ask for one, or keep it without the request.
         // Signed out, the request waits for sign-in and is retried until it goes.
         const addFriend = wantsFriend && (!userId || (await nameFirst(colors)))
-        const ids = keep.current({ question: found.question, person: { display_name: name } }) || []
+        // The same link opened twice: point at the copy already kept, not a second one.
+        const want = String(found.question || '').trim()
+        const had = (readShelf().boards || []).flatMap((book) => book.lamps || []).find((lamp) => !lamp.archived && String(lamp.question || '').trim() === want)
+        const ids = had ? [had.id] : keep.current({ question: found.question, person: { display_name: name } }) || []
         saveDidYouClaim(code)
         if (addFriend) {
           if (userId) {
