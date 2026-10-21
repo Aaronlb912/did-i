@@ -140,7 +140,7 @@ export function scheduleAt(lamp, dateIso) {
 }
 
 // The was list for an edit made today: old's schedule holds until today.
-export function keepPastSchedule(old, next, todayIso) {
+export function keepPastSchedule(old, next, todayIso, answeredToday = false) {
   const was = Array.isArray(old?.was) ? old.was : []
   // Every so often and once keep the history: an edit back must not lose it.
   if (!WAS_CADENCES.has(next.cadence) && !was.length && !WAS_CADENCES.has(old?.cadence)) return []
@@ -153,8 +153,9 @@ export function keepPastSchedule(old, next, todayIso) {
   if (was.length && was[was.length - 1].until >= todayIso) return was
   // Daily to monthly (or back) changes today's key from the day to the month,
   // so today's answer would be left behind. Today keeps the old schedule.
-  const reshaped = (old.cadence === 'monthly') !== (next.cadence === 'monthly') && isDueOn({ ...old, archived: false }, todayIso)
-  const entry = { until: reshaped ? addDaysIso(todayIso, 1) : todayIso }
+  // So does today's answer when the new days leave today out.
+  const reshaped = (old.cadence === 'monthly') !== (next.cadence === 'monthly') || (answeredToday && !isDueOn({ ...next, was: null, archived: false }, todayIso))
+  const entry = { until: reshaped && isDueOn({ ...old, archived: false }, todayIso) ? addDaysIso(todayIso, 1) : todayIso }
   for (const key of WAS_FIELDS) entry[key] = old[key] ?? ''
   if (old.cadence === 'once') entry.cadence = 'every'
   return [...was, entry].slice(-WAS_KEEP)

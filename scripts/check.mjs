@@ -1128,6 +1128,18 @@ test('leaving or ending a did we drops the cached cards', () => {
   assert.ok(src.includes("call('we_close', { card }).then(dropLoaded)"))
 })
 
+test('changing weekdays after answering today keeps today', async () => {
+  const { keepPastSchedule, isDueOn } = await import('../src/lib/recurrence.js')
+  const old = lamp('gym', { cadence: 'weekly', weekdays: [2, 4], createdOn: '2026-10-01' })
+  const next = { ...old, weekdays: [1, 3] }
+  next.was = keepPastSchedule(old, next, '2026-10-20', true)
+  assert.ok(isDueOn(next, '2026-10-20'), 'answered today stays')
+  assert.ok(!isDueOn(next, '2026-10-22'), 'Thursday no longer due')
+  const fresh = { ...old, weekdays: [1, 3] }
+  fresh.was = keepPastSchedule(old, fresh, '2026-10-20', false)
+  assert.ok(!isDueOn(fresh, '2026-10-20'), 'unanswered today leaves with the edit')
+})
+
 test('a phone-only shelf survives a sync that finds no session', () => {
   const book = {
     id: 'board-local',
