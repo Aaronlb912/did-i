@@ -8696,6 +8696,46 @@ test('over-the-air updates load on a return to the app, only at a safe moment', 
   assert.match(read('native/AppShell.jsx'), /useEffect\(\(\) => startOtaRefresh\(\), \[\]\)/)
 })
 
+// A Did we yes once went out with no push and nobody knew (2026-10-20). Every
+// table now says how its people hear about a change: the function that queues
+// the push, or why it stays quiet. A new table fails here until it is listed.
+test('every table says how people hear about it: a push, or why not', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const dir = path.join(root, 'supabase')
+  const sql = readdirSync(dir).filter((f) => f.endsWith('.sql')).map((f) => readFileSync(path.join(dir, f), 'utf8')).join('\n').replace(/\r\n/g, '\n')
+  const pushes = (fn) => sql.split(`function public.${fn}(`).slice(1).some((body) => body.split('$$;')[0].includes('into public.push_queue'))
+  const pushed = {
+    sends: 'queue_send_push queue_send_kept_push edit_send',
+    friend_links: 'queue_ask_push queue_yes_push',
+    we_members: 'queue_we_ask_push queue_we_joined_push',
+    we_cards: 'queue_we_closed_push',
+    we_answers: 'we_settle',
+    we_nudges: 'we_nudge',
+    family_members: 'queue_family_joined_push queue_family_left_push',
+    profiles: 'queue_invite_used_push',
+    app_sends: 'queue_app_send_push',
+    did_you_link_claims: 'queue_link_kept_push',
+    cheer_gifts: 'send_gift thank_gift',
+    check_ons: 'queue_check_ons',
+    family_answers: 'queue_family_summaries',
+    shop_drop_days: 'queue_drop_pushes',
+  }
+  const quiet = {
+    'own data, no one else': 'admins answer_keys answer_log app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done',
+    'counters, caps and logs': 'check_on_pushed family_code_misses family_miss_days family_summary_sent friend_ask_log friend_id_misses push_queue push_to_counts send_counts we_done_pushed we_slot_repair_ran report_mail_queue shop_drop_sent',
+    'catalogs': 'gift_catalog shop_catalog',
+    'quiet on purpose: a block, a pass or a leave would tell someone they were dropped': 'blocks send_answers app_send_answers we_turns',
+    'shown when opened, no event of its own': 'did_you_links we_links families family_lamps family_tags shared_notes we_notes reports report_actions waitlist',
+  }
+  for (const [table, fns] of Object.entries(pushed)) {
+    for (const fn of fns.split(' ')) assert.ok(pushes(fn), `${table}: ${fn} should insert into push_queue`)
+  }
+  const known = new Set([...Object.keys(pushed), ...Object.values(quiet).flatMap((s) => s.split(' '))])
+  const tables = [...new Set([...sql.matchAll(/create table (?:if not exists )?public\.(\w+)/g)].map((m) => m[1]))]
+  const missing = tables.filter((t) => !known.has(t))
+  assert.deepEqual(missing, [], `new tables need a push or a reason in this test: ${missing.join(', ')}`)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

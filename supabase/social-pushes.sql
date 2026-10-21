@@ -1,6 +1,7 @@
 -- Pushes that were missing (found 2026-10-20 after a Did we yes went unseen):
 -- a Did you kept in the app, a Did we ended by its maker, someone joining
--- your family. And one push per thing: the same words to the same person
+-- your family, someone leaving it, someone joining with your invite code.
+-- And one push per thing: the same words to the same person
 -- within two minutes are dropped (a link join over an ask sent two).
 
 -- Words for these, in every language the app has. push_text holds the rest.
@@ -14,15 +15,15 @@ as $$
 declare
   lang text := coalesce((select p.prefs ->> 'locale' from public.profiles p where p.user_id = who), 'en');
   words jsonb := '{
-    "en": {"we_closed": "{name} ended the Did we: {q}", "family_joined": "{name} joined your family."},
-    "de": {"we_closed": "{name} hat das Did we beendet: {q}", "family_joined": "{name} ist deiner Familie beigetreten."},
-    "es": {"we_closed": "{name} terminó el Did we: {q}", "family_joined": "{name} se unió a tu familia."},
-    "fr": {"we_closed": "{name} a terminé le Did we : {q}", "family_joined": "{name} a rejoint ta famille."},
-    "it": {"we_closed": "{name} ha chiuso il Did we: {q}", "family_joined": "{name} è entrato nella tua famiglia."},
-    "ja": {"we_closed": "{name}さんが Did we を終了しました：{q}", "family_joined": "{name}さんが家族に参加しました。"},
-    "ko": {"we_closed": "{name}님이 Did we를 끝냈어요: {q}", "family_joined": "{name}님이 가족에 들어왔어요."},
-    "pt": {"we_closed": "{name} encerrou o Did we: {q}", "family_joined": "{name} entrou na sua família."},
-    "zh": {"we_closed": "{name} 结束了 Did we：{q}", "family_joined": "{name} 加入了你的家庭。"}
+    "en": {"we_closed": "{name} ended the Did we: {q}", "family_joined": "{name} joined your family.", "family_left": "{name} left your family.", "invite_used": "{name} joined Did I with your invite code."},
+    "de": {"we_closed": "{name} hat das Did we beendet: {q}", "family_joined": "{name} ist deiner Familie beigetreten.", "family_left": "{name} hat deine Familie verlassen.", "invite_used": "{name} ist mit deinem Einladungscode bei Did I."},
+    "es": {"we_closed": "{name} terminó el Did we: {q}", "family_joined": "{name} se unió a tu familia.", "family_left": "{name} salió de tu familia.", "invite_used": "{name} se unió a Did I con tu código de invitación."},
+    "fr": {"we_closed": "{name} a terminé le Did we : {q}", "family_joined": "{name} a rejoint ta famille.", "family_left": "{name} a quitté ta famille.", "invite_used": "{name} a rejoint Did I avec ton code d’invitation."},
+    "it": {"we_closed": "{name} ha chiuso il Did we: {q}", "family_joined": "{name} è entrato nella tua famiglia.", "family_left": "{name} ha lasciato la tua famiglia.", "invite_used": "{name} è entrato in Did I con il tuo codice invito."},
+    "ja": {"we_closed": "{name}さんが Did we を終了しました：{q}", "family_joined": "{name}さんが家族に参加しました。", "family_left": "{name}さんが家族から抜けました。", "invite_used": "{name}さんがあなたの招待コードで Did I に参加しました。"},
+    "ko": {"we_closed": "{name}님이 Did we를 끝냈어요: {q}", "family_joined": "{name}님이 가족에 들어왔어요.", "family_left": "{name}님이 가족에서 나갔어요.", "invite_used": "{name}님이 내 초대 코드로 Did I에 들어왔어요."},
+    "pt": {"we_closed": "{name} encerrou o Did we: {q}", "family_joined": "{name} entrou na sua família.", "family_left": "{name} saiu da sua família.", "invite_used": "{name} entrou no Did I com seu código de convite."},
+    "zh": {"we_closed": "{name} 结束了 Did we：{q}", "family_joined": "{name} 加入了你的家庭。", "family_left": "{name} 离开了你的家庭。", "invite_used": "{name} 用你的邀请码加入了 Did I。"}
   }'::jsonb;
   out text;
   k text;
@@ -139,6 +140,65 @@ drop trigger if exists queue_family_joined_push on public.family_members;
 create trigger queue_family_joined_push
   after insert on public.family_members
   for each row execute function public.queue_family_joined_push();
+
+-- Leaving a family tells the people still in it. Only when you leave
+-- yourself: a parent removing someone already knows.
+create or replace function public.queue_family_left_push()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if old.user_id is distinct from (select auth.uid()) then
+    return old;
+  end if;
+  insert into public.push_queue (to_id, from_id, title, body, go)
+  select m.user_id, old.user_id, public.push_text(m.user_id, 'family'),
+    left(public.push_more_text(m.user_id, 'family_left', jsonb_build_object(
+      'name', public.push_name(old.user_id, m.user_id))), 200),
+    '/people'
+  from public.family_members m
+  where m.family_id = old.family_id and m.user_id <> old.user_id
+    and public.push_wanted(m.user_id, 'family');
+  return old;
+end;
+$$;
+
+revoke all on function public.queue_family_left_push() from public, anon, authenticated;
+
+drop trigger if exists queue_family_left_push on public.family_members;
+create trigger queue_family_left_push
+  after delete on public.family_members
+  for each row execute function public.queue_family_left_push();
+
+-- Someone using your invite code tells you (the gems follow when you open the app).
+create or replace function public.queue_invite_used_push()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if old.invited_by is not null or new.invited_by is null
+     or not public.push_wanted(new.invited_by, 'friends') then
+    return new;
+  end if;
+  insert into public.push_queue (to_id, from_id, title, body, go)
+  values (new.invited_by, new.user_id, 'Did I',
+    left(public.push_more_text(new.invited_by, 'invite_used', jsonb_build_object(
+      'name', public.push_name(new.user_id, new.invited_by))), 200),
+    '/people');
+  return new;
+end;
+$$;
+
+revoke all on function public.queue_invite_used_push() from public, anon, authenticated;
+
+drop trigger if exists queue_invite_used_push on public.profiles;
+create trigger queue_invite_used_push
+  after update of invited_by on public.profiles
+  for each row execute function public.queue_invite_used_push();
 
 -- One push per thing. Named to run last (triggers run in name order), so it
 -- compares the row as it would be stored. Sender and link must match too, so
