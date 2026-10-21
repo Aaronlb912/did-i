@@ -8847,6 +8847,16 @@ test('switching to monthly does not turn old daily months into misses', async ()
   assert.deepEqual(recentPeriodKeys(q, '2026-10-21', 7), ['2026-10'])
 })
 
+test('the year view keeps the Did days of a question paused later', async () => {
+  const { yearMonths } = await import('../src/lib/hall-pages.js')
+  const q = { ...lamp('y'), createdOn: '2026-10-01', archived: true, pausedOn: '2026-10-10' }
+  const book = { id: 'b', title: 'Home', lamps: [q], answers: [{ id: 'a', lampId: 'y', periodKey: '2026-10-05', status: 'yes', answeredAt: '2026-10-05T20:00:00.000Z', note: '' }] }
+  const oct = yearMonths([book], 2026, new Date(2026, 9, 21, 12))[9]
+  const day = (iso) => oct.nights.find((n) => n.iso === iso)
+  assert.equal(day('2026-10-05').on, true, 'the Did day still shows')
+  assert.equal(day('2026-10-06').miss, false, 'unanswered paused days are not misses')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

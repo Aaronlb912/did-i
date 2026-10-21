@@ -355,6 +355,7 @@ function yearIndex(book) {
 // nightMarks for many nights at once, with the same rules, without
 // rebuilding the due list per book per night. Daily questions (most of them)
 // skip the date parse.
+const REPEATING = new Set(['daily', 'weekly', 'every_n', 'monthly'])
 function nightMarksMany(books, isos, today, tagId = '') {
   const prepped = books.map((book) => {
     const index = yearIndex(book)
@@ -364,8 +365,10 @@ function nightMarksMany(books, isos, today, tagId = '') {
     const doneOn = new Map()
     for (const lamp of book.lamps || []) {
       const onceKey = lamp.cadence === 'once' ? `once:${lamp.id}` : ''
-      if (lamp.archived && !(onceKey && oncePastCounts(lamp, index.onceAnswer.get(lamp.id)))) continue
-      lamps.push(lamp.archived ? { ...lamp, archived: false } : lamp)
+      // A paused repeating question keeps only its Did nights, same as archivedDids in hall-feel.js.
+      const keptDids = lamp.archived && REPEATING.has(lamp.cadence)
+      if (lamp.archived && !keptDids && !(onceKey && oncePastCounts(lamp, index.onceAnswer.get(lamp.id)))) continue
+      lamps.push(lamp.archived ? { ...lamp, archived: false, ...(keptDids ? { keptDids } : {}) } : lamp)
       if (onceKey) doneOn.set(lamp.id, onceDoneNight(lamp, index.onceAnswer.get(lamp.id)))
     }
     return { start: startNight(book), lamps, index, doneOn, book }
@@ -391,7 +394,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
         if (skipped && travelNightState(answerFor(book.book, lamp.id, key), iso) === 'none') continue
         // Same rows as countedTonightRows.
         const done = status === 'yes' || status === 'late'
-        if (lamp.fromDidI) continue
+        if (lamp.fromDidI || (lamp.keptDids && !done)) continue
         const doneOn = done ? book.doneOn.get(lamp.id) : ''
         if (doneOn && doneOn !== iso) continue
         if (!done && (lamp.optional || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
