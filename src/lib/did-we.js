@@ -170,9 +170,14 @@ export function weReminders(cards, night = tonightIso()) {
       cadence: card.cadence,
       weekdays: card.weekdays || [],
       startsOn: card.startsOn,
-      // Not yet keeps the day's reminder, as solo questions do.
-      skipNight: card.done || weMine(card)?.status === 'did' ? night : '',
+      // Not yet keeps the day's reminder, as solo questions do. In turns,
+      // today's reminder goes only to whoever's turn it is.
+      skipNight: card.done || weMine(card)?.status === 'did' || notMyTurn(card) ? night : '',
     }))
+}
+
+function notMyTurn(card) {
+  return card.mode === 'turns' && !!card.turn && card.turn !== weMine(card)?.id
 }
 
 export function saveWeReminders(cards) {

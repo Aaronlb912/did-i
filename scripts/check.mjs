@@ -1148,6 +1148,9 @@ await testAsync('a paused Did we is not asked, and "you both did it" needs two d
   assert.equal(weReminders([{ ...live, people: [{ ...me, status: 'nope' }] }])[0].skipNight, '', 'Not yet keeps the day reminder')
   assert.notEqual(weReminders([{ ...live, people: [me] }])[0].skipNight, '', 'Did drops the day reminder')
   assert.equal(weReminders([paused]).length, 0, 'a paused card sets no reminder')
+  const turns = { ...live, mode: 'turns', people: [{ ...me, status: null }, { ...pal, status: null }] }
+  assert.notEqual(weReminders([{ ...turns, turn: 'p' }])[0].skipNight, '', 'no reminder today when it is their turn, not mine')
+  assert.equal(weReminders([{ ...turns, turn: 'm' }])[0].skipNight, '', 'my turn keeps the reminder')
 })
 
 test('a night says why it broke, by the same rules as the dots', () => {
