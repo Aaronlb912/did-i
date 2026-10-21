@@ -1215,9 +1215,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         {isNew && (status === 'yes' || status === 'late') ? (
           <Text style={[faceCardStyles.meta, { color: colors.inkDim }]}>{t('pill.doneFinal')}</Text>
         ) : null}
-        <MarkStamp status={status} colors={colors} />
-        <View style={styles.actions}>
+        {/* The stamp sits beside Add a note, so it adds no height to the card. */}
+        <View style={[styles.actions, styles.actionsStamp]}>
           <TonightNote rows={[pillRow]} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
+          <View style={styles.stampEnd}>
+            <MarkStamp status={status} colors={colors} />
+          </View>
         </View>
       </GemFaceShell>
     )
@@ -1420,9 +1423,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           }}
           hitSlop={10}
           accessibilityRole="button"
-          style={[styles.back, { borderColor: colors.line, backgroundColor: colors.panel2 }]}
+          style={[styles.back, { borderColor: colors.on, backgroundColor: colors.panel2 }]}
         >
-          <Text style={[styles.backText, { color: colors.ink }]}>‹  {t('tonight.backToStack')}</Text>
+          <Text style={[styles.backText, { color: colors.on }]}>‹  {t('tonight.backToStack')}</Text>
         </Pressable>
       ) : null}
 
@@ -1541,6 +1544,8 @@ const styles = StyleSheet.create({
   titleHit: { alignSelf: 'flex-start', maxWidth: '100%' },
   graceLate: { marginTop: 10 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
+  actionsStamp: { alignItems: 'center' },
+  stampEnd: { marginLeft: 'auto', marginTop: -12 },
   tomorrow: { marginTop: 16 },
   tomorrowRow: { marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: 10, columnGap: 12 },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -1557,17 +1562,19 @@ const styles = StyleSheet.create({
   jewels: { flexGrow: 0, marginBottom: 12 },
   jewelsRule: { width: StyleSheet.hairlineWidth * 2, height: 24, marginHorizontal: 2 },
   jewelsIn: { gap: 8, paddingRight: 8, alignItems: 'center' },
+  // Full width and in the accent, so the way back to the stack is easy to see.
   back: {
-    alignSelf: 'flex-start',
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 36,
+    justifyContent: 'center',
+    minHeight: 44,
     paddingHorizontal: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: 999,
     marginBottom: 6,
   },
-  backText: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  backText: { fontFamily: fonts.uiSemi, fontSize: 16 },
   // Top-aligned: the card box grows to centre the card when there is room, and
   // when there is not, the rows under it move down instead of the card riding
   // up over the pills.

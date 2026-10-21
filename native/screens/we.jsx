@@ -690,6 +690,8 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       </View>
       <WeSheets draft={draft} setDraft={setDraft} sheet={sheet} setSheet={setSheet} colors={colors} />
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.newLead')}</Text>
+      {/* The main send, so the link button is never the only one in reach. */}
+      <DidButton colors={colors} label={t('we.make')} disabled={!ready} onPress={() => make(false)} />
       <KeyButton colors={colors} label={t('weLink.makeShare')} disabled={busy || !question} onPress={() => make(true)} />
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('weLink.hint')}</Text>
       {miss ? (
