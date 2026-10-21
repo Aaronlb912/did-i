@@ -574,6 +574,8 @@ export function recentPeriodKeys(lamp, dateIso, count = 7) {
       const next = new Date(date.getFullYear(), date.getMonth() - i, 1)
       const key = `${next.getFullYear()}-${pad(next.getMonth() + 1)}`
       if (createdMonth && key < createdMonth) continue
+      // A month that ended before it turned monthly was asked by day, not by month.
+      if (`${key}-31` < (lamp.was?.[lamp.was.length - 1]?.until || '') && scheduleAt(lamp, `${key}-01`).cadence !== 'monthly') continue
       keys.push(key)
     }
     return keys

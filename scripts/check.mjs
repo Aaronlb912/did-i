@@ -183,10 +183,23 @@ if (!globalThis.window) {
 let ran = 0
 let failed = 0
 
+// An async test is awaited before the count, so its failure counts too.
+const pendingTests = []
 function test(name, fn) {
   ran += 1
   try {
-    fn()
+    const out = fn()
+    if (out && typeof out.then === 'function') {
+      pendingTests.push(out.then(
+        () => console.log(`ok   ${name}`),
+        (error) => {
+          failed += 1
+          console.error(`FAIL ${name}
+     ${error.message}`)
+        },
+      ))
+      return
+    }
     console.log(`ok   ${name}`)
   } catch (error) {
     failed += 1
@@ -8808,6 +8821,25 @@ test('money and family SQL tests stay in the repo (run with npm run db:test)', (
   assert.match(readFileSync(path.join(checkRoot, 'supabase/drop-tonight.sql'), 'utf8'), /Gifts waiting for you go back/)
 })
 
+test('a paused question stops counting misses from the day it was paused', async () => {
+  const { toggleArchive } = await import('../src/lib/board-ops.js')
+  const q = { ...lamp('p'), cadence: 'daily', createdOn: '2026-09-01' }
+  const answers = Array.from({ length: 20 }, (_, i) => ({ id: 'a' + i, lampId: 'p', periodKey: `2026-10-${String(i + 1).padStart(2, '0')}`, status: 'yes', answeredAt: '2026-10-01T20:00:00.000Z', note: '' }))
+  const paused = toggleArchive({ id: 'b', lamps: [q], answers }, q, new Date(2026, 9, 21, 12))
+  const pq = paused.lamps[0]
+  assert.equal(pq.pausedOn, '2026-10-21')
+  const rec = lampRecord(paused, pq, '2026-10-31', 30)
+  assert.equal(rec.asked - rec.did, 0, 'days after the pause are not misses')
+  assert.equal(toggleArchive(paused, pq).lamps[0].pausedOn, undefined, 'resuming clears it')
+})
+
+test('switching to monthly does not turn old daily months into misses', async () => {
+  const { recentPeriodKeys } = await import('../src/lib/recurrence.js')
+  const q = { ...lamp('m'), cadence: 'monthly', monthDay: 1, createdOn: '2026-03-01', was: [{ until: '2026-10-21', cadence: 'daily', weekdays: [], monthDay: '', everyN: '', everyNAnchor: '' }] }
+  assert.deepEqual(recentPeriodKeys(q, '2026-10-21', 7), ['2026-10'])
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
+await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)

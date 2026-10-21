@@ -260,6 +260,8 @@ export function normalizeLamp(raw) {
     priority: lampPriority(lamp),
     notify: lampNotifyOn(lamp),
     archived: asBool(lamp.archived),
+    // The day it was paused, so its record stops counting from there.
+    ...(asBool(lamp.archived) && /^d{4}-d{2}-d{2}$/.test(asString(lamp.pausedOn).trim()) ? { pausedOn: asString(lamp.pausedOn).trim() } : {}),
     ...(Number.isInteger(Number(lamp.order)) && lamp.order !== '' && lamp.order != null && Number(lamp.order) >= 0
       ? { order: Math.min(Number(lamp.order), 9999) }
       : {}),
@@ -567,6 +569,7 @@ export function duplicateLamp(lamp, now = new Date()) {
   copy.id = newLampId()
   copy.createdOn = isoDate(now)
   copy.archived = false
+  delete copy.pausedOn
   // Trim the name first so " copy" always fits inside the limit.
   const suffix = ` ${t('lamp.copySuffix')}`
   const full = shortLabel(copy)
