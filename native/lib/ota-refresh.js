@@ -28,7 +28,15 @@ export function safeToReload({ path, sheetUp, state }) {
   return state === 'active' && !sheetUp && HALL_PATHS.has(path || '/')
 }
 
+// Widget and watch taps are taken off disk and pushed right on return: let
+// them land before a reload tears JS down.
+const SETTLE_MS = 2500
+
 function reloadIfSafe() {
+  setTimeout(reloadNow, SETTLE_MS)
+}
+
+function reloadNow() {
   if (!ready) return
   const route = readRoute()
   if (!safeToReload({ path: route?.path, sheetUp: sheetIsUp(), state: AppState.currentState })) return
