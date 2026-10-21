@@ -8587,7 +8587,9 @@ test('signed in, did then a restart then did still pays once', () => {
 test('the streak-risk ping is skipped when quiet hours move it', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const native = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
-  assert.match(native, /if \(risk && afterQuiet\(new Date\(risk\.at\)\)\.getTime\(\) === new Date\(risk\.at\)\.getTime\(\)\)/)
+  assert.match(native, /if \(risk && !lateThen && afterQuiet\(new Date\(risk\.at\)\)\.getTime\(\) === riskAt\)/)
+  // A 21:00 last call already buzzes then: no second streak note on top.
+  assert.match(native, /lateThen = notes\.some\(\(note\) => note\.lateCall && note\.trigger\.date\.getTime\(\) === riskAt\)/)
 })
 
 test('family codes: six or ten pass, seven does not, ten is not cut', async () => {
