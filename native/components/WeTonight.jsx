@@ -221,58 +221,69 @@ export function WeAnswers({ card, colors }) {
   )
 }
 
-// Did wes you already answered tonight, for Home: one slim row under the
-// question card, like the friends row. One Did we shows its question and
-// where it stands; several show a count. Tap opens the card, or the list.
-// Nothing when there are none.
-export function WeAnswered({ cards, colors, hide = '' }) {
+const WE_ROWS = 3
+
+// Today's Did wes, one row each under the card: the question, the faces, where
+// it stands, and Did / Not yet while it waits on you. Waiting on you goes on
+// top; answered rows get a check and dim. Past three, a row opens the list.
+// hide: the Did we the card above is asking, so it is not asked twice.
+export function WeToday({ cards, colors, ans, hide = '' }) {
   const known = useKnownFaces()
-  const done = (cards || []).filter((card) => card.myState === 'in' && card.due && weMine(card)?.status && card.id !== hide)
-  if (!done.length) return null
-  const line = weRowLine(done)
-  const status = line.status.map((bit) => t(bit.key, bit.vars)).join(' · ')
-  const first = done[0]
-  const title = line.many ? t('we.rowMany', { n: line.n }) : first.question
-  const seen = []
-  for (const card of done) {
-    for (const person of card.people || []) {
-      if (person.state === 'in' && !seen.some((x) => x.person.id === person.id)) seen.push({ person, card })
-    }
-  }
-  const more = Math.max(0, seen.length - 3)
+  const due = (cards || []).filter((card) => card.myState === 'in' && card.due && card.id !== hide)
+  if (!due.length) return null
+  const open = new Set(weOpenForMe(due, new Date(), { early: true }).map((card) => card.id))
+  const rank = (card) => (open.has(card.id) ? 0 : card.done ? 2 : 1)
+  const sorted = [...due].sort((a, b) => rank(a) - rank(b))
+  const shown = sorted.slice(0, WE_ROWS)
+  const more = sorted.length - shown.length
   const tint = colors.we || colors.on
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${t('we.title')}: ${title}, ${status}${more ? `, ${t('we.more', { n: more })}` : ''}`}
-      onPress={() => (line.many ? goHash('/we') : goHash('/we', { id: first.id }))}
-      hitSlop={6}
-      style={({ pressed }) => [styles.slim, { borderColor: tint, backgroundColor: colors.panel }, pressFx(pressed)]}
-    >
-      <View style={styles.slimFaces}>
-        {seen.slice(0, 3).map(({ person, card }) => (
-          <View key={person.id} style={styles.slimSlot}>
-            <WeFace person={person} card={card} colors={colors} known={known} size={26} />
+    <View style={[styles.today, { borderColor: tint, backgroundColor: colors.panel }]}>
+      {shown.map((card, i) => {
+        const waiting = open.has(card.id)
+        const status = waiting
+          ? weTimeReady(card) ? weStatusLine(card) : t('we.asksAt', { time: clockWords(card.askAfter) })
+          : weRowLine([card]).status.map((bit) => t(bit.key, bit.vars)).join(' · ')
+        const people = (card.people || []).filter((p) => p.state === 'in').slice(0, 3)
+        return (
+          <View key={card.id} style={[styles.todayRow, i ? { borderTopColor: colors.line, borderTopWidth: 1 } : null]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${t('we.title')}: ${card.question}, ${status}`}
+              onPress={() => goHash('/we', { id: card.id })}
+              style={({ pressed }) => [styles.todayMain, waiting ? null : styles.todayDim, pressFx(pressed)]}
+            >
+              <View style={styles.slimFaces}>
+                {people.map((person) => (
+                  <View key={person.id} style={styles.slimSlot}>
+                    <WeFace person={person} card={card} colors={colors} known={known} size={24} />
+                  </View>
+                ))}
+              </View>
+              <View style={styles.slimCopy}>
+                <Text style={[styles.slimQ, { color: colors.ink }]} numberOfLines={2}>
+                  {card.question}
+                </Text>
+                <Text style={[styles.slimStatus, { color: card.done ? tint : colors.inkSoft }]} numberOfLines={1}>
+                  {waiting ? '' : '✓ '}
+                  {status}
+                </Text>
+              </View>
+            </Pressable>
           </View>
-        ))}
-        {more ? (
-          <View style={[styles.slimMore, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
-            <Text style={[styles.faceText, { color: colors.inkSoft }]} numberOfLines={1}>
-              {t('we.more', { n: more })}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-      <View style={styles.slimCopy}>
-        <Text style={[styles.slimQ, { color: colors.ink }]} numberOfLines={1} ellipsizeMode="tail">
-          {title}
-        </Text>
-        <Text style={[styles.slimStatus, { color: line.many || !first.done ? colors.inkSoft : tint }]} numberOfLines={1} ellipsizeMode="tail">
-          {status}
-        </Text>
-      </View>
-      <Text style={[styles.slimGo, { color: colors.inkDim }]}>›</Text>
-    </Pressable>
+        )
+      })}
+      {more > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => goHash('/we')}
+          style={({ pressed }) => [styles.todayMore, { borderTopColor: colors.line }, pressFx(pressed)]}
+        >
+          <Text style={[styles.slimQ, { color: colors.inkSoft }]}>{t('we.andMore', { n: more })} ›</Text>
+        </Pressable>
+      ) : null}
+      {ans.note ? <Text style={[styles.note, { color: colors.inkSoft }]}>{ans.note}</Text> : null}
+    </View>
   )
 }
 
@@ -360,6 +371,8 @@ export function useWeAnswer(reload, book) {
     // A repeat tap on tonight's lit answer does nothing: a Did we answer has
     // no undo, so it must not clear by accident. Taking back is explicit.
     if (!night && status && mine?.status === status) return
+    // One answer at a time: a second tap while one is sending does nothing.
+    if (busy) return
     const next = status
     const out = await run(card.id, () => weAnswer(card.id, next, night || undefined))
     // A Did we answer has no undo: it says it was saved, or that it was not.
@@ -568,13 +581,15 @@ const styles = StyleSheet.create({
   answers: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
   answer: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 999, paddingLeft: 3, paddingRight: 9, paddingVertical: 3, maxWidth: '100%' },
   answerText: { fontFamily: fonts.uiSemi, fontSize: 12, flexShrink: 1 },
-  slim: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8, alignSelf: 'stretch' },
   slimFaces: { flexDirection: 'row' },
-  slimMore: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   slimSlot: { marginRight: 2 },
   slimCopy: { flex: 1, minWidth: 0 },
   slimQ: { fontFamily: fonts.uiSemi, fontSize: 13 },
   slimStatus: { fontFamily: fonts.ui, fontSize: 12 },
-  slimGo: { fontFamily: fonts.uiSemi, fontSize: 18 },
   answerCount: { marginLeft: 2 },
+  today: { borderWidth: 1, borderRadius: 16, marginTop: 8, overflow: 'hidden', alignSelf: 'stretch' },
+  todayRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  todayMain: { flexDirection: 'row', alignItems: 'center', gap: 10, flexGrow: 1, flexBasis: 180, minWidth: 0 },
+  todayDim: { opacity: 0.6 },
+  todayMore: { borderTopWidth: 1, paddingHorizontal: 12, paddingVertical: 10, alignItems: 'center' },
 })

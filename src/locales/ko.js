@@ -3593,6 +3593,7 @@ export const ko = {
   'we.rowWaitingOne': "{name}님 기다리는 중",
   'we.rowWaitingMany': "{n}명 기다리는 중",
   'we.rowMany': "Did we: {n}개",
+  'we.andMore': "외 {n}개",
   'we.rowManyStatus': "{done}개 완료 · {waiting}개 대기",
   'we.weekKey': "위: 함께 했어요. 아래: 나.",
   'we.dot.did': "했어요",
