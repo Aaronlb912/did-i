@@ -5,6 +5,11 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## First-run tour (2026-10-21, branch `tour`, SQL applied, OTA)
+
+- **Built:** a step-by-step tour with cutouts. Basics (swipe, add, time, days, folders, Not yet, widget) pays 20 coins once; More (friends, Did you, Did we, cheer, shop, Recent) pays 30 (`supabase/tour-coins.sql`). Progress is per account. Replay from Help, "Show me around". Steps whose target is missing skip. Someone new adds a first question before the menu and tabs show. Three days after Basics, one "Want to see the rest?" card if More was never opened.
+- **Not done:** not tried on an iPhone (the Add sheet has its own host). A widget tap on the home screen during the widget step is a real answer. New accounts on a phone that already ran the tour see it again.
+
 ## Bug audit 2026-10-20 (#338 and branch `audit-2`, SQL applied, OTA)
 
 - **Built:** a widget or watch Not yet no longer replaces a Did on the server (`supabase/keep-did.sql`); a widget answer with the app closed clears that question's reminders right away; a gem pack that would pass 9999 waits instead of losing gems (`supabase/gem-cap.sql`); only a parent moves a family question onto someone else (`supabase/family-edit.sql`); a Did we Not yet keeps that day's reminder; the iOS app minimum is 1.3.8, so old JS cannot make a gem buy with no owner. Round 2: a stale iOS widget Not yet keeps a Did and redraws; a watch tap that fails stays pending and does not drop the rest; a session that ends on its own clears the answer key; a join or leave never undoes last night's Did we (`supabase/we-keep-done.sql`). Sign out, offline launch and an update mid-answer were audited and are clean.

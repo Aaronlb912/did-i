@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
 import { refreshTogether } from '../../src/lib/people.js'
@@ -10,6 +10,8 @@ import { pressFx, useFadeIn } from '../lib/motion.jsx'
 import { PersonAvatar } from './PersonAvatar.jsx'
 
 const SHOWN = 6
+// Narrow phones or a Cheer chip: fewer faces, so the row never runs off the edge.
+const SHOWN_TIGHT = 4
 
 // Friends and family on Home: a face each, lit when they are done tonight.
 // Reads the list the Together widget keeps (one known_people call, saved),
@@ -18,6 +20,7 @@ const SHOWN = 6
 // cheer: a friend who isn't done yet (from pickSocialLine); adds a Cheer chip.
 export function FriendsRow({ colors, cheer = null }) {
   const account = useAccount()
+  const { width } = useWindowDimensions()
   const [people, setPeople] = useState(() => readTogetherPeople())
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export function FriendsRow({ colors, cheer = null }) {
   const props = buildTogetherWidgetProps(people)
   // Done first here: the row is a nudge that others are already there.
   const rows = [...props.people].sort((a, b) => Number(b.done) - Number(a.done) || a.name.localeCompare(b.name))
-  const shown = rows.slice(0, SHOWN)
+  const shown = rows.slice(0, cheer || width < 360 ? SHOWN_TIGHT : SHOWN)
   const raw = new Map(people.map((p) => [String(p.id || ''), p]))
   const more = rows.length - shown.length
   const tint = colors.we || colors.on

@@ -324,3 +324,18 @@ export function shortCount(value) {
   const tenths = Math.floor((n * 10) / size) / 10
   return `${n / size >= 100 ? Math.floor(n / size) : tenths}${mark}`
 }
+
+// One-time coins for finishing a tour part (basics 20, more 30). Returns
+// { paid, balance }: paid is 0 when already claimed. Null when it did not go
+// through.
+export async function claimTourCoins(part) {
+  if (!accountSessionOn()) return null
+  const db = cloud()
+  if (!db) return null
+  const { data, error } = await db.rpc('claim_tour_coins', { part })
+  if (error) return null
+  return {
+    paid: Math.max(0, Math.floor(Number(data?.paid) || 0)),
+    balance: Math.max(0, Math.floor(Number(data?.balance) || 0)),
+  }
+}

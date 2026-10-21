@@ -7,6 +7,7 @@ import { readMine } from '../../src/lib/people.js'
 import { confirmDone } from '../lib/confirm.js'
 import { goHash } from '../navigation/hash.js'
 import { InviteCodeSection } from './InviteCodeSection.jsx'
+import { tourActive } from '../lib/tour.js'
 import { publishSheet, sheetIsUp, whenNoSheet } from './SheetHost.jsx'
 
 // A new account is asked once, on Today, whether someone invited it: that is
@@ -102,7 +103,7 @@ export function InviteAskHost({ colors, book, onChange, path }) {
     let alive = true
     // After the first sync has had its turn with a link's code.
     const timer = setTimeout(async () => {
-      if (!alive || readPendingInvite() || wasAsked(userId)) return
+      if (!alive || readPendingInvite() || wasAsked(userId) || tourActive()) return
       const mine = await readMine().catch(() => null)
       if (!alive || !mine || wasAsked(userId)) return
       markAsked(userId)

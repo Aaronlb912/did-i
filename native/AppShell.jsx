@@ -6,6 +6,8 @@ import { needsEnter } from '../src/lib/session.js'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAccount } from '../src/lib/account.js'
 import { readShelf } from '../src/lib/board-shelf.js'
+import { readTour } from '../src/lib/first-run.js'
+import { firstPullWaiting, useSync } from '../src/lib/cloud-sync.js'
 import { authGated } from '../src/lib/auth-gate.js'
 import { armLampPings, checkPings, pingButtonLabel, pingSupport, requestPings } from '../src/lib/notify.js'
 import { useAutoAdd } from '../src/lib/people.js'
@@ -33,6 +35,8 @@ import { UpdatePrompt } from './components/UpdatePrompt.jsx'
 import { SheetHost, onSheetUp } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
 import { InviteAskHost } from './components/InviteAskHost.jsx'
+import { TourHost } from './components/TourHost.jsx'
+import { setTourBalanceHandler } from './lib/tour.js'
 import { lazyScreen } from './lib/lazy-screen.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
 import { resumeCheckOnStops } from './components/LampManage.jsx'
@@ -158,7 +162,7 @@ const QUESTIONS_ICON =
 
 /** The root screen: Tonight and Questions in the system tab bar. */
 function HallScreen() {
-  const { colors, locked } = useContext(ScreenProps)
+  const { colors, locked, firstAdd } = useContext(ScreenProps)
   // The hall mounts first, so a goHash from before the stack existed lands now.
   useEffect(() => {
     flushNavigation()
@@ -174,12 +178,12 @@ function HallScreen() {
       tabBarMinimizeBehavior: 'onScrollDown',
       ...(Platform.OS === 'android'
         ? {
-            tabBarStyle: { backgroundColor: colors.panel, display: locked ? 'none' : 'flex' },
+            tabBarStyle: { backgroundColor: colors.panel, display: locked || firstAdd ? 'none' : 'flex' },
             tabBarLabelStyle: { fontFamily: fonts.uiSemi },
           }
-        : { tabBarStyle: { display: locked ? 'none' : 'flex' } }),
+        : { tabBarStyle: { display: locked || firstAdd ? 'none' : 'flex' } }),
     }),
-    [colors, locked],
+    [colors, locked, firstAdd],
   )
   return (
     <Tab.Navigator screenOptions={options} backBehavior="firstRoute">
@@ -204,6 +208,10 @@ export function AppShell() {
   const prefs = usePrefs()
   const route = useNativeRoute()
   const app = useAppShelf()
+  useEffect(() => {
+    setTourBalanceHandler(app.applyCoinBalance)
+    return () => setTourBalanceHandler(null)
+  }, [app.applyCoinBalance])
   const marksHeld = useMarksHeld()
   // A new mark joins the toast line once the night's celebration is over.
   // It also waits while an undo is up, so a tap on Undo never lands on it.
@@ -215,6 +223,7 @@ export function AppShell() {
     showToast({ id: `mark:${mark.id || 'mark'}`, kind: 'mark', mark, ms: 5200, onGone: clearMark })
   }, [clearMark, mark])
   const account = useAccount()
+  const sync = useSync()
   const colors = useHallColors(app.book)
   // Terms and privacy before sign-in open over sign-in, not in the navigator,
   // which is not there yet.
@@ -347,6 +356,14 @@ export function AppShell() {
   const pingLabel = pingButtonLabel(pingState)
 
   const locked = needsEnter(app.book)
+  // Someone new adds a first question before the tabs show (TonightScreen hides the menu).
+  // Signed in, it waits for a first pull that worked, so a returning account on
+  // a new phone is never shut out by a shelf that has not arrived.
+  const firstAdd =
+    Boolean(app.shelf?.boards) &&
+    app.shelf.boards.every((board) => !(board.lamps || []).some((lamp) => !lamp.archived)) &&
+    readTour().basics === 'new' &&
+    (!account.user || (!firstPullWaiting(sync) && !sync.miss))
   const screenProps = useMemo(
     () => ({
       colors,
@@ -368,9 +385,11 @@ export function AppShell() {
       pingLabel,
       // The PIN screen shows no tabs, so nothing behind it looks reachable.
       locked,
+      firstAdd,
     }),
     [
       locked,
+      firstAdd,
       app.addBoard,
       app.book,
       app.change,
@@ -471,6 +490,7 @@ export function AppShell() {
         {booted && app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
         {app.book && !gated ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
         {booted && app.book && !gated ? <InviteAskHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
+        {booted && app.book && !gated ? <TourHost path={route.path} hasQuestion={(app.book.lamps || []).some((lamp) => !lamp.archived)} /> : null}
         <SheetHost />
         <CheerBurstHost />
         <Slot>

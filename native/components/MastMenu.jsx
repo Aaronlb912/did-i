@@ -29,6 +29,7 @@ import { HEADER_BUTTON, HeaderButton, headerLift, headerSurface } from './Header
 import { menuIsOn, menuItems } from './mast-menu-items.js'
 import { openStore, useUpdateOffered } from './UpdatePrompt.jsx'
 import { MenuIcon } from './MenuIcon.jsx'
+import { useTourTarget } from '../lib/tour.js'
 
 const MastMenuCtx = createContext(null)
 
@@ -363,10 +364,14 @@ export function MastMenuCog() {
   // (Did we's count shows through Friends and family.)
   const on = menuIsOn(menuItems(showAdd, people.inbox, people.asks, people.signedIn, people.we))
   const button = useRef(null)
+  const tour = useTourTarget('menu')
 
   return (
     <HeaderButton
-      ref={button}
+      ref={(node) => {
+        button.current = node
+        tour.ref(node)
+      }}
       bare
       colors={colors}
       on={on}

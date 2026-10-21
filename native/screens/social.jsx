@@ -84,6 +84,7 @@ import {
 } from '../../src/lib/purse.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { useOnline } from '../hooks/useOnline.js'
+import { useTourTarget } from '../lib/tour.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { isNewShelf } from '../../src/lib/first-run.js'
 import { boardDate, formatBoardDate, isoDate } from '../../src/lib/recurrence.js'
@@ -824,6 +825,7 @@ export function PeopleScreen({ book, onChange }) {
   const [said, setSaid] = useState('')
   const [sheet, setSheet] = useState(null)
   const [tab, setTab] = useState('friends')
+  const peopleTour = useTourTarget('people')
 
   const load = useCallback(async () => {
     if (!account.user) {
@@ -923,7 +925,7 @@ export function PeopleScreen({ book, onChange }) {
         />
       </View>
 
-      <View style={styles.friendTabs}>
+      <View style={styles.friendTabs} {...peopleTour}>
         <KitSegment
           items={[
             {
@@ -1291,6 +1293,7 @@ export function PeopleConnectScreen({ book, onChange, route }) {
   const [idMiss, setIdMiss] = useState(false)
   const [idDraft, setIdDraft] = useState('')
   const [showQr, setShowQr] = useState(false)
+  const friendIdTour = useTourTarget('friendId')
   const idAsk = useFriendAsk((words) => {
     setIdDraft('')
     say(words)
@@ -1408,7 +1411,7 @@ export function PeopleConnectScreen({ book, onChange, route }) {
           here, where they come to add that friend. Gone once one is used. */}
       <InviteCodeSection colors={colors} book={book} onChange={onChange} hideBar hideDone />
 
-      <View style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+      <View {...friendIdTour} style={[styles.groupCard, styles.groupPad, styles.friendIdCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('friendId.yours')}</Text>
         <Text selectable style={[styles.friendId, { color: colors.ink }]}>
           {myId ? formatFriendId(myId) : t('family.loading')}

@@ -117,6 +117,7 @@ export function ScreenRouter({
   onSendCopy,
   onAskPings,
   pingLabel,
+  firstAdd,
 }) {
   const path = route.path
   const boards = shelf.boards
@@ -248,6 +249,7 @@ export function ScreenRouter({
       onKeep={keepSent}
       focusLampId={route.face}
       focusKey={route.focusAt}
+      firstAdd={firstAdd}
     />
   )
 }

@@ -65,6 +65,8 @@ import { HangFold } from '../components/HangFold.jsx'
 import { PickSheet } from '../components/PickSheet.jsx'
 import Reanimated, { FadeIn } from 'react-native-reanimated'
 import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
+import { useTour, useTourTarget } from '../lib/tour.js'
+import { TOUR_PARTS } from '../../src/lib/tour-steps.js'
 import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { LampManage, lampActions, stopCheckOns } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
@@ -1725,6 +1727,18 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   }
 
   // The card keeps to the extras; the line under it says when it repeats.
+  const reminderTour = useTourTarget('reminder')
+  const scheduleTour = useTourTarget('schedule')
+  const folderTour = useTourTarget('folder')
+  // The folder step opens More and the folder picker so there is something to point at.
+  const tourNow = useTour()
+  const tourOnFolders = tourNow.phase !== 'idle' && TOUR_PARTS[tourNow.part].steps[tourNow.index]?.key === 'folders'
+  useEffect(() => {
+    if (!tourOnFolders) return
+    setMoreOpen(true)
+    setOpen('tag')
+  }, [tourOnFolders])
+  const leadTour = useTourTarget('lead')
   const whenWords = [whenLine(draft), draft.askAfter ? timeLabel(draft.askAfter) : t('hang.askAny')].join(' · ')
   const meta = [whenWords, hang.priority === 'high' ? t('hang.metaHigh') : ''].filter(Boolean).join(' · ')
   // Topics stay out of the way until someone uses them.
@@ -1782,6 +1796,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         onBlank={changeBlank}
         meta={meta}
         metaAction={{ label: t('checkOn.change'), a11y: `${t('hang.when')}: ${whenWords}`, onPress: () => fold('when') }}
+        metaTour={scheduleTour}
+        leadTour={leadTour}
         wave={wave}
         stamp={stamp}
         shake={shake}
@@ -1954,7 +1970,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         }}
       >
         <SetCard colors={colors}>
-          {reminderRow(false)}
+          <View {...reminderTour}>{reminderRow(false)}</View>
           {ideasShown ? (
             <SetRow
               colors={colors}
@@ -2031,6 +2047,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
         <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
         <SetCard colors={colors}>
+          <View {...folderTour}>
           <HangFold
             label={t('hang.tag')}
             value={tagName}
@@ -2090,6 +2107,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               </>
             ) : null}
           </HangFold>
+          </View>
 
           <HangFold
             label={t('hang.priority')}

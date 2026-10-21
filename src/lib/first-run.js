@@ -3,6 +3,7 @@
 import { blankLamp } from './board-json.js'
 import { hangInto } from './board-ops.js'
 import { hangStarter } from './starters.js'
+import { accountSessionOn, readAccountUserId } from './session-id.js'
 
 // Every pack question fits, so taking all packs never silently drops one.
 export const FIRST_PICKS_MAX = 12
@@ -250,5 +251,32 @@ export function takeMorningFocus() {
     return on
   } catch {
     return false
+  }
+}
+
+// The coach-mark tour (src/lib/tour-steps.js): per part 'new' (never shown),
+// 'seen' (Not now or skipped) or 'done'. A part's coins are claimed once, on
+// its first finish; <part>Claim stays 'pending' until the server pays.
+// Kept per account (signed out has its own), so one account's progress or
+// pending coins never carry to another.
+export const tourWho = () => (accountSessionOn() ? readAccountUserId() : '')
+const tourKey = (who) => `did-i-tour:${who || 'out'}`
+
+export function readTour(who = tourWho()) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(tourKey(who)) || '{}')
+    const tour = raw && typeof raw === 'object' ? raw : {}
+    return { basics: 'new', more: 'new', ...tour }
+  } catch {
+    // No storage: count it as done so nothing nags.
+    return { basics: 'done', more: 'done' }
+  }
+}
+
+export function writeTour(patch, who = tourWho()) {
+  try {
+    localStorage.setItem(tourKey(who), JSON.stringify({ ...readTour(who), ...patch }))
+  } catch {
+    // Shows again next time; harmless.
   }
 }

@@ -116,6 +116,7 @@ import { addMorning, isTodayOnce, morningCount, morningOpen, todayLabel } from '
 import { commitBook } from '../../src/lib/achievements.js'
 import { MorningAsk } from '../components/MorningAsk.jsx'
 import { pinWidget, showWidgetTip, widgetPlaced } from '../lib/widget-pin.js'
+import { tourActive, useTourTarget } from '../lib/tour.js'
 
 // Where the stack has no card of your own to swipe, so a Did we can have it.
 const WE_SWIPE_OVER = new Set(['hall', 'finish', 'rest', 'off', 'waiting'])
@@ -194,7 +195,7 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
   )
 }
 
-export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, focusLampId, focusKey }) {
+export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, focusLampId, focusKey, firstAdd = false }) {
   const theme = useTheme()
   const look = activeLook(book)
   const colors = useHallColors(book)
@@ -331,6 +332,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     setPickTall((prev) => (prev.key === pickKey && prev.h >= h ? prev : { key: pickKey, h }))
   }
   const pickMinH = pickKey && pickTall.key === pickKey ? pickTall.h : 0
+  const swipeTour = useTourTarget('swipe', onPickLayout)
+  const notYetTour = useTourTarget('notYet')
   const frozen = stack.shelf ? freezeState(stack.shelf, stack.clock).frozen : null
   // Best run ever, so a streak reached before frames shipped still earns them.
   const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -486,7 +489,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         const placed = await widgetPlaced()
         const state = readWidgetTip()
         if (placed && !state.done) writeWidgetTip({ ...state, done: true })
-        const busy = sheetIsUp() || nightOneRef.current || navigation.isFocused?.() === false
+        const busy = tourActive() || sheetIsUp() || nightOneRef.current || navigation.isFocused?.() === false
         if (!shouldShowWidgetTip({ state, today, hasQuestion: true, widgetPlaced: placed, busy })) return
         writeWidgetTip({ ...state, shown: (state.shown || 0) + 1, shownDay: today })
         showWidgetTip(colors, () => writeWidgetTip({ ...readWidgetTip(), done: true }))
@@ -996,6 +999,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           rows={stack.stillOpen}
           rowKey={stack.rowKey}
           colors={colors}
+          tour={notYetTour}
           onLate={stack.lateFromList}
           onLeave={stack.leaveFromList}
         />
@@ -1326,7 +1330,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     <CardFrameProps.Provider value={cardFrame}>
     <MastMenuRoot colors={colors} showAdd>
     <View pointerEvents="box-none" style={[styles.frame, { backgroundColor: colors.bg }, gemFrame]}>
-      <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={purse} menu clear={premium} />
+      <AppHeader colors={colors} titleSlot={titleSlot} back={false} purse={firstAdd ? undefined : purse} menu={!firstAdd} clear={premium} />
       <Slot>
         <HallAmbient heat={stack.heat} hour={stack.hour} hallOn={stack.nightDone} accent={colors.on} />
       </Slot>
@@ -1451,7 +1455,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             {/* flex: 1 because the card fills this box; without it the card collapses to no height. */}
             <View style={[styles.pickBox, pillPicked && styles.pickTop]}>
               {/* Measures the card, not the room around it, so the held height can shrink back. */}
-              <View onLayout={onPickLayout} style={pickMinH ? { minHeight: pickMinH } : null}>
+              <View {...swipeTour} style={pickMinH ? { minHeight: pickMinH } : null}>
                 {/* Loading to the real card eases in, never a hard swap. */}
                 <DoneIn key={pullWait ? 'wait' : 'card'}>{face}</DoneIn>
               </View>

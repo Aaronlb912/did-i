@@ -11,9 +11,9 @@ import { fonts, radius } from '../theme.js'
  * One row at a time, so a long list never runs off the card; answering one
  * brings up the next.
  */
-export function StillOpen({ rows, rowKey, colors, onLate, onLeave }) {
+export function StillOpen({ rows, rowKey, colors, onLate, onLeave, tour }) {
   return (
-    <View>
+    <View {...tour}>
       <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.restKicker')}</Text>
       <Text style={[faceCardStyles.title, { color: colors.ink }]}>
         {rows.length === 1
