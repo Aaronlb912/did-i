@@ -5,6 +5,12 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Bug hunt 2026-10-22 (#557 to #563, OTA)
+
+- **Built:** removed buddy stays off after sync; block refreshes Did we and the inbox; blocking a family member offers leave or remove; offline coins from older days go on yesterday; reminders that run out end with an Open Did I note; edit page save keeps pause records; a parked folder name opens that folder; Wear taps report the watch time (next build).
+- **Not done: undo on one phone comes back from a sleeping second phone.** Undo only goes out as a live broadcast. A phone that missed it re-sends every answer on open (`pushAnswers(written, true)` in `src/lib/cloud-sync.js`), and `put_answers` takes the undone Did back. Fix needs a server undo record (table keyed by lamp and period with the undo time, RLS own rows), `put_answers` refusing rows stamped at or before it, and the pull dropping them. Also send the earlier answer inside the undo broadcast so the drop and restore cannot arrive out of order.
+- **Not checked yet:** done screen counts and "N not yet", gentle mode, optional questions, first launch.
+
 ## First-run tour (2026-10-21, branch `tour`, SQL applied, OTA)
 
 - **Built:** a step-by-step tour with cutouts. Basics (swipe, add, time, days, folders, Not yet, widget) pays 20 coins once; More (friends, Did you, Did we, cheer, shop, Recent) pays 30 (`supabase/tour-coins.sql`). Progress is per account. Replay from Help, "Show me around". Steps whose target is missing skip. Someone new adds a first question before the menu and tabs show. Three days after Basics, one "Want to see the rest?" card if More was never opened.
