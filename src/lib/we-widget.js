@@ -31,6 +31,14 @@ export function saveWePings(list) {
   }
 }
 
+// A Did saved outside the app screens (widget, reminder button) skips that
+// day's reminder, as saveWeReminders does on the next load.
+export function skipWePing(card, night) {
+  const list = readWePings()
+  if (!list.some((ping) => ping.id === card && ping.skipNight !== night)) return false
+  return saveWePings(list.map((ping) => (ping.id === card ? { ...ping, skipNight: night } : ping)))
+}
+
 export function readWePings() {
   try {
     const list = JSON.parse(localStorage.getItem(PINGS_KEY) || '[]')

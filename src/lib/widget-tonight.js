@@ -16,7 +16,7 @@ import { t } from './i18n.js'
 import { lastTimeLine } from './every-copy.js'
 import { gentleOn } from './prefs.js'
 import { alignShelfPurse, normalizePurse, spreadPurseFrom } from './purse.js'
-import { readWeLine, readWeOpen } from './we-widget.js'
+import { readWeLine, readWeOpen, skipWePing } from './we-widget.js'
 import {
   answerFor,
   boardDate,
@@ -460,6 +460,7 @@ function applyWeTap(card, status, clock, cardNight = '', tapAt = 0) {
   // A Did already saved for that night is not turned into Not yet by an old card.
   if (status !== 'yes' && weNightStatus(night, card) === 'did') return null
   markWeNight(card, night, status === 'yes' ? 'did' : 'nope')
+  if (status === 'yes') skipWePing(card, night)
   const shelf = readShelf()
   const previous = readWidgetTonightProps()
   const props = buildTonightWidgetProps(shelf, clock)

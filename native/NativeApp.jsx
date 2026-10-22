@@ -129,6 +129,11 @@ export function NativeApp() {
             // A weekly card's closed slot says week; unknown cards keep the day line.
             const miss = knownWeCard(cardId) ? weMissKey(knownWeCard(cardId), out.miss) : out.miss
             if (out.miss) showToast({ id: 'we-answer', kind: 'error', text: tMiss(miss), ms: 5200 })
+            else if (kind === 'did') {
+              const { skipWePing } = await import('../src/lib/we-widget.js')
+              const { boardDate } = await import('../src/lib/recurrence.js')
+              if (skipWePing(cardId, night || boardDate())) armNativePingsNow(readShelf()?.boards || []).catch(() => {})
+            }
           } catch {
             showToast({ id: 'we-answer', kind: 'error', text: t('people.reach'), ms: 5200 })
           }
