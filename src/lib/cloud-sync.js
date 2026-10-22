@@ -41,6 +41,7 @@ import {
   applyCoinCatalogToShelf,
   applyGemBalanceToShelf,
   applyGemOwnedToShelf,
+  catchUpFreeClaims,
   grantWeeklyGem,
   readCoinCatalog,
   readGemBalance,
@@ -680,7 +681,12 @@ async function pullAndMergeOnce() {
     if (shopWriteCount() === shopAtStart) {
       if (bal != null) written = applyGemBalanceToShelf(written, bal)
       if (coinBag) written = applyCoinCatalogToShelf(written, coinBag)
-      if (gemBag) written = applyGemOwnedToShelf(written, gemBag)
+      if (gemBag) {
+        // Free event items claimed signed out reach the account in the
+        // background. The phone keeps its copy; the next sync reads the server.
+        catchUpFreeClaims(written, gemBag).catch(() => {})
+        written = applyGemOwnedToShelf(written, gemBag)
+      }
     }
 
     const uploadAt = new Date().toISOString()

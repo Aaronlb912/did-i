@@ -201,6 +201,11 @@ export function isFreeEventId(kind, id) {
   return list.some((item) => item.id === id && isFreeEvent(item))
 }
 
+export function freeEventItem(kind, id) {
+  const list = kind === 'cheer' ? ALL_CHEERS : kind === 'buddy' ? ALL_BUDDIES : []
+  return list.find((item) => item.id === id && isFreeEvent(item)) || null
+}
+
 // The next drop inside its teaser week, or null.
 export function comingDrop(today = boardDate(new Date())) {
   const pick = (list) => list.filter((item) => isTeased(item, today))
