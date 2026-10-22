@@ -1316,6 +1316,7 @@ export const pt = {
   'pings.kind.daySub': 'Um aviso às {morning} e às {afternoon} enquanto houver perguntas abertas.',
   'pings.day.1': 'Comece o dia com Did I.',
   'pings.day.morning': "O que você quer lembrar hoje?",
+  'pings.renew': "Abra o Did I para continuar recebendo seus lembretes.",
   'morning.title': "Algo para lembrar hoje?",
   'morning.placeholder': "Uma pergunta para hoje",
   'morning.add': "Adicionar",

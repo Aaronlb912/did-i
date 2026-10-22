@@ -1302,6 +1302,7 @@ export const ja = {
   'pings.kind.daySub': '答えていない質問があるとき、{morning} と {afternoon} にお知らせします。',
   'pings.day.1': 'Did I で一日を始めよう。',
   'pings.day.morning': "今日は何を覚えておきたい？",
+  'pings.renew': "リマインダーを続けて受け取るには Did I を開いてください。",
   'morning.title': "今日覚えておくことはある？",
   'morning.placeholder': "今日の質問",
   'morning.add': "追加",

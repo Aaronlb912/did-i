@@ -352,7 +352,20 @@ async function schedulePingsNow(books, now = new Date()) {
     const soon = now.getTime() + 48 * 60 * 60 * 1000
     const spare = (note) => (note.lateCall && note.trigger.date.getTime() > soon ? 1 : 0)
     notes.sort((a, b) => spare(a) - spare(b) || a.trigger.date - b.trigger.date)
-    notes.length = Math.min(notes.length, PING_CAP)
+    // Nothing sets reminders while the app stays closed. When they run out
+    // (cap or end of the week), one last note asks to open the app.
+    const over = notes.length > PING_CAP - 1
+    notes.length = Math.min(notes.length, PING_CAP - 1)
+    if (reminders && notes.length) {
+      const last = Math.max(...notes.map((note) => note.trigger.date.getTime()))
+      const renewAt = new Date(over ? last + 60 * 1000 : last + 24 * 60 * 60 * 1000)
+      // when() moves it past quiet hours.
+      notes.push({
+        identifier: String(notifyId('renew', 'pings')),
+        content: { title: 'Did I', body: t('pings.renew'), data: { go: '/tonight' } },
+        trigger: when(renewAt),
+      })
+    }
     // Any folder's streak can be at risk, not only the first one's.
     const streakPings = pingOn('streakRisk') && !gentleOn()
     const heat = streakPings ? shelfStreak(list, now) : null

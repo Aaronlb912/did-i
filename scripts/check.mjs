@@ -9074,7 +9074,9 @@ await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an ho
   // A week of nudges plus question reminders still fits the 60 the phone keeps (iOS holds 64).
   const native = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
   assert.match(native, /const PING_CAP = 60/)
-  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: PING_DAYS, reminders, shift: afterQuiet, times \}\)[\s\S]*notes\.length = Math\.min\(notes\.length, PING_CAP\)/)
+  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: PING_DAYS, reminders, shift: afterQuiet, times \}\)[\s\S]*notes\.length = Math\.min\(notes\.length, PING_CAP - 1\)/)
+  // Nothing re-arms while the app is closed: the last slot asks to open it.
+  assert.match(native, /notes\.length = Math\.min\(notes\.length, PING_CAP - 1\)[\s\S]*notifyId\('renew', 'pings'\)[\s\S]*t\('pings\.renew'\)/)
   assert.ok(all.length <= 60)
 })
 
