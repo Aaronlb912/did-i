@@ -29,6 +29,8 @@ import {
   openFloorIso,
   graceFirst,
   graceNightIso,
+  isDueOn,
+  isEvery,
 } from './recurrence.js'
 import { nightEnd } from './daily.js'
 import { clockWords } from './hall-pages.js'
@@ -432,7 +434,11 @@ function rowForStoredNight(book, lampId, night, clock) {
   if (!stored) {
     return dueTonight(book, clock).find((row) => row.lamp.id === lampId) || null
   }
-  const dateIso = /^\d{4}-\d{2}-\d{2}$/.test(stored) ? stored : boardDate(clock)
+  const plain = /^\d{4}-\d{2}-\d{2}$/.test(stored)
+  // An old watch or widget card can name a day the question is no longer
+  // due on (its schedule changed): that tap is refused, not saved and paid.
+  if (plain && !isEvery(lamp) && !isDueOn(lamp, stored)) return null
+  const dateIso = plain ? stored : boardDate(clock)
   return {
     lamp,
     dateIso,
