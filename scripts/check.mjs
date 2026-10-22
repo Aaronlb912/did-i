@@ -9525,6 +9525,26 @@ test('keeping a did you, removing a friend, and making or joining a family recou
   for (const name of ['answerSend', 'dropFriend', 'makeFamily', 'joinFamily']) assert.match(body(name), /refreshPeople\(\)/, name)
 })
 
+test('a live reconnect has every screen read again, so the people poll can be slow', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sync = readFileSync(path.join(root, 'src/lib/cloud-sync.js'), 'utf8')
+  const people = readFileSync(path.join(root, 'src/lib/people.js'), 'utf8')
+  assert.match(sync, /if \(mine\.joined\) for \(const kind of LIVE_KINDS\) noteSocialLive\(kind\)/)
+  const listed = new Set(sync.match(/const LIVE_KINDS = \[([^\]]*)\]/)?.[1].match(/'[a-zA-Z]+'/g) || [])
+  const heard = new Set()
+  for (const dir of ['src', 'native']) {
+    for (const file of readdirSync(path.join(root, dir), { recursive: true })) {
+      if (!/\.jsx?$/.test(file)) continue
+      const text = readFileSync(path.join(root, dir, file), 'utf8')
+      for (const m of text.matchAll(/onVisible\([^,]+, \[([^\]]*)\]|(?:seen|kinds?)\.has\(('[a-zA-Z]+')\)/g)) {
+        for (const kind of (m[1] || m[2]).match(/'[a-zA-Z]+'/g) || []) heard.add(kind)
+      }
+    }
+  }
+  for (const kind of heard) assert.ok(listed.has(kind), `reconnect catch-up covers ${kind}`)
+  assert.match(people, /const PULSE_MS = 15 \* 60 \* 1000/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

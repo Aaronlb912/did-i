@@ -499,8 +499,16 @@ export async function startLiveAnswers() {
       if (payload.kind === 'undo') take({ gone: payload.gone })
       else noteSocialLive(payload.kind)
     })
-    .subscribe()
+    .subscribe((status) => {
+      if (status !== 'SUBSCRIBED' || live !== mine) return
+      // Back after a dropped connection: pings sent in the gap are gone, so
+      // every screen reads again (the people pulse waits 15 minutes otherwise).
+      if (mine.joined) for (const kind of LIVE_KINDS) noteSocialLive(kind)
+      mine.joined = true
+    })
 }
+
+const LIVE_KINDS = ['ask', 'friend', 'gift', 'familyInfo', 'weMembers', 'we', 'family', 'send']
 
 export function stopLiveAnswers() {
   const old = live
