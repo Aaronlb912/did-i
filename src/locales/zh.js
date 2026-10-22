@@ -387,6 +387,7 @@ export const zh = {
   'tonight.peopleMiss': "没有保存。请检查信号后再滑一次。",
   'tonight.weSaved': "已保存到你的 Did we。",
   'tonight.familySaved': "已为 {name} 保存。",
+  'tonight.familyRow': "{name} · {question}",
   'tonight.offlineSaved': "已保存在这部手机上。恢复联网后会同步。",
   'seen.title': "别人能看到什么",
   'seen.sub': "朋友和家人，简单说明",

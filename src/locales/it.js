@@ -393,6 +393,7 @@ export const it = {
   'tonight.peopleMiss': "Non è stato salvato. Controlla il segnale e scorri di nuovo.",
   'tonight.weSaved': "Salvato nel tuo Did we.",
   'tonight.familySaved': "Salvato per {name}.",
+  'tonight.familyRow': "{name} · {question}",
   'tonight.offlineSaved': "Salvato su questo telefono. Si sincronizza quando torni online.",
   'seen.title': "Cosa vedono gli altri",
   'seen.sub': "Amici e famiglia, in parole semplici",

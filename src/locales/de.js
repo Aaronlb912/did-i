@@ -394,6 +394,7 @@ export const de = {
   'tonight.peopleMiss': "Das wurde nicht gespeichert. Prüfe dein Netz und wische noch einmal.",
   'tonight.weSaved': "In deinem Did we gespeichert.",
   'tonight.familySaved': "Für {name} gespeichert.",
+  'tonight.familyRow': "{name} · {question}",
   'tonight.offlineSaved': "Auf diesem Handy gespeichert. Wird synchronisiert, sobald du wieder online bist.",
   'seen.title': "Was andere sehen",
   'seen.sub': "Freunde und Familie, ganz einfach erklärt",

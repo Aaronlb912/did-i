@@ -387,6 +387,7 @@ export const ja = {
   'tonight.peopleMiss': "保存できませんでした。電波を確認して、もう一度スワイプしてください。",
   'tonight.weSaved': "Did we に保存しました。",
   'tonight.familySaved': "{name} に保存しました。",
+  'tonight.familyRow': "{name} · {question}",
   'tonight.offlineSaved': "このスマホに保存しました。オンラインに戻ると同期します。",
   'seen.title': "ほかの人に見えるもの",
   'seen.sub': "友だちと家族について、わかりやすく",

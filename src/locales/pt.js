@@ -394,6 +394,7 @@ export const pt = {
   'tonight.peopleMiss': "Não salvou. Veja seu sinal e deslize de novo.",
   'tonight.weSaved': "Salvo no seu Did we.",
   'tonight.familySaved': "Salvo para {name}.",
+  'tonight.familyRow': "{name} · {question}",
   'tonight.offlineSaved': "Salvo neste telefone. Sincroniza quando você voltar a ficar online.",
   'seen.title': "O que os outros veem",
   'seen.sub': "Amigos e família, em palavras simples",

@@ -394,6 +394,7 @@ export const en = {
   'tonight.peopleMiss': "That didn't save. Check your signal and swipe again.",
   'tonight.weSaved': "Saved to your Did we.",
   'tonight.familySaved': "Saved for {name}.",
+  'tonight.familyRow': "{name}: {question}",
   'tonight.offlineSaved': "Saved on this phone. Syncs when you're back online.",
   'seen.title': "What others can see",
   'seen.sub': "Friends and family, in plain words",

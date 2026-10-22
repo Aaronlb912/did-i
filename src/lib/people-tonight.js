@@ -18,6 +18,15 @@ export function peopleTonightItems({ familyRows = [], asks = [], night, gone = [
   return out.filter((item) => !skip.has(item.key))
 }
 
+// Family questions you said Not yet to today. They are never cards: they
+// only show in the still-open list on the finish card.
+export function skippedFamilyRows(familyRows = [], gone = []) {
+  const skip = new Set(gone)
+  return familyRows.filter(
+    (row) => row.answer?.status === 'skip' && !skip.has(`famkeep:${row.family.id}:${row.lamp.id}:${row.night}`),
+  )
+}
+
 // Cards swiped away today, kept so a remount or restart does not bring them
 // back above the done screen. Dropped when the day changes.
 const HIDDEN = 'did-i-people-hidden'

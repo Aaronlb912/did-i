@@ -82,7 +82,7 @@ import { NightSky, useSkyClock } from '../components/NightSky.jsx'
 import { isDaytime } from '../lib/night-sky.js'
 import { Slot } from '../components/Slot.jsx'
 import { answerFamilyLamp, answerSend, listInbox, personName, useFamilyTonight } from '../../src/lib/people.js'
-import { peopleTonightItems, peopleWaitingLine, readPeopleHidden, writePeopleHidden } from '../../src/lib/people-tonight.js'
+import { peopleTonightItems, peopleWaitingLine, skippedFamilyRows, readPeopleHidden, writePeopleHidden } from '../../src/lib/people-tonight.js'
 import { WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
 import { FriendsRow } from '../components/FriendsRow.jsx'
 import { pickSocialLine } from '../../src/lib/social-line.js'
@@ -735,10 +735,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }, [weAns.note])
   // Your own questions come first. Once none is left to swipe, an unanswered
   // Did we takes the card's place.
+  const famBusy = useRef(new Set())
+  const familyOpen = skippedFamilyRows(family.rows, peopleGone)
+  const stillOpenRows = [...stack.stillOpen, ...familyOpen]
   const weSwipe =
     WE_SWIPE_OVER.has(stack.bodyKind) &&
     !stack.cheer &&
-    !(stack.bodyKind === 'finish' && stack.stillOpen.length) ? (
+    !(stack.bodyKind === 'finish' && stillOpenRows.length) ? (
       <WeSwipeCard
         cards={weCards}
         colors={colors}
@@ -1014,17 +1017,39 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     face = withAnswerButtons(weSwipe, () => weAns.answer(weTop, 'did'), () => weAns.answer(weTop, 'nope'))
   } else if (peopleSwipe) {
     face = withAnswerButtons(peopleSwipe, peopleTop.onDid, peopleTop.onNope)
-  } else if (stack.bodyKind === 'finish' && stack.stillOpen.length) {
+  } else if (stack.bodyKind === 'finish' && stillOpenRows.length) {
+    // A family row answers through the family path, not the shelf. Its key
+    // is the people key, so a left or answered row stays gone today.
+    const famKey = (row) => `fam:${row.family.id}:${row.lamp.id}:${row.night}`
+    const famDid = (row) => {
+      const key = famKey(row)
+      if (famBusy.current.has(key)) return
+      famBusy.current.add(key)
+      peopleAnswer(
+        key,
+        () => answerFamilyLamp(row.family.id, row.lamp.id, boardDate(), 'yes'),
+        () => {
+          confirmDone(t('tonight.familySaved', { name: row.family.name }))
+          family.reload()
+        },
+        'yes',
+        family.reload,
+      ).finally(() => famBusy.current.delete(key))
+    }
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
         <StillOpen
-          rows={stack.stillOpen}
-          rowKey={stack.rowKey}
+          rows={stillOpenRows}
+          rowKey={(row) => (row.family ? famKey(row) : stack.rowKey(row))}
           colors={colors}
           tour={notYetTour}
-          onLate={stack.lateFromList}
-          onLeave={stack.leaveFromList}
+          onLate={(row) => (row.family ? famDid(row) : stack.lateFromList(row))}
+          onLeave={(row) => {
+            if (!row.family) return stack.leaveFromList(row)
+            setPeopleGone((keys) => [...keys, `famkeep:${famKey(row).slice(4)}`])
+            feelTap('tick')
+          }}
         />
       </GemFaceShell>
     )
