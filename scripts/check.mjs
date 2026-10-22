@@ -9532,7 +9532,8 @@ test('a Wear OS tap stays answered until the phone lists it as taken, like the A
   const drain = readFileSync(path.join(root, 'native/widget-tap.android.js'), 'utf8')
   const wear = readFileSync(path.join(root, 'android/wear/src/main/java/com/aaronbryant/didi/wear/CardStore.kt'), 'utf8')
   assert.doesNotMatch(sync, /Platform\.OS === 'ios' && takenTaps/, 'taken goes to both watches')
-  assert.match(drain, /noteTaken\(tap\.at\)/, 'the Android tap queue notes watch taps')
+  assert.match(drain, /noteTaken\(tap\.sent \|\| tap\.at\)/, 'the Android tap queue notes watch taps by the watch time')
+  assert.equal(parseWidgetTapQueue(JSON.stringify([{ lampId: 'a', kind: 'did', night: '2026-10-22', at: 5, sent: 9 }]))[0].sent, 9, 'the watch time survives the queue')
   assert.match(wear, /optJSONArray\("taken"\)/, 'the Wear app reads taken')
 })
 
