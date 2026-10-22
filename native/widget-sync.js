@@ -116,14 +116,18 @@ export async function syncTonightWidget(shelf) {
     queueWidgetSync(shelf)
     return
   }
+  // A tap made since the last read would be drawn over by the timeline
+  // written below, so a new one sends this through the read again.
+  if (Platform.OS === 'ios' && timelineRead && readTimeline && (await timelineHasNewTaps())) timelineRead = false
   if (Platform.OS === 'ios' && !timelineRead && readTimeline) {
     // A failed read must not hold the widget back for good.
     await readTimeline().catch(() => {})
     // The read merged the taps into the stored shelf; read it again so an
     // answer made in the app meanwhile is not drawn over.
     shelf = readShelf()
-    if (tapsPending) return
   }
+  // A tap whose question is not here yet stays on the widget until it merges.
+  if (Platform.OS === 'ios' && tapsPending) return
   const built = buildTonightWidgetProps(shelf)
   const props = enrichTonightWidgetProps(shelf, built)
   lastTonightKey = tonightWidgetKey(props)
@@ -244,6 +248,22 @@ export async function syncTogetherWidget(people = readTogetherPeople()) {
     } catch (error) {
       console.warn('together widget android update', error?.message || error)
     }
+  }
+}
+
+// The entry showing now holds a status the app did not write: a tap.
+async function timelineHasNewTaps() {
+  try {
+    const api = await tonightWidgetApi()
+    if (!api?.getTimeline) return false
+    const now = Date.now()
+    const shown = (await api.getTimeline()).filter((entry) => entry?.props && entry.date.getTime() <= now)
+    const last = shown[shown.length - 1]?.props
+    if (!last) return false
+    const mine = new Map((readWidgetTonightProps()?.items || []).map((item) => [`${item.lampId}|${item.periodKey}`, item.status]))
+    return (last.items || []).some((item) => mine.get(`${item.lampId}|${item.periodKey}`) !== item.status)
+  } catch {
+    return false
   }
 }
 

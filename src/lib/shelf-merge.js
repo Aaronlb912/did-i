@@ -69,9 +69,25 @@ function foldPurse(winner, loser) {
   }
 }
 
+// The copy edited later wins; a missing stamp counts as never, a tie keeps the winner.
+function atMs(item) {
+  const ms = Date.parse(item?.at || '')
+  return Number.isFinite(ms) ? ms : 0
+}
+
 export function mergeBooks(winner, loser) {
   const win = normalizeBook(winner)
   const lose = normalizeBook(loser)
+  const loseById = byId(lose.lamps)
+  win.lamps = win.lamps.map((lamp) => {
+    const other = loseById.get(lamp.id)
+    return other && atMs(other) > atMs(lamp) ? other : lamp
+  })
+  if (atMs(lose) > atMs(win)) {
+    win.title = lose.title
+    win.archived = lose.archived
+    win.at = lose.at
+  }
 
   // A question taken off on either phone stays off, unless it was put back
   // later than that. Without this, the older phone's copy brings it back.

@@ -131,7 +131,7 @@ export function ScreenRouter({
     return (
       <EnterScreen
         book={book}
-        onSaveKeeper={(patch) => change({ ...book, ...patch })}
+        onSaveKeeper={(patch) => change({ ...book, ...patch, ...(patch?.title && patch.title !== book.title ? { at: new Date().toISOString() } : {}) })}
         onEraseHere={onImport}
         returnTo={path === '/enter' ? undefined : path}
       />

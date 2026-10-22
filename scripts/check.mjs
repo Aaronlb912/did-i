@@ -884,6 +884,18 @@ test('an owned look can be worn again after it leaves the shop', () => {
   assert.ok(body.indexOf('purse.looks.includes(id)') < body.indexOf("miss: 'shop.miss.lookGone'"))
 })
 
+test('sync pass: pulls overlap, iPhone widget reads new taps first, watch taps wait for the shelf', () => {
+  const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
+  const log = read('src/lib/answer-log.js')
+  assert.match(log, /let cursor = overlap\(since\)/, 'the answer pull reaches back past late commits')
+  assert.match(log, /gte\('undone_at', overlap\(since\)\)/)
+  const sync = read('native/widget-sync.js')
+  assert.match(sync, /timelineRead && readTimeline && \(await timelineHasNewTaps\(\)\)\) timelineRead = false/, 'a new tap is read before the timeline is written')
+  assert.match(sync, /if \(Platform\.OS === 'ios' && tapsPending\) return/, 'a pending tap is never drawn over')
+  const app = read('native/NativeApp.jsx')
+  assert.match(app, /if \(!shelf && !\(readShelf\(\)\.boards \|\| \[\]\)\.length\) throw/, 'a watch tap before the shelf loads is retried')
+})
+
 test('widget taps are never lost on the way to the server or the widget', () => {
   const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
   const wcs = read('src/lib/widget-cloud-sync.js')
@@ -1045,6 +1057,25 @@ test('a Did you kept on two phones under two ids keeps the answers from both pho
   assert.deepEqual(won.lamps.map((lamp) => lamp.id), ['a'])
   assert.ok(won.answers.some((item) => item.lampId === 'a' && item.periodKey === '2026-10-01' && item.status === 'yes'))
   assert.ok(!won.answers.some((item) => item.lampId === 'b'))
+})
+
+test('the later edit of a question or folder wins, not the phone that synced last', () => {
+  const q = (extra) => ({ id: 'q1', question: 'Water?', short: 'Water', cadence: 'daily', ...extra })
+  const shelf = (title, lamp, at) => ({ currentId: 'b1', boards: [{ id: 'b1', title, ...(at ? { at } : {}), lamps: [lamp], answers: [] }] })
+  // Phone B paused Q1 and renamed the folder at 9:00 offline. Phone A only opened the app at 9:30.
+  const b = shelf('Morning', q({ archived: true, pausedOn: '2026-10-22', at: '2026-10-22T09:00:00.000Z' }), '2026-10-22T09:00:00.000Z')
+  const a = shelf('Home', q({ at: '2026-10-21T20:00:00.000Z' }), '2026-10-21T20:00:00.000Z')
+  for (const merged of [mergeShelves(a, b, '2026-10-22T09:30:00.000Z', '2026-10-22T09:00:00.000Z'), mergeShelves(b, a, '2026-10-22T09:00:00.000Z', '2026-10-22T09:30:00.000Z')]) {
+    assert.equal(merged.boards[0].lamps[0].archived, true, 'the pause stays')
+    assert.equal(merged.boards[0].title, 'Morning', 'the rename stays')
+  }
+  // A copy with no stamp never beats a stamped one, and a tie keeps the winner.
+  const plain = mergeShelves(shelf('Home', q({ short: 'Plain' })), shelf('Home', q({ short: 'Stamped', at: '2026-10-22T09:00:00.000Z' })), '2026-10-22T09:30:00.000Z', '2026-10-22T09:00:00.000Z')
+  assert.equal(plain.boards[0].lamps[0].short, 'Stamped')
+  // The stamp survives a normalize round trip, and an answer never sets it.
+  const kept = mergeShelves(b, b, '1', '0')
+  assert.equal(kept.boards[0].lamps[0].at, '2026-10-22T09:00:00.000Z')
+  assert.equal(kept.boards[0].at, '2026-10-22T09:00:00.000Z')
 })
 
 test('a buddy taken off stays off when an older copy still wears it', () => {

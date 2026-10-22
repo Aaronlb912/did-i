@@ -91,8 +91,12 @@ export function NativeApp() {
       if (alive) {
         stopWatch = listenForWatchTaps((tap) => {
           const shelf = applyWidgetTapOnce(tap?.id, tap?.answer, tap?.night || '', new Date(), Number(tap?.at) || Date.now())
+          // Shelf not loaded yet at launch: keep the tap for the retry list.
+          if (!shelf && !(readShelf().boards || []).length) throw new Error('shelf not loaded')
           resendWatchCards()
           syncTonightWidget(shelf || readShelf()).catch(() => {})
+          // Now, as for reminder buttons: iOS may suspend the wake before the debounce.
+          if (shelf) armNativePingsNow(shelf.boards || []).catch(() => {})
         }, async () => {
           // Wear OS: the tap is already in the widget tap queue (WatchTapService).
           const { applyPendingAndroidWidgetTap } = await import('./widget-tap.android.js')

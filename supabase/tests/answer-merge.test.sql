@@ -23,5 +23,13 @@ begin
   select status, note into got from public.answer_log where user_id = a and lamp_id = 'q1';
   if got.status <> 'skip' or got.note <> 'tired' then raise exception 'newer tap: % %', got.status, got.note; end if;
 
+  -- A newer tap behind a newer note (answer-split-merge.sql) still wins.
+  perform public.put_answers_as(a, '[{"l":"q2","p":"2026-10-20","s":"yes","a":"2026-10-20T21:00:00Z","n":"","e":""}]');
+  perform public.put_answers_as(a, '[{"l":"q2","p":"2026-10-20","s":"yes","a":"2026-10-20T21:00:00Z","n":"walked","e":"2026-10-20T21:05:00Z"}]');
+  perform public.put_answers_as(a, '[{"l":"q2","p":"2026-10-20","s":"skip","a":"2026-10-20T21:04:00Z","n":"","e":""}]');
+  select status, note into got from public.answer_log where user_id = a and lamp_id = 'q2';
+  if got.status <> 'skip' then raise exception 'a newer tap was refused behind a newer note: %', got.status; end if;
+  if got.note <> 'walked' then raise exception 'the note was lost: %', got.note; end if;
+
   raise exception 'SQL TESTS PASSED';
 end $$;
