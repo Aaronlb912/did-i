@@ -259,7 +259,7 @@ export const weReply = (card, yes) => call('we_reply', { card, yes })
 export const weLeave = (card) => call('we_leave', { card }).then(dropLoaded)
 // Only the maker can close it; the server checks.
 export const weClose = (card) => call('we_close', { card }).then(dropLoaded)
-function dropLoaded(out) {
+export function dropLoaded(out) {
   if (!out.miss) {
     loadedAt = 0
     // No live ping comes for your own leave or end: open screens read now.

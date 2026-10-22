@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { noteSocialLive, onSocialLive } from './social-live.js'
-import { weAskCount } from './did-we.js'
+import { dropLoaded, weAskCount } from './did-we.js'
 import { t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { addDaysIso, boardDate, isoDate } from './recurrence.js'
@@ -1135,7 +1135,11 @@ export async function blockPerson(otherId, why = '') {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const { error } = await db.rpc('block_person', { other: otherId, why })
-  return error ? bad(error) : { miss: '' }
+  if (error) return bad(error)
+  // The server left their shared cards and dropped their sends: show that now.
+  dropLoaded({ miss: '' })
+  refreshPeople()
+  return { miss: '' }
 }
 
 export async function unblockPerson(otherId) {

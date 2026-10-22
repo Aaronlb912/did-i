@@ -1011,6 +1011,12 @@ test('a Did you kept on two phones under two ids keeps the answers from both pho
   assert.ok(!won.answers.some((item) => item.lampId === 'b'))
 })
 
+test('a buddy taken off stays off when an older copy still wears it', () => {
+  const book = (buddyOn) => ({ id: 'b1', title: 'Home', lamps: [], answers: [], buddies: ['frog'], buddyOn })
+  const merged = mergeShelves({ currentId: 'b1', boards: [book('')] }, { currentId: 'b1', boards: [book('frog')] }, '2026-10-22', '2026-10-21')
+  assert.equal(merged.boards[0].buddyOn, '')
+})
+
 test('resuming a paused question does not close the paused days as Not yet', async () => {
   const { catchUpRows } = await import('../src/lib/recurrence.js')
   const q = lamp('a', { cadence: 'daily', createdOn: '2026-10-01', pauses: [['2026-10-10', '2026-10-21']] })
