@@ -50,6 +50,7 @@ public final class WidgetTapStore {
                     if (!"did".equals(mark) || !"nope".equals(existing.optString("kind"))) return KEPT;
                     existing.put("kind", mark);
                     existing.put("at", tappedAt);
+                    if (at > 0) existing.put("sent", at); else existing.remove("sent");
                     return prefs(context).edit().putString(KEY, rows.toString()).commit() ? WROTE : FAILED;
                 }
             }
@@ -61,6 +62,8 @@ public final class WidgetTapStore {
             row.put("night", storedNight);
             // When it was tapped, so JS can drop a tap on a card whose night already turned.
             row.put("at", tappedAt);
+            // The watch's own time, so the taken list it gets back matches its tap.
+            if (at > 0) row.put("sent", at);
             rows.put(row);
             return prefs(context).edit().putString(KEY, rows.toString()).commit() ? WROTE : FAILED;
         } catch (JSONException error) {

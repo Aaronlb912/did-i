@@ -17,6 +17,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets'
 import { SWIPE_THRESHOLD, SWIPE_WAKE } from '../../src/lib/swipe-face.js'
 import { t } from '../../src/lib/i18n.js'
+import { tourActive } from '../lib/tour.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { feelTap } from '../../src/lib/native.js'
 import { useTheme } from '../../src/lib/prefs.js'
@@ -76,6 +77,7 @@ export function SwipeCard({
   cardKey = '',
   head,
   kicker,
+  mark,
   title,
   stampDid,
   stampNope,
@@ -108,6 +110,9 @@ export function SwipeCard({
   const [thrown, setThrown] = useState('')
   const live = useRef(null)
   live.current = { onDid, onNope, blockDid, blockNope }
+  // Two taps before the next render would both answer this card: Did then
+  // Not yet would overwrite the Did. One throw per card until it re-renders.
+  const threw = useRef({ key: '', at: 0 })
 
   // Cards that mount after the first paint come up from one row deeper.
   useEffect(() => {
@@ -117,12 +122,17 @@ export function SwipeCard({
   const tone = gemLook ? gemLookTone(gemLook, theme) : null
   const line = tone?.ring || colors?.line || '#2b3140'
   const glowStyle = gemLook ? gemGlowHostStyle(gemLook, theme) : null
-  const face = { head, kicker, title, stampDid, stampNope, buddy, onEdit, children }
+  const face = { head, kicker, mark, title, stampDid, stampNope, buddy, onEdit, children }
 
   const answer = useCallback(
     (way, from) => {
       const now = live.current
-      if (way > 0 ? now.blockDid : now.blockNope) return
+      // A refused throw reports false, so the card springs back home.
+      if (way > 0 ? now.blockDid : now.blockNope) return false
+      // The tour never answers a question.
+      if (tourActive()) return false
+      if (threw.current.key === cardKey && Date.now() - threw.current.at < 700) return false
+      threw.current = { key: cardKey, at: Date.now() }
       const done = way > 0 ? now.onDid : now.onNope
       lastThrow = { key: cardKey, way, at: Date.now() }
       const host = fly?.host()
@@ -244,6 +254,7 @@ export function SwipeCard({
             onPress={() => tap(-1)}
             disabled={blockNope}
             accessibilityRole="button"
+            accessibilityLabel={`${nopeLabel || stampNope}: ${title}`}
             accessibilityState={{ disabled: blockNope }}
             style={({ pressed }) => [
               styles.answer,
@@ -258,6 +269,7 @@ export function SwipeCard({
             onPress={() => tap(1)}
             disabled={blockDid}
             accessibilityRole="button"
+            accessibilityLabel={`${didLabel || stampDid}: ${title}`}
             accessibilityState={{ disabled: blockDid }}
             style={({ pressed }) => [
               styles.answer,
@@ -306,6 +318,11 @@ function StackCard({
   const grab = useSharedValue(1)
   const height = useSharedValue(0)
   const zone = useSharedValue(0)
+  const throwCard = (way, from) => {
+    if (onAnswer(way, from) !== false) return
+    x.value = withSpring(0, SPRING)
+    y.value = withSpring(0, SPRING)
+  }
   const level = useSharedValue(
     reduce ? depth : returning ? 0 : start !== undefined ? start : enter ? depth + 1 : depth,
   )
@@ -393,7 +410,7 @@ function StackCard({
       pull.value = withTiming(0, { duration: 180 })
       const way = event.canceled ? 0 : releaseWay(x.value, event.velocityX, blockDid, blockNope)
       if (way !== 0) {
-        scheduleOnRN(onAnswer, way, {
+        scheduleOnRN(throwCard, way, {
           x: x.value,
           y: y.value,
           vx: event.velocityX,
@@ -466,7 +483,10 @@ function StackCard({
 
 const styles = StyleSheet.create({
   host: {
-    flex: 1,
+    // Its own height, not flex: 1, so a tall card makes room instead of
+    // spilling over the pills above it.
+    flexGrow: 1,
+    flexShrink: 0,
     width: '100%',
     justifyContent: 'center',
     position: 'relative',

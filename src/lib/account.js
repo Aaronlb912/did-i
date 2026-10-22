@@ -1,3 +1,4 @@
+import { noteSessionUser, readAccountUserId } from './session-id.js'
 import { useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
 import { t } from './i18n.js'
@@ -215,7 +216,11 @@ export async function signOutEverywhere() {
   await Promise.all([dropPushToken(), dropAllPushTokens(), endAnswerKeys(null)])
   // The server has to end the other sessions; if it could not, say so.
   const { error } = await db.auth.signOut({ scope: 'global' })
-  if (error) throw error
+  if (error) {
+    // Still signed in here: put this phone's push token back, or its pushes stop.
+    await import('./push.js').then(({ syncPushTokenIfAllowed }) => syncPushTokenIfAllowed()).catch(() => {})
+    throw error
+  }
   saveTogetherPeople([])
   forgetAccountCaches()
   forgetPendingLinks()
@@ -227,10 +232,11 @@ export async function signOutEverywhere() {
 export async function deleteAccount() {
   const db = cloud()
   if (!db) return { miss: 'off' }
-  // Photo files live in storage, which delete_me cannot reach; take them first.
-  await removeAvatar().catch(() => {})
   const { error } = await db.rpc('delete_me')
   if (error) return { miss: error.message }
+  // Only once the delete went through: a failed delete keeps its photo.
+  // delete_me tries storage too; this catches what it missed.
+  await removeAvatar().catch(() => {})
   // The account's keys went with it (cascade); take this phone's copy too.
   await endAnswerKeys(null)
   await db.auth.signOut()
@@ -263,18 +269,23 @@ export function useAccount() {
     const db = cloud()
     if (!db) return undefined
     let alive = true
+    // A failed refresh offline is not a sign out: keep the account we knew.
+    // Only SIGNED_OUT below clears it.
+    const keep = () => lastUser || (readAccountUserId() ? { id: readAccountUserId() } : null)
     db.auth.getSession().then(
-      ({ data }) => {
-        lastUser = data?.session?.user || null
+      ({ data, error }) => {
+        lastUser = data?.session?.user || (error ? keep() : null)
+        noteSessionUser(lastUser?.id)
         if (alive) setState((was) => (was.ready && was.user?.id === lastUser?.id ? was : { ready: true, user: lastUser }))
       },
       () => {
-        lastUser = null
-        if (alive) setState({ ready: true, user: null })
+        lastUser = keep()
+        if (alive) setState({ ready: true, user: lastUser })
       },
     )
     const { data: sub } = db.auth.onAuthStateChange((_event, session) => {
       lastUser = session?.user || null
+      noteSessionUser(lastUser?.id)
       if (alive) setState((was) => (was.ready && was.user?.id === lastUser?.id ? was : { ready: true, user: lastUser }))
     })
     return () => {

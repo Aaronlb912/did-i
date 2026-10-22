@@ -44,7 +44,7 @@ export function Boards({
       return
     }
     setAddMiss('')
-    onChange({ ...book, title })
+    onChange({ ...book, title, at: new Date().toISOString() })
   }
 
   const live = (boards || []).filter((item) => !item.archived)

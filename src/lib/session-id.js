@@ -19,6 +19,13 @@ export function writeAccountUserId(id) {
   }
 }
 
+// The live session's user: a Did before the first sync stores the id is not paid on the phone.
+let sessionUser = ''
+
+export function noteSessionUser(id) {
+  sessionUser = id || ''
+}
+
 export function accountSessionOn() {
-  return cloudSetUp() && Boolean(readAccountUserId())
+  return cloudSetUp() && Boolean(readAccountUserId() || sessionUser)
 }

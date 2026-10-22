@@ -18,12 +18,13 @@ import {
   saveLinkFriend,
 } from '../../src/lib/did-you-links.js'
 import { t } from '../../src/lib/i18n.js'
+import { readShelf } from '../../src/lib/board-shelf.js'
 import { readMine } from '../../src/lib/people.js'
 import { refreshWeNights } from '../../src/lib/we-nights.js'
 import { goHash } from '../navigation/hash.js'
 import { showToast } from '../lib/toast-queue.js'
 import { nameFirst } from './NameFirstSheet.jsx'
-import { publishSheet } from './SheetHost.jsx'
+import { publishSheet, sheetIsUp, whenNoSheet } from './SheetHost.jsx'
 
 // Shown once each: what happens after the first Did you kept from a link,
 // and after the first Did we joined from one.
@@ -75,8 +76,19 @@ export function DidYouLinkHost({ colors, onKeep }) {
   useEffect(() => {
     // Until the session is read, signed in looks like signed out.
     if (!account.ready) return undefined
-    const code = peekPendingDidYou()
+    // A Did we link waits for sign-in; a Did you link behind it still opens.
+    const code = peekPendingDidYou(userId ? null : isWeLinkCode)
     if (!code) return undefined
+    // Another sheet is open (an earlier link, the tour, a buy): wait for it, never replace it.
+    if (sheetIsUp()) {
+      let waiting = true
+      whenNoSheet().then(() => {
+        if (waiting) setTick((n) => n + 1)
+      })
+      return () => {
+        waiting = false
+      }
+    }
     const we = isWeLinkCode(code)
     if (we && !userId) {
       // Kept until they sign in. Asked once; Not now only closes the sheet, the link still runs after sign-in.
@@ -197,7 +209,10 @@ export function DidYouLinkHost({ colors, onKeep }) {
         // Signed in with no name: ask for one, or keep it without the request.
         // Signed out, the request waits for sign-in and is retried until it goes.
         const addFriend = wantsFriend && (!userId || (await nameFirst(colors)))
-        const ids = keep.current({ question: found.question, person: { display_name: name } }) || []
+        // The same link opened twice: point at the copy already kept, not a second one.
+        const want = String(found.question || '').trim()
+        const had = (readShelf().boards || []).flatMap((book) => book.lamps || []).find((lamp) => !lamp.archived && String(lamp.question || '').trim() === want)
+        const ids = had ? [had.id] : keep.current({ question: found.question, person: { display_name: name } }) || []
         saveDidYouClaim(code)
         if (addFriend) {
           if (userId) {

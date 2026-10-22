@@ -11,7 +11,7 @@ alter table public.profiles add constraint profiles_frame_on_ok
     'polaroid', 'wood', 'flowers', 'comic', 'moon', 'filigree', 'deco', 'marble', 'glow',
     'silver', 'neon', 'fireflies', 'shoot', 'glass', 'gold', 'const', 'ring', 'aurora',
     'vine', 'ember', 'gems', 'frost', 'bloom', 'web', 'leaves', 'snow', 'sakura', 'bday',
-    'ticket', 'notebook', 'postage', 'bamboo', 'chalk', 'quilt', 'rope', 'street', 'lights', 'train', 'garden', 'dusk', 'globe', 'doodle', 'swipe', 'hearts', 'clover', 'fireworks', 'sunny', 'royal', 'wrapped', 'galaxy', 'neonheart', 'storm', 'linked', 'bedtime', 'countdown', 'knit', 'window', 'candles', 'ginger', 'snowman', 'solstice', 'mosaic', 'domino', 'fresh', 'origami', 'aquarium', 'books', 'lace', 'boats', 'thaw', 'fullhouse', 'orchard', 'hundred'));
+    'ticket', 'notebook', 'postage', 'bamboo', 'chalk', 'quilt', 'rope', 'street', 'lights', 'train', 'garden', 'dusk', 'globe', 'doodle', 'swipe', 'hearts', 'clover', 'fireworks', 'sunny', 'royal', 'wrapped', 'galaxy', 'neonheart', 'storm', 'linked', 'bedtime', 'countdown', 'knit', 'window', 'candles', 'ginger', 'snowman', 'solstice', 'mosaic', 'domino', 'fresh', 'origami', 'aquarium', 'books', 'lace', 'boats', 'thaw', 'pumpkins', 'fullhouse', 'orchard', 'hundred'));
 alter table public.profiles drop constraint if exists profiles_look_on_ok;
 alter table public.profiles add constraint profiles_look_on_ok
   check (look_on ~ '^[a-z0-9-]{1,24}$') not valid;

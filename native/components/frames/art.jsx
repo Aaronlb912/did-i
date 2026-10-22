@@ -56,6 +56,7 @@ import { GingerOver, SnowmanOver, SolsticeOver } from './art-2026-12-18.jsx'
 import { DominoOver, FreshOver, FreshUnder, MosaicOver } from './art-2027-01-01.jsx'
 import { AquariumOver, AquariumUnder, BooksOver, OrigamiOver } from './art-2027-01-15.jsx'
 import { BoatsOver, LaceUnder, ThawOver } from './art-2027-01-29.jsx'
+import { PumpkinsOver, PumpkinsUnder } from './art-2026-10-28.jsx'
 import { FullhouseOver, FullhouseUnder, HundredOver, OrchardOver } from './art-2026-11-06.jsx'
 
 const { withTiming } = Reanimated
@@ -1682,6 +1683,7 @@ export const FRAME_ART = {
   lace: { under: LaceUnder },
   boats: { over: BoatsOver, animated: true },
   thaw: { over: ThawOver, animated: true },
+  pumpkins: { under: PumpkinsUnder, over: PumpkinsOver, animated: true },
   fullhouse: { under: FullhouseUnder, over: FullhouseOver },
   orchard: { over: OrchardOver, animated: true },
   hundred: { over: HundredOver, animated: true },

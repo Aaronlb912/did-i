@@ -67,11 +67,20 @@ object CardStore {
     val items = incoming.optJSONArray("items") ?: JSONArray()
     // Sent by the phone after it had the tap: the phone's word wins (an undo).
     val builtAt = incoming.optLong("at", 0L)
+    // Newer phones list the taps (by at) they have saved or turned down. Then
+    // only that list, or an answer on the card, lets a tap go, so cards built
+    // before the phone had the tap cannot flip it back to open.
+    val taken = incoming.optJSONArray("taken")
     val keep = JSONArray()
     for (t in 0 until taps.length()) {
       val tap = taps.optJSONObject(t) ?: continue
-      val sentAt = tap.optLong("sentAt", 0L)
-      if (sentAt > 0L && builtAt > sentAt) continue
+      if (taken != null) {
+        val at = tap.optLong("at", 0L)
+        if (at > 0L && (0 until taken.length()).any { taken.optLong(it) == at }) continue
+      } else {
+        val sentAt = tap.optLong("sentAt", 0L)
+        if (sentAt > 0L && builtAt > sentAt) continue
+      }
       var stillOpen = false
       for (i in 0 until items.length()) {
         val item = items.optJSONObject(i) ?: continue

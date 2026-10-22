@@ -4,6 +4,8 @@ import { setAnswerKeyStore } from '../src/lib/answer-key.js'
 import { pullAndMerge } from '../src/lib/cloud-sync.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { refreshTogether } from '../src/lib/people.js'
+import { saveWeReminders, weTonight } from '../src/lib/did-we.js'
+import { armLampPings } from '../src/lib/notify.js'
 import { syncTogetherWidget, syncTonightWidget } from './widget-sync.js'
 
 // Answers made away from the app.
@@ -56,6 +58,9 @@ export function runWake(ms = 20000) {
       await syncTonightWidget(shelf)
       await refreshTogether().catch(() => {})
       await syncTogetherWidget()
+      // A Did we answered on another phone: drop today's reminder here too.
+      const we = await weTonight().catch(() => ({ miss: 'off' }))
+      if (!we.miss && saveWeReminders(we.cards)) await armLampPings(readShelf().boards).catch(() => {})
     } catch {
       // The next open pulls anyway.
     }

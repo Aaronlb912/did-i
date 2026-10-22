@@ -16,7 +16,7 @@ import { t } from './i18n.js'
 import { lastTimeLine } from './every-copy.js'
 import { gentleOn } from './prefs.js'
 import { alignShelfPurse, normalizePurse, spreadPurseFrom } from './purse.js'
-import { readWeLine, readWeOpen } from './we-widget.js'
+import { readWeLine, readWeOpen, skipWePing } from './we-widget.js'
 import {
   answerFor,
   boardDate,
@@ -29,6 +29,8 @@ import {
   openFloorIso,
   graceFirst,
   graceNightIso,
+  isDueOn,
+  isEvery,
 } from './recurrence.js'
 import { nightEnd } from './daily.js'
 import { clockWords } from './hall-pages.js'
@@ -166,9 +168,11 @@ export function preferStoredTonightProps(built, stored) {
   const builtStatus = new Map(
     (built.items || []).map((item) => [`${item.lampId}|${item.periodKey}`, item.status]),
   )
+  // So is an open question the shelf no longer offers (deleted, or
+  // yesterday's grace ended).
   const stale = stored.items.some((item) => {
-    const now = builtStatus.get(`${item.lampId}|${item.periodKey}`)
-    return item.status === 'open' && now && now !== 'open'
+    if (item.status !== 'open') return false
+    return builtStatus.get(`${item.lampId}|${item.periodKey}`) !== 'open'
   })
   if (stale || widgetOpenCount(stored) <= widgetOpenCount(built)) {
     // Keep the question the person browsed to with Next while it is still open.
@@ -387,7 +391,7 @@ export function peekNextTonightCard(props, dir = 1) {
 
 // Each item answers on whichever tag its own lamp lives on, since the card
 // mixes questions from every tag now.
-export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
+export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date(), unmatched = null) {
   if (!props?.items?.length) return shelf
   // Each answer pays into the shared purse the one before it left.
   let boards = alignShelfPurse(shelf).boards
@@ -407,7 +411,11 @@ export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
       continue
     }
     const book = findBookHoldingLamp(boards, item.lampId)
-    if (!book) continue
+    if (!book) {
+      // Not on the shelf yet: the caller keeps this tap pending.
+      if (unmatched) unmatched.push(item)
+      continue
+    }
     const nextBook = applyItemStatus(book, item, item.status, clock)
     if (nextBook === book) continue
     boards = spreadPurseFrom({ ...shelf, boards: boards.map((b) => (b.id === nextBook.id ? nextBook : b)) }, nextBook).boards
@@ -430,7 +438,11 @@ function rowForStoredNight(book, lampId, night, clock) {
   if (!stored) {
     return dueTonight(book, clock).find((row) => row.lamp.id === lampId) || null
   }
-  const dateIso = /^\d{4}-\d{2}-\d{2}$/.test(stored) ? stored : boardDate(clock)
+  const plain = /^\d{4}-\d{2}-\d{2}$/.test(stored)
+  // An old watch or widget card can name a day the question is no longer
+  // due on (its schedule changed): that tap is refused, not saved and paid.
+  if (plain && !isEvery(lamp) && !isDueOn(lamp, stored)) return null
+  const dateIso = plain ? stored : boardDate(clock)
   return {
     lamp,
     dateIso,
@@ -458,6 +470,7 @@ function applyWeTap(card, status, clock, cardNight = '', tapAt = 0) {
   // A Did already saved for that night is not turned into Not yet by an old card.
   if (status !== 'yes' && weNightStatus(night, card) === 'did') return null
   markWeNight(card, night, status === 'yes' ? 'did' : 'nope')
+  if (status === 'yes') skipWePing(card, night)
   const shelf = readShelf()
   const previous = readWidgetTonightProps()
   const props = buildTonightWidgetProps(shelf, clock)
@@ -536,7 +549,8 @@ export function parseWidgetTapQueue(raw) {
         night: String(row.night || '').trim(),
       }
       const at = Math.floor(Number(row.at) || 0)
-      return at > 0 ? { ...tap, at } : tap
+      const sent = Math.floor(Number(row.sent) || 0)
+      return { ...tap, ...(at > 0 ? { at } : {}), ...(sent > 0 ? { sent } : {}) }
     })
     .filter((row) => row.lampId && (row.kind === 'did' || row.kind === 'nope'))
 }
@@ -546,14 +560,17 @@ export function parseWidgetTapQueue(raw) {
 export function applyWidgetTapsOnce(taps, clock = new Date()) {
   let shelf = null
   const failed = []
+  let refused = 0
   for (const tap of taps || []) {
     try {
-      shelf = applyWidgetTapOnce(tap.lampId, tap.kind, tap.night, clock, tap.at) || shelf
+      const next = applyWidgetTapOnce(tap.lampId, tap.kind, tap.night, clock, tap.at)
+      if (!next) refused += 1
+      shelf = next || shelf
     } catch {
       failed.push(tap)
     }
   }
-  return { shelf, failed }
+  return { shelf, failed, refused }
 }
 
 // `night` comes from the tapped card (did:<lampId>|<periodKey>). Old targets
@@ -583,6 +600,9 @@ export function recordWidgetAnswer(lampId, kind, clock = new Date(), night = '')
   if (!row) return null
   // A card left over from a night that has closed must not write to it.
   if (!rows.includes(row) && periodPassed(row.lamp, row.periodKey, openFloorIso(clock))) return null
+  // A widget that had not redrawn can still show a card answered in the app:
+  // a Not yet can turn into a Did, nothing else changes a set answer.
+  if (row.answer && !(row.answer.status === 'skip' && status === 'yes')) return null
   const finalStatus = status === 'yes' ? didStatusForRow(row) : status
   const nextBook = putAnswer(book, row, finalStatus, clock)
   if (nextBook === book) return null
@@ -618,5 +638,7 @@ export function handleAndroidWidgetClick(clickAction, clickActionData) {
   const kind = String(clickActionData?.kind || '').trim()
   const night = String(clickActionData?.night || '').trim()
   if (!lampId || (kind !== 'did' && kind !== 'nope')) return null
-  return applyWidgetTapOnce(lampId, kind, night, new Date(), Date.now())
+  // No tap time reaches this fallback, and the cold start can land after
+  // midnight: 0 lets tapClock place the answer on the card's own night.
+  return applyWidgetTapOnce(lampId, kind, night, new Date(), 0)
 }

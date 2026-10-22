@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { needsName, saveName } from '../../src/lib/people.js'
 import { DidButton, Field } from './ui.jsx'
-import { publishSheet } from './SheetHost.jsx'
+import { currentSheet, onSheetUp, publishSheet } from './SheetHost.jsx'
 
 function NameFirst({ colors, goLabel, onSaved }) {
   const [name, setName] = useState('')
@@ -45,7 +45,8 @@ function NameFirst({ colors, goLabel, onSaved }) {
 export async function nameFirst(colors, copy = {}) {
   if (!(await needsName().catch(() => false))) return true
   return new Promise((resolve) => {
-    publishSheet({
+    let off = () => {}
+    const sheet = {
       kicker: copy.kicker ?? t('friendAsk.kicker'),
       title: copy.title ?? t('friendAsk.nameTitle'),
       body: copy.body ?? t('friendAsk.nameFirst'),
@@ -54,6 +55,7 @@ export async function nameFirst(colors, copy = {}) {
           colors={colors}
           goLabel={copy.go ?? t('friendAsk.saveSend')}
           onSaved={() => {
+            off()
             publishSheet(null)
             resolve(true)
           }}
@@ -62,9 +64,17 @@ export async function nameFirst(colors, copy = {}) {
       closeLabel: copy.back ?? t('friendAsk.dontSend'),
       colors,
       onClose: () => {
+        off()
         publishSheet(null)
         resolve(false)
       },
+    }
+    publishSheet(sheet)
+    // Replaced by another sheet: settle as backed out, so the caller is not left waiting.
+    off = onSheetUp(() => {
+      if (currentSheet() === sheet) return
+      off()
+      resolve(false)
     })
   })
 }

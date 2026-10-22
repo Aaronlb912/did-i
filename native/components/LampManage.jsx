@@ -50,17 +50,23 @@ function runStops(ids) {
   for (const id of drop) {
     dropCheckOn(id)
       .then((out) => {
-        if (out?.miss === 'people.reach') retry(id)
+        if (out?.miss === 'people.reach' || out?.miss === 'out') retry(id)
         else if (out?.miss) confirmMiss(tMiss(out.miss))
       })
       .catch(() => retry(id))
   }
 }
 
-export function stopCheckOns(lampIds) {
+// later: the caller runs flushCheckOnStops when its own undo window ends.
+export function stopCheckOns(lampIds, later = false) {
   const ids = [].concat(lampIds).map(String)
   writeStops([...new Set([...readStops(), ...ids])])
-  setTimeout(() => runStops(ids), DELETE_UNDO_MS + 500)
+  if (!later) setTimeout(() => runStops(ids), DELETE_UNDO_MS + 500)
+  return ids
+}
+
+export function flushCheckOnStops(ids) {
+  if (ids?.length) runStops(ids)
 }
 
 // On start, after sign in: the undo window is long over.

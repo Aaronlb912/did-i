@@ -37,7 +37,9 @@ const admin = createClient(
 
 // owner: the account id the app set on the buy (appAccountToken / obfuscatedExternalAccountId).
 // Empty on buys made before the app set it. boughtAt: ms since 1970, 0 when the store left it out.
-type Verified = { ok: true; ref: string; test: boolean; owner: string; boughtAt: number } | { ok: false; miss: string }
+type Verified =
+  | { ok: true; ref: string; test: boolean; owner: string; boughtAt: number; ack?: () => Promise<unknown> }
+  | { ok: false; miss: string }
 
 // A buy with no owner could be claimed by any account that learns its id,
 // so only buys from before every build set the owner may still go without.
@@ -173,6 +175,15 @@ async function verifyPlay(productId: string, purchaseToken: string): Promise<Ver
     test: info.purchaseType === 0,
     owner: String(info.obfuscatedExternalAccountId || ''),
     boughtAt: Number(info.purchaseTimeMillis) || 0,
+    // 0 not acknowledged yet. Google refunds a buy left that way for 3 days.
+    ack:
+      info.acknowledgementState === 0
+        ? () => fetch(`${url}:acknowledge`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${access_token}` },
+            signal: AbortSignal.timeout(3000),
+          })
+        : undefined,
   }
 }
 
@@ -243,5 +254,8 @@ Deno.serve(async (req) => {
 
   // Twenty packs a day (cap_gem_purchases): the buy stays open on the phone for tomorrow.
   if (error) return /gem purchase cap/.test(error.message || '') ? json({ miss: 'tooMany' }, 429) : json({ miss: 'miss' }, 500)
+  // Recorded, so Google may keep it even if this phone never opens the app
+  // again. The phone still consumes it; a failed ack here changes nothing.
+  if (verified.ack) await verified.ack().catch(() => {})
   return json({ ok: true, pack: packId, gems: pack.gems })
 })

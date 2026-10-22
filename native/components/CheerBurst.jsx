@@ -36,6 +36,14 @@ import {
   CRACKLE_PATH,
   DISCO_COLORS,
   DISCO_LATS,
+  GHOST_BODY,
+  GHOST_COLORS,
+  GHOST_EYES,
+  GHOST_KEYS,
+  GHOST_MOUTH,
+  GHOST_MS,
+  GHOST_SPARK,
+  GHOST_VIEW,
   GIFT_BAND,
   GIFT_BOW,
   GIFT_BOX,
@@ -2507,6 +2515,88 @@ function RubberBall({ delay, x, len, fall, size, color, ink }) {
   )
 }
 
+// Boo: a sheet ghost pops up with a dip, overshoots, wobbles and floats away
+// (web .di-ghost, same GHOST_KEYS).
+const GHOST_T = GHOST_KEYS.map((k) => k[0])
+
+function Ghost({ delay, x, y, size, swing }) {
+  const progress = useLinear(delay, GHOST_MS)
+  const h = remPx(size || '3')
+  const w = h * 0.8
+  const dir = swing < 0 ? -1 : 1
+  const at = (f) => progress.interpolate({ inputRange: GHOST_T, outputRange: GHOST_KEYS.map((k) => f(k)) })
+  const translateX = at((k) => k[2] * w * dir)
+  const translateY = at((k) => k[1] * h)
+  const rotate = progress.interpolate({ inputRange: GHOST_T, outputRange: GHOST_KEYS.map((k) => `${k[3] * dir}deg`) })
+  const scaleX = at((k) => k[4])
+  const scaleY = at((k) => k[5])
+  const opacity = at((k) => k[6])
+  const parts = svgParts()
+  const glow = h * 1.7
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{ position: 'absolute', left: remPx(x) - w / 2, top: -h + remPx(y || '0'), width: w, height: h, opacity, transformOrigin: 'bottom', transform: [{ translateX }, { translateY }, { rotate }, { scaleX }, { scaleY }] }}
+    >
+      <View style={{ position: 'absolute', left: (w - glow) / 2, top: (h - glow) / 2, width: glow, height: glow, borderRadius: glow / 2, backgroundColor: GHOST_COLORS.glow, opacity: 0.1 }} />
+      <View style={{ position: 'absolute', left: (w - glow * 0.7) / 2, top: (h - glow * 0.7) / 2, width: glow * 0.7, height: glow * 0.7, borderRadius: glow * 0.35, backgroundColor: GHOST_COLORS.glow, opacity: 0.16 }} />
+      {parts ? (
+        <parts.Svg width={w} height={h} viewBox={GHOST_VIEW}>
+          <parts.Path d={GHOST_BODY} fill={GHOST_COLORS.body} stroke={GHOST_COLORS.rim} strokeWidth={1.3} strokeLinejoin="round" />
+          {GHOST_EYES.map(([cx, cy, rx, ry], i) => (
+            <parts.Ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} fill={GHOST_COLORS.ink} />
+          ))}
+          <parts.Ellipse cx={GHOST_MOUTH[0]} cy={GHOST_MOUTH[1]} rx={GHOST_MOUTH[2]} ry={GHOST_MOUTH[3]} fill={GHOST_COLORS.ink} />
+        </parts.Svg>
+      ) : (
+        <View style={{ width: w, height: h, borderRadius: w / 2, backgroundColor: GHOST_COLORS.body, borderWidth: 1, borderColor: GHOST_COLORS.rim }} />
+      )}
+    </Animated.View>
+  )
+}
+
+function GhostSpark({ delay, x, y, size }) {
+  const progress = useLinear(delay, 1100)
+  const px = remPx(size || '0.7')
+  const bx = remPx(x)
+  const by = remPx(y)
+  const scale = progress.interpolate({ inputRange: [0, 0.3, 0.6, 1], outputRange: [0, 1.2, 0.8, 0] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.01, 0.6, 1], outputRange: [0, 1, 1, 0] })
+  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [by, by - remPx('0.8')] })
+  const rotate = progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '110deg'] })
+  const parts = svgParts()
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{ position: 'absolute', left: bx - px / 2, top: -px / 2, width: px, height: px, opacity, transform: [{ translateY }, { rotate }, { scale }] }}
+    >
+      {parts ? (
+        <parts.Svg width={px} height={px} viewBox="0 0 12 12">
+          <parts.Path d={GHOST_SPARK} fill={GHOST_COLORS.spark} stroke="#ffffff" strokeWidth={0.8} strokeLinejoin="round" />
+        </parts.Svg>
+      ) : (
+        <View style={{ width: px, height: px, borderRadius: px / 2, backgroundColor: GHOST_COLORS.spark }} />
+      )}
+    </Animated.View>
+  )
+}
+
+function Wisp({ delay, x, y, rise, size }) {
+  const progress = useLinear(delay, 1100)
+  const px = remPx(size || '0.7')
+  const bx = remPx(x)
+  const by = remPx(y)
+  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1.5] })
+  const opacity = progress.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 0.95, 0] })
+  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [by, by - remPx(rise)] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{ position: 'absolute', left: bx - px / 2, top: -px / 2, width: px, height: px, borderRadius: px / 2, backgroundColor: GHOST_COLORS.body, borderWidth: 1.5, borderColor: GHOST_COLORS.rim, opacity, transform: [{ translateY }, { scale }] }}
+    />
+  )
+}
+
 function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   if (bit.screen && !screen) return null
   if (!bit.screen && screen) return null
@@ -2692,6 +2782,9 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
   if (bit.butterfly) {
     return <Butterfly delay={delay} x={bit.x} y={bit.y} size={bit.size} turn={bit.turn} color={paintColor(bit.tone, colors)} ink={colors.ink} />
   }
+  if (bit.ghost) return <Ghost delay={delay} x={bit.x} y={bit.y} size={bit.size} swing={bit.swing} />
+  if (bit.ghostSpark) return <GhostSpark delay={delay} x={bit.x} y={bit.y} size={bit.size} />
+  if (bit.wisp) return <Wisp delay={delay} x={bit.x} y={bit.y} rise={bit.rise} size={bit.size} />
   if (bit.rubberBall) {
     return <RubberBall delay={delay} x={bit.x} len={bit.len} fall={bit.fall} size={bit.size} color={paintColor(bit.tone, colors)} ink={colors.ink} />
   }

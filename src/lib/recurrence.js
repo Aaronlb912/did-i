@@ -103,6 +103,7 @@ export function lastDayOfMonth(year, monthIndex) {
 export function periodKeyFor(lamp, dateIso) {
   const date = parseIsoDate(dateIso)
   if (!date) return ''
+  lamp = scheduleAt(lamp, dateIso)
   if (lamp.cadence === 'monthly') {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`
   }
@@ -118,14 +119,58 @@ export function periodPassed(lamp, periodKey, todayIso) {
     const day = String((lamp.onceWhen === 'by' ? lamp.dueBy : lamp.onceOn) || lamp.createdOn || '').trim()
     return /^\d{4}-\d{2}-\d{2}$/.test(day) && day < todayIso
   }
-  if (lamp.cadence === 'monthly') return periodKey < todayIso.slice(0, 7)
+  // By the key's shape, not today's schedule: a day kept from before a switch
+  // to monthly is still a day, and this month's key is still open.
+  if (periodKey.length === 7) return periodKey < todayIso.slice(0, 7)
   return periodKey < todayIso
+}
+
+// A repeating question keeps the schedules it had before an edit (was), so
+// changing Mondays to daily does not make every past day a miss.
+// was is oldest first; until is the first day of the next schedule.
+export const WAS_KEEP = 4
+const WAS_CADENCES = new Set(['daily', 'weekly', 'monthly', 'every_n'])
+const WAS_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor']
+
+export function scheduleAt(lamp, dateIso) {
+  const was = lamp?.was
+  if (!was || !was.length || !(dateIso < was[was.length - 1].until)) return lamp
+  for (const old of was) if (dateIso < old.until) return { ...lamp, ...old, was: null }
+  return lamp
+}
+
+// The was list for an edit made today: old's schedule holds until today.
+export function keepPastSchedule(old, next, todayIso, answeredToday = false) {
+  const was = Array.isArray(old?.was) ? old.was : []
+  // Every so often and once keep the history: an edit back must not lose it.
+  if (!WAS_CADENCES.has(next.cadence) && !was.length && !WAS_CADENCES.has(old?.cadence)) return []
+  // Every so often has no missed days: before the edit, past days stay not due.
+  // A one-time question made repeating is the same: no past day became a miss.
+  if (!old || !(WAS_CADENCES.has(old.cadence) || old.cadence === 'every' || old.cadence === 'once')) return was
+  if (!old.createdOn || old.createdOn >= todayIso) return was
+  if (WAS_FIELDS.every((key) => JSON.stringify(old[key] ?? '') === JSON.stringify(next[key] ?? ''))) return was
+  // Edited twice today: the first edit's old schedule is the one past days had.
+  if (was.length && was[was.length - 1].until >= todayIso) return was
+  // Daily to monthly (or back) changes today's key from the day to the month,
+  // so today's answer would be left behind. Today keeps the old schedule.
+  // So does today's answer when the new days leave today out.
+  const reshaped = (old.cadence === 'monthly') !== (next.cadence === 'monthly') || (answeredToday && !isDueOn({ ...next, was: null, archived: false }, todayIso))
+  const entry = { until: reshaped && isDueOn({ ...old, archived: false }, todayIso) ? addDaysIso(todayIso, 1) : todayIso }
+  for (const key of WAS_FIELDS) entry[key] = old[key] ?? ''
+  if (old.cadence === 'once') entry.cadence = 'every'
+  return [...was, entry].slice(-WAS_KEEP)
+}
+
+// A day inside a pause since resumed ([from, until) pairs on lamp.pauses).
+export function inPause(lamp, iso) {
+  return Boolean(lamp?.pauses?.some(([from, until]) => iso >= from && iso < until))
 }
 
 export function isDueOn(lamp, dateIso) {
   if (!lamp || lamp.archived) return false
   const date = parseIsoDate(dateIso)
   if (!date) return false
+  if (lamp.was) lamp = scheduleAt(lamp, dateIso)
   switch (lamp.cadence) {
     case 'daily':
       return true
@@ -354,9 +399,15 @@ export function askAfterPassed(lamp, now = new Date()) {
 
 export function previousDueDate(lamp, dateIso) {
   if (!lamp || lamp.cadence === 'once' || isEvery(lamp)) return ''
-  for (let i = 1; i <= 62; i += 1) {
+  // Every 90 days needs a look back of 90, not 62, including a past schedule.
+  const gap = (one) => (one?.cadence === 'every_n' ? Number(one.everyN) || 0 : 0)
+  const back = Math.max(62, gap(lamp), ...(lamp.was || []).map(gap))
+  // A monthly day moved later can be due twice in one month: one key, one day.
+  // Only from a due day: mid-month, this month's earlier due day is the one.
+  const month = isDueOn(lamp, dateIso) ? periodKeyFor(lamp, dateIso) : ''
+  for (let i = 1; i <= back; i += 1) {
     const iso = addDaysIso(dateIso, -i)
-    if (isDueOn(lamp, iso)) return iso
+    if (isDueOn(lamp, iso) && !(month.length === 7 && iso.startsWith(month))) return iso
   }
   return ''
 }
@@ -371,7 +422,7 @@ export function catchUpRows(book, now = new Date(), skipped = null) {
     let prevIso = previousDueDate(lamp, dateIso)
     for (let step = 0; skipped && prevIso && skipped(prevIso) && step < 3; step += 1) prevIso = previousDueDate(lamp, prevIso)
     if (prevIso && skipped && skipped(prevIso)) continue
-    if (!prevIso) continue
+    if (!prevIso || inPause(lamp, prevIso)) continue
     if (lamp.createdOn && prevIso < lamp.createdOn) continue
     const periodKey = periodKeyFor(lamp, prevIso)
     if (answerFor(book, lamp.id, periodKey)) continue
@@ -458,12 +509,18 @@ function doneOtherNight(row) {
   return Boolean(done) && done !== row.dateIso
 }
 
+// Counts only once you said Did: a question put on your tonight for you, or one
+// someone sent you (Not yet or no answer is like a night with nothing due).
+export function countsOnlyOnDid(lamp) {
+  return Boolean(lamp?.optional || lamp?.fromDidYou)
+}
+
 export function countedTonightRows(rows) {
   return (rows || []).filter(
     (row) =>
       !row?.lamp?.fromDidI &&
       !doneOtherNight(row) &&
-      ((!row?.lamp?.optional && !isEvery(row?.lamp)) || rowDoneTonight(row)) &&
+      ((!countsOnlyOnDid(row?.lamp) && !isEvery(row?.lamp)) || rowDoneTonight(row)) &&
       (mustSwipeDeadline(row.lamp, row.dateIso) || rowDoneTonight(row)),
   )
 }
@@ -539,6 +596,8 @@ export function recentPeriodKeys(lamp, dateIso, count = 7) {
       const next = new Date(date.getFullYear(), date.getMonth() - i, 1)
       const key = `${next.getFullYear()}-${pad(next.getMonth() + 1)}`
       if (createdMonth && key < createdMonth) continue
+      // A month that ended before it turned monthly was asked by day, not by month.
+      if (`${key}-31` < (lamp.was?.[lamp.was.length - 1]?.until || '') && scheduleAt(lamp, `${key}-01`).cadence !== 'monthly') continue
       keys.push(key)
     }
     return keys

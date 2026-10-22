@@ -8,7 +8,7 @@ import { takeBackAnswer } from './answer-log.js'
 import { reportRejection } from './report.js'
 import { markedToast } from './pill-status.js'
 import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
-import { deliverStreakHit, maybeStreakHit } from './streak-moments.js'
+import { clearStreakSeen, deliverStreakHit, maybeStreakHit } from './streak-moments.js'
 import { clockWords } from './hall-pages.js'
 import { feelTap, playClick } from './native.js'
 import {
@@ -307,9 +307,16 @@ export function useTonightStack({
 
   function applyUndo() {
     if (!undo) return
-    const next = undoneBook(shelf.find((item) => item.id === undo.book.id) || undo.book, undo)
+    const current = shelf.find((item) => item.id === undo.book.id) || undo.book
+    const next = undoneBook(current, undo)
+    // Reopening a cleared day: a real clear later plays the streak moment again.
+    if (allClearTonight(current, clock) && !allClearTonight(next, clock)) clearStreakSeen('hit', dateIso)
     setOverlay(next)
     change(next)
+    // The card you took back comes to the front, not the one after it.
+    setFaceId(undo.lampId)
+    setSkipReview(false)
+    setRestNight(false)
     // The tap may already be on the account; without this the next pull brings it back.
     takeBackAnswer(undo.book, undo.lampId, undo.periodKey).catch(reportRejection('undo-answer'))
     setUndo(null)

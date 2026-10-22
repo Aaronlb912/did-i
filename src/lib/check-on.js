@@ -225,13 +225,14 @@ export async function followCheckOn(before, after) {
 /**
  * Stops your check-on for one question, if there is one: after a delete,
  * pause or stop, so the friend is not pushed about a question you dropped.
- * With no cloud or no session there is nothing on the server to stop.
+ * With no cloud there is nothing on the server to stop. With no session it
+ * returns out, so the caller keeps it and tries again after sign in.
  */
 export async function dropCheckOn(lampId) {
   const db = cloud()
   if (!db || lampId == null) return { miss: '' }
   const user = await me(db)
-  if (!user) return { miss: '' }
+  if (!user) return { miss: 'out' }
   const { error } = await db.from('check_ons').delete().eq('owner_id', user.id).eq('lamp_id', String(lampId))
   return error ? { miss: missOf(error) } : { miss: '' }
 }

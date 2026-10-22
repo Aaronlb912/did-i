@@ -3,7 +3,7 @@ import { readShelf } from '../../src/lib/board-shelf.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { armLampPings, checkPings, requestPings } from '../../src/lib/notify.js'
-import { publishSheet } from '../components/SheetHost.jsx'
+import { publishSheet, whenNoSheet } from '../components/SheetHost.jsx'
 import { offerExactAlarms } from './exact-alarms.js'
 
 const KEY = 'did-i-ping-primer'
@@ -42,8 +42,11 @@ function markPrimerShown(key = KEY) {
 async function showPrimer({ title, body, colors, key = KEY }) {
   if (primerShown(key)) return
   if ((await checkPings().catch(() => 'missing')) !== 'default') return
-  markPrimerShown(key)
   shownThisRun = true
+  await whenNoSheet()
+  // Marked once it is about to show: an app closed while waiting keeps the ask.
+  if (primerShown(key)) return
+  markPrimerShown(key)
   publishSheet({
     kicker: t('notify.primerKicker'),
     title,

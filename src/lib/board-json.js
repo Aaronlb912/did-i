@@ -1,6 +1,7 @@
 import { t } from './i18n.js'
+import { readPrefs } from './prefs.js'
 import { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
-import { addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
+import { WAS_KEEP, addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
 import { capSkips } from './travel.js'
 
@@ -8,6 +9,25 @@ export { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
 
 function uid(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
+const WAS_CADENCE = new Set(['daily', 'weekly', 'monthly', 'every_n'])
+
+function cleanWas(was) {
+  if (!Array.isArray(was)) return []
+  return was
+    .filter((old) => old && ISO_DAY.test(String(old.until)) && WAS_CADENCE.has(old.cadence))
+    .map((old) => ({
+      until: String(old.until),
+      cadence: old.cadence,
+      weekdays: Array.isArray(old.weekdays) ? old.weekdays.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6) : [],
+      monthDay: old.monthDay === 'last' ? 'last' : Number.isInteger(Number(old.monthDay)) && old.monthDay !== '' ? Number(old.monthDay) : '',
+      everyN: Number.isInteger(Number(old.everyN)) && old.everyN !== '' ? Number(old.everyN) : '',
+      everyNAnchor: ISO_DAY.test(String(old.everyNAnchor)) ? String(old.everyNAnchor) : '',
+    }))
+    .sort((x, y) => (x.until < y.until ? -1 : 1))
+    .slice(-WAS_KEEP)
 }
 
 export function newLampId() {
@@ -198,6 +218,12 @@ export function emptyBoard() {
   return blankBook()
 }
 
+// When the user last edited this question or folder (ISO). Sync keeps the later edit.
+function cleanAt(value) {
+  const at = asString(value).trim()
+  return at && Number.isFinite(Date.parse(at)) ? at : ''
+}
+
 export function normalizeLamp(raw) {
   const lamp = raw && typeof raw === 'object' ? raw : {}
   const kind = asString(lamp.kind).trim().slice(0, KIND_MAX)
@@ -241,10 +267,16 @@ export function normalizeLamp(raw) {
     priority: lampPriority(lamp),
     notify: lampNotifyOn(lamp),
     archived: asBool(lamp.archived),
+    // The day it was paused, so its record stops counting from there.
+    ...(asBool(lamp.archived) && /^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.pausedOn).trim()) ? { pausedOn: asString(lamp.pausedOn).trim() } : {}),
+    ...(asPauses(lamp.pauses).length ? { pauses: asPauses(lamp.pauses) } : {}),
     ...(Number.isInteger(Number(lamp.order)) && lamp.order !== '' && lamp.order != null && Number(lamp.order) >= 0
       ? { order: Math.min(Number(lamp.order), 9999) }
       : {}),
     createdOn: asString(lamp.createdOn).trim() || isoDate(new Date()),
+    ...(cleanAt(lamp.at) ? { at: cleanAt(lamp.at) } : {}),
+    // Schedules it had before an edit (recurrence.js scheduleAt).
+    ...(cleanWas(lamp.was).length ? { was: cleanWas(lamp.was) } : {}),
     // Put on your tonight for you (a Did you auto-added from family or a
     // friend you allow): a did counts, a nope or no answer does not count
     // against you. Only set when true, so other questions are unchanged.
@@ -283,9 +315,20 @@ export function amountUnitOf(lamp) {
 }
 
 // A number from 0 to AMOUNT_MAX, two places at most, or null. A comma reads as a decimal point.
+// "1,500" and "1.500,5" are thousands; a lone comma otherwise is a decimal point.
+// Where the app's language writes 1,5 for one and a half, "1,250" is 1.25.
+const COMMA_DECIMAL = new Set(['de', 'es', 'fr', 'it', 'pt'])
+function decimalText(text) {
+  const dot = text.lastIndexOf('.')
+  const comma = text.lastIndexOf(',')
+  if (dot >= 0 && comma >= 0) return dot > comma ? text.replace(/,/g, '') : text.replace(/\./g, '').replace(',', '.')
+  if (/^\d{1,3}(,\d{3})+$/.test(text) && !COMMA_DECIMAL.has(readPrefs().locale)) return text.replace(/,/g, '')
+  return text.replace(',', '.')
+}
+
 export function cleanAmount(value) {
   if (value === null || value === undefined) return null
-  const text = typeof value === 'number' ? String(value) : String(value).trim().replace(',', '.')
+  const text = typeof value === 'number' ? String(value) : decimalText(String(value).trim())
   if (!text) return null
   const n = Number(text)
   if (!Number.isFinite(n) || n < 0 || n > AMOUNT_MAX) return null
@@ -341,6 +384,7 @@ export function normalizeBook(raw) {
     clickSound: asBool(book.clickSound),
     inkNote: asString(book.inkNote),
     archived: asBool(book.archived),
+    ...(cleanAt(book.at) ? { at: cleanAt(book.at) } : {}),
     lamps: Array.isArray(book.lamps) ? book.lamps.map(normalizeLamp) : [],
     answers: Array.isArray(book.answers) ? book.answers.map(normalizeAnswer) : [],
     gone: normalizeGone(book.gone),
@@ -368,6 +412,7 @@ export function normalizeBook(raw) {
     frames: purse.frames,
     frame: purse.frame,
     friendCheers: purse.friendCheers,
+    wish: purse.wish,
   }
 }
 
@@ -532,11 +577,20 @@ export function addUnlock(book, id) {
 // The short name field's length limit.
 export const SHORT_MAX = 24
 
+// Resumed pauses as [from, until) day pairs, newest 8.
+function asPauses(list) {
+  if (!Array.isArray(list)) return []
+  const day = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+  return list.filter((pair) => Array.isArray(pair) && day(pair[0]) && day(pair[1]) && pair[0] < pair[1]).map(([from, until]) => [from, until]).slice(-8)
+}
+
 export function duplicateLamp(lamp, now = new Date()) {
   const copy = normalizeLamp(lamp)
   copy.id = newLampId()
   copy.createdOn = isoDate(now)
   copy.archived = false
+  delete copy.pausedOn
+  delete copy.pauses
   // Trim the name first so " copy" always fits inside the limit.
   const suffix = ` ${t('lamp.copySuffix')}`
   const full = shortLabel(copy)

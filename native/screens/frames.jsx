@@ -94,9 +94,9 @@ export function frameStatus(frame, purse, ctx) {
     return { text: frame.earn === 'freeze' ? t('frames.earnFreeze') : t('frames.progress', { n: p.n, of: p.of }) }
   }
   if (frame.kind === 'season') {
-    return seasonOpen(frame, ctx.today)
-      ? { text: t('frames.freeNow') }
-      : { text: t('frames.back', { date: monthDay(seasonNextText(frame, ctx.today)) }) }
+    if (seasonOpen(frame, ctx.today)) return { text: t('frames.freeNow') }
+    const next = seasonNextText(frame, ctx.today)
+    return { text: next ? t('frames.back', { date: monthDay(next) }) : '' }
   }
   return { text: t('frames.free') }
 }
@@ -143,6 +143,12 @@ const CORNER_ART = new Set(['frost'])
 // What is left after a buy, so spending the last gem is never a surprise.
 // A buy awaits the server, and the book it was handed is from the tap. Put
 // the bought purse on the folder as it is now, so answers made meanwhile stay.
+// The folder as it is now, for a buy confirmed from a sheet opened earlier:
+// coins a tap earned meanwhile must not be spent over.
+export function liveBook(book) {
+  return readShelf().boards.find((item) => item.id === book?.id) || book
+}
+
 export function onLiveBook(out) {
   if (!out?.book) return out
   const live = readShelf().boards.find((item) => item.id === out.book.id)
@@ -280,7 +286,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
             title: frameName(id),
             body: `${t('frames.buyBody', { cost: frame.coins ? t('shop.coins', { n: frame.coins }) : t('shop.gems', { n: frame.gems }) })} ${leftAfter(purse, frame)}`,
             onGo: async () => {
-              const next = onLiveBook(await buyFrame(book, id))
+              const next = onLiveBook(await buyFrame(liveBook(book), id))
               if (next.miss === 'shop.miss.needGems') return offerMoreGems(colors)
               if (next.miss === SIGN_IN_MISS) return askSignIn(colors)
               if (next.miss) return confirmMiss(frameMiss(next))
@@ -305,10 +311,11 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
   }
   const shortCoins = !owned && frame.coins && purse.coins < frame.coins
   // Seasonal, not claimed yet: say it costs nothing and stays yours.
-  const seasonLine = !owned && frame.kind === 'season' ? `\n${t('frames.seasonFree')}` : ''
+  const seasonLine = !owned && frame.kind === 'season' && !frame.lastYear ? `\n${t('frames.seasonFree')}` : ''
   // The wishlist heart. A seasonal frame that is closed gets Remind me: the
   // done card names it once it is back.
   const wishable = !owned && ['coin', 'gem', 'season'].includes(frame.kind) && !frame.hidden
+    && !(frame.kind === 'season' && !seasonOpen(frame, ctx.today) && !seasonNextText(frame, ctx.today))
   const remind = frame.kind === 'season' && !seasonOpen(frame, ctx.today)
   const wished = isWished(purse, 'frame', id)
   const wishLabels = remind
@@ -439,8 +446,9 @@ function allFramesLists(purse, ctx) {
   // The soonest season that is not on now, for the line under the list.
   const next = shownFrames(ctx.today).filter((f) => f.kind === 'season' && !seasonOpen(f, ctx.today))
     .map((f) => ({ f, on: seasonNextText(f, ctx.today) }))
+    .filter((x) => x.on)
     .sort((a, b) => a.on.localeCompare(b.on))[0]
-  const mineCount = shownFrames(ctx.today).filter((f) => owned.has(f.id)).length
+  const mineCount = shownFrames(ctx.today, owned).filter((f) => owned.has(f.id)).length
   return { sections, next, mineCount }
 }
 
@@ -535,7 +543,7 @@ export function FramesCollection({ book, colors, onChange }) {
   const purse = normalizePurse(book)
   const owned = framesOwned(purse, ctx)
   const worn = wornFrame(purse, ctx)
-  const mine = shownFrames(ctx.today).filter((f) => owned.has(f.id))
+  const mine = shownFrames(ctx.today, owned).filter((f) => owned.has(f.id))
   const locked = shownFrames(ctx.today).filter((f) => f.kind === 'earned' && !owned.has(f.id))
   function wear(id) {
     const next = wearFrame(book, id === worn ? '' : id, ctx)
@@ -587,7 +595,9 @@ export function framesOwnedCount(book) {
   const purse = normalizePurse(book)
   const ctx = frameCtxFor(readShelf().boards)
   const owned = framesOwned(purse, ctx)
-  const shown = shownFrames(ctx.today)
+  const shown = shownFrames(ctx.today, owned).filter(
+    (f) => owned.has(f.id) || f.kind !== 'season' || seasonOpen(f, ctx.today) || Boolean(seasonNextText(f, ctx.today)),
+  )
   return { n: shown.filter((f) => owned.has(f.id)).length, of: shown.length, worn: wornFrame(purse, ctx) }
 }
 

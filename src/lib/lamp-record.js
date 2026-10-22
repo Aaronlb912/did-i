@@ -1,5 +1,5 @@
 import { t } from './i18n.js'
-import { addDaysIso, answerFor, isDueOn, isEvery, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, answerFor, graceNightIso, inPause, isDueOn, isEvery, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
 import { travelNightState, travelSkipped } from './travel.js'
 
 function didStatus(status) {
@@ -7,20 +7,47 @@ function didStatus(status) {
 }
 
 
+// A period left open after the question was paused was never asked: it
+// neither counts nor breaks. A month counts as paused if it ends after pausedOn.
+export function pausedOpen(lamp, key, answer) {
+  if (!lamp || didStatus(answer?.status)) return false
+  const paused = lamp.archived && lamp.pausedOn
+  if (!paused && !lamp.pauses?.length) return false
+  const month = /^\d{4}-\d{2}$/.test(key)
+  if (paused && !answer && (month ? `${key}-31` : periodNight(lamp, key)) >= lamp.pausedOn) return true
+  // An earlier pause, since resumed: those days were never asked either. A
+  // Not yet there was closed by an older build on resume, not tapped.
+  // A month counts as paused the same way: the pause reached into it and ran past its due day.
+  if (month) return Boolean(lamp.pauses?.some(([from, until]) => `${key}-31` >= from && until > monthDueDay(lamp, key)))
+  return inPause(lamp, periodNight(lamp, key))
+}
+
+// The day a monthly question was due in that month.
+function monthDueDay(lamp, key) {
+  const live = { ...lamp, archived: false }
+  for (let day = 1; day <= 31; day += 1) {
+    const iso = `${key}-${String(day).padStart(2, '0')}`
+    if (isDueOn(live, iso)) return iso
+  }
+  return `${key}-31`
+}
+
 // The one streak rule for a question: Did and late Did keep it going; a nope
 // or a missed night ends it. Tonight counts once answered, and an unanswered
 // tonight does not break it yet. Every per-question streak uses this.
-export function questionStreak(book, lamp, dateIso, cap = 400) {
+export function questionStreak(book, lamp, dateIso, cap = 400, now = new Date()) {
   if (!lamp || !dateIso || isEvery(lamp)) return 0
   if (lamp.cadence === 'once') return didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))?.status) ? 1 : 0
   const live = { ...lamp, archived: false }
   let cursor = isDueOn(live, dateIso) ? dateIso : previousDueDate(live, dateIso)
   if (cursor === dateIso && !answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))) cursor = previousDueDate(live, dateIso)
+  // Last night is still open until the grace hour: unanswered, it does not break the run yet.
+  const grace = openGrace(dateIso, now)
   let count = 0
   while (cursor && count < cap) {
     const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cursor))
-    // Left open on a night skipped by travel: neither counts nor breaks.
-    if (travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') {
+    // Left open on a night skipped by travel, or last night still in grace: neither counts nor breaks.
+    if ((travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') || (cursor === grace && !answer) || pausedOpen(lamp, periodKeyFor(lamp, cursor), answer)) {
       cursor = previousDueDate(live, cursor)
       continue
     }
@@ -33,7 +60,12 @@ export function questionStreak(book, lamp, dateIso, cap = 400) {
 
 // The longest run this question ever had, same rule as questionStreak.
 // Walks due nights back to the question's first; callers memoize it.
-export function bestQuestionStreak(book, lamp, dateIso, cap = 1000) {
+function openGrace(dateIso, now) {
+  const grace = graceNightIso(now)
+  return grace && addDaysIso(grace, 1) === dateIso ? grace : ''
+}
+
+export function bestQuestionStreak(book, lamp, dateIso, cap = 1000, now = new Date()) {
   if (!lamp || !dateIso || isEvery(lamp)) return 0
   if (lamp.cadence === 'once') return questionStreak(book, lamp, dateIso)
   const live = { ...lamp, archived: false }
@@ -47,12 +79,13 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000) {
   }
   if (first && lamp.cadence === 'monthly') first = `${first.slice(0, 7)}-01`
   let cursor = isDueOn(live, dateIso) ? dateIso : previousDueDate(live, dateIso)
+  const grace = openGrace(dateIso, now)
   let best = 0
   let run = 0
   let steps = 0
   while (cursor && steps < cap && (!first || cursor >= first)) {
     const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cursor))
-    if (travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') {
+    if ((travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') || pausedOpen(lamp, periodKeyFor(lamp, cursor), answer)) {
       steps += 1
       cursor = previousDueDate(live, cursor)
       continue
@@ -60,7 +93,7 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000) {
     if (didStatus(answer?.status)) {
       run += 1
       if (run > best) best = run
-    } else if (cursor !== dateIso) {
+    } else if (cursor !== dateIso && !(cursor === grace && !answer)) {
       run = 0
     }
     steps += 1
@@ -77,6 +110,13 @@ export function lampRecord(book, lamp, dateIso, days = 30) {
   const tonight = answerFor(book, lamp.id, tonightKey)?.status || ''
   // A paused question keeps its history on show, so count its nights as if live.
   const keys = recentPeriodKeys({ ...lamp, archived: false }, dateIso, days).filter((key) => key !== tonightKey || tonight)
+    // Nights after it was paused were never asked.
+    .filter((key) => !pausedOpen(lamp, key, answerFor(book, lamp.id, key)))
+    // Travel days left open count neither way, same as the streak.
+    .filter((key) => {
+      const iso = periodNight(lamp, key)
+      return !(travelSkipped(book, iso) && travelNightState(answerFor(book, lamp.id, key), iso) === 'none')
+    })
   let did = 0
   for (const key of keys) {
     if (didStatus(answerFor(book, lamp.id, key)?.status)) did += 1
@@ -105,6 +145,7 @@ export function lampWeeks(book, lamp, dateIso, weeks = 8) {
       if (travelSkipped(book, iso) && travelNightState(answer, iso) === 'none') continue
       const status = answer?.status || ''
       if (iso === dateIso && !status) continue
+      if (pausedOpen(lamp, iso, answer)) continue
       due += 1
       if (didStatus(status)) did += 1
     }

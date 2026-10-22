@@ -49,6 +49,8 @@ function blankPrefs() {
     familyHour: 21,
     // The morning ask card on Tonight (morning-ask.js).
     morningAsk: true,
+    // When its nudge comes (day-nudges.js MORNING_AT_TIMES, 5:00 to 11:30).
+    morningAt: '08:00',
   }
 }
 
@@ -134,6 +136,7 @@ function cleanPrefs(raw) {
   if (QUIET_TIME.test(raw?.quietTo || '')) next.quietTo = raw.quietTo
   if (raw?.dropPings === true) next.dropPings = true
   if (raw?.morningAsk === false) next.morningAsk = false
+  if (/^(0[5-9]|1[01]):(00|30)$/.test(raw?.morningAt || '')) next.morningAt = raw.morningAt
   if (Number.isInteger(raw?.familyHour) && raw.familyHour >= 0 && raw.familyHour <= 23) next.familyHour = raw.familyHour
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
@@ -143,7 +146,35 @@ function cleanPrefs(raw) {
   if (raw?.openingSeen === true) next.openingSeen = true
   // Swipes counted by older builds; a phone that reached 3 skips the popup. No longer written.
   if (Number.isInteger(raw?.swipesLearned) && raw.swipesLearned > 0) next.swipesLearned = Math.min(raw.swipesLearned, 3)
+  // When each setting was last changed on a phone, so two phones merge key by key.
+  if (raw?.at && typeof raw.at === 'object') {
+    const at = {}
+    for (const [key, when] of Object.entries(raw.at)) {
+      if (/^[a-zA-Z]{1,30}$/.test(key) && typeof when === 'string' && when.length <= 30) at[key] = when
+    }
+    next.at = at
+  }
   return next
+}
+
+// Two phones' settings, merged one setting at a time: the later change wins.
+// A setting neither phone stamped (older builds) follows the newer shelf.
+export function mergePrefs(local, remote, remoteNewer = false) {
+  const mine = cleanPrefs(local)
+  const theirs = cleanPrefs(remote)
+  const out = { ...mine, at: { ...mine.at } }
+  const keys = new Set([...Object.keys(mine), ...Object.keys(theirs)])
+  keys.delete('at')
+  for (const key of keys) {
+    const ours = mine.at?.[key] || ''
+    const other = theirs.at?.[key] || ''
+    if (other > ours || (!other && !ours && remoteNewer)) {
+      if (key in theirs) out[key] = theirs[key]
+      else delete out[key]
+      if (other) out.at[key] = other
+    }
+  }
+  return cleanPrefs(out)
 }
 
 export function readPrefs() {
@@ -161,7 +192,15 @@ export function readPrefs() {
 }
 
 export function writePrefs(patch, fromCloud = false) {
-  const next = cleanPrefs({ ...readPrefs(), ...patch })
+  const was = readPrefs()
+  const next = cleanPrefs({ ...was, ...patch })
+  if (!fromCloud) {
+    const now = new Date().toISOString()
+    next.at = { ...next.at }
+    for (const key of Object.keys(patch || {})) {
+      if (key !== 'at' && JSON.stringify(was[key]) !== JSON.stringify(next[key])) next.at[key] = now
+    }
+  }
   localStorage.setItem(KEY, JSON.stringify(next))
   savePrefsForSw(next)
   if (!fromCloud) stampSavedAt()

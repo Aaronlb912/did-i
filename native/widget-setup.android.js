@@ -7,7 +7,7 @@ import {
 } from '../src/lib/widget-tonight.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { renderDidITonightAndroidWidget } from '../widgets/android/DidITonightAndroidWidget.jsx'
-import { onPrefs } from '../src/lib/prefs.js'
+import { onPrefs, readPrefs } from '../src/lib/prefs.js'
 import { enrichTogetherWidgetProps, enrichTonightWidgetProps, syncTogetherWidget, syncTonightWidget } from './widget-sync.js'
 import { renderDidITogetherAndroidWidget } from '../widgets/android/DidITogetherAndroidWidget.jsx'
 import {
@@ -18,6 +18,7 @@ import {
 } from '../src/lib/together-widget.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { resendWatchCards, sendWatchCards } from './watch-sync.js'
+import { armNativePingsNow, pingsStale } from './shim/native.js'
 import { widgetRedrawTimes } from '../src/lib/widget-config.js'
 import {
   applyPendingAndroidWidgetTap,
@@ -49,8 +50,10 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
   }
   // Browsing to another open question is display-only — it never touches
   // the shelf, so it skips the answer-tap plumbing below and renders straight
-  // from what's already on the card.
-  if (widgetAction === 'WIDGET_CLICK' && clickAction === 'PEEK') {
+  // from what's already on the card. A Did tapped just before Next is applied
+  // first, or the peek would draw that question open again.
+  const applied = await applyPendingAndroidWidgetTap()
+  if (widgetAction === 'WIDGET_CLICK' && clickAction === 'PEEK' && !applied) {
     const current = await tonightPropsForWidget(readShelf())
     const dir = clickActionData?.dir === 'prev' ? -1 : 1
     const peeked = peekNextTonightCard(current, dir)
@@ -61,10 +64,10 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
       return
     }
   }
-  const applied = await applyPendingAndroidWidgetTap()
   // A silent wake while the app was closed (WakeMessagingService): pull now,
   // after this phone's own taps are applied, so they are paid here first.
-  if (await takeAndroidWake()) await runWake()
+  const woke = await takeAndroidWake()
+  if (woke) await runWake()
   let clicked = null
   if (widgetAction === 'WIDGET_CLICK') {
     clicked = handleAndroidWidgetClick(clickAction, clickActionData)
@@ -85,6 +88,10 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
     await armAndroidWidgetAskTimes(widgetRedrawTimes((shelf?.boards || []).filter((b) => !b.archived), new Date()))
   }
   if (tappedShelf) await syncTonightWidget(tappedShelf)
+  // Answered with the app closed: drop that question's later reminders now.
+  // A time zone change lands here too (DidITonight.java): reminders are fixed
+  // instants, so set them again in the new zone.
+  if (tappedShelf || woke || pingsStale()) await armNativePingsNow(readShelf()?.boards || []).catch(() => {})
 }
 
 // Headless widget clicks evaluate the bundle and look for this task immediately.
@@ -93,6 +100,12 @@ registerWidgetTaskHandler(handleDidITonightWidgetTask)
 
 export function installWidgetSetup() {
   onPrefs(() => {
+    syncTonightWidget(readShelf()).catch(() => {})
+    syncTogetherWidget().catch(() => {})
+  })
+  // Theme set to Phone: the system going dark changes no prefs, so redraw here too.
+  globalThis.__didIAppearance?.addChangeListener?.(() => {
+    if (readPrefs().theme !== 'phone') return
     syncTonightWidget(readShelf()).catch(() => {})
     syncTogetherWidget().catch(() => {})
   })

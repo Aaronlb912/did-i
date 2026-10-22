@@ -106,12 +106,26 @@ begin
     raise exception 'FAIL: own write landed wrong';
   end if;
 
-  -- Same merge rule as the app: an older tap does not win, Not yet then Did is late.
+  -- Same rule as the app: a Not yet never replaces a Did, even a newer one
+  -- from a widget that had not redrawn. Not yet then Did is late.
   execute 'set local role anon';
-  got := public.key_answer(ka, 'qa', tonight, 'nope', to_char((now() - interval '1 minute') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'));
-  if got <> 'same' then raise exception 'FAIL: older tap gave %', got; end if;
   got := public.key_answer(ka, 'qa', tonight, 'nope', later);
-  if got <> 'ok' then raise exception 'FAIL: newer nope gave %', got; end if;
+  if got <> 'same' then raise exception 'FAIL: nope over a did gave %', got; end if;
+  execute 'reset role';
+  if (select status from public.answer_log where user_id = a and lamp_id = 'qa' and period_key = tonight) <> 'yes' then
+    raise exception 'FAIL: a later Not yet replaced the Did';
+  end if;
+  execute 'set local role anon';
+  got := public.key_answer(ka, 'qa', tonight, 'undo', stamp);
+  if got <> 'ok' then raise exception 'FAIL: undo of the did gave %', got; end if;
+  execute 'reset role';
+  if not exists (select 1 from public.answer_undos where user_id = a and lamp_id = 'qa' and period_key = tonight
+                 and public.stamp_ts(answered_at) = public.stamp_ts(stamp)) then
+    raise exception 'FAIL: a key undo was not noted';
+  end if;
+  execute 'set local role anon';
+  got := public.key_answer(ka, 'qa', tonight, 'nope', later);
+  if got <> 'ok' then raise exception 'FAIL: nope on an open question gave %', got; end if;
   got := public.key_answer(ka, 'qa', tonight, 'did', to_char((now() + interval '2 seconds') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
   execute 'reset role';
   if (select status from public.answer_log where user_id = a and lamp_id = 'qa' and period_key = tonight) <> 'late' then

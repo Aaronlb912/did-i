@@ -600,6 +600,10 @@ declare
   heir uuid;
 begin
   perform pg_advisory_xact_lock(hashtext('we_card:' || card::text));
+  -- Not on the card: nothing to leave, and no turns pinned on someone else's card.
+  if not exists (select 1 from public.we_members where card_id = card and user_id = who and state = 'in') then
+    return;
+  end if;
   perform public.we_pin_turns(card, current_date - 1, current_date + 1);
   update public.we_members set state = 'left'
   where card_id = card and user_id = who and state = 'in';
@@ -895,7 +899,7 @@ as $$
     and not exists (select 1 from public.we_answers a join due on due.night = a.night where a.card_id = card);
 $$;
 
-revoke all on function public.we_paused(uuid, date) from public, anon;
+revoke all on function public.we_paused(uuid, date) from public, anon, authenticated;
 
 -- Any member can restart a paused card. It asks again from tonight, the
 -- phone's night when it sends one.

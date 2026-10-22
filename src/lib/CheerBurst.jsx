@@ -18,6 +18,11 @@ import {
   BUTTERFLY_VIEW,
   CRACKLE_PATH,
   DISCO_LATS,
+  GHOST_BODY,
+  GHOST_EYES,
+  GHOST_MOUTH,
+  GHOST_SPARK,
+  GHOST_VIEW,
   GIFT_BAND,
   GIFT_BOW,
   GIFT_BOX,
@@ -381,6 +386,21 @@ function Butterfly({ delay, x, y, size, tone, turn }) {
   )
 }
 
+function Ghost({ delay, x, y, size, swing }) {
+  return (
+    <b className="di-ghost" style={{ '--gh': size, '--gx': x, '--gy': y, '--dir': swing < 0 ? -1 : 1, animationDelay: delay }}>
+      <i className="di-ghost-glow" />
+      <svg viewBox={GHOST_VIEW} aria-hidden="true" focusable="false">
+        <path className="di-ghost-body" d={GHOST_BODY} />
+        {GHOST_EYES.map(([cx, cy, rx, ry], i) => (
+          <ellipse key={i} className="di-ghost-eye" cx={cx} cy={cy} rx={rx} ry={ry} />
+        ))}
+        <ellipse className="di-ghost-mouth" cx={GHOST_MOUTH[0]} cy={GHOST_MOUTH[1]} rx={GHOST_MOUTH[2]} ry={GHOST_MOUTH[3]} />
+      </svg>
+    </b>
+  )
+}
+
 function RubberBall({ delay, x, len, fall, size, tone }) {
   const roll = Number.parseFloat(len) || 0
   const spin = (roll / (Math.PI * (Number.parseFloat(size) || 1))) * 360
@@ -634,6 +654,21 @@ function renderBit(burst, pop, bit, screen = false) {
   }
   if (bit.butterfly) {
     return <Butterfly key={key} delay={delay} x={bit.x} y={bit.y} size={bit.size} tone={bit.tone} turn={bit.turn} />
+  }
+  if (bit.ghost) {
+    return <Ghost key={key} delay={delay} x={bit.x} y={bit.y} size={bit.size} swing={bit.swing} />
+  }
+  if (bit.ghostSpark) {
+    return (
+      <b key={key} className="di-ghost-spark" style={{ '--dx': bit.x, '--dy': bit.y, '--sz': bit.size, animationDelay: delay }}>
+        <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+          <path d={GHOST_SPARK} />
+        </svg>
+      </b>
+    )
+  }
+  if (bit.wisp) {
+    return <i key={key} className="di-wisp" style={{ '--dx': bit.x, '--dy': bit.y, '--rise': bit.rise, '--sz': bit.size, animationDelay: delay }} />
   }
   if (bit.rubberBall) {
     return <RubberBall key={key} delay={delay} x={bit.x} len={bit.len} fall={bit.fall} size={bit.size} tone={bit.tone} />

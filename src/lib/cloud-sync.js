@@ -6,10 +6,11 @@ import { addNotice, clearNotices, markNoticesSeen } from './notices.js'
 import { giftThanksNotice } from './gift-history.js'
 import { clearAuthSkip } from './auth-gate.js'
 import { forgetAccountCaches } from './account-cache.js'
+import { saveTogetherPeople } from './together-widget.js'
 import { clearLocalShelf, readShelf, writeShelf } from './board-shelf.js'
 import { cloud, cloudSetUp } from './cloud.js'
-import { refreshAnswerKey } from './answer-key.js'
-import { readPrefs, writePrefs } from './prefs.js'
+import { forgetAnswerKey, refreshAnswerKey } from './answer-key.js'
+import { mergePrefs, readPrefs, writePrefs } from './prefs.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'
 import { mergeShelves } from './shelf-merge.js'
 import {
@@ -20,6 +21,7 @@ import {
   pullAnswers,
   purgeDemoAnswers,
   pushAnswers,
+  runPendingUndos,
   shelfWithoutAnswers,
 } from './answer-log.js'
 import { stripDemoShelf } from './demo-strip.js'
@@ -35,6 +37,7 @@ import { claimGemPurchases } from './gem-claim.js'
 import { applyInvitePayout, dropEarnedCoins, mergeGift, mergePurses } from './purse.js'
 import { FRAME_IDS } from './frames.js'
 import {
+  applyCoinBalanceToShelf,
   applyCoinCatalogToShelf,
   applyGemBalanceToShelf,
   applyGemOwnedToShelf,
@@ -42,6 +45,7 @@ import {
   readCoinCatalog,
   readGemBalance,
   readGemOwned,
+  shopWriteCount,
 } from './wallet.js'
 import { closeShelfPastNights } from './daily.js'
 import { noteSocialLive } from './social-live.js'
@@ -131,6 +135,16 @@ async function me() {
   return data?.session?.user || null
 }
 
+// Like me(), but a failed token refresh (offline with an old access token)
+// throws instead of reading as signed out: that path wipes the shelf.
+async function meOrThrow() {
+  const db = cloud()
+  if (!db) return null
+  const { data, error } = await db.auth.getSession()
+  if (!data?.session && error) throw error
+  return data?.session?.user || null
+}
+
 function readLastUser() {
   return readAccountUserId()
 }
@@ -139,28 +153,64 @@ function writeLastUser(id) {
   writeAccountUserId(id)
 }
 
+// Whose data is on the phone, set the moment a pull lands it. Last user is
+// only set once the push succeeds, so a pull cut short would otherwise leave
+// one account's shelf looking phone-only and fold it into the next account.
+const OWNER_KEY = 'did-i-shelf-owner'
+function readShelfOwner() {
+  try {
+    return localStorage.getItem(OWNER_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+function writeShelfOwner(id) {
+  try {
+    if (id) localStorage.setItem(OWNER_KEY, id)
+    else localStorage.removeItem(OWNER_KEY)
+  } catch {
+    // ok
+  }
+}
+
 // Bumped on sign out so a pull already out drops its result instead of
 // merging the old account's shelf into the cleared one.
 let syncRun = 0
 
 export function signedOutSync() {
   syncRun += 1
+  // A send still waiting holds the last account's shelf: it never goes.
+  if (timer) window.clearTimeout(timer)
+  timer = 0
   // Every way out (here, everywhere, deleted, signed out elsewhere) lands here.
   forgetAccountCaches()
   clearGifts()
   dropEarnedCoins()
   // The next person to sign in on this phone starts from nothing.
   forgetAnswerMarks()
+  forgetAnswerKey()
   clearWeNights()
   forgetTravelSkips()
   // Recent notices and your photo belong to the account that left.
   clearNotices()
   markNoticesSeen(0)
   noteAvatar('')
+  // The Together widget's friends too, even when the session just ran out.
+  saveTogetherPeople([])
   const shelf = clearLocalShelf()
   keepProfileName('')
   writeLastUser('')
+  writeShelfOwner('')
   clearAuthSkip()
+  // Settings go with the account; theme, language and clock stay with the
+  // phone. No stamps left, so the next account's own settings win the merge.
+  const { theme, locale, clock, lessMotion } = readPrefs()
+  try {
+    localStorage.removeItem('did-i-prefs')
+  } catch {
+    // Nothing stored.
+  }
+  writePrefs({ theme, locale, clock, lessMotion, at: {} }, true)
   setState({ how: cloudSetUp() ? 'out' : 'off', at: '', miss: '', firstPull: false })
   if (typeof window !== 'undefined') {
     accountChanged = true
@@ -173,7 +223,7 @@ export function signedOutSync() {
 // shelf never belonged to an account, and wiping it throws away the
 // questions someone just added.
 export function sessionMissing() {
-  if (readLastUser()) {
+  if (readLastUser() || readShelfOwner()) {
     signedOutSync()
     return
   }
@@ -186,16 +236,36 @@ export function sessionMissing() {
 // Structure only. Answers go through answer-log.js, one at a time,
 // because they are the part that grows without end.
 async function putShelf(db, user, shelf, savedAt) {
+  const at = savedAt || new Date().toISOString()
   const { error } = await db.from('shelves').upsert(
     {
       user_id: user.id,
       doc: shelfWithoutAnswers(shelf),
-      saved_at: savedAt || new Date().toISOString(),
+      saved_at: at,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' },
   )
+  if (!error) writeSeenAt(at)
   return error
+}
+
+// The server shelf this phone last wrote or merged. A push finds a newer one
+// when another phone wrote since: it pulls and merges instead of overwriting.
+const SEEN_KEY = 'did-i-shelf-seen'
+function readSeenAt() {
+  try {
+    return localStorage.getItem(SEEN_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+function writeSeenAt(at) {
+  try {
+    localStorage.setItem(SEEN_KEY, at)
+  } catch {
+    // The next push pulls first.
+  }
 }
 
 // The streak and the night, so friends and Did I tonight have something
@@ -380,15 +450,34 @@ function applyLiveRows() {
   // In order: an undo then the answer from before it is two steps.
   let shelf = readShelf()
   let changed = 0
+  const dropped = []
   for (const row of rows) {
     const step = row.gone ? dropSentAnswers(shelf, row.gone) : applyAnswers(shelf, [row])
     shelf = step.shelf
     changed += step.changed
+    if (row.gone && step.changed) dropped.push(...row.gone)
   }
   if (!changed) return
   // Same saved stamp: only answers changed, and they travel on their own.
   const written = writeShelf(shelf, readSavedAt())
   window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
+  // The answer an undo put back can arrive before the undo, lose to the
+  // undone one, and go with it. Read those slots again.
+  if (dropped.length) readRestored(dropped)
+}
+
+async function readRestored(gone) {
+  const db = cloud()
+  const mine = live
+  if (!db || !mine) return
+  const lamps = [...new Set(gone.map((item) => item.lamp))]
+  const { data, error } = await db.from('answer_log').select('*').eq('user_id', mine.userId).in('lamp_id', lamps)
+    .in('period_key', [...new Set(gone.map((item) => item.period))])
+  if (error || live !== mine) return
+  const rows = (data || []).filter((row) => gone.some((item) => item.lamp === row.lamp_id && item.period === row.period_key))
+  if (!rows.length) return
+  liveRows.push(...rows)
+  if (!liveTimer) liveTimer = setTimeout(applyLiveRows, 0)
 }
 
 export async function startLiveAnswers() {
@@ -430,8 +519,20 @@ export async function startLiveAnswers() {
       if (payload.kind === 'undo') take({ gone: payload.gone })
       else noteSocialLive(payload.kind)
     })
-    .subscribe()
+    .subscribe((status) => {
+      if (status !== 'SUBSCRIBED' || live !== mine) return
+      // Back after a dropped connection: pings sent in the gap are gone, so
+      // every screen reads again (the people pulse waits 15 minutes otherwise).
+      if (mine.joined && Date.now() - lastCatchUp > 60000) {
+        lastCatchUp = Date.now()
+        for (const kind of LIVE_KINDS) noteSocialLive(kind)
+      }
+      mine.joined = true
+    })
 }
+
+let lastCatchUp = 0
+const LIVE_KINDS = ['ask', 'friend', 'gift', 'familyInfo', 'weMembers', 'we', 'family', 'send']
 
 export function stopLiveAnswers() {
   const old = live
@@ -451,8 +552,9 @@ async function pullAndMergeOnce() {
   const db = cloud()
   if (!db) return null
   const run = syncRun
+  const shopAtStart = shopWriteCount()
   try {
-    const user = await me()
+    const user = await meOrThrow()
     if (!user) {
       sessionMissing()
       return null
@@ -465,11 +567,13 @@ async function pullAndMergeOnce() {
     if (shelfRow.error) throw shelfRow.error
 
     await awaitWidgetTimeline()
-    const lastUser = readLastUser()
+    const lastUser = readLastUser() || readShelfOwner()
     let local = reconcileLocalShelfFromWidget()
     let localSavedAt = readSavedAt()
     if (lastUser && lastUser !== user.id) {
       local = clearLocalShelf()
+      // The old account's answer marks would hide the new account's older answers.
+      forgetAnswerMarks()
       localSavedAt = ''
     }
     const remote = shelfRow.data?.doc || null
@@ -482,19 +586,36 @@ async function pullAndMergeOnce() {
     // `next` was built from the copy saved at seenAt, so that is its stamp
     // in the compare; `at` (upload time) would let it beat newer local edits.
     let seenAt = readSavedAt()
+    const purseOf = (shelf) => `${shelf?.boards?.[0]?.gems}|${shelf?.boards?.[0]?.coins}`
+    let seenPurse = purseOf(readShelf())
     const land = (next, at) => {
       if (run !== syncRun) throw new Error('account.signedOut')
       const nowAt = readSavedAt()
-      const base = nowAt !== seenAt ? mergeShelves(readShelf(), next, nowAt, seenAt) : next
+      let base = next
+      if (nowAt !== seenAt) {
+        // A buy or an earn during the sync wrote the server's newer balance
+        // here; the merge would keep the larger, older one.
+        const local = readShelf()
+        const purse = local?.boards?.[0]
+        base = mergeShelves(local, next, nowAt, seenAt)
+        if (purseOf(local) !== seenPurse) {
+          if (Number.isFinite(purse?.gems)) base = applyGemBalanceToShelf(base, purse.gems)
+          if (Number.isFinite(purse?.coins)) base = applyCoinBalanceToShelf(base, purse.coins)
+        }
+      }
       const out = writeShelf(base, at)
       seenAt = readSavedAt()
+      seenPurse = purseOf(out)
       return out
     }
 
+    // An undo that missed the server goes first, or the pull brings the Did back.
+    await runPendingUndos()
     // Fold in every answer the account has that this phone has not seen.
     const pulled = await pullAnswers(merged, { stillCurrent: () => run === syncRun })
     if (pulled.miss) throw new Error(pulled.miss)
 
+    writeShelfOwner(user.id)
     let written = land(closeShelfPastNights(pulled.shelf), metaAt)
     // The account's questions are on the phone now; Tonight can draw them.
     if (state.firstPull) setState({ firstPull: false })
@@ -552,12 +673,15 @@ async function pullAndMergeOnce() {
       }
     }
 
+    // A buy during this sync makes these reads older than the shelf: skip them.
     const bal = await readGemBalance()
-    if (bal != null) written = applyGemBalanceToShelf(written, bal)
     const coinBag = await readCoinCatalog()
-    if (coinBag) written = applyCoinCatalogToShelf(written, coinBag)
     const gemBag = await readGemOwned()
-    if (gemBag) written = applyGemOwnedToShelf(written, gemBag)
+    if (shopWriteCount() === shopAtStart) {
+      if (bal != null) written = applyGemBalanceToShelf(written, bal)
+      if (coinBag) written = applyCoinCatalogToShelf(written, coinBag)
+      if (gemBag) written = applyGemOwnedToShelf(written, gemBag)
+    }
 
     const uploadAt = new Date().toISOString()
     written = reconcileShelfFromWidget(written)
@@ -566,8 +690,10 @@ async function pullAndMergeOnce() {
     window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
 
     const remotePrefs = profileRow.data?.prefs
-    if (remotePrefs && remoteSavedAt && remoteSavedAt > localSavedAt) {
-      writePrefs(remotePrefs, true)
+    if (remotePrefs) {
+      const now = readPrefs()
+      const merged = mergePrefs(now, remotePrefs, !!remoteSavedAt && remoteSavedAt > localSavedAt)
+      if (JSON.stringify(merged) !== JSON.stringify(now)) writePrefs(merged, true)
     }
 
     const bad = (await putShelf(db, user, written, uploadAt)) || (await putPrefs(db, user, written))
@@ -594,30 +720,45 @@ async function pullAndMergeOnce() {
   }
 }
 
+// A pull still out for the account before a sign-out is not this account's pull.
+let pullingRun = -1
+
 export function pullAndMerge() {
-  if (pulling) return pulling
-  pulling = pullAndMergeOnce().finally(() => {
+  if (pulling && pullingRun === syncRun) return pulling
+  pullingRun = syncRun
+  const mine = pullAndMergeOnce().finally(() => {
+    if (pulling !== mine) return
     pulling = null
     if (state.firstPull) setState({ firstPull: false })
   })
-  return pulling
+  pulling = mine
+  return mine
 }
 
 export async function pushNow(shelf) {
   const db = cloud()
   if (!db) return
-  const user = await me()
+  let user
+  try {
+    user = await meOrThrow()
+  } catch (error) {
+    setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    return
+  }
   if (!user) {
     sessionMissing()
     return
   }
   setState({ how: 'busy', miss: '' })
+  let answersSent = false
   try {
     let doc = shelf || readShelf()
     // Usually one answer. The document only moves because a tag or a
     // question changed, and those are small.
     const sent = await pushAnswers(doc)
     if (sent.miss) throw new Error(sent.miss)
+    // The answers are on the server; the rest is the shelf document.
+    answersSent = true
     // No pull has landed for this account on this phone yet (the last user id
     // is written only after one does), so the local shelf may be the empty one
     // sign out left. Sending it would overwrite the account's questions.
@@ -625,18 +766,29 @@ export async function pushNow(shelf) {
     // the gate, and only a failed one shows as a miss.
     if (readLastUser() !== user.id) {
       await pullAndMerge()
-      if (readLastUser() !== user.id) return
+      if (readLastUser() !== user.id) return answersSent
       // Landed: send what is on the phone now, edits made during the pull too.
       doc = readShelf()
+    } else {
+      const row = await db.from('shelves').select('saved_at').eq('user_id', user.id).maybeSingle()
+      if (row.error) throw row.error
+      const at = row.data?.saved_at || ''
+      // Compared as times: the server sends +00:00 where JS wrote Z.
+      if (at && Date.parse(at) !== Date.parse(readSeenAt())) {
+        await pullAndMerge()
+        return answersSent
+      }
     }
     const uploadAt = new Date().toISOString()
     stampSavedAt(uploadAt)
     const bad = (await putShelf(db, user, doc, uploadAt)) || (await putPrefs(db, user, doc))
     if (bad) throw bad
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
+    return true
   } catch (error) {
     setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
     recordAppError('sync', error).catch(() => {})
+    return answersSent
   }
 }
 
@@ -860,6 +1012,17 @@ export async function exportAll() {
   }
 }
 
+// The server hands back at most 1000 rows a read, so an export reads page by page.
+async function allPages(query, page = 1000) {
+  const data = []
+  for (let from = 0; ; from += page) {
+    const res = await query().range(from, from + page - 1)
+    if (res.error) return res
+    data.push(...(res.data || []))
+    if ((res.data || []).length < page) return { data, error: null }
+  }
+}
+
 // Your side of Did we and Did you: the cards you are on, your own rows and
 // answers, and what you sent or got. Only what the database lets you read.
 async function exportSocial() {
@@ -871,12 +1034,16 @@ async function exportSocial() {
       .from('we_members')
       .select('card_id, state, turn, asked_at, joined_at, said_no_at, folder, topics')
       .eq('user_id', user.id),
-    db.from('we_answers').select('card_id, night, status, answered_at').eq('user_id', user.id).limit(5000),
-    db
-      .from('sends')
-      .select('id, from_id, to_id, kind, question, note, due_on, state, made_at, repeat')
-      .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
-      .limit(5000),
+    allPages(() =>
+      db.from('we_answers').select('card_id, night, status, answered_at').eq('user_id', user.id).order('card_id').order('night'),
+    ),
+    allPages(() =>
+      db
+        .from('sends')
+        .select('id, from_id, to_id, kind, question, note, due_on, state, made_at, repeat')
+        .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
+        .order('id'),
+    ),
   ])
   const failed = [mine, answers, sends].find((res) => res.error)
   if (failed) throw failed.error

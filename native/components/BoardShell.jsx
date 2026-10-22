@@ -14,6 +14,7 @@ import { LookGlow, LookMark } from './LookGlow.jsx'
 import { AppHeader, HeaderLargeTitle, LARGE_TITLE } from './AppHeader.jsx'
 import { MastMenuRoot } from './MastMenu.jsx'
 import { TileWindow, tileScrolled } from './frames/FramePreview.jsx'
+import { setTourScroller } from '../lib/tour.js'
 // Room under the last row so it never sits against the home indicator or nav bar.
 const END_ROOM = 24
 
@@ -199,6 +200,7 @@ export function BoardShell({
         ref={(node) => {
           scrollRef.current = node
           if (scrollHandle) scrollHandle.current = node
+          setTourScroller(node)
         }}
         onLayout={onScrollLayout}
         onContentSizeChange={onContentSize}

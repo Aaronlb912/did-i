@@ -18,6 +18,34 @@ export function peopleTonightItems({ familyRows = [], asks = [], night, gone = [
   return out.filter((item) => !skip.has(item.key))
 }
 
+// Family questions you said Not yet to today. They are never cards: they
+// only show in the still-open list on the finish card.
+export function skippedFamilyRows(familyRows = [], gone = []) {
+  const skip = new Set(gone)
+  return familyRows.filter(
+    (row) => row.answer?.status === 'skip' && !skip.has(`famkeep:${row.family.id}:${row.lamp.id}:${row.night}`),
+  )
+}
+
+// Cards swiped away today, kept so a remount or restart does not bring them
+// back above the done screen. Dropped when the day changes.
+const HIDDEN = 'did-i-people-hidden'
+export function readPeopleHidden(day) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(HIDDEN) || 'null')
+    return saved?.day === day && Array.isArray(saved.keys) ? saved.keys : []
+  } catch {
+    return []
+  }
+}
+export function writePeopleHidden(day, keys) {
+  try {
+    localStorage.setItem(HIDDEN, JSON.stringify({ day, keys }))
+  } catch {
+    // ok
+  }
+}
+
 // A send defaults to the sender's night. A sender a timezone ahead can
 // stamp tomorrow on an ask made for tonight here, so one day ahead still
 // shows while the send is under a day old.

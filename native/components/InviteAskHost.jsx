@@ -7,7 +7,8 @@ import { readMine } from '../../src/lib/people.js'
 import { confirmDone } from '../lib/confirm.js'
 import { goHash } from '../navigation/hash.js'
 import { InviteCodeSection } from './InviteCodeSection.jsx'
-import { publishSheet, sheetIsUp } from './SheetHost.jsx'
+import { tourActive } from '../lib/tour.js'
+import { publishSheet, sheetIsUp, whenNoSheet } from './SheetHost.jsx'
 
 // A new account is asked once, on Today, whether someone invited it: that is
 // when the friend's code is at hand. An account made from an invite link
@@ -102,11 +103,14 @@ export function InviteAskHost({ colors, book, onChange, path }) {
     let alive = true
     // After the first sync has had its turn with a link's code.
     const timer = setTimeout(async () => {
-      if (!alive || sheetIsUp() || readPendingInvite() || wasAsked(userId)) return
+      if (!alive || readPendingInvite() || wasAsked(userId) || tourActive()) return
       const mine = await readMine().catch(() => null)
-      if (!alive || !mine || sheetIsUp() || wasAsked(userId)) return
+      if (!alive || !mine || wasAsked(userId)) return
       markAsked(userId)
       if (mine.invited_by) return
+      // Waits its turn: the reminders ask also comes up on first run, and
+      // either one opening over the other closed it before it could be read.
+      await whenNoSheet()
       showAsk(colors, book, onChange)
     }, 2500)
     return () => {

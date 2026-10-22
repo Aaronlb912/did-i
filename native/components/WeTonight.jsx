@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { PersonAvatar } from './PersonAvatar.jsx'
 import { useAccount } from '../../src/lib/account.js'
@@ -10,13 +10,17 @@ import {
   weClaim,
   weGoal,
   weMine,
+  weNotTonightLine,
   weReply,
   weStreak,
   weTimeReady,
   wePausedCards,
   weRestart,
 } from '../../src/lib/did-we.js'
-import { weFaceRow, weStatus } from '../../src/lib/we-look.js'
+import { weFaceFor, weFaceRow, weMissKey, wePersonKey, weSlotDay, weStatus, weWeekKey } from '../../src/lib/we-look.js'
+import { refreshTogether } from '../../src/lib/people.js'
+import { onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
+import { pressFx } from '../lib/motion.jsx'
 import { SwipeCardHost } from './SwipeCardHost.jsx'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -25,14 +29,28 @@ import { goHash } from '../navigation/hash.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import { fonts } from '../theme.js'
+import { readPrefs } from '../../src/lib/prefs.js'
 import { DidButton, KeyButton } from './ui.jsx'
+import { MarkStamp } from './SwipeFace.jsx'
 
 
 const FACES_SHOWN = 5
 
 // One person: their buddy if they wear one, else their initials. The ring
 // lights up on a did and marks whose turn it is; someone only asked is faded.
-function WeFace({ person, card, colors, size = 30 }) {
+// The people you know carry the photo and buddy that a card's people may lack
+// (the same list the Friends row reads, kept by the Together widget).
+function useKnownFaces() {
+  const [people, setPeople] = useState(() => readTogetherPeople())
+  useEffect(() => {
+    refreshTogether().catch(() => {})
+    return onTogetherSaved(() => setPeople(readTogetherPeople()))
+  }, [])
+  return useMemo(() => new Map(people.map((p) => [String(p.id || ''), p])), [people])
+}
+
+function WeFace({ person: raw, card, colors, known, size = 30 }) {
+  const person = weFaceFor(raw, known)
   const lit = person.status === 'did'
   const turn = card.mode === 'turns' && card.turn === person.id
   const tint = colors.we || colors.on
@@ -53,10 +71,8 @@ function WeFace({ person, card, colors, size = 30 }) {
 function personLine(person, card) {
   if (person.state === 'asked') return t('we.pAsked')
   const bits = []
-  if (card.mode === 'turns' && card.turn === person.id) bits.push(t('we.tonightsTurn'))
-  if (person.status === 'did') bits.push(t('we.pDid'))
-  else if (person.status === 'nope') bits.push(t('we.pNope'))
-  else bits.push(t('we.pWaiting'))
+  if (card.mode === 'turns' && card.turn === person.id) bits.push(t(weWeekKey(card, 'we.tonightsTurn'), { day: weSlotDay(card, readPrefs().locale) }))
+  bits.push(t(wePersonKey(card, person.status), { day: weSlotDay(card, readPrefs().locale) }))
   return bits.join(' · ')
 }
 
@@ -82,6 +98,7 @@ function WeDot({ dot, colors }) {
 
 export function WeFaces({ card, colors, cheer, dots = true }) {
   const [open, setOpen] = useState(false)
+  const known = useKnownFaces()
   const { shown, more } = weFaceRow(card, FACES_SHOWN)
   const listed = card.people || []
   const showDots = dots && card.due
@@ -96,7 +113,7 @@ export function WeFaces({ card, colors, cheer, dots = true }) {
       >
         {shown.map(({ person, dot }) => (
           <View key={person.id} style={styles.slot}>
-            <WeFace person={person} card={card} colors={colors} />
+            <WeFace person={person} card={card} colors={colors} known={known} />
             {showDots ? <WeDot dot={dot} colors={colors} /> : null}
           </View>
         ))}
@@ -123,7 +140,7 @@ export function WeFaces({ card, colors, cheer, dots = true }) {
               <ScrollView style={styles.popList}>
                 {listed.map((person) => (
                   <View key={person.id} style={[styles.popRow, { borderTopColor: colors.line }]}>
-                    <WeFace person={person} card={card} colors={colors} size={40} />
+                    <WeFace person={person} card={card} colors={colors} known={known} size={40} />
                     <View style={styles.popCopy}>
                       <Text style={[styles.question, { color: colors.ink }]}>{person.me ? t('we.you') : person.name}</Text>
                       <Text style={[styles.meta, { color: colors.inkDim }]}>{personLine(person, card)}</Text>
@@ -167,6 +184,7 @@ export function WeFaces({ card, colors, cheer, dots = true }) {
 const STATE_KEY = { did: 'we.did', nope: 'we.nope', waiting: 'we.a.waiting' }
 
 export function WeAnswers({ card, colors }) {
+  const known = useKnownFaces()
   const people = (card.people || []).filter((p) => p.state === 'in' && (card.shows !== 'count' || p.me))
   if (!people.length) return null
   const tint = colors.we || colors.on
@@ -188,7 +206,7 @@ export function WeAnswers({ card, colors }) {
               },
             ]}
           >
-            <WeFace person={person} card={card} colors={colors} size={18} />
+            <WeFace person={person} card={card} colors={colors} known={known} size={18} />
             <Text style={[styles.answerText, { color: state === 'waiting' ? colors.inkDim : colors.ink }]} numberOfLines={1}>
               {label}
             </Text>
@@ -204,34 +222,8 @@ export function WeAnswers({ card, colors }) {
   )
 }
 
-// Did wes you already answered tonight, for Home: who has answered and what.
-// Each opens its page. Nothing when there are none.
-export function WeAnswered({ cards, colors, hide = '' }) {
-  const done = (cards || []).filter((card) => card.myState === 'in' && card.due && weMine(card)?.status && card.id !== hide)
-  if (!done.length) return null
-  return (
-    <View style={[styles.wrap, styles.pausedWrap, { borderColor: colors.we || colors.line, backgroundColor: colors.panel }]}>
-      {done.map((card, i) => (
-        <Pressable
-          key={card.id}
-          accessibilityRole="button"
-          onPress={() => goHash('/we', { id: card.id })}
-          style={[styles.row, i ? { borderTopColor: colors.line } : { borderTopWidth: 0 }]}
-        >
-          <View style={styles.copy}>
-            <Text style={[styles.question, { color: colors.ink }]} numberOfLines={2}>
-              {card.question}
-            </Text>
-            <WeAnswers card={card} colors={colors} />
-          </View>
-        </Pressable>
-      ))}
-    </View>
-  )
-}
-
 export function weStatusLine(card) {
-  const { key, vars } = weStatus(card)
+  const { key, vars } = weStatus(card, readPrefs().locale)
   return t(key, vars)
 }
 
@@ -246,12 +238,17 @@ export function WeAsks({ colors }) {
   const { cards, reload } = useWeTonight(account.user)
   const [busy, setBusy] = useState('')
   const [miss, setMiss] = useState('')
+  // State lags a frame: a double tap would send twice without this.
+  const sending = useRef(false)
   const asks = cards.filter((card) => card.myState === 'asked')
   if (!asks.length) return null
 
   async function reply(card, yes) {
+    if (sending.current) return
+    sending.current = true
     setBusy(card.id)
-    const out = await weReply(card.id, yes)
+    const out = await weReply(card.id, yes).catch(() => ({ miss: 'confirm.miss' }))
+    sending.current = false
     setBusy('')
     setMiss(out.miss ? tMiss(out.miss) : '')
     if (!out.miss) confirmDone(t(yes ? 'confirm.weJoined' : 'confirm.weDeclined'))
@@ -293,6 +290,8 @@ export function useWeAnswer(reload, book) {
   const [busy, setBusy] = useState('')
   const [miss, setMiss] = useState('')
   const [note, setNote] = useState('')
+  // State lags a frame: a double tap would answer (and cheer, and claim) twice.
+  const sending = useRef(false)
 
   async function run(id, job) {
     setBusy(id)
@@ -314,11 +313,22 @@ export function useWeAnswer(reload, book) {
     // A repeat tap on tonight's lit answer does nothing: a Did we answer has
     // no undo, so it must not clear by accident. Taking back is explicit.
     if (!night && status && mine?.status === status) return
+    // One answer at a time: a second tap while one is sending does nothing.
+    if (busy || sending.current) return
+    sending.current = true
+    try {
+      await answerNow(card, status, night)
+    } finally {
+      sending.current = false
+    }
+  }
+
+  async function answerNow(card, status, night) {
     const next = status
     const out = await run(card.id, () => weAnswer(card.id, next, night || undefined))
     // A Did we answer has no undo: it says it was saved, or that it was not.
     if (out?.miss) {
-      confirmMiss(tMiss(out.miss))
+      confirmMiss(tMiss(weMissKey(card, out.miss)))
       return
     }
     if (next) {
@@ -364,10 +374,14 @@ function weKicker(card) {
 // The Tonight card for a Did we: swipe right for did, left for nope, the
 // other open ones stacked behind.
 // frame: the worn card frame, the same as on your own cards.
-export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, buddy, frame = null }) {
-  const open = weOpenForMe(cards, new Date(), { early: true })
+// picked: a Did we tapped in the pills. It shows even once answered, with a
+// Did or Not yet stamp, and can't be answered twice.
+export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, buddy, frame = null, picked = null }) {
+  const open = picked ? [picked] : weOpenForMe(cards, new Date(), { early: true })
   if (!open.length) return null
   const card = open[0]
+  const mine = picked ? weMine(card)?.status || '' : ''
+  const locked = Boolean(mine) || Boolean(picked && card.done)
   // Did we wears its own accent, so a shared card reads apart from your own.
   const weColors = { ...colors, on: colors.we || colors.on, line: colors.we || colors.line, onDeep: colors.weDeep || colors.onDeep }
   return (
@@ -383,12 +397,16 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
         </View>
       }
       kicker={weKicker(card)}
+      mark={mine === 'did' || mine === 'nope' ? <MarkStamp status={mine === 'did' ? 'yes' : 'skip'} colors={weColors} /> : null}
       title={card.question}
       stampDid={t('tonight.swipeDid')}
       stampNope={t('tonight.swipeNope')}
       behind={open.slice(1).map((next) => ({ key: `we:${next.id}`, kicker: weKicker(next), title: next.question }))}
       onDid={() => onAnswer(card, 'did')}
       onNope={() => onAnswer(card, 'nope')}
+      blockDid={locked}
+      blockNope={locked}
+      onEdit={picked ? () => goHash('/we', { id: card.id }) : undefined}
       buddy={buddy}
       frame={frame}
     >
@@ -409,18 +427,21 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
 export function WePausedRow({ cards, colors, reload }) {
   const [busy, setBusy] = useState('')
   const [miss, setMiss] = useState('')
+  const sending = useRef(false)
   const paused = wePausedCards(cards)
   if (!paused.length) return null
 
   async function restart(card) {
+    if (sending.current) return
+    sending.current = true
     setBusy(card.id)
-    const out = await weRestart(card.id)
+    const out = await weRestart(card.id).catch(() => ({ miss: 'confirm.miss' }))
+    sending.current = false
     setBusy('')
     setMiss(out.miss ? tMiss(out.miss) : '')
-    if (!out.miss) {
-      confirmDone(t('we.restarted'))
-      reload()
-    }
+    if (!out.miss) confirmDone(t('we.restarted'))
+    // A miss may mean someone else already restarted or left it: show what is true now.
+    reload()
   }
 
   return (
@@ -431,7 +452,7 @@ export function WePausedRow({ cards, colors, reload }) {
             <Text style={[styles.question, { color: colors.ink }]} numberOfLines={2}>
               {card.question}
             </Text>
-            <Text style={[styles.meta, { color: colors.inkDim }]}>{t('we.paused')}</Text>
+            <Text style={[styles.meta, { color: colors.inkDim }]}>{t(weWeekKey(card, 'we.paused'))}</Text>
           </View>
           <KeyButton colors={colors} label={t('we.restart')} disabled={busy === card.id} onPress={() => restart(card)} />
         </View>
@@ -469,11 +490,11 @@ export function WeList({ colors }) {
               <WeFaces card={card} colors={colors} />
               <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
               <Text style={[styles.status, { color: card.done && card.due ? colors.we || colors.on : colors.ink }]} numberOfLines={1}>
-                {card.paused ? t('we.paused') : card.due ? weStatusLine(card) : t('we.notTonight')}
+                {card.paused ? t(weWeekKey(card, 'we.paused')) : card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
               </Text>
               {card.folder || streak > 0 || goal ? (
                 <Text style={[styles.meta, { color: colors.inkDim }]} numberOfLines={1}>
-                  {[card.folder, streak > 0 ? t('we.streak', { n: streak }) : '', goal ? t('we.goalLine', { n: goal.done, goal: goal.goal }) : '']
+                  {[card.folder, streak > 0 ? t('we.streak', { n: streak }) : '', goal ? t(weWeekKey(card, 'we.goalLine'), { n: goal.done, goal: goal.goal }) : '']
                     .filter(Boolean)
                     .join(' · ')}
                 </Text>
@@ -522,5 +543,10 @@ const styles = StyleSheet.create({
   answers: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
   answer: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 999, paddingLeft: 3, paddingRight: 9, paddingVertical: 3, maxWidth: '100%' },
   answerText: { fontFamily: fonts.uiSemi, fontSize: 12, flexShrink: 1 },
+  slimFaces: { flexDirection: 'row' },
+  slimSlot: { marginRight: 2 },
+  slimCopy: { flex: 1, minWidth: 0 },
+  slimQ: { fontFamily: fonts.uiSemi, fontSize: 13 },
+  slimStatus: { fontFamily: fonts.ui, fontSize: 12 },
   answerCount: { marginLeft: 2 },
 })

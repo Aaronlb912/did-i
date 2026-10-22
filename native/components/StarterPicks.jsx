@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { confirmDone } from '../lib/confirm.js'
@@ -7,6 +8,10 @@ import { fonts } from '../theme.js'
 
 export function StarterPicks({ book, onChange, now, colors, label, readyNow = false }) {
   const clock = now || new Date()
+  // Two quick picks land before the new book comes back as a prop; build the
+  // second on the first so neither is lost.
+  const last = useRef({ from: null, next: null })
+  const base = () => (last.current.from === book ? last.current.next : book)
   const open = unusedStarters(book, clock, readyNow)
   if (!open.length || !onChange) return null
 
@@ -20,7 +25,12 @@ export function StarterPicks({ book, onChange, now, colors, label, readyNow = fa
             label={starter.short}
             colors={colors}
             onPress={() => {
-              onChange(hangStarter(book, starter, clock, readyNow))
+              const from = base()
+              // A double tap on the same pick adds it once.
+              if (!unusedStarters(from, clock, readyNow).some((item) => item.short === starter.short)) return
+              const next = hangStarter(from, starter, clock, readyNow)
+              last.current = { from: book, next }
+              onChange(next)
               confirmDone(t('confirm.questionAdded'))
             }}
           />

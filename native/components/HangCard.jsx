@@ -38,6 +38,9 @@ export const HangCard = forwardRef(function HangCard(
     leadColor,
     // The schedule line's Change: { label, onPress, a11y }. Opens the When sheet.
     metaAction,
+    // Tour cutouts for the first words and the Change button.
+    leadTour,
+    metaTour,
     // The Add screen scrolls the card and the ideas under it into view itself.
     liftsItself = false,
   },
@@ -164,6 +167,7 @@ export const HangCard = forwardRef(function HangCard(
           accessibilityRole="button"
           accessibilityLabel={t('lead.change', { lead: leadText || t('tonight.didI') })}
           style={styles.leadHit}
+          {...leadTour}
         >
           <WaveLead
             text={leadText || t('tonight.didI')}
@@ -236,6 +240,7 @@ export const HangCard = forwardRef(function HangCard(
             accessibilityRole="button"
             accessibilityLabel={metaAction.a11y || metaAction.label}
             hitSlop={8}
+            {...metaTour}
             style={({ pressed }) => [styles.metaGo, pressed && { opacity: 0.6 }]}
           >
             <Text style={[styles.metaGoText, { color: leadColor || colors.on }]}>{metaAction.label}</Text>

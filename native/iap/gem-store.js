@@ -7,6 +7,7 @@ import { SHELF_IN } from '../../src/lib/cloud-sync.js'
 import { readUser } from '../../src/lib/account.js'
 import { submitGemPurchase } from '../../src/lib/gem-verify.js'
 import { addGemsShelf } from '../../src/lib/purse.js'
+import { applyGemBalanceToShelf, readGemBalance } from '../../src/lib/wallet.js'
 import { t } from '../../src/lib/i18n.js'
 import { showToast } from '../lib/toast-queue.js'
 
@@ -139,6 +140,11 @@ function testBuyToast() {
   showToast({ id: 'gems-test-miss', kind: 'error', text: t('gems.testMiss'), ms: 6000 })
 }
 
+// Paid, but the book is near 999,999: the server keeps the pack until there is room.
+function gemsWaitToast() {
+  showToast({ id: 'gems-waiting', kind: 'done', text: t('gems.waiting'), ms: 6000 })
+}
+
 function creditMissToast() {
   showToast({
     id: 'gems-credit-miss',
@@ -159,8 +165,15 @@ function creditMissToast() {
 // Server-side gems not yet on this phone land on the shelf.
 async function claimAndCredit() {
   const claimed = await claimGemPurchases()
-  if (claimed.gems > 0) {
-    const shelf = writeShelf(addGemsShelf(readShelf(), claimed.gems))
+  // Refresh even when nothing new was claimed: an earlier claim may have
+  // landed on the server while this phone missed the reply.
+  {
+    // The server's balance, not ours plus the pack: a sync may already have
+    // landed it, and adding again shows gems the account does not have.
+    const balance = await readGemBalance().catch(() => null)
+    const shelf = writeShelf(
+      balance === null ? addGemsShelf(readShelf(), claimed.gems) : applyGemBalanceToShelf(readShelf(), balance),
+    )
     try {
       global.window?.dispatchEvent?.({ type: SHELF_IN, detail: shelf })
     } catch {
@@ -277,7 +290,9 @@ async function connectStore() {
       // Paid but not credited: say so, with a tap that tries again. The store
       // keeps the buy open, so the next connect retries too.
       if (out?.miss === 'test') testBuyToast()
+      else if (out?.miss === 'pending') showToast({ id: 'gems-pending', kind: 'done', text: t('gems.pending'), ms: 4200 })
       else if (out?.miss && out.miss !== 'other') creditMissToast()
+      else if (!out?.miss && !out?.gems && (readShelf()?.boards?.[0]?.gems || 0) > 999899) gemsWaitToast()
     })
     errorSub = purchaseErrorListener((error) => {
       if (error?.code === ErrorCode.UserCancelled) return

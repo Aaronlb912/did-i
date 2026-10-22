@@ -31,6 +31,8 @@ import {
   weMine,
   weMonth,
   weNextMilestone,
+  weEarly,
+  weSlotLocked,
   weNextNight,
   weNudge,
   weQuestion,
@@ -47,7 +49,7 @@ import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
-import { weRuleKey, weWeekDots } from '../../src/lib/we-look.js'
+import { weNextCoinsKey, weRuleKey, weModeKey, weSlotDay, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
 import { boardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -209,7 +211,7 @@ function ruleParts({ draft, setDraft, open, fold, colors }) {
                 <Pill key={id} label={t(`we.mode.${id}`)} on={draft.mode === id} onPress={() => set('mode')(id)} colors={colors} radio />
               ))}
             </View>
-            <Text style={[styles.hint, { color: colors.inkDim }]}>{t(`we.modeNote.${draft.mode}`)}</Text>
+            <Text style={[styles.hint, { color: colors.inkDim }]}>{t(weModeKey(draft, 'we.modeNote', draft.mode))}</Text>
           </HangFold>
     ),
     shows: (last) => (
@@ -386,7 +388,7 @@ function WeSheets({ draft, setDraft, sheet, setSheet, colors }) {
               <ScheduleTile key={id} accent={colors.we} label={t(`we.mode.${id}`)} on={draft.mode === id} onPress={() => set('mode')(id)} colors={colors} />
             ))}
           </ScheduleTiles>
-          <Text style={[styles.hint, { color: colors.inkDim }]}>{t(`we.modeNote.${draft.mode}`)}</Text>
+          <Text style={[styles.hint, { color: colors.inkDim }]}>{t(weModeKey(draft, 'we.modeNote', draft.mode))}</Text>
           <Text style={[styles.hint, { color: colors.inkSoft }]}>{t('we.whatShows')}</Text>
           <View style={styles.pillRow}>
             {['waiting', 'all', 'count'].map((id) => (
@@ -688,6 +690,8 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       </View>
       <WeSheets draft={draft} setDraft={setDraft} sheet={sheet} setSheet={setSheet} colors={colors} />
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.newLead')}</Text>
+      {/* The main send, so the link button is never the only one in reach. */}
+      <DidButton colors={colors} label={t('we.make')} disabled={!ready} onPress={() => make(false)} />
       <KeyButton colors={colors} label={t('weLink.makeShare')} disabled={busy || !question} onPress={() => make(true)} />
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('weLink.hint')}</Text>
       {miss ? (
@@ -777,17 +781,23 @@ function openAmountBox({ title, colors, ...rest }) {
 function WeWeek({ card, colors }) {
   const night = boardDate()
   const [mine, setMine] = useState(() => new Map())
+  const [weekMiss, setWeekMiss] = useState(false)
+  const [again, setAgain] = useState(0)
   useEffect(() => {
     let alive = true
     weMyWeek(card.id, night)
       .then((map) => {
-        if (alive) setMine(map)
+        if (!alive) return
+        setWeekMiss(false)
+        setMine(map)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (alive) setWeekMiss(true)
+      })
     return () => {
       alive = false
     }
-  }, [card.id, night, weMine(card)?.status])
+  }, [card.id, night, weMine(card)?.status, again])
   const days = weWeekDots(card, night, mine)
   const locale = readPrefs().locale
   const tint = colors.we || colors.on
@@ -817,6 +827,12 @@ function WeWeek({ card, colors }) {
         ))}
       </View>
       <Meta colors={colors}>{t('we.weekKey')}</Meta>
+      {weekMiss ? (
+        <>
+          <Text style={[styles.miss, { color: colors.miss }]}>{t('we.loadMiss')}</Text>
+          <KeyButton colors={colors} label={t('gift.retry')} onPress={() => setAgain((n) => n + 1)} />
+        </>
+      ) : null}
     </View>
   )
 }
@@ -841,6 +857,8 @@ function WeCardPage({ book, cardId, onChange }) {
   // Your link for this card while it works, so you can turn it off.
   const [link, setLink] = useState('')
   const [linkSaid, setLinkSaid] = useState('')
+  const [linkMiss, setLinkMiss] = useState(false)
+  const [linkTry, setLinkTry] = useState(0)
   const [fresh] = useState(() => justMade === cardId)
   useEffect(() => {
     if (justMade === cardId) justMade = ''
@@ -849,13 +867,17 @@ function WeCardPage({ book, cardId, onChange }) {
     let alive = true
     myWeLink(cardId)
       .then((code) => {
-        if (alive) setLink(code)
+        if (!alive) return
+        setLinkMiss(false)
+        setLink(code)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (alive) setLinkMiss(true)
+      })
     return () => {
       alive = false
     }
-  }, [cardId])
+  }, [cardId, linkTry])
   const [miss, setMiss] = useState('')
   const ans = useWeAnswer(() => load(), book)
   // Not asked tonight: its next asked night can be answered early.
@@ -877,8 +899,8 @@ function WeCardPage({ book, cardId, onChange }) {
     const found = out.cards.find((c) => c.id === cardId) || null
     setCard(found)
     // The total and the early card read at the same time.
-    const night = found && !found.due && found.myState === 'in' ? weNextNight(found) : ''
-    const totals = found?.myState === 'in' ? weWeekTotals([found.id]) : null
+    const night = found && weEarly(found) && found.myState === 'in' ? weNextNight(found) : ''
+    const totals = found?.myState === 'in' ? weWeekTotals([found.id], undefined, found.slot || undefined) : null
     const laterAsk = night ? weTonight(night) : null
     if (totals) {
       totals.then((res) => {
@@ -905,15 +927,16 @@ function WeCardPage({ book, cardId, onChange }) {
 
   if (card === undefined) {
     return (
-      <ScreenShell book={book} title={t('we.title')} colors={colors}>
+      <ScreenShell book={book} title={t('we.title')} colors={colors} onRefresh={load}>
         <LateMeta colors={colors}>{t('we.loading')}</LateMeta>
       </ScreenShell>
     )
   }
   if (!card) {
     return (
-      <ScreenShell book={book} title={t('we.title')} colors={colors}>
+      <ScreenShell book={book} title={t('we.title')} colors={colors} onRefresh={load}>
         <Meta colors={colors}>{miss || t('we.gone')}</Meta>
+        {miss ? <KeyButton colors={colors} label={t('gift.retry')} onPress={load} /> : null}
         <KeyButton colors={colors} label={t('we.backTonight')} onPress={() => goHash('/tonight')} />
       </ScreenShell>
     )
@@ -1080,16 +1103,16 @@ function WeCardPage({ book, cardId, onChange }) {
       content: (
         <View>
           <Meta colors={colors}>
-            {t(`we.modeLine.${card.mode}`)} {t(`we.showsLine.${card.shows}`)}
+            {t(weModeKey(card, 'we.modeLine', card.mode))} {t(`we.showsLine.${card.shows}`)}
             {card.askAfter ? ` · ${t('we.fromTime', { time: clockWords(card.askAfter) })}` : ''}
           </Meta>
           {goal ? (
             <Meta colors={colors}>
-              {goal.finished ? t('we.goalDone', { goal: goal.goal }) : t('we.goalLine', { n: goal.done, goal: goal.goal })}
+              {goal.finished ? t(weWeekKey(card, 'we.goalDone'), { goal: goal.goal }) : t(weWeekKey(card, 'we.goalLine'), { n: goal.done, goal: goal.goal })}
             </Meta>
           ) : null}
-          <Meta colors={colors}>{t(month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth', { n: month.done, due: month.due })}</Meta>
-          {last.due ? <Meta colors={colors}>{t('we.lastMonth', { n: last.done, due: last.due })}</Meta> : null}
+          <Meta colors={colors}>{t(weWeekKey(card, month.due === 1 ? 'we.thisMonthOne' : 'we.thisMonth'), { n: month.done, due: month.due })}</Meta>
+          {last.due ? <Meta colors={colors}>{t(weWeekKey(card, 'we.lastMonth'), { n: last.done, due: last.due })}</Meta> : null}
           {card.shows === 'count' ? <Meta colors={colors}>{t('we.countOnly', { total: card.total })}</Meta> : null}
           <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
             <Cap colors={colors}>{t('we.people')}</Cap>
@@ -1097,7 +1120,7 @@ function WeCardPage({ book, cardId, onChange }) {
               <Meta key={p.id} colors={colors}>
                 {p.me ? t('we.you') : p.name}
                 {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
-                {card.mode === 'turns' && card.turn === p.id ? ` · ${t('we.tonightsTurn')}` : ''}
+                {card.mode === 'turns' && card.turn === p.id ? ` · ${t(weWeekKey(card, 'we.tonightsTurn'), { day: weSlotDay(card, readPrefs().locale) })}` : ''}
               </Meta>
             ))}
           </View>
@@ -1144,7 +1167,7 @@ function WeCardPage({ book, cardId, onChange }) {
         if (Number.isNaN(amount)) return setMiss(t('weAmount.bad'))
         publishSheet(null)
         // Before 9am the did may be last night's: put the amount on that night.
-        const night = weMine(card)?.status === 'did' ? boardDate() : graceNightIso() || boardDate()
+        const night = weMine(card)?.status === 'did' ? card.slot || boardDate() : graceNightIso() || boardDate()
         const out = await wePutAmount(card.id, amount, night)
         if (out.miss) return setMiss(tMiss(out.miss))
         setMiss('')
@@ -1182,6 +1205,12 @@ function WeCardPage({ book, cardId, onChange }) {
       </View>
       <Meta colors={colors}>{t('weLink.hint')}</Meta>
       {linkSaid ? <Meta colors={colors}>{linkSaid}</Meta> : null}
+      {linkMiss ? (
+        <>
+          <Text style={[styles.miss, { color: colors.miss }]}>{t('we.loadMiss')}</Text>
+          <KeyButton colors={colors} label={t('gift.retry')} onPress={() => setLinkTry((n) => n + 1)} />
+        </>
+      ) : null}
     </View>
   )
 
@@ -1266,7 +1295,7 @@ function WeCardPage({ book, cardId, onChange }) {
           </>
         )
       ) : null}
-      {card.due ? (
+      {card.due && !weSlotLocked(card) ? (
         <View style={styles.acts}>
           {/* Not answered yet: Did and Nope look the same, so neither reads as picked. */}
           {mine?.status === 'did' ? (
@@ -1332,7 +1361,7 @@ function WeCardPage({ book, cardId, onChange }) {
         {sum ? <Text style={[styles.hint, styles.tight, { color: colors.we }]}>{togetherLine(sum) || t('weAmount.none')}</Text> : null}
         <Meta colors={colors}>
           {t('we.best', { n: best })}
-          {next ? ` · ${(next - streak === 1 ? t('we.nextCoinsOne') : t('we.nextCoins', { n: next - streak }))}` : ''}
+          {next ? ` · ${(() => { const w = weNextCoinsKey(card, next - streak); return t(w.key, w.vars) })()}` : ''}
         </Meta>
       </View>
 
@@ -1511,7 +1540,7 @@ export function WeHomeList({ book, onChange }) {
           <Cap colors={colors}>{t('we.monthTogether')}</Cap>
           <Text style={[styles.big, { color: colors.we }]}>{t(nightsTogether === 1 ? 'we.nightsDoneOne' : 'we.nightsDone', { n: nightsTogether })}</Text>
           {longest?.streak ? (
-            <Meta colors={colors}>{t(longest.streak === 1 ? 'we.longestOne' : 'we.longest', { question: longest.card.question, n: longest.streak })}</Meta>
+            <Meta colors={colors}>{t(weWeekKey(longest.card, longest.streak === 1 ? 'we.longestOne' : 'we.longest'), { question: longest.card.question, n: longest.streak })}</Meta>
           ) : null}
         </View>
       ) : null}

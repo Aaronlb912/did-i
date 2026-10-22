@@ -96,6 +96,10 @@ function tonightWidgetApi() {
 // (widget-bridge.js) before it is written again.
 let timelineRead = false
 let readTimeline = null
+// A tap whose question is not on the shelf yet stays in the stored timeline.
+let tapsPending = false
+// Held at most 2 minutes: a question that never arrives was deleted, and the widget must redraw.
+let pendingSince = 0
 
 export function setWidgetTimelineReader(fn) {
   readTimeline = typeof fn === 'function' ? fn : null
@@ -112,6 +116,9 @@ export async function syncTonightWidget(shelf) {
     queueWidgetSync(shelf)
     return
   }
+  // A tap made since the last read would be drawn over by the timeline
+  // written below, so a new one sends this through the read again.
+  if (Platform.OS === 'ios' && timelineRead && readTimeline && (await timelineHasNewTaps())) timelineRead = false
   if (Platform.OS === 'ios' && !timelineRead && readTimeline) {
     // A failed read must not hold the widget back for good.
     await readTimeline().catch(() => {})
@@ -119,6 +126,8 @@ export async function syncTonightWidget(shelf) {
     // answer made in the app meanwhile is not drawn over.
     shelf = readShelf()
   }
+  // A tap whose question is not here yet stays on the widget until it merges.
+  if (Platform.OS === 'ios' && tapsPending) return
   const built = buildTonightWidgetProps(shelf)
   const props = enrichTonightWidgetProps(shelf, built)
   lastTonightKey = tonightWidgetKey(props)
@@ -242,6 +251,22 @@ export async function syncTogetherWidget(people = readTogetherPeople()) {
   }
 }
 
+// The entry showing now holds a status the app did not write: a tap.
+async function timelineHasNewTaps() {
+  try {
+    const api = await tonightWidgetApi()
+    if (!api?.getTimeline) return false
+    const now = Date.now()
+    const shown = (await api.getTimeline()).filter((entry) => entry?.props && entry.date.getTime() <= now)
+    const last = shown[shown.length - 1]?.props
+    if (!last) return false
+    const mine = new Map((readWidgetTonightProps()?.items || []).map((item) => [`${item.lampId}|${item.periodKey}`, item.status]))
+    return (last.items || []).some((item) => mine.get(`${item.lampId}|${item.periodKey}`) !== item.status)
+  } catch {
+    return false
+  }
+}
+
 export async function pullWidgetTimelineIntoShelf(shelf) {
   if (!nativeWidgetsEnabled()) return shelf
   if (Platform.OS !== 'ios') return shelf
@@ -255,9 +280,23 @@ export async function pullWidgetTimelineIntoShelf(shelf) {
     const shown = (await api.getTimeline()).filter((entry) => entry?.props && entry.date.getTime() <= now)
     // Only a read that worked lets the next updateTimeline replace the taps.
     timelineRead = true
+    tapsPending = false
     if (!shown.length) return shelf
-    writeWidgetTonightProps(shown[shown.length - 1].props)
-    return shown.reduce((next, entry) => mergeWidgetPropsIntoShelf(next, entry.props), shelf)
+    // The timeline also holds the app's own snapshots. A status the app wrote
+    // itself is no tap: merging it back would undo an undo made elsewhere.
+    const mine = new Map((readWidgetTonightProps()?.items || []).map((item) => [`${item.lampId}|${item.periodKey}`, item.status]))
+    const taps = (props) => ({ ...props, items: (props.items || []).filter((item) => mine.get(`${item.lampId}|${item.periodKey}`) !== item.status) })
+    const unmatched = []
+    const merged = shown.reduce((next, entry) => mergeWidgetPropsIntoShelf(next, taps(entry.props), new Date(), unmatched), shelf)
+    // Only after the merge: a stored tap status would hide that tap next time.
+    // Unmatched taps are not recorded, so a later read still merges them, and
+    // the timeline is left alone until then.
+    const last = shown[shown.length - 1].props
+    if (!unmatched.length) pendingSince = 0
+    else if (!pendingSince) pendingSince = Date.now()
+    tapsPending = unmatched.length > 0 && Date.now() - pendingSince < 2 * 60 * 1000
+    writeWidgetTonightProps(tapsPending ? { ...last, items: (last.items || []).filter((item) => !unmatched.some((u) => u.lampId === item.lampId && u.periodKey === item.periodKey)) } : last)
+    return merged
   } catch {
     return shelf
   }

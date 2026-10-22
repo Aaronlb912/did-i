@@ -17,6 +17,7 @@ revoke all on public.shop_drop_days from anon, authenticated;
 insert into public.shop_drop_days (day) values
   ('2026-10-09'),
   ('2026-10-23'),
+  ('2026-10-28'),
   ('2026-11-06'),
   ('2026-11-20'),
   ('2026-12-04'),

@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frame: Pumpkin Patch</title>
+<style>
+:root{color-scheme:dark;--bg:#07090d;--panel:#111620;--ink:#eef1f6;--soft:#a3abb8;--dim:#5f6876;--line:#1f2632;--gold:#f2c45a;--accent:#c9f24d;
+ --ui:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;--display:Georgia,"Times New Roman",serif;--mono:ui-monospace,Consolas,monospace;--halo:#16203a}
+body.light{color-scheme:light;--bg:#e9ece4;--panel:#f7f8f4;--ink:#171a14;--soft:#4c5446;--dim:#7a8274;--line:#d3d8cb;--gold:#9a6b10;--halo:#ffffff}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 50% -10%,var(--halo) 0,transparent 60%),var(--bg);color:var(--ink);font:400 15px/1.55 var(--ui)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 16px 80px;display:grid;gap:34px}
+header{text-align:center;display:grid;gap:12px;justify-items:center}
+.kicker{font:700 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font:800 clamp(34px,7vw,56px)/1 var(--display);margin:0}
+h3{margin:0;font:800 24px/1.1 var(--display)}
+.lede{color:var(--soft);margin:0;max-width:64ch}
+.controls{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:var(--panel);border:1px solid var(--line);gap:4px}
+.seg button{font:600 13px/1 var(--ui);padding:9px 14px;border-radius:999px;border:0;background:transparent;color:var(--soft);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg i{width:10px;height:10px;border-radius:50%;display:inline-block}
+button:focus-visible{outline:3px solid #6aa8ff;outline-offset:2px}
+section.opt{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:18px;display:grid;gap:14px}
+.tag{font:700 10.5px/1 var(--mono);letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.opt p{margin:0;color:var(--soft);font-size:14.5px;max-width:78ch}
+.feat{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:0;list-style:none;font:600 12.5px/1.4 var(--mono);color:var(--ink)}
+.feat li::before{content:"· ";color:var(--gold)}
+.row{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:flex-start}
+.stage{border-radius:20px;padding:6px;display:grid;justify-items:center;gap:2px}
+.cap{font:700 11px/1.3 var(--mono);letter-spacing:.06em;color:var(--soft);text-align:center;padding-bottom:8px}
+.fw{position:relative;flex:none}
+.fw>.lay{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.card{position:absolute;box-sizing:border-box;overflow:hidden}
+.card .k{font:700 11px/1 var(--mono);letter-spacing:.16em}
+.card .q{font:800 27px/1.12 var(--ui);margin-top:14px;max-width:92%}
+.card .s{font:600 14px/1.3 var(--ui);margin-top:10px}
+.card .pills{position:absolute;left:20px;right:20px;bottom:20px;display:flex;gap:12px}
+.card .pill{flex:1;height:46px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:800 16px/1 var(--ui)}
+.card .chip{position:absolute;right:20px;top:18px;font:700 11px/1 var(--ui);padding:6px 9px;border-radius:999px}
+.tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.tile{width:120px;height:144px;border-radius:16px;position:relative;overflow:hidden;flex:none}
+.tile .fw{position:absolute}
+.tl{font:600 10px/1.2 var(--mono);color:var(--soft);text-align:center;margin-top:4px;max-width:120px}
+.tilecol{display:grid;justify-items:center}
+.cmp{display:grid;gap:10px}
+.cmp h4{margin:0;font:800 18px/1.1 var(--display)}
+.review{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:8px 18px;font-size:13.5px;color:var(--soft)}
+.review b{color:var(--ink)}
+/* motion */
+@keyframes breatheO{0%,100%{opacity:.6}50%{opacity:1}}
+.breatheO{animation:breatheO 7s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 7s linear infinite}
+@keyframes sweep{0%,20%{transform:translateX(-70%)}60%,100%{transform:translateX(70%)}}
+.sweep{animation:sweep 4.5s ease-in-out infinite}
+@keyframes fall{from{transform:translateY(-30px)}to{transform:translateY(420px)}}
+.fall{animation:fall linear infinite}
+@keyframes lamp{0%,100%{opacity:.72}50%{opacity:1}}
+.lamp{animation:lamp 4.2s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.25}50%{opacity:1}}
+.tw{animation:tw 2.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-2.6deg)}50%{transform:translateY(-.9px) rotate(2.6deg)}}
+.bob{transform-box:fill-box;transform-origin:50% 100%;animation:bob 3.2s ease-in-out infinite}
+@keyframes driftL{from{transform:translateX(0)}to{transform:translateX(-30px)}}
+@keyframes driftR{from{transform:translateX(0)}to{transform:translateX(30px)}}
+.driftL{animation:driftL 5.6s linear infinite}.driftR{animation:driftR 8.4s linear infinite}
+@keyframes flap{0%,100%{transform:scaleY(1)}50%{transform:scaleY(-.5)}}
+.flap{transform-box:fill-box;transform-origin:50% 100%;animation:flap 1.6s ease-in-out infinite}
+@keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(-2px,-1.5px)}}
+.drift{animation:drift 7s ease-in-out infinite}
+@keyframes drip{0%,55%{transform:translateY(0) scale(.2);opacity:0}62%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(46px) scale(.9);opacity:0}}
+.drip{transform-box:fill-box;transform-origin:50% 0;animation:drip 3.6s ease-in infinite}
+@keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 4.4s ease-in-out infinite}
+.still *,body.nomotion *{animation:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+.notes{color:var(--soft);font-size:14px;max-width:80ch;margin:0 auto}
+@keyframes pflick{0%,100%{opacity:1}13%{opacity:.88}27%{opacity:.98}41%{opacity:.8}58%{opacity:1}72%{opacity:.9}}
+.pflick{animation:pflick 3s ease-in-out infinite}
+@keyframes pmoon{from{transform:translateY(26px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pmoon{animation:pmoon 3s cubic-bezier(.2,.7,.2,1) 1 both}
+@keyframes pbat1{0%{transform:translate(-26px,3px);opacity:0}12%{opacity:1}50%{transform:translate(0,-3px)}88%{opacity:1}100%{transform:translate(26px,3px);opacity:0}}
+@keyframes pbat2{0%{transform:translate(24px,-2px);opacity:0}12%{opacity:1}50%{transform:translate(0,3px)}88%{opacity:1}100%{transform:translate(-24px,-2px);opacity:0}}
+.pbat1{animation:pbat1 9s linear infinite}
+.pbat2{animation:pbat2 13s linear 3s infinite;opacity:0}
+@keyframes pflap{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.45)}}
+.pflap{transform-box:fill-box;transform-origin:50% 60%;animation:pflap .5s ease-in-out infinite}
+@keyframes webbob{0%,100%{transform:translateY(0)}50%{transform:translateY(10px)}}
+.webbob{animation:webbob 3s ease-in-out infinite}
+.still *,body.nomotion *{animation:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+ <span class="kicker">Frame · Halloween 2026</span>
+ <h1>Pumpkin Patch</h1>
+ <p class="lede">A special frame, free Oct 28 to 31 and kept after. One jack-o'-lantern for every question today. Each Did lights one from inside. Switch theme, look and motion to check it.</p>
+</header>
+<div class="controls" role="group" aria-label="Preview">
+ <div class="seg" id="theme"><button aria-pressed="true" data-v="dark">Dark</button><button aria-pressed="false" data-v="light">Light</button></div>
+ <div class="seg" id="look"><button aria-pressed="true" data-v="lime"><i style="background:#c9f24d"></i>Lime</button><button aria-pressed="false" data-v="sky"><i style="background:#4aa8ff"></i>Sky</button><button aria-pressed="false" data-v="maple"><i style="background:#fa774f"></i>Maple</button></div>
+ <div class="seg" id="motion"><button aria-pressed="true" data-v="on">Motion</button><button aria-pressed="false" data-v="off">Still</button></div>
+</div>
+<div id="out" style="display:grid;gap:34px"></div>
+<p class="notes">Port notes: pumpkin drawing uses only Path, Ellipse, Circle, Line, LinearGradient, RadialGradient and ClipPath, in card space like art.jsx. Glow and moon are under the card; vine and pumpkins sit just outside it. Motion here is CSS; in the app it becomes Mover worklets and stops for still tiles, reduced motion and low power.</p>
+</div>
+
+<script>
+const PAD=48;
+const fx=n=>Math.round(n*100)/100;
+let N=0;const uid=p=>p+(++N);
+function rrPath(x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));return `M${fx(x)} ${fx(y+h-r)}L${fx(x)} ${fx(y+r)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+r)} ${fx(y)}L${fx(x+w-r)} ${fx(y)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+w)} ${fx(y+r)}L${fx(x+w)} ${fx(y+h-r)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+w-r)} ${fx(y+h)}L${fx(x+r)} ${fx(y+h)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x)} ${fx(y+h-r)}Z`}
+function rrLength(w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));return 2*(w-2*r)+2*(h-2*r)+2*Math.PI*r}
+// Same as geometry.js rrPointAt: starts at the bottom of the left edge, clockwise. (nx,ny) points out.
+function rrPointAt(x,y,w,h,r,d){r=Math.max(0,Math.min(r,w/2,h/2));const sv=h-2*r,sh=w-2*r,arc=Math.PI*r/2,L=rrLength(w,h,r);let s=((d%L)+L)%L;
+ const out=(px,py,ang)=>({x:px,y:py,ang,nx:Math.sin(ang),ny:-Math.cos(ang)});const onArc=(cx,cy,from,k)=>{const th=from+(r?k/r:0);return out(cx+r*Math.cos(th),cy+r*Math.sin(th),th+Math.PI/2)};
+ if(s<sv)return out(x,y+h-r-s,-Math.PI/2);s-=sv;if(s<arc)return onArc(x+r,y+r,Math.PI,s);s-=arc;if(s<sh)return out(x+r+s,y,0);s-=sh;if(s<arc)return onArc(x+w-r,y+r,-Math.PI/2,s);s-=arc;
+ if(s<sv)return out(x+w,y+r+s,Math.PI/2);s-=sv;if(s<arc)return onArc(x+w-r,y+h-r,0,s);s-=arc;if(s<sh)return out(x+w-r-s,y+h,Math.PI);s-=sh;return onArc(x+r,y+h-r,Math.PI/2,Math.min(s,arc))}
+const ring=(f,o)=>rrPath(-o,-o,f.w+2*o,f.h+2*o,Math.max(0,f.R+o));
+const band=(f,a,b)=>`${ring(f,b)} ${ring(f,a)}`;
+function spots(f,o,n,t0=0){const W=f.w+2*o,H=f.h+2*o,L=rrLength(W,H,f.R+o);return Array.from({length:n},(_,i)=>rrPointAt(-o,-o,W,H,f.R+o,((t0+i/n)%1)*L))}
+const seeded=s=>{let x=s;return()=>{x=(x*9301+49297)%233280;return x/233280}};
+const lerp=(a,b,t)=>a+(b-a)*t;
+function mix(c1,c2,t){const p=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));const a=p(c1),b=p(c2);return '#'+a.map((v,i)=>Math.round(lerp(v,b[i],t)).toString(16).padStart(2,'0')).join('')}
+function openTopPath(w,h,r,gap){const m=w/2;return `M${m-gap} 0L${r} 0A${r} ${r} 0 0 0 0 ${r}L0 ${h-r}A${r} ${r} 0 0 0 ${r} ${h}L${w-r} ${h}A${r} ${r} 0 0 0 ${w} ${h-r}L${w} ${r}A${r} ${r} 0 0 0 ${w-r} 0L${m+gap} 0`}
+// A small hole or blob as a closed subpath: a circle.
+const circ=(x,y,r)=>`M${fx(x-r)} ${fx(y)}A${r} ${r} 0 1 0 ${fx(x+r)} ${fx(y)}A${r} ${r} 0 1 0 ${fx(x-r)} ${fx(y)}Z`;
+/* ================= Existing frames, recreated roughly from art.jsx ================= */
+function goldUnder(f){const id=uid('gd');let halo='';for(let i=0;i<3;i++){const k=-10-1-i*2;halo+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="#e2b75a" stroke-width="2" stroke-opacity="${fx(.18*Math.pow(1-i/3,1.6))}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a5414"/><stop offset=".22" stop-color="#f8dc8a"/><stop offset=".4" stop-color="#b8892b"/><stop offset=".52" stop-color="#fff1c2"/><stop offset=".66" stop-color="#a87a24"/><stop offset=".84" stop-color="#f3d27a"/><stop offset="1" stop-color="#7a5414"/></linearGradient></defs>${halo}<path d="${ring(f,10)}" fill="url(#${id})"/><path d="${ring(f,9.5)}" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1"/>`}
+function goldHtml(f){const o=10;return `<div style="position:absolute;left:${PAD-o}px;top:${PAD-o}px;width:${f.w+2*o}px;height:${f.h+2*o}px;border-radius:${f.R+o}px;overflow:hidden"><div class="sweep" style="position:absolute;inset:-40% -60%;background:linear-gradient(100deg,transparent 44%,rgba(255,255,255,.6) 50%,transparent 56%)"></div></div>`}
+const FILI=id=>`<path d="M6 58 C6 26 26 6 58 6" fill="none" stroke="url(#${id})" stroke-width="3"/><path d="M14 54 C16 32 32 16 54 14" fill="none" stroke="url(#${id})" stroke-width="1.6"/><path d="M6 22 q10 -2 12 -12 q2 10 12 12 q-10 2 -12 12 q-2 -10 -12 -12z" fill="url(#${id})"/><circle cx="34" cy="34" r="3" fill="url(#${id})"/><path d="M40 8 q6 4 4 10 M8 40 q4 6 10 4" fill="none" stroke="url(#${id})" stroke-width="1.4"/>`;
+const GDEF=id=>`<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1c2"/><stop offset=".5" stop-color="#e2b75a"/><stop offset="1" stop-color="#8a6420"/></linearGradient></defs>`;
+function corners(f,off,art){return [[off,off,0],[f.w-off,off,90],[f.w-off,f.h-off,180],[off,f.h-off,270]].map(([x,y,a])=>`<g transform="translate(${x} ${y}) rotate(${a})">${art}</g>`).join('')}
+function goldOver(f){const id='gg'+uid('');return GDEF(id)+corners(f,-14,FILI(id))}
+function filigreeOver(f){const id='gf'+uid('');return GDEF(id)+`<path d="${ring(f,.75)}" fill="none" stroke="#c9a34e" stroke-width="1.5"/><path d="${ring(f,6.5)}" fill="none" stroke="rgba(201,163,78,.5)" stroke-width="1"/>`+corners(f,-4,FILI(id))}
+function flowersOver(f){const id=uid('fl');const bq=`${[[40,8,0],[64,30,40],[18,40,80]].map(([x,y,r])=>`<ellipse cx="${x}" cy="${y}" rx="15" ry="6" fill="url(#${id}l)" transform="rotate(${r} ${x} ${y})"/>`).join('')}${[[22,22,11],[46,16,8],[16,48,8],[38,38,6]].map(([x,y,s])=>`<g transform="translate(${x} ${y})">${[0,72,144,216,288].map(r=>`<ellipse rx="${s}" ry="${fx(s*.62)}" cx="${fx(s*.8)}" fill="url(#${id}p)" transform="rotate(${r})"/>`).join('')}<circle r="${fx(s*.42)}" fill="#ffd86b"/></g>`).join('')}`;
+ return `<defs><radialGradient id="${id}p"><stop offset="0" stop-color="#fff0f6"/><stop offset=".6" stop-color="#f7b3cc"/><stop offset="1" stop-color="#e77aa4"/></radialGradient><linearGradient id="${id}l" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9be27f"/><stop offset="1" stop-color="#3f8a3a"/></linearGradient></defs><path d="${ring(f,.5)}" fill="none" stroke="rgba(242,167,195,.45)"/><g transform="translate(-20 -20) scale(1.2)">${bq}</g><g transform="translate(${f.w+20} ${f.h+20}) rotate(180) scale(1.2)">${bq}</g>`}
+function auroraUnder(f){const id=uid('au');let h='';const steps=f.still?3:15;for(let i=0;i<steps;i++){const k=-3-1-i*2;h+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="url(#${id})" stroke-width="2" stroke-opacity="${fx(.42*Math.pow(1-i/steps,1.6))}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#46f0c0"/><stop offset=".35" stop-color="#6aa8ff"/><stop offset=".7" stop-color="#c38bff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient></defs><g class="breatheO">${h}</g>`}
+function auroraHtml(f){const o=3,D=Math.hypot(f.w,f.h)+20;return `<div style="position:absolute;left:${PAD-o}px;top:${PAD-o}px;width:${f.w+2*o}px;height:${f.h+2*o}px;border-radius:${f.R+o}px;overflow:hidden"><div class="spin" style="position:absolute;width:${D}px;height:${D}px;left:${(f.w+2*o-D)/2}px;top:${(f.h+2*o-D)/2}px;background:conic-gradient(#46f0c0,#6aa8ff,#c38bff,#ff7ad9,#46f0c0)"></div></div>`}
+function litPath(p,r){const waxing=p<.5,k=Math.cos(2*Math.PI*p),rx=Math.abs(k)*r,cres=Math.abs(p-.5)>.25;
+ return `M0 ${-r}A${r} ${r} 0 0 ${waxing?1:0} 0 ${r}A${fx(rx)} ${r} 0 0 ${waxing?(cres?0:1):(cres?1:0)} 0 ${-r}Z`}
+function moonDisc(p,r,id){return `<circle r="${r}" fill="#262c3a"/><path d="${litPath(p,r)}" fill="url(#${id})"/><circle r="${r}" fill="none" stroke="rgba(241,230,196,.35)" stroke-width=".8"/>`}
+function moonOver(f){const id=uid('mn'),p=.62;let week='';for(let i=0;i<7;i++){const q=(p-.0339*(6-i)+1)%1,t=i===6;week+=`<g transform="translate(${fx(f.w*(.12+i*.127))} ${f.h+1})">${t?`<circle r="12" fill="none" stroke="rgba(241,230,196,.6)"/>`:''}${moonDisc(q,t?8:6.5,id)}</g>`}
+ return `<defs><radialGradient id="${id}" cx=".4" cy=".35" r=".6"><stop offset="0" stop-color="#fffaf0"/><stop offset=".7" stop-color="#f1e6c4"/><stop offset="1" stop-color="#d8c99a"/></radialGradient><radialGradient id="${id}h"><stop offset="0" stop-color="#f1e6c4" stop-opacity=".43"/><stop offset="1" stop-color="#f1e6c4" stop-opacity="0"/></radialGradient></defs>
+ <path d="${openTopPath(f.w,f.h,f.R,34)}" fill="none" stroke="rgba(241,230,196,.55)" stroke-width="1.5"/><g transform="translate(${f.w/2} -2)"><circle r="44" fill="url(#${id}h)"/>${moonDisc(p,20,id)}<circle r="5" cx="-6" cy="4" fill="rgba(0,0,0,.08)"/><circle r="3" cx="7" cy="-7" fill="rgba(0,0,0,.07)"/></g>${week}`}
+const HOUSES=[[26,13,'roof'],[20,18,'tall'],[30,12,'wide'],[22,15,'roof'],[24,17,'tower']];
+function streetOver(f){const total=Math.max(3,Math.min(8,f.p.total||4)),lit=Math.min(total,f.p.answered||0),all=f.p.total>0&&f.p.answered>=f.p.total,base=f.h+22,step=f.w/total;
+ let o=`<path d="${band(f,0,22)}" fill-rule="evenodd" fill="#0f1424" stroke="#2e3650" stroke-width="1.2"/>${all?`<path d="${ring(f,22)}" fill="none" stroke="#ffd166" stroke-opacity=".35" stroke-width="6"/>`:''}<line x1="-18" y1="${base}" x2="${f.w+18}" y2="${base}" stroke="#2e3650" stroke-width="2"/>`;
+ for(let i=0;i<total;i++){const [hw,hh,k]=HOUSES[i%5],cx=step*(i+.5),top=base-hh,on=i<lit;
+  if(k==='roof')o+=`<path d="M${cx-hw/2-3} ${top}L${cx} ${top-7}L${cx+hw/2+3} ${top}Z" fill="#2e3650"/>`;if(k==='tower')o+=`<path d="M${cx-hw/2} ${top}L${cx} ${top-8}L${cx+hw/2} ${top}Z" fill="#2e3650"/>`;if(k==='tall'||k==='wide')o+=`<rect x="${cx-hw/2-2}" y="${top-4}" width="${hw+4}" height="5" fill="#2e3650"/>`;
+  o+=`<rect x="${cx-hw/2}" y="${top}" width="${hw}" height="${hh}" fill="#232a3d"/>${on?`<rect x="${cx-11}" y="${top}" width="22" height="12" fill="#ffd166" opacity=".14"/>`:''}<rect x="${cx-4}" y="${top+3}" width="8" height="6" rx="1.5" fill="${on?'#ffd166':'#141826'}"/>`}
+ if(all)o+=`<circle cx="${f.w+6}" cy="-10" r="11" fill="#fff4cf"/><circle cx="${f.w+11}" cy="-13" r="10" fill="#0f1424"/>`;return o}
+/* ================= WEB (port of art.jsx WebOver) ================= */
+function webArt(){return `<g stroke="rgba(210,210,220,.65)" stroke-width="1" fill="none"><path d="M2 2L64 34M2 2L34 64M2 2L54 54"/>${[16,30,44,58].map(r=>`<path d="M${r} 2Q${fx(r*.9)} ${fx(r*.38)} ${fx(r*.88)} ${fx(r*.47)}Q${fx(r*.72)} ${fx(r*.72)} ${fx(r*.47)} ${fx(r*.88)}Q${fx(r*.38)} ${fx(r*.9)} 2 ${r}"/>`).join('')}</g>`}
+function webOver(f){const id=uid('wb'),k=84/72,x=f.w-46;
+ const sp=`<g transform="translate(${x+1} 62)" stroke="#2a2a30" stroke-width="1.4" stroke-linecap="round" fill="none">${[-1,1].map(s=>`<path d="M0 -1L${s*8} -6L${s*10} -2M0 0L${s*9} -2L${s*11} 2M0 1L${s*9} 3L${s*10} 7M0 2L${s*7} 6L${s*8} 10"/>`).join('')}<ellipse cx="0" cy="1" rx="4.5" ry="5.5" fill="#2a2a30" stroke="none"/><circle cx="0" cy="-5" r="3" fill="#2a2a30" stroke="none"/></g>`;
+ return `<defs><clipPath id="${id}"><path d="${rrPath(1,1,f.w-2,f.h-2,f.R-1)}"/></clipPath></defs><path d="${ring(f,.5)}" fill="none" stroke="rgba(180,180,190,.4)"/><g clip-path="url(#${id})"><g transform="translate(-6 -6) scale(${fx(k)})">${webArt()}</g><g transform="translate(${f.w+6} ${f.h+6}) rotate(180) scale(${fx(k)})">${webArt()}</g></g><g class="webbob"><line x1="${x+1}" y1="-6" x2="${x+1}" y2="56" stroke="rgba(200,200,210,.6)" stroke-width="1.5"/>${sp}</g>`}
+
+
+/* ================= PUMPKIN PATCH (special, Oct 28 to 31) ================= */
+// One jack-o'-lantern per question today on a vine along the bottom and lower sides.
+// A thin vine climbs both sides and curls near the top corners. Under the card: the halo of
+// each lit pumpkin and, when every question is answered, a full moon behind the top right
+// corner with two bats. Over: vine, leaves, tendrils, then the pumpkins, all outside the card.
+const ringAt=(f,o,d)=>rrPointAt(-o,-o,f.w+2*o,f.h+2*o,f.R+o,d);
+const ARCLEN=(f,o)=>{const W=f.w+2*o,H=f.h+2*o,rr=Math.max(0,Math.min(f.R+o,W/2,H/2));return{rr,arc:Math.PI*rr/2,sh:W-2*rr,sv:H-2*rr}};
+const VO=4.6; // vine ring offset: the vine never touches the card
+function patchLayout(f){
+ const P=f.p,T=Math.max(1,Math.min(8,P.total||4));
+ const A=Math.min(T,P.answered||0),SK=Math.min(T-A,P.skipped||0);
+ const done=f.still?true:(P.total>0&&A+SK>=T);
+ const tile=f.still&&f.w<=220,K=tile?1.7:1;
+ const big=f.w>250,many=T>=7;
+ const sd=(many?(big?92:76):(big?56:46))*(tile?1.1:1);
+ const g=ARCLEN(f,12),U=2*sd+2*g.arc+g.sh;
+ const bs=T<=4?1:T<=6?.92:1;
+ const rnd=seeded(77+T);
+ const pumps=[];
+ for(let i=0;i<T;i++){const u=(i+.5)/T,d=sd-U*u,n0=ringAt(f,12,d),w=Math.abs(n0.ny);
+  const sc=K*(many?.62:bs*(.78+.22*w));
+  // gap from the card: the pumpkin's reach along the outward normal (stem counts at the bottom), plus 1.5 px
+  const ext=Math.max(Math.hypot(14.3*n0.nx,11*n0.ny),12.4*Math.max(0,n0.ny))*sc;
+  const op=ext+1.5,pt=ringAt(f,op,d);
+  pumps.push({x:pt.x,y:pt.y,rot:-pt.nx*3+(rnd()-.5)*5,sc,lit:tile?true:i<A,d:d,op,i,pt})}
+ // the vine: lower run (thick) plus thin runs up the sides to the top corners
+ const gv=ARCLEN(f,VO),sdv=sd+(big?46:38);
+ const dL=gv.sv+gv.arc+(big?70:56);              // left end: up the left side, round the corner, along the top
+ const upR=Math.min(gv.sv,(f.h+VO-gv.rr)-(big?46:40));
+ const dR=-(gv.arc+gv.sh+gv.arc+upR);            // right end: up the right side, stops below the moon
+ const UV=dL-dR,vp=[];
+ for(let s=0;s<=UV;s+=3){const pt=ringAt(f,VO,dL-s),w=1.5*Math.sin(s/14.5)+.8*Math.sin(s/6.3+1.7);
+  vp.push({x:pt.x+pt.nx*w,y:pt.y+pt.ny*w,nx:pt.nx,ny:pt.ny,s})}
+ // s range of the thick lower run
+ const sThick0=dL-sdv,sThick1=dL+gv.arc*2+gv.sh+sdv; // distance from the left end where d = sdv ... -(sdv+...)
+ return{T,A,SK,done,K,tile,pumps,vp,UV,s0:dL-sdv,s1:dL+(2*gv.arc+gv.sh+sdv)}}
+
+function leafPath(L,wd){return `M0 0C${fx(L*.22)} ${fx(-wd)} ${fx(L*.68)} ${fx(-wd*.95)} ${fx(L)} 0C${fx(L*.68)} ${fx(wd*.95)} ${fx(L*.22)} ${fx(wd)} 0 0Z`}
+function curl(x,y,a0,r0,turns,dir){let d=`M${fx(x)} ${fx(y)}`;const n=Math.round(turns*14);let cx=x+Math.cos(a0+dir*Math.PI/2)*r0,cy=y+Math.sin(a0+dir*Math.PI/2)*r0;
+ for(let i=1;i<=n;i++){const t=i/n,ang=a0-dir*Math.PI/2+dir*t*turns*2*Math.PI,r=r0*(1-.86*t);d+=`L${fx(cx+Math.cos(ang)*r)} ${fx(cy+Math.sin(ang)*r)}`}return d}
+
+function pumpkinSvg(id,p,f,lit){
+ const g=lit?`url(#${id}lit)`:`url(#${id}dim)`,st=lit?'#8a3004':'#1f0d05';
+ const lobes=[[-9.6,1,4.8,8.2],[9.6,1,4.8,8.2],[-5.5,.2,7.1,9.8],[5.5,.2,7.1,9.8],[0,0,7.4,10.5]];
+ let b=lobes.map(([cx,cy,rx,ry])=>`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${g}" stroke="${st}" stroke-width=".75" stroke-opacity=".9"/>`).join('');
+ b+=lobes.slice(0,2).map(([cx,cy,rx,ry])=>`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#3a1200" opacity="${lit?.2:.22}"/>`).join('')+lobes.slice(2,4).map(([cx,cy,rx,ry])=>`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#3a1200" opacity="${lit?.08:.12}"/>`).join('');
+ if(lit)b+=lobes.map(([cx,cy,rx,ry])=>`<ellipse cx="${fx(cx-rx*.32)}" cy="${fx(cy-ry*.52)}" rx="${fx(rx*.3)}" ry="${fx(ry*.17)}" fill="#fff" opacity=".14" transform="rotate(-18 ${fx(cx-rx*.32)} ${fx(cy-ry*.52)})"/>`).join('');
+ b+=`<path d="M-8.4 6.6Q0 11.8 8.4 6.6Q0 9.2 -8.4 6.6Z" fill="#1e0a02" opacity=".34"/>`;
+ const eyeL='M-6.5 -1.1L-2.3 -2.3L-3.9 -6.3Z',eyeR='M6.5 -1.1L2.3 -2.3L3.9 -6.3Z',nose='M0 -.3L-1.9 2.6L1.9 2.6Z';
+ const mouth='M-7.1 3.1Q0 7.4 7.1 3.1L6.4 5.7L4.7 4.9L3.5 7.3L1.7 6.2L0 8.2L-1.7 6.2L-3.5 7.3L-4.7 4.9L-6.4 5.7Z';
+ const cut=lit?`<g class="${f.still?'':'pflick'}" style="animation-duration:${(2.5+p.i*.37).toFixed(2)}s;animation-delay:${-(p.i*.9).toFixed(1)}s"><ellipse cx="0" cy="2" rx="10" ry="8" fill="url(#${id}spill)"/>${[eyeL,eyeR,nose,mouth].map(d=>`<path d="${d}" fill="url(#${id}fc)" stroke="#8a2d00" stroke-width=".5" stroke-linejoin="round"/>`).join('')}</g>`
+  :[eyeL,eyeR,nose,mouth].map(d=>`<path d="${d}" fill="#080301" stroke="#1d0b04" stroke-width=".4" stroke-linejoin="round"/>`).join('');
+ const stem=lit?`<path d="M-2.3 -9.4C-3 -12.2 -1.8 -14.6 .9 -15.8L3.5 -14.4C1.9 -13.4 1.9 -11.4 2.5 -9.4Z" fill="#587a2a" stroke="#27380f" stroke-width=".7" stroke-linejoin="round"/><path d="M-1 -10.2C-1.2 -12 -.6 -13.4 .6 -14.4" fill="none" stroke="#9ac05a" stroke-width=".7" opacity=".8"/>`
+  :`<path d="M-2.3 -9.4C-3 -12.2 -1.8 -14.6 .9 -15.8L3.5 -14.4C1.9 -13.4 1.9 -11.4 2.5 -9.4Z" fill="#3b4a20" stroke="#1b2409" stroke-width=".7" stroke-linejoin="round"/>`;
+ return `<g transform="translate(${fx(p.x)} ${fx(p.y)}) rotate(${fx(p.rot)}) scale(${fx(p.sc)})">${stem}${b}${cut}</g>`}
+
+function pumpDefs(id){return `<defs>
+ <radialGradient id="${id}lit" cx=".5" cy=".56" r=".68"><stop offset="0" stop-color="#ffb84a"/><stop offset=".45" stop-color="#f77f14"/><stop offset="1" stop-color="#a63d06"/></radialGradient>
+ <radialGradient id="${id}dim" cx=".4" cy=".34" r=".85"><stop offset="0" stop-color="#8a4a22"/><stop offset=".55" stop-color="#5e2e12"/><stop offset="1" stop-color="#33160a"/></radialGradient>
+ <radialGradient id="${id}fc" gradientUnits="userSpaceOnUse" cx="0" cy="1" r="8.5"><stop offset="0" stop-color="#fffbd6"/><stop offset=".4" stop-color="#ffe45a"/><stop offset="1" stop-color="#ffa11c"/></radialGradient>
+ <radialGradient id="${id}spill" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffe57a" stop-opacity=".28"/><stop offset="1" stop-color="#ffb02e" stop-opacity="0"/></radialGradient>
+ <linearGradient id="${id}lf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6aa94a"/><stop offset="1" stop-color="#2f6128"/></linearGradient>
+ <linearGradient id="${id}lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f8d3a"/><stop offset="1" stop-color="#244d20"/></linearGradient></defs>`}
+
+function pumpkinsOver(f){
+ const id=f.uid,L=patchLayout(f),vp=L.vp,tot=vp.length;
+ let o=pumpDefs(id);
+ const line=(pts)=>pts.map((p,i)=>(i?'L':'M')+fx(p.x)+' '+fx(p.y)).join('');
+ const at=s=>vp[Math.max(0,Math.min(tot-1,Math.round(s/3)))];
+ const seg=(a,b)=>vp.slice(Math.max(0,Math.round(a/3)),Math.min(tot,Math.round(b/3)+1));
+ const thick=seg(L.s0,L.s1),mid=seg(L.s0-40,L.s1+40),mid2=seg(L.s0-90,L.s1+90);
+ o+=`<path d="${line(vp)}" transform="translate(.6 .9)" fill="none" stroke="#0a1a09" stroke-opacity=".36" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+ const rnd=seeded(31);let lv='',td='';
+ const leaf=(q,side,len,j)=>{const na=Math.atan2(q.ny,q.nx),a=na+side*(.8+rnd()*.3);
+  return `<g transform="translate(${fx(q.x)} ${fx(q.y)}) rotate(${fx(a*180/Math.PI)})"><path d="${leafPath(len,len*.4)}" fill="url(#${id}${j%3?'lf':'lg'})" stroke="#1d3d1a" stroke-width=".6" stroke-linejoin="round"/><path d="M0 0C${fx(len*.3)} ${fx(side*-.4)} ${fx(len*.6)} 0 ${fx(len*.88)} 0" fill="none" stroke="#173415" stroke-width=".6" opacity=".7"/><path d="M${fx(len*.1)} ${fx(-len*.08)}C${fx(len*.3)} ${fx(-len*.26)} ${fx(len*.55)} ${fx(-len*.27)} ${fx(len*.74)} ${fx(-len*.14)}" fill="none" stroke="#b9e08a" stroke-opacity=".55" stroke-width=".7"/></g>`};
+ for(let j=0,s=L.s0+10;s<L.s1-8;j++,s+=24+rnd()*8)lv+=leaf(at(s),j%2?1:-1,11+rnd()*5,j);
+ // thin runs: two small leaves each
+ [[L.s0*.3,1],[L.s0*.68,-1],[L.s1+(L.UV-L.s1)*.32,-1],[L.s1+(L.UV-L.s1)*.7,1]].forEach(([s,sd],j)=>{lv+=leaf(at(s),sd,8.5,j+1)});
+ for(let j=0,s=L.s0+36;s<L.s1-30;j++,s+=64+rnd()*30){const q=at(s),na=Math.atan2(q.ny,q.nx),dir=j%2?1:-1;
+  td+=`<path d="${curl(q.x+q.nx*1.5,q.y+q.ny*1.5,na,5.5+rnd()*1.5,1.45,dir)}" fill="none" stroke="#3d7a30" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>`}
+ // one side curl on each thin run
+ [L.s0*.5,L.s1+(L.UV-L.s1)*.5].forEach((s,j)=>{const q=at(s),na=Math.atan2(q.ny,q.nx);td+=`<path d="${curl(q.x,q.y,na,4.6,1.4,j?1:-1)}" fill="none" stroke="#3d7a30" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>`});
+ // curled ends near the top corners
+ [[vp[0],vp[1],-1],[vp[tot-1],vp[tot-2],1]].forEach(([e,n,dir])=>{const a=Math.atan2(e.y-n.y,e.x-n.x),c=curl(e.x,e.y,a,6.6,1.7,dir);td+=`<path d="${c}" fill="none" stroke="#2c5a28" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="${c}" fill="none" stroke="#6aa84a" stroke-width=".6" stroke-opacity=".7" stroke-linecap="round"/>`});
+ o+=td+lv;
+ const vl=(pts,w,c)=>`<path d="${line(pts)}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+ o+=vl(vp,2.4,'#244f22')+vl(vp,1.5,'#3b7a30');
+ o+=vl(mid2,2.9,'#244f22')+vl(mid2,1.9,'#3b7a30');o+=vl(mid,3.4,'#244f22')+vl(mid,2.2,'#3b7a30');
+ o+=vl(thick,4.1,'#244f22')+vl(thick,2.8,'#3b7a30');
+ o+=`<path d="${line(vp.map(p=>({x:p.x-p.nx*.6,y:p.y-p.ny*.6})))}" fill="none" stroke="#9ed06a" stroke-opacity=".55" stroke-width=".7" stroke-linecap="round"/>`;
+ L.pumps.forEach(p=>{o+=pumpkinSvg(id,p,f,p.lit)});
+ return o}
+
+function pumpkinsUnder(f){
+ const id=f.uid,L=patchLayout(f),light=f.c.light;let o='';
+ o+=`<defs><radialGradient id="${id}gl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${light?'#ff9d00':'#ffb42e'}" stop-opacity="${light?.6:.7}"/><stop offset="${light?.5:.4}" stop-color="${light?'#ff8a00':'#ff8a1c'}" stop-opacity="${light?.3:.34}"/><stop offset="1" stop-color="#ff7a10" stop-opacity="0"/></radialGradient>
+ <radialGradient id="${id}mn" cx=".38" cy=".34" r=".75"><stop offset="0" stop-color="#fffdee"/><stop offset=".62" stop-color="${light?'#f3e2a2':'#f6ebc2'}"/><stop offset="1" stop-color="${light?'#c9b36a':'#cdbd84'}"/></radialGradient>
+ <radialGradient id="${id}mh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${light?'#8c78c0':'#f6e9b8'}" stop-opacity="${light?.34:.5}"/><stop offset=".5" stop-color="${light?'#8c78c0':'#f6e9b8'}" stop-opacity="${light?.14:.2}"/><stop offset="1" stop-color="${light?'#8c78c0':'#f6e9b8'}" stop-opacity="0"/></radialGradient></defs>`;
+ if(L.done){const mx=f.w-10,my=-4;
+  o+=`<g class="${f.still?'':'pmoon'}"><circle cx="${mx}" cy="${my}" r="50" fill="url(#${id}mh)"/>${light?`<circle cx="${mx}" cy="${my}" r="23.5" fill="none" stroke="#7b66b0" stroke-opacity=".55" stroke-width="2"/>`:''}<circle cx="${mx}" cy="${my}" r="21" fill="url(#${id}mn)"/>
+  <circle cx="${mx-5.5}" cy="${my-3}" r="3.6" fill="#b9a76c" opacity=".26"/><circle cx="${mx+5}" cy="${my-6}" r="2.5" fill="#b9a76c" opacity=".22"/><circle cx="${mx+3.5}" cy="${my+3.5}" r="4.6" fill="#b9a76c" opacity=".18"/><circle cx="${mx-9}" cy="${my+4}" r="2" fill="#b9a76c" opacity=".2"/><circle cx="${mx+10}" cy="${my-1}" r="1.7" fill="#b9a76c" opacity=".2"/>
+  <circle cx="${mx}" cy="${my}" r="21" fill="none" stroke="${light?'#9a8238':'rgba(120,100,50,.35)'}" stroke-opacity="${light?.85:1}" stroke-width="${light?1.2:.7}"/>
+  <g transform="translate(${mx} ${my-8}) scale(1.75)"><g class="${f.still?'':'pbat1'}" ${f.still?'transform="translate(-6 0)"':''}>${bat(f)}</g></g>
+  <g transform="translate(${mx} ${my+7}) scale(1.3)"><g class="${f.still?'':'pbat2'}">${f.still?'':bat(f)}</g></g></g>`}
+ L.pumps.forEach(p=>{if(!p.lit)return;const r=(light?24:34)*p.sc*(L.tile?.9:1)*(light?1.15:1);
+  o+=`<circle class="${f.still?'':'pflick'}" style="animation-duration:${(2.9+p.i*.41).toFixed(2)}s;animation-delay:${-(p.i*1.1).toFixed(1)}s" cx="${fx(p.x)}" cy="${fx(p.y+1)}" r="${fx(Math.max(r,light?20:26))}" fill="url(#${id}gl)"/>`});
+ return o}
+function bat(f){return `<g class="${f.still?'':'pflap'}"><path d="M0 -.4C-1.4 -2.4 -4 -3.8 -7.2 -2.6C-5.8 -1.6 -5.2 -.1 -4.6 1.3C-3.5 .3 -2.5 .4 -1.7 1.6C-1.1 .8 -.5 .9 0 2.3C.5 .9 1.1 .8 1.7 1.6C2.5 .4 3.5 .3 4.6 1.3C5.2 -.1 5.8 -1.6 7.2 -2.6C4 -3.8 1.4 -2.4 0 -.4Z" fill="#1d1530"/><path d="M-1.3 -1L-1.1 -3.2L0 -1.9L1.1 -3.2L1.3 -1Z" fill="#1d1530"/></g>`}
+
+const FR={
+ pumpkins:{name:'Pumpkin Patch',kind:'Special · free Oct 28 to 31 · kept after',under:pumpkinsUnder,over:pumpkinsOver},
+ web:{name:'Web (seasonal)',kind:'Seasonal · October',over:webOver},
+ street:{name:'Night Street',kind:'Gem · living',over:streetOver},
+ gold:{name:'Gold leaf',under:goldUnder,html:goldHtml,over:goldOver},
+ aurora:{name:'Aurora',under:auroraUnder,html:auroraHtml},
+ moon:{name:"Tonight's moon",over:moonOver},
+};
+const LOOKS={
+ lime:{dark:{bg:'#0e1014',card:'#16191f',line:'#2b3140',on:'#c9f24d',onInk:'#101208',ink:'#f4f6fa',soft:'#99a1b0',dim:'#7c838f',miss:'#ff6f61',chip:'#242935'},
+       light:{bg:'#eef1e6',card:'#ffffff',line:'#cfd4c4',on:'#567510',onInk:'#ffffff',ink:'#1a1d16',soft:'#4a5240',dim:'#697060',miss:'#c44536',chip:'#e8ebdf'}},
+ sky:{dark:{bg:'#0a0d14',card:'#10151f',line:'#253247',on:'#4aa8ff',onInk:'#06121f',ink:'#f4f6fa',soft:'#99a1b0',dim:'#7c838f',miss:'#ff6f61',chip:'#1b2433'},
+      light:{bg:'#e7eff9',card:'#f6faff',line:'#b7cce6',on:'#1766c2',onInk:'#ffffff',ink:'#141a22',soft:'#4a5566',dim:'#6a7486',miss:'#c44536',chip:'#dbe7f5'}},
+ maple:{dark:{bg:'#140c0a',card:'#1f1410',line:'#462d26',on:'#fa774f',onInk:'#1a0904',ink:'#f8f0ec',soft:'#b3a19a',dim:'#8a7770',miss:'#ff6f61',chip:'#32211c'},
+        light:{bg:'#f9ebe7',card:'#fff8f6',line:'#e5c3b8',on:'#be411b',onInk:'#ffffff',ink:'#22140f',soft:'#5e4a42',dim:'#806a62',miss:'#c44536',chip:'#f4e1dc'}}};
+let THEME='dark',LOOK='lime';
+
+function bigCard(pal,f){const P=f.p,all=P.total>0&&P.answered+P.skipped>=P.total;
+ return `<div class="card" style="left:${PAD}px;top:${PAD}px;width:${f.w}px;height:${f.h}px;border-radius:${f.R}px;background:${pal.card};border:1px solid ${pal.line};color:${pal.ink};padding:22px">
+ <span class="k" style="color:${pal.on}">${all?'ALL DONE TODAY':`TODAY · ${P.answered+P.skipped+1} OF ${P.total}`}</span><span class="chip" style="background:${pal.chip};color:${pal.soft}">Health</span>
+ <div class="q">${all?'That was the last one for today.':'Did I take my vitamins?'}</div>
+ <div class="s" style="color:${pal.soft}">6 days in a row</div>
+ ${all?'':`<div class="pills"><span class="pill" style="border:1px solid ${pal.line};color:${pal.ink}">Not yet</span><span class="pill" style="background:${pal.on};color:${pal.onInk}">Did</span></div>`}</div>`}
+function miniCard(pal,f,id){const wk=[1,1,1,1,0,1,1];
+ return `<div class="card" style="left:${PAD}px;top:${PAD}px;width:${f.w}px;height:${f.h}px;border-radius:${f.R}px;background:${pal.card};border:2px solid ${pal.line}">
+ <div style="position:absolute;left:24px;top:28px;width:58px;height:10px;border-radius:5px;background:${pal.on}"></div>
+ <div style="position:absolute;left:24px;top:54px;width:160px;height:18px;border-radius:9px;background:${pal.ink}"></div>
+ <div style="position:absolute;left:24px;top:80px;width:104px;height:18px;border-radius:9px;background:${pal.ink}"></div>
+ ${id==='moon'?'':`<div style="position:absolute;left:24px;right:24px;bottom:30px;display:flex;justify-content:space-between">${wk.map(o=>`<i style="width:16px;height:16px;border-radius:50%;background:${o?pal.on:pal.miss}"></i>`).join('')}</div>`}</div>`}
+
+function framed(id,{theme=THEME,look=LOOK,zoom=1,mini=false,still=false,p={}}={}){
+ const pal=LOOKS[look][theme],light=theme==='light';
+ const w=mini?220:300,h=mini?264:340,R=mini?30:24;
+ const f={uid:uid('pk'),w,h,R,still,c:{light,accent:pal.on,card:pal.card,bg:pal.bg,ink:pal.ink,snow:light?pal.dim:'#ffffff'},p:{answered:2,total:4,skipped:0,evening:.5,pull:0,date:{m:10,d:30},...p}};
+ const F=FR[id],svg=s=>`<svg class="lay" viewBox="${-PAD} ${-PAD} ${w+2*PAD} ${h+2*PAD}" width="${w+2*PAD}" height="${h+2*PAD}" aria-hidden="true">${s}</svg>`;
+ return `<div class="fw ${still?'still':''}" style="width:${w+2*PAD}px;height:${h+2*PAD}px;zoom:${zoom}">${F.under?svg(F.under(f)):''}${F.html?F.html(f):''}${mini?miniCard(pal,f,id):bigCard(pal,f)}${F.over?svg(F.over(f)):''}</div>`}
+function stage(id,cap,opts){const pal=LOOKS[opts.look||LOOK][opts.theme||THEME];return `<div class="stage" style="background:${pal.bg}">${framed(id,opts)}<div class="cap">${cap}</div></div>`}
+function tile(id,theme,p={},label,look){const pal=LOOKS[look||LOOK][theme];const k=.36,W=316*k,H=360*k;
+ return `<div class="tilecol"><div class="tile" style="background:${pal.bg};border:1px solid ${pal.line}"><div style="position:absolute;left:${(120-W)/2}px;top:${(144-H)/2}px">${framed(id,{theme,look,mini:true,still:true,zoom:k,p})}</div></div><div class="tl">${label||FR[id].name}</div></div>`}
+
+const S0={answered:0,total:5},S3={answered:3,total:5},S5={answered:5,total:5},S4N={answered:3,skipped:1,total:5};
+const NOTES=[
+['1. Would someone want it?','Yes. It is a small patch you tend all day: every Did lights one more jack-o\'-lantern, and the last one raises a full moon with two bats. It is free for four days and only comes once, so it is a reason to open the app on Halloween.'],
+['2. Different from the closest frame?','<b>Web</b> is a pale cobweb in two card corners with one spider on a thread: grey, still, and it knows nothing about your day. <b>Leaves</b> is falling autumn leaves with an orange outline: loose, decorative, and no state. <b>Night Street</b> (and String Lights) are the other light-per-answer frames: a row of dark city windows on a blue night street, and bulbs on a wire. <b>Pumpkin Patch</b> has no street, no wire and no cobweb. It is a green vine with leaves and curls that holds one carved face per question, in orange and green, and the finish is a moon and bats, which none of them have.'],
+['3. Detail and finish','Each pumpkin is five shaded lobes with a rim, a specular on every lobe, a ground shade, a stem with a highlight and a carved face (two eyes, nose, toothy grin). Lit ones glow through the cuts and warm the skin around the face; unlit ones are dark orange with black cuts. The vine has a shadow, a body, a highlight, leaves with a midrib and a lit edge and side curls. It is thick along the bottom and thins as it climbs both sides and along the top, ending in a curl near each top corner. Unlit pumpkins are dull brown-orange with near-black faces and no halo; lit ones are bright with a yellow face and a halo. The moon has a radial body, five craters, a rim and a soft halo; the bats are small silhouettes with ears and a wing flap. Color: warm orange and gold against two greens, a cream moon and a plum bat, nothing taken from the look.'],
+['4. Tile','Shows the patch fully lit on a 220 wide mini card: four pumpkins (drawn 1.7x so they read at 120 px) and the top vine on the vine, the moon and one bat at the top right. No motion.'],
+['5. Corners, text, clipping','The vine runs 4.6 px out from the card edge and follows the corner radius with the same ring math as other frames. Each pumpkin is placed by its own size so it clears the rounded outline by 1.5 px, stem included. Pumpkins reach about 23 px at most (22.6 on the sides, 24 at the bottom centre). The glow and the moon are under the card, so they cannot cover anything. The moon is hidden by the card where they meet.'],
+['6. Looks and themes','Pumpkin, vine and moon colors are fixed and do not use the accent, so they work in Lime, Sky and Maple. The dark pumpkins keep a light rim and strong lobe shade to stay readable on dark; on light pages the glow is softer and the outlines darker.'],
+['7. Animation','Lit faces and glows flicker like a candle (2.5 to 4 s per pumpkin, 0.76 to 1 opacity), moon rises once when the last question is answered, bats cross the moon (9 s and 13 s) and flap. Everything stops in tiles, still mode and reduced motion. The flicker runs on the top card only.'],
+['8. Copy','Name: Pumpkin Patch. Description: "A jack-o\'-lantern for every question today. Each Did lights one." Features: "Did lights a pumpkin", "A full moon when today is done", "Free Oct 28 to 31, yours to keep". Short, plain, no em dashes.']];
+
+function section(title,tag,desc,body){return `<section class="opt"><span class="tag">${tag}</span><h3>${title}</h3><p>${desc}</p>${body}</section>`}
+function render(){
+ const z=.8,out=[];
+ out.push(section('Pumpkin Patch','Special · free Oct 28 to 31 · kept after','A jack-o\'-lantern for every question today, on a vine along the bottom and lower sides. Each Did lights one from inside. When every question is answered, a full moon rises behind the top right corner and two bats cross it.',
+  `<ul class="feat"><li>Did lights a pumpkin</li><li>Not yet leaves it dark</li><li>A full moon when today is done</li></ul><div class="row">${stage('pumpkins','0 of 5 answered',{zoom:z,p:S0})+stage('pumpkins','3 of 5, 3 Did',{zoom:z,p:S3})+stage('pumpkins','5 of 5, moon and bats',{zoom:z,p:S5})}</div>
+  <div class="row">${stage('pumpkins','4 of 5, 3 Did and 1 Not yet',{zoom:z,p:S4N})+stage('pumpkins','3 questions, 2 Did',{zoom:z,p:{answered:2,total:3}})+stage('pumpkins','8 questions, 5 Did',{zoom:z,p:{answered:5,total:8}})}</div>
+  <div class="tiles">${tile('pumpkins','dark',{answered:4,total:4},'Dark tile')+tile('pumpkins','light',{answered:4,total:4},'Light tile')}</div>`));
+ out.push(section('Three looks, two themes','Looks','Lime, Sky and Maple, dark above and light below, 3 of 5 answered.',
+  ['dark','light'].map(t=>`<div class="row">${['lime','sky','maple'].map(l=>stage('pumpkins',l+' · '+t,{zoom:.62,theme:t,look:l,p:S3})).join('')}</div>`).join('')));
+ const cmp=(t,p,lab)=>`<div class="cmp"><h4>${lab}</h4><div class="row">${['pumpkins','web','street','gold','aurora','moon'].map(k=>stage(k,FR[k].name,{zoom:.4,theme:t,p})).join('')}</div></div>`;
+ out.push(section('Next to the best frames','Side by side','Gold leaf, Aurora, Tonight\'s moon, Web, and Night Street (the closest light-per-answer frame). Same card, same look.',
+  cmp('dark',S3,'Dark · 3 of 5')+cmp('dark',S5,'Dark · 5 of 5')+cmp('light',S3,'Light · 3 of 5')+cmp('light',S5,'Light · 5 of 5')));
+ const all=['pumpkins','web','street','gold','aurora','moon'];
+ out.push(section('All frames, still','Tiles','The shop and Collection tile: a 220 by 264 mini card, no motion. Top dark, bottom light.',
+  `<div class="tiles">${all.map(k=>tile(k,'dark',{answered:4,total:4})).join('')}</div><div class="tiles">${all.map(k=>tile(k,'light',{answered:4,total:4})).join('')}</div><div class="tiles">${['lime','sky','maple'].map(l=>tile('pumpkins','dark',{answered:4,total:4},'Dark '+l,l)+tile('pumpkins','light',{answered:4,total:4},'Light '+l,l)).join('')}</div>`));
+ out.push(`<section class="opt"><span class="tag">Self-review</span><h3>Eight checks</h3><div class="review" style="grid-template-columns:1fr">${NOTES.map(([a,b])=>`<div><b>${a}</b> ${b}</div>`).join('')}</div></section>`);
+ document.getElementById('out').innerHTML=out.join('');
+}
+function seg(id,fn){const s=document.getElementById(id);s.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;s.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v);render()})}
+seg('theme',v=>{THEME=v;document.body.classList.toggle('light',v==='light')});
+seg('look',v=>LOOK=v);
+seg('motion',v=>document.body.classList.toggle('nomotion',v==='off'));
+const q=new URLSearchParams(location.search);
+if(q.get('theme')==='light'){THEME='light';document.body.classList.add('light')}
+if(q.get('look')&&LOOKS[q.get('look')])LOOK=q.get('look');
+if(q.get('motion')==='off')document.body.classList.add('nomotion');
+// ?solo=pumpkins&z=3&a=2&t=5&sk=1&theme=light&mini&still&crop=x,y,w,h draws one card big, for close checks.
+if(q.get('solo')){const id=q.get('solo'),z=+(q.get('z')||2);document.querySelector('header').remove();document.querySelector('.controls').remove();
+ const opts={zoom:1,still:q.has('still'),mini:q.has('mini'),theme:q.get('theme')||'dark',p:{answered:+(q.get('a')??2),total:+(q.get('t')??4),skipped:+(q.get('sk')??0)}};
+ const c=(q.get('crop')||'0,0,396,436').split(',').map(Number),pal=LOOKS[LOOK][opts.theme];
+ document.body.innerHTML=`<div style="width:${c[2]*z}px;height:${c[3]*z}px;overflow:hidden;position:relative;background:${pal.bg}"><div style="position:absolute;left:0;top:0;transform-origin:0 0;transform:scale(${z}) translate(${-c[0]}px,${-c[1]}px)">${framed(id,opts)}</div></div>`;}
+else render();
+</script>
+</body></html>

@@ -1,8 +1,8 @@
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import { cloud } from '../../src/lib/cloud.js'
 import { deviceKey } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
-import { firstResponse, notificationAnswer } from '../../src/lib/notify-answer.js'
+import { SEND_CATEGORY, firstResponse, notificationAnswer, sendActions } from '../../src/lib/notify-answer.js'
 import {
   askNotificationPermission,
   notificationPermissionGranted,
@@ -10,9 +10,9 @@ import {
 } from '../lib/notification-perms.js'
 import { isNativeHall } from './native.js'
 import { askMorningFocus } from '../../src/lib/first-run.js'
+import { addNotice, noticesSeenAt, readNotices } from '../../src/lib/notices.js'
 
 const CHANNEL_ID = 'did-i'
-const SEND_CATEGORY = 'did-i-send'
 
 let handlerReady = false
 let responseBound = false
@@ -25,18 +25,45 @@ async function notifications() {
   return notificationsMod
 }
 
+// A push from the server (someone joined your Did we, a cheer, a friend
+// request) also goes on Recent, so one swiped away can still be found.
+// Reminders are local, not 'push', and stay off it.
+function keepPushNotice(notification) {
+  const request = notification?.request
+  if (request?.trigger?.type !== 'push' || !request.identifier) return
+  const content = request.content || {}
+  const title = String(content.title || '')
+  if (!title) return
+  const go = content.data?.go ? String(content.data.go) : ''
+  const at = Number(notification.date) || Date.now()
+  addNotice({ id: 'push:' + request.identifier, kind: 'push', title, text: String(content.body || ''), at, go: go ? { path: go } : undefined })
+}
+
+async function keepTrayNotices(Notifications) {
+  const shown = await Notifications.getPresentedNotificationsAsync?.().catch(() => [])
+  // Only ones Recent never had: a cleared or already-seen one stays gone.
+  const have = new Set(readNotices().map((item) => item.id))
+  const seenAt = noticesSeenAt()
+  ;(shown || [])
+    .filter((n) => !have.has('push:' + n?.request?.identifier) && Number(n?.date) > seenAt)
+    .forEach(keepPushNotice)
+}
+
 async function ensureNotificationHandler() {
   if (handlerReady) return
   handlerReady = true
   try {
     const Notifications = await notifications()
     Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowBanner: true,
-        shouldShowList: true,
-        shouldPlaySound: Platform.OS === 'ios',
-        shouldSetBadge: Platform.OS === 'ios',
-      }),
+      handleNotification: async (notification) => {
+        keepPushNotice(notification)
+        return {
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: Platform.OS === 'ios',
+          shouldSetBadge: Platform.OS === 'ios',
+        }
+      },
     })
   } catch {
     // ok
@@ -103,22 +130,21 @@ async function bindResponseListener(handlers = {}) {
   responseBound = true
   const onGo = handlers.onGo
   const onLamp = handlers.onLamp
+  let listening = false
   try {
     const Notifications = await notifications()
     // Keep and Pass on a friend's did you (supabase/functions/push sets the
     // category). Both open the app; the inbox answers it.
     try {
       // Not awaited, so a slow call never holds up the listener below.
-      Notifications.setNotificationCategoryAsync(SEND_CATEGORY, [
-        { identifier: 'keep', buttonTitle: t('inbox.keep'), options: { opensAppToForeground: true } },
-        { identifier: 'pass', buttonTitle: t('inbox.pass'), options: { opensAppToForeground: true } },
-      ])?.catch?.(() => {})
+      Notifications.setNotificationCategoryAsync(SEND_CATEGORY, sendActions(t))?.catch?.(() => {})
     } catch {
       // No buttons; a tap still opens the inbox.
     }
     const seen = new Set()
     const handle = (response) => {
       if (!firstResponse(seen, response)) return
+      keepPushNotice(response?.notification)
       const data = response?.notification?.request?.content?.data || {}
       const lampId = data.lampId ? String(data.lampId) : ''
       const go = data.go ? String(data.go) : ''
@@ -140,6 +166,11 @@ async function bindResponseListener(handlers = {}) {
       }
     }
     Notifications.addNotificationResponseReceivedListener(handle)
+    listening = true
+    keepTrayNotices(Notifications)
+    AppState.addEventListener('change', (state) => {
+      if (state === 'active') keepTrayNotices(Notifications)
+    })
     // The tap that launched the app came before this listener existed.
     const first = await Notifications.getLastNotificationResponseAsync?.()
     if (first) {
@@ -147,7 +178,8 @@ async function bindResponseListener(handlers = {}) {
       Notifications.clearLastNotificationResponse?.()
     }
   } catch {
-    // ok
+    // Never bound (the import failed): let the next start try again.
+    if (!listening) responseBound = false
   }
 }
 

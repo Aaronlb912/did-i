@@ -14,13 +14,15 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import {
-  liveBuddies,
+  buddiesOnOrOwned,
+  cheersOnOrOwned,
+  freeLastDay,
+  SPECIAL_CHEERS,
   shopBuddies,
   BUDDY_GEMS,
   buyCheerStage,
   buyLook,
   liveCheers,
-  ownableCheers,
   CHEER_GEMS,
   CHEER_STAGE_COIN,
   CHEER_STAGE_COINS,
@@ -79,6 +81,7 @@ import {
   buyCheerStageWithCoins,
   buyLookWithCoins,
   buyWithGems,
+  claimFree,
   SIGN_IN_MISS,
 } from '../../src/lib/coin-shop.js'
 import { goHash } from '../navigation/hash.js'
@@ -90,8 +93,8 @@ import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
-import { useIsFocused, useNavigation } from '@react-navigation/native'
-import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, onLiveBook, openFrameSheet } from './frames.jsx'
+import { useIsFocused } from '@react-navigation/native'
+import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, liveBook, onLiveBook, openFrameSheet } from './frames.jsx'
 import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
@@ -324,7 +327,7 @@ function PriceTag({ tag, colors }) {
     return <Text style={[styles.tagText, { color: colors.inkDim }]}>{t('shop.owned')}</Text>
   }
   const n = tag.gems || tag.coins
-  if (!n) return null
+  if (!n) return tag.free ? <Text style={[styles.tagText, { color: colors.ink }]}>{t('shop.free')}</Text> : null
   return (
     <View style={styles.tagRow}>
       {tag.gems ? <GemIcon size={12} /> : <CoinIcon size={12} />}
@@ -792,8 +795,14 @@ function CompactGemRow({ pack, price, bonusNote, onBuy, colors, artRef }) {
 
 // A Coming item: when it goes on sale and what it will cost.
 function teasedBody(item) {
+  if (item.free) return t('shop.teasedFree', { date: formatBoardDate(item.from), until: formatBoardDate(freeLastDay(item)) })
   const cost = item.gems ? gemLine(item.gems) : item.coins ? coinLine(item.coins) : ''
   return [t('shop.teasedBody', { date: formatBoardDate(item.from) }), cost].filter(Boolean).join('\n')
+}
+
+// "Free until Sat, Oct 31" for an event item you do not own yet.
+function freeLine(item) {
+  return t('shop.freeUntil', { date: formatBoardDate(freeLastDay(item)) })
 }
 
 // coinsFor(): up to two paid taps of up to two coins each.
@@ -802,6 +811,7 @@ const COINS_PER_NIGHT_CAP = NIGHT_COIN_CAP
 function previewBody(type, item, purse) {
   const tag = shopTag(purse, type, item)
   if (tag.owned) return t('shop.owned')
+  if (tag.free) return freeLine(item)
   const base = tag.gems ? gemLine(tag.gems) : coinLine(tag.coins)
   if (tag.coins && purse.coins < tag.coins) {
     const short = tag.coins - purse.coins
@@ -964,23 +974,30 @@ function useTileTap(book, onChange, colors, coat, purse) {
         })
       },
     })
+    // A free event item: no price, so no confirm step. A miss shows in the sheet.
+    const claimNow = () => ({
+      label: t('shop.claimFree'),
+      go: async () => done(type, item, await claimFree(liveBook(book), type, item.id), true),
+    })
     if (type === 'look') {
       if (purse.lookOn === item.id) return null
       if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearLook(book, item.id), false) }
-      return buy(() => buyLookWithCoins(book, item.id))
+      return buy(() => buyLookWithCoins(liveBook(book), item.id))
     }
     if (type === 'buddy') {
       if (purse.buddyOn === item.id) return null
       if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearBuddy(book, item.id), false) }
-      return buy(() => buyWithGems(book, 'buddy', item.id))
+      if (tag.free) return claimNow()
+      return buy(() => buyWithGems(liveBook(book), 'buddy', item.id))
     }
     if (type === 'accessory') {
       if (tag.owned) {
         const on = purse.worn[item.slot] === item.id
         return { label: on ? t('shop.takeOff') : t('shop.use'), go: () => done(type, item, wearAccessory(book, item.id), false) }
       }
-      return buy(() => buyAccessoryWithCoins(book, item.id))
+      return buy(() => buyAccessoryWithCoins(liveBook(book), item.id))
     }
+    if (tag.free) return claimNow()
     // Cheers bought with coins come in stages, which only the cheers page shows.
     if (tag.owned || !(item.gems > 0)) {
       return {
@@ -991,7 +1008,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
         },
       }
     }
-    return buy(() => buyWithGems(book, 'cheer', item.id))
+    return buy(() => buyWithGems(liveBook(book), 'cheer', item.id))
   }
 
   // The heart flips in place: save the book, then reopen the same sheet with it.
@@ -1036,26 +1053,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
   return onTile
 }
 
-// True once the page has finished sliding in (or shortly after, if no slide
-// reports). Heavy rows wait for it, so building them never stutters the slide.
-function useOpened() {
-  const nav = useNavigation()
-  const [opened, setOpened] = useState(false)
-  useEffect(() => {
-    const off = nav.addListener('transitionEnd', (e) => {
-      if (!e?.data?.closing) setOpened(true)
-    })
-    const fallback = setTimeout(() => setOpened(true), 600)
-    return () => {
-      off()
-      clearTimeout(fallback)
-    }
-  }, [nav])
-  return opened
-}
-
 export function ShopScreen({ book, onChange }) {
-  const opened = useOpened()
   const colors = useShopColors(book)
   const prefs = usePrefs()
   const purse = normalizePurse(book)
@@ -1105,7 +1103,6 @@ export function ShopScreen({ book, onChange }) {
         }}
       />
 
-      {opened ? (
       <Reveal layout={false} style={styles.shopBelow}>
       <SavedRow purse={purse} colors={colors} onTile={onTile} />
 
@@ -1133,7 +1130,6 @@ export function ShopScreen({ book, onChange }) {
         />
       </View>
       </Reveal>
-      ) : null}
     </BoardShell>
   )
 }
@@ -1206,7 +1202,7 @@ export function ShopLooksScreen({ book, onChange }) {
             title: t(lookText(item.id, 'name')),
             body: `${t('shop.buyLookBody', { cost })} ${leftAfter(purse, item)}`,
             go: async () => {
-              const next = await buyLookWithCoins(book, item.id)
+              const next = await buyLookWithCoins(liveBook(book), item.id)
               take(next, item.id, true)
             },
           })
@@ -1285,8 +1281,14 @@ export function ShopCheersScreen({ book, onChange }) {
         const have = purse.cheers.includes(item.id)
         const stage = cheerStageOf(book, item.id)
         const next = have ? nextCheerStage(stage) : 0
-        let actionLabel = t('shop.buy')
+        const free = item.free && !have
+        let actionLabel = free ? t('shop.claimFree') : t('shop.buy')
         let onAction = () => {
+          if (free) {
+            setMiss(NO_MISS)
+            claimFree(liveBook(book), 'cheer', item.id).then((out) => take(out, item.id, true))
+            return
+          }
           if (purse.gems < item.gems) {
             offerMoreGems(colors)
             return
@@ -1295,7 +1297,7 @@ export function ShopCheersScreen({ book, onChange }) {
           setConfirm({
             title: t(cheerText(item.id, 'name')),
             body: `${t('shop.buyCheerBody', { cost: gemLine(item.gems) })} ${leftAfter(purse, item)}`,
-            go: async () => take(await buyWithGems(book, 'cheer', item.id), item.id, true),
+            go: async () => take(await buyWithGems(liveBook(book), 'cheer', item.id), item.id, true),
           })
         }
         let disabled = false
@@ -1310,7 +1312,7 @@ export function ShopCheersScreen({ book, onChange }) {
                 title: t(cheerText(item.id, 'name')),
                 body: t('shop.buyStageBody', { n: next, cost: coinLine(CHEER_STAGE_COINS[next]) }),
                 go: async () => {
-                  const out = await buyCheerStageWithCoins(book, item.id)
+                  const out = await buyCheerStageWithCoins(liveBook(book), item.id)
                   take(out, item.id)
                   // A stage has no fly-in, so say it landed.
                   if (!out.miss) confirmDone(t('confirm.stageBought', { name: t(cheerText(item.id, 'name')), n: next }))
@@ -1336,6 +1338,7 @@ export function ShopCheersScreen({ book, onChange }) {
             extra={<CheerPlay id={item.id} coat={coat} colors={colors} />}
             name={t(cheerText(item.id, 'name'))}
             info={t(cheerText(item.id, 'line'))}
+            note={free ? freeLine(item) : undefined}
             miss={miss.id === item.id ? miss.text : ''}
             actionLabel={actionLabel}
             primary={primary}
@@ -1398,7 +1401,8 @@ export function ShopBuddiesScreen({ book, onChange }) {
       {ownedLast('buddy', shopBuddies(), purse).map((item) => {
         const have = purse.buddies.includes(item.id)
         const on = purse.buddyOn === item.id
-        const label = on ? t('shop.takeOff') : have ? t('shop.use') : t('shop.buy')
+        const free = item.free && !have
+        const label = on ? t('shop.takeOff') : have ? t('shop.use') : free ? t('shop.claimFree') : t('shop.buy')
         return (
           <ShopActionRow
             key={item.id}
@@ -1408,7 +1412,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
             previewOn={peekBuddy === item.id}
             onPreview={() => setPeekBuddy(item.id)}
             name={t(buddyText(item.id, 'name'))}
-            note={t(buddyText(item.id, 'line'))}
+            note={free ? `${t(buddyText(item.id, 'line'))}\n${freeLine(item)}` : t(buddyText(item.id, 'line'))}
             miss={miss.id === item.id ? miss.text : ''}
             actionLabel={label}
             primary={on}
@@ -1421,6 +1425,11 @@ export function ShopBuddiesScreen({ book, onChange }) {
                 take(wearBuddy(book, item.id), item.id)
                 return
               }
+              if (free) {
+                setMiss(NO_MISS)
+                claimFree(liveBook(book), 'buddy', item.id).then((out) => take(out, item.id, true))
+                return
+              }
               if (purse.gems < item.gems) {
                 offerMoreGems(colors)
                 return
@@ -1429,7 +1438,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
               setConfirm({
                 title: t(buddyText(item.id, 'name')),
                 body: `${t('shop.buyBuddyBody', { cost: gemLine(item.gems) })} ${leftAfter(purse, item)}`,
-                go: async () => take(await buyWithGems(book, 'buddy', item.id), item.id, true),
+                go: async () => take(await buyWithGems(liveBook(book), 'buddy', item.id), item.id, true),
               })
             }}
           />
@@ -1593,7 +1602,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
               setConfirm({
                 title: t(`accessory.${item.id}`),
                 body: t('shop.buyAccessoryBody', { cost: coinLine(item.coins) }),
-                go: async () => take(await buyAccessoryWithCoins(book, item.id), item.id, true),
+                go: async () => take(await buyAccessoryWithCoins(liveBook(book), item.id), item.id, true),
               })
             }
             return (
@@ -2011,8 +2020,10 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const purse = normalizePurse(book)
   // Shop order, always: a tile never moves under your finger when you wear it.
   const looks = liveLooks().filter((item) => purse.looks.includes(item.id))
-  const buddies = liveBuddies().filter((item) => purse.buddies.includes(item.id))
-  const cheers = ownableCheers().filter((item) => purse.cheers.includes(item.id))
+  const buddyPool = buddiesOnOrOwned(purse)
+  const cheerPool = cheersOnOrOwned(purse)
+  const buddies = buddyPool.filter((item) => purse.buddies.includes(item.id))
+  const cheers = [...cheerPool, ...SPECIAL_CHEERS].filter((item) => purse.cheers.includes(item.id))
   const wornCheer = cheers.find((item) => item.id === purse.cheerOn)
   const accessories = ACCESSORIES.filter((item) => purse.accessories.includes(item.id))
   const wished = wishRows(purse)
@@ -2060,8 +2071,8 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const kinds = {
     looks: { art: <LookChip id={purse.lookOn} colors={colors} plain={tab !== 'looks'} />, n: looks.length, of: liveLooks().length },
     frames: { art: frameInfo.worn ? <FramePreview id={frameInfo.worn} colors={colors} size={32} /> : offChip, n: frameInfo.n, of: frameInfo.of },
-    cheers: { art: purse.cheerOn ? <CheerChip id={purse.cheerOn} stage={1} colors={colors} /> : offChip, n: cheers.length, of: Math.max(cheers.length, liveCheers().length) },
-    buddies: { art: purse.buddyOn ? <BuddyChip id={purse.buddyOn} /> : offChip, n: buddies.length, of: liveBuddies().length },
+    cheers: { art: purse.cheerOn ? <CheerChip id={purse.cheerOn} stage={1} colors={colors} /> : offChip, n: cheers.length, of: Math.max(cheers.length, cheerPool.length) },
+    buddies: { art: purse.buddyOn ? <BuddyChip id={purse.buddyOn} /> : offChip, n: buddies.length, of: buddyPool.length },
     accessories: { art: firstWorn ? <AccessoryChip id={firstWorn} buddyId={purse.buddyOn || 'ant'} tone={colors.on} /> : offChip, n: accessories.length, of: ACCESSORIES.length },
     wish: { art: <Text style={[styles.kindHeart, { color: colors.on }]}>♥</Text>, count: t('kit.wishN', { n: wished.length }) },
   }

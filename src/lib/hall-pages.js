@@ -8,8 +8,10 @@ import {
   dueTonight,
   faceReadyTonight,
   formatBoardDate,
+  inPause,
   isDueOn,
   isEvery,
+  countsOnlyOnDid,
   isoDate,
   onceDoneNight,
   oncePastCounts,
@@ -17,6 +19,7 @@ import {
   periodKeyFor,
   periodNight,
   rowDoneTonight,
+  stampDay,
   stampMs,
   unansweredTonight,
   waitingTonight,
@@ -355,6 +358,7 @@ function yearIndex(book) {
 // nightMarks for many nights at once, with the same rules, without
 // rebuilding the due list per book per night. Daily questions (most of them)
 // skip the date parse.
+const REPEATING = new Set(['daily', 'weekly', 'every_n', 'monthly'])
 function nightMarksMany(books, isos, today, tagId = '') {
   const prepped = books.map((book) => {
     const index = yearIndex(book)
@@ -364,8 +368,10 @@ function nightMarksMany(books, isos, today, tagId = '') {
     const doneOn = new Map()
     for (const lamp of book.lamps || []) {
       const onceKey = lamp.cadence === 'once' ? `once:${lamp.id}` : ''
-      if (lamp.archived && !(onceKey && oncePastCounts(lamp, index.onceAnswer.get(lamp.id)))) continue
-      lamps.push(lamp.archived ? { ...lamp, archived: false } : lamp)
+      // A paused repeating question keeps only its Did nights, same as archivedDids in hall-feel.js.
+      const keptDids = lamp.archived && REPEATING.has(lamp.cadence)
+      if (lamp.archived && !keptDids && !(onceKey && oncePastCounts(lamp, index.onceAnswer.get(lamp.id)))) continue
+      lamps.push(lamp.archived ? { ...lamp, archived: false, ...(keptDids ? { keptDids } : {}) } : lamp)
       if (onceKey) doneOn.set(lamp.id, onceDoneNight(lamp, index.onceAnswer.get(lamp.id)))
     }
     return { start: startNight(book), lamps, index, doneOn, book }
@@ -383,7 +389,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
       const skipped = travelSkipped(book.book, iso)
       for (const lamp of book.lamps) {
         if (lamp.createdOn && lamp.createdOn > iso) continue
-        const daily = lamp.cadence === 'daily'
+        const daily = lamp.cadence === 'daily' && !lamp.was
         if (!daily && !isDueOn(lamp, iso)) continue
         const key = daily ? iso : periodKeyFor(lamp, iso)
         const status = book.index.byLamp.get(lamp.id)?.get(key)
@@ -391,10 +397,11 @@ function nightMarksMany(books, isos, today, tagId = '') {
         if (skipped && travelNightState(answerFor(book.book, lamp.id, key), iso) === 'none') continue
         // Same rows as countedTonightRows.
         const done = status === 'yes' || status === 'late'
-        if (lamp.fromDidI) continue
+        if (!done && lamp.pauses && inPause(lamp, iso)) continue
+        if (lamp.fromDidI || (lamp.keptDids && !done && (!lamp.pausedOn || iso >= lamp.pausedOn))) continue
         const doneOn = done ? book.doneOn.get(lamp.id) : ''
         if (doneOn && doneOn !== iso) continue
-        if (!done && (lamp.optional || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
+        if (!done && (countsOnlyOnDid(lamp) || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
         dueCount += 1
         if (!done) clear = false
       }
@@ -520,7 +527,7 @@ export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
     sum.late += answers.filter((answer) => answer.status === 'late').length
     sum.skip += answers.filter((answer) => answer.status === 'skip').length
   }
-  return { ...sum, heat: books.length ? shelfStreak(books, now) : 0 }
+  return { ...sum, heat: books.length ? shelfStreak(boards, now, tagId) : 0 }
 }
 
 // The week behind a night, for the Sunday recap and Stats. `week` is
@@ -547,11 +554,15 @@ export function weekRecap(boards, week, tagId = '') {
         const status = answer.status
         if (status !== 'yes' && status !== 'late' && status !== 'skip') continue
         let key = String(answer.periodKey || '')
-        // A once question counts on its own day.
+        // A once question counts on its own day; a Did on a "by" one on the
+        // day it was tapped, same as the calendar.
         if (key.startsWith('once:')) {
           lamps = lamps || new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
-          key = periodNight(lamps.get(answer.lampId), key)
+          const lamp = lamps.get(answer.lampId)
+          key = onceDoneNight(lamp, answer) || periodNight(lamp, key)
         }
+        // A monthly key is the month: count it on the day it was answered.
+        if (key.length === 7) key = stampDay(answer.answeredAt)
         if (key.length !== 10 || key < from || key > to) continue
         if (status === 'skip') nopes += 1
         else {

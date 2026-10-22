@@ -106,6 +106,31 @@ through `t()` with keys in **all 9** `src/locales/*.js` files.
   before any app code; up to 2 redesign rounds. Keep the sketch in
   `docs/ideas/`.
 
+## Event drop (free, one time)
+
+An item with `free: true`, `gems: 0`, `from` and `until` in `src/lib/purse.js`
+is a free event item (Halloween 2026: buddy `bat`, cheer `boo`).
+
+- It is claimed in the shop, with a "Free" tag and "Free until {last day}"
+  (`freeLastDay()`; `until` is the first day it is gone). The sheet button says
+  "Claim it free". It shows as Coming for the 7 days before `from`, with its
+  free dates, and cannot be claimed then.
+- After `until` it is not in the shop or Coming, ever. Owners keep it: it
+  stays in the purse, Collection lists owned items even when off sale
+  (`buddiesOnOrOwned`, `cheersOnOrOwned`), and sync keeps it.
+- Signed in, `claimFree` (src/lib/coin-shop.js) calls `claim_free_item`
+  (supabase/event-items.sql). The server reads the window from
+  `event_catalog` (same day of slack as paid drops) and adds the item to
+  `profiles.gem_cosmetics`. No gems move. Signed out, it is claimed on the
+  phone only, like a season frame, and kept at sign in. Add a row to
+  `event_catalog` for each new event item, plus a `cheer_stage` row in the
+  same file for a cheer (owners buy its stages with coins).
+- Not in `gift_catalog`, so it can never be gifted; the gift picker hides it.
+- `from` still needs a line in `shop_drop_days` (supabase/shop-drops.sql) so
+  the morning push goes out.
+- A free frame follows the frame rule (kind 'season', claimed once per year
+  with the existing season-frame claim), not this path.
+
 ## Coming soon
 
 A drop shows in the shop as **"Coming {date}"** for the 7 days before its day

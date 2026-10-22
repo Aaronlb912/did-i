@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { NOTE_MAX, setAnswerNote } from '../../src/lib/board-ops.js'
-import { shortLabel } from '../../src/lib/board-json.js'
+import { cleanAmount, shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { lampNights } from '../../src/lib/lamp-record.js'
 import { nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
@@ -29,14 +29,18 @@ function liveBook(book) {
 // "Note saved" only when the note landed: the answer may have been undone
 // or removed while the sheet was open, and then nothing was written.
 function saveNote(book, lampId, periodKey, draft, count, onChange) {
+  // A typo in the amount would otherwise wipe the old amount and still say saved.
+  if (String(count ?? '').trim() && cleanAmount(count) === null) { confirmMiss(); return }
   const next = setAnswerNote(book, lampId, periodKey, draft, undefined, count)
   const there = (book?.answers || []).some((item) => item.lampId === lampId && item.periodKey === periodKey)
+  // Done with the sheet either way: there is no answer left to note.
   if (!there) {
     confirmMiss()
-    return
+    return 'gone'
   }
   if (next !== book) onChange(next)
   confirmDone(t('note.saved'))
+  return true
 }
 
 function removeNote(book, lampId, periodKey, note, onChange) {
@@ -126,8 +130,8 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
     }
   }, [share?.lampId, share?.periodKey])
   const save = () => {
-    onSave(draft, amount ? count : undefined)
-    shareAfter(share, on, draft)
+    // Share only a note that was saved on the answer.
+    if (onSave(draft, amount ? count : undefined) === true) shareAfter(share, on, draft)
   }
   return (
     <View style={styles.edit}>
@@ -187,8 +191,10 @@ function openNoteSheet({ title, label, initial, amount = null, share = null, col
         share={share}
         colors={colors}
         onSave={(draft, count) => {
-          close()
-          onSave(draft, count)
+          // A typo in the amount keeps the sheet open with what was typed.
+          const out = onSave(draft, count)
+          if (out) close()
+          return out
         }}
         onCancel={close}
         onRemove={
@@ -221,9 +227,7 @@ export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange })
     amount: amountProps(lamp, answer),
     share: shareProps(lamp, answer),
     colors,
-    onSave: (draft, count) => {
-      saveNote(live(), lampId, periodKey, draft, count, onChange)
-    },
+    onSave: (draft, count) => saveNote(live(), lampId, periodKey, draft, count, onChange),
     onRemove: () => removeNote(live() || book, lampId, periodKey, answer.note, onChange),
   })
 }
@@ -247,9 +251,7 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
       amount: amountProps(lamp, answer),
       share: shareProps(lamp, answer),
       colors,
-      onSave: (draft, count) => {
-        saveNote(liveBook(book), lamp.id, answer.periodKey, draft, count, onChange)
-      },
+      onSave: (draft, count) => saveNote(liveBook(book), lamp.id, answer.periodKey, draft, count, onChange),
       onRemove: () => removeNote(liveBook(book), lamp.id, answer.periodKey, answer.note, onChange),
     })
   }
@@ -316,7 +318,7 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
       <Pressable
         onPress={() => goHash('/notes')}
         accessibilityRole="link"
-        hitSlop={8}
+        accessibilityLabel={t('notes.seeAll')}
         style={({ pressed }) => [styles.seeAll, pressFx(pressed)]}
       >
         <Text style={[styles.quiet, { color: colors.inkSoft }]}>{t('notes.seeAll')} ›</Text>
@@ -340,9 +342,10 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
 
   const close = () => publishSheet(null)
   const save = (row, draft, count) => {
-    onChange(setAnswerNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, draft, undefined, count))
-    close()
-    confirmDone(t('note.saved'))
+    // A typo in the amount keeps the sheet open with what was typed.
+    const out = saveNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, draft, count, onChange)
+    if (out) close()
+    return out
   }
   const remove = (row) => {
     close()
@@ -432,5 +435,5 @@ const styles = StyleSheet.create({
   quiet: { fontSize: 14 },
   pen: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   noteText: { width: '100%', fontStyle: 'italic' },
-  seeAll: { alignSelf: 'flex-start', marginTop: 8 },
+  seeAll: { alignSelf: 'stretch', minHeight: 44, justifyContent: 'center', marginTop: 8 },
 })

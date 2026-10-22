@@ -147,7 +147,7 @@ export function WeFaces({ card, cheer }) {
 }
 
 export function weStatusLine(card) {
-  const { key, vars } = weStatus(card)
+  const { key, vars } = weStatus(card, readPrefs().locale)
   return t(key, vars)
 }
 

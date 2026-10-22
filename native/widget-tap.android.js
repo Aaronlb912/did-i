@@ -1,6 +1,9 @@
 import { NativeModules } from 'react-native'
-import { applyWidgetTapsOnce, parseWidgetTapQueue } from '../src/lib/widget-tonight.js'
+import { applyWidgetTapsOnce, buildTonightWidgetProps, parseWidgetTapQueue } from '../src/lib/widget-tonight.js'
+import { readShelf } from '../src/lib/board-shelf.js'
 import { buddySvgFor } from '../widgets/android/DidITonightAndroidWidget.jsx'
+import { noteTaken } from './watch-sync.js'
+import { enrichTonightWidgetProps } from './widget-sync.js'
 
 export async function loadAndroidWidgetCard() {
   const mod = NativeModules.WidgetTap
@@ -50,12 +53,24 @@ export async function applyPendingAndroidWidgetTap() {
   }
   const taps = parseWidgetTapQueue(raw)
   if (!taps.length) return null
-  const { shelf, failed } = applyWidgetTapsOnce(taps)
+  const { shelf, failed, refused } = applyWidgetTapsOnce(taps)
+  // Wear OS taps are in this queue: tell the watch which ones the phone has.
+  for (const tap of taps) if (!failed.includes(tap)) noteTaken(tap.sent || tap.at)
   if (failed.length) {
     try {
       await mod.restorePending?.(JSON.stringify(failed))
     } catch {
       // The rows are already off disk. The next open cannot see them.
+    }
+  }
+  // A refused tap was never saved, but the widget card already moved past it.
+  // Draw the card again from the shelf so it never shows an answer the app lacks.
+  if (refused) {
+    try {
+      const current = readShelf()
+      await saveAndroidWidgetCard(enrichTonightWidgetProps(current, buildTonightWidgetProps(current)))
+    } catch {
+      // The next redraw reads the shelf.
     }
   }
   return shelf

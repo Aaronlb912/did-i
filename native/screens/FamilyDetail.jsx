@@ -37,6 +37,7 @@ import {
 import { addDaysIso, boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { useMyAvatar } from '../../src/lib/avatar.js'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
+import { pickCheer } from '../components/pickCheer.jsx'
 import { AddPill, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
 import { ChipRow, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
@@ -100,9 +101,12 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   const [naming, setNaming] = useState(null)
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
+  const loadRef = useRef(0)
   const load = useCallback(async () => {
     // Sign in is still loading: wait instead of showing the family as gone.
     if (!account.ready) return
+    // A newer load (another account, another family) wins over this one.
+    const mine = ++loadRef.current
     if (!familyId || !account.user) {
       setFam(null)
       setLamps([])
@@ -125,6 +129,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     const cheersAsk = readFriendCheers().catch(() => null)
     const guessAsk = guessKey ? readDay(guessKey).catch(() => null) : null
     const row = await readFamily(familyId)
+    if (mine !== loadRef.current) return
     if (row?.miss) {
       setMiss(row.miss)
       setReady(true)
@@ -139,9 +144,10 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       const day = (key === guessKey && (await guessAsk)) || (await readDay(key))
       const [tonightRows, pastRows] = day
       const serverCheers = await cheersAsk
+      if (mine !== loadRef.current) return
       if (typeof serverCheers === 'number') setStock(serverCheers)
-      if (tonightRows.miss) {
-        setMiss(tonightRows.miss)
+      if (tonightRows.miss || pastRows.miss) {
+        setMiss(tonightRows.miss || pastRows.miss)
         setReady(true)
         return
       }
@@ -249,6 +255,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       onPress: () => once(`role:${row.user_id}`, async () => {
         const { miss: why } = await setRole(fam.id, row.user_id, row.role === 'parent' ? 'kid' : 'parent')
         if (why === 'lastparent') setMiss(t('family.lastParent'))
+        else if (why === 'unchanged') setMiss(t('confirm.miss'))
         else if (why) setMiss(why)
         else {
           setMiss('')
@@ -273,6 +280,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             publishSheet(null)
             const { miss: why } = (await once(`drop:${row.user_id}`, () => dropMember(fam.id, row.user_id))) || {}
             if (why === 'lastparent') setMiss(t('family.lastParent'))
+            else if (why === 'unchanged') setMiss(t('confirm.miss'))
             else if (why) setMiss(why)
             else {
               setMiss('')
@@ -309,6 +317,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     })
   }
 
+  // A question for someone who has left the family has no one to answer it.
+  const shownLamps = lamps.filter((lamp) => !lamp.for_id || fam.members.some((row) => row.user_id === lamp.for_id))
+
   return (
     <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
       <View style={[styles.head, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -320,7 +331,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
           {fam.members.length === 1 ? t('family.memberCountOne') : t('family.memberCount', { n: fam.members.length })} · {t('family.weekTotal', { n: weekTotal })}
         </Text>
         {/* With nothing in the family folder, no one can be done. */}
-        {lamps.length ? (
+        {shownLamps.length ? (
           <Text style={[styles.glance, { color: colors.inkSoft }]}>
             {t('family.doneOf', {
               done: fam.members.filter((row) => doneTonight(row.person, night)).length,
@@ -346,7 +357,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
           </>
         ) : null}
       </View>
-      {fam.members.length < 2 || !lamps.length ? <Meta colors={colors}>{t('family.whatFor')}</Meta> : null}
+      {fam.members.length < 2 || !shownLamps.length ? <Meta colors={colors}>{t('family.whatFor')}</Meta> : null}
 
       <SectionHead colors={colors} label={t('family.people')} />
       {fam.members.map((row) => {
@@ -395,19 +406,19 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                       colors={colors}
                       disabled={cheersLeft < 1}
                       label={t('friends.cheerUse')}
-                      onPress={async () => {
+                      onPress={() => pickCheer(colors, { name, purse, onGo: async (cheerId) => {
                         setMiss('')
                         setSaid('')
-                        const sent = await once(`cheer:${row.user_id}`, () => cheerFamily(book, row.user_id, t('family.cheerNote'), purse.cheerOn))
+                        const sent = await once(`cheer:${row.user_id}`, () => cheerFamily(book, row.user_id, t('family.cheerNote'), cheerId))
                         if (!sent) return undefined
                         const known = friendCheerMissKey(sent.miss)
                         if (known) return setMiss(t(known.key, known.vars))
                         if (sent.miss) return setMiss(tMiss(sent.miss))
                         setStock(normalizePurse(sent.book).friendCheers)
                         if (onChange) onChange(sent.book)
-                        fireCheer(purse.cheerOn, 1)
+                        fireCheer(cheerId, 1)
                         return setSaid(t('family.cheerSent', { name }))
-                      }}
+                      } })}
                     />
                   ) : null}
                   <Pressable
@@ -435,8 +446,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       ) : null}
 
       <Cap colors={colors}>{t('family.tonight')}</Cap>
-      {lamps.length ? (
-        lamps.map((lamp) => {
+      {shownLamps.length ? (
+        shownLamps.map((lamp) => {
           const crowd = owing(lamp)
           const done = crowd.filter((row) => {
             const answer = answerFor(lamp.id, row.user_id)
@@ -596,7 +607,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             closeLabel: t('settings.neverMind'),
             colors,
             onClose: () => publishSheet(null),
-            onGo: async () => {
+            onGo: () =>
+              once('fam-leave', async () => {
               publishSheet(null)
               const { miss: why } = await leaveFamily(fam.id)
               if (why === 'lastparent') return setMiss(t('family.lastParentLeave'))
@@ -604,7 +616,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
               confirmDone(t('confirm.leftFamily', { name: fam.name || t('people.familyOne') }))
               refreshPeople()
               swapHash('/people')
-            },
+              }),
           })
         }
       />

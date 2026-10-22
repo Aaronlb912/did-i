@@ -1,20 +1,20 @@
 import { cloud, cloudSetUp } from './cloud.js'
 import { readUser } from './account.js'
 import { accountSessionOn } from './session-id.js'
-import { CHEER_STAGE_COIN, FREE_BUDDY, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, liveLooks, normalizePurse } from './purse.js'
+import { CHEER_STAGE_COIN, FREE_BUDDY, isFreeEventId, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, liveLooks, normalizePurse } from './purse.js'
 import { accessoryById, accessoryOnSale } from './accessories.js'
 import { boardDate } from './recurrence.js'
 import { frameById, withServerFrames } from './frames.js'
 
 export function applyGemBalanceToShelf(shelf, balance) {
-  const gems = Math.max(0, Math.min(9999, Math.floor(Number(balance) || 0)))
+  const gems = Math.max(0, Math.min(999999, Math.floor(Number(balance) || 0)))
   if (!shelf?.boards?.length) return shelf
   const boards = shelf.boards.map((book) => ({ ...book, gems }))
   return { ...shelf, boards }
 }
 
 export function applyCoinBalanceToShelf(shelf, balance) {
-  const coins = Math.max(0, Math.min(9999, Math.floor(Number(balance) || 0)))
+  const coins = Math.max(0, Math.min(999999, Math.floor(Number(balance) || 0)))
   if (!shelf?.boards?.length) return shelf
   const boards = shelf.boards.map((book) => ({ ...book, coins }))
   return { ...shelf, boards }
@@ -109,9 +109,10 @@ export function applyGemOwnedToBook(book, owned, opts = {}) {
     ...purse,
     gems: own.gems,
     looks: [...new Set([...purse.looks.filter((id) => !isGemLook(id)), ...own.looks])],
-    cheers: [...new Set(['lime', ...own.cheers])],
+    // A free event item claimed signed out stays; it costs nothing to keep.
+    cheers: [...new Set(['lime', ...purse.cheers.filter((id) => isFreeEventId('cheer', id)), ...own.cheers])],
     // The referral buddy is not a gem item; it stays once claim_invites gave it.
-    buddies: [...new Set([FREE_BUDDY, ...purse.buddies.filter(isReferBuddy), ...own.buddies])],
+    buddies: [...new Set([FREE_BUDDY, ...purse.buddies.filter((id) => isReferBuddy(id) || isFreeEventId('buddy', id)), ...own.buddies])],
     frames: withServerFrames(purse.frames, 'gem', own.frames),
     frame: opts.frameOn || purse.frame,
     lookOn: opts.lookOn || purse.lookOn,
@@ -135,10 +136,19 @@ export async function readGemOwned() {
   return normalizeGemOwned(data)
 }
 
+// Bumped on every shop write. A sync that began before one must not apply its
+// older balance or owned lists over the buy (cloud-sync.js).
+let shopWrites = 0
+export function shopWriteCount() {
+  return shopWrites
+}
+
 export async function purchaseWithGems(kind, itemId) {
   const db = cloud()
   if (!db) return { miss: 'shop.miss.buyFail' }
+  shopWrites += 1
   const { data, error } = await db.rpc('buy_with_gems', { p_kind: kind, p_item_id: itemId })
+  shopWrites += 1
   if (error) {
     const text = error.message || ''
     if (/need gems/i.test(text)) return { miss: 'shop.miss.needGems' }
@@ -147,6 +157,20 @@ export async function purchaseWithGems(kind, itemId) {
       if (kind === 'frame') return { miss: 'frames.miss.notSold' }
       return { miss: kind === 'buddy' ? 'shop.miss.buddyGone' : 'shop.miss.cheerGone' }
     }
+    return { miss: 'shop.miss.buyFail' }
+  }
+  return { miss: '', owned: normalizeGemOwned(data) }
+}
+
+// Free event items (event_catalog): no gems move, the server records the item.
+export async function claimFreeItem(kind, itemId) {
+  const db = cloud()
+  if (!db) return { miss: 'shop.miss.buyFail' }
+  shopWrites += 1
+  const { data, error } = await db.rpc('claim_free_item', { p_kind: kind, p_item_id: itemId })
+  shopWrites += 1
+  if (error) {
+    if (/bad item/i.test(error.message || '')) return { miss: kind === 'buddy' ? 'shop.miss.buddyGone' : 'shop.miss.cheerGone' }
     return { miss: 'shop.miss.buyFail' }
   }
   return { miss: '', owned: normalizeGemOwned(data) }
@@ -259,11 +283,18 @@ export async function purchaseWithCoins(kind, itemId) {
   const id = String(itemId || '').trim()
   const gone = k === 'look' ? 'shop.miss.lookGone' : k === 'accessory' ? 'shop.miss.accessoryGone' : k === 'frame' ? 'frames.miss.notSold' : 'shop.miss.cheerGone'
   if (!validateCoinItem(k, id)) return { miss: gone }
+  shopWrites += 1
   const { data, error } = await db.rpc('buy_with_coins', { p_kind: k, p_item_id: id })
+  shopWrites += 1
   if (error) {
     const text = error.message || ''
     if (/need coins/i.test(text)) return { miss: 'shop.miss.needCoins', missN: coinCostFor(k, id) }
     if (/bad item/i.test(text)) return { miss: gone }
+    // The reply may be lost after the buy landed: read back, so the phone
+    // shows the item owned and the coins spent instead of "buy failed".
+    const list = { look: 'looks', accessory: 'accessories', frame: 'frames' }[k]
+    const back = list ? await readCoinCatalog().catch(() => null) : null
+    if (back?.[list]?.includes(id)) return { miss: '', ...back, catalog: back }
     return { miss: 'shop.miss.buyFail' }
   }
   const cat = normalizeCoinCatalog(data)
@@ -313,4 +344,29 @@ export async function readCoinHistory() {
     .map((row) => ({ night: String(row.night || '').slice(0, 10), coins: Math.max(0, Math.floor(Number(row.coins) || 0)) }))
     .filter((row) => /^\d{4}-\d{2}-\d{2}$/.test(row.night))
   return { nights, gemWeek: String(data.gem_week || '') }
+}
+
+// A balance short enough for the header: 9999, then 12.3k, then 1.2M.
+// Rounded down, so it never shows more than the person has.
+export function shortCount(value) {
+  const n = Math.max(0, Math.floor(Number(value) || 0))
+  if (n < 10000) return String(n)
+  const [size, mark] = n < 1000000 ? [1000, 'k'] : [1000000, 'M']
+  const tenths = Math.floor((n * 10) / size) / 10
+  return `${n / size >= 100 ? Math.floor(n / size) : tenths}${mark}`
+}
+
+// One-time coins for finishing a tour part (basics 20, more 30). Returns
+// { paid, balance }: paid is 0 when already claimed. Null when it did not go
+// through.
+export async function claimTourCoins(part) {
+  if (!accountSessionOn()) return null
+  const db = cloud()
+  if (!db) return null
+  const { data, error } = await db.rpc('claim_tour_coins', { part })
+  if (error) return null
+  return {
+    paid: Math.max(0, Math.floor(Number(data?.paid) || 0)),
+    balance: Math.max(0, Math.floor(Number(data?.balance) || 0)),
+  }
 }

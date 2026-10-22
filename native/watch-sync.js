@@ -74,10 +74,10 @@ export function watchCardsFromProps(props, shelf = null) {
     updatedAt: Number(props?.updatedAt) || Date.now(),
     // Watch taps (their at) this phone has saved or turned down. The watch
     // keeps showing a tap until its at is here or the card shows an answer.
-    // Apple Watch only (Wear OS taps go through the widget tap queue). Left
-    // out while empty (a fresh start): the watch then uses its older rule and
-    // does not hold a tap the phone turned down before it restarted.
-    ...(Platform.OS === 'ios' && takenTaps.length ? { taken: [...takenTaps] } : {}),
+    // Wear OS taps come in through the widget tap queue and are noted there.
+    // Left out while empty (a fresh start): the watch then uses its older rule
+    // and does not hold a tap the phone turned down before it restarted.
+    ...(takenTaps.length ? { taken: [...takenTaps] } : {}),
   }
 }
 
@@ -85,7 +85,7 @@ let lastSent = ''
 // Recent watch taps the phone has handled, by their at (ms). Memory only: after
 // a restart the watch just holds an unseen tap a while longer (24h at most).
 const takenTaps = []
-function noteTaken(at) {
+export function noteTaken(at) {
   const n = Number(at)
   if (!n || takenTaps.includes(n)) return
   takenTaps.push(n)
@@ -108,6 +108,26 @@ export function sendWatchCards(props, shelf = null) {
   }
 }
 
+// takePendingTaps empties the native queue and the watch never sends a tap
+// twice, so a tap that failed to apply is kept here and tried again.
+const RETRY_KEY = 'did-i-watch-retry'
+function readRetry() {
+  try {
+    const list = JSON.parse(localStorage.getItem(RETRY_KEY) || '[]')
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+function writeRetry(list) {
+  try {
+    if (list.length) localStorage.setItem(RETRY_KEY, JSON.stringify(list.slice(-50)))
+    else localStorage.removeItem(RETRY_KEY)
+  } catch {
+    // Kept in memory for this run only.
+  }
+}
+
 // onTap({ id, answer: 'did' | 'nope', night, dateIso, at }). Returns a stop function.
 // Android: WatchTapService already saved the tap in the widget tap queue, so
 // onQueued() takes that queue instead (no tap is applied twice).
@@ -122,17 +142,24 @@ export function listenForWatchTaps(onTap, onQueued) {
   // Newer builds save every tap natively and send an empty event; older ones
   // send the tap itself. Either way, take the saved queue too.
   const take = (tap) => {
-    const taps = []
+    const taps = readRetry()
     try {
       taps.push(...(mod.takePendingTaps?.() || []))
     } catch {
       // Nothing queued.
     }
     if (tap?.id) taps.push(tap)
+    // One tap that fails must not drop the rest, or tell the watch it landed.
+    const failed = []
     for (const item of taps) {
-      noteTaken(item?.at)
-      onTap(item)
+      try {
+        onTap(item)
+        noteTaken(item?.at)
+      } catch {
+        failed.push(item)
+      }
     }
+    writeRetry(failed)
   }
   const sub = mod.addListener('onWatchTap', take)
   take(null)

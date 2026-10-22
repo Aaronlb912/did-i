@@ -344,6 +344,51 @@ const BUDDY_SVG = {
     <ellipse cx="24" cy="39" rx="1.1" ry="1.1" fill="#2d241c"/>
     <ellipse cx="24" cy="43" rx="1.1" ry="1.1" fill="#2d241c"/>
   </svg>`,
+  bat: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="9,19 19,19 14,6.5" fill="#6b5a8e"/>
+    <polygon points="29,19 39,19 34,6.5" fill="#6b5a8e"/>
+    <polygon points="11.2,18.5 16.8,18.5 14,10.5" fill="#f4a6c4"/>
+    <polygon points="31.2,18.5 36.8,18.5 34,10.5" fill="#f4a6c4"/>
+    <ellipse cx="24" cy="31" rx="15" ry="14" fill="#6b5a8e"/>
+    <ellipse cx="24" cy="37" rx="9" ry="7" fill="#d9ccef"/>
+    <polygon points="0.6,42.9 15.4,42.9 8,29.7" fill="#40345e"/>
+    <polygon points="0.8,42.3 6.2,42.3 3.5,47.1" fill="#40345e"/>
+    <polygon points="5.3,42.3 10.7,42.3 8,47.1" fill="#40345e"/>
+    <polygon points="9.8,42.3 15.2,42.3 12.5,47.1" fill="#40345e"/>
+    <polygon points="1.4,42.3 14.6,42.3 8,29.9" fill="#5d4e84"/>
+    <polygon points="1.5,42.3 5.7,42.3 3.6,46.1" fill="#5d4e84"/>
+    <polygon points="5.9,42.3 10.1,42.3 8,46.1" fill="#5d4e84"/>
+    <polygon points="10.3,42.3 14.5,42.3 12.4,46.1" fill="#5d4e84"/>
+    <line x1="8" y1="29.5" x2="3.6" y2="46.3" stroke="#40345e" stroke-width="0.6" stroke-linecap="round"/>
+    <line x1="8" y1="29.5" x2="8" y2="46.3" stroke="#40345e" stroke-width="0.6" stroke-linecap="round"/>
+    <line x1="8" y1="29.5" x2="12.4" y2="46.3" stroke="#40345e" stroke-width="0.6" stroke-linecap="round"/>
+    <polygon points="5.3,31.6 7.1,31.6 6.2,28.6" fill="#d9ccef"/>
+    <polygon points="32.6,42.9 47.4,42.9 40,29.7" fill="#40345e"/>
+    <polygon points="41.8,42.3 47.2,42.3 44.5,47.1" fill="#40345e"/>
+    <polygon points="37.3,42.3 42.7,42.3 40,47.1" fill="#40345e"/>
+    <polygon points="32.8,42.3 38.2,42.3 35.5,47.1" fill="#40345e"/>
+    <polygon points="33.4,42.3 46.6,42.3 40,29.9" fill="#5d4e84"/>
+    <polygon points="42.3,42.3 46.5,42.3 44.4,46.1" fill="#5d4e84"/>
+    <polygon points="37.9,42.3 42.1,42.3 40,46.1" fill="#5d4e84"/>
+    <polygon points="33.5,42.3 37.7,42.3 35.6,46.1" fill="#5d4e84"/>
+    <line x1="40" y1="29.5" x2="44.4" y2="46.3" stroke="#40345e" stroke-width="0.6" stroke-linecap="round"/>
+    <line x1="40" y1="29.5" x2="40" y2="46.3" stroke="#40345e" stroke-width="0.6" stroke-linecap="round"/>
+    <line x1="40" y1="29.5" x2="35.6" y2="46.3" stroke="#40345e" stroke-width="0.6" stroke-linecap="round"/>
+    <polygon points="40.9,31.6 42.7,31.6 41.8,28.6" fill="#d9ccef"/>
+    <ellipse cx="19.5" cy="27" rx="2.4" ry="3" fill="#2d241c"/>
+    <ellipse cx="28.5" cy="27" rx="2.4" ry="3" fill="#2d241c"/>
+    <ellipse cx="20.3" cy="26" rx="0.8" ry="1" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="29.3" cy="26" rx="0.8" ry="1" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="24" cy="32.2" rx="1.7" ry="1.2" fill="#f4a6c4"/>
+    <line x1="22.4" y1="34.6" x2="25.6" y2="34.6" stroke="#4f4170" stroke-width="0.7" stroke-linecap="round"/>
+    <polygon points="23.8,34.9 26.4,34.9 25.1,38.1" fill="#4f4170"/>
+    <polygon points="24.2,34.9 26,34.9 25.1,37.3" fill="#ffffff"/>
+    <ellipse cx="16.5" cy="32.2" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7"/>
+    <ellipse cx="31.5" cy="32.2" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7"/>
+    <ellipse cx="17" cy="45.5" rx="4.5" ry="2.8" fill="#4f4170"/>
+    <ellipse cx="31" cy="45.5" rx="4.5" ry="2.8" fill="#4f4170"/>
+  </svg>`,
+
   hive: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="11" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" stroke-width="1" transform="rotate(-25 11 18)"/>
     <ellipse cx="37" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" stroke-width="1" transform="rotate(25 37 18)"/>

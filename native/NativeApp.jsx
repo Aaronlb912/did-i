@@ -19,6 +19,15 @@ import { refreshTogether } from '../src/lib/people.js'
 import { t, tMiss } from '../src/lib/i18n.js'
 import { showToast } from './lib/toast-queue.js'
 import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
+
+// Did on a second reminder for a question already Did: nothing was lost.
+function alreadySaid(lampId, kind, night) {
+  const want = kind === 'did' ? ['yes', 'late'] : ['skip']
+  return (readShelf()?.boards || []).some((book) =>
+    (book.answers || []).some((answer) => answer.lampId === lampId && (!night || answer.periodKey === night) && want.includes(answer.status)),
+  )
+}
+import { armNativePingsNow } from './shim/native.js'
 import { onSocialLive } from '../src/lib/social-live.js'
 import { hallColors } from './palette.js'
 import { BootView } from './components/BootView.jsx'
@@ -73,6 +82,7 @@ export function NativeApp() {
     })
     let alive = true
     let stopWatch = () => {}
+    let offLive = () => {}
     afterNativeBridgeReady(async () => {
       installQuickActions()
       // Did or Not yet on the watch: saved like a widget tap, then the watch
@@ -81,8 +91,12 @@ export function NativeApp() {
       if (alive) {
         stopWatch = listenForWatchTaps((tap) => {
           const shelf = applyWidgetTapOnce(tap?.id, tap?.answer, tap?.night || '', new Date(), Number(tap?.at) || Date.now())
+          // Shelf not loaded yet at launch: keep the tap for the retry list.
+          if (!shelf && !(readShelf().boards || []).length) throw new Error('shelf not loaded')
           resendWatchCards()
           syncTonightWidget(shelf || readShelf()).catch(() => {})
+          // Now, as for reminder buttons: iOS may suspend the wake before the debounce.
+          if (shelf) armNativePingsNow(shelf.boards || []).catch(() => {})
         }, async () => {
           // Wear OS: the tap is already in the widget tap queue (WatchTapService).
           const { applyPendingAndroidWidgetTap } = await import('./widget-tap.android.js')
@@ -104,15 +118,26 @@ export function NativeApp() {
         onAnswer: (lampId, kind, night, at) => {
           const shelf = applyWidgetTapOnce(lampId, kind, night, new Date(), at || Date.now())
           if (shelf && nativeWidgetsEnabled()) syncTonightWidget(shelf).catch(() => {})
-          if (!shelf) showToast({ id: 'note-answer', kind: 'error', text: t('noteAnswer.notSaved'), ms: 5200 })
+          // Now, not after the debounce: iOS may suspend a background wake first,
+          // and that question's later reminders would still go off.
+          if (shelf) armNativePingsNow(shelf.boards || []).catch(() => {})
+          if (!shelf && !alreadySaid(lampId, kind, night)) showToast({ id: 'note-answer', kind: 'error', text: t('noteAnswer.notSaved'), ms: 5200 })
         },
         // Did or Nope on a Did we reminder: saved on the server. A miss
         // (offline, card left) says so on the next look at the app.
         onWeAnswer: async (cardId, kind, night) => {
           try {
-            const { weAnswer } = await import('../src/lib/did-we.js')
+            const { knownWeCard, weAnswer } = await import('../src/lib/did-we.js')
+            const { weMissKey } = await import('../src/lib/we-look.js')
             const out = await weAnswer(cardId, kind, night || undefined)
-            if (out.miss) showToast({ id: 'we-answer', kind: 'error', text: tMiss(out.miss), ms: 5200 })
+            // A weekly card's closed slot says week; unknown cards keep the day line.
+            const miss = knownWeCard(cardId) ? weMissKey(knownWeCard(cardId), out.miss) : out.miss
+            if (out.miss) showToast({ id: 'we-answer', kind: 'error', text: tMiss(miss), ms: 5200 })
+            else if (kind === 'did') {
+              const { skipWePing } = await import('../src/lib/we-widget.js')
+              const { boardDate } = await import('../src/lib/recurrence.js')
+              if (skipWePing(cardId, night || boardDate())) armNativePingsNow(readShelf()?.boards || []).catch(() => {})
+            }
           } catch {
             showToast({ id: 'we-answer', kind: 'error', text: t('people.reach'), ms: 5200 })
           }
@@ -123,7 +148,7 @@ export function NativeApp() {
         refreshTogether().catch(() => {})
         globalThis.__didIOnVisible?.(() => refreshTogether().catch(() => {}))
         // Someone you are with answered while the app is open.
-        onSocialLive(() => refreshTogether().catch(() => {}))
+        offLive = onSocialLive(() => refreshTogether().catch(() => {}))
         await initWidgetsOnLaunch(readShelf()).catch(() => {})
       }
     })
@@ -131,6 +156,7 @@ export function NativeApp() {
       alive = false
       stop?.()
       stopWatch()
+      offLive()
     }
   }, [launchReady])
 

@@ -34,6 +34,10 @@ import {
   BOW_TAILS,
   BUTTERFLY_FEELERS,
   BUTTERFLY_VIEW,
+  GHOST_BODY,
+  GHOST_EYES,
+  GHOST_MOUTH,
+  GHOST_VIEW,
   CLINK_COLORS,
   DISCO_COLORS,
   DISCO_GRID,
@@ -828,6 +832,17 @@ function WinterChip({ id, on, onDeep, ink, inkSoft, late }) {
         </Svg>
       )
       break
+    case 'boo':
+      art = (
+        <Svg width={h * 0.8} height={h} viewBox={GHOST_VIEW}>
+          <Path d={GHOST_BODY} fill={on} />
+          {GHOST_EYES.map(([cx, cy, rx, ry], i) => (
+            <Ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} fill={ink} />
+          ))}
+          <Ellipse cx={GHOST_MOUTH[0]} cy={GHOST_MOUTH[1]} rx={GHOST_MOUTH[2]} ry={GHOST_MOUTH[3]} fill={ink} />
+        </Svg>
+      )
+      break
     case 'bounce':
       art = (
         <Svg width={h * (24 / 28)} height={h} viewBox="0 0 24 28">
@@ -1037,6 +1052,7 @@ function CheerChipArt({ id, stage = 1, colors }) {
     case 'splat':
     case 'butterfly':
     case 'bounce':
+    case 'boo':
       art = <WinterChip id={id} on={on} onDeep={onDeep} ink={ink} inkSoft={colors?.inkSoft || ink} late={colors?.late || '#6fb7ff'} />
       break
     default: {
@@ -1152,7 +1168,7 @@ function useMyOutfit() {
   return { worn: book ? normalizePurse(book).worn : {}, tone: colors.on }
 }
 
-const TALL_EARS = new Set(['rabbit', 'fox', 'duck', 'reindeer'])
+const TALL_EARS = new Set(['rabbit', 'fox', 'duck', 'reindeer', 'bat'])
 
 export function BuddyHang({ id, inline = false, alive = false, worn = null, tone = '' }) {
   const life = useBuddyLife(alive)

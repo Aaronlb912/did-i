@@ -16,6 +16,15 @@ export function askActions(t) {
   ]
 }
 
+// Keep and Pass on a friend's did you (supabase/functions/push sets the category).
+export const SEND_CATEGORY = 'did-i-send'
+export function sendActions(t) {
+  return [
+    { identifier: 'keep', buttonTitle: t('inbox.keep'), options: { opensAppToForeground: true } },
+    { identifier: 'pass', buttonTitle: t('inbox.pass'), options: { opensAppToForeground: true } },
+  ]
+}
+
 // A button press on a reminder, or null for anything else (a plain tap opens
 // the app as before). `at` is when it was handled. A 23:59:58 tap handled
 // after midnight still files to `night` while grace holds it open; a night
@@ -37,7 +46,8 @@ export function notificationAnswer(response, now = Date.now()) {
 export function firstResponse(seen, response) {
   const id = response?.notification?.request?.identifier
   if (!id) return true
-  const key = `${id}|${response?.actionIdentifier || ''}`
+  // The streak note reuses its id each day; the delivery time tells the days apart.
+  const key = `${id}|${response?.notification?.date || ''}|${response?.actionIdentifier || ''}`
   if (seen.has(key)) return false
   seen.add(key)
   return true

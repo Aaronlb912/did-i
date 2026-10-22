@@ -14,19 +14,20 @@ import {
   selectBook,
   writeShelf,
 } from '../../src/lib/board-shelf.js'
-import { bulkLamps, hangInto, takeDown } from '../../src/lib/board-ops.js'
+import { bulkLamps, hangInto, putAnswer, takeDown } from '../../src/lib/board-ops.js'
 import { blankLamp } from '../../src/lib/board-json.js'
 import { keptLamp } from '../../src/lib/send-repeat.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from '../../src/lib/daily.js'
 import { forgetAnswerMarks } from '../../src/lib/answer-log.js'
 import { bindForegroundSync, pullAndMerge, pushSoon, SHELF_IN, takeAccountChanged } from '../../src/lib/cloud-sync.js'
 import { stripDemoShelf } from '../../src/lib/demo-strip.js'
-import { isoDate } from '../../src/lib/recurrence.js'
+import { isoDate, periodKeyFor } from '../../src/lib/recurrence.js'
 import {
   maybeStreakMiss,
   queueStreakMoment,
 } from '../../src/lib/streak-moments.js'
 import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
+import { armNativePingsNow, pingsStale } from '../shim/native.js'
 import { accountSessionOn, readAccountUserId } from '../../src/lib/session-id.js'
 import { reportRejection } from '../../src/lib/report.js'
 import {
@@ -53,7 +54,9 @@ import { nativeWidgetsEnabled } from '../lib/widgets-enabled.js'
 import { beginWidgetRefresh } from '../widget-bridge.js'
 import { applyPendingAndroidWidgetTap } from '../widget-tap'
 import { joinTagIds, tagIdsOf } from '../../src/lib/tags.js'
-import { useLocale } from '../../src/lib/i18n.js'
+import { t, useLocale } from '../../src/lib/i18n.js'
+import { confirmMiss } from '../lib/confirm.js'
+import { stopCheckOns } from '../components/LampManage.jsx'
 
 const DEMO_PURGE_KEY = 'did-i-demo-purge-1'
 
@@ -75,7 +78,13 @@ function firstShelf() {
     // ok
   }
   const now = new Date()
-  const shelf = writeShelf(alignShelfPurse(absorbStoredWidgetProps(readShelf(), now)))
+  let shelf
+  try {
+    shelf = writeShelf(alignShelfPurse(absorbStoredWidgetProps(readShelf(), now)))
+  } catch {
+    // One bad step must not stop the app from opening.
+    shelf = readShelf()
+  }
   // Android applies a stored widget tap before nights close, in the open effect.
   if (Platform.OS === 'android') return shelf
   return withNightsClosed(shelf, now)
@@ -131,7 +140,7 @@ export function useAppShelf() {
     // A reply that lands after a sign out or account switch belongs to the old account.
     const who = readAccountUserId()
     const sameAccount = () => !who || readAccountUserId() === who
-    const taken = accountSessionOn() ? takeEarnedCoins() : {}
+    const taken = accountSessionOn() ? takeEarnedCoins(new Date()) : {}
     for (const [night, earned] of Object.entries(taken)) {
       creditNightCoins(night, earned).then((bal) => {
         if (!sameAccount()) return
@@ -161,7 +170,7 @@ export function useAppShelf() {
     }
     const after = currentBook(written)
     // Every board, the same as armLampPings: one board would cancel the rest.
-    if (written?.boards?.length) scheduleNativePings(written.boards).catch(reportRejection('schedule-pings'))
+    if (written?.boards) scheduleNativePings(written.boards).catch(reportRejection('schedule-pings'))
     syncTonightWidget(written).catch(() => {})
     // A mark that unlocks with nothing on screen may as well not have.
     if (after && after.id === before?.id && !after.quietMode) {
@@ -190,9 +199,12 @@ export function useAppShelf() {
   )
 
   const saveLamp = useCallback(
-    (target, lamp, fromBook, clock = new Date()) => {
-      const source = fromBook && Array.isArray(fromBook.lamps) ? fromBook : null
+    (staleTarget, lamp, fromBook, clock = new Date()) => {
       let next = shelfRef.current
+      // The screen's copies can miss a widget tap or sync since its last render.
+      const fresh = (book) => (book && (next.boards || []).find((item) => item.id === book.id)) || book
+      const target = fresh(staleTarget)
+      const source = fromBook && Array.isArray(fromBook.lamps) ? fresh(fromBook) : null
       let dest = target
       if (source && source.id !== target.id) {
         const answers = (source.answers || []).filter((item) => item.lampId === lamp.id)
@@ -211,8 +223,9 @@ export function useAppShelf() {
 
   // A did you kept from the inbox, or several added on their own, land on
   // the open folder in one write: tonight only, or on the sender's repeat.
+  // did: a Did swipe on Today, so the kept question is also done today.
   const keepSent = useCallback(
-    (questions) => {
+    (questions, { did = false } = {}) => {
       const clock = new Date()
       const lamps = [].concat(questions).map((item) => keptLamp(item, clock, live.dayFoldHour)).filter(Boolean)
       if (!lamps.length) return []
@@ -220,6 +233,7 @@ export function useAppShelf() {
       let dest = currentBook(latest) || live
       for (const lamp of lamps) {
         dest = hangInto(dest, lamp, false)
+        if (did) dest = putAnswer(dest, { lamp, periodKey: periodKeyFor(lamp, lamp.createdOn) }, 'yes', clock)
       }
       persist(putBook(latest, commitBook(dest, clock)))
       // The new questions' ids, so a link can open Tonight right on them.
@@ -254,6 +268,10 @@ export function useAppShelf() {
   }, [live.keeperName, persist])
   const removeBoard = useCallback(
     (id) => {
+      // Friends' check-ons on its questions stop once the undo window ends,
+      // unless the folder came back.
+      const lampIds = (shelfRef.current.boards || []).find((book) => book.id === id)?.lamps?.map((lamp) => lamp.id) || []
+      if (lampIds.length) stopCheckOns(lampIds)
       persist(dropBook(shelfRef.current, id))
       const now = readRoute()
       if (tagIdsOf(now.tag).includes(id)) {
@@ -325,6 +343,8 @@ export function useAppShelf() {
     // background is on disk (or still queued natively), so show it now
     // instead of waiting for the next cold start.
     const wake = AppState.addEventListener('change', (next) => {
+      // A new time zone or a long gap: reminders are fixed instants set a week ahead.
+      if (next === 'active' && pingsStale()) armNativePingsNow(readShelf()?.boards || []).catch(() => {})
       if (next !== 'active' || Platform.OS !== 'android') return
       applyPendingAndroidWidgetTap()
         .catch(() => null)
@@ -344,8 +364,9 @@ export function useAppShelf() {
       if (changed) markWidgetTimelineRead(true)
       const redraw = changed ? syncTonightWidget : syncTonightWidgetIfChanged
       redraw(event.detail).catch(() => {})
-      // Reminders are rebuilt for the new account, so the last one's Did we pings go.
-      if (changed) scheduleNativePings(event.detail.boards || []).catch(reportRejection('schedule-pings'))
+      // Rebuilt on every pull: another phone may have added, moved, deleted or
+      // answered a question. After an account change, the last one's pings go.
+      scheduleNativePings(event.detail.boards || []).catch(reportRejection('schedule-pings'))
     }
     window.addEventListener(SHELF_IN, onShelfIn)
     return () => {
@@ -376,13 +397,23 @@ export function useAppShelf() {
     try {
       await shareShelf(readShelf())
     } catch {
-      // dismissed
+      // Closing the sheet resolves; a throw is a real failure.
+      confirmMiss(t('confirm.shareMiss'))
     }
+  }, [])
+
+  // A coin balance the server returned (tour coins): same steps as creditNightCoins.
+  const applyCoinBalance = useCallback((bal, who) => {
+    if (who && readAccountUserId() !== who) return
+    const synced = writeShelf(applyCoinBalanceToShelf(readShelf(), bal))
+    setShelf(synced)
+    pushSoon(synced)
   }, [])
 
   return {
     shelf,
     book: live,
+    applyCoinBalance,
     tagId,
     route,
     markNote: marks[0] || null,

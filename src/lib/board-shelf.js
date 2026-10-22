@@ -10,6 +10,7 @@ export { readSavedAt, stampSavedAt }
 
 const SHELF_KEY = 'did-i-shelf'
 const OLD_KEY = 'did-i-board'
+let oldKeyCleared = false
 
 // normalizeBook's empty-title fallback used to be the literal 'Did I' before
 // it became the localized General folder. A folder still carrying that old
@@ -108,8 +109,14 @@ export function writeShelf(shelf, savedAt) {
   let changed = true
   try {
     changed = localStorage.getItem(SHELF_KEY) !== text
-    localStorage.setItem(SHELF_KEY, text)
-    localStorage.setItem(OLD_KEY, JSON.stringify(currentBook(next)))
+    if (changed) localStorage.setItem(SHELF_KEY, text)
+    // The one-folder copy is only read when there is no shelf at all, and
+    // writing it doubled every save on a big account. Cleared once instead,
+    // so an old copy cannot come back over newer answers.
+    if (!oldKeyCleared) {
+      localStorage.removeItem(OLD_KEY)
+      oldKeyCleared = true
+    }
   } catch {
     // Board still runs if storage is blocked.
   }
@@ -144,8 +151,9 @@ let lastRaw = null
 let lastShelf = null
 
 export function readShelf() {
+  let raw = null
   try {
-    const raw = localStorage.getItem(SHELF_KEY)
+    raw = localStorage.getItem(SHELF_KEY)
     if (raw && raw === lastRaw && lastShelf) return lastShelf
     if (raw) {
       const next = normalizeShelf(JSON.parse(raw))
@@ -156,7 +164,17 @@ export function readShelf() {
       return shelf
     }
   } catch {
-    // fall through
+    // A cut-off or corrupt shelf is kept aside, never overwritten, and not
+    // stamped as newer: the account copy wins on the next pull.
+    if (raw) {
+      try {
+        localStorage.setItem(SHELF_KEY + '-bad', raw)
+      } catch {
+        // ok
+      }
+      const book = emptyBoard()
+      return { currentId: book.id, boards: [book] }
+    }
   }
   try {
     const raw = localStorage.getItem(OLD_KEY)
@@ -190,12 +208,23 @@ export function findBookHoldingLamp(boards, lampId) {
   )
 }
 
+// Everything a twin must share: same words, same schedule, same ask time.
+const TWIN_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor', 'everyDays', 'onceWhen', 'onceOn', 'dueBy', 'slot', 'askAfter']
+
 function foldBook(into, extra) {
   if (!extra || extra.id === into.id) return extra || into
   const ids = new Set((into.lamps || []).map((lamp) => lamp.id))
   const lamps = [...(into.lamps || [])]
+  // A never-answered twin (a starter picked on a new phone before sign-in,
+  // same words and schedule as one already here) is not a second question.
+  const twinOf = (lamp) =>
+    JSON.stringify([String(lamp.question || '').trim().toLowerCase(), ...TWIN_FIELDS.map((key) => lamp[key] ?? '')])
+  const twins = new Set(lamps.filter((lamp) => !lamp.archived).map(twinOf))
+  const answered = new Set((extra.answers || []).map((answer) => answer.lampId))
   for (const lamp of extra.lamps || []) {
-    if (!ids.has(lamp.id)) lamps.push(lamp)
+    if (ids.has(lamp.id)) continue
+    if (!answered.has(lamp.id) && twins.has(twinOf(lamp))) continue
+    lamps.push(lamp)
   }
   const seen = new Set((into.answers || []).map((answer) => `${answer.lampId}:${answer.periodKey}`))
   const answers = [...(into.answers || [])]
@@ -205,12 +234,16 @@ function foldBook(into, extra) {
     seen.add(key)
     answers.push(answer)
   }
-  return { ...into, lamps, answers }
+  // Keep both delete lists, or a removed question comes back on the next merge.
+  const kept = new Set(lamps.map((lamp) => lamp.id))
+  const gone = [...(into.gone || []), ...(extra.gone || []).filter((item) => !kept.has(item.id))]
+  return { ...into, lamps, answers, ...(gone.length ? { gone } : {}) }
 }
 
 export function mergeSameTitles(shelf) {
   const boards = []
   const byKey = new Map()
+  const into = new Map()
   for (const book of shelf.boards || []) {
     const key = tagKey(book.title)
     const prev = key ? byKey.get(key) : null
@@ -219,13 +252,18 @@ export function mergeSameTitles(shelf) {
       if (key) byKey.set(key, book)
       continue
     }
-    const merged = foldBook(prev, book)
+    // Every phone keeps the same id (the smaller), or a delete of one id on
+    // one phone leaves the other phone's id alive and the folder comes back.
+    const id = book.id && book.id < prev.id ? book.id : prev.id
+    const merged = { ...foldBook(prev, book), id }
+    into.set(prev.id === id ? book.id : prev.id, id)
     const index = boards.findIndex((item) => item.id === prev.id)
     boards[index] = merged
     byKey.set(key, merged)
   }
   if (!boards.length) return shelf
-  const currentId = boards.some((book) => book.id === shelf.currentId) ? shelf.currentId : boards[0].id
+  const current = into.get(shelf.currentId) || shelf.currentId
+  const currentId = boards.some((book) => book.id === current) ? current : boards[0].id
   return { ...shelf, currentId, boards }
 }
 
@@ -242,7 +280,10 @@ export function putBook(shelf, book) {
     const boards = shelf.boards.map((item) => (item.id === next.id ? next : item))
     return mergeSameTitles({ ...shelf, currentId: next.id, boards })
   }
-  const same = findBookByTitle(shelf.boards, next.title)
+  // A folder put back after a remove (undo) is no longer gone. It comes back
+  // as itself, even if another folder took its name meanwhile.
+  const gone = (shelf.goneTags || []).some((item) => item.id === next.id && !item.back)
+  const same = gone ? null : findBookByTitle(shelf.boards, next.title)
   if (same) {
     const merged = foldBook(same, next)
     return {
@@ -254,8 +295,6 @@ export function putBook(shelf, book) {
   // A new folder starts with the shelf's purse. Its empty default purse would
   // otherwise be copied onto every folder on save and wipe coins.
   const fresh = shelf.boards.length ? stampPurse(next, mergePurses(shelf.boards)) : next
-  // A folder put back after a remove (undo) is no longer gone.
-  const gone = (shelf.goneTags || []).some((item) => item.id === next.id && !item.back)
   const goneTags = gone ? [{ id: next.id, at: new Date().toISOString(), back: true }, ...shelf.goneTags] : shelf.goneTags
   return { ...shelf, currentId: next.id, boards: [...shelf.boards, fresh], ...(goneTags ? { goneTags } : {}) }
 }

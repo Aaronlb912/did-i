@@ -1,13 +1,15 @@
-import { Pressable, StyleSheet, Text } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { useAnimatedStyle } from 'react-native-reanimated'
 import { t } from '../../src/lib/i18n.js'
 import { stampOpacity, swipePull } from '../../src/lib/swipe-face.js'
 import { BuddyHang } from './Cosmetic.jsx'
 import { MenuIcon } from './MenuIcon.jsx'
 import { faceCardStyles } from '../lib/face-card.js'
+import { pillStatusLabel } from '../../src/lib/pill-status.js'
+import { fonts } from '../theme.js'
 
 /** What a Tonight card shows. The stamps follow the card's x as it moves. */
-export function SwipeFace({ x, head, kicker, title, stampDid, stampNope, buddy, onEdit, colors, children }) {
+export function SwipeFace({ x, head, kicker, mark, title, stampDid, stampNope, buddy, onEdit, colors, children }) {
   const didStyle = useAnimatedStyle(() => ({ opacity: stampOpacity(swipePull(x.value), 'did') }))
   const nopeStyle = useAnimatedStyle(() => ({ opacity: stampOpacity(swipePull(x.value), 'nope') }))
   const kickerStyle = useAnimatedStyle(() => ({ opacity: 1 - Math.abs(swipePull(x.value)) }))
@@ -18,12 +20,44 @@ export function SwipeFace({ x, head, kicker, title, stampDid, stampNope, buddy, 
       <Animated.Text style={[faceCardStyles.stampDid, { color: colors.on }, didStyle]}>{stampDid}</Animated.Text>
       <Animated.Text style={[faceCardStyles.stampNope, { color: colors.skip }, nopeStyle]}>{stampNope}</Animated.Text>
       {head}
-      {kicker ? (
+      {mark ? (
+        <MarkRow mark={mark}>
+          {kicker ? <Animated.Text style={[faceCardStyles.kicker, styles.kickerInRow, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text> : null}
+        </MarkRow>
+      ) : kicker ? (
         <Animated.Text style={[faceCardStyles.kicker, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text>
       ) : null}
       <Text style={[faceCardStyles.title, { color: colors.ink }]}>{title}</Text>
       {children}
     </>
+  )
+}
+
+// The stamp at the top centre of the card, after the folder name. Its
+// negative margins keep the row as tall as the folder name alone, so the
+// card does not grow.
+export function MarkRow({ mark, children }) {
+  return (
+    <View style={styles.markRow}>
+      {children}
+      <View style={styles.markSpot} pointerEvents="none">{mark}</View>
+    </View>
+  )
+}
+
+// How a picked card is marked, as a stamp at the top after the folder name, so it
+// reads at a glance. status: 'yes', 'late' or 'skip'; nothing when open.
+export function MarkStamp({ status, colors }) {
+  if (status !== 'yes' && status !== 'late' && status !== 'skip') return null
+  const did = status !== 'skip'
+  const tint = did ? colors.on : colors.skip
+  return (
+    <Text
+      accessibilityLabel={pillStatusLabel(status)}
+      style={[styles.mark, { color: tint, borderColor: tint }]}
+    >
+      {t(did ? 'tonight.swipeDid' : 'tonight.swipeNope')}
+    </Text>
   )
 }
 
@@ -47,4 +81,19 @@ const styles = StyleSheet.create({
   // 18 + 2 * 13 padding = a 44pt target; the icon still sits 18 in from the corner.
   pen: { position: 'absolute', top: 5, right: 5, zIndex: 3, padding: 13 },
   penBeside: { right: 47 },
+  markRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+  kickerInRow: { marginBottom: 0 },
+  markSpot: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' },
+  mark: {
+    marginVertical: -8,
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    fontFamily: fonts.display,
+    fontSize: 16,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    transform: [{ rotate: '-8deg' }],
+  },
 })

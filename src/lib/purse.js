@@ -1,7 +1,7 @@
 import { accountSessionOn, readAccountUserId } from './session-id.js'
 import { addDaysIso, allClearTonight, boardDate, periodNight, stampDay } from './recurrence.js'
 import { ACCESSORIES, ACCESSORY_IDS, accessoriesForSale, accessoryById, accessoryOnSale, normalizeWorn } from './accessories.js'
-import { FRAMES, FRAME_IDS, frameById, frameLive, frameText, normalizeFrames, normalizeWornFrame, seasonOpen } from './frames.js'
+import { FRAMES, FRAME_IDS, frameById, frameLive, frameText, normalizeFrames, normalizeWornFrame, seasonNextText, seasonOpen } from './frames.js'
 
 // One price for every cheer while the economy is still being tuned.
 export const CHEER_GEMS = 2
@@ -51,6 +51,8 @@ const ALL_CHEERS = [
   { id: 'splat', gems: CHEER_GEMS, from: '2027-01-15' },
   { id: 'butterfly', gems: CHEER_GEMS, from: '2027-01-29' },
   { id: 'bounce', gems: CHEER_GEMS, from: '2027-01-29' },
+  // Halloween 2026: free to claim from 10-28 to 10-31, then never again (owners keep it).
+  { id: 'boo', gems: 0, free: true, from: '2026-10-28', until: '2026-11-01' },
 ]
 
 export const FREE_BUDDY = 'ant'
@@ -74,6 +76,8 @@ const ALL_BUDDIES = [
   { id: 'turtle', gems: BUDDY_GEMS, from: '2027-01-29' },
   // Winter drop. Date and price are placeholders until confirmed.
   { id: 'reindeer', gems: BUDDY_GEMS, from: '2026-12-01' },
+  // Halloween 2026: free to claim from 10-28 to 10-31, then never again (owners keep it).
+  { id: 'bat', gems: 0, free: true, from: '2026-10-28', until: '2026-11-01' },
   // Never sold. The server gives it at 15 friends joined (claim_invites).
   { id: 'hive', gems: 0, refer: 15 },
 ]
@@ -156,6 +160,15 @@ export function ownableCheers(today = boardDate(new Date())) {
   return [...liveCheers(today), ...SPECIAL_CHEERS]
 }
 
+// What Collection lists: on sale now, plus anything you own that has left the
+// shop (a free event item stays yours after its last day).
+export function buddiesOnOrOwned(purse, today = boardDate(new Date())) {
+  return ALL_BUDDIES.filter((item) => isLive(item, today) || purse.buddies.includes(item.id))
+}
+export function cheersOnOrOwned(purse, today = boardDate(new Date())) {
+  return ALL_CHEERS.filter((item) => isLive(item, today) || purse.cheers.includes(item.id))
+}
+
 // A drop shows as "Coming" for the week before its day, then goes on sale.
 // Anything further out stays hidden.
 export const TEASE_DAYS = 7
@@ -169,6 +182,23 @@ function daysBefore(iso, days) {
 export function isTeased(item, today = boardDate(new Date())) {
   if (!item?.from || item.from <= today) return false
   return daysBefore(item.from, TEASE_DAYS) <= today
+}
+
+// An event item (`free: true`) costs nothing while it is live and is never
+// offered again after `until`. Owners keep it (docs/shop-drops.md).
+export function isFreeEvent(item) {
+  return Boolean(item?.free)
+}
+
+// The last day a free item can be claimed (`until` is the first day it is gone).
+export function freeLastDay(item) {
+  return item?.until ? daysBefore(item.until, 1) : ''
+}
+
+// Event items by kind, so a claim made signed out survives sign in.
+export function isFreeEventId(kind, id) {
+  const list = kind === 'cheer' ? ALL_CHEERS : kind === 'buddy' ? ALL_BUDDIES : []
+  return list.some((item) => item.id === id && isFreeEvent(item))
 }
 
 // The next drop inside its teaser week, or null.
@@ -242,7 +272,7 @@ export function shopTag(purse, type, item) {
     (type === 'accessory' && purse.accessories.includes(item.id)) ||
     (type === 'frame' && (purse.frames || []).includes(item.id))
   if (owned) return { owned: true, gems: 0, coins: 0 }
-  return { owned: false, gems: Number(item.gems) || 0, coins: Number(item.coins) || 0 }
+  return { owned: false, gems: Number(item.gems) || 0, coins: Number(item.coins) || 0, free: isFreeEvent(item) }
 }
 
 // Everything, released or not, for checks and the drop calendar.
@@ -475,7 +505,8 @@ export function mergePurses(boards) {
       ]),
     ),
     friendCheers: Math.max(...purses.map((item) => item.friendCheers)),
-    wish: [...new Set(purses.flatMap((item) => item.wish))].slice(0, WISH_MAX),
+    // The first folder holds this phone's list: a union would bring back a removed heart.
+    wish: purses[0]?.wish || [],
   }
 }
 
@@ -534,16 +565,18 @@ export function nextCheerStage(stage) {
   return n < CHEER_STAGE_MAX ? n + 1 : 0
 }
 
-export function coinsFor(status, book, row, clock = new Date()) {
+export function coinsFor(status, book, row, clock = new Date(), others = []) {
   if (status !== 'yes' && status !== 'late') return 0
   // A question added tonight pays too, one-night or not: the 3 paid taps a
   // night (and the server's 6 a night) stop anyone adding questions for coins.
-  if (tapsPaidTonight(book, clock) >= PAID_TAPS) return 0
+  // The purse is shared, so the cap counts every folder, not just this one.
+  const paidToday = [book, ...others].reduce((n, one) => n + tapsPaidTonight(one, clock, book.dayFoldHour), 0)
+  if (paidToday >= PAID_TAPS) return 0
   return status === 'yes' ? 2 : 1
 }
 
-function tapsPaidTonight(book, clock) {
-  const today = boardDate(clock, book.dayFoldHour)
+function tapsPaidTonight(book, clock, dayFoldHour = book.dayFoldHour) {
+  const today = boardDate(clock, dayFoldHour)
   return (book.answers || []).filter((answer) => {
     if (answer.status !== 'yes' && answer.status !== 'late' && answer.paid !== true) return false
     const period = String(answer.periodKey || '')
@@ -646,8 +679,15 @@ let earnedGen = 0
 // { nightIso: coins }. A failed credit hands its coins back with
 // returnEarnedCoins; the server caps each night, so a retry cannot double pay.
 // out.gen (not enumerable) goes back with returnEarnedCoins.
-export function takeEarnedCoins() {
-  const out = earnedQueue()
+export function takeEarnedCoins(clock = null) {
+  // The server pays yesterday and today only (6 a day). Older offline nights
+  // go on yesterday: on today they filled its cap, so today's Dids paid 0.
+  const today = clock ? boardDate(clock) : ''
+  const out = {}
+  for (const [night, n] of Object.entries(earnedQueue())) {
+    const key = !today ? night : night > today ? today : night < addDaysIso(today, -1) ? addDaysIso(today, -1) : night
+    out[key] = (out[key] || 0) + n
+  }
   earnedForServer = {}
   saveEarned()
   Object.defineProperty(out, 'gen', { value: earnedGen })
@@ -658,10 +698,12 @@ export function takeEarnedCoins() {
 export function dropEarnedCoins() {
   earnedGen += 1
   earnedForServer = {}
-  paidOnAccount.clear()
+  paidOnAccount = new Set()
+  paidLoaded = false
   // Not saveEarned: it leaves storage alone while the id is ''.
   try {
     localStorage.removeItem(EARNED_KEY)
+    localStorage.removeItem(PAID_KEY)
   } catch {
     // ok
   }
@@ -672,28 +714,62 @@ export function returnEarnedCoins(night, n, clock = new Date(), gen) {
   if (gen != null && gen !== earnedGen) return
   // The server takes yesterday or today (payTap); an older night would be refused forever.
   const today = boardDate(clock)
-  if (night < addDaysIso(today, -1) || night > today) night = today
+  if (night < addDaysIso(today, -1)) night = addDaysIso(today, -1)
+  if (night > today) night = today
   const queue = earnedQueue()
   queue[night] = (queue[night] || 0) + n
   saveEarned()
 }
 
 // Signed in, a Did pays through the server. Undo drops the answer but not those
-// coins, so the next Did on the same question must not pay again.
-const paidOnAccount = new Set()
+// coins, so the next Did on the same question must not pay again. Saved per
+// user so closing the app inside the undo window cannot pay twice.
+const PAID_KEY = 'did-i-paid-taps'
+const PAID_MAX = 300
+let paidOnAccount = new Set()
+let paidLoaded = false
 
-export function payTap(before, after, row, status, clock = new Date()) {
+function paidSet() {
+  if (paidLoaded) return paidOnAccount
+  try {
+    const user = readAccountUserId()
+    if (!user) return paidOnAccount
+    paidLoaded = true
+    const saved = JSON.parse(localStorage.getItem(PAID_KEY) || 'null')
+    if (saved && saved.user === user && Array.isArray(saved.keys)) {
+      for (const key of saved.keys) paidOnAccount.add(key)
+    }
+  } catch {
+    // ok
+  }
+  return paidOnAccount
+}
+
+function notePaid(key) {
+  let set = paidSet()
+  set.add(key)
+  if (set.size > PAID_MAX) paidOnAccount = set = new Set([...set].slice(-PAID_MAX))
+  try {
+    const user = readAccountUserId()
+    if (user) localStorage.setItem(PAID_KEY, JSON.stringify({ user, keys: [...set] }))
+  } catch {
+    // ok
+  }
+}
+
+// otherFolders: () => the shelf's other folders, read only when signed out.
+export function payTap(before, after, row, status, clock = new Date(), otherFolders = () => []) {
   const purse = normalizePurse(after)
   const prev = (before.answers || []).find(
     (item) => item.lampId === row?.lamp?.id && item.periodKey === row?.periodKey,
   )
   const paidKey = `${before.id}:${row?.lamp?.id}:${row?.periodKey}`
-  const paid = (prev && (prev.paid === true || prev.status === 'yes' || prev.status === 'late')) || paidOnAccount.has(paidKey)
+  const paid = (prev && (prev.paid === true || prev.status === 'yes' || prev.status === 'late')) || (accountSessionOn() && paidSet().has(paidKey))
   let coins = purse.coins
   if (!paid) {
-    const earned = coinsFor(status, before, row, clock)
+    const earned = coinsFor(status, before, row, clock, accountSessionOn() ? [] : otherFolders())
     if (accountSessionOn()) {
-      if (earned > 0) paidOnAccount.add(paidKey)
+      if (earned > 0) notePaid(paidKey)
       // The server takes yesterday or today; a week or month key maps further back.
       const today = boardDate(clock)
       const night = periodNight(row?.lamp, row?.periodKey)
@@ -885,10 +961,11 @@ export function spendGems(book, gems) {
 export function buyLook(book, id) {
   const look = liveLooks().find((item) => item.id === id)
   const purse = normalizePurse(book)
-  if (!look) return { book, miss: 'shop.miss.lookGone' }
-  if (purse.looks.includes(id)) {
+  // A look you own stays yours to wear after its season leaves the shop.
+  if (purse.looks.includes(id) && (look || ALL_LOOKS.some((item) => item.id === id))) {
     return { book: { ...book, ...purse, lookOn: id }, miss: '' }
   }
+  if (!look) return { book, miss: 'shop.miss.lookGone' }
   const costGems = Math.max(0, Math.floor(Number(look.gems) || 0))
   const costCoins = Math.max(0, Math.floor(Number(look.coins) || 0))
   if (costGems && purse.gems < costGems) {
@@ -1123,10 +1200,19 @@ function ownsKey(key, owned) {
   return Boolean(list?.includes(id))
 }
 
-function asWish(raw, owned) {
+// Never coming back: a free event item past `until`, or a one-time frame
+// that is closed with no next season.
+function wishNever(key, today) {
+  const item = wishItem(key)
+  if (!item) return true
+  if (key.startsWith('frame:')) return item.kind === 'season' && !seasonOpen(item, today) && !seasonNextText(item, today)
+  return isFreeEvent(item) && Boolean(item.until) && today >= item.until
+}
+
+export function asWish(raw, owned, today = boardDate(new Date())) {
   if (!Array.isArray(raw)) return []
   const keys = [...new Set(raw.map((key) => String(key)))]
-  return keys.filter((key) => wishItem(key) && !ownsKey(key, owned)).slice(0, WISH_MAX)
+  return keys.filter((key) => wishItem(key) && !wishNever(key, today) && !ownsKey(key, owned)).slice(0, WISH_MAX)
 }
 
 export function isWished(purse, type, id) {
@@ -1156,6 +1242,7 @@ export function wishGoal(purse, today = boardDate(new Date())) {
     if (!item) continue
     const [type, id] = key.split(':')
     if (type === 'frame' && item.kind === 'season' && !seasonOpen(item, today)) continue
+    if (['look', 'cheer', 'buddy'].includes(type) && !isLive(item, today)) continue
     const gems = Number(item.gems) || 0
     const coins = Number(item.coins) || 0
     const short = gems ? Math.max(0, gems - purse.gems) : Math.max(0, coins - purse.coins)

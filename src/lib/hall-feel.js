@@ -1,5 +1,5 @@
-import { weNight, weNightsStamp } from './we-nights.js'
-import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, isEvery, onceDoneNight, oncePastCounts, parseIsoDate } from './recurrence.js'
+import { weFirstNight, weNight, weNightsStamp } from './we-nights.js'
+import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { travelNightState, travelSkipped, travelWe } from './travel.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
@@ -17,9 +17,29 @@ export function dueThatNight(book, iso, at) {
   return dueTonight(withPastOnce(book), at).filter((row) => {
     if (skipped && travelNightState(row.answer, iso) === 'none') return false
     if (isEvery(row.lamp) || (row.lamp.createdOn && row.lamp.createdOn > iso)) return false
+    if (row.lamp.pauses && inPause(row.lamp, iso) && row.answer?.status !== 'yes' && row.answer?.status !== 'late') return false
     const done = onceDoneNight(row.lamp, row.answer)
     return !done || done === iso
-  })
+  }).concat(archivedDids(book, iso))
+}
+
+// An archived daily, weekly, every-N-days or monthly question keeps the nights it was done, so
+// archiving it does not shorten the streak. Unanswered nights stay out.
+const REPEATS = new Set(['daily', 'weekly', 'every_n', 'monthly'])
+function archivedDids(book, iso) {
+  const rows = []
+  for (const lamp of book.lamps || []) {
+    if (!lamp.archived || !REPEATS.has(lamp.cadence)) continue
+    if (!isDueOn({ ...lamp, archived: false }, iso)) continue
+    const periodKey = periodKeyFor(lamp, iso)
+    const answer = answerFor(book, lamp.id, periodKey)
+    if (answer?.status === 'yes' || answer?.status === 'late') rows.push({ lamp, dateIso: iso, periodKey, answer })
+    // Paused on a known day: nights before it keep their misses too, same as the year view.
+    else if (lamp.pausedOn && iso < lamp.pausedOn && !inPause(lamp, iso) && !(lamp.createdOn && lamp.createdOn > iso) && !(travelSkipped(book, iso) && travelNightState(answer, iso) === 'none')) {
+      rows.push({ lamp, dateIso: iso, periodKey, answer })
+    }
+  }
+  return rows
 }
 
 // The book with answered, archived one-time questions put back, so past
@@ -45,6 +65,8 @@ function noonOn(iso) {
 export function hallHeat(book, now = new Date()) {
   if (!book) return 0
   let cursor = boardDate(now, book.dayFoldHour)
+  // Last night, while it can still be answered, waits like tonight does.
+  const grace = graceNightIso(now)
   let heat = 0
   for (let step = 0; step < 40 && heat < 5; step += 1) {
     const at = noonOn(cursor)
@@ -56,7 +78,7 @@ export function hallHeat(book, now = new Date()) {
     }
     // Tonight still open is not a break yet; it just does not count.
     if (!dueClearTonight(rows)) {
-      if (step > 0) break
+      if (step > 0 && cursor !== grace) break
       cursor = addDaysIso(cursor, -1)
       continue
     }
@@ -79,7 +101,14 @@ export function shelfStreak(boards, now = new Date(), tagId = '') {
 }
 
 // The night the oldest question was made, or '' when one has no date.
+// Did wes done before the first question still count, so they move the floor back.
 function firstNight(books) {
+  const own = ownFirstNight(books)
+  const we = weFirstNight()
+  return own && we && we < own ? we : own
+}
+
+function ownFirstNight(books) {
   let first = ''
   for (const book of books) {
     for (const lamp of book.lamps || []) {

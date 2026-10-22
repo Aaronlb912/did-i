@@ -1,7 +1,7 @@
 import { addUserInteractionListener } from 'expo-widgets'
 import { recordWidgetAnswer, WIDGET_NAME } from '../src/lib/widget-tonight.js'
 import { readShelf } from '../src/lib/board-shelf.js'
-import { onPrefs } from '../src/lib/prefs.js'
+import { onPrefs, readPrefs } from '../src/lib/prefs.js'
 import { goHash } from './navigation/hash.js'
 import { syncTogetherWidget, syncTonightWidget } from './widget-sync.js'
 import { onTogetherSaved } from '../src/lib/together-widget.js'
@@ -28,16 +28,24 @@ export function installWidgetSetup() {
     const [tapLamp, tapNight] = cut < 0 ? [tapTarget, ''] : [tapTarget.slice(0, cut), tapTarget.slice(cut + 1)]
     if (did) {
       const next = recordWidgetAnswer(tapLamp, 'did', new Date(), tapNight)
-      if (next) syncTonightWidget(next)
+      // A refused tap still redraws, so a stale card shows its real answer.
+      syncTonightWidget(next || readShelf())
       return
     }
     if (nope) {
       const next = recordWidgetAnswer(tapLamp, 'nope', new Date(), tapNight)
-      if (next) syncTonightWidget(next)
+      // A refused tap still redraws, so a stale card shows its real answer.
+      syncTonightWidget(next || readShelf())
     }
   })
 
   onPrefs(() => {
+    syncTonightWidget(readShelf()).catch(() => {})
+    syncTogetherWidget().catch(() => {})
+  })
+  // Theme set to Phone: the system going dark changes no prefs, so redraw here too.
+  globalThis.__didIAppearance?.addChangeListener?.(() => {
+    if (readPrefs().theme !== 'phone') return
     syncTonightWidget(readShelf()).catch(() => {})
     syncTogetherWidget().catch(() => {})
   })

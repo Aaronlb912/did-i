@@ -22,8 +22,26 @@ export function onSheetUp(fn) {
   return () => upWatchers.delete(fn)
 }
 
+// The sheet on screen now, so a caller can tell when another replaced its own.
+export function currentSheet() {
+  return current
+}
+
 export function sheetIsUp() {
   return Boolean(current?.title)
+}
+
+// Resolves once no sheet is up, a beat after the last one closes, so a sheet
+// that waits its turn never replaces one the person is reading.
+export function whenNoSheet() {
+  return new Promise((resolve) => {
+    if (!sheetIsUp()) return resolve()
+    const off = onSheetUp((up) => {
+      if (up) return
+      off()
+      setTimeout(resolve, 400)
+    })
+  })
 }
 
 export function publishSheet(next) {

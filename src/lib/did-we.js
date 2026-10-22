@@ -7,7 +7,8 @@ import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
 import { refreshWeNights } from './we-nights.js'
-import { weDueOn, weNextDue, weNextLabel } from './we-next.js'
+import { weekKind, weSlotDay } from './we-look.js'
+import { weDueOn, weNextDue, weNextLabel, wePrevDue, weSlotOf } from './we-next.js'
 
 // Did we: one question two or more people answer together. The server
 // (supabase/did-we.sql) decides what counts as done and what each person may
@@ -169,8 +170,14 @@ export function weReminders(cards, night = tonightIso()) {
       cadence: card.cadence,
       weekdays: card.weekdays || [],
       startsOn: card.startsOn,
-      skipNight: card.done || weMine(card)?.status ? night : '',
+      // Not yet keeps the day's reminder, as solo questions do. In turns,
+      // today's reminder goes only to whoever's turn it is.
+      skipNight: card.done || weMine(card)?.status === 'did' || notMyTurn(card) ? night : '',
     }))
+}
+
+function notMyTurn(card) {
+  return card.mode === 'turns' && !!card.turn && card.turn !== weMine(card)?.id
 }
 
 export function saveWeReminders(cards) {
@@ -247,9 +254,19 @@ export async function weKnownPeople() {
 
 export const weAsk = (card, other) => call('we_ask', { card, other })
 export const weReply = (card, yes) => call('we_reply', { card, yes })
-export const weLeave = (card) => call('we_leave', { card })
+// Leaving or ending a card drops the last load, so Today reads again and
+// does not show it for a few more seconds.
+export const weLeave = (card) => call('we_leave', { card }).then(dropLoaded)
 // Only the maker can close it; the server checks.
-export const weClose = (card) => call('we_close', { card })
+export const weClose = (card) => call('we_close', { card }).then(dropLoaded)
+export function dropLoaded(out) {
+  if (!out.miss) {
+    loadedAt = 0
+    // No live ping comes for your own leave or end: open screens read now.
+    import('./social-live.js').then(({ noteSocialLive }) => noteSocialLive('we')).catch(() => {})
+  }
+  return out
+}
 // A paused card (nobody answered 3 nights) asks again from tonight.
 export const weRestart = (card) => call('we_restart', { card, want_night: tonightIso() })
 
@@ -292,31 +309,56 @@ export function weNextNight(card, night = tonightIso()) {
   return ''
 }
 
-export { weDueOn }
+export { weDueOn, weSlotOf }
+
+// Not asked tonight and no open slot either (none yet, or this slot is
+// already done), so a Did can only go on the card's next night ("done it
+// already"). A server without slots sends no
+// slot: any night it is not due counts, as before.
+export function weEarly(card, night = tonightIso()) {
+  if (card.due) return false
+  return !card.slot || card.slot > night || Boolean(card.done)
+}
 
 // "Not due tonight · Next: Sat, Oct 10", or just "Not due tonight".
 export function weNotTonightLine(card, locale, night = tonightIso()) {
   const next = weNextLabel(weNextDue(card, night), locale)
+  const kind = weekKind(card)
+  if (kind !== 'daily') {
+    if (card.slot && card.slot <= night) {
+      if (kind === 'multi') return next ? t('we.notTonightDayNext', { day: weSlotDay(card, locale), next }) : t('we.notTonightDayDone', { day: weSlotDay(card, locale) })
+      return next ? t('we.notTonightWeekNext', { day: next }) : t('we.notTonightWeekDone')
+    }
+    if (kind === 'multi') return next ? t('we.notTonightWeekStarts', { day: next }) : t('we.notTonight')
+    return next ? t('we.notTonightWeekStarts', { day: next }) : t('we.notTonightWeek')
+  }
   return next ? t('we.notTonightNext', { day: next }) : t('we.notTonight')
 }
 
-// The run of due nights done together, ending tonight, or last night while
-// tonight is still open. Same rule as we_claim on the server.
+// A done slot older than last night cannot be taken back or changed from a
+// later day of its week: the server refuses, so the card shows as done.
+export function weSlotLocked(card, night = tonightIso()) {
+  return Boolean(card.done && card.slot && card.slot < addDays(night, -1) && card.slot !== night)
+}
+
+// The run of slots done together. It ends at the current slot when that is
+// done, else at the one before it, so a slot still open never breaks it. The
+// server counts it (card.streak); without that, count here from doneNights.
 export function weStreak(card, night = tonightIso()) {
+  if (Number.isInteger(card.streak)) return card.streak
   const done = new Set(card.doneNights || [])
-  let day = done.has(night) ? night : addDays(night, -1)
+  let slot = weSlotOf(card, night)
+  if (slot && !done.has(slot)) slot = wePrevDue(card, slot)
   let run = 0
-  for (let i = 0; i < 400 && day >= String(card.startsOn || ''); i += 1) {
-    if (weDueOn(card, day)) {
-      if (!done.has(day)) break
-      run += 1
-    }
-    day = addDays(day, -1)
+  for (let i = 0; slot && done.has(slot) && i < 400; i += 1) {
+    run += 1
+    slot = wePrevDue(card, slot)
   }
   return run
 }
 
 export function weBest(card) {
+  if (Number.isInteger(card.best)) return card.best
   const nights = [...(card.doneNights || [])].sort()
   let best = 0
   let run = 0
@@ -340,7 +382,7 @@ export function weBest(card) {
 
 // Done-together nights in a month, and how many nights it was due.
 export function weMonth(card, monthIso = tonightIso().slice(0, 7), today = tonightIso()) {
-  const done = (card.doneNights || []).filter((night) => night.startsWith(monthIso)).length
+  const done = (card.doneNights || []).filter((night) => night.startsWith(monthIso) && weDueOn(card, night)).length
   let due = 0
   for (let day = `${monthIso}-01`; day.startsWith(monthIso) && day <= today; day = addDays(day, 1)) {
     if (weDueOn(card, day)) due += 1
@@ -439,6 +481,11 @@ function sharedFor_(userId) {
     loadedAt = 0
   }
   return shared
+}
+
+// A card already loaded this session, by id (a reminder's answer has only the id).
+export function knownWeCard(id) {
+  return (shared?.cards || []).find((card) => card.id === id) || null
 }
 
 // Your buddy and cheer show on the Did we cards you share (your cheer plays

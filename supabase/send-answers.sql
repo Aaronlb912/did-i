@@ -76,7 +76,8 @@ begin
   from jsonb_array_elements(rows) r
   where (r ->> 'send_id')::uuid = any(ok)
     and (r ->> 'night')::date between since and current_date + 2
-    and r ->> 'answer' in ('did', 'nope');
+    and r ->> 'answer' in ('did', 'nope')
+  order by (r ->> 'send_id')::uuid, (r ->> 'night')::date, (r ->> 'at') desc nulls last;
   get diagnostics n = row_count;
 
   -- ids is every Did you still shared on the caller's shelf, so a send left
@@ -85,10 +86,11 @@ begin
   using public.sends s
   where s.id = a.send_id and s.to_id = me and not (a.send_id = any(ids));
 
-  -- Nobody looks back further than this. Same idea as send_counts.
+  -- Nobody looks back further than a week. Two weeks covers every time zone
+  -- and the oldest `since` this accepts.
   delete from public.send_answers a
   using public.sends s
-  where s.id = a.send_id and s.to_id = me and a.night < current_date - 60;
+  where s.id = a.send_id and s.to_id = me and a.night < current_date - 14;
 
   return n;
 end;
@@ -135,6 +137,9 @@ as $$
     where s.id = any(ids[1:200])
       and s.from_id = (select auth.uid())
       and s.share_answers
+      -- The last week only. current_date is UTC, so one more night covers a
+      -- phone a day behind.
+      and a.night >= current_date - 8
       and not public.blocked_with(s.to_id)
       and (public.are_friends(s.to_id) or public.shares_family(s.to_id))
   ) x

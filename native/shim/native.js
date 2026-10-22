@@ -6,15 +6,15 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { ASK_CATEGORY, askActions, askNoteData } from '../../src/lib/notify-answer.js'
+import { ASK_CATEGORY, SEND_CATEGORY, askActions, askNoteData, sendActions } from '../../src/lib/notify-answer.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
-import { boardDate, dueTonight, waitingTonight } from '../../src/lib/recurrence.js'
+import { boardDate, dueTonight, nightOpen, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
-import { dayNudges } from '../../src/lib/day-nudges.js'
+import { DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges } from '../../src/lib/day-nudges.js'
 import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { readWePings } from '../../src/lib/we-widget.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
@@ -127,6 +127,7 @@ export async function requestNativePings() {
       return 'granted'
     }
     if (status === 'denied') return 'denied'
+    if (status === 'missing') return 'missing'
     return 'default'
   } catch {
     return 'denied'
@@ -147,6 +148,37 @@ const LATE_NUDGE_HOUR = 21
 let pingChain = Promise.resolve()
 let pingTimer = null
 let pingNext = null
+
+// The zone reminders were last set in. They are fixed instants, so after the
+// phone moves zone they keep the old times until set again.
+const PING_ZONE_KEY = 'did-i-ping-zone'
+function pingZone() {
+  return `${Intl.DateTimeFormat().resolvedOptions().timeZone}|${new Date().getTimezoneOffset()}`
+}
+// Reminders are set PING_DAYS ahead. Set again a day later so a week away
+// from the app never runs them out.
+const PING_AT_KEY = 'did-i-ping-at'
+const PING_REFRESH_MS = 20 * 60 * 60 * 1000
+export function pingsStale() {
+  if (pingZoneMoved()) return true
+  try {
+    const at = Number(localStorage.getItem(PING_AT_KEY))
+    // Never set (notifications were off at first) counts too: on in Settings later.
+    return !(at > 0) || Date.now() - at > PING_REFRESH_MS
+  } catch {
+    return false
+  }
+}
+
+export function pingZoneMoved() {
+  try {
+    const saved = localStorage.getItem(PING_ZONE_KEY)
+    return Boolean(saved) && saved !== pingZone()
+  } catch {
+    return false
+  }
+}
+
 export function scheduleNativePings(books, now) {
   return new Promise((resolve, reject) => {
     const waiters = pingNext ? pingNext.waiters : []
@@ -155,6 +187,13 @@ export function scheduleNativePings(books, now) {
     clearTimeout(pingTimer)
     pingTimer = setTimeout(flushNativePings, 500)
   })
+}
+
+// Headless tasks (widget taps) can end before the 500ms timer: run at once.
+export function armNativePingsNow(books) {
+  const done = scheduleNativePings(books)
+  flushNativePings()
+  return done
 }
 
 function flushNativePings() {
@@ -170,6 +209,17 @@ function flushNativePings() {
     )
 }
 
+// Sign-out: drop a waiting run and cancel behind any run already going, so
+// neither can put the old account's reminders back after the cancel.
+export function clearNativePings() {
+  clearTimeout(pingTimer)
+  const job = pingNext
+  pingNext = null
+  job?.waiters.forEach((w) => w.resolve())
+  pingChain = pingChain.then(() => notifications().then((n) => n.cancelAllScheduledNotificationsAsync())).catch(() => {})
+  return pingChain
+}
+
 // Takes one board or every board on the shelf; each tag's questions ping.
 async function schedulePingsNow(books, now = new Date()) {
   // An empty list still runs: it clears what an old account left scheduled.
@@ -178,11 +228,6 @@ async function schedulePingsNow(books, now = new Date()) {
     const allowed = await checkNativePings()
     if (allowed !== 'granted') return
     const Notifications = await notifications()
-    try {
-      await Notifications.cancelAllScheduledNotificationsAsync()
-    } catch {
-      // ok
-    }
     if (Platform.OS === 'android') {
       // A ping sent to a channel that does not exist yet never shows.
       await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
@@ -194,6 +239,8 @@ async function schedulePingsNow(books, now = new Date()) {
     // Did and Nope buttons on a question reminder. They answer without opening
     // the app (native/shim/push.js saves it like a widget tap).
     await Notifications.setNotificationCategoryAsync(ASK_CATEGORY, askActions(t)).catch(() => {})
+    // Keep and Pass too, so a language change reaches them without a restart.
+    await Notifications.setNotificationCategoryAsync(SEND_CATEGORY, sendActions(t)).catch(() => {})
     const when = (at) => ({
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: afterQuiet(at),
@@ -210,7 +257,8 @@ async function schedulePingsNow(books, now = new Date()) {
         // Not yet (status skip) is not done, so it keeps the late note too.
         const rows = dueTonight(book, day).filter((row) => !row.answer || row.answer.status === 'skip')
         const waiting = ahead === 0 ? new Set(waitingTonight(book, now).map((row) => `${row.lamp.id}:${row.periodKey}`)) : null
-        const [year, month, date] = boardDate(day).split('-').map(Number)
+        const night = boardDate(day)
+        const [year, month, date] = night.split('-').map(Number)
         for (const row of rows) {
           // Low priority stays quiet, like the web (src/lib/notify.js upcomingPings).
           if (!reminders || !lampBuzzes(row.lamp)) continue
@@ -223,7 +271,10 @@ async function schedulePingsNow(books, now = new Date()) {
             data: askNoteData(row),
             categoryIdentifier: ASK_CATEGORY,
           }
-          if (at && !row.answer && at.getTime() > now.getTime() && (!waiting || row.lamp.morning || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
+          // Quiet hours can push it past the time that day can still be answered.
+          // A note quiet hours moved to morning still lies ahead after its ask time.
+          const moved = at && afterQuiet(at).getTime() !== at.getTime()
+          if (at && !row.answer && afterQuiet(at).getTime() > now.getTime() && nightOpen(night, afterQuiet(at)) && (!waiting || row.lamp.morning || moved || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
             notes.push({
               identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}`)),
               content,
@@ -240,6 +291,7 @@ async function schedulePingsNow(books, now = new Date()) {
             identifier: String(notifyId(row.lamp.id, `${row.periodKey}:late:${row.dateIso}`)),
             content,
             trigger: when(late),
+            lateCall: true,
           })
         }
       }
@@ -254,8 +306,9 @@ async function schedulePingsNow(books, now = new Date()) {
           const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
           const night = boardDate(day)
           if (night < String(we.startsOn || '') || night === we.skipNight) continue
-          if (we.cadence === 'weekly' && !(we.weekdays || []).includes(day.getDay())) continue
+          // The weekday of the app day, not the phone calendar.
           const [year, month, date] = night.split('-').map(Number)
+          if (we.cadence === 'weekly' && !(we.weekdays || []).includes(new Date(year, month - 1, date).getDay())) continue
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
           if (at.getTime() <= now.getTime()) continue
           notes.push({
@@ -277,9 +330,11 @@ async function schedulePingsNow(books, now = new Date()) {
       const reminders = notes.map((note) => note.trigger.date)
       // Only the room the cap leaves, so a nudge never crowds out a question.
       const room = PING_CAP - notes.length
-      // The 9:00 one asks for today's questions and opens the morning card.
-      const morning = readPrefs().morningAsk
-      for (const nudge of dayNudges(list, now, { days: PING_DAYS, reminders, shift: afterQuiet }).slice(0, Math.max(0, room))) {
+      // With the morning ask on, the first one comes at its picked time,
+      // asks for today's questions and opens the morning sheet.
+      const { morningAsk: morning, morningAt } = readPrefs()
+      const times = morning ? [morningAt || MORNING_AT_DEFAULT, DAY_NUDGE_TIMES[1]] : DAY_NUDGE_TIMES
+      for (const nudge of dayNudges(list, now, { days: PING_DAYS, reminders, shift: afterQuiet, times }).slice(0, Math.max(0, room))) {
         const ask = morning && nudge.slot === 0
         notes.push({
           identifier: String(notifyId('day', nudge.at.toISOString())),
@@ -292,14 +347,34 @@ async function schedulePingsNow(books, now = new Date()) {
         })
       }
     }
-    notes.sort((a, b) => a.trigger.date - b.trigger.date)
-    notes.length = Math.min(notes.length, PING_CAP)
+    // Over the cap, a later day's question beats a 21:00 last call after
+    // tomorrow, so many high questions do not use up the week in three days.
+    const soon = now.getTime() + 48 * 60 * 60 * 1000
+    const spare = (note) => (note.lateCall && note.trigger.date.getTime() > soon ? 1 : 0)
+    notes.sort((a, b) => spare(a) - spare(b) || a.trigger.date - b.trigger.date)
+    // Nothing sets reminders while the app stays closed. When they run out
+    // (cap or end of the week), one last note asks to open the app.
+    const over = notes.length > PING_CAP - 1
+    notes.length = Math.min(notes.length, PING_CAP - 1)
+    if (reminders && notes.length) {
+      const last = Math.max(...notes.map((note) => note.trigger.date.getTime()))
+      const renewAt = new Date(over ? last + 60 * 1000 : last + 24 * 60 * 60 * 1000)
+      // when() moves it past quiet hours.
+      notes.push({
+        identifier: String(notifyId('renew', 'pings')),
+        content: { title: 'Did I', body: t('pings.renew'), data: { go: '/tonight' } },
+        trigger: when(renewAt),
+      })
+    }
     // Any folder's streak can be at risk, not only the first one's.
     const streakPings = pingOn('streakRisk') && !gentleOn()
     const heat = streakPings ? shelfStreak(list, now) : null
     const risk = streakPings ? list.map((item) => streakRiskFire(item, now, heat)).find(Boolean) : null
-    // Quiet hours would move it onto the grace ping.
-    if (risk && afterQuiet(new Date(risk.at)).getTime() === new Date(risk.at).getTime()) {
+    // Quiet hours would move it onto the grace ping. A 21:00 last call for an
+    // open question already says it: one buzz, not two.
+    const riskAt = risk ? new Date(risk.at).getTime() : 0
+    const lateThen = notes.some((note) => note.lateCall && note.trigger.date.getTime() === riskAt)
+    if (risk && !lateThen && afterQuiet(new Date(risk.at)).getTime() === riskAt) {
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
         content: {
@@ -311,7 +386,9 @@ async function schedulePingsNow(books, now = new Date()) {
       })
     }
     const grace = streakPings ? list.map((item) => graceRiskFire(item, now, heat)).find(Boolean) : null
-    if (grace) {
+    // Quiet hours can push it past 9:00, when the streak can no longer be saved.
+    const graceEnd = grace ? new Date(grace.at).setHours(9, 0, 0, 0) : 0
+    if (grace && afterQuiet(new Date(grace.at)).getTime() < graceEnd) {
       notes.push({
         identifier: String(notifyId('streak', grace.tag)),
         content: {
@@ -322,12 +399,25 @@ async function schedulePingsNow(books, now = new Date()) {
         trigger: when(new Date(grace.at)),
       })
     }
+    // Cleared only once the new list is built: a throw above keeps the old ones.
+    try {
+      await Notifications.cancelAllScheduledNotificationsAsync()
+    } catch {
+      // ok
+    }
     for (const note of notes) {
       try {
-        await Notifications.scheduleNotificationAsync(note)
+        await Notifications.scheduleNotificationAsync({ identifier: note.identifier, content: note.content, trigger: note.trigger })
       } catch {
         // Some ROMs block exact alarms.
       }
+    }
+    // Saved only once set, so a run cut short is tried again.
+    try {
+      localStorage.setItem(PING_ZONE_KEY, pingZone())
+      localStorage.setItem(PING_AT_KEY, String(Date.now()))
+    } catch {
+      // ok
     }
   } catch {
     // Notifications native module not ready or misconfigured.

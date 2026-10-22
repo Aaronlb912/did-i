@@ -18,7 +18,7 @@ begin
     (c, c || '@test.invalid', 'authenticated', 'authenticated');
   insert into public.profiles (user_id, zone) values (a, 'UTC'), (b, 'UTC'), (c, 'UTC')
     on conflict (user_id) do update set zone = 'UTC';
-  insert into public.shelves (user_id, doc) values (a, '{"boards":[{"id":"ba","lamps":[{"id":"qa"}]}]}')
+  insert into public.shelves (user_id, doc) values (a, '{"boards":[{"id":"ba","lamps":[{"id":"qa"},{"id":"qb"}]}]}')
     on conflict (user_id) do update set doc = excluded.doc;
   insert into public.devices (user_id, device_key, push_token, wake_ok) values
     (a, 'a-phone', 'tok-a-phone', true), (a, 'a-pad', 'tok-a-pad', true), (a, 'a-web', null, true),
@@ -90,7 +90,7 @@ begin
   execute 'reset role';
   perform set_config('request.jwt.claims', '', true);
   execute 'set local role anon';
-  perform public.key_answer(key, 'qa', tonight, 'nope', to_char((now() + interval '1 second') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+  perform public.key_answer(key, 'qb', tonight, 'nope', to_char((now() + interval '1 second') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
   execute 'reset role';
   perform set_config('didi.device', '', true);
   if not exists (select 1 from public.wake_queue where user_id = a and device_key = 'a-phone' and due) then
@@ -108,8 +108,8 @@ begin
   if (select count(*) from public.wake_queue where user_id = a) <> 2 then
     raise exception 'FAIL: Did we partner not woken on both devices';
   end if;
-  if exists (select 1 from public.wake_queue where user_id in (b, c)) then
-    raise exception 'FAIL: answerer or outsider woken for Did we';
+  if exists (select 1 from public.wake_queue where user_id = c) then
+    raise exception 'FAIL: outsider woken for Did we (the answerer''s own phones are, #354)';
   end if;
   -- Every woken person got the live ping too.
   if exists (

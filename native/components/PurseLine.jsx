@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { shortCount } from '../../src/lib/wallet.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { goHash } from '../navigation/hash.js'
 import { usePop } from '../hooks/usePop.js'
@@ -30,7 +31,7 @@ export function PurseLine({ purse, colors, gemsLink = false, mast = false }) {
   const gemBody = (
     <>
       <GemIcon size={iconSize} />
-      <Text style={[styles.n, mast && styles.nMast, { color: numColor }]}>{gems}</Text>
+      <Text style={[styles.n, mast && styles.nMast, { color: numColor }]}>{shortCount(gems)}</Text>
     </>
   )
 
@@ -44,7 +45,7 @@ export function PurseLine({ purse, colors, gemsLink = false, mast = false }) {
         accessibilityLabel={t('coins.tapAria')}
       >
         <CoinIcon size={iconSize} />
-        <Text style={[styles.n, mast && styles.nMast, { color: numColor }]}>{coins}</Text>
+        <Text style={[styles.n, mast && styles.nMast, { color: numColor }]}>{shortCount(coins)}</Text>
       </Pressable>
       {mast ? null : <Text style={[styles.sep, { color: colors.line }]}>·</Text>}
       {gemsLink ? (

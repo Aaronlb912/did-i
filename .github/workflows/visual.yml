@@ -1,9 +1,18 @@
 name: visual parity
 
+# PRs that can change what the website draws; not SQL, docs or Android.
 on:
-  push:
-    branches: [master, main]
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'supabase/**'
+      - 'android/**'
+  workflow_dispatch:
+
+concurrency:
+  group: visual-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   visual:

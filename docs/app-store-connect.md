@@ -106,6 +106,14 @@ Card frames: dress up your card with a frame. Some are free, some cost coins or 
 - Better VoiceOver support, and forms send with Return.
 - Your sign-in is stored encrypted on your phone.
 
+**What's new in 1.3.8** (submitted 2026-10-19, build 88):
+- When a new version is out, "Update Did I" shows in the menu.
+- Did, closing the app, then Did again no longer pays coins twice.
+- Easier-to-read text in light mode, and clearer labels for VoiceOver.
+- Did we, friend codes and sharing now tell you when something didn't load, with Try again.
+- Invite gems arrive once your friend has answered on 3 days.
+- Reduce motion skips the coin animation.
+
 Same text for the Play release notes (en-US). App Privacy labels and Play Data safety: no new data types.
 
 **App Privacy labels for 1.3.1:** no new data types. The look and card

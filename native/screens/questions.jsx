@@ -7,6 +7,7 @@ import {
   BackHandler,
   Keyboard,
   LayoutAnimation,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -64,8 +65,10 @@ import { HangFold } from '../components/HangFold.jsx'
 import { PickSheet } from '../components/PickSheet.jsx'
 import Reanimated, { FadeIn } from 'react-native-reanimated'
 import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
+import { useTour, useTourTarget } from '../lib/tour.js'
+import { TOUR_PARTS } from '../../src/lib/tour-steps.js'
 import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
-import { LampManage, lampActions, stopCheckOns } from '../components/LampManage.jsx'
+import { LampManage, flushCheckOnStops, lampActions, stopCheckOns } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -107,14 +110,24 @@ const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
 function useHall(book) {
   const colors = useHallColors(book)
-  // Fresh when the app comes back, so a page left open overnight shows today.
+  // Fresh when the app comes back, and when the day turns with the page open.
   const [clock, setClock] = useState(() => new Date())
+  const fold = book.dayFoldHour
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') setClock(new Date())
     })
-    return () => sub.remove()
-  }, [])
+    const tick = setInterval(() => {
+      setClock((was) => {
+        const now = new Date()
+        return boardDate(now, fold) === boardDate(was, fold) ? was : now
+      })
+    }, 60000)
+    return () => {
+      sub.remove()
+      clearInterval(tick)
+    }
+  }, [fold])
   const dateIso = boardDate(clock, book.dayFoldHour)
   return { colors, clock, dateIso }
 }
@@ -590,7 +603,10 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
 
   useEffect(() => {
     if (!undo) return undefined
-    const timer = setTimeout(() => setUndo(null), UNDO_MS)
+    const timer = setTimeout(() => {
+      flushCheckOnStops(undo.stops)
+      setUndo(null)
+    }, UNDO_MS)
     return () => clearTimeout(timer)
   }, [undo, undoSeen])
 
@@ -612,7 +628,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     const books = readShelf().boards || shelf
     const before = books.filter((item) => lampPicks.some((one) => one.boardId === item.id))
     onChangeBooks(bulkLamps(books, lampPicks, kind).map((item) => commitBook(item, clock)))
-    if (kind === 'delete' || kind === 'stop') stopCheckOns(lampPicks.map((one) => one.lampId))
+    const stops = kind === 'delete' || kind === 'stop' ? stopCheckOns(lampPicks.map((one) => one.lampId), true) : null
+    // A new undo replaces the old toast, so its window is over.
+    flushCheckOnStops(undo?.stops)
     const n = lampPicks.length
     const label =
       kind === 'delete'
@@ -620,7 +638,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         : kind === 'stop'
           ? t('questions.bulkStopped', { n })
           : t('questions.bulkAsked', { n })
-    setUndo({ id: Date.now(), label, before, picks: lampPicks })
+    setUndo({ id: Date.now(), label, before, picks: lampPicks, stops })
     stopPicking()
   }
 
@@ -714,7 +732,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   function takeBack() {
     if (!undo || !onChangeBooks) return
     if (undo.moved) {
-      let books = shelf
+      let books = readShelf().boards || shelf
       const back = new Set()
       for (const boardId of new Set(undo.moved.map((one) => one.boardId))) {
         const picks = undo.moved.filter((one) => one.boardId === boardId).map((one) => ({ boardId: undo.to, lampId: one.lampId }))
@@ -727,7 +745,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       setUndo(null)
       return
     }
-    onChangeBooks(undoBulkLamps(shelf, undo.before, undo.picks))
+    onChangeBooks(undoBulkLamps(readShelf().boards || shelf, undo.before, undo.picks))
     setUndo(null)
   }
 
@@ -863,7 +881,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                       label={starter.short}
                       colors={colors}
                       onPress={() => {
-                        onChange(commitBook(hangInto(book, { ...blankLamp(clock), ...starter }), clock))
+                        const current = (readShelf().boards || []).find((item) => item.id === book.id) || book
+                        if ((current.lamps || []).some((lamp) => lamp.short === starter.short || lamp.question === starter.question)) return
+                        onChange(commitBook(hangInto(current, { ...blankLamp(clock), ...starter }), clock))
                         confirmDone(t('confirm.questionAdded'))
                       }}
                     />
@@ -1159,7 +1179,7 @@ function usePhoneQuiet() {
       playClick()
       askPingsNow(colors)
         .then(setState)
-        .catch(() => {})
+        .catch(() => Linking.openSettings().catch(() => {}))
     },
   }
 }
@@ -1390,6 +1410,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   // A question that does not read "Did I ..." keeps its own words, with no fixed lead.
   const [lead] = useState(() => !draft.question || /^did i\b/i.test(draft.question))
   const [blank, setBlank] = useState(() => (lead ? starterBlank(draft) : draft.question))
+  // Typing a new folder: stays open even when the name so far matches one (Work, then Workout).
+  const [newTag, setNewTag] = useState(false)
   const [open, setOpen] = useState(() => {
     const first = foldNext
     foldNext = ''
@@ -1655,6 +1677,12 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   // another: Add another saves, then starts a blank question on the same screen.
   function save(another = false) {
     if (stamp) return
+    // Deleted somewhere else while this was open: saving would bring it back empty.
+    if (lampId && !existing) {
+      confirmMiss(t('lamp.gone'))
+      swapHash('/lamps')
+      return
+    }
     const built = hang.buildLamp()
     const problem = built.problem
     // The short name saved is the one the field showed.
@@ -1724,6 +1752,18 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   }
 
   // The card keeps to the extras; the line under it says when it repeats.
+  const reminderTour = useTourTarget('reminder')
+  const scheduleTour = useTourTarget('schedule')
+  const folderTour = useTourTarget('folder')
+  // The folder step opens More and the folder picker so there is something to point at.
+  const tourNow = useTour()
+  const tourOnFolders = tourNow.phase !== 'idle' && TOUR_PARTS[tourNow.part].steps[tourNow.index]?.key === 'folders'
+  useEffect(() => {
+    if (!tourOnFolders) return
+    setMoreOpen(true)
+    setOpen('tag')
+  }, [tourOnFolders])
+  const leadTour = useTourTarget('lead')
   const whenWords = [whenLine(draft), draft.askAfter ? timeLabel(draft.askAfter) : t('hang.askAny')].join(' · ')
   const meta = [whenWords, hang.priority === 'high' ? t('hang.metaHigh') : ''].filter(Boolean).join(' · ')
   // Topics stay out of the way until someone uses them.
@@ -1781,6 +1821,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         onBlank={changeBlank}
         meta={meta}
         metaAction={{ label: t('checkOn.change'), a11y: `${t('hang.when')}: ${whenWords}`, onPress: () => fold('when') }}
+        metaTour={scheduleTour}
+        leadTour={leadTour}
         wave={wave}
         stamp={stamp}
         shake={shake}
@@ -1953,7 +1995,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         }}
       >
         <SetCard colors={colors}>
-          {reminderRow(false)}
+          <View {...reminderTour}>{reminderRow(false)}</View>
           {ideasShown ? (
             <SetRow
               colors={colors}
@@ -2030,6 +2072,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
         <SetCap colors={colors}>{t('hang.secOrganize')}</SetCap>
         <SetCard colors={colors}>
+          <View {...folderTour}>
           <HangFold
             label={t('hang.tag')}
             value={tagName}
@@ -2048,16 +2091,26 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                   key={item.id}
                   label={item.title}
                   on={hang.isTagSelected(item.title)}
-                  onPress={() => hang.setTagTitle(item.title)}
+                  onPress={() => {
+                    setNewTag(false)
+                    hang.setTagTitle(item.title)
+                  }}
                   colors={colors}
                   radio
                 />
               ))}
-              {hang.knownTag ? (
-                <Pill label={`+ ${t('hang.tagNew')}`} onPress={() => hang.setTagTitle('')} colors={colors} />
+              {hang.knownTag && !newTag ? (
+                <Pill
+                  label={`+ ${t('hang.tagNew')}`}
+                  onPress={() => {
+                    setNewTag(true)
+                    hang.setTagTitle('')
+                  }}
+                  colors={colors}
+                />
               ) : null}
             </View>
-            {!hang.knownTag ? (
+            {newTag || !hang.knownTag ? (
               <FoldInput
                 label={t('hang.tagNew')}
                 value={hang.tagTitle}
@@ -2079,7 +2132,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                       key={item.id}
                       label={item.title}
                       on={hang.isTagSelected(item.title)}
-                      onPress={() => hang.setTagTitle(item.title)}
+                      onPress={() => {
+                    setNewTag(false)
+                    hang.setTagTitle(item.title)
+                  }}
                       colors={colors}
                       dim
                       radio
@@ -2089,6 +2145,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               </>
             ) : null}
           </HangFold>
+          </View>
 
           <HangFold
             label={t('hang.priority')}

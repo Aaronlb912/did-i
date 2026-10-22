@@ -31,16 +31,100 @@ export function weRuleKey(mode) {
   return `we.rule.${weRule(mode)}`
 }
 
+// One rule for the wording: 'daily' (a slot a day), 'weekly' (one weekday, so a
+// slot is a week) or 'multi' (several weekdays, so each due day is its own slot).
+export function weekKind(card) {
+  if (card?.cadence !== 'weekly') return 'daily'
+  return (card.weekdays || []).length >= 2 ? 'multi' : 'weekly'
+}
+
+export const isWeekly = (card) => weekKind(card) === 'weekly'
+
+// "Monday": the weekday of the card's current slot, for multi-day cards. '' when there is none.
+export function weSlotDay(card, locale) {
+  if (!card?.slot) return ''
+  return new Date(`${card.slot}T12:00:00`).toLocaleDateString(locale || undefined, { weekday: 'long' })
+}
+
+// Keys with a Day twin that takes {day} (multi-day cards only).
+const DAY_KEYS = ['we.tonightsTurn']
+
+// One person's line on a card ("Said did today" / "this week" / "for Monday"): the i18n key.
+export function wePersonKey(card, status) {
+  const base = status === 'did' ? 'we.pDid' : status === 'nope' ? 'we.pNope' : 'we.pWaiting'
+  const kind = weekKind(card)
+  return kind === 'weekly' ? `${base}Week` : kind === 'multi' && card.slot ? `${base}Day` : base
+}
+
+// "Coins after N more days/weeks together": { key, vars } for t().
+export function weNextCoinsKey(card, left) {
+  const one = left === 1
+  if (isWeekly(card)) return { key: one ? 'we.nextCoinsWeek' : 'we.nextCoinsWeeks', vars: { n: left } }
+  return { key: one ? 'we.nextCoinsOne' : 'we.nextCoins', vars: { n: left } }
+}
+
+// Any day-worded key gets its Week twin on a weekly card: 'we.goalLine' ->
+// 'we.goalLineWeek'. Multi-day cards count days, so only the keys that name
+// the due day change ('we.tonightsTurn' -> 'we.tonightsTurnDay').
+export function weWeekKey(card, key) {
+  const kind = weekKind(card)
+  if (kind === 'weekly') return `${key}Week`
+  return kind === 'multi' && card.slot && DAY_KEYS.includes(key) ? `${key}Day` : key
+}
+
+// 'we.modeNote.turns' / 'we.modeLine.turns' say "a day"; weekly cards get the Week twin.
+export function weModeKey(card, base, mode) {
+  if (mode !== 'turns') return `${base}.${mode}`
+  const kind = weekKind(card)
+  return kind === 'weekly' ? `${base}.turnsWeek` : kind === 'multi' ? `${base}.turnsDay` : `${base}.turns`
+}
+
+// A miss code from the server, in week words when the card is weekly.
+export function weMissKey(card, miss) {
+  return miss === 'we.missClosed' ? weWeekKey(card, miss) : miss
+}
+
+// A card person with the photo and buddy from the people you know. Cards can
+// lack them; the Friends list has them. known: Map of id -> { avatar, buddy }.
+export function weFaceFor(person, known) {
+  const row = known?.get(String(person?.id || ''))
+  if (!row) return person
+  return { ...person, avatar: row.avatar || person.avatar || person.avatar_url || '', buddy: row.buddy || person.buddy || '' }
+}
+
+// The slim Tonight row for Did wes you answered: status pieces for t().
+// One card: what you did and who is still waiting. Several: how many are done.
+export function weRowLine(cards) {
+  const list = cards || []
+  if (list.length !== 1) {
+    const done = list.filter((c) => c.done).length
+    const waiting = list.length - done
+    return { many: true, n: list.length, status: [waiting ? { key: 'we.rowManyStatus', vars: { done, waiting } } : { key: 'we.doneTogether', vars: {} }] }
+  }
+  const card = list[0]
+  if (card.done) return { many: false, n: 1, status: [{ key: 'we.doneTogether', vars: {} }] }
+  const me = (card.people || []).find((p) => p.me)
+  const waiting = (card.people || []).filter((p) => p.state === 'in' && !p.me && p.status !== 'did' && p.status !== 'nope')
+  const status = [{ key: me?.status === 'nope' ? 'we.rowYouNope' : 'we.youDid', vars: {} }]
+  if (waiting.length === 1) status.push({ key: 'we.rowWaitingOne', vars: { name: waiting[0].name } })
+  else if (waiting.length > 1) status.push({ key: 'we.rowWaitingMany', vars: { n: waiting.length } })
+  return { many: false, n: 1, status }
+}
+
 // The one status line: { key, vars } for t(). Done reads per rule; take turns
 // names whose turn it is; anything else is "2 of 3 did it tonight".
-export function weStatus(card) {
-  if (card?.done) return { key: weRule(card.mode) === 'all' ? 'we.doneAll' : 'we.doneTogether', vars: {} }
+export function weStatus(card, locale) {
+  const kind = weekKind(card)
+  const week = kind === 'weekly'
+  const day = kind === 'multi' ? weSlotDay(card, locale) : ''
+  const vars = day ? { day } : {}
+  if (card?.done) return { key: weRule(card.mode) === 'all' ? (week ? 'we.doneAllWeek' : day ? 'we.doneAllDay' : 'we.doneAll') : 'we.doneTogether', vars }
   if (card?.mode === 'turns') {
     const whose = (card.people || []).find((p) => p.id === card.turn)
-    if (whose?.me) return { key: 'we.yourTurnShort', vars: {} }
-    if (whose) return { key: 'we.theirTurn', vars: { name: whose.name } }
+    if (whose?.me) return { key: day ? 'we.yourTurnDay' : 'we.yourTurnShort', vars }
+    if (whose) return { key: week ? 'we.theirTurnWeek' : day ? 'we.theirTurnDay' : 'we.theirTurn', vars: { ...vars, name: whose.name } }
   }
-  return { key: 'we.ofDid', vars: { n: card?.dids || 0, total: card?.total || 0 } }
+  return { key: week ? 'we.ofDidWeek' : day ? 'we.ofDidDay' : 'we.ofDid', vars: { ...vars, n: card?.dids || 0, total: card?.total || 0 } }
 }
 
 // The last 7 nights ending `night` (oldest first), each with whether it was

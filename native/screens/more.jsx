@@ -80,8 +80,8 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { DAY_NUDGE_TIMES } from '../../src/lib/day-nudges.js'
-import { PING_KINDS, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
+import { DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
+import { PING_KINDS, afterQuiet, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
 import { syncLine } from '../../src/lib/sync-line.js'
@@ -96,6 +96,7 @@ import {
 } from '../../src/lib/session.js'
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
+import { useDayNow } from '../hooks/useDayNow.js'
 import { boardDate, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
@@ -107,6 +108,7 @@ import { leftoverOn, scopedBooks, tagIdsOf } from '../../src/lib/tags.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
+import { startTour, useTourTarget } from '../lib/tour.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts, radius, sectionLabel, withAlpha } from '../theme.js'
 import { CalendarGrid, YearGrid } from '../components/CalendarGrid.jsx'
@@ -299,6 +301,7 @@ export function HelpScreen() {
         <KeyButton colors={colors} label={t('settings.ideas')} onPress={() => goHash('/ideas')} />
         <KeyButton colors={colors} label={t('settings.what')} onPress={() => goHash('/about')} />
       </View>
+      <KeyButton colors={colors} label={t('tour.help')} onPress={() => startTour('basics', { replay: true })} />
       <HelpFold colors={colors} title={t('help.groupDaily')}>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.tonight')}</Text>
         <Meta colors={colors}>{t('help.tonightP1')}</Meta>
@@ -462,6 +465,7 @@ export function IdeasScreen() {
 // Opening it marks them seen, which clears the menu's count.
 export function RecentScreen() {
   const colors = useHallColors()
+  const recentTour = useTourTarget('recent')
   const { list } = useNotices()
   // The menu row counts inbox asks too, so the page shows them first.
   const account = useAccount()
@@ -480,6 +484,7 @@ export function RecentScreen() {
   }
   return (
     <ScreenShell title={t('recent.title')} colors={colors}>
+      <View {...recentTour}>
       {account.user && inbox > 0 ? (
         <Pressable
           accessibilityRole="button"
@@ -510,6 +515,7 @@ export function RecentScreen() {
       ) : account.user && inbox > 0 ? null : (
         <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors} />
       )}
+      </View>
     </ScreenShell>
   )
 }
@@ -737,7 +743,8 @@ export function NotesScreen({ book, boards }) {
 
 export function CalendarScreen({ book, boards, tagId, now }) {
   const colors = useHallColors()
-  const clock = now || new Date()
+  const today = useDayNow()
+  const clock = now || today
   const [view, setView] = useState('month')
   const [startShift, setStartShift] = useState(0)
   const gentle = usePrefs().gentle === true
@@ -800,7 +807,8 @@ export function CalendarScreen({ book, boards, tagId, now }) {
 
 export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors(book)
-  const clock = now || new Date()
+  const today = useDayNow()
+  const clock = now || today
   const gentle = usePrefs().gentle === true
   // The week's walks once per shelf, folder and minute, not every render.
   const minute = Math.floor(clock.getTime() / 60000)
@@ -1089,7 +1097,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
       return
     }
     setTitleDraft(title)
-    onChange({ ...book, title })
+    onChange({ ...book, title, at: new Date().toISOString() })
     confirmDone(t('settings.saved'))
   }
 
@@ -1101,6 +1109,15 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
     }
     if ((boards || []).some((item) => !item.archived && item.title.trim().toLowerCase() === title.toLowerCase())) {
       setAddMiss(t('boards.addSame'))
+      return
+    }
+    // A parked folder with that name: open it, which brings it back.
+    const asleep = (boards || []).find((item) => item.archived && item.title.trim().toLowerCase() === title.toLowerCase())
+    if (asleep) {
+      setAdding(false)
+      setNewName('')
+      setAddMiss('')
+      onSelect?.(asleep.id)
       return
     }
     onAdd?.(title)
@@ -1297,7 +1314,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
               onClose: () => publishSheet(null),
               onGo: () => {
                 publishSheet(null)
-                setRemoved({ id: Date.now(), label: t('confirm.folderRemoved', { title: book.title }), book })
+                setRemoved({ id: Date.now(), label: t('confirm.folderRemoved', { title: book.title }), book: readShelf().boards.find((item) => item.id === book.id) || book })
                 onRemove?.(book.id)
               },
             })
@@ -1697,6 +1714,18 @@ export function FirstNightScreen({ book, onChange, now }) {
 
 // Pushes come from the server, which reads these switches from the synced prefs.
 const PUSH_KINDS = new Set(['sends', 'we', 'cheers', 'friends', 'family', 'didi'])
+// Morning ask times outside quiet hours: a nudge inside them never rings.
+// The picked one stays listed so the choice never looks empty.
+function morningTimes(prefs) {
+  const free = MORNING_AT_TIMES.filter((id) => {
+    const [h, m] = id.split(':').map(Number)
+    const at = new Date()
+    at.setHours(h, m, 0, 0)
+    return afterQuiet(at, prefs).getTime() === at.getTime() || id === prefs.morningAt
+  })
+  return free.length ? free : MORNING_AT_TIMES
+}
+
 const QUIET_HOURS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`)
 
 function PingKinds({ colors, on }) {
@@ -1750,7 +1779,8 @@ function PingKinds({ colors, on }) {
     setMiss('')
     const saved = await saveProfile({ family_hour: hour, prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      writePrefs({ familyHour: was })
+      // A newer pick made while this saved stays.
+      if (readPrefs().familyHour === hour) writePrefs({ familyHour: was })
       setMiss(t('pings.kindsMiss'))
     }
   }
@@ -1761,15 +1791,26 @@ function PingKinds({ colors, on }) {
     setMiss('')
     const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      writePrefs({ pingsPrivate: was })
+      if (readPrefs().pingsPrivate === !was) writePrefs({ pingsPrivate: was })
       setMiss(t('pings.kindsMiss'))
     }
   }
 
   // The shop drop push. Turning it on asks for notifications first.
+  // The server reads dropPings, so save it there now like the other switches.
+  async function saveDropPings(next) {
+    writePrefs({ dropPings: next })
+    const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
+    if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
+      if (readPrefs().dropPings === next) writePrefs({ dropPings: !next })
+      setMiss(t('pings.kindsMiss'))
+    }
+  }
+
   async function flipDropPings() {
     if (prefs.dropPings) {
-      writePrefs({ dropPings: false })
+      setMiss('')
+      await saveDropPings(false)
       return
     }
     const state = await requestPings().catch(() => 'denied')
@@ -1778,8 +1819,8 @@ function PingKinds({ colors, on }) {
       return
     }
     setMiss('')
-    writePrefs({ dropPings: true })
     syncPushTokenIfAllowed().catch(() => {})
+    await saveDropPings(true)
   }
 
   const familyId = QUIET_HOURS[prefs.familyHour] || '21:00'
@@ -1799,7 +1840,10 @@ function PingKinds({ colors, on }) {
                 kind === 'family'
                   ? t('pings.kind.familySubAt', { time: familyTime })
                   : kind === 'day'
-                    ? t('pings.kind.daySub', { morning: clockWords(DAY_NUDGE_TIMES[0]), afternoon: clockWords(DAY_NUDGE_TIMES[1]) })
+                    ? t('pings.kind.daySub', {
+                        morning: clockWords(prefs.morningAsk !== false ? prefs.morningAt || MORNING_AT_DEFAULT : DAY_NUDGE_TIMES[0]),
+                        afternoon: clockWords(DAY_NUDGE_TIMES[1]),
+                      })
                     : t(`pings.kind.${kind}Sub`)
               }
               on={!prefs.pingsOff.includes(kind)}
@@ -1813,7 +1857,19 @@ function PingKinds({ colors, on }) {
                 on={prefs.morningAsk !== false}
                 onPress={() => {
                   writePrefs({ morningAsk: prefs.morningAsk === false })
-                  // The 9:00 nudge's words follow this switch.
+                  // The morning nudge's time and words follow this switch.
+                  armLampPings(readShelf().boards).catch(() => {})
+                }}
+              />
+            ) : null}
+            {kind === 'day' && prefs.morningAsk !== false && !prefs.pingsOff.includes('day') ? (
+              <SetChoice
+                colors={colors}
+                label={t('morning.at')}
+                options={morningTimes(prefs).map((id) => ({ id, label: clockWords(id) }))}
+                selected={prefs.morningAt || MORNING_AT_DEFAULT}
+                onSelect={(id) => {
+                  writePrefs({ morningAt: id })
                   armLampPings(readShelf().boards).catch(() => {})
                 }}
               />
@@ -1936,7 +1992,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
     if (!lamp || !onChange) return confirmMiss(t('confirm.miss'))
     const next = !lampNotifyOn(lamp)
     setSeen((was) => new Map(was).set(fire.id, fire))
-    onChange(commitBook({ ...home, lamps: home.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next } : item)) }, clock))
+    onChange(commitBook({ ...home, lamps: home.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next, at: clock.toISOString() } : item)) }, clock))
     return confirmDone(next ? t('pings.oneOn') : t('pings.oneOff'))
   }
 

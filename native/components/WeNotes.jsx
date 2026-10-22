@@ -41,7 +41,8 @@ export function WeNotes({ card, mine, colors, cheer }) {
   // Past nights you said Did, inside the note window, so a note can go on them too.
   const [didNights, setDidNights] = useState([])
   const [miss, setMiss] = useState('')
-  const night = boardDate()
+  // A weekly card keeps tonight's answer on its slot's due night.
+  const night = card.slot || boardDate()
   const people = (card.people || []).filter((p) => p.state === 'in')
 
   async function load() {

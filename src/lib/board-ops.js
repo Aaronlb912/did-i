@@ -1,7 +1,28 @@
 import { answeredAtIso, cleanAmount, duplicateLamp, newAnswerId } from './board-json.js'
 import { activeLook } from './active-look.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
-import { answerFor, openFloorIso, periodPassed, stampMs } from './recurrence.js'
+import { answerFor, boardDate, openFloorIso, periodPassed, stampMs } from './recurrence.js'
+import { readShelf } from './board-shelf.js'
+
+// Pausing notes the day, so the question's record stops counting there.
+// Edits stamp `at` so sync keeps the later edit of a question (shelf-merge.js).
+// Answers live in book.answers and never touch it.
+export function stampEdit(item, clock = new Date()) {
+  return { ...item, at: clock.toISOString() }
+}
+
+function withPause(lamp, archived, clock = new Date()) {
+  if (Boolean(lamp.archived) === archived) return lamp
+  const { pausedOn, ...rest } = lamp
+  if (archived) return stampEdit({ ...rest, archived, pausedOn: boardDate(clock) }, clock)
+  // Resumed: the paused days stay out of the streak, [from, until).
+  const until = boardDate(clock)
+  const pauses = pausedOn && pausedOn < until ? [...(lamp.pauses || []), [pausedOn, until]].slice(-8) : lamp.pauses
+  return stampEdit({ ...rest, archived, ...(pauses?.length ? { pauses } : {}) }, clock)
+}
+
+// Set on every saved answer so a reload never lands mid-answer (native/lib/ota-refresh.js).
+export let lastAnswerAt = 0
 
 export function putAnswer(book, row, status, clock = new Date()) {
   if (!row || !row.lamp) return book
@@ -12,13 +33,17 @@ export function putAnswer(book, row, status, clock = new Date()) {
   const prev = (book.answers || []).find((item) => item.lampId === row.lamp.id && item.periodKey === row.periodKey)
   // Once a Did, always counted: flipping Did, Not yet, Did never pays twice.
   const counted = status === 'yes' || status === 'late' || prev?.paid === true || prev?.status === 'yes' || prev?.status === 'late'
+  lastAnswerAt = Date.now()
   const answer = {
     id: newAnswerId(),
     lampId: row.lamp.id,
     periodKey: row.periodKey,
     status,
     answeredAt: answeredAtIso(clock),
-    note: '',
+    // Changing the answer keeps the day's note and amount.
+    note: prev?.note || '',
+    ...(prev?.note && prev.noteAt ? { noteAt: prev.noteAt } : {}),
+    ...(cleanAmount(prev?.amount) !== null ? { amount: prev.amount } : {}),
     ...(counted ? { paid: true } : {}),
   }
   const next = {
@@ -30,7 +55,7 @@ export function putAnswer(book, row, status, clock = new Date()) {
       answer,
     ],
   }
-  const paid = payTap(book, next, row, status, clock)
+  const paid = payTap(book, next, row, status, clock, () => (readShelf().boards || []).filter((item) => item.id !== book.id))
   if (status !== 'yes' && status !== 'late') return paid
   const cheered = noteCheer(paid)
   const purse = normalizePurse(cheered)
@@ -52,8 +77,9 @@ function wasGone(book, ids) {
   return (book.gone || []).some((item) => ids.has(item.id) && !item.back)
 }
 
-export function hangInto(book, lamp, editing) {
-  if (!lamp) return book
+export function hangInto(book, saved, editing) {
+  if (!saved) return book
+  const lamp = stampEdit(saved)
   if (editing) {
     return {
       ...book,
@@ -63,7 +89,8 @@ export function hangInto(book, lamp, editing) {
   const ids = new Set([lamp.id])
   return {
     ...book,
-    lamps: [...(book.lamps || []), lamp],
+    // A double tap on Add another saves the same id twice; keep one.
+    lamps: [...(book.lamps || []).filter((item) => item.id !== lamp.id), lamp],
     ...(wasGone(book, ids) ? { gone: noteGone(book, ids, true) } : {}),
   }
 }
@@ -101,7 +128,7 @@ export function bulkLamps(books, picks, kind) {
       const archived = kind === 'stop'
       out.push({
         ...book,
-        lamps: (book.lamps || []).map((item) => (ids.has(item.id) ? { ...item, archived } : item)),
+        lamps: (book.lamps || []).map((item) => (ids.has(item.id) ? withPause(item, archived) : item)),
       })
     }
   }
@@ -118,7 +145,7 @@ export function undoBulkLamps(books, before, picks) {
     if (!now) continue
     const nowLamps = new Map((now.lamps || []).map((item) => [item.id, item]))
     const lamps = (old.lamps || [])
-      .map((item) => (picked.has(item.id) ? item : nowLamps.get(item.id)))
+      .map((item) => (picked.has(item.id) ? stampEdit(item) : nowLamps.get(item.id)))
       .filter(Boolean)
     const kept = new Set(lamps.map((item) => item.id))
     for (const item of now.lamps || []) if (!kept.has(item.id)) lamps.push(item)
@@ -163,12 +190,12 @@ export function moveLamps(books, picks, targetId) {
   return [...changed.values()]
 }
 
-export function toggleArchive(book, lamp) {
+export function toggleArchive(book, lamp, clock = new Date()) {
   if (!lamp) return book
   return {
     ...book,
     lamps: (book.lamps || []).map((item) =>
-      item.id === lamp.id ? { ...item, archived: !item.archived } : item,
+      item.id === lamp.id ? withPause(item, !item.archived, clock) : item,
     ),
   }
 }
@@ -192,6 +219,25 @@ export function answerStamp(answer) {
   const tap = String(answer?.answeredAt || '')
   const note = String(answer?.noteAt || '')
   return stampMs(note) > stampMs(tap) ? note : tap
+}
+
+// Two copies of one answer: the tap (status, answeredAt) and the note (note,
+// noteAt, amount) each come from the copy that changed them last, so an old
+// tap with a newer note never puts back an answer another phone replaced.
+// Ties keep a.
+export function mergeAnswer(a, b) {
+  const tapB = stampMs(b?.answeredAt) > stampMs(a?.answeredAt)
+  const noteB = stampMs(b?.noteAt) > stampMs(a?.noteAt)
+  if (tapB === noteB) return tapB ? b : a
+  const tap = tapB ? b : a
+  const side = noteB ? b : a
+  const { note: _n, noteAt: _t, amount: _m, ...rest } = tap
+  return {
+    ...rest,
+    note: side.note || '',
+    ...(side.noteAt ? { noteAt: side.noteAt } : {}),
+    ...(cleanAmount(side.amount) !== null ? { amount: side.amount } : {}),
+  }
 }
 
 // amount: leave it out to keep the night's amount; '' or null clears it.

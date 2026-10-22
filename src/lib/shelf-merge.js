@@ -1,7 +1,6 @@
 import { normalizeBook, normalizeGone } from './board-json.js'
 import { normalizeShelf } from './board-shelf.js'
-import { answerStamp } from './board-ops.js'
-import { stampMs } from './recurrence.js'
+import { mergeAnswer } from './board-ops.js'
 import { capSkips } from './travel.js'
 import { CHEER_STAGE_MAX, normalizePurse } from './purse.js'
 
@@ -24,9 +23,7 @@ function answerKey(answer) {
 // Whichever wins, a night that was once a Did on either phone stays counted
 // toward its paid taps (paid), so Did, Not yet elsewhere, Did never pays twice.
 function laterAnswer(a, b) {
-  const left = answerStamp(a)
-  const right = answerStamp(b)
-  const won = left && right ? (stampMs(right) > stampMs(left) ? b : a) : right && !left ? b : a
+  const won = mergeAnswer(a, b)
   return !onceDid(won) && (onceDid(a) || onceDid(b)) ? { ...won, paid: true } : won
 }
 
@@ -60,7 +57,7 @@ function foldPurse(winner, loser) {
     accessories: unionList(win.accessories, lose.accessories),
     worn: win.worn,
     buddies: unionList(win.buddies, lose.buddies),
-    buddyOn: win.buddyOn || lose.buddyOn,
+    buddyOn: win.buddyOn,
     frames: unionList(win.frames, lose.frames),
     frame: win.frame,
     cheerOn: win.cheerOn,
@@ -72,9 +69,25 @@ function foldPurse(winner, loser) {
   }
 }
 
+// The copy edited later wins; a missing stamp counts as never, a tie keeps the winner.
+function atMs(item) {
+  const ms = Date.parse(item?.at || '')
+  return Number.isFinite(ms) ? ms : 0
+}
+
 export function mergeBooks(winner, loser) {
   const win = normalizeBook(winner)
   const lose = normalizeBook(loser)
+  const loseById = byId(lose.lamps)
+  win.lamps = win.lamps.map((lamp) => {
+    const other = loseById.get(lamp.id)
+    return other && atMs(other) > atMs(lamp) ? other : lamp
+  })
+  if (atMs(lose) > atMs(win)) {
+    win.title = lose.title
+    win.archived = lose.archived
+    win.at = lose.at
+  }
 
   // A question taken off on either phone stays off, unless it was put back
   // later than that. Without this, the older phone's copy brings it back.
@@ -84,14 +97,25 @@ export function mergeBooks(winner, loser) {
   const lampsWin = byId(win.lamps)
   const lamps = win.lamps.filter((lamp) => !dead.has(lamp.id))
   // The same kept Did you saved on two phones under two ids is one question.
-  const sendsWin = new Set(win.lamps.map((lamp) => lamp.sendId).filter(Boolean))
+  // Its answers move to the copy that stays.
+  const sendsWin = new Map(win.lamps.filter((lamp) => lamp.sendId).map((lamp) => [lamp.sendId, lamp.id]))
+  const renamed = new Map()
   for (const lamp of lose.lamps) {
-    if (lamp.sendId && sendsWin.has(lamp.sendId)) continue
+    const same = lamp.sendId ? sendsWin.get(lamp.sendId) : undefined
+    if (same !== undefined) {
+      if (same !== lamp.id) renamed.set(lamp.id, same)
+      continue
+    }
     if (!lampsWin.has(lamp.id) && !dead.has(lamp.id)) lamps.push(lamp)
   }
 
   const answers = new Map()
-  for (const answer of lose.answers) answers.set(answerKey(answer), answer)
+  for (const old of lose.answers) {
+    const answer = renamed.has(old.lampId) ? { ...old, lampId: renamed.get(old.lampId) } : old
+    const key = answerKey(answer)
+    const prev = answers.get(key)
+    answers.set(key, prev ? laterAnswer(prev, answer) : answer)
+  }
   for (const answer of win.answers) {
     const key = answerKey(answer)
     const prev = answers.get(key)
@@ -108,6 +132,19 @@ export function mergeBooks(winner, loser) {
     travelSkips: capSkips([...win.travelSkips, ...lose.travelSkips]),
     ...foldPurse(win, lose),
   })
+}
+
+// A backup file loaded on this phone: its answers and new questions come in,
+// but this phone's question settings win, and coins, gems and shop items
+// stay as they are here, so a copy cannot bring back what was spent.
+export function mergeBackup(local, backup) {
+  const PURSE = ['coins', 'gems', 'cheers', 'looks', 'accessories', 'buddies', 'frames', 'cheerStages', 'buddyOn', 'cheerOn', 'worn', 'frame', 'wish']
+  const boards = (backup?.boards || []).map((book) => {
+    const out = { ...book }
+    for (const key of PURSE) delete out[key]
+    return out
+  })
+  return mergeShelves(local, { ...backup, boards }, '', '')
 }
 
 export function mergeShelves(local, remote, localSavedAt = '', remoteSavedAt = '') {

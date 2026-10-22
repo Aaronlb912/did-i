@@ -117,6 +117,7 @@ export function ScreenRouter({
   onSendCopy,
   onAskPings,
   pingLabel,
+  firstAdd,
 }) {
   const path = route.path
   const boards = shelf.boards
@@ -130,7 +131,7 @@ export function ScreenRouter({
     return (
       <EnterScreen
         book={book}
-        onSaveKeeper={(patch) => change({ ...book, ...patch })}
+        onSaveKeeper={(patch) => change({ ...book, ...patch, ...(patch?.title && patch.title !== book.title ? { at: new Date().toISOString() } : {}) })}
         onEraseHere={onImport}
         returnTo={path === '/enter' ? undefined : path}
       />
@@ -248,6 +249,7 @@ export function ScreenRouter({
       onKeep={keepSent}
       focusLampId={route.face}
       focusKey={route.focusAt}
+      firstAdd={firstAdd}
     />
   )
 }

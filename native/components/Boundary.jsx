@@ -2,6 +2,7 @@ import { Component } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { hallColors, fonts } from '../theme.js'
+import * as Updates from '../shim/updates-safe.cjs'
 
 // Same job as src/lib/Boundary.jsx on the web, and the same storage key
 // so lastBreak() reads either one. Without this a thrown render is a
@@ -42,6 +43,20 @@ export class Boundary extends Component {
   constructor(props) {
     super(props)
     this.state = { broke: null, where: '' }
+    this.tries = 0
+  }
+
+  // A second break in a row would throw again on the same stored state:
+  // restart the whole app instead of looping on this screen.
+  again() {
+    this.tries += 1
+    if (this.tries > 1) {
+      Promise.resolve()
+        .then(() => Updates.reloadAsync())
+        .catch(() => this.setState({ broke: null }))
+      return
+    }
+    this.setState({ broke: null })
   }
 
   static getDerivedStateFromError(error) {
@@ -81,7 +96,7 @@ export class Boundary extends Component {
           ) : null}
           <Pressable
             accessibilityRole="button"
-            onPress={() => this.setState({ broke: null })}
+            onPress={() => this.again()}
             style={[styles.again, { backgroundColor: colors.on }]}
           >
             <Text style={[styles.againText, { color: colors.bg }]}>{t('broke.again')}</Text>

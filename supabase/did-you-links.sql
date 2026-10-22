@@ -93,7 +93,21 @@ $$;
 revoke all on function public.make_did_you_link(text) from public, anon;
 grant execute on function public.make_did_you_link(text) to authenticated;
 
--- What the link page and the app show. Nothing for an unknown or ended code.
+-- A link made by a person works for 7 days. Links Did I made (made_by null)
+-- do not expire. Same length as a Did we link (we_links.ends_at).
+create or replace function public.did_you_link_open(made_by uuid, made_at timestamptz)
+returns boolean
+language sql
+stable
+set search_path = public
+as $$
+  select did_you_link_open.made_by is null or did_you_link_open.made_at > now() - interval '7 days';
+$$;
+
+revoke all on function public.did_you_link_open(uuid, timestamptz) from public;
+grant execute on function public.did_you_link_open(uuid, timestamptz) to anon, authenticated;
+
+-- What the link page and the app show. Nothing for an unknown, ended or expired code.
 create or replace function public.look_up_did_you_link(code text)
 returns table (question text, name text, avatar_url text)
 language sql
@@ -108,6 +122,7 @@ as $$
   from public.did_you_links l
   left join public.profiles p on p.user_id = l.made_by
   where l.code = lower(btrim(look_up_did_you_link.code)) and not l.ended
+    and public.did_you_link_open(l.made_by, l.made_at)
   limit 1;
 $$;
 
@@ -131,6 +146,7 @@ begin
   -- Blocked either way: nothing is counted and the maker hears nothing.
   if not exists (select 1 from public.did_you_links l
                  where l.code = c and not l.ended and l.made_by is distinct from me
+                   and public.did_you_link_open(l.made_by, l.made_at)
                    and (l.made_by is null or not public.blocked_with(l.made_by))) then
     return false;
   end if;
@@ -262,7 +278,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select l.code, l.question, l.made_at, l.ended,
+  select l.code, l.question, l.made_at, (l.ended or not public.did_you_link_open(l.made_by, l.made_at)),
     coalesce((
       select jsonb_agg(jsonb_build_object(
         'user_id', c.user_id,
@@ -308,7 +324,8 @@ $$;
 revoke all on function public.end_did_you_link(text) from public, anon;
 grant execute on function public.end_did_you_link(text) to authenticated;
 
--- True when the code was a real link and its maker stopped it, so the link
+-- True when the code was a real link and its maker stopped it or it ran out
+-- its 7 days, so the link
 -- page can say so instead of "not right". Nothing else about the link.
 create or replace function public.did_you_link_stopped(code text)
 returns boolean
@@ -318,7 +335,8 @@ security definer
 set search_path = public
 as $$
   select exists (select 1 from public.did_you_links l
-                 where l.code = lower(btrim(coalesce(did_you_link_stopped.code, ''))) and l.ended);
+                 where l.code = lower(btrim(coalesce(did_you_link_stopped.code, '')))
+                   and (l.ended or not public.did_you_link_open(l.made_by, l.made_at)));
 $$;
 
 revoke all on function public.did_you_link_stopped(text) from public;

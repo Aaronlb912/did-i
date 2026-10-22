@@ -1,7 +1,7 @@
-import { accountSessionOn } from './session-id.js'
+import { accountSessionOn, readAccountUserId } from './session-id.js'
 import { buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, liveCheers, liveLooks, nextCheerStage, shopBuddies, normalizePurse, wearAccessory } from './purse.js'
 import { accessoryById } from './accessories.js'
-import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems } from './wallet.js'
+import { applyGemOwnedToBook, applyPurchaseToBook, claimFreeItem, purchaseWithCoins, purchaseWithGems, readGemOwned } from './wallet.js'
 import { buyFrameLocal, frameById, frameForSale } from './frames.js'
 import { noteMilestone } from './milestones.js'
 
@@ -31,12 +31,11 @@ async function buyFrameRaw(book, id) {
 
 async function buyLookWithCoinsRaw(book, id) {
   const look = liveLooks().find((item) => item.id === id)
-  if (!look) return { book, miss: 'shop.miss.lookGone' }
   const purse = normalizePurse(book)
-  if (purse.looks.includes(id)) {
-    return { book: { ...book, ...purse, lookOn: id }, miss: '' }
-  }
-  if (look.gems > 0) return buyWithGems(book, 'look', id)
+  if (purse.looks.includes(id)) return buyLook(book, id)
+  if (!look) return { book, miss: 'shop.miss.lookGone' }
+  // Raw: this whole buy is already counted once.
+  if (look.gems > 0) return buyWithGemsRaw(book, 'look', id)
   if (!look.coins) return buyLook(book, id)
   if (accountSessionOn()) {
     const remote = await purchaseWithCoins('look', id)
@@ -91,16 +90,42 @@ async function buyWithGemsRaw(book, kind, id) {
   if (!item || purse[how.owned].includes(id)) return how.local(book, id)
   if (!accountSessionOn()) return item.gems > 0 ? { book, miss: SIGN_IN_MISS } : how.local(book, id)
   if (purse.gems < item.gems) return { book, miss: 'shop.miss.needGems', missN: item.gems }
-  const remote = await purchaseWithGems(kind, id)
+  let remote = await purchaseWithGems(kind, id).catch(() => ({ miss: 'shop.miss.buyFail' }))
+  // A lost reply can hide a buy that went through: ask the server what we own.
+  if (remote.miss === 'shop.miss.buyFail') {
+    const owned = await readGemOwned().catch(() => null)
+    if (owned?.[how.owned]?.includes(id)) remote = { miss: '', owned }
+  }
   if (remote.miss) return { book, miss: remote.miss, missN: item.gems }
+  return { book: applyGemOwnedToBook(book, remote.owned, { [how.on]: id }), miss: '' }
+}
+
+// A free event item (docs/shop-drops.md). Signed in, the server records it
+// while its window is open; signed out, it is kept on this phone, like a
+// season frame. Not live (or not yet): the same "gone" miss as a buy.
+async function claimFreeRaw(book, kind, id) {
+  const how = GEM_KINDS[kind]
+  const item = how?.list().find((row) => row.id === id)
+  const purse = normalizePurse(book)
+  if (!how) return { book, miss: 'shop.miss.buyFail' }
+  if (purse[how.owned].includes(id)) return how.local(book, id)
+  if (!item?.free) return { book, miss: kind === 'buddy' ? 'shop.miss.buddyGone' : 'shop.miss.cheerGone' }
+  if (!accountSessionOn()) return how.local(book, id)
+  let remote = await claimFreeItem(kind, id).catch(() => ({ miss: 'shop.miss.buyFail' }))
+  if (remote.miss === 'shop.miss.buyFail') {
+    const owned = await readGemOwned().catch(() => null)
+    if (owned?.[how.owned]?.includes(id)) remote = { miss: '', owned }
+  }
+  if (remote.miss) return { book, miss: remote.miss }
   return { book: applyGemOwnedToBook(book, remote.owned, { [how.on]: id }), miss: '' }
 }
 
 // A buy counts as a milestone only when coins or gems actually went down,
 // so wearing something you already own does not.
-function counted(buy) {
+export function counted(buy) {
   return async (book, ...rest) => {
     const before = normalizePurse(book)
+    const who = readAccountUserId()
     let out
     try {
       out = await buy(book, ...rest)
@@ -109,6 +134,9 @@ function counted(buy) {
       // never a tap that does nothing. Nothing was spent on this phone.
       return { book, miss: 'shop.miss.buyFail' }
     }
+    // Signed out or switched while the buy was out: its purse is the old
+    // account's, so write nothing on this phone.
+    if (who && readAccountUserId() !== who) return { book: null, miss: 'shop.miss.buyFail' }
     const after = out?.book ? normalizePurse(out.book) : before
     if (!out?.miss && (after.coins < before.coins || after.gems < before.gems)) noteMilestone('bought')
     return out
@@ -120,3 +148,4 @@ export const buyLookWithCoins = counted(buyLookWithCoinsRaw)
 export const buyCheerStageWithCoins = counted(buyCheerStageWithCoinsRaw)
 export const buyAccessoryWithCoins = counted(buyAccessoryWithCoinsRaw)
 export const buyWithGems = counted(buyWithGemsRaw)
+export const claimFree = counted(claimFreeRaw)
