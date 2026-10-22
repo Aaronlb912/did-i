@@ -97,6 +97,7 @@ const files = [
   'supabase/we-live-edit.sql',
   'supabase/answer-undos.sql',
   'supabase/answer-split-merge.sql',
+  'supabase/event-items.sql',
   'supabase/drop-tonight.sql',
 ]
 

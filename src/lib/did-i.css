@@ -6474,7 +6474,8 @@ button.di-refer-rung {
 .di-cheer-chip[data-cheer='bolt'] svg,
 .di-cheer-chip[data-cheer='splat'] svg,
 .di-cheer-chip[data-cheer='butterfly'] svg,
-.di-cheer-chip[data-cheer='bounce'] svg {
+.di-cheer-chip[data-cheer='bounce'] svg,
+.di-cheer-chip[data-cheer='boo'] svg {
   width: 1.5rem;
   height: 1.5rem;
   overflow: visible;
@@ -14216,4 +14217,166 @@ button.di-we-faces {
 .di-first-item:has(input:focus-visible) {
   outline: 2px solid var(--di-on);
   outline-offset: -2px;
+}
+
+/* Boo: a sheet ghost pops up from below with a dip, overshoots, wobbles side
+   to side and floats away. Its bottom edge sits on the pop's anchor; the
+   times and offsets are GHOST_KEYS in cheer-pops.js. */
+.di-ghost {
+  position: absolute;
+  top: calc(var(--gh) * -1 + var(--gy));
+  left: var(--gx);
+  width: calc(var(--gh) * 0.8);
+  height: var(--gh);
+  margin-left: calc(var(--gh) * -0.4);
+  opacity: 0;
+  transform-origin: 50% 100%;
+  animation: di-ghost 2s linear forwards;
+}
+
+.di-ghost svg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.di-ghost-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--gh) * 1.7);
+  height: calc(var(--gh) * 1.7);
+  margin: calc(var(--gh) * -0.85) 0 0 calc(var(--gh) * -0.85);
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, #9db4ff 50%, transparent) 0%, color-mix(in srgb, #9db4ff 18%, transparent) 45%, transparent 70%);
+}
+
+.di-ghost-body {
+  fill: #ffffff;
+  stroke: #9d90d6;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+
+.di-ghost-eye,
+.di-ghost-mouth {
+  fill: #2a2342;
+}
+
+.di-ghost-spark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sz);
+  height: var(--sz);
+  margin: calc(var(--sz) / -2) 0 0 calc(var(--sz) / -2);
+  opacity: 0;
+  animation: di-ghost-spark 1.1s ease-out forwards;
+}
+
+.di-ghost-spark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: #a99bec;
+  stroke: #ffffff;
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+
+.di-wisp {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sz);
+  height: var(--sz);
+  margin: calc(var(--sz) / -2) 0 0 calc(var(--sz) / -2);
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #9d90d6;
+  box-sizing: border-box;
+  opacity: 0;
+  animation: di-wisp 1.1s ease-out forwards;
+}
+
+@keyframes di-ghost {
+  0% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * 0.6)) rotate(calc(0deg * var(--dir))) scale(0.7, 0.7);
+    opacity: 0;
+  }
+  6% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * 0.7)) rotate(calc(0deg * var(--dir))) scale(1.12, 0.84);
+    opacity: 1;
+  }
+  20% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.55)) rotate(calc(0deg * var(--dir))) scale(0.9, 1.18);
+    opacity: 1;
+  }
+  28% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.8)) rotate(calc(0deg * var(--dir))) scale(0.96, 1.06);
+    opacity: 1;
+  }
+  36% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.66)) rotate(calc(0deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  44% {
+    transform: translate(calc(var(--gh) * 0.8 * -0.06 * var(--dir)), calc(var(--gh) * -0.68)) rotate(calc(-12deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  52% {
+    transform: translate(calc(var(--gh) * 0.8 * 0.06 * var(--dir)), calc(var(--gh) * -0.66)) rotate(calc(12deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(calc(var(--gh) * 0.8 * -0.05 * var(--dir)), calc(var(--gh) * -0.68)) rotate(calc(-10deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  68% {
+    transform: translate(calc(var(--gh) * 0.8 * 0.04 * var(--dir)), calc(var(--gh) * -0.66)) rotate(calc(8deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  74% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.66)) rotate(calc(0deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -1.9)) rotate(calc(0deg * var(--dir))) scale(0.96, 1.06);
+    opacity: 0;
+  }
+}
+
+@keyframes di-ghost-spark {
+  0% {
+    transform: translate(var(--dx), var(--dy)) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  30% {
+    transform: translate(var(--dx), var(--dy)) scale(1.2) rotate(40deg);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(var(--dx), var(--dy)) scale(0.8) rotate(70deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), calc(var(--dy) - 0.8rem)) scale(0) rotate(110deg);
+    opacity: 0;
+  }
+}
+
+@keyframes di-wisp {
+  0% {
+    transform: translate(var(--dx), var(--dy)) scale(0.3);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(var(--dx), calc(var(--dy) - var(--rise))) scale(1.5);
+    opacity: 0;
+  }
 }

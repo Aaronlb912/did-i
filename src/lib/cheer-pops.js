@@ -100,6 +100,7 @@ const CHEER_KINDS = [
   'splat',
   'butterfly',
   'bounce',
+  'boo',
 ]
 
 const GAP_MS = {
@@ -134,6 +135,7 @@ const GAP_MS = {
   splat: 110,
   butterfly: 130,
   bounce: 120,
+  boo: 150,
 }
 
 const BASE_HOLD = {
@@ -168,6 +170,7 @@ const BASE_HOLD = {
   splat: 1750,
   butterfly: 2150,
   bounce: 2000,
+  boo: 2400,
 }
 
 function stageN(stage) {
@@ -819,6 +822,36 @@ export const BOUNCE_KEYS = [
   [1, 0, 1, 1],
 ]
 
+// Boo: a sheet ghost on a 32 by 40 box. The hem is three scallops. GHOST_KEYS is
+// the 2s show: [time 0..1, y and x in ghost heights/widths (y is up from the
+// anchor, negative is up), tilt in degrees, squash x, squash y, opacity]. x is
+// multiplied by the pop's swing side.
+export const GHOST_VIEW = '0 0 32 40'
+export const GHOST_BODY =
+  'M4 34 V16 C4 7.2 9.4 2 16 2 C22.6 2 28 7.2 28 16 V34 A4 4 0 0 1 20 34 A4 4 0 0 1 12 34 A4 4 0 0 1 4 34 Z'
+export const GHOST_EYES = [
+  [12, 15, 2, 3],
+  [20, 15, 2, 3],
+]
+export const GHOST_MOUTH = [16, 23.5, 2.3, 3.2]
+export const GHOST_COLORS = { body: '#ffffff', rim: '#9d90d6', ink: '#2a2342', glow: '#9db4ff', spark: '#a99bec' }
+export const GHOST_MS = 2000
+export const GHOST_KEYS = [
+  [0, 0.6, 0, 0, 0.7, 0.7, 0],
+  [0.06, 0.7, 0, 0, 1.12, 0.84, 1],
+  [0.2, -0.55, 0, 0, 0.9, 1.18, 1],
+  [0.28, -0.8, 0, 0, 0.96, 1.06, 1],
+  [0.36, -0.66, 0, 0, 1, 1, 1],
+  [0.44, -0.68, -0.06, -12, 1, 1, 1],
+  [0.52, -0.66, 0.06, 12, 1, 1, 1],
+  [0.6, -0.68, -0.05, -10, 1, 1, 1],
+  [0.68, -0.66, 0.04, 8, 1, 1, 1],
+  [0.74, -0.66, 0, 0, 1, 1, 1],
+  [1, -1.9, 0, 0, 0.96, 1.06, 0],
+]
+// A four point sparkle on a 12 box.
+export const GHOST_SPARK = 'M6 0 L7.4 4.6 L12 6 L7.4 7.4 L6 12 L4.6 7.4 L0 6 L4.6 4.6 Z'
+
 // Lean a spray toward the middle so edge pops stay on screen.
 function leanFor(pop, stage, reach) {
   const ox = Number.parseFloat(ORIGINS[stageN(stage) - 1][pop]?.[0]) || 50
@@ -1216,6 +1249,7 @@ const BURST_BUILDERS = {
   splat: splatBits,
   butterfly: butterflyBits,
   bounce: bounceBits,
+  boo: booBits,
 }
 
 function popsAtOrigins(origins, stage, buildBits, gapMs = 120) {
@@ -1225,6 +1259,48 @@ function popsAtOrigins(origins, stage, buildBits, gapMs = 120) {
     wait: `${pop * gapMs}ms`,
     bits: buildBits(pop, stage),
   }))
+}
+
+// A little sheet ghost pops up with a dip, overshoots, wobbles side to side
+// and floats away. More pops make more ghosts; higher levels add a small
+// companion ghost, twinkles and tiny puffs.
+function booBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const n = stageN(stage)
+  const size = Math.min(6.2, (3.1 + n * 0.55 + pop * 0.1) * (pop % 2 ? 0.92 : 1))
+  const side = pop % 2 ? -1 : 1
+  const lean = leanFor(pop, stage, size * 0.8)
+  const down = size * 0.8
+  const bits = [{ id: 'boo-ghost', ghost: true, x: rem(lean), y: rem(down), size: rem(size), swing: side, delay: '0ms' }]
+  if (level >= 7) {
+    const inward = lean ? Math.sign(lean) : side
+    bits.push({ id: 'boo-mini', ghost: true, x: rem(lean + inward * size * 0.85), y: rem(down), size: rem(size * 0.5), swing: -inward, delay: '260ms' })
+  }
+  const sparks = Math.min(3, Math.max(0, level - 2))
+  for (let i = 0; i < sparks; i += 1) {
+    const a = ((i + 0.5) / sparks) * Math.PI + Math.PI
+    bits.push({
+      id: `boo-spark-${i}`,
+      ghostSpark: true,
+      x: rem(lean + Math.cos(a) * size * 0.75),
+      y: rem(down - size * 0.8 + Math.sin(a) * size * 0.65),
+      size: rem(Math.min(1.1, 0.55 + n * 0.1)),
+      delay: `${380 + i * 120}ms`,
+    })
+  }
+  const puffs = level >= 4 ? Math.min(2, level - 3) : 0
+  for (let i = 0; i < puffs; i += 1) {
+    bits.push({
+      id: `boo-puff-${i}`,
+      wisp: true,
+      x: rem(lean + (i ? -1 : 1) * side * size * 0.3),
+      y: rem(down - size * 0.5),
+      rise: rem(size * 0.7),
+      size: rem(Math.min(0.95, 0.5 + n * 0.08)),
+      delay: `${820 + i * 150}ms`,
+    })
+  }
+  return bits
 }
 
 export function popsFor(kind, stage) {

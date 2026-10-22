@@ -115,6 +115,8 @@ const RAW = [
   coin('lace', 90, { from: '2027-01-29' }),
   gem('boats', 3, { from: '2027-01-29' }),
   season('thaw', '02-20', '03-05', { from: '2027-01-29' }),
+  // Halloween 2026: one time only. Free Oct 28 to 31, never offered again after 2026 (lastYear); owners keep it.
+  season('pumpkins', '10-28', '10-31', { from: '2026-10-28', lastYear: 2026 }),
   // Did I's birthday: hidden until APP_LAUNCH is set.
   LAUNCH_MD ? season('bday', LAUNCH_MD, addDays(LAUNCH_MD, 6), { firstYear: Number(APP_LAUNCH.slice(0, 4)) + 1 }) : season('bday', '01-01', '01-01', { hidden: true }),
 ]
@@ -147,9 +149,15 @@ export function frameLive(frame, today = boardDate(new Date())) {
   return Boolean(frame) && (!frame.from || frame.from <= today)
 }
 
-// SHOWN_FRAMES that are out today.
-export function shownFrames(today) {
-  return SHOWN_FRAMES.filter((frame) => frameLive(frame, today))
+// A one-time frame (`lastYear`) is gone from the shop and All frames once that year is over.
+export function frameGone(frame, today = boardDate(new Date())) {
+  return Boolean(frame?.lastYear) && Number(String(today).slice(0, 4)) > frame.lastYear
+}
+
+// SHOWN_FRAMES that are out today. A one-time frame that is gone shows only
+// when `owned` (a Set of ids) has it.
+export function shownFrames(today, owned) {
+  return SHOWN_FRAMES.filter((frame) => frameLive(frame, today) && (!frameGone(frame, today) || Boolean(owned?.has(frame.id))))
 }
 
 export function frameText(id, field) {
@@ -172,12 +180,13 @@ export function seasonOpen(frame, today) {
   const win = frame?.season
   if (!win || frame.hidden) return false
   if (frame.firstYear && Number(String(today).slice(0, 4)) < frame.firstYear) return false
+  if (frameGone(frame, today)) return false
   const md = monthDay(today)
   if (!/^\d{2}-\d{2}$/.test(md)) return false
   return inWindow(win, md) || Boolean(frame.also && inWindow(frame.also, md))
 }
 
-// The next day a season opens, today or later, as YYYY-MM-DD.
+// The next day a season opens, today or later, as YYYY-MM-DD. '' when it never opens again.
 export function seasonNextText(frame, today) {
   const win = frame?.season
   if (!win) return ''
@@ -186,9 +195,10 @@ export function seasonNextText(frame, today) {
   const md = monthDay(today)
   const next = (from) => (md < from ? `${year}-${from}` : `${year + 1}-${from}`)
   const a = next(win.from)
-  if (!frame.also) return a
-  const b = next(frame.also.from)
-  return a < b ? a : b
+  const b = frame.also ? next(frame.also.from) : a
+  const soonest = a < b ? a : b
+  // A one-time frame never comes back: no date.
+  return frame.lastYear && Number(soonest.slice(0, 4)) > frame.lastYear ? '' : soonest
 }
 
 // Only coin and gem frames are ever sold, and only from their drop day.

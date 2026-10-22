@@ -105,7 +105,7 @@ export function ShopBuddies({ book, onChange, now }) {
           </div>
         ) : null}
 
-        <div className="di-set-card di-shop-card">{shopBuddies().map(buddyRow)}</div>
+        <div className="di-set-card di-shop-card">{shopBuddies().filter((item) => !item.free).map(buddyRow)}</div>
 
         {miss ? (
           <p className="di-miss" role="alert">

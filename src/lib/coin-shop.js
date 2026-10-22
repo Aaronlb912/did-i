@@ -1,7 +1,7 @@
 import { accountSessionOn, readAccountUserId } from './session-id.js'
 import { buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, liveCheers, liveLooks, nextCheerStage, shopBuddies, normalizePurse, wearAccessory } from './purse.js'
 import { accessoryById } from './accessories.js'
-import { applyGemOwnedToBook, applyPurchaseToBook, purchaseWithCoins, purchaseWithGems, readGemOwned } from './wallet.js'
+import { applyGemOwnedToBook, applyPurchaseToBook, claimFreeItem, purchaseWithCoins, purchaseWithGems, readGemOwned } from './wallet.js'
 import { buyFrameLocal, frameById, frameForSale } from './frames.js'
 import { noteMilestone } from './milestones.js'
 
@@ -100,6 +100,26 @@ async function buyWithGemsRaw(book, kind, id) {
   return { book: applyGemOwnedToBook(book, remote.owned, { [how.on]: id }), miss: '' }
 }
 
+// A free event item (docs/shop-drops.md). Signed in, the server records it
+// while its window is open; signed out, it is kept on this phone, like a
+// season frame. Not live (or not yet): the same "gone" miss as a buy.
+async function claimFreeRaw(book, kind, id) {
+  const how = GEM_KINDS[kind]
+  const item = how?.list().find((row) => row.id === id)
+  const purse = normalizePurse(book)
+  if (!how) return { book, miss: 'shop.miss.buyFail' }
+  if (purse[how.owned].includes(id)) return how.local(book, id)
+  if (!item?.free) return { book, miss: kind === 'buddy' ? 'shop.miss.buddyGone' : 'shop.miss.cheerGone' }
+  if (!accountSessionOn()) return how.local(book, id)
+  let remote = await claimFreeItem(kind, id).catch(() => ({ miss: 'shop.miss.buyFail' }))
+  if (remote.miss === 'shop.miss.buyFail') {
+    const owned = await readGemOwned().catch(() => null)
+    if (owned?.[how.owned]?.includes(id)) remote = { miss: '', owned }
+  }
+  if (remote.miss) return { book, miss: remote.miss }
+  return { book: applyGemOwnedToBook(book, remote.owned, { [how.on]: id }), miss: '' }
+}
+
 // A buy counts as a milestone only when coins or gems actually went down,
 // so wearing something you already own does not.
 export function counted(buy) {
@@ -128,3 +148,4 @@ export const buyLookWithCoins = counted(buyLookWithCoinsRaw)
 export const buyCheerStageWithCoins = counted(buyCheerStageWithCoinsRaw)
 export const buyAccessoryWithCoins = counted(buyAccessoryWithCoinsRaw)
 export const buyWithGems = counted(buyWithGemsRaw)
+export const claimFree = counted(claimFreeRaw)

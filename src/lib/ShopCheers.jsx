@@ -52,7 +52,7 @@ export function ShopCheers({ book, onChange, now }) {
         <p className="di-set-note">{t('shop.cheerHint', { cheer: CHEER_GEMS, stage: CHEER_STAGE_COIN })}</p>
 
         <div className="di-set-card di-shop-card">
-          {liveCheers().map((item) => {
+          {liveCheers().filter((item) => !item.free).map((item) => {
             const have = purse.cheers.includes(item.id)
             const stage = cheerStageOf(book, item.id)
             const next = have ? nextCheerStage(stage) : 0

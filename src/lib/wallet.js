@@ -1,7 +1,7 @@
 import { cloud, cloudSetUp } from './cloud.js'
 import { readUser } from './account.js'
 import { accountSessionOn } from './session-id.js'
-import { CHEER_STAGE_COIN, FREE_BUDDY, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, liveLooks, normalizePurse } from './purse.js'
+import { CHEER_STAGE_COIN, FREE_BUDDY, isFreeEventId, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, liveLooks, normalizePurse } from './purse.js'
 import { accessoryById, accessoryOnSale } from './accessories.js'
 import { boardDate } from './recurrence.js'
 import { frameById, withServerFrames } from './frames.js'
@@ -109,9 +109,10 @@ export function applyGemOwnedToBook(book, owned, opts = {}) {
     ...purse,
     gems: own.gems,
     looks: [...new Set([...purse.looks.filter((id) => !isGemLook(id)), ...own.looks])],
-    cheers: [...new Set(['lime', ...own.cheers])],
+    // A free event item claimed signed out stays; it costs nothing to keep.
+    cheers: [...new Set(['lime', ...purse.cheers.filter((id) => isFreeEventId('cheer', id)), ...own.cheers])],
     // The referral buddy is not a gem item; it stays once claim_invites gave it.
-    buddies: [...new Set([FREE_BUDDY, ...purse.buddies.filter(isReferBuddy), ...own.buddies])],
+    buddies: [...new Set([FREE_BUDDY, ...purse.buddies.filter((id) => isReferBuddy(id) || isFreeEventId('buddy', id)), ...own.buddies])],
     frames: withServerFrames(purse.frames, 'gem', own.frames),
     frame: opts.frameOn || purse.frame,
     lookOn: opts.lookOn || purse.lookOn,
@@ -156,6 +157,20 @@ export async function purchaseWithGems(kind, itemId) {
       if (kind === 'frame') return { miss: 'frames.miss.notSold' }
       return { miss: kind === 'buddy' ? 'shop.miss.buddyGone' : 'shop.miss.cheerGone' }
     }
+    return { miss: 'shop.miss.buyFail' }
+  }
+  return { miss: '', owned: normalizeGemOwned(data) }
+}
+
+// Free event items (event_catalog): no gems move, the server records the item.
+export async function claimFreeItem(kind, itemId) {
+  const db = cloud()
+  if (!db) return { miss: 'shop.miss.buyFail' }
+  shopWrites += 1
+  const { data, error } = await db.rpc('claim_free_item', { p_kind: kind, p_item_id: itemId })
+  shopWrites += 1
+  if (error) {
+    if (/bad item/i.test(error.message || '')) return { miss: kind === 'buddy' ? 'shop.miss.buddyGone' : 'shop.miss.cheerGone' }
     return { miss: 'shop.miss.buyFail' }
   }
   return { miss: '', owned: normalizeGemOwned(data) }

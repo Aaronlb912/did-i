@@ -287,9 +287,9 @@ export function shelfStats(boards, now = new Date()) {
   // Every one in the shop now, not just as many as there are.
   s.looksAll = liveLooks().every((item) => purse.looks.includes(item.id))
   s.cheers = purse.cheers.filter((id) => id !== 'lime').length
-  s.cheersAll = liveCheers().every((item) => purse.cheers.includes(item.id))
+  s.cheersAll = liveCheers().every((item) => item.free || purse.cheers.includes(item.id))
   s.buddies = purse.buddies.filter((id) => id !== FREE_BUDDY).length
-  s.buddiesAll = shopBuddies().every((item) => purse.buddies.includes(item.id))
+  s.buddiesAll = shopBuddies().every((item) => item.free || purse.buddies.includes(item.id))
   s.plays = purse.cheerUses
   s.coins = purse.coins
   return s

@@ -5,6 +5,11 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Free event items (Halloween 2026, branch `drop/2026-10-28-halloween`, needs SQL)
+- **Signed-out claims stay on the phone.** A bat or boo claimed signed out is kept at sign in (sync does not strip it) but is not on the server, so a second phone does not get it until it is claimed there inside the window.
+- **Web shop is not updated.** The web Shop pages list the free items as 0 gem buys; the phone shop has the Free tag and Claim button.
+- **Owned looks leave Collection when they leave the shop.** Buddies and cheers now always show when owned; looks still use the live list.
+
 ## Bug hunt 2026-10-22 (#557 to #563, OTA)
 - **Not done: Android widget taps skip the server send while the app is running** (`AnswerKeyPost.java` jsRunning). Removing the skip loses that tap's coins when a pull lands the server row before the app applies the tap. Fix needs coins paid when a pulled row matches a queued tap. Also: an Android card left up past midnight still advances on tap (the widget has no day or fold hour); the app now redraws it from the shelf after.
 

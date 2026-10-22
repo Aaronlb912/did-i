@@ -11,6 +11,7 @@ export const FRAME_IDS = [
   'ticket', 'notebook', 'postage', 'bamboo', 'chalk', 'quilt', 'rope', 'street', 'lights', 'train', 'garden', 'dusk', 'globe', 'doodle', 'swipe', 'hearts', 'clover', 'fireworks', 'sunny', 'royal', 'wrapped', 'galaxy', 'neonheart', 'storm',
   'linked', 'bedtime', 'countdown',
   'knit', 'window', 'candles', 'ginger', 'snowman', 'solstice', 'mosaic', 'domino', 'fresh', 'origami', 'aquarium', 'books', 'lace', 'boats', 'thaw',
+  'pumpkins',
 ]
 
 /** Clockwise rounded rect that starts at the bottom of the left edge. */

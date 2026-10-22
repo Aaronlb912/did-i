@@ -16,10 +16,11 @@ import {
   cheerPlayOf,
   cheerStageOf,
   fireCheer,
-  liveBuddies,
+  buddiesOnOrOwned,
+  cheersOnOrOwned,
   liveLooks,
   normalizePurse,
-  ownableCheers,
+  SPECIAL_CHEERS,
   wearBuddy,
   wearCheer,
   wearCheerStage,
@@ -43,8 +44,8 @@ export function Collection({ book, onChange, now, startTab }) {
   const purse = normalizePurse(book)
   const coat = activeLook(book)
   const looks = liveLooks().filter((item) => purse.looks.includes(item.id))
-  const buddies = liveBuddies().filter((item) => purse.buddies.includes(item.id))
-  const cheers = ownableCheers().filter((item) => purse.cheers.includes(item.id))
+  const buddies = buddiesOnOrOwned(purse).filter((item) => purse.buddies.includes(item.id))
+  const cheers = [...cheersOnOrOwned(purse), ...SPECIAL_CHEERS].filter((item) => purse.cheers.includes(item.id))
   const accessories = ACCESSORIES.filter((item) => purse.accessories.includes(item.id))
   const focusId = pick || kitTabDefault(tab, purse)
 
