@@ -10,6 +10,7 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated'
 import { nightProgress } from '../../src/lib/night-progress.js'
+import { countedTonightRows } from '../../src/lib/recurrence.js'
 import { t } from '../../src/lib/i18n.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { gemMeterStyle } from '../lib/gem-look-tone.js'
@@ -63,7 +64,8 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
   const done = ratio >= 1
   const left = total - answered
   // A nope is answered for now, so it is counted apart from what is still open.
-  const nope = (due || []).filter((row) => row.answer?.status === 'skip').length
+  // Same rows as the total, or an optional Not yet hides a required open one.
+  const nope = countedTonightRows((due || []).filter((row) => row?.lamp && row?.dateIso)).filter((row) => row.answer?.status === 'skip').length
   const open = Math.max(0, left - nope)
   // Counts answers, so it reads as done and left, not as a card position.
   const label = [
