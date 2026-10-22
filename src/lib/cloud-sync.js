@@ -450,15 +450,34 @@ function applyLiveRows() {
   // In order: an undo then the answer from before it is two steps.
   let shelf = readShelf()
   let changed = 0
+  const dropped = []
   for (const row of rows) {
     const step = row.gone ? dropSentAnswers(shelf, row.gone) : applyAnswers(shelf, [row])
     shelf = step.shelf
     changed += step.changed
+    if (row.gone && step.changed) dropped.push(...row.gone)
   }
   if (!changed) return
   // Same saved stamp: only answers changed, and they travel on their own.
   const written = writeShelf(shelf, readSavedAt())
   window.dispatchEvent(new CustomEvent(SHELF_IN, { detail: written }))
+  // The answer an undo put back can arrive before the undo, lose to the
+  // undone one, and go with it. Read those slots again.
+  if (dropped.length) readRestored(dropped)
+}
+
+async function readRestored(gone) {
+  const db = cloud()
+  const mine = live
+  if (!db || !mine) return
+  const lamps = [...new Set(gone.map((item) => item.lamp))]
+  const { data, error } = await db.from('answer_log').select('*').eq('user_id', mine.userId).in('lamp_id', lamps)
+    .in('period_key', [...new Set(gone.map((item) => item.period))])
+  if (error || live !== mine) return
+  const rows = (data || []).filter((row) => gone.some((item) => item.lamp === row.lamp_id && item.period === row.period_key))
+  if (!rows.length) return
+  liveRows.push(...rows)
+  if (!liveTimer) liveTimer = setTimeout(applyLiveRows, 0)
 }
 
 export async function startLiveAnswers() {

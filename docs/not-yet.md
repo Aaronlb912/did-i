@@ -8,7 +8,7 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 ## Bug hunt 2026-10-22 (#557 to #563, OTA)
 
 - **Built:** removed buddy stays off after sync; block refreshes Did we and the inbox; blocking a family member offers leave or remove; offline coins from older days go on yesterday; reminders that run out end with an Open Did I note; edit page save keeps pause records; a parked folder name opens that folder; Wear taps report the watch time (next build).
-- **Built: undo on one phone stays undone on a sleeping second phone.** `supabase/answer-undos.sql` notes each undone answer; `put_answers_as` refuses that exact answer and pulls drop it before merging. Still open: undos from the answer key and widget path (`supabase/keep-did.sql` delete) are not noted, and the live undo broadcast does not carry the earlier answer.
+- **Built: undo on one phone stays undone on a sleeping second phone.** `supabase/answer-undos.sql` notes each undone answer; `put_answers_as` refuses that exact answer and pulls drop it before merging. Answer-key undos (widget, watch, Wear) are noted too, in `key_answer` in the same file, and a live undo reads the slot again so the answer it put back is not lost.
 - **Not checked yet:** done screen counts and "N not yet", gentle mode, optional questions, first launch.
 
 ## First-run tour (2026-10-21, branch `tour`, SQL applied, OTA)

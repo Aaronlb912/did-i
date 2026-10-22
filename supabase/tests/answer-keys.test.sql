@@ -118,6 +118,12 @@ begin
   execute 'set local role anon';
   got := public.key_answer(ka, 'qa', tonight, 'undo', stamp);
   if got <> 'ok' then raise exception 'FAIL: undo of the did gave %', got; end if;
+  execute 'reset role';
+  if not exists (select 1 from public.answer_undos where user_id = a and lamp_id = 'qa' and period_key = tonight
+                 and public.stamp_ts(answered_at) = public.stamp_ts(stamp)) then
+    raise exception 'FAIL: a key undo was not noted';
+  end if;
+  execute 'set local role anon';
   got := public.key_answer(ka, 'qa', tonight, 'nope', later);
   if got <> 'ok' then raise exception 'FAIL: nope on an open question gave %', got; end if;
   got := public.key_answer(ka, 'qa', tonight, 'did', to_char((now() + interval '2 seconds') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
