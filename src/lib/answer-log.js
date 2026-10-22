@@ -12,6 +12,8 @@ import { readAccountUserId } from './session-id.js'
 
 const MARK = 'did-i-answers-sent'
 const SEEN = 'did-i-answers-seen'
+// Last undo note read (supabase/answer-undos.sql).
+const SEEN_UNDO = 'did-i-answers-undo-seen'
 const CHUNK = 500
 // Set once every answer has been resent with a zoned time. Older apps sent
 // local times with no zone, which the server reads as UTC.
@@ -36,6 +38,7 @@ function write(key, value) {
 export function forgetAnswerMarks() {
   write(MARK, '')
   write(SEEN, '')
+  write(SEEN_UNDO, '')
   write(UNDO, '')
 }
 
@@ -236,9 +239,25 @@ export async function pullAnswers(shelf, { stillCurrent = () => true } = {}) {
       from += PAGE
     }
   }
-  const next = applyAnswers(shelf, data)
+  // Undos made on another phone while this one was away: drop that exact answer,
+  // or this phone would show it and send it back. Dropped before the merge, so
+  // an earlier answer the undo put back lands on an empty slot.
+  const undos = await pullUndos(db, stillCurrent)
+  const dropped = dropSentAnswers(shelf, undos)
+  const next = applyAnswers(dropped.shelf, data)
   if (data?.length && stillCurrent()) write(SEEN, data[data.length - 1].updated_at)
-  return { ...next, miss: '' }
+  return { shelf: next.shelf, changed: next.changed + dropped.changed, miss: '' }
+}
+
+async function pullUndos(db, stillCurrent) {
+  const since = read(SEEN_UNDO)
+  let query = db.from('answer_undos').select('lamp_id, period_key, answered_at, note_at, undone_at').order('undone_at', { ascending: true }).limit(1000)
+  if (since) query = query.gte('undone_at', since)
+  const { data, error } = await query
+  // Not there before the SQL is applied: nothing to drop.
+  if (error || !data?.length) return []
+  if (stillCurrent()) write(SEEN_UNDO, data[data.length - 1].undone_at)
+  return data.map((row) => ({ lamp: row.lamp_id, period: row.period_key, at: row.answered_at, noteAt: row.note_at }))
 }
 
 // Undo of a tap. A later answeredAt always wins a pull, so the row the tap
@@ -292,6 +311,9 @@ async function undoOnce(db, item, late = false) {
   // Already the answer from before the tap (the second run): leave it, so
   // other devices do not see it go and come back.
   if (item.beforeAt && at === item.beforeAt) return
+  // Noted first, so a phone that missed the undo cannot send this answer back.
+  // Best effort: before the SQL is applied the call fails and the undo still runs.
+  await db.rpc('note_answer_undo', { lamp: item.lampId, period: item.periodKey, a: data.answered_at || '', e: data.note_at || '' }).then(() => {}, () => {})
   const { error } = await db
     .from('answer_log')
     .delete()
