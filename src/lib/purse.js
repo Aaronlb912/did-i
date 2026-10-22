@@ -650,12 +650,12 @@ let earnedGen = 0
 // returnEarnedCoins; the server caps each night, so a retry cannot double pay.
 // out.gen (not enumerable) goes back with returnEarnedCoins.
 export function takeEarnedCoins(clock = null) {
-  // Coins queued offline for a night the server no longer takes move to today,
-  // or the server would answer with the balance and they would never pay.
+  // The server pays yesterday and today only (6 a day). Older offline nights
+  // go on yesterday: on today they filled its cap, so today's Dids paid 0.
   const today = clock ? boardDate(clock) : ''
   const out = {}
   for (const [night, n] of Object.entries(earnedQueue())) {
-    const key = today && (night < addDaysIso(today, -1) || night > today) ? today : night
+    const key = !today ? night : night > today ? today : night < addDaysIso(today, -1) ? addDaysIso(today, -1) : night
     out[key] = (out[key] || 0) + n
   }
   earnedForServer = {}
@@ -684,7 +684,8 @@ export function returnEarnedCoins(night, n, clock = new Date(), gen) {
   if (gen != null && gen !== earnedGen) return
   // The server takes yesterday or today (payTap); an older night would be refused forever.
   const today = boardDate(clock)
-  if (night < addDaysIso(today, -1) || night > today) night = today
+  if (night < addDaysIso(today, -1)) night = addDaysIso(today, -1)
+  if (night > today) night = today
   const queue = earnedQueue()
   queue[night] = (queue[night] || 0) + n
   saveEarned()
