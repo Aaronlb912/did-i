@@ -15,6 +15,9 @@ function withPause(lamp, archived, clock = new Date()) {
   return { ...rest, archived, ...(pauses?.length ? { pauses } : {}) }
 }
 
+// Set on every saved answer so a reload never lands mid-answer (native/lib/ota-refresh.js).
+export let lastAnswerAt = 0
+
 export function putAnswer(book, row, status, clock = new Date()) {
   if (!row || !row.lamp) return book
   if (periodPassed(row.lamp, row.periodKey, openFloorIso(clock))) {
@@ -24,6 +27,7 @@ export function putAnswer(book, row, status, clock = new Date()) {
   const prev = (book.answers || []).find((item) => item.lampId === row.lamp.id && item.periodKey === row.periodKey)
   // Once a Did, always counted: flipping Did, Not yet, Did never pays twice.
   const counted = status === 'yes' || status === 'late' || prev?.paid === true || prev?.status === 'yes' || prev?.status === 'late'
+  lastAnswerAt = Date.now()
   const answer = {
     id: newAnswerId(),
     lampId: row.lamp.id,

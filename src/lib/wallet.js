@@ -135,10 +135,19 @@ export async function readGemOwned() {
   return normalizeGemOwned(data)
 }
 
+// Bumped on every shop write. A sync that began before one must not apply its
+// older balance or owned lists over the buy (cloud-sync.js).
+let shopWrites = 0
+export function shopWriteCount() {
+  return shopWrites
+}
+
 export async function purchaseWithGems(kind, itemId) {
   const db = cloud()
   if (!db) return { miss: 'shop.miss.buyFail' }
+  shopWrites += 1
   const { data, error } = await db.rpc('buy_with_gems', { p_kind: kind, p_item_id: itemId })
+  shopWrites += 1
   if (error) {
     const text = error.message || ''
     if (/need gems/i.test(text)) return { miss: 'shop.miss.needGems' }
@@ -259,7 +268,9 @@ export async function purchaseWithCoins(kind, itemId) {
   const id = String(itemId || '').trim()
   const gone = k === 'look' ? 'shop.miss.lookGone' : k === 'accessory' ? 'shop.miss.accessoryGone' : k === 'frame' ? 'frames.miss.notSold' : 'shop.miss.cheerGone'
   if (!validateCoinItem(k, id)) return { miss: gone }
+  shopWrites += 1
   const { data, error } = await db.rpc('buy_with_coins', { p_kind: k, p_item_id: id })
+  shopWrites += 1
   if (error) {
     const text = error.message || ''
     if (/need coins/i.test(text)) return { miss: 'shop.miss.needCoins', missN: coinCostFor(k, id) }

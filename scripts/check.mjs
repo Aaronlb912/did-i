@@ -9529,7 +9529,7 @@ test('a live reconnect has every screen read again, so the people poll can be sl
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const sync = readFileSync(path.join(root, 'src/lib/cloud-sync.js'), 'utf8')
   const people = readFileSync(path.join(root, 'src/lib/people.js'), 'utf8')
-  assert.match(sync, /if \(mine\.joined\) for \(const kind of LIVE_KINDS\) noteSocialLive\(kind\)/)
+  assert.match(sync, /if \(mine\.joined && Date\.now\(\) - lastCatchUp > 60000\) \{\s*lastCatchUp = Date\.now\(\)\s*for \(const kind of LIVE_KINDS\) noteSocialLive\(kind\)/)
   const listed = new Set(sync.match(/const LIVE_KINDS = \[([^\]]*)\]/)?.[1].match(/'[a-zA-Z]+'/g) || [])
   const heard = new Set()
   for (const dir of ['src', 'native']) {
@@ -9560,6 +9560,20 @@ test('a Did swipe on a Did you card on Today saves the Did, not only the keep', 
   assert.equal((tonight.match(/onKeep\(row\)/g) || []).length, 0, 'every Today keep passes did')
   assert.equal((tonight.match(/onKeep\(row, \{ did: true \}\)/g) || []).length, 2)
   assert.match(shelf, /if \(did\) dest = putAnswer\(dest, \{ lamp, periodKey: periodKeyFor\(lamp, lamp\.createdOn\) \}, 'yes', clock\)/)
+})
+
+test('five review fixes: invite tile live read, shop-vs-sync guard, no reload mid-answer, catch-up throttle, wear tap with no at', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  const social = read('native/screens/social.jsx')
+  assert.ok(social.includes("kinds.has('we') || kinds.has('weMembers')) load()"), 'People reads again on a Did we ping')
+  const sync = read('src/lib/cloud-sync.js')
+  assert.ok(sync.includes('shopWriteCount() === shopAtStart'), 'a sync that a buy overtook keeps the buy')
+  assert.ok(read('src/lib/wallet.js').includes('shopWrites += 1'), 'buys bump the shop counter')
+  assert.ok(read('native/lib/ota-refresh.js').includes('Date.now() - lastAnswerAt < 5000'), 'no reload within 5s of an answer')
+  assert.ok(read('src/lib/board-ops.js').includes('lastAnswerAt = Date.now()'), 'saving an answer stamps the time')
+  assert.ok(sync.includes('Date.now() - lastCatchUp > 60000'), 'a quick rejoin skips the catch-up')
+  assert.ok(read('android/wear/src/main/java/com/aaronbryant/didi/wear/CardStore.kt').includes('if (at > 0L && (0 until taken.length())'), 'a tap with no at is not matched by 0')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

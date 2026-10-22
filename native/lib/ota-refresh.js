@@ -4,6 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { HALL_PATHS, readRoute } from '../navigation/hash.js'
 import { sheetIsUp } from '../components/SheetHost.jsx'
 import { confirmDone } from './confirm.js'
+import { lastAnswerAt } from '../../src/lib/board-ops.js'
 
 // Over-the-air updates without two restarts. The launch check only downloads;
 // the update runs on the next cold start. Here, coming back to the app after a
@@ -40,6 +41,8 @@ function reloadIfSafe() {
 
 function reloadNow() {
   if (!ready) return
+  // An answer was just saved: leave the reload for the next return.
+  if (Date.now() - lastAnswerAt < 5000) return
   const route = readRoute()
   if (!safeToReload({ path: route?.path, sheetUp: sheetIsUp(), state: AppState.currentState })) return
   try {

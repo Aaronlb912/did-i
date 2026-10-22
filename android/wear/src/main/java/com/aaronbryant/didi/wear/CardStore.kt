@@ -76,7 +76,7 @@ object CardStore {
       val tap = taps.optJSONObject(t) ?: continue
       if (taken != null) {
         val at = tap.optLong("at", 0L)
-        if ((0 until taken.length()).any { taken.optLong(it) == at }) continue
+        if (at > 0L && (0 until taken.length()).any { taken.optLong(it) == at }) continue
       } else {
         val sentAt = tap.optLong("sentAt", 0L)
         if (sentAt > 0L && builtAt > sentAt) continue
