@@ -80,7 +80,7 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 ## Wear OS (branch `wear-os`)
 
 - **Built:** `android/wear` (Compose for Wear OS) shows tonight's cards with the ring, buddy, Not yet and Did, the done screen and a tile; taps save on the phone like a widget tap (`WatchTapService`, `WatchModule`). See docs/watch.md, Wear OS app. CI: wear-check.yml; android-apk.yml builds `did-i-wear-aab` with the release key.
-- **Not done:** never run on a Wear emulator or real watch; Play Console Wear OS form factor opt-in and Wear screenshots; no complication (tile only). A tap the phone refuses shows open again on the watch only when cards arrive more than 24 hours later. English-only fallback words before the first cards.
+- **Not done:** never run on a Wear emulator or real watch; Play Console Wear OS form factor opt-in and Wear screenshots; no complication (tile only). A tap from the watch is reported back by the watch's own time (from the next build), so a refused tap opens again when the phone next sends cards. English-only fallback words before the first cards.
 
 ## Live answers across devices (branch `worktree-agent-a1ad3f1da0c5fa3e3`)
 

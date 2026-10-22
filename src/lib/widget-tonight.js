@@ -545,7 +545,8 @@ export function parseWidgetTapQueue(raw) {
         night: String(row.night || '').trim(),
       }
       const at = Math.floor(Number(row.at) || 0)
-      return at > 0 ? { ...tap, at } : tap
+      const sent = Math.floor(Number(row.sent) || 0)
+      return { ...tap, ...(at > 0 ? { at } : {}), ...(sent > 0 ? { sent } : {}) }
     })
     .filter((row) => row.lampId && (row.kind === 'did' || row.kind === 'nope'))
 }
