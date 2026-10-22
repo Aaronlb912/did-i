@@ -1634,10 +1634,10 @@ export async function setAutoAdd(friendId, on) {
 // One poll for the whole app, however many badges are on screen. Each look
 // claims anything allowed straight onto tonight, counts what still waits,
 // and notices a did you that arrived since the last look so the app can
-// show a banner. Nothing polls faster than five minutes; coming back to
-// the app is what keeps it fresh.
+// show a banner. Live pings, your own actions, coming back to the app and a
+// live reconnect keep it fresh; this slow poll only catches a missed ping.
 
-const PULSE_MS = 300000
+const PULSE_MS = 15 * 60 * 1000
 const PULSE_STALE_MS = 60000
 const PULSE_HUNG_MS = 20000
 const PULSE_ZERO = { inbox: 0, asks: 0, gifts: 0, friends: 0, families: 0, news: null }
