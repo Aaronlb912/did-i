@@ -884,6 +884,14 @@ test('an owned look can be worn again after it leaves the shop', () => {
   assert.ok(body.indexOf('purse.looks.includes(id)') < body.indexOf("miss: 'shop.miss.lookGone'"))
 })
 
+test('widget taps are never lost on the way to the server or the widget', () => {
+  const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
+  const wcs = read('src/lib/widget-cloud-sync.js')
+  assert.doesNotMatch(wcs, /await pushNow\([^)]*\)\s*\r?\n\s*clearWidgetCloudPending\(\)/, 'pending clears only when the answers were sent')
+  assert.match(wcs, /if \(await pushNow\(readShelf\(\)\)\) clearWidgetCloudPending\(\)/)
+  assert.match(read('native/widget-tap.android.js'), /refused[\s\S]{0,300}saveAndroidWidgetCard/, 'a refused tap redraws the widget from the shelf')
+})
+
 test('a live undo reads the dropped slots again for the answer it put back', () => {
   const src = readFileSync(new URL('../src/lib/cloud-sync.js', import.meta.url), 'utf8')
   const apply = src.slice(src.indexOf('function applyLiveRows'), src.indexOf('async function readRestored'))
@@ -5383,7 +5391,7 @@ test('every action that changes data on the server says so on the phone', () => 
   const meSrc = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
   assert.ok(/async function meOrThrow[\s\S]{0,200}if \(!data\?\.session && error\) throw error/.test(meSrc) && (meSrc.match(/await meOrThrow\(\)/g) || []).length === 2, 'an offline refresh failure never reads as signed out and wipes the shelf')
   const widgetSync = readFileSync(path.join(checkRoot, 'native/widget-sync.js'), 'utf8')
-  assert.ok(/mine\.get\([^)]*\) !== item\.status[\s\S]{0,200}mergeWidgetPropsIntoShelf\(next, taps\(entry\.props\)\)/.test(widgetSync), 'a status the app wrote to the widget timeline is not merged back as a tap')
+  assert.ok(/mine\.get\([^)]*\) !== item\.status[\s\S]{0,300}mergeWidgetPropsIntoShelf\(next, taps\(entry\.props\)/.test(widgetSync), 'a status the app wrote to the widget timeline is not merged back as a tap')
   assert.ok(/function creditMissToast[\s\S]{0,300}onPress/.test(gemStore), 'the credit miss toast retries on tap')
   assert.ok(/startGemPurchase\(packId\)\s*\}\s*catch/.test(readFileSync(path.join(checkRoot, 'src/lib/GemShop.jsx'), 'utf8')), 'web gem buy shows a store error')
   const tonightSrc = readFileSync(path.join(checkRoot, 'native/screens/TonightScreen.jsx'), 'utf8')

@@ -35,9 +35,9 @@ export async function pushShelfAfterWidgetAnswer(shelf, { now = false } = {}) {
   markWidgetCloudPending()
   armSyncForUser()
   try {
-    if (now) await pushNow(doc)
-    else pushSoon(doc)
-    clearWidgetCloudPending()
+    // Pending stays until the answers are on the server; a later wake sends it.
+    if (!now) pushSoon(doc)
+    else if (await pushNow(doc)) clearWidgetCloudPending()
   } catch {
     // pullAndMerge on next wake will retry
   }
@@ -47,8 +47,7 @@ export async function flushPendingWidgetCloud() {
   if (!cloudSetUp() || !widgetCloudPending()) return
   armSyncForUser()
   try {
-    await pushNow(readShelf())
-    clearWidgetCloudPending()
+    if (await pushNow(readShelf())) clearWidgetCloudPending()
   } catch {
     // ok
   }

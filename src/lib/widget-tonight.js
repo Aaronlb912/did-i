@@ -391,7 +391,7 @@ export function peekNextTonightCard(props, dir = 1) {
 
 // Each item answers on whichever tag its own lamp lives on, since the card
 // mixes questions from every tag now.
-export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
+export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date(), unmatched = null) {
   if (!props?.items?.length) return shelf
   // Each answer pays into the shared purse the one before it left.
   let boards = alignShelfPurse(shelf).boards
@@ -411,7 +411,11 @@ export function mergeWidgetPropsIntoShelf(shelf, props, clock = new Date()) {
       continue
     }
     const book = findBookHoldingLamp(boards, item.lampId)
-    if (!book) continue
+    if (!book) {
+      // Not on the shelf yet: the caller keeps this tap pending.
+      if (unmatched) unmatched.push(item)
+      continue
+    }
     const nextBook = applyItemStatus(book, item, item.status, clock)
     if (nextBook === book) continue
     boards = spreadPurseFrom({ ...shelf, boards: boards.map((b) => (b.id === nextBook.id ? nextBook : b)) }, nextBook).boards
@@ -556,14 +560,17 @@ export function parseWidgetTapQueue(raw) {
 export function applyWidgetTapsOnce(taps, clock = new Date()) {
   let shelf = null
   const failed = []
+  let refused = 0
   for (const tap of taps || []) {
     try {
-      shelf = applyWidgetTapOnce(tap.lampId, tap.kind, tap.night, clock, tap.at) || shelf
+      const next = applyWidgetTapOnce(tap.lampId, tap.kind, tap.night, clock, tap.at)
+      if (!next) refused += 1
+      shelf = next || shelf
     } catch {
       failed.push(tap)
     }
   }
-  return { shelf, failed }
+  return { shelf, failed, refused }
 }
 
 // `night` comes from the tapped card (did:<lampId>|<periodKey>). Old targets
