@@ -9553,6 +9553,15 @@ test('a send from Did I pings open apps after it commits, without waking devices
   assert.match(wake, /if kind in \('we', 'family', 'send'\) then/, "an 'ask' ping sends no silent push")
 })
 
+test('a Did swipe on a Did you card on Today saves the Did, not only the keep', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  const shelf = readFileSync(path.join(root, 'native/hooks/useAppShelf.js'), 'utf8')
+  assert.equal((tonight.match(/onKeep\(row\)/g) || []).length, 0, 'every Today keep passes did')
+  assert.equal((tonight.match(/onKeep\(row, \{ did: true \}\)/g) || []).length, 2)
+  assert.match(shelf, /if \(did\) dest = putAnswer\(dest, \{ lamp, periodKey: periodKeyFor\(lamp, lamp\.createdOn\) \}, 'yes', clock\)/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

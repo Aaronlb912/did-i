@@ -14,14 +14,14 @@ import {
   selectBook,
   writeShelf,
 } from '../../src/lib/board-shelf.js'
-import { bulkLamps, hangInto, takeDown } from '../../src/lib/board-ops.js'
+import { bulkLamps, hangInto, putAnswer, takeDown } from '../../src/lib/board-ops.js'
 import { blankLamp } from '../../src/lib/board-json.js'
 import { keptLamp } from '../../src/lib/send-repeat.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from '../../src/lib/daily.js'
 import { forgetAnswerMarks } from '../../src/lib/answer-log.js'
 import { bindForegroundSync, pullAndMerge, pushSoon, SHELF_IN, takeAccountChanged } from '../../src/lib/cloud-sync.js'
 import { stripDemoShelf } from '../../src/lib/demo-strip.js'
-import { isoDate } from '../../src/lib/recurrence.js'
+import { isoDate, periodKeyFor } from '../../src/lib/recurrence.js'
 import {
   maybeStreakMiss,
   queueStreakMoment,
@@ -223,8 +223,9 @@ export function useAppShelf() {
 
   // A did you kept from the inbox, or several added on their own, land on
   // the open folder in one write: tonight only, or on the sender's repeat.
+  // did: a Did swipe on Today, so the kept question is also done today.
   const keepSent = useCallback(
-    (questions) => {
+    (questions, { did = false } = {}) => {
       const clock = new Date()
       const lamps = [].concat(questions).map((item) => keptLamp(item, clock, live.dayFoldHour)).filter(Boolean)
       if (!lamps.length) return []
@@ -232,6 +233,7 @@ export function useAppShelf() {
       let dest = currentBook(latest) || live
       for (const lamp of lamps) {
         dest = hangInto(dest, lamp, false)
+        if (did) dest = putAnswer(dest, { lamp, periodKey: periodKeyFor(lamp, lamp.createdOn) }, 'yes', clock)
       }
       persist(putBook(latest, commitBook(dest, clock)))
       // The new questions' ids, so a link can open Tonight right on them.
