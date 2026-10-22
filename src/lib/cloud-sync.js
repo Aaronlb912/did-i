@@ -750,12 +750,15 @@ export async function pushNow(shelf) {
     return
   }
   setState({ how: 'busy', miss: '' })
+  let answersSent = false
   try {
     let doc = shelf || readShelf()
     // Usually one answer. The document only moves because a tag or a
     // question changed, and those are small.
     const sent = await pushAnswers(doc)
     if (sent.miss) throw new Error(sent.miss)
+    // The answers are on the server; the rest is the shelf document.
+    answersSent = true
     // No pull has landed for this account on this phone yet (the last user id
     // is written only after one does), so the local shelf may be the empty one
     // sign out left. Sending it would overwrite the account's questions.
@@ -763,7 +766,7 @@ export async function pushNow(shelf) {
     // the gate, and only a failed one shows as a miss.
     if (readLastUser() !== user.id) {
       await pullAndMerge()
-      if (readLastUser() !== user.id) return
+      if (readLastUser() !== user.id) return answersSent
       // Landed: send what is on the phone now, edits made during the pull too.
       doc = readShelf()
     } else {
@@ -773,7 +776,7 @@ export async function pushNow(shelf) {
       // Compared as times: the server sends +00:00 where JS wrote Z.
       if (at && Date.parse(at) !== Date.parse(readSeenAt())) {
         await pullAndMerge()
-        return
+        return answersSent
       }
     }
     const uploadAt = new Date().toISOString()
@@ -781,9 +784,11 @@ export async function pushNow(shelf) {
     const bad = (await putShelf(db, user, doc, uploadAt)) || (await putPrefs(db, user, doc))
     if (bad) throw bad
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
+    return true
   } catch (error) {
     setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
     recordAppError('sync', error).catch(() => {})
+    return answersSent
   }
 }
 
