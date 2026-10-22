@@ -884,6 +884,12 @@ test('an owned look can be worn again after it leaves the shop', () => {
   assert.ok(body.indexOf('purse.looks.includes(id)') < body.indexOf("miss: 'shop.miss.lookGone'"))
 })
 
+test('a live undo reads the dropped slots again for the answer it put back', () => {
+  const src = readFileSync(new URL('../src/lib/cloud-sync.js', import.meta.url), 'utf8')
+  const apply = src.slice(src.indexOf('function applyLiveRows'), src.indexOf('async function readRestored'))
+  assert.match(apply, /if \(dropped\.length\) readRestored\(dropped\)/)
+})
+
 test('the meter counts Not yet over the same rows as its total', () => {
   const src = readFileSync(new URL('../native/components/NightMeter.jsx', import.meta.url), 'utf8')
   assert.match(src, /const nope = countedTonightRows\(/)
