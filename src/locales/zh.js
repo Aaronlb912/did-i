@@ -1300,6 +1300,7 @@ export const zh = {
   'pings.kind.daySub': '还有未回答的问题时，在 {morning} 和 {afternoon} 提醒你。',
   'pings.day.1': '用 Did I 开始新的一天。',
   'pings.day.morning': "今天想记住什么？",
+  'pings.renew': "打开 Did I，提醒才会继续。",
   'morning.title': "今天有什么要记住的吗？",
   'morning.placeholder': "今天的一个问题",
   'morning.add': "添加",

@@ -1314,6 +1314,7 @@ export const en = {
   'pings.kind.daySub': 'A nudge at {morning} and {afternoon} while questions are still open.',
   'pings.day.1': 'Start the day with Did I.',
   'pings.day.morning': "What do you want to remember today?",
+  'pings.renew': "Open Did I to keep your reminders coming.",
   'morning.title': "Anything to remember today?",
   'morning.placeholder': "A question for today",
   'morning.add': "Add",

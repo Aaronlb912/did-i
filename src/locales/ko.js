@@ -1301,6 +1301,7 @@ export const ko = {
   'pings.kind.daySub': '답하지 않은 질문이 있으면 {morning}, {afternoon}에 알려 드려요.',
   'pings.day.1': 'Did I로 하루를 시작해요.',
   'pings.day.morning': "오늘 무엇을 기억하고 싶나요?",
+  'pings.renew': "알림을 계속 받으려면 Did I를 열어 주세요.",
   'morning.title': "오늘 기억할 게 있나요?",
   'morning.placeholder': "오늘의 질문",
   'morning.add': "추가",
