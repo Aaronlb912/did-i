@@ -57,7 +57,7 @@ function foldPurse(winner, loser) {
     accessories: unionList(win.accessories, lose.accessories),
     worn: win.worn,
     buddies: unionList(win.buddies, lose.buddies),
-    buddyOn: win.buddyOn || lose.buddyOn,
+    buddyOn: win.buddyOn,
     frames: unionList(win.frames, lose.frames),
     frame: win.frame,
     cheerOn: win.cheerOn,
