@@ -2279,6 +2279,7 @@ test('gem items added by editing the phone go away on sync; free and coin items 
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const sync = readFileSync(path.join(root, 'src/lib/cloud-sync.js'), 'utf8')
   assert.ok(sync.includes('applyGemOwnedToShelf(written, gemBag)'), 'sync copies the server list')
+  assert.ok(sync.includes('catchUpFreeClaims(written, gemBag).catch('), 'sync sends free items claimed signed out without waiting')
 })
 
 test('a gem lands once per week when a night clears', () => {
@@ -2957,6 +2958,36 @@ test('free event items: claimable in their window, never after, kept by owners',
   const synced = normalizePurse(applyGemOwnedToBook({ buddies: ['ant', 'bat', 'cat'], cheers: ['lime', 'boo', 'rain'] }, { gems: 1, looks: [], cheers: [], buddies: [] }))
   assert.deepEqual(synced.buddies, ['ant', 'bat'])
   assert.deepEqual(synced.cheers, ['lime', 'boo'])
+})
+
+await testAsync('free event items claimed signed out reach the account once per session', async () => {
+  const out = inFakeCloud(`
+    const { catchUpFreeClaims } = await import(url('wallet.js'))
+    const claims = []
+    let down = false
+    answer = (table, ops) => {
+      claims.push(table)
+      if (down) return { data: null, error: { message: 'fetch failed' } }
+      return { data: { gems: 0, looks: [], cheers: ['boo'], buddies: ['bat'], frames: [] }, error: null }
+    }
+    const shelf = { boards: [{ buddies: ['ant', 'bat'], cheers: ['lime'] }] }
+    const none = { gems: 0, looks: [], cheers: [], buddies: [] }
+    const has = { gems: 0, looks: [], cheers: [], buddies: ['bat'] }
+    const early = await catchUpFreeClaims(shelf, none, '2026-10-20')
+    const onServer = await catchUpFreeClaims(shelf, has, '2026-10-29')
+    down = true
+    const offline = await catchUpFreeClaims(shelf, none, '2026-10-29')
+    down = false
+    const first = await catchUpFreeClaims(shelf, none, '2026-10-29')
+    const second = await catchUpFreeClaims(shelf, none, '2026-10-29')
+    return { early, onServer, offline, first: first?.buddies, second, claims }
+  `)
+  assert.equal(out.early, null, 'outside the window is not claimed')
+  assert.equal(out.onServer, null, 'an id the server has is not claimed')
+  assert.equal(out.offline, null, 'a failed send claims nothing')
+  assert.deepEqual(out.first, ['bat'], 'after a failed send the next sync tries again; a local-only bat in window is claimed and the server list comes back')
+  assert.equal(out.second, null, 'a second sync does not ask again')
+  assert.deepEqual(out.claims, ['rpc:claim_free_item', 'rpc:claim_free_item'], 'one failed call, one good call')
 })
 
 test('an invite link carries its code to the app on both phones', () => {

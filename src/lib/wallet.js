@@ -1,9 +1,9 @@
 import { cloud, cloudSetUp } from './cloud.js'
 import { readUser } from './account.js'
 import { accountSessionOn } from './session-id.js'
-import { CHEER_STAGE_COIN, FREE_BUDDY, isFreeEventId, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, liveLooks, normalizePurse } from './purse.js'
+import { CHEER_STAGE_COIN, FREE_BUDDY, freeEventItem, isFreeEventId, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, liveLooks, normalizePurse } from './purse.js'
 import { accessoryById, accessoryOnSale } from './accessories.js'
-import { boardDate } from './recurrence.js'
+import { addDaysIso, boardDate } from './recurrence.js'
 import { frameById, withServerFrames } from './frames.js'
 
 export function applyGemBalanceToShelf(shelf, balance) {
@@ -174,6 +174,33 @@ export async function claimFreeItem(kind, itemId) {
     return { miss: 'shop.miss.buyFail' }
   }
   return { miss: '', owned: normalizeGemOwned(data) }
+}
+
+// A free item claimed signed out lives on the phone only. Signed in, send it
+// to the account once per session while the server still allows its window
+// (a day of slack either way; the server decides). Returns the server's new
+// owned list, or null when nothing was claimed. Failures are silent and the
+// phone keeps its copy; a network or server error tries again next sync.
+const freeCatchUp = new Set()
+export async function catchUpFreeClaims(shelf, owned, today = boardDate(new Date())) {
+  const own = normalizeGemOwned(owned)
+  let latest = null
+  for (const book of shelf?.boards || []) {
+    const purse = normalizePurse(book)
+    for (const [kind, list, have] of [['cheer', purse.cheers, own.cheers], ['buddy', purse.buddies, own.buddies]]) {
+      for (const id of list) {
+        const item = freeEventItem(kind, id)
+        const key = kind + ':' + id
+        if (!item || have.includes(id) || freeCatchUp.has(key)) continue
+        if (!isLive(item, today) && !isLive(item, addDaysIso(today, -1)) && !isLive(item, addDaysIso(today, 1))) continue
+        freeCatchUp.add(key)
+        const out = await claimFreeItem(kind, id).catch(() => null)
+        if (out && !out.miss) latest = out.owned
+        else if (!out || out.miss === 'shop.miss.buyFail') freeCatchUp.delete(key)
+      }
+    }
+  }
+  return latest
 }
 
 export async function readGemBalance() {
