@@ -9497,6 +9497,16 @@ test('pausing a question does not erase its misses from the overall streak', asy
   assert.equal(streakOf([book], new Date(2026, 9, 20, 21)), 10, 'the miss on the 10th still ends the run')
 })
 
+test('a Wear OS tap stays answered until the phone lists it as taken, like the Apple Watch', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sync = readFileSync(path.join(root, 'native/watch-sync.js'), 'utf8')
+  const drain = readFileSync(path.join(root, 'native/widget-tap.android.js'), 'utf8')
+  const wear = readFileSync(path.join(root, 'android/wear/src/main/java/com/aaronbryant/didi/wear/CardStore.kt'), 'utf8')
+  assert.doesNotMatch(sync, /Platform\.OS === 'ios' && takenTaps/, 'taken goes to both watches')
+  assert.match(drain, /noteTaken\(tap\.at\)/, 'the Android tap queue notes watch taps')
+  assert.match(wear, /optJSONArray\("taken"\)/, 'the Wear app reads taken')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

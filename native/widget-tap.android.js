@@ -1,6 +1,7 @@
 import { NativeModules } from 'react-native'
 import { applyWidgetTapsOnce, parseWidgetTapQueue } from '../src/lib/widget-tonight.js'
 import { buddySvgFor } from '../widgets/android/DidITonightAndroidWidget.jsx'
+import { noteTaken } from './watch-sync.js'
 
 export async function loadAndroidWidgetCard() {
   const mod = NativeModules.WidgetTap
@@ -51,6 +52,8 @@ export async function applyPendingAndroidWidgetTap() {
   const taps = parseWidgetTapQueue(raw)
   if (!taps.length) return null
   const { shelf, failed } = applyWidgetTapsOnce(taps)
+  // Wear OS taps are in this queue: tell the watch which ones the phone has.
+  for (const tap of taps) if (!failed.includes(tap)) noteTaken(tap.at)
   if (failed.length) {
     try {
       await mod.restorePending?.(JSON.stringify(failed))
