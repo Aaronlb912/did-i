@@ -815,11 +815,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         // Answered elsewhere already: no second keep or toast, unless the
         // kept question never landed on this shelf.
         if (already) {
-          if (keep && lost && row.kind === 'todo' && onKeep) onKeep(row)
+          if (keep && lost && row.kind === 'todo' && onKeep) onKeep(row, { did: true })
           return loadAsks()
         }
         // Like Keep in the inbox: a kept ask joins your own questions.
-        if (keep && row.kind === 'todo' && onKeep) onKeep(row)
+        // A Did swipe means done, not only added: it lands answered.
+        if (keep && row.kind === 'todo' && onKeep) onKeep(row, { did: true })
         confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
         loadAsks()
       }, keep ? 'yes' : 'skip', loadAsks)
