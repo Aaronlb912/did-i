@@ -396,6 +396,7 @@ export const fr = {
   'tonight.peopleMiss': "Ce n'est pas enregistré. Vérifie ton réseau et glisse encore.",
   'tonight.weSaved': "Enregistré dans ton Did we.",
   'tonight.familySaved': "Enregistré pour {name}.",
+  'tonight.familyRow': "{name} · {question}",
   'tonight.offlineSaved': "Enregistré sur ce téléphone. Se synchronise quand tu es de nouveau en ligne.",
   'seen.title': "Ce que les autres voient",
   'seen.sub': "Amis et famille, en mots simples",

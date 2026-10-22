@@ -32,7 +32,7 @@ export function StillOpen({ rows, rowKey, colors, onLate, onLeave, tour }) {
             <View style={styles.head}>
               <View style={[styles.dot, { backgroundColor: colors.skip }]} />
               <Text style={[styles.question, { color: colors.ink }]} numberOfLines={2}>
-                {row.lamp.question}
+                {row.family ? t('tonight.familyRow', { name: row.family.name, question: row.lamp.question }) : row.lamp.question}
               </Text>
             </View>
             <View style={styles.actions}>

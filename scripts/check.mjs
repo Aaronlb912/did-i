@@ -26,7 +26,7 @@ import {
 } from '../src/lib/recurrence.js'
 import { bestQuestionStreak, lampNights, lampRecord, lampWeeks, questionStreak } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
-import { peopleTonightItems, peopleWaitingLine, readPeopleHidden, writePeopleHidden } from '../src/lib/people-tonight.js'
+import { peopleTonightItems, peopleWaitingLine, readPeopleHidden, skippedFamilyRows, writePeopleHidden } from '../src/lib/people-tonight.js'
 import { nightWhyLines } from '../src/lib/night-why.js'
 import { putAnswer } from '../src/lib/board-ops.js'
 import {
@@ -9617,6 +9617,22 @@ test('people cards: Not yet on a Did you ask only hides it, an undo reopening th
   assert.ok(tonight.includes('readPeopleHidden(boardDate())'))
   const stack = read('src/lib/useTonightStack.js')
   assert.ok(stack.includes("clearStreakSeen('hit', dateIso)"), 'an undo that reopens the day clears the hit mark')
+})
+
+test('still open: a skipped family row is listed in the finish list, never as a card', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  const fam = (id, answer = null) => ({ family: { id: 'f1', name: 'Home' }, lamp: { id, question: `q${id}` }, night: '2026-10-08', answer })
+  const rows = [fam('a', { status: 'skip' }), fam('b'), fam('c', { status: 'yes' })]
+  assert.deepEqual(skippedFamilyRows(rows).map((row) => row.lamp.id), ['a'])
+  assert.deepEqual(skippedFamilyRows(rows, ['fam:f1:a:2026-10-08']).length, 1, 'a card Not yet key does not hide it')
+  assert.deepEqual(skippedFamilyRows(rows, ['fam:f1:a:2026-10-08', 'famkeep:f1:a:2026-10-08']), [], 'Keep not yet hides it')
+  const tonight = read('native/screens/TonightScreen.jsx')
+  assert.ok(tonight.includes('skippedFamilyRows(family.rows, peopleGone)'))
+  assert.ok(tonight.includes('rows={stillOpenRows}'), 'the finish list renders the family rows')
+  assert.ok(tonight.includes("answerFamilyLamp(row.family.id, row.lamp.id, boardDate(), 'yes')"))
+  const people = read('src/lib/people-tonight.js')
+  assert.match(people, /for \(const row of familyRows\) \{\s*if \(row\.answer\) continue/, 'answered family rows stay off the cards')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

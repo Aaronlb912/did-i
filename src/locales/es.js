@@ -395,6 +395,7 @@ export const es = {
   'tonight.peopleMiss': "No se guardó. Revisa tu señal y desliza otra vez.",
   'tonight.weSaved': "Guardado en tu Did we.",
   'tonight.familySaved': "Guardado para {name}.",
+  'tonight.familyRow': "{name} · {question}",
   'tonight.offlineSaved': "Guardado en este teléfono. Se sincroniza cuando vuelvas a tener conexión.",
   'seen.title': "Lo que ven los demás",
   'seen.sub': "Amigos y familia, en palabras sencillas",

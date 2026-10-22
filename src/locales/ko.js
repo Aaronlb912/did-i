@@ -387,6 +387,7 @@ export const ko = {
   'tonight.peopleMiss': "저장되지 않았어요. 신호를 확인하고 다시 밀어 주세요.",
   'tonight.weSaved': "Did we에 저장했어요.",
   'tonight.familySaved': "{name}에 저장했어요.",
+  'tonight.familyRow': "{name} · {question}",
   'tonight.offlineSaved': "이 휴대폰에 저장했어요. 다시 온라인이 되면 동기화돼요.",
   'seen.title': "다른 사람에게 보이는 것",
   'seen.sub': "친구와 가족, 쉬운 말로",
