@@ -260,7 +260,11 @@ export const weLeave = (card) => call('we_leave', { card }).then(dropLoaded)
 // Only the maker can close it; the server checks.
 export const weClose = (card) => call('we_close', { card }).then(dropLoaded)
 function dropLoaded(out) {
-  if (!out.miss) loadedAt = 0
+  if (!out.miss) {
+    loadedAt = 0
+    // No live ping comes for your own leave or end: open screens read now.
+    import('./social-live.js').then(({ noteSocialLive }) => noteSocialLive('we')).catch(() => {})
+  }
   return out
 }
 // A paused card (nobody answered 3 nights) asks again from tonight.

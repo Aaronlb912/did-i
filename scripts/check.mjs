@@ -1126,6 +1126,18 @@ test('leaving or ending a did we drops the cached cards', () => {
   const src = readFileSync(new URL('../src/lib/did-we.js', import.meta.url), 'utf8')
   assert.ok(src.includes("call('we_leave', { card }).then(dropLoaded)"))
   assert.ok(src.includes("call('we_close', { card }).then(dropLoaded)"))
+  assert.match(src, /function dropLoaded[\s\S]*?noteSocialLive\('we'\)/, 'your own leave or end wakes open screens')
+})
+
+test('ending or editing a did we pings the other members', () => {
+  const sql = readFileSync(new URL('../supabase/we-live-edit.sql', import.meta.url), 'utf8')
+  assert.match(sql, /after update on public\.we_cards/)
+  assert.match(sql, /referencing new table as changed for each statement/)
+  assert.match(sql, /security definer/)
+  assert.match(sql, /live_ping\(r\.who, 'we', r\.card_id\)/)
+  assert.match(sql, /revoke all on function public\.live_we_cards\(\) from public, anon, authenticated/)
+  const order = readFileSync(new URL('../scripts/apply-all-sql.mjs', import.meta.url), 'utf8')
+  assert.ok(order.includes("'supabase/we-live-edit.sql'"))
 })
 
 test('changing weekdays after answering today keeps today', async () => {
