@@ -873,7 +873,9 @@ test('Next on the Android widget applies a waiting tap first', () => {
 
 test('a double tap on Block sends one block', () => {
   const src = readFileSync(new URL('../native/screens/social.jsx', import.meta.url), 'utf8')
-  assert.equal(src.split("once('block:' + person.user_id").length, 3)
+  // Every Block button goes through the one guarded call.
+  assert.equal(src.split("once('block:' + person.user_id").length, 2)
+  assert.equal(src.split('await blockPerson(person.user_id').length, 2)
 })
 
 test('an owned look can be worn again after it leaves the shop', () => {

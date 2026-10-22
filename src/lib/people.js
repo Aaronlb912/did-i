@@ -1142,6 +1142,43 @@ export async function blockPerson(otherId, why = '') {
   return { miss: '' }
 }
 
+// Families you share with someone, and whether you are a parent in each.
+// A block keeps them in the family on purpose (readthrough-12.sql), so the
+// block sheet offers to part ways. null when the read failed.
+export async function sharedFamilies(otherId) {
+  const db = cloud()
+  if (!db) return []
+  const user = await me()
+  if (!user) return []
+  const { data, error } = await db
+    .from('family_members')
+    .select('family_id, user_id, role')
+    .in('user_id', [user.id, otherId])
+  if (error) return null
+  const mine = new Map(data.filter((row) => row.user_id === user.id).map((row) => [row.family_id, row.role]))
+  const ids = [...new Set(data.filter((row) => row.user_id === otherId && mine.has(row.family_id)).map((row) => row.family_id))]
+  if (!ids.length) return []
+  const fams = await db.from('families').select('id, name').in('id', ids)
+  if (fams.error) return null
+  return ids.map((id) => ({
+    id,
+    name: String(fams.data.find((row) => row.id === id)?.name || ''),
+    parent: mine.get(id) === 'parent',
+  }))
+}
+
+// Parents take them out; anyone else leaves. Runs after the block.
+export async function partFamilies(families, otherId) {
+  let miss = ''
+  for (const fam of families) {
+    const out = fam.parent ? await dropMember(fam.id, otherId) : await leaveFamily(fam.id)
+    if (out.miss && out.miss !== 'unchanged') miss = 'block.familyMiss'
+  }
+  noteSocialLive('familyInfo')
+  refreshPeople()
+  return { miss }
+}
+
 export async function unblockPerson(otherId) {
   const db = cloud()
   if (!db) return { miss: 'off' }

@@ -24,6 +24,8 @@ import {
   lookUpFriendId,
   myFriendId,
   blockPerson,
+  partFamilies,
+  sharedFamilies,
   claimInvites,
   cleanCode,
   doneTonight,
@@ -214,6 +216,27 @@ function FriendMenu({ name, items, colors, onClose }) {
 }
 
 function BlockModal({ person, colors, onClose, onDone }) {
+  // undefined while reading; [] or null (read failed) means block only.
+  const [fams, setFams] = useState(undefined)
+  useEffect(() => {
+    let live = true
+    sharedFamilies(person.user_id).then(
+      (rows) => live && setFams(rows),
+      () => live && setFams(null),
+    )
+    return () => {
+      live = false
+    }
+  }, [person.user_id])
+  const shared = fams?.length ? fams : null
+  const name = personName(person) || t('people.someone')
+  const block = (why, part) =>
+    once('block:' + person.user_id, async () => {
+      onClose()
+      const out = await blockPerson(person.user_id, why)
+      if (out.miss || !part) return onDone(out.miss)
+      onDone((await partFamilies(shared, person.user_id)).miss)
+    })
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
@@ -224,33 +247,29 @@ function BlockModal({ person, colors, onClose, onDone }) {
         >
           <Text style={[styles.popKicker, { color: colors.on }]}>{t('block.block')}</Text>
           <Text style={[styles.popTitle, { color: colors.ink }]}>
-            {t('block.title', { name: personName(person) || t('people.someone') })}
+            {t('block.title', { name })}
           </Text>
           <Meta colors={colors}>{t('block.body')}</Meta>
+          {shared ? (
+            <Meta colors={colors}>{t('block.family', { name, families: shared.map((fam) => fam.name).join(', ') })}</Meta>
+          ) : null}
           <View style={styles.personActions}>
-            <DidButton
-              colors={colors}
-              small
-              label={t('block.yes')}
-              onPress={() =>
-                once('block:' + person.user_id, async () => {
-                  onClose()
-                  const { miss: why } = await blockPerson(person.user_id)
-                  onDone(why)
-                })
-              }
-            />
-            <KeyButton
-              colors={colors}
-              label={t('block.andReport')}
-              onPress={() =>
-                once('block:' + person.user_id, async () => {
-                  onClose()
-                  const { miss: why } = await blockPerson(person.user_id, 'reported from friends')
-                  onDone(why)
-                })
-              }
-            />
+            {fams === undefined ? null : shared ? (
+              <>
+                <DidButton
+                  colors={colors}
+                  small
+                  label={t(shared.every((fam) => fam.parent) ? 'block.andRemove' : 'block.andLeave')}
+                  onPress={() => block('', true)}
+                />
+                <KeyButton colors={colors} label={t('block.only')} onPress={() => block('', false)} />
+              </>
+            ) : (
+              <DidButton colors={colors} small label={t('block.yes')} onPress={() => block('', false)} />
+            )}
+            {fams === undefined ? null : (
+              <KeyButton colors={colors} label={t('block.andReport')} onPress={() => block('reported from friends', false)} />
+            )}
             <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onClose} />
           </View>
         </Pressable>
@@ -2431,8 +2450,8 @@ export function FriendScreen({ book, onChange, route }) {
           colors={colors}
           onClose={() => setBlocking(false)}
           onDone={(why) => {
-            if (why) return setSaid(tMiss(why))
-            confirmDone(t('confirm.blocked', { name }))
+            if (why && why !== 'block.familyMiss') return setSaid(tMiss(why))
+            confirmDone(why ? tMiss(why) : t('confirm.blocked', { name }))
             refreshPeople()
             return swapHash('/friends')
           }}
