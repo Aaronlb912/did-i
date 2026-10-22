@@ -1,7 +1,7 @@
 <resources>
   <string name="app_name">Did I</string>
   <!-- Same as "version" in app.json (runtimeVersion in app.config.js). -->
-  <string name="expo_runtime_version">1.3.8</string>
+  <string name="expo_runtime_version">1.3.9</string>
   <!-- Translated in values-*/strings.xml, with the words from src/locales. -->
   <string name="widget_diditonight_description">Answer today’s questions with Did or Not yet.</string>
   <string name="widget_diditogether_description">See which friends and family are done today. Nothing to answer here.</string>
