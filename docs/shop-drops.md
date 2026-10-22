@@ -174,9 +174,9 @@ If the emulator is not available, open the PR as a **draft** titled
    opens a PR.
 2. If every point of the quality gate passed on a device, the task waits for
    CI and merges the PR itself. A draft ("needs device check") waits for Aaron.
-3. The `ota update` workflow (.github/workflows/ota-update.yml) publishes the
-   update to phones on every push to master (needs the `EXPO_TOKEN` secret).
-   Pushes that change native files are skipped; those need a store build.
+3. After the merge, the task runs `npm run update:prod` from a local checkout
+   of merged master (no Actions minutes). A merge that changed native files
+   is not published; it needs a store build.
    Items are dated, so shipping early is safe.
 
 Widget buddy art is native on iPhone, so a new buddy shows on the iPhone

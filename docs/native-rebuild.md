@@ -289,8 +289,13 @@ JS-only changes (screens, copy, `src/lib` logic, locales) can go out without a
 store build:
 
 ```powershell
-npm run update:prod
+git checkout master; git pull
+npm run update:prod -- --message "what changed"
 ```
+
+Run it from a local checkout of merged master, after `npm test` passes. EAS
+updates are free on our plan; the GitHub `ota update` workflow is manual only
+now, so updates use no Actions minutes. Merging does not publish anything.
 
 That publishes to the **production** channel. `npm run update:internal` goes to
 EAS `internal` builds only. GitHub builds (APK and IPA) are not EAS builds, so
@@ -337,7 +342,7 @@ before a store build:
 4. GitHub > Settings > Secrets > Actions: `EXPO_UPDATES_PRIVATE_KEY` = the whole of `keys/private-key.pem`. Keep a copy somewhere safe; a lost key means a store build with a new certificate.
 5. Bump `version` in app.json and build both apps.
 
-From then on the ota-update workflow and `npm run update:prod` sign every
+From then on `npm run update:prod` (and the manual ota-update workflow) sign every
 update and refuse to publish without the key. Phones on builds from before step
 5 ignore the signature and keep taking updates.
 

@@ -1,19 +1,10 @@
 name: ota update
 
-# Publishes the JS bundle to phones (expo-updates, production channel) after
-# each push to master, so a merged shop drop reaches users with no manual step.
-# Dated items stay hidden until their day (src/lib/purse.js), so shipping early
-# is safe. Native changes are skipped: those need a store build.
+# Manual only, as a fallback. Updates go out from a local checkout of master
+# with npm run update:prod, which uses no Actions minutes
+# (docs/native-rebuild.md, Over-the-air updates).
 
 on:
-  push:
-    branches: [master]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
-      - '.github/**'
-      - 'supabase/**'
-      - 'scripts/**'
   workflow_dispatch:
 
 concurrency:
