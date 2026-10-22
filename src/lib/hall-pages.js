@@ -11,6 +11,7 @@ import {
   inPause,
   isDueOn,
   isEvery,
+  countsOnlyOnDid,
   isoDate,
   onceDoneNight,
   oncePastCounts,
@@ -400,7 +401,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
         if (lamp.fromDidI || (lamp.keptDids && !done && (!lamp.pausedOn || iso >= lamp.pausedOn))) continue
         const doneOn = done ? book.doneOn.get(lamp.id) : ''
         if (doneOn && doneOn !== iso) continue
-        if (!done && (lamp.optional || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
+        if (!done && (countsOnlyOnDid(lamp) || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
         dueCount += 1
         if (!done) clear = false
       }
