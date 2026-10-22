@@ -9518,6 +9518,13 @@ test('answering a friend request recounts the badge at once, even while a count 
   assert.match(refresh, /pulse\.busy\.catch\(\(\) => \{\}\), hung\]\)\.then\(\(\) => pulseLook\(\)\)/, 'a count already running is followed by a fresh one')
 })
 
+test('keeping a did you, removing a friend, and making or joining a family recount the badges at once', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const src = readFileSync(path.join(root, 'src/lib/people.js'), 'utf8')
+  const body = (name) => { const i = src.indexOf(`export async function ${name}(`); return src.slice(i, src.indexOf('\n}', i)) }
+  for (const name of ['answerSend', 'dropFriend', 'makeFamily', 'joinFamily']) assert.match(body(name), /refreshPeople\(\)/, name)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
