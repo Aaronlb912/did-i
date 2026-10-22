@@ -84,6 +84,9 @@ insert into public.did_you_links (code, made_by, question) values (${lit(code)},
 insert into public.app_sends (question, note, link_code, mode, night)
 values (${lit(question)}, ${lit(note)}, ${lit(code)}, ${night ? "'tonight'" : "'inbox'"}, ${night ? `${lit(night)}::date` : 'null'});
 commit;
+-- Phones with the app open look again now, not on their 15-minute poll.
+-- After the commit, and live_ping drops its own errors, so the send stands.
+select public.live_ping(array(select id from auth.users), 'ask', null);
 select count(*)::int as queued from public.push_queue where sent_at is null and made_at > now() - interval '1 minute' and title = 'Did I';
 `
 

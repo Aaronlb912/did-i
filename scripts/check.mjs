@@ -9545,6 +9545,14 @@ test('a live reconnect has every screen read again, so the people poll can be sl
   assert.match(people, /const PULSE_MS = 15 \* 60 \* 1000/)
 })
 
+test('a send from Did I pings open apps after it commits, without waking devices', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const script = readFileSync(path.join(root, 'scripts/send-from-did-i.mjs'), 'utf8')
+  const wake = readFileSync(path.join(root, 'supabase/wake-push.sql'), 'utf8')
+  assert.match(script, /commit;\s*(--[^\n]*\n\s*)*select public\.live_ping\(array\(select id from auth\.users\), 'ask', null\);/)
+  assert.match(wake, /if kind in \('we', 'family', 'send'\) then/, "an 'ask' ping sends no silent push")
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
