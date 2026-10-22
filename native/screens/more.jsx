@@ -1097,7 +1097,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
       return
     }
     setTitleDraft(title)
-    onChange({ ...book, title })
+    onChange({ ...book, title, at: new Date().toISOString() })
     confirmDone(t('settings.saved'))
   }
 
@@ -1992,7 +1992,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
     if (!lamp || !onChange) return confirmMiss(t('confirm.miss'))
     const next = !lampNotifyOn(lamp)
     setSeen((was) => new Map(was).set(fire.id, fire))
-    onChange(commitBook({ ...home, lamps: home.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next } : item)) }, clock))
+    onChange(commitBook({ ...home, lamps: home.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next, at: clock.toISOString() } : item)) }, clock))
     return confirmDone(next ? t('pings.oneOn') : t('pings.oneOff'))
   }
 

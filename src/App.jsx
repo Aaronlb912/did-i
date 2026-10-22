@@ -337,6 +337,7 @@ export default function App() {
       ...live,
       keeperName: (keeperName && keeperName.trim()) || live.keeperName,
       title: (title && title.trim()) || live.title,
+      ...(title && title.trim() && title.trim() !== live.title ? { at: new Date().toISOString() } : {}),
     })
     markWelcomeSeen()
   }

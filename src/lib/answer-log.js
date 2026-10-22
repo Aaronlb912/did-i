@@ -214,7 +214,9 @@ export async function pullAnswers(shelf, { stillCurrent = () => true } = {}) {
   const data = []
   // Paged by stamp, not offset: rows written while paging would shift an
   // offset and skip some. Offset only steps past a page that is all one stamp.
-  let cursor = since
+  // Back 5 seconds: updated_at is when a write started, so one that committed
+  // after a later one would fall behind the mark. Applying a row twice is free.
+  let cursor = overlap(since)
   let from = 0
   for (;;) {
     let query = db
@@ -249,10 +251,15 @@ export async function pullAnswers(shelf, { stillCurrent = () => true } = {}) {
   return { shelf: next.shelf, changed: next.changed + dropped.changed, miss: '' }
 }
 
+function overlap(since) {
+  const ms = Date.parse(since || '')
+  return Number.isFinite(ms) ? new Date(ms - 5000).toISOString() : since
+}
+
 async function pullUndos(db, stillCurrent) {
   const since = read(SEEN_UNDO)
   let query = db.from('answer_undos').select('lamp_id, period_key, answered_at, note_at, undone_at').order('undone_at', { ascending: true }).limit(1000)
-  if (since) query = query.gte('undone_at', since)
+  if (since) query = query.gte('undone_at', overlap(since))
   const { data, error } = await query
   // Not there before the SQL is applied: nothing to drop.
   if (error || !data?.length) return []

@@ -218,6 +218,12 @@ export function emptyBoard() {
   return blankBook()
 }
 
+// When the user last edited this question or folder (ISO). Sync keeps the later edit.
+function cleanAt(value) {
+  const at = asString(value).trim()
+  return at && Number.isFinite(Date.parse(at)) ? at : ''
+}
+
 export function normalizeLamp(raw) {
   const lamp = raw && typeof raw === 'object' ? raw : {}
   const kind = asString(lamp.kind).trim().slice(0, KIND_MAX)
@@ -268,6 +274,7 @@ export function normalizeLamp(raw) {
       ? { order: Math.min(Number(lamp.order), 9999) }
       : {}),
     createdOn: asString(lamp.createdOn).trim() || isoDate(new Date()),
+    ...(cleanAt(lamp.at) ? { at: cleanAt(lamp.at) } : {}),
     // Schedules it had before an edit (recurrence.js scheduleAt).
     ...(cleanWas(lamp.was).length ? { was: cleanWas(lamp.was) } : {}),
     // Put on your tonight for you (a Did you auto-added from family or a
@@ -377,6 +384,7 @@ export function normalizeBook(raw) {
     clickSound: asBool(book.clickSound),
     inkNote: asString(book.inkNote),
     archived: asBool(book.archived),
+    ...(cleanAt(book.at) ? { at: cleanAt(book.at) } : {}),
     lamps: Array.isArray(book.lamps) ? book.lamps.map(normalizeLamp) : [],
     answers: Array.isArray(book.answers) ? book.answers.map(normalizeAnswer) : [],
     gone: normalizeGone(book.gone),
