@@ -3132,6 +3132,11 @@ await testAsync('a widget or reminder Did pays one purse, not one per folder', a
   assert.equal(mergePurses(readShelf().boards).coins, coins[0])
   assert.equal(applyWidgetTapOnce('b', 'did', '2026-09-23', at, at.getTime()), null, 'a second tap the same night does nothing')
   assert.equal(mergePurses(readShelf().boards).coins, coins[0], 'and pays nothing')
+  // A stale watch card for a day the question is no longer due on is refused.
+  writeShelf({ currentId: 'f1', boards: [{ ...folder('f1', 'w'), lamps: [{ id: 'w', question: 'w?', cadence: 'weekly', weekdays: [1, 2, 3, 4, 5], archived: false, createdOn: '2020-01-01' }] }] })
+  const sat = new Date(2026, 8, 26, 21, 0)
+  assert.equal(applyWidgetTapOnce('w', 'did', '2026-09-26', sat, sat.getTime()), null, 'no Did on a day not due')
+  assert.equal(mergePurses(readShelf().boards).coins, 16, 'and no coins for it')
 
   // The iOS widget path: answers merged from the widget's saved props.
   const shelf = fresh()
