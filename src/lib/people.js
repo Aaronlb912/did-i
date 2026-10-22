@@ -467,7 +467,9 @@ export async function dropFriend(otherId) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const { error } = await db.rpc('drop_friend', { other: otherId })
-  return error ? bad(error) : { miss: '' }
+  if (error) return bad(error)
+  refreshPeople()
+  return { miss: '' }
 }
 
 // Still friends or family with someone (and no block). null when it could not
@@ -1068,7 +1070,14 @@ export async function editFamilyLamp(id, question) {
   return error ? bad(error) : { miss: '' }
 }
 
+// Badges (the inbox count) catch up now, not on the next 5-minute look.
 export async function answerSend(id, keep) {
+  const out = await answerSendNow(id, keep)
+  if (!out?.miss) refreshPeople()
+  return out
+}
+
+async function answerSendNow(id, keep) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   if (String(id).startsWith('app:')) {
@@ -1246,6 +1255,7 @@ export async function makeFamily(name) {
   if (!db) return { miss: 'off' }
   const { data, error } = await db.rpc('make_family', { want_name: String(name || '').trim() })
   if (error) return bad(error)
+  refreshPeople()
   return { miss: '', id: data }
 }
 
@@ -1264,6 +1274,7 @@ export async function joinFamily(code) {
   // A wrong code comes back as null, so the miss still counts toward the limit.
   if (!data) return { miss: 'nofamily' }
   noteSocialLive('familyInfo')
+  refreshPeople()
   return { miss: '', id: data }
 }
 
