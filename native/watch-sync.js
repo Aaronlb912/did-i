@@ -74,10 +74,10 @@ export function watchCardsFromProps(props, shelf = null) {
     updatedAt: Number(props?.updatedAt) || Date.now(),
     // Watch taps (their at) this phone has saved or turned down. The watch
     // keeps showing a tap until its at is here or the card shows an answer.
-    // Apple Watch only (Wear OS taps go through the widget tap queue). Left
-    // out while empty (a fresh start): the watch then uses its older rule and
-    // does not hold a tap the phone turned down before it restarted.
-    ...(Platform.OS === 'ios' && takenTaps.length ? { taken: [...takenTaps] } : {}),
+    // Wear OS taps come in through the widget tap queue and are noted there.
+    // Left out while empty (a fresh start): the watch then uses its older rule
+    // and does not hold a tap the phone turned down before it restarted.
+    ...(takenTaps.length ? { taken: [...takenTaps] } : {}),
   }
 }
 
@@ -85,7 +85,7 @@ let lastSent = ''
 // Recent watch taps the phone has handled, by their at (ms). Memory only: after
 // a restart the watch just holds an unseen tap a while longer (24h at most).
 const takenTaps = []
-function noteTaken(at) {
+export function noteTaken(at) {
   const n = Number(at)
   if (!n || takenTaps.includes(n)) return
   takenTaps.push(n)
