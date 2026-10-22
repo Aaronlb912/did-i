@@ -884,6 +884,11 @@ test('an owned look can be worn again after it leaves the shop', () => {
   assert.ok(body.indexOf('purse.looks.includes(id)') < body.indexOf("miss: 'shop.miss.lookGone'"))
 })
 
+test('the meter counts Not yet over the same rows as its total', () => {
+  const src = readFileSync(new URL('../native/components/NightMeter.jsx', import.meta.url), 'utf8')
+  assert.match(src, /const nope = countedTonightRows\(/)
+})
+
 test('an undo is noted before the delete, and pulls drop undone answers', () => {
   const src = readFileSync(new URL('../src/lib/answer-log.js', import.meta.url), 'utf8')
   const undo = src.slice(src.indexOf('async function undoOnce'))
