@@ -32,7 +32,7 @@ import { keptButMissing } from '../lib/kept-send.js'
 import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
-import { pillStatusLabel } from '../../src/lib/pill-status.js'
+import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { usePrefs, useTheme } from '../../src/lib/prefs.js'
 import { answerFor, isEvery } from '../../src/lib/recurrence.js'
@@ -82,7 +82,7 @@ import { NightSky, useSkyClock } from '../components/NightSky.jsx'
 import { isDaytime } from '../lib/night-sky.js'
 import { Slot } from '../components/Slot.jsx'
 import { answerFamilyLamp, answerSend, listInbox, personName, useFamilyTonight } from '../../src/lib/people.js'
-import { peopleTonightItems, peopleWaitingLine } from '../../src/lib/people-tonight.js'
+import { peopleTonightItems, peopleWaitingLine, readPeopleHidden, writePeopleHidden } from '../../src/lib/people-tonight.js'
 import { WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../components/WeTonight.jsx'
 import { FriendsRow } from '../components/FriendsRow.jsx'
 import { pickSocialLine } from '../../src/lib/social-line.js'
@@ -229,7 +229,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // Family questions and Did you asks from friends: cards after your own.
   const family = useFamilyTonight(account.user)
   const [asks, setAsks] = useState([])
-  const [peopleGone, setPeopleGone] = useState([])
+  const [peopleGone, setPeopleGone] = useState(() => readPeopleHidden(boardDate()))
+  useEffect(() => writePeopleHidden(boardDate(), peopleGone), [peopleGone])
   // A read that lands after a sign out or account switch is the old account's.
   const userIdRef = useRef(account.user?.id)
   userIdRef.current = account.user?.id
@@ -802,6 +803,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         onNope: save('skip'),
       }
     }
+    // Not yet only hides the card for now. The ask stays in the inbox, where Pass is a pass.
+    const notYet = () => {
+      setPeopleGone((keys) => [...keys, item.key])
+      feelTap('skip')
+    }
     const save = (keep) => () => {
       let already = false
       let lost = false
@@ -821,7 +827,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         // Like Keep in the inbox: a kept ask joins your own questions.
         // A Did swipe means done, not only added: it lands answered.
         if (keep && row.kind === 'todo' && onKeep) onKeep(row, { did: true })
-        confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
+        confirmDone(markedToast('yes', { question: row.question }))
         loadAsks()
       }, keep ? 'yes' : 'skip', loadAsks)
     }
@@ -830,7 +836,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       kicker: t('tonight.peopleFrom', { name: personName(row.person) || t('people.someone') }),
       line: sendLastLine(row.repeat, row.last_did_on, stack.dateIso),
       onDid: save(true),
-      onNope: save(false),
+      onNope: notYet,
     }
   })
   const peopleTop = peopleItems[0] || null

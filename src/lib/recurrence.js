@@ -509,12 +509,18 @@ function doneOtherNight(row) {
   return Boolean(done) && done !== row.dateIso
 }
 
+// Counts only once you said Did: a question put on your tonight for you, or one
+// someone sent you (Not yet or no answer is like a night with nothing due).
+export function countsOnlyOnDid(lamp) {
+  return Boolean(lamp?.optional || lamp?.fromDidYou)
+}
+
 export function countedTonightRows(rows) {
   return (rows || []).filter(
     (row) =>
       !row?.lamp?.fromDidI &&
       !doneOtherNight(row) &&
-      ((!row?.lamp?.optional && !isEvery(row?.lamp)) || rowDoneTonight(row)) &&
+      ((!countsOnlyOnDid(row?.lamp) && !isEvery(row?.lamp)) || rowDoneTonight(row)) &&
       (mustSwipeDeadline(row.lamp, row.dateIso) || rowDoneTonight(row)),
   )
 }

@@ -26,7 +26,7 @@ import {
 } from '../src/lib/recurrence.js'
 import { bestQuestionStreak, lampNights, lampRecord, lampWeeks, questionStreak } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
-import { peopleTonightItems, peopleWaitingLine } from '../src/lib/people-tonight.js'
+import { peopleTonightItems, peopleWaitingLine, readPeopleHidden, writePeopleHidden } from '../src/lib/people-tonight.js'
 import { nightWhyLines } from '../src/lib/night-why.js'
 import { putAnswer } from '../src/lib/board-ops.js'
 import {
@@ -9574,6 +9574,49 @@ test('five review fixes: invite tile live read, shop-vs-sync guard, no reload mi
   assert.ok(read('src/lib/board-ops.js').includes('lastAnswerAt = Date.now()'), 'saving an answer stamps the time')
   assert.ok(sync.includes('Date.now() - lastCatchUp > 60000'), 'a quick rejoin skips the catch-up')
   assert.ok(read('android/wear/src/main/java/com/aaronbryant/didi/wear/CardStore.kt').includes('if (at > 0L && (0 until taken.length())'), 'a tap with no at is not matched by 0')
+})
+
+await testAsync('a sent question answered Not yet or left open does not break the streak, a normal one does', async () => {
+  const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
+  const { countsOnlyOnDid } = await import('../src/lib/recurrence.js')
+  const now = new Date('2026-10-05T21:13:00')
+  const a = (lampId, periodKey, status) => ({ lampId, periodKey, status, answeredAt: `${periodKey}T21:00:00` })
+  const days = ['2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05']
+  const make = (extra, miss) => ({
+    id: 'b',
+    dayFoldHour: 0,
+    lamps: [lamp('c', { createdOn: '2026-10-02' }), lamp('s', { createdOn: '2026-10-02', ...extra })],
+    answers: [
+      ...days.map((day) => a('c', day, 'yes')),
+      ...days.filter((day) => day !== '2026-10-03').map((day) => a('s', day, 'yes')),
+      ...(miss === 'skip' ? [a('s', '2026-10-03', 'skip')] : []),
+    ],
+  })
+  assert.equal(countsOnlyOnDid({ fromDidYou: true }), true)
+  assert.equal(countsOnlyOnDid({ optional: true }), true)
+  assert.equal(countsOnlyOnDid({}), false)
+  assert.equal(streakOf([make({ fromDidYou: true }, 'skip')], now), 4, 'a sent question Not yet keeps the streak')
+  assert.equal(streakOf([make({ fromDidYou: true }, 'none')], now), 4, 'a sent question left open keeps the streak')
+  assert.ok(streakOf([make({}, 'skip')], now) < 4, 'a question you wrote still breaks it')
+  assert.equal(streakOf([make({ fromDidYou: true }, 'skip')], now) > 0, true)
+})
+
+test('people cards: Not yet on a Did you ask only hides it, an undo reopening the day clears the hit mark', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (file) => readFileSync(path.join(root, file), 'utf8')
+  const tonight = read('native/screens/TonightScreen.jsx')
+  assert.match(tonight, /onNope: notYet,/)
+  assert.ok(!tonight.includes("t('didYouLink.added') : t('confirm.passed')"), 'the Today ask keep says the normal Did')
+  assert.ok(tonight.includes("confirmDone(markedToast('yes', { question: row.question }))"))
+  const fam = (id, answer = null) => ({ family: { id: 'f1', name: 'Home' }, lamp: { id, question: `q${id}` }, night: '2026-10-08', answer })
+  const items = peopleTonightItems({ familyRows: [fam('a', { status: 'skip' }), fam('b'), fam('c', { status: 'yes' })], night: '2026-10-08' })
+  assert.deepEqual(items.map((item) => item.key), ['fam:f1:b:2026-10-08'], 'answered family rows stay off the face')
+  writePeopleHidden('2026-10-08', ['ask:1'])
+  assert.deepEqual(readPeopleHidden('2026-10-08'), ['ask:1'], 'hidden keys survive a fresh read')
+  assert.deepEqual(readPeopleHidden('2026-10-09'), [], 'a new day drops them')
+  assert.ok(tonight.includes('readPeopleHidden(boardDate())'))
+  const stack = read('src/lib/useTonightStack.js')
+  assert.ok(stack.includes("clearStreakSeen('hit', dateIso)"), 'an undo that reopens the day clears the hit mark')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

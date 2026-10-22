@@ -63,6 +63,17 @@ export function markStreakSeen(kind, dateIso) {
   }
 }
 
+export function clearStreakSeen(kind, dateIso) {
+  try {
+    const raw = localStorage.getItem(SEEN)
+    const bag = raw ? JSON.parse(raw) : {}
+    delete bag[seenKey(kind, dateIso)]
+    localStorage.setItem(SEEN, JSON.stringify(bag))
+  } catch {
+    // ok
+  }
+}
+
 export function queueStreakMoment(detail, dateIso) {
   if (!detail?.kind || streakSeen(detail.kind, dateIso)) return
   let stored = false
