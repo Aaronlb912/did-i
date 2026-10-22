@@ -9507,6 +9507,17 @@ test('a Wear OS tap stays answered until the phone lists it as taken, like the A
   assert.match(wear, /optJSONArray\("taken"\)/, 'the Wear app reads taken')
 })
 
+test('answering a friend request recounts the badge at once, even while a count is running', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const src = readFileSync(path.join(root, 'src/lib/people.js'), 'utf8')
+  const yes = src.slice(src.indexOf('export async function sayYes'), src.indexOf('export async function sayNo'))
+  const no = src.slice(src.indexOf('export async function sayNo'), src.indexOf('export async function unsendAsk'))
+  assert.match(yes, /refreshPeople\(\)/, 'a yes recounts')
+  assert.match(no, /refreshPeople\(\)/, 'a no recounts')
+  const refresh = src.slice(src.indexOf('export function refreshPeople'), src.indexOf('export function didYouNewsLines'))
+  assert.match(refresh, /pulse\.busy\.catch\(\(\) => \{\}\), hung\]\)\.then\(\(\) => pulseLook\(\)\)/, 'a count already running is followed by a fresh one')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

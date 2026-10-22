@@ -428,7 +428,10 @@ export async function sayYes(linkId) {
   const { error } = await db.rpc('say_yes', { link: linkId })
   // They took it back first: say so, and the list reloads.
   if (error && /no request to answer/i.test(error.message || '')) return { miss: 'friends.askChanged' }
-  return error ? bad(error) : { miss: '' }
+  if (error) return bad(error)
+  // The request badge counts it until the next look; look now.
+  refreshPeople()
+  return { miss: '' }
 }
 
 export async function sayNo(linkId) {
@@ -437,6 +440,7 @@ export async function sayNo(linkId) {
   // No row back: they took it back first, so nothing was declined.
   const { data, error } = await db.from('friend_links').delete().eq('id', linkId).select('id')
   if (error) return bad(error)
+  refreshPeople()
   return data?.length ? { miss: '' } : { miss: 'friends.askChanged' }
 }
 
@@ -1831,7 +1835,11 @@ function pulseWatch(user, fn) {
 /** Look again now, for example after answering something in the inbox. */
 export function refreshPeople() {
   if (!pulse.userId) return Promise.resolve()
-  return pulseLook()
+  // A look already running may have counted before the change: look again
+  // once it ends (or hangs past PULSE_HUNG_MS).
+  if (!pulse.busy) return pulseLook()
+  const hung = new Promise((done) => setTimeout(done, PULSE_HUNG_MS))
+  return Promise.race([pulse.busy.catch(() => {}), hung]).then(() => pulseLook())
 }
 
 /** What the banner says for a piece of news, and where a tap goes. */
