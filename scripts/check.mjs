@@ -2898,7 +2898,7 @@ test('shop drops wait for their day and the server sells the same coin items', (
   assert.ok(isTeased(drop, '2026-10-08'), 'still coming the day before')
   assert.ok(!isTeased(drop, '2026-10-09'), 'on the day it is for sale, not coming')
   assert.ok(!isTeased({ id: 'b' }, '2026-10-05'), 'undated items are never coming')
-  const sql = readFileSync(new URL('../supabase/shop-catalog.sql', import.meta.url), 'utf8')
+  const sql = ['shop-catalog', 'event-items'].map((name) => readFileSync(new URL('../supabase/' + name + '.sql', import.meta.url), 'utf8')).join('')
   for (const look of SHOP_CALENDAR.looks.filter((item) => item.coins > 0)) {
     assert.ok(sql.includes("('look', '" + look.id + "'"), 'coin look ' + look.id + ' is in shop_catalog')
   }
@@ -2912,6 +2912,51 @@ test('shop drops wait for their day and the server sells the same coin items', (
       if (item.from) assert.match(item.from, /^\d{4}-\d{2}-\d{2}$/)
     }
   }
+})
+
+test('free event items: claimable in their window, never after, kept by owners', async () => {
+  const P = await import('../src/lib/purse.js')
+  const free = [...SHOP_CALENDAR.buddies, ...SHOP_CALENDAR.cheers].filter((item) => item.free)
+  assert.deepEqual(free.map((item) => item.id).sort(), ['bat', 'boo'])
+  for (const item of free) {
+    assert.equal(item.gems || 0, 0, item.id + ' costs nothing')
+    assert.ok(item.from && item.until, item.id + ' has a window')
+    assert.ok(!P.isLive(item, '2026-10-27') && P.isTeased(item, '2026-10-27'), 'coming the day before, not claimable')
+    assert.ok(P.isLive(item, '2026-10-28') && P.isLive(item, '2026-10-31'), 'live on both ends')
+    assert.ok(!P.isLive(item, '2026-11-01') && !P.isTeased(item, '2026-11-01'), 'gone after, never coming again')
+    assert.equal(P.freeLastDay(item), '2026-10-31')
+  }
+  assert.ok(P.shopBuddies('2026-10-30').some((item) => item.id === 'bat') && !P.shopBuddies('2026-11-02').some((item) => item.id === 'bat'))
+  assert.ok(P.liveCheers('2026-10-30').some((item) => item.id === 'boo') && !P.liveCheers('2026-11-02').some((item) => item.id === 'boo'))
+  assert.equal(P.shopTag(normalizePurse({}), 'buddy', free.find((item) => item.id === 'bat')).free, true)
+  assert.equal(P.shopTag(normalizePurse({ buddies: ['ant', 'bat'] }), 'buddy', free.find((item) => item.id === 'bat')).free, undefined, 'owned is not offered again')
+  // The local claim follows today's date: it works while the window is open, and is refused otherwise.
+  for (const [id, buy, key] of [['bat', P.buyBuddy, 'buddies'], ['boo', P.buyCheer, 'cheers']]) {
+    const out = buy({ gems: 0 }, id)
+    const open = P.isLive(free.find((item) => item.id === id))
+    assert.equal(!out.miss, open, id + ' claim matches the window')
+    if (open) assert.equal(out.book.gems, 0, 'no gems move')
+    assert.equal(normalizePurse(out.book)[key].includes(id), open)
+  }
+  // Owners keep it and still see it in Collection after the window.
+  const owned = normalizePurse({ buddies: ['ant', 'bat'], cheers: ['lime', 'boo'], buddyOn: 'bat', cheerOn: 'boo' })
+  assert.deepEqual([owned.buddyOn, owned.cheerOn], ['bat', 'boo'], 'still worn')
+  assert.ok(P.buddiesOnOrOwned(owned, '2026-11-02').some((item) => item.id === 'bat'))
+  assert.ok(P.cheersOnOrOwned(owned, '2026-11-02').some((item) => item.id === 'boo'))
+  assert.ok(!P.buddiesOnOrOwned(normalizePurse({}), '2026-11-02').some((item) => item.id === 'bat'), 'not owned, not offered')
+  assert.ok(!P.giftItems().buddies.some((item) => item.id === 'bat') && !P.giftItems().cheers.some((item) => item.id === 'boo'), 'never a gift')
+  // A hearted event item is a goal only while it can be claimed, and drops off once it is gone.
+  const hearted = normalizePurse({ wish: ['buddy:bat'] })
+  assert.equal(P.wishGoal(hearted, '2026-10-25'), null)
+  assert.equal(P.wishGoal(hearted, '2026-11-02'), null)
+  assert.equal(P.wishGoal(hearted, '2026-10-29')?.id, 'bat')
+  assert.deepEqual(P.asWish(['buddy:bat'], {}, '2026-10-29'), ['buddy:bat'])
+  assert.deepEqual(P.asWish(['buddy:bat', 'cheer:boo', 'frame:pumpkins'], {}, '2026-11-02'), [])
+  // A server sync keeps a free item claimed on this phone.
+  const { applyGemOwnedToBook } = await import('../src/lib/wallet.js')
+  const synced = normalizePurse(applyGemOwnedToBook({ buddies: ['ant', 'bat', 'cat'], cheers: ['lime', 'boo', 'rain'] }, { gems: 1, looks: [], cheers: [], buddies: [] }))
+  assert.deepEqual(synced.buddies, ['ant', 'bat'])
+  assert.deepEqual(synced.cheers, ['lime', 'boo'])
 })
 
 test('an invite link carries its code to the app on both phones', () => {
@@ -6441,8 +6486,8 @@ const frameGeo = await import('../native/components/frames/geometry.js')
 test('every card frame id has art, and the vine and moon math hold', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const ids = frameGeo.FRAME_IDS
-  assert.equal(ids.length, 77)
-  assert.equal(new Set(ids).size, 77)
+  assert.equal(ids.length, 78)
+  assert.equal(new Set(ids).size, 78)
   const art = readFileSync(path.join(root, 'native/components/frames/art.jsx'), 'utf8')
   const map = art.slice(art.indexOf('export const FRAME_ART = {'))
   const keys = [...map.slice(0, map.indexOf('\n}')).matchAll(/^\s+(\w+): \{/gm)].map((m) => m[1])
@@ -9481,7 +9526,7 @@ test('every table says how people hear about it: a push, or why not', () => {
   const quiet = {
     'own data, no one else': 'admins answer_keys answer_log answer_undos app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims',
     'counters, caps and logs': 'check_on_pushed family_code_misses family_miss_days family_summary_sent friend_ask_log friend_id_misses push_queue push_to_counts send_counts we_done_pushed we_slot_repair_ran report_mail_queue shop_drop_sent',
-    'catalogs': 'gift_catalog shop_catalog',
+    'catalogs': 'gift_catalog shop_catalog event_catalog',
     'quiet on purpose: a block, a pass or a leave would tell someone they were dropped': 'blocks send_answers app_send_answers we_turns',
     'shown when opened, no event of its own': 'did_you_links we_links families family_lamps family_tags shared_notes we_notes reports waitlist',
   }

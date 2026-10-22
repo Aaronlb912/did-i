@@ -21,6 +21,7 @@ const COAT = {
   axolotl: { body: '#ffc2d4', belly: '#ffe6ee', ear: '#ff6f91' },
   turtle: { body: '#9edb86', belly: '#a0753e', ear: '#8fd27a' },
   reindeer: { body: '#a8703f', belly: '#f0d6b0', ear: '#c9a06a' },
+  bat: { body: '#6b5a8e', belly: '#d9ccef', ear: '#f4a6c4' },
 }
 
 function spot(box, x, y, w, h, color, radius) {
@@ -186,6 +187,19 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
       </View>
     )
   }
+  if (id === 'bat') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 9, 17, 30, 28, coat.body)} />
+        <View style={spot(box, 15, 31, 18, 14, coat.belly)} />
+        <View style={spot(box, 17.1, 24, 4.8, 6, pupil)} />
+        <View style={spot(box, 26.1, 24, 4.8, 6, pupil)} />
+        <View style={spot(box, 22.3, 31, 3.4, 2.4, coat.ear)} />
+        <View style={spot(box, 12.5, 42.7, 9, 5.6, '#4f4170')} />
+        <View style={spot(box, 26.5, 42.7, 9, 5.6, '#4f4170')} />
+      </View>
+    )
+  }
   if (id === 'snowman') {
     return (
       <View style={{ width, height }}>
@@ -337,6 +351,10 @@ const EYES = {
   turtle: [
     [[19.5, 25, 2.2, 2.8, DARK], [20.2, 24.1, 0.7, 0.9, ...SHINE]],
     [[28.5, 25, 2.2, 2.8, DARK], [29.2, 24.1, 0.7, 0.9, ...SHINE]],
+  ],
+  bat: [
+    [[19.5, 27, 2.4, 3, DARK], [20.3, 26, 0.8, 1, ...SHINE]],
+    [[28.5, 27, 2.4, 3, DARK], [29.3, 26, 0.8, 1, ...SHINE]],
   ],
   reindeer: [
     [[19.5, 27, 2.2, 2.8, DARK], [20.2, 26.1, 0.7, 0.9, ...SHINE]],
@@ -761,6 +779,52 @@ function BuddyDrawing({ id, width, height, eyes }) {
         <Ellipse cx="24" cy="35" rx="1.1" ry="1.1" fill="#2d241c" />
         <Ellipse cx="24" cy="39" rx="1.1" ry="1.1" fill="#2d241c" />
         <Ellipse cx="24" cy="43" rx="1.1" ry="1.1" fill="#2d241c" />
+      </Svg>
+    )
+  }
+
+  if (id === 'bat') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Polygon points="9,19 19,19 14,6.5" fill="#6b5a8e" />
+        <Polygon points="29,19 39,19 34,6.5" fill="#6b5a8e" />
+        <Polygon points="11.2,18.5 16.8,18.5 14,10.5" fill="#f4a6c4" />
+        <Polygon points="31.2,18.5 36.8,18.5 34,10.5" fill="#f4a6c4" />
+        <Ellipse cx="24" cy="31" rx="15" ry="14" fill="#6b5a8e" />
+        <Ellipse cx="24" cy="37" rx="9" ry="7" fill="#d9ccef" />
+        <Polygon points="0.6,42.9 15.4,42.9 8,29.7" fill="#40345e" />
+        <Polygon points="0.8,42.3 6.2,42.3 3.5,47.1" fill="#40345e" />
+        <Polygon points="5.3,42.3 10.7,42.3 8,47.1" fill="#40345e" />
+        <Polygon points="9.8,42.3 15.2,42.3 12.5,47.1" fill="#40345e" />
+        <Polygon points="1.4,42.3 14.6,42.3 8,29.9" fill="#5d4e84" />
+        <Polygon points="1.5,42.3 5.7,42.3 3.6,46.1" fill="#5d4e84" />
+        <Polygon points="5.9,42.3 10.1,42.3 8,46.1" fill="#5d4e84" />
+        <Polygon points="10.3,42.3 14.5,42.3 12.4,46.1" fill="#5d4e84" />
+        <Line x1="8" y1="29.5" x2="3.6" y2="46.3" stroke="#40345e" strokeWidth="0.6" strokeLinecap="round" />
+        <Line x1="8" y1="29.5" x2="8" y2="46.3" stroke="#40345e" strokeWidth="0.6" strokeLinecap="round" />
+        <Line x1="8" y1="29.5" x2="12.4" y2="46.3" stroke="#40345e" strokeWidth="0.6" strokeLinecap="round" />
+        <Polygon points="5.3,31.6 7.1,31.6 6.2,28.6" fill="#d9ccef" />
+        <Polygon points="32.6,42.9 47.4,42.9 40,29.7" fill="#40345e" />
+        <Polygon points="41.8,42.3 47.2,42.3 44.5,47.1" fill="#40345e" />
+        <Polygon points="37.3,42.3 42.7,42.3 40,47.1" fill="#40345e" />
+        <Polygon points="32.8,42.3 38.2,42.3 35.5,47.1" fill="#40345e" />
+        <Polygon points="33.4,42.3 46.6,42.3 40,29.9" fill="#5d4e84" />
+        <Polygon points="42.3,42.3 46.5,42.3 44.4,46.1" fill="#5d4e84" />
+        <Polygon points="37.9,42.3 42.1,42.3 40,46.1" fill="#5d4e84" />
+        <Polygon points="33.5,42.3 37.7,42.3 35.6,46.1" fill="#5d4e84" />
+        <Line x1="40" y1="29.5" x2="44.4" y2="46.3" stroke="#40345e" strokeWidth="0.6" strokeLinecap="round" />
+        <Line x1="40" y1="29.5" x2="40" y2="46.3" stroke="#40345e" strokeWidth="0.6" strokeLinecap="round" />
+        <Line x1="40" y1="29.5" x2="35.6" y2="46.3" stroke="#40345e" strokeWidth="0.6" strokeLinecap="round" />
+        <Polygon points="40.9,31.6 42.7,31.6 41.8,28.6" fill="#d9ccef" />
+        {eyes ? <EyesInline parts={parts} id="bat" /> : null}
+        <Ellipse cx="24" cy="32.2" rx="1.7" ry="1.2" fill="#f4a6c4" />
+        <Line x1="22.4" y1="34.6" x2="25.6" y2="34.6" stroke="#4f4170" strokeWidth="0.7" strokeLinecap="round" />
+        <Polygon points="23.8,34.9 26.4,34.9 25.1,38.1" fill="#4f4170" />
+        <Polygon points="24.2,34.9 26,34.9 25.1,37.3" fill="#ffffff" />
+        <Ellipse cx="16.5" cy="32.2" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="31.5" cy="32.2" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="17" cy="45.5" rx="4.5" ry="2.8" fill="#4f4170" />
+        <Ellipse cx="31" cy="45.5" rx="4.5" ry="2.8" fill="#4f4170" />
       </Svg>
     )
   }

@@ -75,6 +75,10 @@ import {
   BOW_TAILS,
   BUTTERFLY_FEELERS,
   BUTTERFLY_VIEW,
+  GHOST_BODY,
+  GHOST_EYES,
+  GHOST_MOUTH,
+  GHOST_VIEW,
   DISCO_GRID,
   GIFT_BAND,
   GIFT_BOW,
@@ -188,6 +192,16 @@ function winterChipArt(id) {
           <path d={WING_LOW_R} fill="var(--di-on-deep)" />
           <ellipse cx="20" cy="17" rx="1.6" ry="7" fill="var(--di-ink)" />
           <path d={BUTTERFLY_FEELERS} fill="none" stroke="var(--di-ink)" strokeWidth="1" strokeLinecap="round" />
+        </svg>
+      )
+    case 'boo':
+      return (
+        <svg viewBox={GHOST_VIEW}>
+          <path d={GHOST_BODY} fill="var(--di-on)" />
+          {GHOST_EYES.map(([cx, cy, rx, ry], i) => (
+            <ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} fill="var(--di-ink)" />
+          ))}
+          <ellipse cx={GHOST_MOUTH[0]} cy={GHOST_MOUTH[1]} rx={GHOST_MOUTH[2]} ry={GHOST_MOUTH[3]} fill="var(--di-ink)" />
         </svg>
       )
     case 'bounce':

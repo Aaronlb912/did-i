@@ -34,6 +34,8 @@ const AT = {
   snowman: { ex: [20, 28], ey: 23, er: 3.5, crown: 15.5, neck: 33.5, side: 13 },
   // Antlers rise from the top of the head; head items sit on it, in front of their bases.
   reindeer: { ex: [19.5, 28.5], ey: 27, er: 3.5, crown: 17.5, neck: 39.5, side: 14 },
+  // Tall ears and folded wings: head items sit in front of the ear bases, back items behind the wings.
+  bat: { ex: [19.5, 28.5], ey: 27, er: 3.7, crown: 17, neck: 40, side: 16 },
 }
 
 const INK = '#2d241c'
