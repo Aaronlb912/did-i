@@ -71,6 +71,7 @@ import {
 } from '../../src/lib/people.js'
 import { sharedNotesFrom } from '../../src/lib/social-amounts.js'
 import { keptProfileName } from '../../src/lib/cloud-sync.js'
+import { onSocialLive } from '../../src/lib/social-live.js'
 import {
   FRIEND_CHEER_CAP,
   FRIEND_CHEER_GEMS,
@@ -867,6 +868,11 @@ export function PeopleScreen({ book, onChange }) {
   useEffect(() => {
     load()
   }, [load, pulse.inbox, pulse.asks, pulse.friends, pulse.families])
+
+  // A Did we card changed while this is open: the invite tile count reads again.
+  useEffect(() => onSocialLive((kinds) => {
+    if (kinds.has('we') || kinds.has('weMembers')) load()
+  }), [load])
 
   function say(words) {
     setMiss('')

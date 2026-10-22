@@ -45,6 +45,7 @@ import {
   readCoinCatalog,
   readGemBalance,
   readGemOwned,
+  shopWriteCount,
 } from './wallet.js'
 import { closeShelfPastNights } from './daily.js'
 import { noteSocialLive } from './social-live.js'
@@ -503,11 +504,15 @@ export async function startLiveAnswers() {
       if (status !== 'SUBSCRIBED' || live !== mine) return
       // Back after a dropped connection: pings sent in the gap are gone, so
       // every screen reads again (the people pulse waits 15 minutes otherwise).
-      if (mine.joined) for (const kind of LIVE_KINDS) noteSocialLive(kind)
+      if (mine.joined && Date.now() - lastCatchUp > 60000) {
+        lastCatchUp = Date.now()
+        for (const kind of LIVE_KINDS) noteSocialLive(kind)
+      }
       mine.joined = true
     })
 }
 
+let lastCatchUp = 0
 const LIVE_KINDS = ['ask', 'friend', 'gift', 'familyInfo', 'weMembers', 'we', 'family', 'send']
 
 export function stopLiveAnswers() {
@@ -528,6 +533,7 @@ async function pullAndMergeOnce() {
   const db = cloud()
   if (!db) return null
   const run = syncRun
+  const shopAtStart = shopWriteCount()
   try {
     const user = await meOrThrow()
     if (!user) {
@@ -648,12 +654,15 @@ async function pullAndMergeOnce() {
       }
     }
 
+    // A buy during this sync makes these reads older than the shelf: skip them.
     const bal = await readGemBalance()
-    if (bal != null) written = applyGemBalanceToShelf(written, bal)
     const coinBag = await readCoinCatalog()
-    if (coinBag) written = applyCoinCatalogToShelf(written, coinBag)
     const gemBag = await readGemOwned()
-    if (gemBag) written = applyGemOwnedToShelf(written, gemBag)
+    if (shopWriteCount() === shopAtStart) {
+      if (bal != null) written = applyGemBalanceToShelf(written, bal)
+      if (coinBag) written = applyCoinCatalogToShelf(written, coinBag)
+      if (gemBag) written = applyGemOwnedToShelf(written, gemBag)
+    }
 
     const uploadAt = new Date().toISOString()
     written = reconcileShelfFromWidget(written)
