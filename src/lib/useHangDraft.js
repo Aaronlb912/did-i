@@ -137,9 +137,12 @@ export function useHangDraft({
       if (unit) next.amountUnit = unit
     }
     // Stopped or asked again elsewhere while the form was open: that stays.
+    // So do the pause records, or the paused days come back as misses.
     if (editing) {
-      if (lamp.archived) next.archived = lamp.archived
-      else delete next.archived
+      for (const key of ['archived', 'pausedOn', 'pauses']) {
+        if (lamp[key]) next[key] = lamp[key]
+        else delete next[key]
+      }
     }
     // Past days keep the schedule they had, so a schedule edit never ends a streak.
     const today = boardDate(clock, book.dayFoldHour)

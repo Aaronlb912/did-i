@@ -884,6 +884,11 @@ test('an owned look can be worn again after it leaves the shop', () => {
   assert.ok(body.indexOf('purse.looks.includes(id)') < body.indexOf("miss: 'shop.miss.lookGone'"))
 })
 
+test('saving the edit page keeps the pause record set while it was open', () => {
+  const src = readFileSync(new URL('../src/lib/useHangDraft.js', import.meta.url), 'utf8')
+  assert.match(src, /for \(const key of \['archived', 'pausedOn', 'pauses'\]\)/)
+})
+
 test('resuming a paused question keeps its streak', async () => {
   const { toggleArchive } = await import('../src/lib/board-ops.js')
   const { normalizeLamp } = await import('../src/lib/board-json.js')

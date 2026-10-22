@@ -1111,6 +1111,15 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
       setAddMiss(t('boards.addSame'))
       return
     }
+    // A parked folder with that name: open it, which brings it back.
+    const asleep = (boards || []).find((item) => item.archived && item.title.trim().toLowerCase() === title.toLowerCase())
+    if (asleep) {
+      setAdding(false)
+      setNewName('')
+      setAddMiss('')
+      onSelect?.(asleep.id)
+      return
+    }
     onAdd?.(title)
     setAdding(false)
     setNewName('')
