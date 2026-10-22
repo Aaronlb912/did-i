@@ -95,6 +95,7 @@ const files = [
   'supabase/app-send-keep-once.sql',
   'supabase/shared-notes-window.sql',
   'supabase/we-live-edit.sql',
+  'supabase/answer-undos.sql',
   'supabase/drop-tonight.sql',
 ]
 

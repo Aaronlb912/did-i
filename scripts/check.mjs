@@ -884,6 +884,16 @@ test('an owned look can be worn again after it leaves the shop', () => {
   assert.ok(body.indexOf('purse.looks.includes(id)') < body.indexOf("miss: 'shop.miss.lookGone'"))
 })
 
+test('an undo is noted before the delete, and pulls drop undone answers', () => {
+  const src = readFileSync(new URL('../src/lib/answer-log.js', import.meta.url), 'utf8')
+  const undo = src.slice(src.indexOf('async function undoOnce'))
+  assert.ok(undo.indexOf("rpc('note_answer_undo'") > 0 && undo.indexOf("rpc('note_answer_undo'") < undo.indexOf('.delete()'))
+  const pull = src.slice(src.indexOf('export async function pullAnswers'), src.indexOf('async function pullUndos'))
+  // Drop before the merge, or a restored earlier answer is lost behind the undone one.
+  assert.match(pull, /dropSentAnswers\(shelf, undos\)[\s\S]*applyAnswers\(dropped\.shelf, data\)/)
+  assert.match(src, /write\(SEEN_UNDO, ''\)/, 'sign out forgets the undo mark')
+})
+
 test('saving the edit page keeps the pause record set while it was open', () => {
   const src = readFileSync(new URL('../src/lib/useHangDraft.js', import.meta.url), 'utf8')
   assert.match(src, /for \(const key of \['archived', 'pausedOn', 'pauses'\]\)/)
@@ -9419,7 +9429,7 @@ test('every table says how people hear about it: a push, or why not', () => {
     report_actions: 'queue_report_removed_push',
   }
   const quiet = {
-    'own data, no one else': 'admins answer_keys answer_log app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims',
+    'own data, no one else': 'admins answer_keys answer_log answer_undos app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims',
     'counters, caps and logs': 'check_on_pushed family_code_misses family_miss_days family_summary_sent friend_ask_log friend_id_misses push_queue push_to_counts send_counts we_done_pushed we_slot_repair_ran report_mail_queue shop_drop_sent',
     'catalogs': 'gift_catalog shop_catalog',
     'quiet on purpose: a block, a pass or a leave would tell someone they were dropped': 'blocks send_answers app_send_answers we_turns',
