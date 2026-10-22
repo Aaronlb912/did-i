@@ -83,7 +83,9 @@ is fallback only — do not start an EAS build unless asked).
 - **iOS TestFlight/IPA**: `.github/workflows/ios-ipa.yml` or `npm run
   ios:build:store` (Expo). Both run `scripts/ios-bump-build.mjs`, which takes
   and pushes the next `ios.buildNumber` in `app.json` before building.
-- **OTA**: `npm run update:prod` for JS-only changes (`expo-updates`). Native
+- **OTA**: `npm run update:prod` from a local checkout of merged master, for
+  JS-only changes (`expo-updates`). Merging publishes nothing; the GitHub
+  `ota update` workflow is manual only, to save Actions minutes. Native
   changes need a build; bump `version` in `app.json` when native code changes.
 
 Full details, signing secret names, and timings: `docs/native-rebuild.md`.
