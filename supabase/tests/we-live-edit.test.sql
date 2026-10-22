@@ -20,7 +20,7 @@ begin
   values (card, a, 'Did we walk?', 'all', 'all', 'daily', current_date - 1);
   insert into public.we_members (card_id, user_id, state, joined_at)
   values (card, a, 'in', now()), (card, b, 'in', now());
-  insert into public.we_members (card_id, user_id, state) values (card, c, 'declined');
+  insert into public.we_members (card_id, user_id, state) values (card, c, 'left');
   delete from realtime.messages;
 
   update public.we_cards set archived = true where id = card;
@@ -30,6 +30,6 @@ begin
   select count(*) into n from realtime.messages where topic = 'didi:' || c;
   if n <> 0 then raise exception 'FAIL: someone not on the card was pinged'; end if;
 
-  raise notice 'ok';
+  raise exception 'SQL TESTS PASSED';
 end;
 $$;
