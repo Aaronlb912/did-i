@@ -411,11 +411,11 @@ export function useTonightStack({
     setFaceId('')
   }
 
-  function restStack() {
+  function restStack(quiet) {
     setRestNight(true)
     setSkipReview(false)
     setFaceId('')
-    feelTap('tick')
+    if (!quiet) feelTap('tick')
   }
 
   // The still-open list: each noped question with its own way out.

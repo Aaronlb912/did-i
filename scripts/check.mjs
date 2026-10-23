@@ -9813,10 +9813,21 @@ test('still open: a skipped family row is listed in the finish list, never as a 
   assert.deepEqual(skippedFamilyRows(rows, ['fam:f1:a:2026-10-08', 'famkeep:f1:a:2026-10-08']), [], 'Keep not yet hides it')
   const tonight = read('native/screens/TonightScreen.jsx')
   assert.ok(tonight.includes('skippedFamilyRows(family.rows, peopleGone)'))
-  assert.ok(tonight.includes('rows={stillOpenRows}'), 'the finish list renders the family rows')
+  assert.ok(tonight.includes('const top = stillOpenRows[0]'), 'Look again deals the family rows too')
   assert.ok(tonight.includes("answerFamilyLamp(row.family.id, row.lamp.id, boardDate(), 'yes')"))
   const people = read('src/lib/people-tonight.js')
   assert.match(people, /for \(const row of familyRows\) \{\s*if \(row\.answer\) continue/, 'answered family rows stay off the cards')
+})
+
+test('Not yets come back as swipe cards only after Look again; the meter leads with left', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.match(tonight, /if \(finishList && !lookAgain\) stack\.restStack\(true\)/)
+  assert.ok(tonight.includes('const stillOpenRows = [...familyOpen, ...stack.stillOpen]'), 'family first, so leaving your own last one cannot strand them')
+  assert.match(tonight, /\} else if \(finishList && lookAgain\) \{[\s\S]{0,2000}<SwipeCardHost\s+key="look-again"/)
+  assert.ok(!existsSync(path.join(root, 'native/components/StillOpen.jsx')), 'no tap-to-Did list')
+  const meter = readFileSync(path.join(root, 'native/components/NightMeter.jsx'), 'utf8')
+  assert.match(meter, /\{open\}\s*<\/Text>/, 'the big number is what is left')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
