@@ -67,11 +67,11 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
   // Same rows as the total, or an optional Not yet hides a required open one.
   const nope = countedTonightRows((due || []).filter((row) => row?.lamp && row?.dateIso)).filter((row) => row.answer?.status === 'skip').length
   const open = Math.max(0, left - nope)
-  // Counts answers, so it reads as done and left, not as a card position.
+  // Leads with what is left, the number people expect to be the big one.
   const label = [
-    t('tonight.meterDone'),
+    t('tonight.meterLeftWord'),
+    answered ? t('tonight.meterDoneN', { n: answered }) : '',
     nope ? t('tonight.meterNope', { n: nope }) : '',
-    open ? t('tonight.meterLeft', { n: open }) : '',
   ]
     .filter(Boolean)
     .join(' · ')
@@ -86,9 +86,9 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
       accessibilityLabel={`${t('tonight.meterDoneAria', { n: answered, left: open })}${nope ? `, ${t('tonight.meterNope', { n: nope })}` : ''}${waiting ? `, ${waiting}` : ''}`}>
       <View style={styles.top}>
         {/* Plain text, not RollNumber: its digit moves on the UI thread, which
-            the cheer keeps busy, so done lagged the left count by a second. */}
+            the cheer keeps busy, so the big count lagged by a second. */}
         <Text style={[styles.count, { color: hallOn || done ? colors.on : colors.ink }]} accessible={false}>
-          {answered}
+          {open}
         </Text>
         <Text style={[styles.label, { color: colors.inkDim }]}>{label}</Text>
         {waiting ? (
