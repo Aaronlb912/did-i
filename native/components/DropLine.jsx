@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { frameText } from '../../src/lib/frames.js'
 import { buddyText, cheerText, freshDrop, lookText } from '../../src/lib/purse.js'
 import { boardDate } from '../../src/lib/recurrence.js'
 import { goHash } from '../navigation/hash.js'
@@ -19,14 +20,18 @@ function read(key) {
 }
 
 function itemName({ type, item }) {
-  const key = type === 'look' ? lookText(item.id, 'name') : type === 'cheer' ? cheerText(item.id, 'name') : buddyText(item.id, 'name')
+  const key =
+    type === 'look' ? lookText(item.id, 'name')
+      : type === 'cheer' ? cheerText(item.id, 'name')
+      : type === 'frame' ? frameText(item.id, 'name')
+      : buddyText(item.id, 'name')
   return t(key)
 }
 
 // One line on Home the day a shop drop goes live, and the day after.
 export function DropLine({ colors }) {
   const today = (typeof __DEV__ !== 'undefined' && __DEV__ && read(TEST_KEY)) || boardDate(new Date())
-  const drop = freshDrop(today)
+  const drop = freshDrop(today, { frames: true })
   const [seen, setSeen] = useState(() => read(SEEN_KEY))
   if (!drop || !drop.items.length || seen === drop.date) return null
   const names = drop.items.slice(0, 3).map(itemName).join(', ')

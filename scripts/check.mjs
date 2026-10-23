@@ -78,7 +78,7 @@ import {
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
 import { applyGemOwnedToBook, validateCoinItem } from '../src/lib/wallet.js'
-import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, WISH_MAX, buyLook, isLive, isTeased, normalizePurse, offSeason, seasonNext, shopRow, toggleWish, wishGoal, wishLine, CHEERS as SHOP_CHEERS } from '../src/lib/purse.js'
+import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, WISH_MAX, buyLook, dropSlides, freshDrop, isLive, isTeased, normalizePurse, offSeason, seasonNext, shopRow, toggleWish, wishGoal, wishLine, CHEERS as SHOP_CHEERS } from '../src/lib/purse.js'
 const CHEERS_FOR_SIGN_IN = () => SHOP_CHEERS.find((item) => item.gems > 0).id
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import '../src/lib/locales-all.js'
@@ -9828,6 +9828,17 @@ test('Not yets come back as swipe cards only after Look again; the meter leads w
   assert.ok(!existsSync(path.join(root, 'native/components/StillOpen.jsx')), 'no tap-to-Did list')
   const meter = readFileSync(path.join(root, 'native/components/NightMeter.jsx'), 'utf8')
   assert.match(meter, /\{left\}\s*<\/Text>/, 'the big number is what is left, Not yets included')
+})
+
+test('shop drop banners show new frames on the phone, sold ones only', () => {
+  const types = (slide) => slide.items.map((row) => `${row.type}:${row.item.id}`)
+  const coming = dropSlides('2026-11-14', { frames: true })[0]
+  assert.equal(coming.kind, 'coming')
+  assert.ok(types(coming).includes('frame:linked') && types(coming).includes('frame:bedtime'))
+  assert.ok(!types(dropSlides('2026-11-21', { frames: true })[0]).includes('frame:countdown'), 'season frames stay on the Frames page')
+  assert.ok(!dropSlides('2026-11-20')[0].items.some((row) => row.type === 'frame'), 'the website draws no frame tiles')
+  assert.ok(freshDrop('2026-11-20', { frames: true }).items.some((row) => row.type === 'frame'))
+  assert.ok(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8').includes('dropSlides(undefined, { frames: true })'))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
