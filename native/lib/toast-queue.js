@@ -36,7 +36,7 @@ function keepNotice(toast) {
       .join('. ')
     addNotice({ id: toast.id, kind: 'mark', title: t('marks.new'), text, go: { path: '/marks' } })
   } else if (toast.kind === 'frame') {
-    addNotice({ id: toast.id, kind: 'frame', title: t('frames.unlocked'), text: t(frameText(toast.frameId, 'name')), go: { path: '/shop/frames' } })
+    addNotice({ id: toast.id, kind: 'frame', title: t('frames.unlocked'), text: t(frameText(toast.frameId, 'name')), go: { path: '/kit', id: 'frames' } })
   } else if (toast.kind === 'we') {
     addNotice({ id: toast.id, kind: 'we', title: t('we.title'), text: toast.text || '', go: { path: '/we', id: toast.cardId } })
   }

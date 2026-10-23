@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useNavigation } from '@react-navigation/native'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { useFrameActive } from '../components/frames/index.js'
-import { keepEarnedFrames, takeFramesToAnnounce, wearFrame, wornFrame } from '../../src/lib/frames.js'
+import { frameText, keepEarnedFrames, takeFramesToAnnounce, wearFrame, wornFrame } from '../../src/lib/frames.js'
+import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { nightProgress } from '../../src/lib/night-progress.js'
 import { addDaysIso, boardDate } from '../../src/lib/recurrence.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
@@ -405,18 +406,41 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     if (!fresh.length) return
     feelTap('did')
     if (purse.cheerOn) fireCheer(purse.cheerOn, 3)
+    const wear = (id) => {
+      const now = bookNow.current
+      if (String(now?.frame || '') === id) return
+      const worn = wearFrame(now, id, frameCtxNow.current)
+      if (!worn.miss) onChangeNow.current(worn.book)
+    }
+    // The first new frame gets a pop-up; others, or one while a sheet is up, a toast.
+    const popId = sheetIsUp() ? '' : fresh[0]
+    if (popId) {
+      publishSheet({
+        preview: <FramePreview id={popId} colors={colors} size={120} />,
+        kicker: t('frames.unlocked'),
+        title: t(frameText(popId, 'name')),
+        body: t('kit.added'),
+        goLabel: t('frames.wearIt'),
+        onGo: () => {
+          wear(popId)
+          publishSheet(null)
+        },
+        moreLabel: t('gift.viewKit'),
+        onMore: () => {
+          publishSheet(null)
+          goHash('/kit', { id: 'frames' })
+        },
+        colors,
+      })
+    }
     for (const id of fresh) {
+      if (id === popId) continue
       showToast({
         id: `frame:${id}`,
         kind: 'frame',
         frameId: id,
         ms: 6000,
-        onWear: () => {
-          const now = bookNow.current
-          if (String(now?.frame || '') === id) return
-          const worn = wearFrame(now, id, frameCtxNow.current)
-          if (!worn.miss) onChangeNow.current(worn.book)
-        },
+        onWear: () => wear(id),
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

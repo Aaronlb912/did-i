@@ -6382,6 +6382,17 @@ test('family summary hour and phone names: prefs clamp, SQL order, menu resets t
   assert.ok(!hash.includes('routes: [routes[0], { name: route.path'), 'menu navigation keeps the page you were on behind it')
 })
 
+await testAsync('an earned frame from a later drop does not unlock before its day, and the unlock opens the Collection', async () => {
+  const F = await import('../src/lib/frames.js')
+  const candles = F.frameById('candles')
+  assert.equal(F.frameEarned(candles, { bestStreak: 20, today: '2026-10-22' }), false)
+  assert.equal(F.frameEarned(candles, { bestStreak: 20, today: candles.from }), true)
+  assert.ok(!F.framesToKeep({}, { bestStreak: 20, today: '2026-10-22' }).includes('candles'))
+  const toasts = readFileSync('native/lib/toast-queue.js', 'utf8') + readFileSync('native/components/ToastHost.jsx', 'utf8')
+  assert.ok(!toasts.includes('/shop/frames'), 'a new frame opens the Collection, not the shop')
+  assert.match(readFileSync('native/screens/TonightScreen.jsx', 'utf8'), /publishSheet\(\{\s*preview: <FramePreview id=\{popId\}/, 'a new frame gets a pop-up')
+})
+
 await testAsync('frames: still frames cost coins, animated cost gems, and the server sells the same', async () => {
   const F = await import('../src/lib/frames.js')
   for (const frame of F.FRAMES) {

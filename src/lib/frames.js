@@ -214,6 +214,8 @@ export function isSoldFrame(id) {
 // Earned now, from what the shelf shows tonight.
 export function frameEarned(frame, ctx = {}) {
   if (!frame || frame.kind !== 'earned') return false
+  // A dated frame is not out yet: no unlock before its drop day.
+  if (!frameLive(frame, ctx.today || undefined)) return false
   if (frame.earn === 'streak') return (Number(ctx.bestStreak) || 0) >= frame.need
   if (frame.earn === 'freeze') return Boolean(ctx.everFrozen)
   if (frame.earn === 'gifts') return (Number(ctx.giftsSent) || 0) >= frame.need
