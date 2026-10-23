@@ -1058,7 +1058,7 @@ export function ShopScreen({ book, onChange }) {
   const prefs = usePrefs()
   const purse = normalizePurse(book)
   const coat = activeLook(book)
-  const slides = dropSlides()
+  const slides = dropSlides(undefined, { frames: true })
   const accessoryList = accessoriesForSale(boardDate(new Date()))
   const rows = [
     { type: 'look', list: liveLooks(), cap: t('shop.looks'), allLabel: t('shop.allLooks'), path: '/shop/looks' },

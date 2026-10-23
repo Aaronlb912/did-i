@@ -206,10 +206,16 @@ export function freeEventItem(kind, id) {
   return list.find((item) => item.id === id && isFreeEvent(item)) || null
 }
 
+// Dated frames sold for coins or gems (earned and season frames live on the
+// Frames page, where their rules are shown). Only the phone draws frame tiles, so
+// callers opt in with { frames: true }.
+const DROP_FRAMES = FRAMES.filter((frame) => frame.from && !frame.hidden && (frame.kind === 'coin' || frame.kind === 'gem'))
+const framesIf = (frames) => (frames ? DROP_FRAMES : [])
+
 // The next drop inside its teaser week, or null.
-export function comingDrop(today = boardDate(new Date())) {
+export function comingDrop(today = boardDate(new Date()), { frames = false } = {}) {
   const pick = (list) => list.filter((item) => isTeased(item, today))
-  const all = [...pick(ALL_LOOKS), ...pick(ALL_CHEERS), ...pick(ALL_BUDDIES)]
+  const all = [...pick(ALL_LOOKS), ...pick(ALL_CHEERS), ...pick(ALL_BUDDIES), ...pick(framesIf(frames))]
   if (!all.length) return null
   const date = all.reduce((low, item) => (item.from < low ? item.from : low), all[0].from)
   const on = (list) => pick(list).filter((item) => item.from === date)
@@ -226,23 +232,24 @@ function daysUntil(iso, today) {
   return Math.round(ms / 86400000)
 }
 
-function slideItems(date) {
+function slideItems(date, frames = false) {
   const at = (list, type) => list.filter((item) => item.from === date).map((item) => ({ type, item }))
-  return [...at(ALL_LOOKS, 'look'), ...at(ALL_CHEERS, 'cheer'), ...at(ALL_BUDDIES, 'buddy')]
+  return [...at(ALL_LOOKS, 'look'), ...at(ALL_CHEERS, 'cheer'), ...at(ALL_BUDDIES, 'buddy'), ...at(framesIf(frames), 'frame')]
 }
 
-export function dropSlides(today = boardDate(new Date())) {
+export function dropSlides(today = boardDate(new Date()), { frames = false } = {}) {
   const slides = []
-  const coming = comingDrop(today)
+  const coming = comingDrop(today, { frames })
   if (coming) {
-    slides.push({ kind: 'coming', date: coming.date, days: daysUntil(coming.date, today), items: slideItems(coming.date) })
+    slides.push({ kind: 'coming', date: coming.date, days: daysUntil(coming.date, today), items: slideItems(coming.date, frames) })
   }
-  const dates = [...new Set([...liveLooks(today), ...liveCheers(today), ...liveBuddies(today)].map((item) => item.from).filter(Boolean))]
+  const liveFrames = framesIf(frames).filter((frame) => frameLive(frame, today))
+  const dates = [...new Set([...liveLooks(today), ...liveCheers(today), ...liveBuddies(today), ...liveFrames].map((item) => item.from).filter(Boolean))]
     .filter((date) => date <= today)
     .sort()
     .reverse()
   for (const date of dates.slice(0, DROP_SLIDES_MAX)) {
-    slides.push({ kind: 'drop', date, items: slideItems(date) })
+    slides.push({ kind: 'drop', date, items: slideItems(date, frames) })
   }
   if (!dates.length) {
     slides.push({
@@ -259,13 +266,13 @@ export function dropSlides(today = boardDate(new Date())) {
 }
 
 // A drop that went live today or yesterday, for the one line on Home.
-export function freshDrop(today = boardDate(new Date())) {
+export function freshDrop(today = boardDate(new Date()), { frames = false } = {}) {
   const yesterday = daysBefore(today, 1)
-  const dates = [...new Set([...ALL_LOOKS, ...ALL_CHEERS, ...ALL_BUDDIES].map((item) => item.from))]
+  const dates = [...new Set([...ALL_LOOKS, ...ALL_CHEERS, ...ALL_BUDDIES, ...framesIf(frames)].map((item) => item.from))]
     .filter((date) => date && date >= yesterday && date <= today)
     .sort()
   const date = dates[dates.length - 1]
-  return date ? { date, items: slideItems(date) } : null
+  return date ? { date, items: slideItems(date, frames) } : null
 }
 
 // What a tile says under its name: owned, or its price.
