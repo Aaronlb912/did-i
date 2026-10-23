@@ -477,6 +477,8 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
                       colors={colors}
                       onTile={onTile}
                       style={styles.slideTile}
+                      // A free or earned frame has no price: say how you get it.
+                      note={type === 'frame' && !item.coins && !item.gems ? frameStatus(item, purse, frameCtxFor(readShelf().boards)).text : ''}
                     />
                   ))}
                 </View>
@@ -1085,7 +1087,13 @@ export function ShopScreen({ book, onChange }) {
         slides={slides}
         purse={purse}
         colors={colors}
-        onTile={onTile}
+        // A frame opens its own sheet, which claims a holiday frame for free and
+        // shows how an earned one is earned. A Coming one is only a look.
+        onTile={(type, item) =>
+          type === 'frame' && !isTeased(item)
+            ? openFrameSheet({ id: item.id, book, colors, ctx: frameCtxFor(readShelf().boards), onChange })
+            : onTile(type, item)
+        }
         // The link sits inside the coming page only. Pages share one height,
         // so nothing below jumps on a swipe and other pages keep no blank strip.
         foot={(slide) => {
