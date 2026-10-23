@@ -1810,6 +1810,7 @@ export const ko = {
   'web.nav.feedback': '의견',
   'web.nav.menu': '메뉴',
   'web.nav.press': '보도자료',
+  'web.nav.guides': '가이드',
   'web.press.title': '보도자료와 브랜드',
   'web.press.lead': '취재 문의는',
   'web.press.save': '다운로드',

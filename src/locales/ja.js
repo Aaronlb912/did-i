@@ -1808,6 +1808,7 @@ export const ja = {
   'web.nav.feedback': 'フィードバック',
   'web.nav.menu': 'メニュー',
   'web.nav.press': 'プレス',
+  'web.nav.guides': 'ガイド',
   'web.press.title': 'プレスとブランド',
   'web.press.lead': '取材のご連絡は',
   'web.press.save': 'ダウンロード',

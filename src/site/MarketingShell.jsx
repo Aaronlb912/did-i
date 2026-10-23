@@ -97,7 +97,8 @@ export function MarketingShell({ children, path, wide = false }) {
               <a href={`mailto:${email}`}>{email}</a>
             </>
           ) : null}{' '}
-          <a href="/press">{t('web.nav.press')}</a>
+          <a href="/press">{t('web.nav.press')}</a>{' '}
+          <a href="/guides/">{t('web.nav.guides')}</a>
         </p>
         <p>{t('legal.copyright')}</p>
       </footer>

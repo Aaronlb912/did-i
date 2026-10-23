@@ -1832,6 +1832,7 @@ export const en = {
   'web.nav.feedback': 'Feedback',
   'web.nav.menu': 'Menu',
   'web.nav.press': 'Press',
+  'web.nav.guides': 'Guides',
   'web.press.title': 'Press & Brand',
   'web.press.lead': 'For press, email',
   'web.press.save': 'Download',

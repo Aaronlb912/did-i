@@ -1803,6 +1803,7 @@ export const zh = {
   'web.nav.feedback': '反馈',
   'web.nav.menu': '菜单',
   'web.nav.press': '媒体',
+  'web.nav.guides': '指南',
   'web.press.title': '媒体与品牌',
   'web.press.lead': '媒体联系请发邮件至',
   'web.press.save': '下载',
