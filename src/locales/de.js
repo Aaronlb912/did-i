@@ -1843,6 +1843,7 @@ export const de = {
   'web.nav.feedback': 'Feedback',
   'web.nav.menu': 'Menü',
   'web.nav.press': 'Presse',
+  'web.nav.guides': 'Ratgeber',
   'web.press.title': 'Presse & Marke',
   'web.press.lead': 'Presseanfragen per E-Mail an',
   'web.press.save': 'Herunterladen',

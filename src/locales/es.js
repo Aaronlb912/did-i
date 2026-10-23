@@ -1836,6 +1836,7 @@ export const es = {
   'web.nav.feedback': 'Comentarios',
   'web.nav.menu': 'Menú',
   'web.nav.press': 'Prensa',
+  'web.nav.guides': 'Guías',
   'web.press.title': 'Prensa y marca',
   'web.press.lead': 'Para prensa, escribe a',
   'web.press.save': 'Descargar',

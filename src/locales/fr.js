@@ -1838,6 +1838,7 @@ export const fr = {
   'web.nav.feedback': 'Avis',
   'web.nav.menu': 'Menu',
   'web.nav.press': 'Presse',
+  'web.nav.guides': 'Conseils',
   'web.press.title': 'Presse et marque',
   'web.press.lead': 'Pour la presse, écris à',
   'web.press.save': 'Télécharger',
