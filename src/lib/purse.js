@@ -206,10 +206,9 @@ export function freeEventItem(kind, id) {
   return list.find((item) => item.id === id && isFreeEvent(item)) || null
 }
 
-// Dated frames sold for coins or gems (earned and season frames live on the
-// Frames page, where their rules are shown). Only the phone draws frame tiles, so
+// Dated frames: sold, earned and free holiday ones. Only the phone draws frame tiles, so
 // callers opt in with { frames: true }.
-const DROP_FRAMES = FRAMES.filter((frame) => frame.from && !frame.hidden && (frame.kind === 'coin' || frame.kind === 'gem'))
+const DROP_FRAMES = FRAMES.filter((frame) => frame.from && !frame.hidden)
 const framesIf = (frames) => (frames ? DROP_FRAMES : [])
 
 // The next drop inside its teaser week, or null.
