@@ -9840,6 +9840,7 @@ test('shop drop banners show new frames on the phone, free holiday ones too', ()
   assert.ok(freshDrop('2026-11-20', { frames: true }).items.some((row) => row.type === 'frame'))
   assert.ok(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8').includes('dropSlides(undefined, { frames: true })'))
   assert.match(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8'), /type === 'frame' && !isTeased\(item\)\s*\?\s*openFrameSheet\(/, 'a banner frame claims through its own sheet')
+  assert.match(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8'), /type === 'frame'\) preview = <FrameSheetPreview/, 'a Coming frame shows its live card')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

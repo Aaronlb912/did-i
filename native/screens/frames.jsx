@@ -183,7 +183,7 @@ function useDemoNight(id) {
   return { answered: Math.min(3, step % 5), streak: step, evening: step / 14 }
 }
 
-function FrameSheetPreview({ id, colors, ctx, weekLit }) {
+export function FrameSheetPreview({ id, colors, ctx, weekLit }) {
   const demo = useDemoNight(id)
   return (
     <View style={[styles.sheetPreview, id === 'polaroid' && styles.sheetPreviewCaption]}>
