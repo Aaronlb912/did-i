@@ -9827,7 +9827,7 @@ test('Not yets come back as swipe cards only after Look again; the meter leads w
   assert.match(tonight, /\} else if \(finishList && lookAgain\) \{[\s\S]{0,2000}<SwipeCardHost\s+key="look-again"/)
   assert.ok(!existsSync(path.join(root, 'native/components/StillOpen.jsx')), 'no tap-to-Did list')
   const meter = readFileSync(path.join(root, 'native/components/NightMeter.jsx'), 'utf8')
-  assert.match(meter, /\{open\}\s*<\/Text>/, 'the big number is what is left')
+  assert.match(meter, /\{left\}\s*<\/Text>/, 'the big number is what is left, Not yets included')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
