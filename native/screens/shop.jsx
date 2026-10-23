@@ -94,7 +94,7 @@ import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
 import { useIsFocused } from '@react-navigation/native'
-import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, liveBook, onLiveBook, openFrameSheet } from './frames.jsx'
+import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, liveBook, onLiveBook, openFrameSheet, FrameSheetPreview } from './frames.jsx'
 import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
@@ -894,6 +894,8 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
   else if (type === 'look') preview = <LookPreviewCard id={item.id} />
   else if (type === 'buddy') preview = <BuddyPreviewCard id={item.id} colors={colors} />
   else if (type === 'accessory') preview = <AccessoryPreviewCard id={item.id} purse={purse} colors={colors} />
+  // A Coming frame opens here, not its own sheet, so it needs the same live card.
+  else if (type === 'frame') preview = <FrameSheetPreview id={item.id} colors={colors} ctx={frameCtxFor(readShelf().boards)} />
   publishSheet({
     preview,
     title: name,
