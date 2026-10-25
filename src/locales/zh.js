@@ -361,6 +361,7 @@ export const zh = {
   'tonight.restOne': "你对一个问题选了“还没”。",
   'tonight.restTitle': "你对 {n} 个问题选了“还没”。",
   'tonight.restHint': "其实做了？{time}前都可以改掉“还没”，算作迟到。",
+  'tonight.untilTomorrow': '明天{time}',
   'tonight.meter': '/ {n}',
   'tonight.meterAria': '{n} / {total}',
   'tonight.meterDone': '已完成',
