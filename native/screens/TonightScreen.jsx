@@ -908,6 +908,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // tonight's own cards until 9am.
   // Your own open questions from last night, then last night's open Did wes.
   const graceNight = graceNightIso()
+  // The 9am cutoff is tomorrow for today's rows, and this morning for yesterday's.
+  const untilWords = (row) => {
+    const words = clockWords('09:00')
+    return !row || !row.dateIso || row.dateIso === stack.dateIso ? t('tonight.untilTomorrow', { time: words }) : words
+  }
   const graceWeOpen = graceNight ? weOpenOn(graceNight) : new Set()
   const graceItems = [
     ...stack.graceOpen.map((row) => ({
@@ -1106,7 +1111,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           frame={cardFrame}
         >
           <Text style={[faceCardStyles.meta, styles.graceLate, { color: colors.inkSoft }]}>
-            {t('tonight.nopedChange', { time: clockWords('09:00') })}
+            {t('tonight.nopedChange', { time: untilWords(top) })}
           </Text>
         </SwipeCardHost>
       </View>,
@@ -1234,7 +1239,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>
           {stack.finishCount === 1 ? t('tonight.restOne') : t('tonight.restTitle', { n: stack.finishCount })}
         </Text>
-        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint', { time: clockWords('09:00') })}</Text>
+        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint', { time: untilWords() })}</Text>
         <View style={styles.actions}>
           <DidButton label={t('tonight.restChange')} colors={colors} small onPress={startLookAgain} />
         </View>
@@ -1380,7 +1385,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         {pillMeta ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillMeta}</Text> : null}
         {/* A not yet still takes a swipe right to Did (late); say where it stands. */}
         {status === 'skip' ? (
-          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.nopedChange', { time: clockWords('09:00') })}</Text>
+          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.nopedChange', { time: untilWords(pillRow) })}</Text>
         ) : null}
         {pillHistory ? (
           <NightStrip

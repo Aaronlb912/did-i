@@ -361,6 +361,7 @@ export const ja = {
   'tonight.restOne': "1つの質問に「まだ」と答えました。",
   'tonight.restTitle': "{n}個の質問に「まだ」と答えました。",
   'tonight.restHint': "やっぱりやった？ {time}まで「まだ」を変えられます。遅れとして数えます。",
+  'tonight.untilTomorrow': '明日の{time}',
   'tonight.meter': '/ {n}',
   'tonight.meterAria': '{n} / {total}',
   'tonight.meterDone': '完了',

@@ -361,6 +361,7 @@ export const ko = {
   'tonight.restOne': "질문 하나에 아직이라고 했어요.",
   'tonight.restTitle': "질문 {n}개에 아직이라고 했어요.",
   'tonight.restHint': "결국 했나요? {time}까지 아직을 바꿀 수 있어요. 늦게로 쳐요.",
+  'tonight.untilTomorrow': '내일 {time}',
   'tonight.meter': '/ {n}',
   'tonight.meterAria': '{n}/{total}',
   'tonight.meterDone': '완료',
