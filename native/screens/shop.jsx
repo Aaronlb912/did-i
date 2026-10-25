@@ -342,12 +342,13 @@ function PriceTag({ tag, colors }) {
 function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) {
   const name = tileName(type, item.id)
   const tag = shopTag(purse, type, item)
+  const price = tag.owned ? t('shop.owned') : tag.gems || tag.coins || (tag.free ? t('shop.free') : '')
   return (
     <Pressable
       onPress={() => onTile(type, item)}
       unstable_pressDelay={100}
       accessibilityRole="button"
-      accessibilityLabel={t('shop.see', { name })}
+      accessibilityLabel={[t('shop.see', { name }), price, note].filter(Boolean).join(', ')}
       style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, dim && styles.tileDim, pressFx(pressed)]}
     >
       <View style={styles.tileArt}>
@@ -1101,14 +1102,7 @@ export function ShopScreen({ book, onChange }) {
         foot={(slide) => {
           if (prefs.dropPings || slide?.kind !== 'coming') return null
           return (
-            <Pressable
-              accessibilityRole="link"
-              onPress={() => goHash('/pings')}
-              hitSlop={8}
-              style={styles.dropLink}
-            >
-              <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.dropPingLink')}</Text>
-            </Pressable>
+            <KeyButton colors={colors} label={t('shop.dropPingLink')} onPress={() => goHash('/pings')} />
           )
         }}
       />
@@ -2133,9 +2127,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
           <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
             <View style={styles.kitEmpty}>
               <Meta colors={colors}>{t('kit.wishEmpty')}</Meta>
-              <Pressable accessibilityRole="link" onPress={() => goHash('/shop')} hitSlop={8} style={styles.dropLink}>
-                <Text style={[styles.promoAll, { color: colors.on }]}>{t('help.shopGo')}</Text>
-              </Pressable>
+              <KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />
             </View>
           </View>
         )
@@ -2170,9 +2162,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
           {!buddies.length ? (
             <View style={styles.kitEmpty}>
               <Meta colors={colors}>{t('kit.noBuddies')}</Meta>
-              <Pressable accessibilityRole="link" onPress={() => goHash('/shop/buddies')} hitSlop={8}>
-                <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.allBuddies')}</Text>
-              </Pressable>
+              <KeyButton colors={colors} label={t('shop.allBuddies')} onPress={() => goHash('/shop/buddies')} />
             </View>
           ) : null}
           {buddies.map((item) => (
@@ -2181,7 +2171,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               label={t(buddyText(item.id, 'name'))}
               worn={purse.buddyOn === item.id}
               colors={colors}
-              onPress={() => wearOn(wearBuddy(book, item.id), t(buddyText(item.id, 'name')))}
+              onPress={() => wearOn(wearBuddy(book, item.id), purse.buddyOn === item.id ? '' : t(buddyText(item.id, 'name')))}
             >
               <BuddyChip id={item.id} alive={purse.buddyOn === item.id} />
             </KitTile>
@@ -2206,9 +2196,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
             <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
               <View style={styles.kitEmpty}>
                 <Meta colors={colors}>{t('kit.noAccessories')}</Meta>
-                <Pressable accessibilityRole="button" onPress={() => goHash('/shop/accessories')} hitSlop={8}>
-                  <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.allAccessories')}</Text>
-                </Pressable>
+                <KeyButton colors={colors} label={t('shop.allAccessories')} onPress={() => goHash('/shop/accessories')} />
               </View>
             </View>
           ) : null}

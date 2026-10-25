@@ -46,7 +46,7 @@ import { HangCard } from '../components/HangCard.jsx'
 import { PickSheet } from '../components/PickSheet.jsx'
 import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { goHash, swapHash } from '../navigation/hash.js'
-import { confirmDone, once } from '../lib/confirm.js'
+import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
 import { sharedLastLine } from '../../src/lib/every-copy.js'
 import { KeyboardLift } from '../components/KeyboardLift.jsx'
@@ -194,12 +194,48 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     return !lamp.for_id || lamp.for_id === fam.youId
   }
 
+  async function cheerNow(row, name, cheerId) {
+    setSaid('')
+    const sent = await once(`cheer:${row.user_id}`, () => cheerFamily(book, row.user_id, t('family.cheerNote'), cheerId))
+    if (!sent) return undefined
+    const known = friendCheerMissKey(sent.miss)
+    if (known) return confirmMiss(t(known.key, known.vars))
+    if (sent.miss) return confirmMiss(tMiss(sent.miss))
+    setStock(normalizePurse(sent.book).friendCheers)
+    if (onChange) onChange(sent.book)
+    fireCheer(cheerId, 1)
+    return confirmDone(t('family.cheerSent', { name }))
+  }
+
+  async function buyCheersNow() {
+    const bought = await once('buy-cheers', () => buyCheers(book))
+    if (!bought) return false
+    if (bought.miss === 'gems') {
+      offerMoreGems(colors)
+      return false
+    }
+    const known = friendCheerMissKey(bought.miss)
+    if (known) { confirmMiss(t(known.key, known.vars)); return false }
+    if (bought.miss) { confirmMiss(tMiss(bought.miss)); return false }
+    setStock(normalizePurse(bought.book).friendCheers)
+    if (onChange) onChange(bought.book)
+    return true
+  }
+
+  function cheerWith(row, name, cheerId) {
+    if (cheersLeft >= 1) return cheerNow(row, name, cheerId)
+    if (purse.gems < FRIEND_CHEER_GEMS) return offerMoreGems(colors)
+    return confirmFriendCheers(colors, async () => {
+      if (await buyCheersNow()) await cheerNow(row, name, cheerId)
+    })
+  }
+
   async function tap(lamp, status) {
     // The night at tap time: the page may have been open across the fold.
     const tapNight = boardDate(new Date(), fam.fold_hour)
     const out = await once(`tap:${lamp.id}`, () => answerFamilyLamp(fam.id, lamp.id, tapNight, status))
     if (!out) return undefined
-    if (out.miss) return setMiss(out.miss)
+    if (out.miss) return confirmMiss(tMiss(out.miss))
     return load()
   }
 
@@ -254,13 +290,10 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       label: row.role === 'parent' ? t('family.makeKid') : t('family.makeParent'),
       onPress: () => once(`role:${row.user_id}`, async () => {
         const { miss: why } = await setRole(fam.id, row.user_id, row.role === 'parent' ? 'kid' : 'parent')
-        if (why === 'lastparent') setMiss(t('family.lastParent'))
-        else if (why === 'unchanged') setMiss(t('confirm.miss'))
-        else if (why) setMiss(why)
-        else {
-          setMiss('')
-          setSaid(t(row.role === 'parent' ? 'confirm.nowKid' : 'confirm.nowParent', { name }))
-        }
+        if (why === 'lastparent') confirmMiss(t('family.lastParent'))
+        else if (why === 'unchanged') confirmMiss(t('confirm.miss'))
+        else if (why) confirmMiss(tMiss(why))
+        else confirmDone(t(row.role === 'parent' ? 'confirm.nowKid' : 'confirm.nowParent', { name }))
         load()
       }),
     })
@@ -279,13 +312,10 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
           onGo: async () => {
             publishSheet(null)
             const { miss: why } = (await once(`drop:${row.user_id}`, () => dropMember(fam.id, row.user_id))) || {}
-            if (why === 'lastparent') setMiss(t('family.lastParent'))
-            else if (why === 'unchanged') setMiss(t('confirm.miss'))
-            else if (why) setMiss(why)
-            else {
-              setMiss('')
-              setSaid(t('confirm.memberRemoved', { name }))
-            }
+            if (why === 'lastparent') confirmMiss(t('family.lastParent'))
+            else if (why === 'unchanged') confirmMiss(t('confirm.miss'))
+            else if (why) confirmMiss(tMiss(why))
+            else confirmDone(t('confirm.memberRemoved', { name }))
             load()
           },
         }),
@@ -404,21 +434,11 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   {done ? (
                     <KeyButton
                       colors={colors}
-                      disabled={cheersLeft < 1}
                       label={t('friends.cheerUse')}
-                      onPress={() => pickCheer(colors, { name, purse, onGo: async (cheerId) => {
-                        setMiss('')
-                        setSaid('')
-                        const sent = await once(`cheer:${row.user_id}`, () => cheerFamily(book, row.user_id, t('family.cheerNote'), cheerId))
-                        if (!sent) return undefined
-                        const known = friendCheerMissKey(sent.miss)
-                        if (known) return setMiss(t(known.key, known.vars))
-                        if (sent.miss) return setMiss(tMiss(sent.miss))
-                        setStock(normalizePurse(sent.book).friendCheers)
-                        if (onChange) onChange(sent.book)
-                        fireCheer(cheerId, 1)
-                        return setSaid(t('family.cheerSent', { name }))
-                      } })}
+                      onPress={() => {
+                        if (cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return confirmMiss(t('friends.cheerCap', { n: FRIEND_CHEER_CAP }))
+                        return pickCheer(colors, { name, purse, onGo: (cheerId) => cheerWith(row, name, cheerId) })
+                      }}
                     />
                   ) : null}
                   <Pressable
@@ -471,11 +491,11 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   <DidButton
                     small
                     colors={colors}
-                    label={mine?.status === 'yes' ? t('family.did') : t('family.doIt')}
+                    label={mine?.status === 'yes' ? t('family.did') : t('tonight.answerDid')}
                     disabled={mine?.status === 'yes'}
                     onPress={() => tap(lamp, 'yes')}
                   />
-                  <KeyButton colors={colors} label={t('family.nope')} onPress={() => tap(lamp, 'skip')} />
+                  <KeyButton colors={colors} picked={mine?.status === 'skip'} label={t('family.nope')} onPress={() => tap(lamp, 'skip')} />
                 </View>
               ) : (
                 <Text style={{ color: colors.inkSoft }}>{done.length ? t('family.theirDone') : t('family.theirWait')}</Text>
@@ -497,7 +517,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                         onGo: async () => {
                           publishSheet(null)
                           const { miss: why } = (await once(`drop-lamp:${lamp.id}`, () => dropFamilyLamp(lamp.id))) || {}
-                          if (why) setMiss(why)
+                          if (why) confirmMiss(tMiss(why))
                           load()
                         },
                       })
@@ -579,19 +599,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             return
           }
           confirmFriendCheers(colors, async () => {
-            setMiss('')
-            const bought = await once('buy-cheers', () => buyCheers(book))
-            if (!bought) return
-            if (bought.miss === 'gems') {
-              offerMoreGems(colors)
-              return
-            }
-            const known = friendCheerMissKey(bought.miss)
-            if (known) return setMiss(t(known.key, known.vars))
-            if (bought.miss) return setMiss(tMiss(bought.miss))
-            setStock(normalizePurse(bought.book).friendCheers)
-            if (onChange) onChange(bought.book)
-            setSaid(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
+            if (await buyCheersNow()) confirmDone(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
           })
         }}
       />

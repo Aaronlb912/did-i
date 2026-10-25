@@ -1617,6 +1617,14 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     setMiss(why === 'off' || why === 'out' ? tMiss(why) : t('friends.autoAddMiss'))
   }
 
+  function cheerWith(person, cheerId) {
+    if (cheersLeft >= 1) return once(`cheer:${person.user_id}`, () => cheer(person, cheerId))
+    if (purse.gems < FRIEND_CHEER_GEMS) return offerMoreGems(colors)
+    return confirmFriendCheers(colors, () => once('buy-cheers', async () => {
+      if (await buyNowOnce()) await cheer(person, cheerId)
+    }))
+  }
+
   async function cheer(person, cheerId) {
     const sent = await cheerFriend(book, person.user_id, cheerId)
     const known = friendCheerMissKey(sent.miss)
@@ -1641,21 +1649,23 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   }
 
   function buyNow() {
-    return once('buy-cheers', buyNowOnce)
+    return once('buy-cheers', async () => {
+      if (await buyNowOnce()) confirmDone(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
+    })
   }
 
   async function buyNowOnce() {
     const bought = await buyCheers(book)
     if (bought.miss === 'gems') {
       offerMoreGems(colors)
-      return
+      return false
     }
     const known = friendCheerMissKey(bought.miss)
-    if (known) return setMiss(t(known.key, known.vars))
-    if (bought.miss) return setMiss(tMiss(bought.miss))
+    if (known) { setMiss(t(known.key, known.vars)); return false }
+    if (bought.miss) { setMiss(tMiss(bought.miss)); return false }
     setStock(normalizePurse(bought.book).friendCheers)
     if (onChange) onChange(bought.book)
-    confirmDone(t('confirm.cheersBought', { n: FRIEND_CHEERS_PER_GEM }))
+    return true
   }
 
   if (!cloudSetUp()) return <CloudOff colors={colors} />
@@ -1789,9 +1799,11 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                   />
                   <KeyButton
                     colors={colors}
-                    disabled={cheersLeft < 1}
                     label={t('friends.cheerUse')}
-                    onPress={() => pickCheer(colors, { name: personName(row.person) || t('people.someone'), purse, onGo: (id) => once(`cheer:${row.person.user_id}`, () => cheer(row.person, id)) })}
+                    onPress={() => {
+                      if (cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return confirmMiss(t('friends.cheerCap', { n: FRIEND_CHEER_CAP }))
+                      return pickCheer(colors, { name: personName(row.person) || t('people.someone'), purse, onGo: (id) => cheerWith(row.person, id) })
+                    }}
                   />
                 </>
               }
