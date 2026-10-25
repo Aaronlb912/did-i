@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
-  stamp: { position: 'absolute', top: 16, left: 20, fontFamily: fonts.display, fontSize: 15, letterSpacing: 1 },
+  stamp: { position: 'absolute', top: 16, left: 20, fontFamily: fonts.display, fontSize: 15, letterSpacing: 1, textTransform: 'uppercase' },
   kicker: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 2 },
   title: { fontFamily: fonts.display, fontSize: 28, lineHeight: 34 },
   rail: {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  railText: { fontFamily: fonts.display, fontSize: 12, letterSpacing: 1.5, transform: [{ rotate: '-90deg' }] },
+  railText: { fontFamily: fonts.display, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', transform: [{ rotate: '-90deg' }] },
   // The pretend thumb: a soft dot that drags the card.
   hand: {
     position: 'absolute',

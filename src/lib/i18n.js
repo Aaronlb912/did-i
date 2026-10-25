@@ -54,3 +54,10 @@ export function tMiss(code, vars) {
   if (hasLocaleKey(code)) return t(code, vars)
   return code
 }
+
+// Server and network errors are English text. Only our own keys and short
+// codes (no spaces) go to the screen; anything else becomes the fallback key.
+export function appMiss(error, fallback = 'people.reach') {
+  const text = String(error?.message ?? error ?? '')
+  return /^[\w.-]+$/.test(text) ? text : fallback
+}

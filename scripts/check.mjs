@@ -2442,6 +2442,24 @@ test('no new strings are left in English in other languages', () => {
   }
 })
 
+// "Not yet" names an answer, so it is capitalized in English copy.
+test('English copy writes the answer as Not yet, never lowercase', () => {
+  const bad = Object.entries(en).filter(([, v]) => typeof v === 'string' && /\bnot yets?\b/.test(v)).map(([k]) => k)
+  assert.deepEqual(bad, [], 'write "Not yet" with a capital N')
+})
+
+// Product words the copy rules ban. Skipped: legal text (policy language), {placeholders}
+// (code names), and keys where night means nighttime (looks, cheers, frames) or Skip is a
+// tour button.
+test('English copy has none of the banned product words', () => {
+  const banned = /\b(tags?|board|nope|night|skip|hall|heat)\b|did not/i
+  const okKey = /^(legal\.|frame\.|cheer\.night\.|look\.night\.|web\.press\.color\.night$|web\.landing\.end\.kicker$|we\.idea\.date$|tour\.skip$)/
+  const bad = Object.entries(en)
+    .filter(([k, v]) => typeof v === 'string' && !okKey.test(k) && banned.test(v.replace(/\{\w+\}|\bNight (look|owl)\b/g, '')))
+    .map(([k, v]) => `${k}: ${v.slice(0, 60)}`)
+  assert.deepEqual(bad, [])
+})
+
 // A translation can only use {placeholders} the English string is given.
 test('locale placeholders match English', () => {
   const holes = (text) => String(text).match(/\{\w+\}/g) || []
@@ -4932,10 +4950,10 @@ await testAsync('a skip reads Not yet while its night is open, Said not yet once
   assert.equal(answerWord('', true), '', 'an empty open night is just open')
   assert.equal(answerWord('yes', false), 'yes')
   assert.equal(answerWord('late', true), 'late')
-  assert.equal(pillStatusLabel('skip'), 'Marked not yet')
+  assert.equal(pillStatusLabel('skip'), 'Marked Not yet')
   const why = (iso, state) => ({ iso, state, noped: [{ lamp: { question: 'Did I read?', short: 'Read' } }], unanswered: [], weOpen: [] })
   assert.match(nightWhyLines(why(fri, 'missed'), { now: sat2am }).join(' '), /Not yet: Read/)
-  assert.match(nightWhyLines(why(fri, 'missed'), { now: sat9am }).join(' '), /Said not yet: Read/)
+  assert.match(nightWhyLines(why(fri, 'missed'), { now: sat9am }).join(' '), /Said Not yet: Read/)
 })
 
 await testAsync('the grace period for the previous night runs until 9am', async () => {
@@ -9881,6 +9899,16 @@ test('shop drop banners show new frames on the phone, free holiday ones too', ()
   // An older widget sync finishing late would draw a question just stopped or deleted.
   const widgetSync = readFileSync(new URL('../native/widget-sync.js', import.meta.url), 'utf8')
   assert.equal((widgetSync.match(/gen !== syncGen/g) || []).length, 3, 'only the newest widget sync draws')
+})
+
+await testAsync('a failed network call shows our words, never the raw error', async () => {
+  const { appMiss } = await import('../src/lib/i18n.js')
+  assert.equal(appMiss(new TypeError('Network request failed')), 'people.reach')
+  assert.equal(appMiss({ message: 'duplicate key value violates unique constraint "x"' }, 'account.syncMiss'), 'account.syncMiss')
+  assert.equal(appMiss({ message: 'family.nameEmpty' }), 'family.nameEmpty', 'our own keys pass through')
+  assert.equal(appMiss(null), 'people.reach')
+  const en = await import('../src/locales/en.js')
+  assert.ok((en.default || en.en || Object.values(en)[0])['people.reach'], 'the fallback key is translated')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
