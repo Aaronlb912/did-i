@@ -165,6 +165,9 @@ export function ownableCheers(today = boardDate(new Date())) {
 export function buddiesOnOrOwned(purse, today = boardDate(new Date())) {
   return ALL_BUDDIES.filter((item) => isLive(item, today) || purse.buddies.includes(item.id))
 }
+export function looksOnOrOwned(purse, today = boardDate(new Date())) {
+  return ALL_LOOKS.filter((item) => isLive(item, today) || purse.looks.includes(item.id))
+}
 export function cheersOnOrOwned(purse, today = boardDate(new Date())) {
   return ALL_CHEERS.filter((item) => isLive(item, today) || purse.cheers.includes(item.id))
 }
@@ -1254,6 +1257,7 @@ export function wishGoal(purse, today = boardDate(new Date())) {
     const [type, id] = key.split(':')
     if (type === 'frame' && item.kind === 'season' && !seasonOpen(item, today)) continue
     if (['look', 'cheer', 'buddy'].includes(type) && !isLive(item, today)) continue
+    if (type === 'accessory' && !accessoryOnSale(item, today)) continue
     const gems = Number(item.gems) || 0
     const coins = Number(item.coins) || 0
     const short = gems ? Math.max(0, gems - purse.gems) : Math.max(0, coins - purse.coins)

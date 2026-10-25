@@ -326,7 +326,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
         moreLabel: wished ? wishLabels[0] : wishLabels[1],
         moreSizeLabels: wishLabels,
         onMore: () => {
-          const next = toggleWish(book, 'frame', id)
+          const next = onLiveBook(toggleWish(liveBook(book), 'frame', id))
           if (next.miss) return confirmMiss(t(next.miss, { n: next.missN }))
           reopen(next.book)
           requestAnimationFrame(() => setTimeout(() => onChange(next.book), 0))
