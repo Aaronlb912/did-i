@@ -229,6 +229,29 @@ export async function readCoinBalance() {
   return Math.max(0, Math.floor(Number(data) || 0))
 }
 
+// What a phone earned signed out, for the once-per-account carry. Gem looks
+// and the free lime look are not coin items. null when there is nothing.
+export function carryPayload(purse) {
+  const p = normalizePurse(purse)
+  const add_coins = Math.min(300, Math.max(0, Math.floor(Number(p.coins) || 0)))
+  const looks = p.looks.filter((id) => id !== 'lime' && !isGemLook(id)).slice(0, 50)
+  const accessories = p.accessories.slice(0, 50)
+  if (!add_coins && !looks.length && !accessories.length) return null
+  return { add_coins, looks, accessories }
+}
+
+export async function carrySignedOut(purse) {
+  const payload = carryPayload(purse)
+  if (!payload) return null
+  const db = cloud()
+  if (!db) return null
+  const user = await readUser()
+  if (!user) return null
+  const { data, error } = await db.rpc('carry_signed_out', payload)
+  if (error) return null
+  return normalizeCoinCatalog(data)
+}
+
 export async function readCoinCatalog() {
   const db = cloud()
   if (!db) return null

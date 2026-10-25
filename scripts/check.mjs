@@ -1358,6 +1358,18 @@ await testAsync('referral ladder: real gem steps, Night look, Hive at 15, Bloom 
   assert.ok(sql.includes("select 15") && sql.includes("select 20") && sql.includes("'hive'") && sql.includes("'bloom'"))
 })
 
+await testAsync('signed-out carry: payload skips lime and gem looks, caps coins, null when empty', async () => {
+  const { carryPayload } = await import('../src/lib/wallet.js')
+  assert.equal(carryPayload({ coins: 0, looks: ['lime'], accessories: [] }), null)
+  const out = carryPayload({ coins: 5000, looks: ['lime'], accessories: ['crown'] })
+  assert.equal(out.add_coins, 300)
+  assert.deepEqual(out.looks, [])
+  assert.deepEqual(out.accessories, ['crown'])
+  const sql = readFileSync(new URL('../supabase/signin-carry.sql', import.meta.url), 'utf8')
+  assert.ok(sql.includes('enable row level security') && sql.includes('(select auth.uid())') && sql.includes('set search_path = public'))
+  assert.ok(readFileSync(new URL('./apply-all-sql.mjs', import.meta.url), 'utf8').includes('supabase/signin-carry.sql'))
+})
+
 test('every sql file in db:apply:all is on disk', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const src = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
@@ -9627,7 +9639,7 @@ test('every table says how people hear about it: a push, or why not', () => {
     report_actions: 'queue_report_removed_push',
   }
   const quiet = {
-    'own data, no one else': 'admins answer_keys answer_log answer_undos app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims',
+    'own data, no one else': 'admins answer_keys answer_log answer_undos app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims signin_carries',
     'counters, caps and logs': 'check_on_pushed family_code_misses family_miss_days family_summary_sent friend_ask_log friend_id_misses push_queue push_to_counts send_counts we_done_pushed we_slot_repair_ran report_mail_queue shop_drop_sent',
     'catalogs': 'gift_catalog shop_catalog event_catalog',
     'quiet on purpose: a block, a pass or a leave would tell someone they were dropped': 'blocks send_answers app_send_answers we_turns',
