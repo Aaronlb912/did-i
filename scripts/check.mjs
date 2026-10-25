@@ -5115,6 +5115,12 @@ await testAsync('marks count the same streak as Today, so a missed yesterday bre
   assert.equal(shelfStats([book], clock).streak, 1, 'six days, a miss, then today is 1, not 7')
 })
 
+test('a hearted seasonal accessory is not a goal once it is off sale', () => {
+  const purse = normalizePurse({ coins: 999, wish: ['accessory:witch'] })
+  assert.equal(wishGoal(purse, '2026-10-25')?.id, 'witch')
+  assert.equal(wishGoal(purse, '2026-11-02'), null)
+})
+
 await testAsync('"Streak broke" shows only for a missed past night, never for tonight reopening', async () => {
   const { markStreakSeen, maybeStreakMiss } = await import('../src/lib/streak-moments.js')
   localStorage.removeItem('did-i-streak-seen')
@@ -7886,7 +7892,7 @@ test('wishlist knows frames: buyable and seasonal, not earned; a seasonal one co
   assert.equal(open.n, 0)
   assert.deepEqual(wishLine(open), { key: 'wish.ready', n: 0, nameKey: 'frame.hearts.name' })
   const frames = readFileSync(new URL('../native/screens/frames.jsx', import.meta.url), 'utf8')
-  assert.match(frames, /toggleWish\(book, 'frame', id\)/)
+  assert.match(frames, /toggleWish\(liveBook\(book\), 'frame', id\)/)
   assert.match(frames, /t\('shop\.remindMe'\)/)
 })
 
