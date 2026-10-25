@@ -5133,6 +5133,10 @@ test('a hearted seasonal accessory is not a goal once it is off sale', () => {
   assert.equal(wishGoal(purse, '2026-11-02'), null)
 })
 
+test('the shop shows only the newest Out now drop', () => {
+  assert.ok(dropSlides('2026-10-25').filter((slide) => slide.kind === 'drop').length <= 1)
+})
+
 await testAsync('"Streak broke" shows only for a missed past night, never for tonight reopening', async () => {
   const { markStreakSeen, maybeStreakMiss } = await import('../src/lib/streak-moments.js')
   localStorage.removeItem('did-i-streak-seen')

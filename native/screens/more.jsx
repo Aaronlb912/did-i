@@ -499,7 +499,11 @@ export function RecentScreen() {
           <Text style={[styles.recentText, { color: colors.ink }]}>{t('people.waitingSub')}</Text>
         </Pressable>
       ) : null}
-      {list.length ? <KeyButton colors={colors} label={t('recent.clear')} onPress={clearAll} /> : null}
+      {list.length ? (
+        <View style={styles.recentClear}>
+          <KeyButton colors={colors} label={t('recent.clear')} onPress={clearAll} />
+        </View>
+      ) : null}
       {list.length ? (
         list.map((item) => (
           <Pressable
@@ -2727,6 +2731,7 @@ const styles = StyleSheet.create({
   accountHead: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
   headCard: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 20 },
   dataGap: { height: 20 },
+  recentClear: { marginBottom: 12 },
   hero: { borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 16, gap: 2 },
   heroCap: { ...sectionLabel },
   heroNum: { fontFamily: fonts.display, fontSize: 44, fontWeight: '700' },
