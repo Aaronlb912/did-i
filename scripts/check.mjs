@@ -9841,6 +9841,9 @@ test('shop drop banners show new frames on the phone, free holiday ones too', ()
   assert.ok(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8').includes('dropSlides(undefined, { frames: true })'))
   assert.match(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8'), /type === 'frame' && !isTeased\(item\)\s*\?\s*openFrameSheet\(/, 'a banner frame claims through its own sheet')
   assert.match(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8'), /type === 'frame'\) preview = <FrameSheetPreview/, 'a Coming frame shows its live card')
+  // An older widget sync finishing late would draw a question just stopped or deleted.
+  const widgetSync = readFileSync(new URL('../native/widget-sync.js', import.meta.url), 'utf8')
+  assert.equal((widgetSync.match(/gen !== syncGen/g) || []).length, 3, 'only the newest widget sync draws')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
