@@ -8319,7 +8319,7 @@ await testAsync('readthrough 8: a missed one-time question still breaks its nigh
 })
 
 await testAsync('readthrough 8: the 9 PM warning fires when last night was frozen', async () => {
-  const { streakRiskFire } = await import('../src/lib/streak-risk.js')
+  const { streakRiskFire, graceRiskFire } = await import('../src/lib/streak-risk.js')
   const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
   const clock = new Date(2026, 8, 30, 16, 0)
   const answers = []
@@ -8334,6 +8334,7 @@ await testAsync('readthrough 8: the 9 PM warning fires when last night was froze
   // A question that asks at 10 PM is still waiting at 9 PM: nothing is open to warn about.
   const lateBook = { ...book, lamps: [{ ...book.lamps[0], askAfter: '22:00' }] }
   assert.equal(streakRiskFire(lateBook, clock, heat), null, 'no 9 PM warning for a question that asks at 10 PM')
+  assert.ok(graceRiskFire(lateBook, clock, heat), 'the midnight warning still comes for a 10 PM question')
   const notify = readFileSync(path.join(checkRoot, 'src/lib/notify.js'), 'utf8')
   assert.ok(notify.includes('shelfStreak([book], now)'), 'web pings pass the real streak')
 })

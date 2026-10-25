@@ -7,14 +7,16 @@ export const STREAK_RISK_HOUR = 21
 // heat: the streak to protect. Callers pass shelfStreak, which carries a
 // streak across a frozen night; this one book's hallHeat (the fallback) stops there.
 // at: when the warning fires; questions still waiting then do not count.
-export function streakAtRisk(book, now = new Date(), heat, at = now) {
+// Without it every open question counts (the midnight warning: all have asked by then).
+export function streakAtRisk(book, now = new Date(), heat, at = null) {
   if (!book) return false
   const going = heat === undefined ? hallHeat(book, now) : Number(heat) || 0
   if (going <= 0) return false
   const we = weNight(boardDate(now, book.dayFoldHour))
   if (we.due && !we.clear) return true
   if (allClearTonight(book, now)) return false
-  return askedBy(countedTonightRows(dueTonight(book, now)), at).length > 0
+  const rows = countedTonightRows(dueTonight(book, now))
+  return (at ? askedBy(rows, at) : rows).length > 0
 }
 
 export function streakRiskFire(book, now = new Date(), heat) {
