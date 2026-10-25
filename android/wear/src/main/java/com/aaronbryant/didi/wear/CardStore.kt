@@ -85,7 +85,7 @@ object CardStore {
       for (i in 0 until items.length()) {
         val item = items.optJSONObject(i) ?: continue
         if (item.optString("id") == tap.optString("id") && item.optString("night") == tap.optString("night") &&
-          item.optString("status") == "open"
+          (item.optString("status") == "open" || (tap.optString("answer") == "did" && item.optString("status") == "nope"))
         ) {
           item.put("status", tap.optString("answer"))
           stillOpen = true

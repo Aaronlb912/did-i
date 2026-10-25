@@ -103,16 +103,9 @@ fun WatchApp() {
       cards.items.isEmpty() -> MessageView(stringResource(R.string.app_name), cards.emptyLabel.orNull() ?: openPhone)
       cards.openCards.isNotEmpty() -> CardView(cards, cards.openCards.first())
       else -> {
-        // Said Not yet to some: they are not done, so do not say all clear.
-        val notYet = cards.items.count { it.status == "nope" }
         val allDone = cards.allDoneLabel.orNull() ?: stringResource(R.string.all_done)
         when {
-          notYet > 0 -> DoneView(
-            cards,
-            fill(cards.notYetLabel, "n" to notYet) ?: stringResource(R.string.not_yet_n, notYet),
-            openPhone,
-            accentText = false,
-          )
+          cards.notYetCards.isNotEmpty() -> CardView(cards, cards.notYetCards.first())
           cards.streak > 0 -> DoneView(
             cards,
             allDone,
@@ -216,7 +209,7 @@ fun CardView(cards: WatchCards, card: WatchCard) {
         horizontalArrangement = Arrangement.spacedBy(18.dp),
         verticalAlignment = Alignment.Top,
       ) {
-        RoundAnswer(
+        if (card.status != "nope") RoundAnswer(
           check = false,
           label = cards.nopeLabel.orNull() ?: stringResource(R.string.not_yet),
           size = 46.dp,
