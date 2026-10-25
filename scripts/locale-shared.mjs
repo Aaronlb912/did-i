@@ -21,6 +21,7 @@ const PRODUCT_SAME = new Set([
   'tonight.didI',
   'tonight.swipeDid',
   'tonight.swipeNope',
+  'hole.didLabel',
   'tonight.answerDid',
   'family.did',
   'widget.tonight.did',

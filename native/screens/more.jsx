@@ -346,6 +346,10 @@ export function HelpScreen() {
       <HelpFold colors={colors} title={t('help.groupApp')}>
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.phone')}</Text>
         <Meta colors={colors}>{t('help.phonePApp')}</Meta>
+        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.safety')}</Text>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.safetyP')}</Meta>
+        <KeyButton colors={colors} label={t('help.peopleGo')} onPress={() => goHash('/people')} />
+        <KeyButton colors={colors} label={t('settings.account')} onPress={() => goHash('/account')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.legal')}</Text>
         <Meta colors={colors} style={styles.beforeBtn}>{t('help.legalP')}</Meta>
         <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />

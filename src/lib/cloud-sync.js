@@ -1,3 +1,4 @@
+import { appMiss } from './i18n.js'
 import { useEffect, useState } from 'react'
 import { recordAppError } from './app-errors.js'
 import { deviceKey, deviceLabel, deviceModel, devicePlatform, takeOldDeviceKey } from './account.js'
@@ -720,7 +721,7 @@ async function pullAndMergeOnce() {
     return written
   } catch (error) {
     if (run !== syncRun) return null
-    setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    setState({ how: 'miss', miss: appMiss(error, 'account.syncMiss') })
     recordAppError('sync', error).catch(() => {})
     return null
   }
@@ -748,7 +749,7 @@ export async function pushNow(shelf) {
   try {
     user = await meOrThrow()
   } catch (error) {
-    setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    setState({ how: 'miss', miss: appMiss(error, 'account.syncMiss') })
     return
   }
   if (!user) {
@@ -792,7 +793,7 @@ export async function pushNow(shelf) {
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
     return true
   } catch (error) {
-    setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    setState({ how: 'miss', miss: appMiss(error, 'account.syncMiss') })
     recordAppError('sync', error).catch(() => {})
     return answersSent
   }
@@ -923,7 +924,7 @@ export async function renameDevice(key, name) {
   if (!user) return { miss: 'out' }
   const clean = String(name || '').trim().slice(0, DEVICE_NAME_MAX)
   const { error } = await db.from('devices').update({ name: clean }).eq('user_id', user.id).eq('device_key', key)
-  return { miss: error ? error.message : '' }
+  return { miss: error ? appMiss(error) : '' }
 }
 
 // Every phone but this one. Their app signs in again on next open if still
@@ -996,7 +997,7 @@ export async function saveProfile(patch) {
     { onConflict: 'user_id' },
   )
   if (!error && typeof patch?.display_name === 'string') keepProfileName(patch.display_name)
-  return { miss: error ? error.message : '' }
+  return { miss: error ? appMiss(error) : '' }
 }
 
 export async function exportAll() {

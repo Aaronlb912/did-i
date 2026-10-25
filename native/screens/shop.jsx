@@ -1805,10 +1805,15 @@ export function GemShopScreen({ book }) {
   // Restore asks the store for paid packs not yet credited, then the server.
   async function restore() {
     if (restoring) return
+    if (account.ready && !account.user) {
+      goHash('/account')
+      return
+    }
     setRestoring(true)
     try {
       const out = await restoreGemPurchases()
       if (out.miss === 'signin') confirmMiss(t('gems.restoreSignIn'))
+      else if (out.miss === 'setup' || out.miss === 'app') confirmMiss(t('gems.restoreSetup'))
       else if (out.miss) confirmMiss(t('gems.restoreMiss'))
       else if (out.gems > 0) confirmDone(t('gems.restored', { n: out.gems }))
       else confirmDone(t('gems.restoreNone'))
@@ -1957,17 +1962,12 @@ export function GemShopScreen({ book }) {
         .
       </Meta>
       {isReactNative() ? (
-        <Pressable
-          accessibilityRole="button"
+        <KeyButton
+          colors={colors}
           disabled={restoring}
+          label={restoring ? t('gems.restoring') : t('gems.restore')}
           onPress={restore}
-          hitSlop={8}
-          style={styles.restoreBtn}
-        >
-          <Text style={[styles.promoAll, { color: restoring ? colors.inkDim : colors.on }]}>
-            {restoring ? t('gems.restoring') : t('gems.restore')}
-          </Text>
-        </Pressable>
+        />
       ) : null}
     </BoardShell>
   )
@@ -2308,7 +2308,6 @@ const styles = StyleSheet.create({
   kindName: { fontFamily: fonts.uiBold, fontSize: 14 },
   kindCount: { fontFamily: fonts.ui, fontSize: 12 },
   kitTileCaption: { fontFamily: fonts.ui, fontSize: 10, maxWidth: '100%' },
-  restoreBtn: { alignSelf: 'center', paddingVertical: 10 },
   kitWearing: { fontFamily: fonts.uiSemi, fontSize: 14 },
   wishBtn: { alignSelf: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 8 },
   wishText: { fontFamily: fonts.uiSemi, fontSize: 14 },

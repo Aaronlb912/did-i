@@ -18,9 +18,20 @@ export function HolePlate({ lamp, periodKey, wasSkip, colors, onLate, onSkip, on
         {wasSkip ? t('hole.nopeBody') : periodLabel(lamp, periodKey)}
       </Text>
       <View style={styles.actions}>
-        <DidButton label={t('hole.markLate')} colors={colors} small onPress={onLate} />
+        <DidButton
+          label={t('hole.markLate')}
+          accessibilityLabel={t('hole.didLabel', { q: lamp.question })}
+          colors={colors}
+          small
+          onPress={onLate}
+        />
         {!wasSkip && onSkip ? (
-          <KeyButton label={t('tonight.swipeNope')} colors={colors} onPress={onSkip} />
+          <KeyButton
+            label={t('hole.notYet')}
+            accessibilityLabel={t('hole.notYetLabel', { q: lamp.question })}
+            colors={colors}
+            onPress={onSkip}
+          />
         ) : null}
       </View>
       {onClose ? (

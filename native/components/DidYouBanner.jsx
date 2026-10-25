@@ -60,6 +60,9 @@ export function DidYouBanner({ path, colors }) {
       >
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={[lines.title, lines.body, lines.go === '/inbox' ? t('didyou.open') : t('didyou.seeTonight')]
+            .filter(Boolean)
+            .join('. ')}
           onPress={() => {
             feelTap()
             dismissPeopleNews()
@@ -71,7 +74,7 @@ export function DidYouBanner({ path, colors }) {
             {lines.title}
           </Text>
           {lines.body ? (
-            <Text style={[styles.body, { color: colors.inkSoft }]} numberOfLines={1}>
+            <Text style={[styles.body, { color: colors.inkSoft }]} numberOfLines={2}>
               {lines.body}
             </Text>
           ) : null}
