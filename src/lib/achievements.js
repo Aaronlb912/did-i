@@ -204,24 +204,17 @@ function quietWeek(book, now) {
 
 const isDid = (answer) => answer.status === 'yes' || answer.status === 'late'
 
-// The streak walks up to three years of nights. The run up to last night
-// only changes when an older night is answered late, so it is worked out once
-// per night (and again after a late mark); tonight is added on top.
+// The streak walks up to three years of nights. It only changes when an older night is answered late or
+// today turns clear, so it is worked out again only then.
 let streakMemo = { key: '', value: 0 }
 function streakNow(boards, now, olderAnswers) {
   const night = boardDate(now)
-  const key = `${night}|${olderAnswers}|${boards.length}`
-  if (streakMemo.key !== key) {
-    const lastNight = parseIsoDate(addDaysIso(night, -1))
-    lastNight.setHours(12, 0, 0, 0)
-    streakMemo = { key, value: shelfStreak(boards, lastNight) }
-  }
   const counted = boards.some((book) => countedTonightRows(dueTonight(book, now)).length > 0)
-  if (!counted) return streakMemo.value
-  const clear = boards.every(
-    (book) => !countedTonightRows(dueTonight(book, now)).length || allClearTonight(book, now),
-  )
-  return clear ? streakMemo.value + 1 : streakMemo.value
+  const clear = counted && boards.every((book) => !countedTonightRows(dueTonight(book, now)).length || allClearTonight(book, now))
+  // Same walk as Today, so a missed yesterday breaks the run here too.
+  const key = `${night}|${olderAnswers}|${boards.length}|${clear}`
+  if (streakMemo.key !== key) streakMemo = { key, value: shelfStreak(boards, now) }
+  return streakMemo.value
 }
 
 // Everything the tiers count, across every tag. Answers are read once.

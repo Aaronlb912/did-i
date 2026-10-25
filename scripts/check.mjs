@@ -5078,6 +5078,25 @@ test('the streak keeps counting past the five the room shows', () => {
   assert.equal(shelfStreak([lastNightOpen], clock), 1, 'a missed night before tonight is a break')
 })
 
+await testAsync('marks count the same streak as Today, so a missed yesterday breaks it', async () => {
+  const { shelfStats } = await import('../src/lib/achievements.js')
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const nights = []
+  for (let back = 0; back < 8; back += 1) {
+    const day = new Date(clock)
+    day.setDate(day.getDate() - back)
+    nights.push(boardDate(day))
+  }
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }],
+    answers: nights.filter((night) => night !== nights[1]).map((night) => ({ lampId: 'door', periodKey: night, status: 'yes', answeredAt: `${night}T21:00:00` })),
+  }
+  assert.equal(shelfStreak([book], clock), 1)
+  assert.equal(shelfStats([book], clock).streak, 1, 'six days, a miss, then today is 1, not 7')
+})
+
 await testAsync('"Streak broke" shows only for a missed past night, never for tonight reopening', async () => {
   const { markStreakSeen, maybeStreakMiss } = await import('../src/lib/streak-moments.js')
   localStorage.removeItem('did-i-streak-seen')
