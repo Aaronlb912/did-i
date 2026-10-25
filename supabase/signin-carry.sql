@@ -9,6 +9,9 @@ create table if not exists public.signin_carries (
   made_at timestamptz not null default now()
 );
 
+alter table public.signin_carries drop constraint if exists signin_carries_items_size;
+alter table public.signin_carries add constraint signin_carries_items_size check (octet_length(items::text) <= 4096);
+
 alter table public.signin_carries enable row level security;
 
 drop policy if exists "signin_carries select own" on public.signin_carries;
