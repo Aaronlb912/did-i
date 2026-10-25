@@ -44,6 +44,8 @@ import {
   applyGemOwnedToShelf,
   catchUpFreeClaims,
   grantWeeklyGem,
+  carryPayload,
+  carrySignedOut,
   readCoinCatalog,
   readGemBalance,
   readGemOwned,
@@ -677,7 +679,30 @@ async function pullAndMergeOnce() {
 
     // A buy during this sync makes these reads older than the shelf: skip them.
     const bal = await readGemBalance()
-    const coinBag = await readCoinCatalog()
+    // Coins and coin items earned signed out carry once, on a phone's first sign-in.
+    let coinBag = null
+    if (!lastUser) {
+      const carryKey = `didi-carry-asked:${user.id}`
+      let asked = false
+      try {
+        asked = !!localStorage.getItem(carryKey)
+      } catch {
+        asked = false
+      }
+      const purse = mergePurses(local?.boards || [])
+      if (!asked && carryPayload(purse)) {
+        coinBag = await carrySignedOut(purse)
+        // A failed carry must not let the server balance replace the phone's
+        // coins: fail this sync so lastUser stays empty and the next one asks again.
+        if (!coinBag) throw new Error('account.syncMiss')
+        try {
+          localStorage.setItem(carryKey, '1')
+        } catch {
+          // Asks again next sync; the server carries once.
+        }
+      }
+    }
+    if (!coinBag) coinBag = await readCoinCatalog()
     const gemBag = await readGemOwned()
     if (shopWriteCount() === shopAtStart) {
       if (bal != null) written = applyGemBalanceToShelf(written, bal)
