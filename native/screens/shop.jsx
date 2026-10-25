@@ -15,6 +15,8 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import {
   buddiesOnOrOwned,
+  looksOnOrOwned,
+  seasonNext,
   cheersOnOrOwned,
   freeLastDay,
   SPECIAL_CHEERS,
@@ -373,6 +375,8 @@ function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) 
 function wishNeed(type, item, purse) {
   // A seasonal frame is free: say when it is back, or that it is out now.
   if (type === 'frame' && item.kind === 'season') return frameStatus(item, purse, frameCtxFor(readShelf().boards)).text
+  // A seasonal accessory off sale: say when it is back, not "Can buy".
+  if (type === 'accessory' && !accessoryOnSale(item, boardDate(new Date()))) return t('shop.coming', { date: formatBoardDate(seasonNext(item)) })
   const tag = shopTag(purse, type, item)
   const short = tag.gems ? tag.gems - purse.gems : tag.coins - purse.coins
   if (short <= 0) return t('shop.canBuy')
@@ -1022,7 +1026,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
     return {
       on,
       toggle: () => {
-        const next = toggleWish(from, type, item.id)
+        const next = onLiveBook(toggleWish(liveBook(from), type, item.id))
         if (next.miss) {
           confirmMiss(shopMiss(next))
           return
@@ -2023,7 +2027,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const coat = activeLook(book)
   const purse = normalizePurse(book)
   // Shop order, always: a tile never moves under your finger when you wear it.
-  const looks = liveLooks().filter((item) => purse.looks.includes(item.id))
+  const looks = looksOnOrOwned(purse).filter((item) => purse.looks.includes(item.id))
   const buddyPool = buddiesOnOrOwned(purse)
   const cheerPool = cheersOnOrOwned(purse)
   const buddies = buddyPool.filter((item) => purse.buddies.includes(item.id))
@@ -2639,6 +2643,8 @@ export function GiftScreen({ book, onChange, toId }) {
   const [tries, setTries] = useState(0)
   const [sent, setSent] = useState('')
   const [busy, setBusy] = useState(false)
+  // The sheet keeps the send from when it opened, so a second tap sees busy as false.
+  const sending = useRef(false)
   const items = giftItems()
   const kind = GIFT_TABS.find((item) => item.id === tab)
   const list = items[tab] || []
@@ -2660,7 +2666,7 @@ export function GiftScreen({ book, onChange, toId }) {
   const name = person ? personName(person) || t('people.someone') : ''
 
   async function send(type, item) {
-    if (busy) return
+    if (busy || sending.current) return
     if (item.gems > 0 && purse.gems < item.gems) {
       publishSheet(null)
       offerMoreGems(colors)
@@ -2671,15 +2677,18 @@ export function GiftScreen({ book, onChange, toId }) {
       return
     }
     setBusy(true)
+    sending.current = true
     let out
     try {
       out = await sendGift(toId, type, item.id, note)
     } catch {
+      sending.current = false
       setBusy(false)
       publishSheet(null)
       confirmMiss(t('confirm.miss'))
       return
     }
+    sending.current = false
     setBusy(false)
     if (out.miss === 'gems') {
       publishSheet(null)
@@ -2932,7 +2941,7 @@ const giftStyles = StyleSheet.create({
   count: { fontFamily: fonts.ui, fontSize: 12, alignSelf: 'flex-end' },
   sent: { fontFamily: fonts.uiBold, fontSize: 14 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tile: { width: '31%', flexGrow: 1 },
+  tile: { width: '31%' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 10 },
   rowArt: { width: 56, alignItems: 'center' },
   rowCopy: { flex: 1, gap: 2 },
