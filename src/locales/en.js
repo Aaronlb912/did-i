@@ -2718,7 +2718,7 @@ export const en = {
   "nightOne.bodyGentle": "Come back tomorrow for the next one.",
   'nightOne.widget': "Add the widget",
   'widgetTip.title': "Want your questions on your home screen?",
-  'widgetTip.body': "The Did I widget shows tonight's questions. Tap Did right from it.",
+  'widgetTip.body': "The Did I widget shows today's questions. Tap Did right from it.",
   'widgetTip.add': "Add to home screen",
   'widgetTip.done': "Done",
   'widgetTip.later': "Not now",

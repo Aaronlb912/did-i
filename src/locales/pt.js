@@ -2724,7 +2724,7 @@ export const pt = {
   "nightOne.bodyGentle": "Volte amanhã para a próxima.",
   'nightOne.widget': "Adicionar o widget",
   'widgetTip.title': "Quer suas perguntas na tela inicial?",
-  'widgetTip.body': "O widget do Did I mostra as perguntas de hoje à noite. Toque em Did direto nele.",
+  'widgetTip.body': "O widget do Did I mostra as perguntas de hoje. Toque em Did direto nele.",
   'widgetTip.add': "Adicionar à tela inicial",
   'widgetTip.done': "Pronto",
   'widgetTip.later': "Agora não",

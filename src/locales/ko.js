@@ -2688,7 +2688,7 @@ export const ko = {
   "nightOne.bodyGentle": "내일 다음 밤에 또 만나요.",
   'nightOne.widget': "위젯 추가",
   'widgetTip.title': "질문을 홈 화면에 둘까요?",
-  'widgetTip.body': "Did I 위젯에 오늘 밤 질문이 보여요. 거기서 바로 Did를 누르세요.",
+  'widgetTip.body': "Did I 위젯에 오늘의 질문이 보여요. 거기서 바로 Did를 누르세요.",
   'widgetTip.add': "홈 화면에 추가",
   'widgetTip.done': "완료",
   'widgetTip.later': "나중에",

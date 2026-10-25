@@ -103,6 +103,7 @@ import {
   markSignInNudgeSeen,
   nightOneSeen,
   readMorningAsk,
+  readTour,
   readWidgetTip,
   shouldShowMorningAsk,
   shouldShowWidgetTip,
@@ -483,7 +484,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         ? (() => {
             const week = weekStripNights(stack.shelf, stack.clock, tagId)
             // Sunday night closes the week: a small recap rides on the done card.
-            const recap = isRecapNight(stack.dateIso) ? weekRecap(stack.shelf, week, tagId) : null
+            const recap = isRecapNight(stack.dateIso) ? weekRecap(stack.shelf, week, tagId, stack.clock) : null
             return { week, recap, tomorrow: tomorrowPreview(stack.shelf, stack.clock, tagId) }
           })()
         : null,
@@ -570,7 +571,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     today: stack.dateIso,
     on: morningOn,
     open: morningOpen(now),
-    busy: nightOne || !hasQuestion,
+    busy: nightOne || !hasQuestion || tourActive() || readTour().basics === 'new',
     addedHere: morningHere,
   })
   const morningN = showMorning ? morningCount(stack.shelf || [book], stack.dateIso) : 0
@@ -981,7 +982,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     if (!sunday) return
     markWeekRecapSeen(sunday)
     const [y, m, d] = sunday.split('-').map(Number)
-    const recap = weekRecap(stack.shelf, weekStripNights(stack.shelf, new Date(y, m - 1, d, 12), tagId), tagId)
+    const recap = weekRecap(stack.shelf, weekStripNights(stack.shelf, new Date(y, m - 1, d, 12), tagId), tagId, new Date())
     // Nothing answered last week (or a new phone): nothing to show.
     if (!recap.dids && !recap.cleared) return
     publishSheet({
@@ -1248,7 +1249,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
         <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.waitKicker')}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
-        {isNew && firstWaiting ? (
+        {firstWaiting ? (
           <View style={styles.actions}>
             <DidButton small label={t('tonight.answerEarly')} colors={colors} onPress={() => stack.jewelClick(firstWaiting)} />
           </View>

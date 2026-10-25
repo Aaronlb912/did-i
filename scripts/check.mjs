@@ -1171,6 +1171,15 @@ test('the weekly recap counts an early by-date Did in the week it was done', () 
   assert.equal(weekRecap([book], weekOf('2026-10-25')).dids, 0)
 })
 
+test('the weekly recap does not count a Not yet on a day that is still open as missed', () => {
+  const daily = lamp('d', { cadence: 'daily', createdOn: '2026-10-01' })
+  const book = { id: 'b', dayFoldHour: 0, lamps: [daily], answers: [{ id: 'x', lampId: 'd', periodKey: '2026-10-25', status: 'skip', answeredAt: '2026-10-25T20:00:00' }, { id: 'y', lampId: 'd', periodKey: '2026-10-24', status: 'skip', answeredAt: '2026-10-24T20:00:00' }] }
+  const week = Array.from({ length: 7 }, (_, i) => ({ iso: addDaysIso('2026-10-19', i), on: false }))
+  assert.equal(weekRecap([book], week, '', new Date(2026, 9, 25, 20, 0)).nopes, 1, 'today is open, yesterday is closed')
+  assert.equal(weekRecap([book], week, '', new Date(2026, 9, 25, 2, 0)).nopes, 0, 'yesterday is open in its grace period')
+  assert.equal(weekRecap([book], week).nopes, 2, 'no clock: every skip counts')
+})
+
 test('a watch tap that fails to apply is kept and tried again', () => {
   const src = readFileSync(new URL('../native/watch-sync.js', import.meta.url), 'utf8')
   const take = src.slice(src.indexOf('const take = (tap)'))
@@ -8322,6 +8331,9 @@ await testAsync('readthrough 8: the 9 PM warning fires when last night was froze
   const heat = streakOf([book], clock)
   assert.equal(heat, 14, 'the freeze carries the streak over last night')
   assert.ok(streakRiskFire(book, clock, heat), 'a frozen streak still gets the warning')
+  // A question that asks at 10 PM is still waiting at 9 PM: nothing is open to warn about.
+  const lateBook = { ...book, lamps: [{ ...book.lamps[0], askAfter: '22:00' }] }
+  assert.equal(streakRiskFire(lateBook, clock, heat), null, 'no 9 PM warning for a question that asks at 10 PM')
   const notify = readFileSync(path.join(checkRoot, 'src/lib/notify.js'), 'utf8')
   assert.ok(notify.includes('shelfStreak([book], now)'), 'web pings pass the real streak')
 })
@@ -9217,6 +9229,11 @@ await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an ho
   assert.equal(dayNudges(notYet, now).length, 14)
   // No questions at all: nothing to nudge about.
   assert.equal(dayNudges({ ...book, lamps: [] }, now).length, 0)
+  // Only a late-evening question: it still waits at 9:00 and 13:30, so no day nudge.
+  const late = { ...book, lamps: [{ ...q('a'), askAfter: '20:00' }] }
+  assert.equal(dayNudges(late, now).length, 0, 'a question waiting past the nudge time is not open')
+  const mixed = { ...book, lamps: [{ ...q('a'), askAfter: '20:00' }, q('b')] }
+  assert.equal(dayNudges(mixed, now).length, 14)
   // A reminder at 9:45 keeps 9:00 quiet; one at 14:30 sits exactly an hour out, so 13:30 stays.
   const near = dayNudges(book, now, { days: 1, reminders: [new Date(2026, 9, 14, 9, 45), new Date(2026, 9, 14, 14, 30)] })
   assert.deepEqual(near.map((n) => n.at.getHours()), [13])

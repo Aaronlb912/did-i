@@ -2679,7 +2679,7 @@ export const zh = {
   "nightOne.bodyGentle": "明天再来，迎接下一晚。",
   'nightOne.widget': "添加小组件",
   'widgetTip.title': "把问题放到主屏幕上？",
-  'widgetTip.body': "Did I 小组件会显示今晚的问题。直接在上面点 Did。",
+  'widgetTip.body': "Did I 小组件会显示今天的问题。直接在上面点 Did。",
   'widgetTip.add': "添加到主屏幕",
   'widgetTip.done': "完成",
   'widgetTip.later': "以后再说",

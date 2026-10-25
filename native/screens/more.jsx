@@ -579,7 +579,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   // The last seven nights, walked once per night (the Sunday recap, any day).
   const recap = useMemo(() => {
     const books = inView(book, boards)
-    return weekRecap(books, weekStripNights(books, clock, tagId), tagId)
+    return weekRecap(books, weekStripNights(books, clock, tagId), tagId, clock)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book, boards, dateIso, tagId])
   // The longest run any one question had (nope breaks it), walked once a night.
@@ -591,15 +591,20 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
     return best
   }, [book, boards, dateIso, tagId])
 
+  if (!counts.hung) {
+    return (
+      <ScreenShell title={t('stats.title')} colors={colors}>
+        <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
+        <Meta colors={colors}>{t('streaks.empty')}</Meta>
+        <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+      </ScreenShell>
+    )
+  }
+
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
-      {!counts.hung ? (
-        <>
-          <Meta colors={colors}>{t('streaks.empty')}</Meta>
-          <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
-        </>
-      ) : !(counts.did + counts.late + counts.skip) ? (
+      {!(counts.did + counts.late + counts.skip) ? (
         <>
           <Meta colors={colors}>{t('stats.empty')}</Meta>
           <DidButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />

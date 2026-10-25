@@ -1,4 +1,4 @@
-import { dueTonight, rowDoneTonight } from './recurrence.js'
+import { askedBy, dueTonight, rowDoneTonight } from './recurrence.js'
 
 // Two daytime nudges, local time, on top of the per-question reminders.
 export const DAY_NUDGE_TIMES = ['09:00', '13:30']
@@ -24,7 +24,7 @@ export function dayNudges(books, now, { days = 7, reminders = [], shift = (at) =
       if (shift(at).getTime() !== at.getTime()) return
       if (near.some((ms) => Math.abs(ms - at.getTime()) < NEAR_MS)) return
       // Today reads the live answers; later days have none yet, so any due question counts.
-      const open = list.some((book) => dueTonight(book, at).some((row) => !rowDoneTonight(row)))
+      const open = list.some((book) => askedBy(dueTonight(book, at), at).some((row) => !rowDoneTonight(row)))
       if (!open) return
       const day = Math.floor(Date.UTC(at.getFullYear(), at.getMonth(), at.getDate()) / 86400000)
       out.push({ at, slot, line: ((day * 2 + slot) % DAY_NUDGE_LINES) + 1 })

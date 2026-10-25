@@ -2737,7 +2737,7 @@ export const de = {
   "nightOne.bodyGentle": "Komm morgen für die nächste wieder.",
   'nightOne.widget': "Widget hinzufügen",
   'widgetTip.title': "Deine Fragen auf dem Home-Bildschirm?",
-  'widgetTip.body': "Das Did I Widget zeigt die Fragen für heute Abend. Tippe dort direkt auf Did.",
+  'widgetTip.body': "Das Did I Widget zeigt die Fragen für heute. Tippe dort direkt auf Did.",
   'widgetTip.add': "Zum Home-Bildschirm",
   'widgetTip.done': "Fertig",
   'widgetTip.later': "Nicht jetzt",
