@@ -692,12 +692,13 @@ async function pullAndMergeOnce() {
       const purse = mergePurses(local?.boards || [])
       if (!asked && carryPayload(purse)) {
         coinBag = await carrySignedOut(purse)
-        if (coinBag) {
-          try {
-            localStorage.setItem(carryKey, '1')
-          } catch {
-            // Asks again next sync; the server carries once.
-          }
+        // A failed carry must not let the server balance replace the phone's
+        // coins: fail this sync so lastUser stays empty and the next one asks again.
+        if (!coinBag) throw new Error('account.syncMiss')
+        try {
+          localStorage.setItem(carryKey, '1')
+        } catch {
+          // Asks again next sync; the server carries once.
         }
       }
     }
