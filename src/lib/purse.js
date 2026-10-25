@@ -227,7 +227,7 @@ export function comingDrop(today = boardDate(new Date()), { frames = false } = {
 // Slides for the shop's drop carousel, first to last: the Coming drop (if in
 // its week), then released drops newest first. Before any dated drop exists,
 // one "new in the shop" slide of the newest items keeps the carousel full.
-export const DROP_SLIDES_MAX = 4
+export const DROP_SLIDES_MAX = 1
 
 function daysUntil(iso, today) {
   const ms = Date.parse(`${iso}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)
