@@ -66,7 +66,6 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
   const question = blank.trim() ? `${lead} ${blank.trim()}` : ''
   const person = (people || []).find((p) => p.id === to)
   const repeat = repeatFrom(cadence, days)
-  const ready = Boolean(question) && Boolean(to) && !busy && !done
   const leave = useLeaveAsk((blank.trim() !== start.trim() || Boolean(note.trim())) && !done, colors, '/people')
 
   function fold(id) {
@@ -145,7 +144,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
       colors={colors}
       back={false}
       leftAction={{ label: t('hang.cancel'), onPress: leave }}
-      rightAction={{ label: t('we.sendShort'), onPress: send, disabled: !ready }}
+      rightAction={{ label: t('we.sendShort'), onPress: send, disabled: !question || busy || done }}
     >
       <HangCard
         ref={inputRef}

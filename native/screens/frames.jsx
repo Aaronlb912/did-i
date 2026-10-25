@@ -367,11 +367,12 @@ export function openFramesHow(colors) {
 const FrameTile = memo(function FrameTile({ frame, purse, ctx, colors, onPress, style, ownedSet }) {
   const name = frameTileName(frame.id)
   const owned = (ownedSet || framesOwned(purse, ctx)).has(frame.id)
+  const status = frameStatus(frame, purse, ctx)
   return (
     <Pressable
       onPress={() => onPress(frame.id)}
       accessibilityRole="button"
-      accessibilityLabel={t('shop.see', { name })}
+      accessibilityLabel={[t('shop.see', { name }), status.gems || status.coins || status.text].filter(Boolean).join(', ')}
       style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, pressFx(pressed)]}
     >
       <View style={styles.tileArt}>
@@ -381,7 +382,7 @@ const FrameTile = memo(function FrameTile({ frame, purse, ctx, colors, onPress, 
         <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={2}>
           {name}
         </Text>
-        <StatusTag status={frameStatus(frame, purse, ctx)} colors={colors} />
+        <StatusTag status={status} colors={colors} />
       </View>
     </Pressable>
   )
