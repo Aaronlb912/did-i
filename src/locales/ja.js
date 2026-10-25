@@ -2686,7 +2686,7 @@ export const ja = {
   "nightOne.bodyGentle": "また明日、次の夜に。",
   'nightOne.widget': "ウィジェットを追加",
   'widgetTip.title': "質問をホーム画面に置きませんか？",
-  'widgetTip.body': "Did I ウィジェットに今夜の質問が出ます。そこから Did をタップできます。",
+  'widgetTip.body': "Did I ウィジェットに今日の質問が出ます。そこから Did をタップできます。",
   'widgetTip.add': "ホーム画面に追加",
   'widgetTip.done': "完了",
   'widgetTip.later': "あとで",

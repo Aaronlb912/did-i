@@ -15,6 +15,7 @@ import {
   isoDate,
   onceDoneNight,
   oncePastCounts,
+  openFloorIso,
   parseIsoDate,
   periodKeyFor,
   periodNight,
@@ -532,7 +533,7 @@ export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
 
 // The week behind a night, for the Sunday recap and Stats. `week` is
 // weekStripNights for that night, so one walk feeds the dots and this.
-export function weekRecap(boards, week, tagId = '') {
+export function weekRecap(boards, week, tagId = '', now) {
   const nights = week || []
   let cleared = 0
   let run = 0
@@ -544,6 +545,8 @@ export function weekRecap(boards, week, tagId = '') {
   }
   const from = nights[0]?.iso || ''
   const to = nights[nights.length - 1]?.iso || ''
+  // A Not yet on a day that can still be answered is not a miss yet.
+  const floor = now ? openFloorIso(now) : ''
   let dids = 0
   let late = 0
   let nopes = 0
@@ -564,8 +567,9 @@ export function weekRecap(boards, week, tagId = '') {
         // A monthly key is the month: count it on the day it was answered.
         if (key.length === 7) key = stampDay(answer.answeredAt)
         if (key.length !== 10 || key < from || key > to) continue
-        if (status === 'skip') nopes += 1
-        else {
+        if (status === 'skip') {
+          if (!floor || key < floor) nopes += 1
+        } else {
           dids += 1
           if (status === 'late') late += 1
         }
