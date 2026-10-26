@@ -65,6 +65,7 @@ export function MarketingShell({ children, path, wide = false }) {
               {t('web.nav.home')}
             </a>
           ) : null}
+          <a href="/guides/">{t('web.nav.guides')}</a>
           <a href="/privacy" className={here === '/privacy' ? 'is-on' : undefined}>
             {t('web.nav.privacy')}
           </a>
