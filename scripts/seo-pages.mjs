@@ -6,6 +6,21 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 const SITE = 'https://did-i.app'
 const APP_STORE = 'https://apps.apple.com/app/id6814688066'
 const today = new Date().toISOString().slice(0, 10)
+// Bump when the guide words change, so sitemap dates mean something.
+const UPDATED = '2026-10-26'
+const ORG = { '@type': 'Organization', name: 'Did I', url: `${SITE}/`, logo: `${SITE}/icon-512.png` }
+const APP = {
+  '@context': 'https://schema.org',
+  '@type': 'MobileApplication',
+  name: 'Did I??? Habit Reminders',
+  url: `${SITE}/`,
+  image: `${SITE}/icon-512.png`,
+  operatingSystem: 'iOS, watchOS, Android',
+  applicationCategory: 'LifestyleApplication',
+  installUrl: APP_STORE,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+}
+const updatedLabel = new Date(`${UPDATED}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
 const pages = [
   {
@@ -232,7 +247,7 @@ main,header,footer{max-width:42rem;margin:0 auto;padding:1.25rem 1rem}header{dis
 .back{display:flex;flex-direction:column;gap:.6rem;margin:2rem 0}.back a{display:block;padding:.9rem 1rem;border:1px solid var(--di-line);border-radius:12px;font-weight:600;text-decoration:none;color:var(--di-ink)}
 h1{font-size:clamp(1.8rem,5vw,2.6rem);line-height:1.15;margin:1rem 0}h2{font-size:1.2rem;margin:2rem 0 .4rem}p{color:var(--di-ink-soft)}.lead{font-size:1.15rem;color:var(--di-ink)}
 a{color:var(--di-on)}.cta{display:flex;flex-wrap:wrap;gap:.75rem;margin:1.5rem 0}.cta a{display:block;padding:.85rem 1.2rem;border:1px solid var(--di-line);border-radius:12px;font-weight:600;text-decoration:none}
-.cta a:first-child{background:var(--di-on);color:var(--di-bg);border-color:var(--di-on)}ul.more{padding-left:1.1rem}footer{border-top:1px solid var(--di-line);font-size:.9rem}`
+.cta a:first-child{background:var(--di-on);color:var(--di-bg);border-color:var(--di-on)}ul.more{padding-left:1.1rem}ul.more li{margin:.5rem 0;color:var(--di-ink-soft)}.updated{font-size:.9rem}footer{border-top:1px solid var(--di-line);font-size:.9rem}`
 
 const cta = `<div class="cta"><a href="${APP_STORE}">Get Did I on the App Store</a><a href="/beta">Join the Android beta</a></div>`
 
@@ -253,6 +268,10 @@ function shell({ path, title, description, body, jsonld }) {
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:image" content="${SITE}/og-image.png?v=2">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta property="og:locale" content="en_US">
 <script type="application/ld+json">${JSON.stringify(jsonld)}</script>
 <style>${style}</style>
 </head>
@@ -278,9 +297,22 @@ ${p.sections.map(([h, t]) => `<h2>${esc(h)}</h2>\n<p>${esc(t)}</p>`).join('\n')}
 <h2>Questions</h2>
 ${p.faq.map(([q, a]) => `<h3>${esc(q)}</h3>\n<p>${esc(a)}</p>`).join('\n')}
 ${cta}
+<p class="updated">Updated <time datetime="${UPDATED}">${updatedLabel}</time></p>
 <h2>More</h2>
 <ul class="more">${others.map((o) => `<li><a href="/${o.slug}/">${esc(o.h1)}</a></li>`).join('')}</ul>`
   const jsonld = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: p.h1,
+      description: p.description,
+      image: `${SITE}/og-image.png`,
+      dateModified: UPDATED,
+      author: ORG,
+      publisher: ORG,
+      mainEntityOfPage: `${SITE}${path}`,
+      about: APP,
+    },
     {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
@@ -308,9 +340,18 @@ writeFileSync(
     title: 'Guides: habit trackers that come to you | Did I',
     description: 'How Did I works as an ADHD habit tracker, a widget, an Apple Watch app, a family tracker, a reminder app and a daily checklist.',
     body: `<h1>Guides</h1>\n<p class="lead">How Did I fits the way you already use your phone.</p>\n<ul class="more">${pages
-      .map((p) => `<li><a href="/${p.slug}/">${esc(p.h1)}</a></li>`)
+      .map((p) => `<li><a href="/${p.slug}/">${esc(p.h1)}</a><br>${esc(p.description)}</li>`)
       .join('')}</ul>\n${cta}`,
-    jsonld: { '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Did I guides', url: `${SITE}/guides/` },
+    jsonld: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'Did I guides',
+        url: `${SITE}/guides/`,
+        hasPart: pages.map((p) => ({ '@type': 'Article', headline: p.h1, url: `${SITE}/${p.slug}/` })),
+      },
+      APP,
+    ],
   }),
 )
 
@@ -318,8 +359,26 @@ const urls = ['/', '/download', '/press', '/beta', '/privacy', '/terms', '/guide
 writeFileSync(
   'public/sitemap.xml',
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
-    .map((u) => `  <url><loc>${SITE}${u}</loc><lastmod>${today}</lastmod></url>`)
+    .map((u) => `  <url><loc>${SITE}${u}</loc><lastmod>${u === '/guides/' || pages.some((p) => u === `/${p.slug}/`) ? UPDATED : today}</lastmod></url>`)
     .join('\n')}\n</urlset>\n`,
 )
 writeFileSync('public/robots.txt', `User-agent: *\nAllow: /\nDisallow: /app\n\nSitemap: ${SITE}/sitemap.xml\n`)
+// A plain list for AI crawlers (llmstxt.org).
+writeFileSync(
+  'public/llms.txt',
+  `# Did I
+
+> Did I??? Habit Reminders is a free habit app for people who forget to open habit trackers. One question at a time comes to a home screen widget, Apple Watch or a reminder. Swipe Did or Not yet. Free on iPhone. Android is in beta at ${SITE}/beta.
+
+## Guides
+
+${pages.map((p) => `- [${p.h1}](${SITE}/${p.slug}/): ${p.description}`).join('\n')}
+
+## Links
+
+- [App Store](${APP_STORE})
+- [Android beta](${SITE}/beta)
+- [Press](${SITE}/press)
+`,
+)
 console.log(`wrote ${pages.length} topic pages, guides, sitemap.xml, robots.txt`)

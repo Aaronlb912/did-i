@@ -1,0 +1,24 @@
+# Did I
+
+> Did I??? Habit Reminders is a free habit app for people who forget to open habit trackers. One question at a time comes to a home screen widget, Apple Watch or a reminder. Swipe Did or Not yet. Free on iPhone. Android is in beta at https://did-i.app/beta.
+
+## Guides
+
+- [How to remember if you did something today](https://did-i.app/remember-if-you-did-something/): Did I drink water? Did I stretch? Why you forget doing routine things, and a simple way to know for sure: ask once, answer Did or Not yet, and check later.
+- [A habit tracker for people who forget to open habit trackers](https://did-i.app/habit-tracker-you-forget-to-open/): You download a habit tracker, use it for three days, then forget it exists. Did I flips that: the question comes to your widget, watch or a reminder.
+- [How to build a habit with one question a day](https://did-i.app/one-question-a-day/): Big habit plans fall apart. One small yes or no question a day is easier to keep. How to pick the question, when to ask it, and what to do on a miss.
+- [How to ask someone if they did a chore without nagging](https://did-i.app/ask-without-nagging/): Texting "did you take the trash out?" again and again turns into nagging. Ask once instead: send a question that waits in their inbox until they answer.
+- [Streaks without the guilt: what Not yet is for](https://did-i.app/streaks-without-guilt/): Streaks help until one breaks and you quit. Did I uses Did and Not yet, lets you tap Did later that day, and has a gentle mode that hides the number.
+- [A habit tracker for ADHD that you do not have to remember to open](https://did-i.app/habit-tracker-for-adhd/): Did I is a free habit tracker for ADHD brains. The question shows up on your widget, watch or a reminder, one at a time. Swipe Did or Not yet. No guilt for a miss.
+- [A habit tracker widget you can answer from](https://did-i.app/habit-tracker-widget/): Did I puts your next habit question in a home screen widget. Tap Did or Not yet right on the widget. Free habit tracker for iPhone, Android beta.
+- [An Apple Watch habit tracker that asks you](https://did-i.app/apple-watch-habit-tracker/): Answer your habits from your Apple Watch. Did I asks one question at a time, a ring fills as you go, and your buddy comes along. Free on iPhone.
+- [A family habit tracker that checks in without nagging](https://did-i.app/family-habit-tracker/): Start a family in Did I and share a code. "Did you take the dog out?" shows up for everyone. Keep a streak together and cheer when someone finishes.
+- [A habit reminder app that asks, not nags](https://did-i.app/habit-reminder-app/): Did I is a habit reminder app that asks one question at the time you set. Swipe Did or Not yet. Free on iPhone, Android in beta.
+- [A daily checklist app that shows one thing at a time](https://did-i.app/daily-checklist-app/): A daily checklist app that shows one item at a time so you always know what is next. Did I is free on iPhone, with widgets and Apple Watch.
+- [A free habit tracker app with streaks and small rewards](https://did-i.app/free-habit-tracker-app/): Did I is a free habit tracker app with streaks, coins, a shop of buddies and looks, widgets and Apple Watch. iPhone now, Android in beta.
+
+## Links
+
+- [App Store](https://apps.apple.com/app/id6814688066)
+- [Android beta](https://did-i.app/beta)
+- [Press](https://did-i.app/press)
