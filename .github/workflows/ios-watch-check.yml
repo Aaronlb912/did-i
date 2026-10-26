@@ -39,7 +39,7 @@ jobs:
       # Same Xcode pick as ios-ipa.yml (Expo SDK 57 needs Xcode 26).
       - name: Select Xcode
         run: |
-          XCODE="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          XCODE="$(ls -d /Applications/Xcode_26*.app /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)"
           if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE"; fi
           xcodebuild -version
           xcodebuild -showsdks | grep -i watch || true
