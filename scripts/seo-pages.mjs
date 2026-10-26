@@ -9,6 +9,27 @@ const today = new Date().toISOString().slice(0, 10)
 
 const pages = [
   {
+    slug: 'remember-if-you-did-something',
+    title: 'How to remember if you did something today | Did I',
+    description: 'Did I drink water? Did I stretch? Why you forget doing routine things, and a simple way to know for sure: ask once, answer Did or Not yet, and check later.',
+    h1: 'How to remember if you did something today',
+    lead: 'You stand in the kitchen and wonder: did I already drink water today? Did I text them back? You did it, maybe. You just cannot remember doing it. Here is why that happens and a simple way to stop guessing.',
+    sections: [
+      ['Why routine things vanish from memory', 'Things you do every day run on autopilot. Your brain saves effort by not storing each time as its own memory, so today blurs into yesterday. That is normal. It is also why "I think I did" is not the same as knowing.'],
+      ['Write it down at the moment you do it', 'The fix is a record made right then, not a memory you try to pull up later. A note, a mark on a paper calendar, or a tap in an app all work. What matters is that it takes a second and happens every time.'],
+      ['Ask a yes or no question', 'Long lists are easy to skip. One clear question is not. "Did I take a walk?" has two answers. When the answer is saved, you can look it up instead of wondering.'],
+      ['Let the question come to you', 'The hard part is remembering to check. Put the question where your eyes already go: your home screen, your watch, or a reminder at the time it matters. Then you do not have to remember to remember.'],
+      ['How Did I does it', 'Did I asks you one question at a time. It shows up on a home screen widget, on Apple Watch, or as a reminder at the time you set. Swipe right for Did or left for Not yet. Later, open Today or the calendar to see what you already answered.'],
+      ['Not yet is a fine answer', 'Not yet does not break anything. You can still tap Did later that day. Streaks count days in a row if they help you, and gentle mode hides the number if they do not.'],
+      ['Start with three questions', 'Pick three small things you often wonder about, like "Did I drink water?", "Did I stretch?" and "Did I read tonight?". Add more once those feel easy. A short list you answer beats a long one you ignore.'],
+    ],
+    faq: [
+      ['Why do I forget if I did something?', 'Routine actions run on autopilot, so your brain does not save each one as a clear memory. A quick record made at the time fixes that.'],
+      ['What is the easiest way to keep track?', 'One yes or no question per habit, answered the moment you do it, somewhere you already look, like a home screen widget.'],
+      ['Is Did I free?', 'Yes. Did I is free on iPhone, and Android is in beta. The shop is optional.'],
+    ],
+  },
+  {
     slug: 'habit-tracker-for-adhd',
     title: 'A habit tracker for ADHD that comes to you | Did I',
     description: 'Did I is a free habit tracker for ADHD brains. The question shows up on your widget, watch or a reminder, one at a time. Swipe Did or Not yet. No guilt for a miss.',
