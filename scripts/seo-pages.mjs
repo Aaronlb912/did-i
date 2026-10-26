@@ -227,9 +227,9 @@ const pages = [
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 const style = `:root{--di-bg:#0e1014;--di-ink:#f4f6fa;--di-ink-soft:#99a1b0;--di-line:#2b3140;--di-on:#c9f24d}
-@media (prefers-color-scheme:light){:root{--di-bg:#f6f5f1;--di-ink:#16181d;--di-ink-soft:#5a6170;--di-line:#d9d6cd;--di-on:#4a6b00}}
 *{box-sizing:border-box}body{margin:0;background:var(--di-bg);color:var(--di-ink);font:17px/1.6 Inter,ui-sans-serif,system-ui,'Segoe UI',Roboto,Arial,sans-serif}
-main,header,footer{max-width:42rem;margin:0 auto;padding:1.25rem 1rem}header a{color:var(--di-ink);font-weight:700;text-decoration:none}
+main,header,footer{max-width:42rem;margin:0 auto;padding:1.25rem 1rem}header{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap}header a{color:var(--di-ink);text-decoration:none}header .brand{font-weight:700;font-size:1.1rem}header nav{display:flex;gap:.5rem;flex-wrap:wrap}header nav a{padding:.5rem .8rem;border:1px solid var(--di-line);border-radius:10px;font-weight:600}header nav a.dl{background:var(--di-on);color:var(--di-bg);border-color:var(--di-on)}
+.back{display:flex;flex-direction:column;gap:.6rem;margin:2rem 0}.back a{display:block;padding:.9rem 1rem;border:1px solid var(--di-line);border-radius:12px;font-weight:600;text-decoration:none;color:var(--di-ink)}
 h1{font-size:clamp(1.8rem,5vw,2.6rem);line-height:1.15;margin:1rem 0}h2{font-size:1.2rem;margin:2rem 0 .4rem}p{color:var(--di-ink-soft)}.lead{font-size:1.15rem;color:var(--di-ink)}
 a{color:var(--di-on)}.cta{display:flex;flex-wrap:wrap;gap:.75rem;margin:1.5rem 0}.cta a{display:block;padding:.85rem 1.2rem;border:1px solid var(--di-line);border-radius:12px;font-weight:600;text-decoration:none}
 .cta a:first-child{background:var(--di-on);color:var(--di-bg);border-color:var(--di-on)}ul.more{padding-left:1.1rem}footer{border-top:1px solid var(--di-line);font-size:.9rem}`
@@ -257,9 +257,10 @@ function shell({ path, title, description, body, jsonld }) {
 <style>${style}</style>
 </head>
 <body>
-<header><a href="/">Did I</a></header>
+<header><a class="brand" href="/">Did I</a><nav><a href="/">Home</a><a href="/guides/">Guides</a><a class="dl" href="/download">Download app</a></nav></header>
 <main>
 ${body}
+<div class="back">${path === '/guides/' ? '' : '<a href="/guides/">All guides</a>'}<a href="/">Back to the Did I home page</a></div>
 </main>
 <footer><p><a href="/">Home</a> · <a href="/guides/">Guides</a> · <a href="/download">Download</a> · <a href="/privacy">Privacy</a></p></footer>
 </body>
