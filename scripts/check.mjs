@@ -2957,15 +2957,23 @@ test('shop drops wait for their day and the server sells the same coin items', (
 test('free event items: claimable in their window, never after, kept by owners', async () => {
   const P = await import('../src/lib/purse.js')
   const free = [...SHOP_CALENDAR.buddies, ...SHOP_CALENDAR.cheers].filter((item) => item.free)
-  assert.deepEqual(free.map((item) => item.id).sort(), ['bat', 'boo'])
+  assert.deepEqual(free.map((item) => item.id).sort(), ['bat', 'boo', 'turkey', 'wishbone'])
+  // [day before, first day, last day, first day gone]
+  const halloween = ['2026-10-27', '2026-10-28', '2026-10-31', '2026-11-01']
+  const thanksgiving = ['2026-11-22', '2026-11-23', '2026-11-26', '2026-11-27']
+  const windows = { bat: halloween, boo: halloween, turkey: thanksgiving, wishbone: thanksgiving }
   for (const item of free) {
+    const [before, first, last, gone] = windows[item.id]
     assert.equal(item.gems || 0, 0, item.id + ' costs nothing')
     assert.ok(item.from && item.until, item.id + ' has a window')
-    assert.ok(!P.isLive(item, '2026-10-27') && P.isTeased(item, '2026-10-27'), 'coming the day before, not claimable')
-    assert.ok(P.isLive(item, '2026-10-28') && P.isLive(item, '2026-10-31'), 'live on both ends')
-    assert.ok(!P.isLive(item, '2026-11-01') && !P.isTeased(item, '2026-11-01'), 'gone after, never coming again')
-    assert.equal(P.freeLastDay(item), '2026-10-31')
+    assert.ok(!P.isLive(item, before) && P.isTeased(item, before), 'coming the day before, not claimable')
+    assert.ok(P.isLive(item, first) && P.isLive(item, last), 'live on both ends')
+    assert.ok(!P.isLive(item, gone) && !P.isTeased(item, gone), 'gone after, never coming again')
+    assert.equal(P.freeLastDay(item), last)
   }
+  assert.ok(P.shopBuddies('2026-11-24').some((item) => item.id === 'turkey') && !P.shopBuddies('2026-11-28').some((item) => item.id === 'turkey'))
+  assert.ok(P.liveCheers('2026-11-24').some((item) => item.id === 'wishbone') && !P.liveCheers('2026-11-28').some((item) => item.id === 'wishbone'))
+  assert.ok(!P.giftItems().buddies.some((item) => item.id === 'turkey') && !P.giftItems().cheers.some((item) => item.id === 'wishbone'), 'never a gift')
   assert.ok(P.shopBuddies('2026-10-30').some((item) => item.id === 'bat') && !P.shopBuddies('2026-11-02').some((item) => item.id === 'bat'))
   assert.ok(P.liveCheers('2026-10-30').some((item) => item.id === 'boo') && !P.liveCheers('2026-11-02').some((item) => item.id === 'boo'))
   assert.equal(P.shopTag(normalizePurse({}), 'buddy', free.find((item) => item.id === 'bat')).free, true)
@@ -6596,8 +6604,8 @@ const frameGeo = await import('../native/components/frames/geometry.js')
 test('every card frame id has art, and the vine and moon math hold', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const ids = frameGeo.FRAME_IDS
-  assert.equal(ids.length, 78)
-  assert.equal(new Set(ids).size, 78)
+  assert.equal(ids.length, 79)
+  assert.equal(new Set(ids).size, 79)
   const art = readFileSync(path.join(root, 'native/components/frames/art.jsx'), 'utf8')
   const map = art.slice(art.indexOf('export const FRAME_ART = {'))
   const keys = [...map.slice(0, map.indexOf('\n}')).matchAll(/^\s+(\w+): \{/gm)].map((m) => m[1])
@@ -9912,7 +9920,9 @@ test('shop drop banners show new frames on the phone, free holiday ones too', ()
   const coming = dropSlides('2026-11-14', { frames: true })[0]
   assert.equal(coming.kind, 'coming')
   assert.ok(types(coming).includes('frame:linked') && types(coming).includes('frame:bedtime'))
-  assert.ok(types(dropSlides('2026-11-21', { frames: true })[0]).includes('frame:countdown'), 'the free holiday frame is in its drop')
+  const nov21 = dropSlides('2026-11-21', { frames: true })
+  assert.ok(types(nov21.find((slide) => slide.kind === 'drop')).includes('frame:countdown'), 'the free holiday frame is in its drop')
+  assert.deepEqual(types(nov21.find((slide) => slide.kind === 'coming')), ['cheer:wishbone', 'buddy:turkey', 'frame:pie'], 'Thanksgiving is Coming two days out')
   assert.ok(!dropSlides('2026-11-20')[0].items.some((row) => row.type === 'frame'), 'the website draws no frame tiles')
   assert.ok(freshDrop('2026-11-20', { frames: true }).items.some((row) => row.type === 'frame'))
   assert.ok(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8').includes('dropSlides(undefined, { frames: true })'))

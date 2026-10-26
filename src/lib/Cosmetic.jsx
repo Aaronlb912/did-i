@@ -79,6 +79,9 @@ import {
   GHOST_EYES,
   GHOST_MOUTH,
   GHOST_VIEW,
+  WISH_LEFT,
+  WISH_RIGHT,
+  WISH_VIEW,
   DISCO_GRID,
   GIFT_BAND,
   GIFT_BOW,
@@ -192,6 +195,13 @@ function winterChipArt(id) {
           <path d={WING_LOW_R} fill="var(--di-on-deep)" />
           <ellipse cx="20" cy="17" rx="1.6" ry="7" fill="var(--di-ink)" />
           <path d={BUTTERFLY_FEELERS} fill="none" stroke="var(--di-ink)" strokeWidth="1" strokeLinecap="round" />
+        </svg>
+      )
+    case 'wishbone':
+      return (
+        <svg viewBox={WISH_VIEW}>
+          <path d={WISH_LEFT} fill="var(--di-on)" stroke="var(--di-ink)" strokeWidth="1.2" strokeLinejoin="round" />
+          <path d={WISH_RIGHT} fill="var(--di-on)" stroke="var(--di-ink)" strokeWidth="1.2" strokeLinejoin="round" />
         </svg>
       )
     case 'boo':

@@ -22,6 +22,7 @@ const COAT = {
   turtle: { body: '#9edb86', belly: '#a0753e', ear: '#8fd27a' },
   reindeer: { body: '#a8703f', belly: '#f0d6b0', ear: '#c9a06a' },
   bat: { body: '#6b5a8e', belly: '#d9ccef', ear: '#f4a6c4' },
+  turkey: { body: '#8a5a34', belly: '#d1a271', ear: '#e8862f' },
 }
 
 function spot(box, x, y, w, h, color, radius) {
@@ -200,6 +201,25 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
       </View>
     )
   }
+  if (id === 'turkey') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 6, 12, 12, 20, '#c8452c')} />
+        <View style={spot(box, 30, 12, 12, 20, '#c8452c')} />
+        <View style={spot(box, 13, 5, 10, 20, '#f2bf47')} />
+        <View style={spot(box, 25, 5, 10, 20, '#f2bf47')} />
+        <View style={spot(box, 19, 3, 10, 20, '#e8862f')} />
+        <View style={spot(box, 10, 19, 28, 26, coat.body)} />
+        <View style={spot(box, 15.4, 31.4, 17.2, 13.2, coat.belly)} />
+        <View style={spot(box, 17.1, 25, 4.8, 6, pupil)} />
+        <View style={spot(box, 26.1, 25, 4.8, 6, pupil)} />
+        <View style={spot(box, 21.8, 31.4, 4.4, 3, '#f2a93b')} />
+        <View style={spot(box, 24.5, 33.4, 2.4, 4.6, '#d8372c')} />
+        <View style={spot(box, 14.2, 43.4, 7.6, 4.4, '#e39a34')} />
+        <View style={spot(box, 26.2, 43.4, 7.6, 4.4, '#e39a34')} />
+      </View>
+    )
+  }
   if (id === 'snowman') {
     return (
       <View style={{ width, height }}>
@@ -355,6 +375,10 @@ const EYES = {
   bat: [
     [[19.5, 27, 2.4, 3, DARK], [20.3, 26, 0.8, 1, ...SHINE]],
     [[28.5, 27, 2.4, 3, DARK], [29.3, 26, 0.8, 1, ...SHINE]],
+  ],
+  turkey: [
+    [[19.5, 28, 2.4, 3, DARK], [20.3, 27, 0.8, 1, ...SHINE]],
+    [[28.5, 28, 2.4, 3, DARK], [29.3, 27, 0.8, 1, ...SHINE]],
   ],
   reindeer: [
     [[19.5, 27, 2.2, 2.8, DARK], [20.2, 26.1, 0.7, 0.9, ...SHINE]],
@@ -825,6 +849,45 @@ function BuddyDrawing({ id, width, height, eyes }) {
         <Ellipse cx="31.5" cy="32.2" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
         <Ellipse cx="17" cy="45.5" rx="4.5" ry="2.8" fill="#4f4170" />
         <Ellipse cx="31" cy="45.5" rx="4.5" ry="2.8" fill="#4f4170" />
+      </Svg>
+    )
+  }
+
+  if (id === 'turkey') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Ellipse cx="11.64" cy="23.43" rx="4.6" ry="9.6" fill="#c8452c" transform="rotate(-62 11.64 23.43)" />
+        <Ellipse cx="14.82" cy="19.43" rx="4.6" ry="9.6" fill="#e8862f" transform="rotate(-41 14.82 19.43)" />
+        <Ellipse cx="19.1" cy="16.89" rx="4.6" ry="9.6" fill="#f2bf47" transform="rotate(-20.5 19.1 16.89)" />
+        <Ellipse cx="24" cy="16" rx="4.6" ry="9.6" fill="#e8862f" />
+        <Ellipse cx="28.9" cy="16.89" rx="4.6" ry="9.6" fill="#f2bf47" transform="rotate(20.5 28.9 16.89)" />
+        <Ellipse cx="33.18" cy="19.43" rx="4.6" ry="9.6" fill="#e8862f" transform="rotate(41 33.18 19.43)" />
+        <Ellipse cx="36.36" cy="23.43" rx="4.6" ry="9.6" fill="#c8452c" transform="rotate(62 36.36 23.43)" />
+        <Ellipse cx="6.87" cy="20.89" rx="2.8" ry="3.6" fill="#e46a48" transform="rotate(-62 6.87 20.89)" />
+        <Ellipse cx="11.27" cy="15.36" rx="2.8" ry="3.6" fill="#f4a65a" transform="rotate(-41 11.27 15.36)" />
+        <Ellipse cx="17.21" cy="11.83" rx="2.8" ry="3.6" fill="#ffd98a" transform="rotate(-20.5 17.21 11.83)" />
+        <Ellipse cx="24" cy="10.6" rx="2.8" ry="3.6" fill="#f4a65a" />
+        <Ellipse cx="30.79" cy="11.83" rx="2.8" ry="3.6" fill="#ffd98a" transform="rotate(20.5 30.79 11.83)" />
+        <Ellipse cx="36.73" cy="15.36" rx="2.8" ry="3.6" fill="#f4a65a" transform="rotate(41 36.73 15.36)" />
+        <Ellipse cx="41.13" cy="20.89" rx="2.8" ry="3.6" fill="#e46a48" transform="rotate(62 41.13 20.89)" />
+        <Ellipse cx="16.51" cy="24.15" rx="3.4" ry="6.6" fill="#7a4a26" transform="rotate(-52 16.51 24.15)" />
+        <Ellipse cx="19.11" cy="21.86" rx="3.4" ry="6.6" fill="#7a4a26" transform="rotate(-31 19.11 21.86)" />
+        <Ellipse cx="22.27" cy="20.66" rx="3.4" ry="6.6" fill="#7a4a26" transform="rotate(-10.5 22.27 20.66)" />
+        <Ellipse cx="25.73" cy="20.66" rx="3.4" ry="6.6" fill="#7a4a26" transform="rotate(10.5 25.73 20.66)" />
+        <Ellipse cx="28.89" cy="21.86" rx="3.4" ry="6.6" fill="#7a4a26" transform="rotate(31 28.89 21.86)" />
+        <Ellipse cx="31.49" cy="24.15" rx="3.4" ry="6.6" fill="#7a4a26" transform="rotate(52 31.49 24.15)" />
+        <Ellipse cx="24" cy="32" rx="14" ry="13" fill="#8a5a34" />
+        <Ellipse cx="11.8" cy="36" rx="3.6" ry="6.6" fill="#6f4527" transform="rotate(-14 11.8 36)" />
+        <Ellipse cx="36.2" cy="36" rx="3.6" ry="6.6" fill="#6f4527" transform="rotate(14 36.2 36)" />
+        <Ellipse cx="24" cy="38" rx="8.6" ry="6.6" fill="#d1a271" />
+        {eyes ? <EyesInline parts={parts} id="turkey" /> : null}
+        <Polygon points="21.7,31.4 26.3,31.4 24,34.8" fill="#f2a93b" />
+        <Polygon points="22.7,31.4 25.3,31.4 24,33.3" fill="#ffd27a" />
+        <Ellipse cx="25.7" cy="35.4" rx="1.2" ry="2.4" fill="#d8372c" />
+        <Ellipse cx="16.5" cy="32" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="31.5" cy="32" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
+        <Ellipse cx="18" cy="45.6" rx="3.8" ry="2.2" fill="#e39a34" />
+        <Ellipse cx="30" cy="45.6" rx="3.8" ry="2.2" fill="#e39a34" />
       </Svg>
     )
   }

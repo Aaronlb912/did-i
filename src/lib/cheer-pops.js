@@ -101,6 +101,7 @@ const CHEER_KINDS = [
   'butterfly',
   'bounce',
   'boo',
+  'wishbone',
 ]
 
 const GAP_MS = {
@@ -136,6 +137,7 @@ const GAP_MS = {
   butterfly: 130,
   bounce: 120,
   boo: 150,
+  wishbone: 150,
 }
 
 const BASE_HOLD = {
@@ -171,6 +173,7 @@ const BASE_HOLD = {
   butterfly: 2150,
   bounce: 2000,
   boo: 2400,
+  wishbone: 2600,
 }
 
 function stageN(stage) {
@@ -852,6 +855,50 @@ export const GHOST_KEYS = [
 // A four point sparkle on a 12 box.
 export const GHOST_SPARK = 'M6 0 L7.4 4.6 L12 6 L7.4 7.4 L6 12 L4.6 7.4 L0 6 L4.6 4.6 Z'
 
+// Wishbone: a 32 by 40 box, the two halves joined at the knob (16, 10).
+// WISH_KEYS moves the whole bone like GHOST_KEYS: [time 0..1, y and x in bone
+// heights/widths, tilt, squash x, squash y, opacity]; it pops up, is tugged
+// side to side and strains. WISH_HALF_KEYS then pulls the left half away:
+// [time, x in widths, y in heights, turn in degrees, opacity]; the right half
+// mirrors x and turn. WISH_STAR_KEYS is the snap: [time, scale, opacity].
+export const WISH_VIEW = '0 0 32 40'
+export const WISH_LEFT =
+  'M16 6.2 C13.4 4.6 10.8 6.4 11.6 9 C12 10.4 13 11 13.4 12.4 L6.6 33.6 C6 35.6 7.8 37.2 9.6 36.4 C11 35.8 11 34.4 10.6 33.2 L15.2 15.6 L16 14.4 Z'
+export const WISH_RIGHT =
+  'M16 6.2 C18.6 4.6 21.2 6.4 20.4 9 C20 10.4 19 11 18.6 12.4 L25.4 33.6 C26 35.6 24.2 37.2 22.4 36.4 C21 35.8 21 34.4 21.4 33.2 L16.8 15.6 L16 14.4 Z'
+export const WISH_SHINE = 'M12.6 8.2 C12.8 9.4 13.6 10 13.8 11 M11.6 18 L9 26'
+export const WISH_STAR = 'M16 3 Q16 9 22 9 Q16 9 16 15 Q16 9 10 9 Q16 9 16 3 Z M9 1.6 Q9 4 11.4 4 Q9 4 9 6.4 Q9 4 6.6 4 Q9 4 9 1.6 Z M23 1.5 Q23 3.5 25 3.5 Q23 3.5 23 5.5 Q23 3.5 21 3.5 Q23 3.5 23 1.5 Z'
+export const WISH_COLORS = { bone: '#fff3d6', rim: '#b07a3c', shine: '#ffffff', star: '#ffd34d', glow: '#ffcf7a' }
+export const WISH_MS = 2200
+export const WISH_KEYS = [
+  [0, 0.5, 0, 0, 0.6, 0.6, 0],
+  [0.08, -0.18, 0, 0, 1.12, 0.88, 1],
+  [0.18, -0.5, 0, 0, 0.94, 1.08, 1],
+  [0.26, -0.42, 0, 0, 1, 1, 1],
+  [0.32, -0.42, -0.03, -8, 1, 1, 1],
+  [0.38, -0.42, 0.03, 8, 1, 1, 1],
+  [0.44, -0.42, -0.02, -6, 1, 1, 1],
+  [0.5, -0.42, 0, 0, 1.06, 0.95, 1],
+  [0.54, -0.42, 0, 0, 1, 1, 1],
+  [0.86, -0.42, 0, 0, 1, 1, 1],
+  [1, -0.42, 0, 0, 1, 1, 0],
+]
+export const WISH_HALF_KEYS = [
+  [0, 0, 0, 0, 1],
+  [0.54, 0, 0, 0, 1],
+  [0.62, -0.2, -0.08, -24, 1],
+  [0.8, -0.5, 0.3, -50, 1],
+  [1, -0.75, 0.75, -70, 0],
+]
+export const WISH_STAR_KEYS = [
+  [0, 0, 0],
+  [0.52, 0, 0],
+  [0.57, 1.35, 1],
+  [0.7, 0.9, 0.9],
+  [0.86, 0.4, 0],
+  [1, 0.4, 0],
+]
+
 // Lean a spray toward the middle so edge pops stay on screen.
 function leanFor(pop, stage, reach) {
   const ox = Number.parseFloat(ORIGINS[stageN(stage) - 1][pop]?.[0]) || 50
@@ -1250,6 +1297,7 @@ const BURST_BUILDERS = {
   butterfly: butterflyBits,
   bounce: bounceBits,
   boo: booBits,
+  wishbone: wishBits,
 }
 
 function popsAtOrigins(origins, stage, buildBits, gapMs = 120) {
@@ -1298,6 +1346,38 @@ function booBits(pop, stage) {
       rise: rem(size * 0.7),
       size: rem(Math.min(0.95, 0.5 + n * 0.08)),
       delay: `${820 + i * 150}ms`,
+    })
+  }
+  return bits
+}
+
+// A wishbone pops up, is tugged side to side, snaps with a gold star and the
+// halves fly apart. Higher levels add a smaller second wishbone and gold sparks
+// at the snap.
+function wishBits(pop, stage) {
+  const level = burstLevel(pop, stage)
+  const n = stageN(stage)
+  const size = Math.min(6.2, (3.1 + n * 0.55 + pop * 0.1) * (pop % 2 ? 0.92 : 1))
+  const side = pop % 2 ? -1 : 1
+  const lean = leanFor(pop, stage, size * 0.8)
+  const down = size * 0.8
+  const bits = [{ id: 'wish-bone', wish: true, x: rem(lean), y: rem(down), size: rem(size), swing: side, delay: '0ms' }]
+  if (level >= 7) {
+    const inward = lean ? Math.sign(lean) : side
+    bits.push({ id: 'wish-mini', wish: true, x: rem(lean + inward * size * 0.85), y: rem(down), size: rem(size * 0.55), swing: -inward, delay: '260ms' })
+  }
+  const snap = Math.round(WISH_MS * 0.55)
+  const sparks = Math.min(4, Math.max(0, level - 2))
+  for (let i = 0; i < sparks; i += 1) {
+    const a = ((i + 0.5) / sparks) * Math.PI + Math.PI
+    bits.push({
+      id: `wish-spark-${i}`,
+      ghostSpark: true,
+      tone: 'gold',
+      x: rem(lean + Math.cos(a) * size * 0.7),
+      y: rem(down - size * 1.17 + Math.sin(a) * size * 0.4),
+      size: rem(Math.min(1.1, 0.55 + n * 0.1)),
+      delay: `${snap + i * 70}ms`,
     })
   }
   return bits

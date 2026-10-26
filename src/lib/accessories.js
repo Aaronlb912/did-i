@@ -36,6 +36,8 @@ const AT = {
   reindeer: { ex: [19.5, 28.5], ey: 27, er: 3.5, crown: 17.5, neck: 39.5, side: 14 },
   // Tall ears and folded wings: head items sit in front of the ear bases, back items behind the wings.
   bat: { ex: [19.5, 28.5], ey: 27, er: 3.7, crown: 17, neck: 40, side: 16 },
+  // The tail fan rises behind the head: head items sit on the head, in front of it.
+  turkey: { ex: [19.5, 28.5], ey: 28, er: 3.7, crown: 19.5, neck: 41, side: 14 },
 }
 
 const INK = '#2d241c'

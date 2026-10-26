@@ -6475,7 +6475,8 @@ button.di-refer-rung {
 .di-cheer-chip[data-cheer='splat'] svg,
 .di-cheer-chip[data-cheer='butterfly'] svg,
 .di-cheer-chip[data-cheer='bounce'] svg,
-.di-cheer-chip[data-cheer='boo'] svg {
+.di-cheer-chip[data-cheer='boo'] svg,
+.di-cheer-chip[data-cheer='wishbone'] svg {
   width: 1.5rem;
   height: 1.5rem;
   overflow: visible;
@@ -14299,6 +14300,172 @@ button.di-we-faces {
   box-sizing: border-box;
   opacity: 0;
   animation: di-wisp 1.1s ease-out forwards;
+}
+
+/* Wishbone: pops up, is tugged side to side, snaps with a gold star and the
+   halves fly apart. Like .di-ghost its bottom edge sits on the pop's anchor;
+   the times and offsets are WISH_KEYS, WISH_HALF_KEYS and WISH_STAR_KEYS. */
+.di-wish {
+  position: absolute;
+  top: calc(var(--gh) * -1 + var(--gy));
+  left: var(--gx);
+  width: calc(var(--gh) * 0.8);
+  height: var(--gh);
+  margin-left: calc(var(--gh) * -0.4);
+  opacity: 0;
+  transform-origin: 50% 100%;
+  animation: di-wish 2.2s linear forwards;
+}
+
+.di-wish svg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.di-wish-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--gh) * 1.5);
+  height: calc(var(--gh) * 1.5);
+  margin: calc(var(--gh) * -0.75) 0 0 calc(var(--gh) * -0.75);
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, #ffcf7a 50%, transparent) 0%, color-mix(in srgb, #ffcf7a 18%, transparent) 45%, transparent 70%);
+}
+
+.di-wish-half {
+  transform-box: view-box;
+  transform-origin: 16px 10px;
+  animation: di-wish-half 2.2s linear forwards;
+}
+
+.di-wish-bone {
+  fill: #fff3d6;
+  stroke: #b07a3c;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+.di-wish-shine {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 0.9;
+  stroke-linecap: round;
+}
+
+.di-wish-star {
+  fill: #ffd34d;
+  stroke: #ffffff;
+  stroke-width: 0.6;
+  stroke-linejoin: round;
+  opacity: 0;
+  transform-box: view-box;
+  transform-origin: 16px 9px;
+  animation: di-wish-star 2.2s linear forwards;
+}
+
+.di-ghost-spark[data-tone='gold'] svg {
+  fill: #ffd34d;
+}
+
+@keyframes di-wish {
+  0% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * 0.5)) rotate(calc(0deg * var(--dir))) scale(0.6, 0.6);
+    opacity: 0;
+  }
+  8% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.18)) rotate(calc(0deg * var(--dir))) scale(1.12, 0.88);
+    opacity: 1;
+  }
+  18% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.5)) rotate(calc(0deg * var(--dir))) scale(0.94, 1.08);
+    opacity: 1;
+  }
+  26% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.42)) rotate(calc(0deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  32% {
+    transform: translate(calc(var(--gh) * 0.8 * -0.03 * var(--dir)), calc(var(--gh) * -0.42)) rotate(calc(-8deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  38% {
+    transform: translate(calc(var(--gh) * 0.8 * 0.03 * var(--dir)), calc(var(--gh) * -0.42)) rotate(calc(8deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  44% {
+    transform: translate(calc(var(--gh) * 0.8 * -0.02 * var(--dir)), calc(var(--gh) * -0.42)) rotate(calc(-6deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.42)) rotate(calc(0deg * var(--dir))) scale(1.06, 0.95);
+    opacity: 1;
+  }
+  54% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.42)) rotate(calc(0deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  86% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.42)) rotate(calc(0deg * var(--dir))) scale(1, 1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--gh) * 0.8 * 0 * var(--dir)), calc(var(--gh) * -0.42)) rotate(calc(0deg * var(--dir))) scale(1, 1);
+    opacity: 0;
+  }
+}
+
+@keyframes di-wish-half {
+  0% {
+    transform: translate(calc(0 * 32px * var(--s)), calc(0 * 40px)) rotate(calc(0deg * var(--s)));
+    opacity: 1;
+  }
+  54% {
+    transform: translate(calc(0 * 32px * var(--s)), calc(0 * 40px)) rotate(calc(0deg * var(--s)));
+    opacity: 1;
+  }
+  62% {
+    transform: translate(calc(-0.2 * 32px * var(--s)), calc(-0.08 * 40px)) rotate(calc(-24deg * var(--s)));
+    opacity: 1;
+  }
+  80% {
+    transform: translate(calc(-0.5 * 32px * var(--s)), calc(0.3 * 40px)) rotate(calc(-50deg * var(--s)));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-0.75 * 32px * var(--s)), calc(0.75 * 40px)) rotate(calc(-70deg * var(--s)));
+    opacity: 0;
+  }
+}
+
+@keyframes di-wish-star {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  52% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  57% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  86% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
 }
 
 @keyframes di-ghost {

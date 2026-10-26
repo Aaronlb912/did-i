@@ -109,7 +109,8 @@ through `t()` with keys in **all 9** `src/locales/*.js` files.
 ## Event drop (free, one time)
 
 An item with `free: true`, `gems: 0`, `from` and `until` in `src/lib/purse.js`
-is a free event item (Halloween 2026: buddy `bat`, cheer `boo`).
+is a free event item (Halloween 2026: buddy `bat`, cheer `boo`, frame `pumpkins`;
+Thanksgiving 2026: buddy `turkey`, cheer `wishbone`, frame `pie`).
 
 - It is claimed in the shop, with a "Free" tag and "Free until {last day}"
   (`freeLastDay()`; `until` is the first day it is gone). The sheet button says

@@ -23,6 +23,11 @@ import {
   GHOST_MOUTH,
   GHOST_SPARK,
   GHOST_VIEW,
+  WISH_LEFT,
+  WISH_RIGHT,
+  WISH_SHINE,
+  WISH_STAR,
+  WISH_VIEW,
   GIFT_BAND,
   GIFT_BOW,
   GIFT_BOX,
@@ -401,6 +406,26 @@ function Ghost({ delay, x, y, size, swing }) {
   )
 }
 
+// The halves turn about the knob and the star about its middle (16,10 and
+// 16,9 in the 32 by 40 box); the times are WISH_*_KEYS in cheer-pops.js.
+function Wish({ delay, x, y, size, swing }) {
+  return (
+    <b className="di-wish" style={{ '--gh': size, '--gx': x, '--gy': y, '--dir': swing < 0 ? -1 : 1, animationDelay: delay }}>
+      <i className="di-wish-glow" />
+      <svg viewBox={WISH_VIEW} aria-hidden="true" focusable="false">
+        <path className="di-wish-star" d={WISH_STAR} style={{ animationDelay: delay }} />
+        <g className="di-wish-half" style={{ '--s': 1, animationDelay: delay }}>
+          <path className="di-wish-bone" d={WISH_LEFT} />
+          <path className="di-wish-shine" d={WISH_SHINE} />
+        </g>
+        <g className="di-wish-half" style={{ '--s': -1, animationDelay: delay }}>
+          <path className="di-wish-bone" d={WISH_RIGHT} />
+        </g>
+      </svg>
+    </b>
+  )
+}
+
 function RubberBall({ delay, x, len, fall, size, tone }) {
   const roll = Number.parseFloat(len) || 0
   const spin = (roll / (Math.PI * (Number.parseFloat(size) || 1))) * 360
@@ -658,9 +683,12 @@ function renderBit(burst, pop, bit, screen = false) {
   if (bit.ghost) {
     return <Ghost key={key} delay={delay} x={bit.x} y={bit.y} size={bit.size} swing={bit.swing} />
   }
+  if (bit.wish) {
+    return <Wish key={key} delay={delay} x={bit.x} y={bit.y} size={bit.size} swing={bit.swing} />
+  }
   if (bit.ghostSpark) {
     return (
-      <b key={key} className="di-ghost-spark" style={{ '--dx': bit.x, '--dy': bit.y, '--sz': bit.size, animationDelay: delay }}>
+      <b key={key} className="di-ghost-spark" data-tone={bit.tone} style={{ '--dx': bit.x, '--dy': bit.y, '--sz': bit.size, animationDelay: delay }}>
         <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
           <path d={GHOST_SPARK} />
         </svg>

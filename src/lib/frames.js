@@ -117,6 +117,8 @@ const RAW = [
   season('thaw', '02-20', '03-05', { from: '2027-01-29' }),
   // Halloween 2026: one time only. Free Oct 28 to 31, never offered again after 2026 (lastYear); owners keep it.
   season('pumpkins', '10-28', '10-31', { from: '2026-10-28', lastYear: 2026 }),
+  // Thanksgiving 2026: one time only. Free Nov 23 to 26, never offered again after 2026 (lastYear); owners keep it.
+  season('pie', '11-23', '11-26', { from: '2026-11-23', lastYear: 2026 }),
   // Did I's birthday: hidden until APP_LAUNCH is set.
   LAUNCH_MD ? season('bday', LAUNCH_MD, addDays(LAUNCH_MD, 6), { firstYear: Number(APP_LAUNCH.slice(0, 4)) + 1 }) : season('bday', '01-01', '01-01', { hidden: true }),
 ]
