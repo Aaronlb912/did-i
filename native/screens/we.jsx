@@ -568,7 +568,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       colors={colors}
       back={false}
       leftAction={{ label: t('hang.cancel'), onPress: leave }}
-      rightAction={{ label: t('we.sendShort'), onPress: () => make(false), disabled: !ready }}
+      rightAction={{ label: t('we.sendShort'), onPress: () => make(false), disabled: !question || busy }}
     >
       <HangCard
         ref={inputRef}

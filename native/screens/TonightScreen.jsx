@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useNavigation } from '@react-navigation/native'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { useFrameActive } from '../components/frames/index.js'
-import { keepEarnedFrames, takeFramesToAnnounce, wearFrame, wornFrame } from '../../src/lib/frames.js'
+import { frameText, keepEarnedFrames, takeFramesToAnnounce, wearFrame, wornFrame } from '../../src/lib/frames.js'
+import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { nightProgress } from '../../src/lib/night-progress.js'
 import { addDaysIso, boardDate } from '../../src/lib/recurrence.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
@@ -65,7 +66,6 @@ import { StarterPicks } from '../components/StarterPicks.jsx'
 import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { flyBackNext } from '../components/SwipeCard.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
-import { StillOpen } from '../components/StillOpen.jsx'
 import { DropLine } from '../components/DropLine.jsx'
 import { RateCard } from '../components/RateCard.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
@@ -103,6 +103,7 @@ import {
   markSignInNudgeSeen,
   nightOneSeen,
   readMorningAsk,
+  readTour,
   readWidgetTip,
   shouldShowMorningAsk,
   shouldShowWidgetTip,
@@ -405,18 +406,41 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     if (!fresh.length) return
     feelTap('did')
     if (purse.cheerOn) fireCheer(purse.cheerOn, 3)
+    const wear = (id) => {
+      const now = bookNow.current
+      if (String(now?.frame || '') === id) return
+      const worn = wearFrame(now, id, frameCtxNow.current)
+      if (!worn.miss) onChangeNow.current(worn.book)
+    }
+    // The first new frame gets a pop-up; others, or one while a sheet is up, a toast.
+    const popId = sheetIsUp() ? '' : fresh[0]
+    if (popId) {
+      publishSheet({
+        preview: <FramePreview id={popId} colors={colors} size={120} />,
+        kicker: t('frames.unlocked'),
+        title: t(frameText(popId, 'name')),
+        body: t('kit.added'),
+        goLabel: t('frames.wearIt'),
+        onGo: () => {
+          wear(popId)
+          publishSheet(null)
+        },
+        moreLabel: t('gift.viewKit'),
+        onMore: () => {
+          publishSheet(null)
+          goHash('/kit', { id: 'frames' })
+        },
+        colors,
+      })
+    }
     for (const id of fresh) {
+      if (id === popId) continue
       showToast({
         id: `frame:${id}`,
         kind: 'frame',
         frameId: id,
         ms: 6000,
-        onWear: () => {
-          const now = bookNow.current
-          if (String(now?.frame || '') === id) return
-          const worn = wearFrame(now, id, frameCtxNow.current)
-          if (!worn.miss) onChangeNow.current(worn.book)
-        },
+        onWear: () => wear(id),
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -460,7 +484,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         ? (() => {
             const week = weekStripNights(stack.shelf, stack.clock, tagId)
             // Sunday night closes the week: a small recap rides on the done card.
-            const recap = isRecapNight(stack.dateIso) ? weekRecap(stack.shelf, week, tagId) : null
+            const recap = isRecapNight(stack.dateIso) ? weekRecap(stack.shelf, week, tagId, stack.clock) : null
             return { week, recap, tomorrow: tomorrowPreview(stack.shelf, stack.clock, tagId) }
           })()
         : null,
@@ -547,7 +571,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     today: stack.dateIso,
     on: morningOn,
     open: morningOpen(now),
-    busy: nightOne || !hasQuestion,
+    busy: nightOne || !hasQuestion || tourActive() || readTour().basics === 'new',
     addedHere: morningHere,
   })
   const morningN = showMorning ? morningCount(stack.shelf || [book], stack.dateIso) : 0
@@ -737,11 +761,25 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // Did we takes the card's place.
   const famBusy = useRef(new Set())
   const familyOpen = skippedFamilyRows(family.rows, peopleGone)
-  const stillOpenRows = [...stack.stillOpen, ...familyOpen]
+  // Family rows first: leaving your own last one rests the stack.
+  const stillOpenRows = [...familyOpen, ...stack.stillOpen]
+  // Not yets come back as cards only after Look again. Until then the stack
+  // rests on the Not yet card, so Did we and people cards are not held back.
+  const [lookAgain, setLookAgain] = useState(false)
+  const finishList = stack.bodyKind === 'finish' && stillOpenRows.length > 0
+  useEffect(() => {
+    if (finishList && !lookAgain) stack.restStack(true)
+    else if (!finishList && lookAgain && stack.bodyKind !== 'finish') setLookAgain(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finishList, lookAgain, stack.bodyKind])
+  const startLookAgain = () => {
+    setLookAgain(true)
+    stack.reopenStillOpen()
+  }
   const weSwipe =
     WE_SWIPE_OVER.has(stack.bodyKind) &&
     !stack.cheer &&
-    !(stack.bodyKind === 'finish' && stillOpenRows.length) ? (
+    !finishList ? (
       <WeSwipeCard
         cards={weCards}
         colors={colors}
@@ -870,6 +908,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // tonight's own cards until 9am.
   // Your own open questions from last night, then last night's open Did wes.
   const graceNight = graceNightIso()
+  // The 9am cutoff is tomorrow for today's rows, and this morning for yesterday's.
+  const untilWords = (row) => {
+    const words = clockWords('09:00')
+    return !row || !row.dateIso || row.dateIso === stack.dateIso ? t('tonight.untilTomorrow', { time: words }) : words
+  }
   const graceWeOpen = graceNight ? weOpenOn(graceNight) : new Set()
   const graceItems = [
     ...stack.graceOpen.map((row) => ({
@@ -944,7 +987,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     if (!sunday) return
     markWeekRecapSeen(sunday)
     const [y, m, d] = sunday.split('-').map(Number)
-    const recap = weekRecap(stack.shelf, weekStripNights(stack.shelf, new Date(y, m - 1, d, 12), tagId), tagId)
+    const recap = weekRecap(stack.shelf, weekStripNights(stack.shelf, new Date(y, m - 1, d, 12), tagId), tagId, new Date())
     // Nothing answered last week (or a new phone): nothing to show.
     if (!recap.dids && !recap.cleared) return
     publishSheet({
@@ -1017,7 +1060,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     face = withAnswerButtons(weSwipe, () => weAns.answer(weTop, 'did'), () => weAns.answer(weTop, 'nope'))
   } else if (peopleSwipe) {
     face = withAnswerButtons(peopleSwipe, peopleTop.onDid, peopleTop.onNope)
-  } else if (stack.bodyKind === 'finish' && stillOpenRows.length) {
+  } else if (finishList && lookAgain) {
     // A family row answers through the family path, not the shelf. Its key
     // is the people key, so a left or answered row stays gone today.
     const famKey = (row) => `fam:${row.family.id}:${row.lamp.id}:${row.night}`
@@ -1036,22 +1079,44 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         family.reload,
       ).finally(() => famBusy.current.delete(key))
     }
-    face = (
-      <GemFaceShell look={premium ? look : ''}
-        theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
-        <StillOpen
-          rows={stillOpenRows}
-          rowKey={(row) => (row.family ? famKey(row) : stack.rowKey(row))}
+    // Look again: each Not yet comes back as a card. Right is Did (late),
+    // left keeps the Not yet and lets the card go for today.
+    const keyOf = (row) => (row.family ? famKey(row) : stack.rowKey(row))
+    const top = stillOpenRows[0]
+    const onDid = () => (top.family ? famDid(top) : stack.lateFromList(top))
+    const onNope = () => {
+      if (!top.family) return stack.leaveFromList(top)
+      setPeopleGone((keys) => [...keys, `famkeep:${famKey(top).slice(4)}`])
+      feelTap('tick')
+    }
+    const titleOf = (row) =>
+      row.family ? t('tonight.familyRow', { name: row.family.name, question: row.lamp.question }) : row.lamp.question
+    const kickerAt = (n) => `${t('tonight.restKicker')} · ${t('tonight.meterLeft', { n: stillOpenRows.length - n + 1 })}`
+    face = withAnswerButtons(
+      <View {...notYetTour}>
+        <SwipeCardHost
+          key="look-again"
+          cardKey={`again:${keyOf(top)}`}
           colors={colors}
-          tour={notYetTour}
-          onLate={(row) => (row.family ? famDid(row) : stack.lateFromList(row))}
-          onLeave={(row) => {
-            if (!row.family) return stack.leaveFromList(row)
-            setPeopleGone((keys) => [...keys, `famkeep:${famKey(row).slice(4)}`])
-            feelTap('tick')
-          }}
-        />
-      </GemFaceShell>
+          panelStyle={gemCard}
+          gemLook={premium ? look : ''}
+          kicker={kickerAt(1)}
+          title={titleOf(top)}
+          stampDid={t('tonight.swipeDid')}
+          stampNope={t('tonight.swipeNope')}
+          behind={stillOpenRows.slice(1).map((row, i) => ({ key: `again:${keyOf(row)}`, kicker: kickerAt(i + 2), title: titleOf(row) }))}
+          onDid={onDid}
+          onNope={onNope}
+          buddy={activeBuddy(book)}
+          frame={cardFrame}
+        >
+          <Text style={[faceCardStyles.meta, styles.graceLate, { color: colors.inkSoft }]}>
+            {t('tonight.nopedChange', { time: untilWords(top) })}
+          </Text>
+        </SwipeCardHost>
+      </View>,
+      onDid,
+      onNope,
     )
   } else if (stack.bodyKind === 'face' && stack.faceRow) {
     const faceRow = stack.faceRow
@@ -1174,9 +1239,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>
           {stack.finishCount === 1 ? t('tonight.restOne') : t('tonight.restTitle', { n: stack.finishCount })}
         </Text>
-        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint', { time: clockWords('09:00') })}</Text>
+        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint', { time: untilWords() })}</Text>
         <View style={styles.actions}>
-          <DidButton label={t('tonight.restChange')} colors={colors} small onPress={stack.reopenStillOpen} />
+          <DidButton label={t('tonight.restChange')} colors={colors} small onPress={startLookAgain} />
         </View>
       </GemFaceShell>
     )
@@ -1189,7 +1254,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
         <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.waitKicker')}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
-        {isNew && firstWaiting ? (
+        {firstWaiting ? (
           <View style={styles.actions}>
             <DidButton small label={t('tonight.answerEarly')} colors={colors} onPress={() => stack.jewelClick(firstWaiting)} />
           </View>
@@ -1320,7 +1385,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         {pillMeta ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillMeta}</Text> : null}
         {/* A not yet still takes a swipe right to Did (late); say where it stands. */}
         {status === 'skip' ? (
-          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.nopedChange', { time: clockWords('09:00') })}</Text>
+          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.nopedChange', { time: untilWords(pillRow) })}</Text>
         ) : null}
         {pillHistory ? (
           <NightStrip

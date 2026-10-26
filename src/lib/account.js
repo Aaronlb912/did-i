@@ -1,7 +1,7 @@
 import { noteSessionUser, readAccountUserId } from './session-id.js'
 import { useEffect, useState } from 'react'
 import { cloud, cloudSetUp } from './cloud.js'
-import { t } from './i18n.js'
+import { appMiss, t } from './i18n.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { removeAvatar } from './avatar.js'
 import { forgetAccountCaches, forgetPendingLinks } from './account-cache.js'
@@ -233,7 +233,7 @@ export async function deleteAccount() {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const { error } = await db.rpc('delete_me')
-  if (error) return { miss: error.message }
+  if (error) return { miss: appMiss(error, 'account.syncMiss') }
   // Only once the delete went through: a failed delete keeps its photo.
   // delete_me tries storage too; this catches what it missed.
   await removeAvatar().catch(() => {})

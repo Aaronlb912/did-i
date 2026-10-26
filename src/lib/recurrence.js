@@ -446,6 +446,12 @@ function standingBy(row, now) {
   return !askAfterPassed(row.lamp, now)
 }
 
+// Rows whose ask time has come by `at`. Pushes use it so a question that
+// still waits at the push time does not count as open.
+export function askedBy(rows, at) {
+  return (rows || []).filter((row) => askAfterPassed(row.lamp, at))
+}
+
 export function faceReadyTonight(book, now = new Date()) {
   const due = dueTonight(book, now)
   const open = due.filter((row) => !row.answer && !standingBy(row, now))

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
+import { View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { currentBook, readShelf } from '../src/lib/board-shelf.js'
@@ -47,6 +48,8 @@ function ThemedStatusBar() {
   const theme = useTheme()
   return <StatusBar style={theme === 'light' ? 'dark' : 'light'} />
 }
+
+const wideColumn = { flex: 1, width: '100%', maxWidth: 640, alignSelf: 'center' }
 
 export function NativeApp() {
   const theme = useTheme()
@@ -168,7 +171,10 @@ export function NativeApp() {
         <SafeAreaProvider>
           <ThemedStatusBar />
           <Boundary>
-            <RootNavigator />
+            {/* Phones are narrower than this; the open iPhone Duo and other wide screens get a centered column. */}
+            <View style={wideColumn}>
+              <RootNavigator />
+            </View>
             <PendingScanHost />
             <Slot>
               <StreakMomentHost />

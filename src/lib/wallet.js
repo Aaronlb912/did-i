@@ -1,9 +1,9 @@
 import { cloud, cloudSetUp } from './cloud.js'
 import { readUser } from './account.js'
 import { accountSessionOn } from './session-id.js'
-import { CHEER_STAGE_COIN, FREE_BUDDY, isFreeEventId, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, liveLooks, normalizePurse } from './purse.js'
+import { CHEER_STAGE_COIN, FREE_BUDDY, freeEventItem, isFreeEventId, isGemLook, isReferBuddy, isLive, LOOK_COIN_PRICE, liveLooks, normalizePurse } from './purse.js'
 import { accessoryById, accessoryOnSale } from './accessories.js'
-import { boardDate } from './recurrence.js'
+import { addDaysIso, boardDate } from './recurrence.js'
 import { frameById, withServerFrames } from './frames.js'
 
 export function applyGemBalanceToShelf(shelf, balance) {
@@ -176,6 +176,33 @@ export async function claimFreeItem(kind, itemId) {
   return { miss: '', owned: normalizeGemOwned(data) }
 }
 
+// A free item claimed signed out lives on the phone only. Signed in, send it
+// to the account once per session while the server still allows its window
+// (a day of slack either way; the server decides). Returns the server's new
+// owned list, or null when nothing was claimed. Failures are silent and the
+// phone keeps its copy; a network or server error tries again next sync.
+const freeCatchUp = new Set()
+export async function catchUpFreeClaims(shelf, owned, today = boardDate(new Date())) {
+  const own = normalizeGemOwned(owned)
+  let latest = null
+  for (const book of shelf?.boards || []) {
+    const purse = normalizePurse(book)
+    for (const [kind, list, have] of [['cheer', purse.cheers, own.cheers], ['buddy', purse.buddies, own.buddies]]) {
+      for (const id of list) {
+        const item = freeEventItem(kind, id)
+        const key = kind + ':' + id
+        if (!item || have.includes(id) || freeCatchUp.has(key)) continue
+        if (!isLive(item, today) && !isLive(item, addDaysIso(today, -1)) && !isLive(item, addDaysIso(today, 1))) continue
+        freeCatchUp.add(key)
+        const out = await claimFreeItem(kind, id).catch(() => null)
+        if (out && !out.miss) latest = out.owned
+        else if (!out || out.miss === 'shop.miss.buyFail') freeCatchUp.delete(key)
+      }
+    }
+  }
+  return latest
+}
+
 export async function readGemBalance() {
   const db = cloud()
   if (!db) return null
@@ -200,6 +227,29 @@ export async function readCoinBalance() {
     return null
   }
   return Math.max(0, Math.floor(Number(data) || 0))
+}
+
+// What a phone earned signed out, for the once-per-account carry. Gem looks
+// and the free lime look are not coin items. null when there is nothing.
+export function carryPayload(purse) {
+  const p = normalizePurse(purse)
+  const add_coins = Math.min(300, Math.max(0, Math.floor(Number(p.coins) || 0)))
+  const looks = p.looks.filter((id) => id !== 'lime' && !isGemLook(id)).slice(0, 50)
+  const accessories = p.accessories.slice(0, 50)
+  if (!add_coins && !looks.length && !accessories.length) return null
+  return { add_coins, looks, accessories }
+}
+
+export async function carrySignedOut(purse) {
+  const payload = carryPayload(purse)
+  if (!payload) return null
+  const db = cloud()
+  if (!db) return null
+  const user = await readUser()
+  if (!user) return null
+  const { data, error } = await db.rpc('carry_signed_out', payload)
+  if (error) return null
+  return normalizeCoinCatalog(data)
 }
 
 export async function readCoinCatalog() {

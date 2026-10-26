@@ -63,15 +63,14 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
   if (!total) return null
   const done = ratio >= 1
   const left = total - answered
-  // A nope is answered for now, so it is counted apart from what is still open.
+  // A nope is answered for now, so the label counts it apart; it still counts as left.
   // Same rows as the total, or an optional Not yet hides a required open one.
   const nope = countedTonightRows((due || []).filter((row) => row?.lamp && row?.dateIso)).filter((row) => row.answer?.status === 'skip').length
-  const open = Math.max(0, left - nope)
-  // Counts answers, so it reads as done and left, not as a card position.
+  // Leads with what is left, Not yets included: the number people expect to be the big one.
   const label = [
-    t('tonight.meterDone'),
+    t('tonight.meterLeftWord'),
+    answered ? t('tonight.meterDoneN', { n: answered }) : '',
     nope ? t('tonight.meterNope', { n: nope }) : '',
-    open ? t('tonight.meterLeft', { n: open }) : '',
   ]
     .filter(Boolean)
     .join(' · ')
@@ -83,12 +82,12 @@ export function NightMeter({ due, we = null, colors, hallOn = false, gemLook = '
       accessibilityRole="button"
       accessibilityHint={t('stats.title')}
       style={styles.wrap}
-      accessibilityLabel={`${t('tonight.meterDoneAria', { n: answered, left: open })}${nope ? `, ${t('tonight.meterNope', { n: nope })}` : ''}${waiting ? `, ${waiting}` : ''}`}>
+      accessibilityLabel={`${t('tonight.meterDoneAria', { n: answered, left })}${nope ? `, ${t('tonight.meterNope', { n: nope })}` : ''}${waiting ? `, ${waiting}` : ''}`}>
       <View style={styles.top}>
         {/* Plain text, not RollNumber: its digit moves on the UI thread, which
-            the cheer keeps busy, so done lagged the left count by a second. */}
+            the cheer keeps busy, so the big count lagged by a second. */}
         <Text style={[styles.count, { color: hallOn || done ? colors.on : colors.ink }]} accessible={false}>
-          {answered}
+          {left}
         </Text>
         <Text style={[styles.label, { color: colors.inkDim }]}>{label}</Text>
         {waiting ? (

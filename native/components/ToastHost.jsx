@@ -244,9 +244,9 @@ function Toast({ item, live, colors, onGone, onAim, landed }) {
       leave(0, FROM_Y)
     }
   } else if (item.kind === 'frame') {
-    // A new frame opens the frames page; Wear it puts it on.
+    // A new frame opens it in the Collection; Wear it puts it on.
     press = () => {
-      goHash('/shop/frames')
+      goHash('/kit', { id: 'frames' })
       leave(0, FROM_Y)
     }
   } else if (item.kind === 'mark') {

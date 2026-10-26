@@ -109,8 +109,13 @@ export function markWidgetTimelineRead(read = true) {
   timelineRead = read
 }
 
+// Each sync waits on the native side, so an older one could finish after a
+// newer one and draw a question just stopped or deleted. Only the newest draws.
+let syncGen = 0
+
 export async function syncTonightWidget(shelf) {
   if (Platform.OS === 'web') return
+  const gen = ++syncGen
   if (!nativeWidgetsEnabled()) return
   if (Platform.OS === 'ios' && !nativeBridgeReady()) {
     queueWidgetSync(shelf)
@@ -128,6 +133,7 @@ export async function syncTonightWidget(shelf) {
   }
   // A tap whose question is not here yet stays on the widget until it merges.
   if (Platform.OS === 'ios' && tapsPending) return
+  if (gen !== syncGen) return
   const built = buildTonightWidgetProps(shelf)
   const props = enrichTonightWidgetProps(shelf, built)
   lastTonightKey = tonightWidgetKey(props)
@@ -137,7 +143,7 @@ export async function syncTonightWidget(shelf) {
     sendWatchCards(props, shelf)
     try {
       const api = await tonightWidgetApi()
-      if (!api) return
+      if (!api || gen !== syncGen) return
       // One entry per ask time, midnight and grace end, for the next few
       // nights, so a widget-only night still shows its own card.
       const boards = (shelf?.boards || []).filter((b) => !b.archived)
@@ -170,6 +176,7 @@ export async function syncTonightWidget(shelf) {
       const boards = (shelf?.boards || []).filter((b) => !b.archived)
       // Alarms at each ask time, at midnight, and when last night's grace ends.
       await armAndroidWidgetAskTimes(widgetRedrawTimes(boards, new Date()))
+      if (gen !== syncGen) return
       await requestWidgetUpdate({
         widgetName: WIDGET_NAME,
         renderWidget: (info) => renderDidITonightAndroidWidget(stored, info),

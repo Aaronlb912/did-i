@@ -15,6 +15,8 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { feelTap } from '../../src/lib/native.js'
 import {
   buddiesOnOrOwned,
+  looksOnOrOwned,
+  seasonNext,
   cheersOnOrOwned,
   freeLastDay,
   SPECIAL_CHEERS,
@@ -94,7 +96,7 @@ import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
 import { useIsFocused } from '@react-navigation/native'
-import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, liveBook, onLiveBook, openFrameSheet } from './frames.jsx'
+import { FramesCollection, FramesShopRow, frameCtxFor, frameStatus, framesForSaleCount, framesOwnedCount, leftAfter, liveBook, onLiveBook, openFrameSheet, FrameSheetPreview } from './frames.jsx'
 import { frameText } from '../../src/lib/frames.js'
 import { fonts } from '../theme.js'
 import { useLookColors } from '../hooks/useHallColors.js'
@@ -342,12 +344,13 @@ function PriceTag({ tag, colors }) {
 function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) {
   const name = tileName(type, item.id)
   const tag = shopTag(purse, type, item)
+  const price = tag.owned ? t('shop.owned') : tag.gems || tag.coins || (tag.free ? t('shop.free') : '')
   return (
     <Pressable
       onPress={() => onTile(type, item)}
       unstable_pressDelay={100}
       accessibilityRole="button"
-      accessibilityLabel={t('shop.see', { name })}
+      accessibilityLabel={[t('shop.see', { name }), price, note].filter(Boolean).join(', ')}
       style={({ pressed }) => [styles.tile, { borderColor: colors.line, backgroundColor: colors.panel2 }, style, dim && styles.tileDim, pressFx(pressed)]}
     >
       <View style={styles.tileArt}>
@@ -372,6 +375,8 @@ function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) 
 function wishNeed(type, item, purse) {
   // A seasonal frame is free: say when it is back, or that it is out now.
   if (type === 'frame' && item.kind === 'season') return frameStatus(item, purse, frameCtxFor(readShelf().boards)).text
+  // A seasonal accessory off sale: say when it is back, not "Can buy".
+  if (type === 'accessory' && !accessoryOnSale(item, boardDate(new Date()))) return t('shop.coming', { date: formatBoardDate(seasonNext(item)) })
   const tag = shopTag(purse, type, item)
   const short = tag.gems ? tag.gems - purse.gems : tag.coins - purse.coins
   if (short <= 0) return t('shop.canBuy')
@@ -477,6 +482,8 @@ function DropCarousel({ slides, purse, colors, onTile, foot }) {
                       colors={colors}
                       onTile={onTile}
                       style={styles.slideTile}
+                      // A free or earned frame has no price: say how you get it.
+                      note={type === 'frame' && !item.coins && !item.gems ? frameStatus(item, purse, frameCtxFor(readShelf().boards)).text : ''}
                     />
                   ))}
                 </View>
@@ -892,6 +899,8 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
   else if (type === 'look') preview = <LookPreviewCard id={item.id} />
   else if (type === 'buddy') preview = <BuddyPreviewCard id={item.id} colors={colors} />
   else if (type === 'accessory') preview = <AccessoryPreviewCard id={item.id} purse={purse} colors={colors} />
+  // A Coming frame opens here, not its own sheet, so it needs the same live card.
+  else if (type === 'frame') preview = <FrameSheetPreview id={item.id} colors={colors} ctx={frameCtxFor(readShelf().boards)} />
   publishSheet({
     preview,
     title: name,
@@ -1017,7 +1026,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
     return {
       on,
       toggle: () => {
-        const next = toggleWish(from, type, item.id)
+        const next = onLiveBook(toggleWish(liveBook(from), type, item.id))
         if (next.miss) {
           confirmMiss(shopMiss(next))
           return
@@ -1058,7 +1067,7 @@ export function ShopScreen({ book, onChange }) {
   const prefs = usePrefs()
   const purse = normalizePurse(book)
   const coat = activeLook(book)
-  const slides = dropSlides()
+  const slides = dropSlides(undefined, { frames: true })
   const accessoryList = accessoriesForSale(boardDate(new Date()))
   const rows = [
     { type: 'look', list: liveLooks(), cap: t('shop.looks'), allLabel: t('shop.allLooks'), path: '/shop/looks' },
@@ -1085,20 +1094,19 @@ export function ShopScreen({ book, onChange }) {
         slides={slides}
         purse={purse}
         colors={colors}
-        onTile={onTile}
+        // A frame opens its own sheet, which claims a holiday frame for free and
+        // shows how an earned one is earned. A Coming one is only a look.
+        onTile={(type, item) =>
+          type === 'frame' && !isTeased(item)
+            ? openFrameSheet({ id: item.id, book, colors, ctx: frameCtxFor(readShelf().boards), onChange })
+            : onTile(type, item)
+        }
         // The link sits inside the coming page only. Pages share one height,
         // so nothing below jumps on a swipe and other pages keep no blank strip.
         foot={(slide) => {
           if (prefs.dropPings || slide?.kind !== 'coming') return null
           return (
-            <Pressable
-              accessibilityRole="link"
-              onPress={() => goHash('/pings')}
-              hitSlop={8}
-              style={styles.dropLink}
-            >
-              <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.dropPingLink')}</Text>
-            </Pressable>
+            <KeyButton colors={colors} label={t('shop.dropPingLink')} onPress={() => goHash('/pings')} />
           )
         }}
       />
@@ -1801,10 +1809,15 @@ export function GemShopScreen({ book }) {
   // Restore asks the store for paid packs not yet credited, then the server.
   async function restore() {
     if (restoring) return
+    if (account.ready && !account.user) {
+      goHash('/account')
+      return
+    }
     setRestoring(true)
     try {
       const out = await restoreGemPurchases()
       if (out.miss === 'signin') confirmMiss(t('gems.restoreSignIn'))
+      else if (out.miss === 'setup' || out.miss === 'app') confirmMiss(t('gems.restoreSetup'))
       else if (out.miss) confirmMiss(t('gems.restoreMiss'))
       else if (out.gems > 0) confirmDone(t('gems.restored', { n: out.gems }))
       else confirmDone(t('gems.restoreNone'))
@@ -1953,17 +1966,12 @@ export function GemShopScreen({ book }) {
         .
       </Meta>
       {isReactNative() ? (
-        <Pressable
-          accessibilityRole="button"
+        <KeyButton
+          colors={colors}
           disabled={restoring}
+          label={restoring ? t('gems.restoring') : t('gems.restore')}
           onPress={restore}
-          hitSlop={8}
-          style={styles.restoreBtn}
-        >
-          <Text style={[styles.promoAll, { color: restoring ? colors.inkDim : colors.on }]}>
-            {restoring ? t('gems.restoring') : t('gems.restore')}
-          </Text>
-        </Pressable>
+        />
       ) : null}
     </BoardShell>
   )
@@ -2019,7 +2027,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
   const coat = activeLook(book)
   const purse = normalizePurse(book)
   // Shop order, always: a tile never moves under your finger when you wear it.
-  const looks = liveLooks().filter((item) => purse.looks.includes(item.id))
+  const looks = looksOnOrOwned(purse).filter((item) => purse.looks.includes(item.id))
   const buddyPool = buddiesOnOrOwned(purse)
   const cheerPool = cheersOnOrOwned(purse)
   const buddies = buddyPool.filter((item) => purse.buddies.includes(item.id))
@@ -2123,9 +2131,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
           <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
             <View style={styles.kitEmpty}>
               <Meta colors={colors}>{t('kit.wishEmpty')}</Meta>
-              <Pressable accessibilityRole="link" onPress={() => goHash('/shop')} hitSlop={8} style={styles.dropLink}>
-                <Text style={[styles.promoAll, { color: colors.on }]}>{t('help.shopGo')}</Text>
-              </Pressable>
+              <KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />
             </View>
           </View>
         )
@@ -2160,9 +2166,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
           {!buddies.length ? (
             <View style={styles.kitEmpty}>
               <Meta colors={colors}>{t('kit.noBuddies')}</Meta>
-              <Pressable accessibilityRole="link" onPress={() => goHash('/shop/buddies')} hitSlop={8}>
-                <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.allBuddies')}</Text>
-              </Pressable>
+              <KeyButton colors={colors} label={t('shop.allBuddies')} onPress={() => goHash('/shop/buddies')} />
             </View>
           ) : null}
           {buddies.map((item) => (
@@ -2171,7 +2175,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               label={t(buddyText(item.id, 'name'))}
               worn={purse.buddyOn === item.id}
               colors={colors}
-              onPress={() => wearOn(wearBuddy(book, item.id), t(buddyText(item.id, 'name')))}
+              onPress={() => wearOn(wearBuddy(book, item.id), purse.buddyOn === item.id ? '' : t(buddyText(item.id, 'name')))}
             >
               <BuddyChip id={item.id} alive={purse.buddyOn === item.id} />
             </KitTile>
@@ -2196,9 +2200,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
             <View style={[styles.kitGrid, { borderColor: colors.line, backgroundColor: colors.panel }]}>
               <View style={styles.kitEmpty}>
                 <Meta colors={colors}>{t('kit.noAccessories')}</Meta>
-                <Pressable accessibilityRole="button" onPress={() => goHash('/shop/accessories')} hitSlop={8}>
-                  <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.allAccessories')}</Text>
-                </Pressable>
+                <KeyButton colors={colors} label={t('shop.allAccessories')} onPress={() => goHash('/shop/accessories')} />
               </View>
             </View>
           ) : null}
@@ -2310,7 +2312,6 @@ const styles = StyleSheet.create({
   kindName: { fontFamily: fonts.uiBold, fontSize: 14 },
   kindCount: { fontFamily: fonts.ui, fontSize: 12 },
   kitTileCaption: { fontFamily: fonts.ui, fontSize: 10, maxWidth: '100%' },
-  restoreBtn: { alignSelf: 'center', paddingVertical: 10 },
   kitWearing: { fontFamily: fonts.uiSemi, fontSize: 14 },
   wishBtn: { alignSelf: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 8 },
   wishText: { fontFamily: fonts.uiSemi, fontSize: 14 },
@@ -2642,6 +2643,8 @@ export function GiftScreen({ book, onChange, toId }) {
   const [tries, setTries] = useState(0)
   const [sent, setSent] = useState('')
   const [busy, setBusy] = useState(false)
+  // The sheet keeps the send from when it opened, so a second tap sees busy as false.
+  const sending = useRef(false)
   const items = giftItems()
   const kind = GIFT_TABS.find((item) => item.id === tab)
   const list = items[tab] || []
@@ -2663,7 +2666,7 @@ export function GiftScreen({ book, onChange, toId }) {
   const name = person ? personName(person) || t('people.someone') : ''
 
   async function send(type, item) {
-    if (busy) return
+    if (busy || sending.current) return
     if (item.gems > 0 && purse.gems < item.gems) {
       publishSheet(null)
       offerMoreGems(colors)
@@ -2674,15 +2677,18 @@ export function GiftScreen({ book, onChange, toId }) {
       return
     }
     setBusy(true)
+    sending.current = true
     let out
     try {
       out = await sendGift(toId, type, item.id, note)
     } catch {
+      sending.current = false
       setBusy(false)
       publishSheet(null)
       confirmMiss(t('confirm.miss'))
       return
     }
+    sending.current = false
     setBusy(false)
     if (out.miss === 'gems') {
       publishSheet(null)
@@ -2935,7 +2941,7 @@ const giftStyles = StyleSheet.create({
   count: { fontFamily: fonts.ui, fontSize: 12, alignSelf: 'flex-end' },
   sent: { fontFamily: fonts.uiBold, fontSize: 14 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tile: { width: '31%', flexGrow: 1 },
+  tile: { width: '31%' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 10 },
   rowArt: { width: 56, alignItems: 'center' },
   rowCopy: { flex: 1, gap: 2 },

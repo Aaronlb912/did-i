@@ -78,7 +78,7 @@ import {
 import { inviteNextFriendGems, inviteRewardProgress } from '../src/lib/invite-reward.js'
 import { inviteClip, inviteFromText, inviteLink, playLinkFor } from '../src/lib/invite-link.js'
 import { applyGemOwnedToBook, validateCoinItem } from '../src/lib/wallet.js'
-import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, WISH_MAX, buyLook, isLive, isTeased, normalizePurse, offSeason, seasonNext, shopRow, toggleWish, wishGoal, wishLine, CHEERS as SHOP_CHEERS } from '../src/lib/purse.js'
+import { BUDDIES, FREE_BUDDY, LOOKS, SHOP_CALENDAR, WISH_MAX, buyLook, dropSlides, freshDrop, isLive, isTeased, normalizePurse, offSeason, seasonNext, shopRow, toggleWish, wishGoal, wishLine, CHEERS as SHOP_CHEERS } from '../src/lib/purse.js'
 const CHEERS_FOR_SIGN_IN = () => SHOP_CHEERS.find((item) => item.gems > 0).id
 import { hasAnyTopic, joinTopics, shelfTopics, topicsOf } from '../src/lib/board-json.js'
 import '../src/lib/locales-all.js'
@@ -1171,6 +1171,15 @@ test('the weekly recap counts an early by-date Did in the week it was done', () 
   assert.equal(weekRecap([book], weekOf('2026-10-25')).dids, 0)
 })
 
+test('the weekly recap does not count a Not yet on a day that is still open as missed', () => {
+  const daily = lamp('d', { cadence: 'daily', createdOn: '2026-10-01' })
+  const book = { id: 'b', dayFoldHour: 0, lamps: [daily], answers: [{ id: 'x', lampId: 'd', periodKey: '2026-10-25', status: 'skip', answeredAt: '2026-10-25T20:00:00' }, { id: 'y', lampId: 'd', periodKey: '2026-10-24', status: 'skip', answeredAt: '2026-10-24T20:00:00' }] }
+  const week = Array.from({ length: 7 }, (_, i) => ({ iso: addDaysIso('2026-10-19', i), on: false }))
+  assert.equal(weekRecap([book], week, '', new Date(2026, 9, 25, 20, 0)).nopes, 1, 'today is open, yesterday is closed')
+  assert.equal(weekRecap([book], week, '', new Date(2026, 9, 25, 2, 0)).nopes, 0, 'yesterday is open in its grace period')
+  assert.equal(weekRecap([book], week).nopes, 2, 'no clock: every skip counts')
+})
+
 test('a watch tap that fails to apply is kept and tried again', () => {
   const src = readFileSync(new URL('../native/watch-sync.js', import.meta.url), 'utf8')
   const take = src.slice(src.indexOf('const take = (tap)'))
@@ -1347,6 +1356,18 @@ await testAsync('referral ladder: real gem steps, Night look, Hive at 15, Bloom 
   assert.ok(W.applyGemOwnedToBook(won, { gems: 0, buddies: [] }).buddies.includes('hive'))
   const sql = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../supabase/referral-rewards.sql'), 'utf8')
   assert.ok(sql.includes("select 15") && sql.includes("select 20") && sql.includes("'hive'") && sql.includes("'bloom'"))
+})
+
+await testAsync('signed-out carry: payload skips lime and gem looks, caps coins, null when empty', async () => {
+  const { carryPayload } = await import('../src/lib/wallet.js')
+  assert.equal(carryPayload({ coins: 0, looks: ['lime'], accessories: [] }), null)
+  const out = carryPayload({ coins: 5000, looks: ['lime'], accessories: ['crown'] })
+  assert.equal(out.add_coins, 300)
+  assert.deepEqual(out.looks, [])
+  assert.deepEqual(out.accessories, ['crown'])
+  const sql = readFileSync(new URL('../supabase/signin-carry.sql', import.meta.url), 'utf8')
+  assert.ok(sql.includes('enable row level security') && sql.includes('(select auth.uid())') && sql.includes('set search_path = public'))
+  assert.ok(readFileSync(new URL('./apply-all-sql.mjs', import.meta.url), 'utf8').includes('supabase/signin-carry.sql'))
 })
 
 test('every sql file in db:apply:all is on disk', () => {
@@ -2279,6 +2300,7 @@ test('gem items added by editing the phone go away on sync; free and coin items 
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const sync = readFileSync(path.join(root, 'src/lib/cloud-sync.js'), 'utf8')
   assert.ok(sync.includes('applyGemOwnedToShelf(written, gemBag)'), 'sync copies the server list')
+  assert.ok(sync.includes('catchUpFreeClaims(written, gemBag).catch('), 'sync sends free items claimed signed out without waiting')
 })
 
 test('a gem lands once per week when a night clears', () => {
@@ -2430,6 +2452,24 @@ test('no new strings are left in English in other languages', () => {
     const fresh = englishLeft(pack, en).filter((key) => !allowed.has(key))
     assert.deepEqual(fresh, [], `${code} has new English text; translate it in src/locales/${code}.js`)
   }
+})
+
+// "Not yet" names an answer, so it is capitalized in English copy.
+test('English copy writes the answer as Not yet, never lowercase', () => {
+  const bad = Object.entries(en).filter(([, v]) => typeof v === 'string' && /\bnot yets?\b/.test(v)).map(([k]) => k)
+  assert.deepEqual(bad, [], 'write "Not yet" with a capital N')
+})
+
+// Product words the copy rules ban. Skipped: legal text (policy language), {placeholders}
+// (code names), and keys where night means nighttime (looks, cheers, frames) or Skip is a
+// tour button.
+test('English copy has none of the banned product words', () => {
+  const banned = /\b(tags?|board|nope|night|skip|hall|heat)\b|did not/i
+  const okKey = /^(legal\.|frame\.|cheer\.night\.|look\.night\.|web\.press\.color\.night$|web\.landing\.end\.kicker$|we\.idea\.date$|tour\.skip$)/
+  const bad = Object.entries(en)
+    .filter(([k, v]) => typeof v === 'string' && !okKey.test(k) && banned.test(v.replace(/\{\w+\}|\bNight (look|owl)\b/g, '')))
+    .map(([k, v]) => `${k}: ${v.slice(0, 60)}`)
+  assert.deepEqual(bad, [])
 })
 
 // A translation can only use {placeholders} the English string is given.
@@ -2957,6 +2997,36 @@ test('free event items: claimable in their window, never after, kept by owners',
   const synced = normalizePurse(applyGemOwnedToBook({ buddies: ['ant', 'bat', 'cat'], cheers: ['lime', 'boo', 'rain'] }, { gems: 1, looks: [], cheers: [], buddies: [] }))
   assert.deepEqual(synced.buddies, ['ant', 'bat'])
   assert.deepEqual(synced.cheers, ['lime', 'boo'])
+})
+
+await testAsync('free event items claimed signed out reach the account once per session', async () => {
+  const out = inFakeCloud(`
+    const { catchUpFreeClaims } = await import(url('wallet.js'))
+    const claims = []
+    let down = false
+    answer = (table, ops) => {
+      claims.push(table)
+      if (down) return { data: null, error: { message: 'fetch failed' } }
+      return { data: { gems: 0, looks: [], cheers: ['boo'], buddies: ['bat'], frames: [] }, error: null }
+    }
+    const shelf = { boards: [{ buddies: ['ant', 'bat'], cheers: ['lime'] }] }
+    const none = { gems: 0, looks: [], cheers: [], buddies: [] }
+    const has = { gems: 0, looks: [], cheers: [], buddies: ['bat'] }
+    const early = await catchUpFreeClaims(shelf, none, '2026-10-20')
+    const onServer = await catchUpFreeClaims(shelf, has, '2026-10-29')
+    down = true
+    const offline = await catchUpFreeClaims(shelf, none, '2026-10-29')
+    down = false
+    const first = await catchUpFreeClaims(shelf, none, '2026-10-29')
+    const second = await catchUpFreeClaims(shelf, none, '2026-10-29')
+    return { early, onServer, offline, first: first?.buddies, second, claims }
+  `)
+  assert.equal(out.early, null, 'outside the window is not claimed')
+  assert.equal(out.onServer, null, 'an id the server has is not claimed')
+  assert.equal(out.offline, null, 'a failed send claims nothing')
+  assert.deepEqual(out.first, ['bat'], 'after a failed send the next sync tries again; a local-only bat in window is claimed and the server list comes back')
+  assert.equal(out.second, null, 'a second sync does not ask again')
+  assert.deepEqual(out.claims, ['rpc:claim_free_item', 'rpc:claim_free_item'], 'one failed call, one good call')
 })
 
 test('an invite link carries its code to the app on both phones', () => {
@@ -4892,10 +4962,10 @@ await testAsync('a skip reads Not yet while its night is open, Said not yet once
   assert.equal(answerWord('', true), '', 'an empty open night is just open')
   assert.equal(answerWord('yes', false), 'yes')
   assert.equal(answerWord('late', true), 'late')
-  assert.equal(pillStatusLabel('skip'), 'Marked not yet')
+  assert.equal(pillStatusLabel('skip'), 'Marked Not yet')
   const why = (iso, state) => ({ iso, state, noped: [{ lamp: { question: 'Did I read?', short: 'Read' } }], unanswered: [], weOpen: [] })
   assert.match(nightWhyLines(why(fri, 'missed'), { now: sat2am }).join(' '), /Not yet: Read/)
-  assert.match(nightWhyLines(why(fri, 'missed'), { now: sat9am }).join(' '), /Said not yet: Read/)
+  assert.match(nightWhyLines(why(fri, 'missed'), { now: sat9am }).join(' '), /Said Not yet: Read/)
 })
 
 await testAsync('the grace period for the previous night runs until 9am', async () => {
@@ -5036,6 +5106,35 @@ test('the streak keeps counting past the five the room shows', () => {
   assert.equal(shelfStreak([tonightOpen], clock), 7, 'tonight counts only once it is clear, and open is not a break')
   const lastNightOpen = { ...book, answers: book.answers.filter((a) => a.periodKey !== nights[1]) }
   assert.equal(shelfStreak([lastNightOpen], clock), 1, 'a missed night before tonight is a break')
+})
+
+await testAsync('marks count the same streak as Today, so a missed yesterday breaks it', async () => {
+  const { shelfStats } = await import('../src/lib/achievements.js')
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const nights = []
+  for (let back = 0; back < 8; back += 1) {
+    const day = new Date(clock)
+    day.setDate(day.getDate() - back)
+    nights.push(boardDate(day))
+  }
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }],
+    answers: nights.filter((night) => night !== nights[1]).map((night) => ({ lampId: 'door', periodKey: night, status: 'yes', answeredAt: `${night}T21:00:00` })),
+  }
+  assert.equal(shelfStreak([book], clock), 1)
+  assert.equal(shelfStats([book], clock).streak, 1, 'six days, a miss, then today is 1, not 7')
+})
+
+test('a hearted seasonal accessory is not a goal once it is off sale', () => {
+  const purse = normalizePurse({ coins: 999, wish: ['accessory:witch'] })
+  assert.equal(wishGoal(purse, '2026-10-25')?.id, 'witch')
+  assert.equal(wishGoal(purse, '2026-11-02'), null)
+})
+
+test('the shop shows only the newest Out now drop', () => {
+  assert.ok(dropSlides('2026-10-25').filter((slide) => slide.kind === 'drop').length <= 1)
 })
 
 await testAsync('"Streak broke" shows only for a missed past night, never for tonight reopening', async () => {
@@ -6349,6 +6448,17 @@ test('family summary hour and phone names: prefs clamp, SQL order, menu resets t
   const hash = readFileSync(path.join(root, 'native/navigation/hash.js'), 'utf8')
   // A menu page goes on top of the page you were on, so phone back returns there.
   assert.ok(!hash.includes('routes: [routes[0], { name: route.path'), 'menu navigation keeps the page you were on behind it')
+})
+
+await testAsync('an earned frame from a later drop does not unlock before its day, and the unlock opens the Collection', async () => {
+  const F = await import('../src/lib/frames.js')
+  const candles = F.frameById('candles')
+  assert.equal(F.frameEarned(candles, { bestStreak: 20, today: '2026-10-22' }), false)
+  assert.equal(F.frameEarned(candles, { bestStreak: 20, today: candles.from }), true)
+  assert.ok(!F.framesToKeep({}, { bestStreak: 20, today: '2026-10-22' }).includes('candles'))
+  const toasts = readFileSync('native/lib/toast-queue.js', 'utf8') + readFileSync('native/components/ToastHost.jsx', 'utf8')
+  assert.ok(!toasts.includes('/shop/frames'), 'a new frame opens the Collection, not the shop')
+  assert.match(readFileSync('native/screens/TonightScreen.jsx', 'utf8'), /publishSheet\(\{\s*preview: <FramePreview id=\{popId\}/, 'a new frame gets a pop-up')
 })
 
 await testAsync('frames: still frames cost coins, animated cost gems, and the server sells the same', async () => {
@@ -7798,7 +7908,7 @@ test('wishlist knows frames: buyable and seasonal, not earned; a seasonal one co
   assert.equal(open.n, 0)
   assert.deepEqual(wishLine(open), { key: 'wish.ready', n: 0, nameKey: 'frame.hearts.name' })
   const frames = readFileSync(new URL('../native/screens/frames.jsx', import.meta.url), 'utf8')
-  assert.match(frames, /toggleWish\(book, 'frame', id\)/)
+  assert.match(frames, /toggleWish\(liveBook\(book\), 'frame', id\)/)
   assert.match(frames, /t\('shop\.remindMe'\)/)
 })
 
@@ -8268,7 +8378,7 @@ await testAsync('readthrough 8: a missed one-time question still breaks its nigh
 })
 
 await testAsync('readthrough 8: the 9 PM warning fires when last night was frozen', async () => {
-  const { streakRiskFire } = await import('../src/lib/streak-risk.js')
+  const { streakRiskFire, graceRiskFire } = await import('../src/lib/streak-risk.js')
   const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
   const clock = new Date(2026, 8, 30, 16, 0)
   const answers = []
@@ -8280,6 +8390,10 @@ await testAsync('readthrough 8: the 9 PM warning fires when last night was froze
   const heat = streakOf([book], clock)
   assert.equal(heat, 14, 'the freeze carries the streak over last night')
   assert.ok(streakRiskFire(book, clock, heat), 'a frozen streak still gets the warning')
+  // A question that asks at 10 PM is still waiting at 9 PM: nothing is open to warn about.
+  const lateBook = { ...book, lamps: [{ ...book.lamps[0], askAfter: '22:00' }] }
+  assert.equal(streakRiskFire(lateBook, clock, heat), null, 'no 9 PM warning for a question that asks at 10 PM')
+  assert.ok(graceRiskFire(lateBook, clock, heat), 'the midnight warning still comes for a 10 PM question')
   const notify = readFileSync(path.join(checkRoot, 'src/lib/notify.js'), 'utf8')
   assert.ok(notify.includes('shelfStreak([book], now)'), 'web pings pass the real streak')
 })
@@ -9175,6 +9289,11 @@ await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an ho
   assert.equal(dayNudges(notYet, now).length, 14)
   // No questions at all: nothing to nudge about.
   assert.equal(dayNudges({ ...book, lamps: [] }, now).length, 0)
+  // Only a late-evening question: it still waits at 9:00 and 13:30, so no day nudge.
+  const late = { ...book, lamps: [{ ...q('a'), askAfter: '20:00' }] }
+  assert.equal(dayNudges(late, now).length, 0, 'a question waiting past the nudge time is not open')
+  const mixed = { ...book, lamps: [{ ...q('a'), askAfter: '20:00' }, q('b')] }
+  assert.equal(dayNudges(mixed, now).length, 14)
   // A reminder at 9:45 keeps 9:00 quiet; one at 14:30 sits exactly an hour out, so 13:30 stays.
   const near = dayNudges(book, now, { days: 1, reminders: [new Date(2026, 9, 14, 9, 45), new Date(2026, 9, 14, 14, 30)] })
   assert.deepEqual(near.map((n) => n.at.getHours()), [13])
@@ -9524,7 +9643,7 @@ test('every table says how people hear about it: a push, or why not', () => {
     report_actions: 'queue_report_removed_push',
   }
   const quiet = {
-    'own data, no one else': 'admins answer_keys answer_log answer_undos app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims',
+    'own data, no one else': 'admins answer_keys answer_log answer_undos app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims signin_carries',
     'counters, caps and logs': 'check_on_pushed family_code_misses family_miss_days family_summary_sent friend_ask_log friend_id_misses push_queue push_to_counts send_counts we_done_pushed we_slot_repair_ran report_mail_queue shop_drop_sent',
     'catalogs': 'gift_catalog shop_catalog event_catalog',
     'quiet on purpose: a block, a pass or a leave would tell someone they were dropped': 'blocks send_answers app_send_answers we_turns',
@@ -9771,10 +9890,47 @@ test('still open: a skipped family row is listed in the finish list, never as a 
   assert.deepEqual(skippedFamilyRows(rows, ['fam:f1:a:2026-10-08', 'famkeep:f1:a:2026-10-08']), [], 'Keep not yet hides it')
   const tonight = read('native/screens/TonightScreen.jsx')
   assert.ok(tonight.includes('skippedFamilyRows(family.rows, peopleGone)'))
-  assert.ok(tonight.includes('rows={stillOpenRows}'), 'the finish list renders the family rows')
+  assert.ok(tonight.includes('const top = stillOpenRows[0]'), 'Look again deals the family rows too')
   assert.ok(tonight.includes("answerFamilyLamp(row.family.id, row.lamp.id, boardDate(), 'yes')"))
   const people = read('src/lib/people-tonight.js')
   assert.match(people, /for \(const row of familyRows\) \{\s*if \(row\.answer\) continue/, 'answered family rows stay off the cards')
+})
+
+test('Not yets come back as swipe cards only after Look again; the meter leads with left', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.match(tonight, /if \(finishList && !lookAgain\) stack\.restStack\(true\)/)
+  assert.ok(tonight.includes('const stillOpenRows = [...familyOpen, ...stack.stillOpen]'), 'family first, so leaving your own last one cannot strand them')
+  assert.match(tonight, /\} else if \(finishList && lookAgain\) \{[\s\S]{0,2000}<SwipeCardHost\s+key="look-again"/)
+  assert.ok(!existsSync(path.join(root, 'native/components/StillOpen.jsx')), 'no tap-to-Did list')
+  const meter = readFileSync(path.join(root, 'native/components/NightMeter.jsx'), 'utf8')
+  assert.match(meter, /\{left\}\s*<\/Text>/, 'the big number is what is left, Not yets included')
+})
+
+test('shop drop banners show new frames on the phone, free holiday ones too', () => {
+  const types = (slide) => slide.items.map((row) => `${row.type}:${row.item.id}`)
+  const coming = dropSlides('2026-11-14', { frames: true })[0]
+  assert.equal(coming.kind, 'coming')
+  assert.ok(types(coming).includes('frame:linked') && types(coming).includes('frame:bedtime'))
+  assert.ok(types(dropSlides('2026-11-21', { frames: true })[0]).includes('frame:countdown'), 'the free holiday frame is in its drop')
+  assert.ok(!dropSlides('2026-11-20')[0].items.some((row) => row.type === 'frame'), 'the website draws no frame tiles')
+  assert.ok(freshDrop('2026-11-20', { frames: true }).items.some((row) => row.type === 'frame'))
+  assert.ok(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8').includes('dropSlides(undefined, { frames: true })'))
+  assert.match(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8'), /type === 'frame' && !isTeased\(item\)\s*\?\s*openFrameSheet\(/, 'a banner frame claims through its own sheet')
+  assert.match(readFileSync(new URL('../native/screens/shop.jsx', import.meta.url), 'utf8'), /type === 'frame'\) preview = <FrameSheetPreview/, 'a Coming frame shows its live card')
+  // An older widget sync finishing late would draw a question just stopped or deleted.
+  const widgetSync = readFileSync(new URL('../native/widget-sync.js', import.meta.url), 'utf8')
+  assert.equal((widgetSync.match(/gen !== syncGen/g) || []).length, 3, 'only the newest widget sync draws')
+})
+
+await testAsync('a failed network call shows our words, never the raw error', async () => {
+  const { appMiss } = await import('../src/lib/i18n.js')
+  assert.equal(appMiss(new TypeError('Network request failed')), 'people.reach')
+  assert.equal(appMiss({ message: 'duplicate key value violates unique constraint "x"' }, 'account.syncMiss'), 'account.syncMiss')
+  assert.equal(appMiss({ message: 'family.nameEmpty' }), 'family.nameEmpty', 'our own keys pass through')
+  assert.equal(appMiss(null), 'people.reach')
+  const en = await import('../src/locales/en.js')
+  assert.ok((en.default || en.en || Object.values(en)[0])['people.reach'], 'the fallback key is translated')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

@@ -137,6 +137,7 @@ export function useAppShelf() {
     pushSoon(written)
     // Signed in, taps queue their coins (payTap); signed out, the phone keeps them.
     // Crediting without a session failed, re-queued, and paid twice on sign-in.
+    // The balance carries once at first sign-in instead (carry_signed_out, up to 300 coins).
     // A reply that lands after a sign out or account switch belongs to the old account.
     const who = readAccountUserId()
     const sameAccount = () => !who || readAccountUserId() === who

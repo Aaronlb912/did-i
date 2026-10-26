@@ -5,8 +5,13 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Signed-out carry (branch `signin-carry`, needs SQL, OTA)
+
+- **Built:** coins, coin looks and accessories earned signed out carry to the account once, at the first sign-in on a phone (`carry_signed_out`, `supabase/signin-carry.sql`). Capped at 300 coins of total value; items are granted cheapest first and cost against the cap.
+- **Not done:** a new account on a fresh install can carry again, so farming is bounded only by real earning (300 coins per account). Tried on no phone yet.
+
 ## Free event items (Halloween 2026, branch `drop/2026-10-28-halloween`, needs SQL)
-- **Signed-out claims stay on the phone.** A bat or boo claimed signed out is kept at sign in (sync does not strip it) but is not on the server, so a second phone does not get it until it is claimed there inside the window.
+- **Late signed-out claims stay on the phone.** A bat or boo claimed signed out is sent to the account on the first sync after sign in, up to a day after the window closes. Signing in later than that keeps it on that phone only.
 - **Web shop is not updated.** The web Shop pages list the free items as 0 gem buys; the phone shop has the Free tag and Claim button.
 - **Owned looks leave Collection when they leave the shop.** Buddies and cheers now always show when owned; looks still use the live list.
 

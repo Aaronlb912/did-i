@@ -1,3 +1,4 @@
+import { appMiss } from './i18n.js'
 import { useEffect, useState } from 'react'
 import { recordAppError } from './app-errors.js'
 import { deviceKey, deviceLabel, deviceModel, devicePlatform, takeOldDeviceKey } from './account.js'
@@ -41,7 +42,10 @@ import {
   applyCoinCatalogToShelf,
   applyGemBalanceToShelf,
   applyGemOwnedToShelf,
+  catchUpFreeClaims,
   grantWeeklyGem,
+  carryPayload,
+  carrySignedOut,
   readCoinCatalog,
   readGemBalance,
   readGemOwned,
@@ -675,12 +679,40 @@ async function pullAndMergeOnce() {
 
     // A buy during this sync makes these reads older than the shelf: skip them.
     const bal = await readGemBalance()
-    const coinBag = await readCoinCatalog()
+    // Coins and coin items earned signed out carry once, on a phone's first sign-in.
+    let coinBag = null
+    if (!lastUser) {
+      const carryKey = `didi-carry-asked:${user.id}`
+      let asked = false
+      try {
+        asked = !!localStorage.getItem(carryKey)
+      } catch {
+        asked = false
+      }
+      const purse = mergePurses(local?.boards || [])
+      if (!asked && carryPayload(purse)) {
+        coinBag = await carrySignedOut(purse)
+        // A failed carry must not let the server balance replace the phone's
+        // coins: fail this sync so lastUser stays empty and the next one asks again.
+        if (!coinBag) throw new Error('account.syncMiss')
+        try {
+          localStorage.setItem(carryKey, '1')
+        } catch {
+          // Asks again next sync; the server carries once.
+        }
+      }
+    }
+    if (!coinBag) coinBag = await readCoinCatalog()
     const gemBag = await readGemOwned()
     if (shopWriteCount() === shopAtStart) {
       if (bal != null) written = applyGemBalanceToShelf(written, bal)
       if (coinBag) written = applyCoinCatalogToShelf(written, coinBag)
-      if (gemBag) written = applyGemOwnedToShelf(written, gemBag)
+      if (gemBag) {
+        // Free event items claimed signed out reach the account in the
+        // background. The phone keeps its copy; the next sync reads the server.
+        catchUpFreeClaims(written, gemBag).catch(() => {})
+        written = applyGemOwnedToShelf(written, gemBag)
+      }
     }
 
     const uploadAt = new Date().toISOString()
@@ -714,7 +746,7 @@ async function pullAndMergeOnce() {
     return written
   } catch (error) {
     if (run !== syncRun) return null
-    setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    setState({ how: 'miss', miss: appMiss(error, 'account.syncMiss') })
     recordAppError('sync', error).catch(() => {})
     return null
   }
@@ -742,7 +774,7 @@ export async function pushNow(shelf) {
   try {
     user = await meOrThrow()
   } catch (error) {
-    setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    setState({ how: 'miss', miss: appMiss(error, 'account.syncMiss') })
     return
   }
   if (!user) {
@@ -786,7 +818,7 @@ export async function pushNow(shelf) {
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
     return true
   } catch (error) {
-    setState({ how: 'miss', miss: error?.message || 'account.syncMiss' })
+    setState({ how: 'miss', miss: appMiss(error, 'account.syncMiss') })
     recordAppError('sync', error).catch(() => {})
     return answersSent
   }
@@ -917,7 +949,7 @@ export async function renameDevice(key, name) {
   if (!user) return { miss: 'out' }
   const clean = String(name || '').trim().slice(0, DEVICE_NAME_MAX)
   const { error } = await db.from('devices').update({ name: clean }).eq('user_id', user.id).eq('device_key', key)
-  return { miss: error ? error.message : '' }
+  return { miss: error ? appMiss(error) : '' }
 }
 
 // Every phone but this one. Their app signs in again on next open if still
@@ -990,7 +1022,7 @@ export async function saveProfile(patch) {
     { onConflict: 'user_id' },
   )
   if (!error && typeof patch?.display_name === 'string') keepProfileName(patch.display_name)
-  return { miss: error ? error.message : '' }
+  return { miss: error ? appMiss(error) : '' }
 }
 
 export async function exportAll() {

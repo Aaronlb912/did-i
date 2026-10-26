@@ -3,7 +3,7 @@ import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { noteSocialLive, onSocialLive } from './social-live.js'
 import { dropLoaded, weAskCount } from './did-we.js'
-import { t } from './i18n.js'
+import { appMiss, t } from './i18n.js'
 import { applyFriendCheerStock, buyFriendCheers, takeFriendCheer } from './purse.js'
 import { addDaysIso, boardDate, isoDate } from './recurrence.js'
 import { sharedEveryDue } from './every-copy.js'
@@ -37,7 +37,7 @@ async function me() {
 }
 
 function bad(error) {
-  return { miss: error?.message || 'people.reach' }
+  return { miss: appMiss(error) }
 }
 
 // Server text is English; show our own words for the ones we know.

@@ -101,7 +101,7 @@ export function LateMeta({ children, colors }) {
 // 40-tall buttons reach the 44pt minimum tap with this, without changing layout.
 const TAP_SLOP = { top: 2, bottom: 2 }
 
-export function DidButton({ label, onPress, colors, small, disabled, dim, danger }) {
+export function DidButton({ label, onPress, colors, small, disabled, dim, danger, accessibilityLabel }) {
   const off = disabled || dim
   return (
     <Pressable
@@ -111,7 +111,7 @@ export function DidButton({ label, onPress, colors, small, disabled, dim, danger
       hitSlop={small ? TAP_SLOP : undefined}
       android_ripple={ripple(`${colors.bg}40`)}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel || label}
       accessibilityState={{ disabled: Boolean(off) }}
       style={({ pressed }) => [
         styles.did,
@@ -126,7 +126,7 @@ export function DidButton({ label, onPress, colors, small, disabled, dim, danger
   )
 }
 
-export function KeyButton({ label, onPress, colors, picked, disabled, danger }) {
+export function KeyButton({ label, onPress, colors, picked, disabled, danger, accessibilityLabel }) {
   return (
     <Pressable
       disabled={disabled}
@@ -134,7 +134,7 @@ export function KeyButton({ label, onPress, colors, picked, disabled, danger }) 
       hitSlop={TAP_SLOP}
       android_ripple={ripple(`${colors.on}33`)}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel || label}
       accessibilityState={{ disabled: Boolean(disabled), selected: Boolean(picked) }}
       style={({ pressed }) => [
         styles.key,

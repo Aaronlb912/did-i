@@ -65,6 +65,7 @@ export function MarketingShell({ children, path, wide = false }) {
               {t('web.nav.home')}
             </a>
           ) : null}
+          <a href="/guides/">{t('web.nav.guides')}</a>
           <a href="/privacy" className={here === '/privacy' ? 'is-on' : undefined}>
             {t('web.nav.privacy')}
           </a>
@@ -97,7 +98,8 @@ export function MarketingShell({ children, path, wide = false }) {
               <a href={`mailto:${email}`}>{email}</a>
             </>
           ) : null}{' '}
-          <a href="/press">{t('web.nav.press')}</a>
+          <a href="/press">{t('web.nav.press')}</a>{' '}
+          <a href="/guides/">{t('web.nav.guides')}</a>
         </p>
         <p>{t('legal.copyright')}</p>
       </footer>
