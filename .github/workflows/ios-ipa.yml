@@ -37,10 +37,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Expo SDK 57 needs Swift 6.2 (Xcode 26). Use the newest Xcode on the image.
+      # Expo SDK 57 needs Swift 6.2 (Xcode 26). Use the newest Xcode on the image; 27.1+ lets the app fill the iPhone Duo screen.
       - name: Select Xcode
         run: |
-          XCODE="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          XCODE="$(ls -d /Applications/Xcode_26*.app /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)"
           if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE"; fi
           xcodebuild -version
           swift --version
