@@ -893,6 +893,7 @@ test('sync pass: pulls overlap, iPhone widget reads new taps first, watch taps w
   assert.match(sync, /timelineRead && readTimeline && \(await timelineHasNewTaps\(\)\)\) timelineRead = false/, 'a new tap is read before the timeline is written')
   assert.ok(!/tapsPending\) return/.test(sync), 'a tap the shelf cannot place never stops the widget redrawing')
   assert.match(sync, /items: \[\.\.\.\(p\.items \|\| \[\]\), \.\.\.pendingTaps\]/, 'that tap is carried into the new timeline, not drawn over')
+  assert.match(sync, /return dropNulls\(JSON\.parse\(JSON\.stringify\(props/, 'no null reaches the iPhone widget store: iOS drops the whole timeline')
   const app = read('native/NativeApp.jsx')
   assert.match(app, /if \(!shelf && !\(readShelf\(\)\.boards \|\| \[\]\)\.length\) throw/, 'a watch tap before the shelf loads is retried')
 })

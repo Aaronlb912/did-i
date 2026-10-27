@@ -15,9 +15,19 @@ import { sendWatchCards } from './watch-sync.js'
 
 // The native side takes plain records. undefined, functions or Dates in the
 // props can make the whole update throw, so send a JSON copy.
+// No nulls: iOS will not store a timeline holding one (NSNull is not a
+// property-list value), so the widget silently stays on "No questions yet".
+function dropNulls(value) {
+  if (Array.isArray(value)) return value.filter((v) => v !== null).map(dropNulls)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== null).map(([k, v]) => [k, dropNulls(v)]))
+  }
+  return value
+}
+
 function plainProps(props) {
   try {
-    return JSON.parse(JSON.stringify(props ?? {}))
+    return dropNulls(JSON.parse(JSON.stringify(props ?? {})))
   } catch {
     return props
   }
