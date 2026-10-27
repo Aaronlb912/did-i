@@ -8,16 +8,26 @@ import { hallColors } from './palette.js'
 import { wornShapes } from '../src/lib/accessory-shapes.js'
 import { BUDDY_PARTS } from '../src/lib/buddy-parts.js'
 import { readShelf } from '../src/lib/board-shelf.js'
-import { boardDate } from '../src/lib/recurrence.js'
+import { addDaysIso, boardDate } from '../src/lib/recurrence.js'
 import { recordAppError } from '../src/lib/app-errors.js'
 import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
 import { sendWatchCards } from './watch-sync.js'
 
 // The native side takes plain records. undefined, functions or Dates in the
 // props can make the whole update throw, so send a JSON copy.
+// No nulls: iOS will not store a timeline holding one (NSNull is not a
+// property-list value), so the widget silently stays on "No questions yet".
+function dropNulls(value) {
+  if (Array.isArray(value)) return value.filter((v) => v !== null).map(dropNulls)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== null).map(([k, v]) => [k, dropNulls(v)]))
+  }
+  return value
+}
+
 function plainProps(props) {
   try {
-    return JSON.parse(JSON.stringify(props ?? {}))
+    return dropNulls(JSON.parse(JSON.stringify(props ?? {})))
   } catch {
     return props
   }
@@ -96,10 +106,9 @@ function tonightWidgetApi() {
 // (widget-bridge.js) before it is written again.
 let timelineRead = false
 let readTimeline = null
-// A tap whose question is not on the shelf yet stays in the stored timeline.
-let tapsPending = false
-// Held at most 2 minutes: a question that never arrives was deleted, and the widget must redraw.
-let pendingSince = 0
+// Taps whose question is not on the shelf yet. The widget still redraws, with
+// these carried along, so a later read merges them once the question arrives.
+let pendingTaps = []
 
 export function setWidgetTimelineReader(fn) {
   readTimeline = typeof fn === 'function' ? fn : null
@@ -131,8 +140,6 @@ export async function syncTonightWidget(shelf) {
     // answer made in the app meanwhile is not drawn over.
     shelf = readShelf()
   }
-  // A tap whose question is not here yet stays on the widget until it merges.
-  if (Platform.OS === 'ios' && tapsPending) return
   if (gen !== syncGen) return
   const built = buildTonightWidgetProps(shelf)
   const props = enrichTonightWidgetProps(shelf, built)
@@ -153,7 +160,9 @@ export async function syncTonightWidget(shelf) {
         props: enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf, date)),
       }))
       if (later.length && api.updateTimeline) {
-        const entries = [{ date: new Date(), props }, ...later]
+        // Not in writeWidgetTonightProps above: a carried tap must still read as a tap.
+        const carry = (p) => (pendingTaps.length ? { ...p, items: [...(p.items || []), ...pendingTaps] } : p)
+        const entries = [{ date: new Date(), props }, ...later].map((entry) => ({ ...entry, props: carry(entry.props) }))
         await api.updateTimeline(entries.map((entry) => ({ date: entry.date, props: plainProps(entry.props) })))
       } else await api.updateSnapshot(plainProps(props))
     } catch (error) {
@@ -268,7 +277,12 @@ async function timelineHasNewTaps() {
     const last = shown[shown.length - 1]?.props
     if (!last) return false
     const mine = new Map((readWidgetTonightProps()?.items || []).map((item) => [`${item.lampId}|${item.periodKey}`, item.status]))
-    return (last.items || []).some((item) => mine.get(`${item.lampId}|${item.periodKey}`) !== item.status)
+    // A carried tap is already known; counting it would read and redraw forever.
+    const carried = new Set(pendingTaps.map((item) => `${item.lampId}|${item.periodKey}`))
+    return (last.items || []).some((item) => {
+      const key = `${item.lampId}|${item.periodKey}`
+      return !carried.has(key) && mine.get(key) !== item.status
+    })
   } catch {
     return false
   }
@@ -287,7 +301,7 @@ export async function pullWidgetTimelineIntoShelf(shelf) {
     const shown = (await api.getTimeline()).filter((entry) => entry?.props && entry.date.getTime() <= now)
     // Only a read that worked lets the next updateTimeline replace the taps.
     timelineRead = true
-    tapsPending = false
+    pendingTaps = []
     if (!shown.length) return shelf
     // The timeline also holds the app's own snapshots. A status the app wrote
     // itself is no tap: merging it back would undo an undo made elsewhere.
@@ -299,10 +313,17 @@ export async function pullWidgetTimelineIntoShelf(shelf) {
     // Unmatched taps are not recorded, so a later read still merges them, and
     // the timeline is left alone until then.
     const last = shown[shown.length - 1].props
-    if (!unmatched.length) pendingSince = 0
-    else if (!pendingSince) pendingSince = Date.now()
-    tapsPending = unmatched.length > 0 && Date.now() - pendingSince < 2 * 60 * 1000
-    writeWidgetTonightProps(tapsPending ? { ...last, items: (last.items || []).filter((item) => !unmatched.some((u) => u.lampId === item.lampId && u.periodKey === item.periodKey)) } : last)
+    // Kept from yesterday on: an older one is for a question deleted since.
+    // Only Did: a carried Not yet would be the widget's lead when nothing else is open.
+    const oldest = addDaysIso(boardDate(new Date()), -1)
+    const seen = new Set()
+    pendingTaps = unmatched.filter((item) => {
+      const key = `${item.lampId}|${item.periodKey}`
+      if (item.status !== 'yes' || seen.has(key) || String(item.periodKey || '') < oldest) return false
+      seen.add(key)
+      return true
+    })
+    writeWidgetTonightProps({ ...last, items: (last.items || []).filter((item) => !unmatched.some((u) => u.lampId === item.lampId && u.periodKey === item.periodKey)) })
     return merged
   } catch {
     return shelf
