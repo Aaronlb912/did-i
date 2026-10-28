@@ -139,17 +139,6 @@ export function Landing() {
 
         <section className="di-log-hero">
           <div>
-            <div className="di-log-mono">{L('hero.kicker')}</div>
-            <h1>
-              {L('hero.title')} <em>{L('hero.titleEm')}</em>
-            </h1>
-            <p className="di-log-lede">{L('hero.lead')}</p>
-            <div className="di-log-chips">
-              {[1, 2, 3, 4].map((n) => (
-                <span key={n}>{L(`hero.c${n}`)}</span>
-              ))}
-            </div>
-            <StoreButtons />
             <a
               className="di-log-hunt"
               href="https://www.producthunt.com/products/did-i-habit-reminders?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-did-i-habit-reminders"
@@ -163,6 +152,17 @@ export function Landing() {
                 src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1293446&theme=light"
               />
             </a>
+            <div className="di-log-mono">{L('hero.kicker')}</div>
+            <h1>
+              {L('hero.title')} <em>{L('hero.titleEm')}</em>
+            </h1>
+            <p className="di-log-lede">{L('hero.lead')}</p>
+            <div className="di-log-chips">
+              {[1, 2, 3, 4].map((n) => (
+                <span key={n}>{L(`hero.c${n}`)}</span>
+              ))}
+            </div>
+            <StoreButtons />
           </div>
           <LandingPhone />
         </section>
