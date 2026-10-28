@@ -597,6 +597,64 @@ export function BuddyArt({ id, className = '' }) {
     )
   }
 
+  // Never in the shop: given to people who came from Product Hunt (src/lib/purse.js HUNT_BUDDY).
+  if (id === 'rocket') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <polygon points="19.6,46 28.4,46 24,55" fill="#ff9f1c" />
+        <polygon points="21.7,46 26.3,46 24,51.5" fill="#ffe27a" />
+        <ellipse cx="12.8" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(26 12.8 41)" />
+        <ellipse cx="35.2" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(-26 35.2 41)" />
+        <ellipse cx="24" cy="31" rx="12.5" ry="15" fill="#ff6154" />
+        <polygon points="13.8,22 34.2,22 24,6.5" fill="#ff6154" />
+        <ellipse cx="27.5" cy="32" rx="6" ry="13" fill="#e5493d" opacity="0.55" />
+        <ellipse cx="18.5" cy="29" rx="1.8" ry="9" fill="#ffffff" transform="rotate(-6 18.5 29)" opacity="0.35" />
+        <polygon points="19.9,12.8 28.1,12.8 24,6.5" fill="#c7362b" />
+        <ellipse cx="24" cy="45.3" rx="5.6" ry="1.8" fill="#8f2a22" />
+        <ellipse cx="24" cy="27" rx="6" ry="6" fill="#fff3e0" />
+        <ellipse cx="24" cy="27" rx="4.4" ry="4.4" fill="#5fb6f0" />
+        <ellipse cx="24" cy="27" rx="6" ry="6" fill="none" stroke="#c7362b" strokeWidth="1.1" />
+        <ellipse cx="22.6" cy="25.4" rx="1.4" ry="1" fill="#ffffff" transform="rotate(-30 22.6 25.4)" opacity="0.85" />
+      </svg>
+    )
+  }
+
+  // Never in the shop: given to people who came from Product Hunt (src/lib/purse.js HUNT_BUDDY).
+  if (id === 'rocket') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 48 58"
+        width="48"
+        height="58"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <polygon points="19.6,46 28.4,46 24,55" fill="#ff9f1c" />
+        <polygon points="21.7,46 26.3,46 24,51.5" fill="#ffe27a" />
+        <ellipse cx="12.8" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(26 12.8 41)" />
+        <ellipse cx="35.2" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(-26 35.2 41)" />
+        <ellipse cx="24" cy="31" rx="12.5" ry="15" fill="#ff6154" />
+        <polygon points="13.8,22 34.2,22 24,6.5" fill="#ff6154" />
+        <ellipse cx="27.5" cy="32" rx="6" ry="13" fill="#e5493d" opacity="0.55" />
+        <ellipse cx="18.5" cy="29" rx="1.8" ry="9" fill="#ffffff" transform="rotate(-6 18.5 29)" opacity="0.35" />
+        <polygon points="19.9,12.8 28.1,12.8 24,6.5" fill="#c7362b" />
+        <ellipse cx="24" cy="45.3" rx="5.6" ry="1.8" fill="#8f2a22" />
+        <ellipse cx="24" cy="27" rx="6" ry="6" fill="#fff3e0" />
+        <ellipse cx="24" cy="27" rx="4.4" ry="4.4" fill="#5fb6f0" />
+        <ellipse cx="24" cy="27" rx="6" ry="6" fill="none" stroke="#c7362b" strokeWidth="1.1" />
+        <ellipse cx="22.6" cy="25.4" rx="1.4" ry="1" fill="#ffffff" transform="rotate(-30 22.6 25.4)" opacity="0.85" />
+      </svg>
+    )
+  }
+
   // Never sold: earned by bringing 15 friends (src/lib/purse.js REFER_BUDDY).
   if (id === 'hive') {
     return (

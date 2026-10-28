@@ -106,6 +106,15 @@ through `t()` with keys in **all 9** `src/locales/*.js` files.
   before any app code; up to 2 redesign rounds. Keep the sketch in
   `docs/ideas/`.
 
+## Product Hunt buddy (rocket)
+
+`rocket` is a free buddy (`hunt: true` in `src/lib/purse.js`, live 2026-10-27
+to 2027-01-01) that is never in the shop, Coming, drops or gifts. It is claimed
+two ways: the link `did-i.app/hunt/claim` (or `didi://hunt`), and a one-time
+"Where did you find Did I?" ask for new accounts (`native/components/HuntHost.jsx`).
+Only "Product Hunt" claims it. A claim made offline stays on the phone and
+`catchUpFreeClaims` sends it later. The page is `did-i.app/hunt`.
+
 ## Event drop (free, one time)
 
 An item with `free: true`, `gems: 0`, `from` and `until` in `src/lib/purse.js`
