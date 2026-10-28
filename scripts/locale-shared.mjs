@@ -3,6 +3,10 @@
 
 const PRODUCT_SAME = new Set([
   'nav.everyone',
+  // The name of the site the Rocket buddy came from.
+  'hunt.src.hunt',
+  'hunt.gotKicker',
+  'web.hunt.kicker',
   // "Did you · 3" and "Did we · 2": product names plus a count.
   'questions.didYouPill',
   'questions.didWePill',

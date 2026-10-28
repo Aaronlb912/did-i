@@ -2492,7 +2492,7 @@ test('locale placeholders match English', () => {
 test('zh, ja and ko have no stray English words', () => {
   const keep = new Set(('Did I we you coin coins gem gems cheer cheers Google Play Apple App Store Android iPhone iOS Mac Windows ' +
     'Safari Chrome Siri Watch Wear OS Assistant Supabase EAS Expo Firebase Cloud Messaging Vercel React Excel Sheets CSV PIN QR ID AM PM ' +
-    'URL JSON HTTPS IP OK D Hayes Street Jordan Hale Aaron Bryant AQ LBS ' +
+    'Product Hunt URL JSON HTTPS IP OK D Hayes Street Jordan Hale Aaron Bryant AQ LBS ' +
     // Widget names in the phone's widget picker, which is not translated.
     'today tonight questions together').toLowerCase().split(' '))
   const skip = (key) => /^(legal|lang|site\.into|device)\./.test(key) || /^(cheer|look)\.\w+\.name$/.test(key) ||
@@ -2958,7 +2958,7 @@ test('shop drops wait for their day and the server sells the same coin items', (
 
 test('free event items: claimable in their window, never after, kept by owners', async () => {
   const P = await import('../src/lib/purse.js')
-  const free = [...SHOP_CALENDAR.buddies, ...SHOP_CALENDAR.cheers].filter((item) => item.free)
+  const free = [...SHOP_CALENDAR.buddies, ...SHOP_CALENDAR.cheers].filter((item) => item.free && !item.hunt)
   assert.deepEqual(free.map((item) => item.id).sort(), ['bat', 'boo'])
   for (const item of free) {
     assert.equal(item.gems || 0, 0, item.id + ' costs nothing')
@@ -3029,6 +3029,47 @@ await testAsync('free event items claimed signed out reach the account once per 
   assert.deepEqual(out.first, ['bat'], 'after a failed send the next sync tries again; a local-only bat in window is claimed and the server list comes back')
   assert.equal(out.second, null, 'a second sync does not ask again')
   assert.deepEqual(out.claims, ['rpc:claim_free_item', 'rpc:claim_free_item'], 'one failed call, one good call')
+})
+
+test('the Product Hunt rocket: never in the shop, claimed by link or by the source ask', async () => {
+  const P = await import('../src/lib/purse.js')
+  const { readHuntLink, huntFromText } = await import('../src/lib/hunt-link.js')
+  const { claimFree } = await import('../src/lib/coin-shop.js')
+  const inList = (list) => list.some((item) => item.id === 'rocket')
+  assert.ok(P.BUDDY_IDS.has('rocket'), 'it is a buddy that renders and can be worn')
+  for (const day of ['2026-10-27', '2026-12-01', '2027-03-01']) {
+    assert.ok(!inList(P.shopBuddies(day)), 'not sold on ' + day)
+    assert.ok(!P.dropSlides(day).some((slide) => JSON.stringify(slide).includes('rocket')) && !inList(P.giftItems().buddies), 'not a drop or a gift on ' + day)
+  }
+  assert.ok(!inList(P.SHOP_BUDDIES), 'not in the shop list')
+  const got = P.claimHuntBuddy({}, '2026-11-02')
+  assert.deepEqual([got.miss, got.book.buddyOn, normalizePurse(got.book).buddies.includes('rocket')], ['', 'rocket', true])
+  assert.equal(P.claimHuntBuddy(got.book, '2026-11-02').had, true, 'a second claim keeps it once')
+  assert.equal(P.claimHuntBuddy({}, '2027-01-02').miss, 'shop.miss.buddyGone', 'refused after its window')
+  const signedOut = await claimFree({}, 'buddy', 'rocket')
+  assert.ok(!signedOut.miss || signedOut.miss === 'shop.miss.buddyGone', 'signed out it is kept on the phone')
+  const kept = normalizePurse(applyGemOwnedToBook({ buddies: ['rocket', 'cat'] }, { gems: 1, looks: [], cheers: [], buddies: [] }))
+  assert.deepEqual(kept.buddies, ['ant', 'rocket'], 'a sync keeps the free event buddy and drops the paid one')
+  for (const url of ['https://did-i.app/hunt/claim', 'https://did-i.app/hunt/claim/', 'https://did-i.app/hunt/claim?x=1', 'didi://hunt']) {
+    assert.ok(readHuntLink(url), url)
+  }
+  for (const url of ['https://did-i.app/hunt', 'https://did-i.app/i/ABCDE12345', 'didi://tonight', '']) assert.ok(!readHuntLink(url), url)
+  assert.ok(huntFromText('https://did-i.app/hunt/claim') && huntFromText('hunt=1') && !huntFromText('invite=ABCDE12345'), 'the iPhone clipboard and the Play referrer')
+  const link = readFileSync(new URL('../native/deep-link.js', import.meta.url), 'utf8')
+  assert.match(link, /readHuntLink\(url\)\) return \{ hunt: true \}/, 'the deep link routes the claim link')
+  assert.match(link, /route\.hunt\) \{\s+savePendingHunt\(\)/, 'and keeps it until the app has claimed')
+  assert.match(readFileSync(new URL('../native/invite-capture.js', import.meta.url), 'utf8'), /huntFromText\(referrer\)[\s\S]*huntFromText\(text\)/, 'a fresh install keeps it on both phones')
+  const host = readFileSync(new URL('../native/components/HuntHost.jsx', import.meta.url), 'utf8')
+  for (const key of ['hunt', 'store', 'friend', 'other']) assert.ok(host.includes("'" + key + "'") && en['hunt.src.' + key], 'source choice ' + key)
+  assert.match(host, /if \(id === 'hunt'\)/, 'only Product Hunt claims it')
+  assert.match(host, /huntAsked\(userId\)[\s\S]*markHuntAsked\(userId\)/, 'asked once per account')
+  assert.match(host, /tourActive\(\)/, 'waits for the tour')
+  assert.match(readFileSync(new URL('../native/AppShell.jsx', import.meta.url), 'utf8'), /<HuntHost /, 'mounted in the shell')
+  const sql = readFileSync(new URL('../supabase/event-items.sql', import.meta.url), 'utf8')
+  assert.ok(sql.includes("('buddy', 'rocket', '2026-10-27', '2027-01-01')"), 'the server lists it')
+  const path = await import('../src/site/path.js')
+  assert.ok(['/hunt', '/hunt/claim'].every((route) => readFileSync(new URL('../src/site/path.js', import.meta.url), 'utf8').includes("'" + route + "'")) && path)
+  assert.ok(readFileSync(new URL('../public/sitemap.xml', import.meta.url), 'utf8').includes('did-i.app/hunt<'), 'in the sitemap')
 })
 
 test('an invite link carries its code to the app on both phones', () => {
@@ -6032,7 +6073,7 @@ const { readPrefs: readPrefsForCheck } = await import('../src/lib/prefs.js')
 test('the drop push knows every shop drop date, runs in order, and is off by default', () => {
   const sql = readFileSync(path.join(checkRoot, 'supabase/shop-drops.sql'), 'utf8')
   const dates = new Set(
-    [...SHOP_CALENDAR.looks, ...SHOP_CALENDAR.cheers, ...SHOP_CALENDAR.buddies].map((item) => item.from).filter(Boolean),
+    [...SHOP_CALENDAR.looks, ...SHOP_CALENDAR.cheers, ...SHOP_CALENDAR.buddies.filter((item) => !item.hunt)].map((item) => item.from).filter(Boolean),
   )
   for (const date of dates) assert.ok(sql.includes(`('${date}')`), `shop-drops.sql lists ${date}`)
   assert.ok(/enable row level security/.test(sql))

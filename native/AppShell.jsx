@@ -34,6 +34,7 @@ import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { UpdatePrompt } from './components/UpdatePrompt.jsx'
 import { SheetHost, onSheetUp } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
+import { HuntHost } from './components/HuntHost.jsx'
 import { InviteAskHost } from './components/InviteAskHost.jsx'
 import { TourHost } from './components/TourHost.jsx'
 import { setTourBalanceHandler } from './lib/tour.js'
@@ -492,6 +493,7 @@ export function AppShell() {
         {booted && app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
         {app.book && !gated ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
         {booted && app.book && !gated ? <InviteAskHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
+        {booted && app.book && !gated ? <HuntHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
         {booted && app.book && !gated ? <TourHost path={route.path} hasQuestion={(app.book.lamps || []).some((lamp) => !lamp.archived)} /> : null}
         <SheetHost />
         <CheerBurstHost />

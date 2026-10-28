@@ -4,6 +4,7 @@ import * as Application from 'expo-application'
 import * as Clipboard from 'expo-clipboard'
 import { inviteFromText, savePendingInvite } from '../src/lib/invite-link.js'
 import { savePendingScan, scanFromText } from '../src/lib/qr-links.js'
+import { huntFromText, savePendingHunt } from '../src/lib/hunt-link.js'
 import { didYouFromText, savePendingDidYou } from '../src/lib/did-you-links.js'
 
 // First launch after an invite link (did-i.app/i/CODE). Android gets the code
@@ -22,6 +23,7 @@ export async function captureInviteOnFirstLaunch() {
       savePendingInvite(inviteFromText(referrer))
       savePendingScan(scanFromText(referrer))
       savePendingDidYou(didYouFromText(referrer))
+      if (huntFromText(referrer)) savePendingHunt()
       return
     }
     if (Platform.OS !== 'ios') return
@@ -33,6 +35,7 @@ export async function captureInviteOnFirstLaunch() {
     savePendingScan(scanFromText(text))
     // So does a Did you link (did-i.app/d/CODE); it asks right away, no sign-in.
     savePendingDidYou(didYouFromText(text))
+    if (huntFromText(text)) savePendingHunt()
   } catch {
     // No invite is fine.
   }

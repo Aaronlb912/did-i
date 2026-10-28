@@ -5,6 +5,13 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Product Hunt buddy (branch `hunt-buddy`, needs SQL, OTA, then a build)
+
+- Needs `npm run db:apply:all` (adds the rocket row to `event_catalog`).
+- The Android App Link for `/hunt/claim` is a manifest change, so it needs a
+  new Android build; until then the page's "Claim" button (`didi://hunt`) works.
+- The iPhone `apple-app-site-association` entry ships with the website deploy.
+
 ## Signed-out carry (branch `signin-carry`, needs SQL, OTA)
 
 - **Built:** coins, coin looks and accessories earned signed out carry to the account once, at the first sign-in on a phone (`carry_signed_out`, `supabase/signin-carry.sql`). Capped at 300 coins of total value; items are granted cheapest first and cost against the cap.

@@ -80,9 +80,14 @@ const ALL_BUDDIES = [
   { id: 'bat', gems: 0, free: true, from: '2026-10-28', until: '2026-11-01' },
   // Never sold. The server gives it at 15 friends joined (claim_invites).
   { id: 'hive', gems: 0, refer: 15 },
+  // Never in the shop. Given to people who found Did I on Product Hunt (src/lib/hunt-link.js, native/components/HuntHost.jsx), free through 2026.
+  { id: 'rocket', gems: 0, free: true, hunt: true, from: '2026-10-27', until: '2027-01-01' },
 ]
 
 export const REFER_BUDDY = 'hive'
+export const HUNT_BUDDY = 'rocket'
+// Drop calendars and the shop carousel never list the Product Hunt buddy.
+const DROP_BUDDIES = ALL_BUDDIES.filter((item) => !item.hunt)
 
 const ALL_LOOKS = [
   { id: 'lime', coins: 0, gems: 0 },
@@ -135,7 +140,7 @@ export const CHEERS = ALL_CHEERS.filter((item) => isLive(item))
 export const OWNABLE_CHEERS = [...CHEERS, ...SPECIAL_CHEERS]
 export const BUDDIES = ALL_BUDDIES.filter((item) => isLive(item))
 // What the shop sells: every buddy but the one earned by referring friends.
-export const SHOP_BUDDIES = BUDDIES.filter((item) => !item.refer)
+export const SHOP_BUDDIES = BUDDIES.filter((item) => !item.refer && !item.hunt)
 
 export function isReferBuddy(id) {
   return Boolean(ALL_BUDDIES.find((item) => item.id === id)?.refer)
@@ -154,8 +159,17 @@ export function liveBuddies(today = boardDate(new Date())) {
   return ALL_BUDDIES.filter((item) => isLive(item, today))
 }
 export function shopBuddies(today = boardDate(new Date())) {
-  return liveBuddies(today).filter((item) => !item.refer)
+  return liveBuddies(today).filter((item) => !item.refer && !item.hunt)
 }
+// The Product Hunt buddy: free while its window is open, claimed outside the shop.
+export function claimHuntBuddy(book, today = boardDate(new Date())) {
+  const buddy = ALL_BUDDIES.find((item) => item.id === HUNT_BUDDY)
+  const purse = normalizePurse(book)
+  if (purse.buddies.includes(HUNT_BUDDY)) return { book: { ...book, ...purse }, miss: '', had: true }
+  if (!isLive(buddy, today)) return { book, miss: 'shop.miss.buddyGone' }
+  return { book: { ...book, ...purse, buddies: [...purse.buddies, HUNT_BUDDY], buddyOn: HUNT_BUDDY }, miss: '', had: false }
+}
+
 export function ownableCheers(today = boardDate(new Date())) {
   return [...liveCheers(today), ...SPECIAL_CHEERS]
 }
@@ -217,11 +231,11 @@ const framesIf = (frames) => (frames ? DROP_FRAMES : [])
 // The next drop inside its teaser week, or null.
 export function comingDrop(today = boardDate(new Date()), { frames = false } = {}) {
   const pick = (list) => list.filter((item) => isTeased(item, today))
-  const all = [...pick(ALL_LOOKS), ...pick(ALL_CHEERS), ...pick(ALL_BUDDIES), ...pick(framesIf(frames))]
+  const all = [...pick(ALL_LOOKS), ...pick(ALL_CHEERS), ...pick(DROP_BUDDIES), ...pick(framesIf(frames))]
   if (!all.length) return null
   const date = all.reduce((low, item) => (item.from < low ? item.from : low), all[0].from)
   const on = (list) => pick(list).filter((item) => item.from === date)
-  return { date, looks: on(ALL_LOOKS), cheers: on(ALL_CHEERS), buddies: on(ALL_BUDDIES) }
+  return { date, looks: on(ALL_LOOKS), cheers: on(ALL_CHEERS), buddies: on(DROP_BUDDIES) }
 }
 
 // Slides for the shop's drop carousel, first to last: the Coming drop (if in
@@ -236,7 +250,7 @@ function daysUntil(iso, today) {
 
 function slideItems(date, frames = false) {
   const at = (list, type) => list.filter((item) => item.from === date).map((item) => ({ type, item }))
-  return [...at(ALL_LOOKS, 'look'), ...at(ALL_CHEERS, 'cheer'), ...at(ALL_BUDDIES, 'buddy'), ...at(framesIf(frames), 'frame')]
+  return [...at(ALL_LOOKS, 'look'), ...at(ALL_CHEERS, 'cheer'), ...at(DROP_BUDDIES, 'buddy'), ...at(framesIf(frames), 'frame')]
 }
 
 export function dropSlides(today = boardDate(new Date()), { frames = false } = {}) {
@@ -246,7 +260,7 @@ export function dropSlides(today = boardDate(new Date()), { frames = false } = {
     slides.push({ kind: 'coming', date: coming.date, days: daysUntil(coming.date, today), items: slideItems(coming.date, frames) })
   }
   const liveFrames = framesIf(frames).filter((frame) => frameLive(frame, today))
-  const dates = [...new Set([...liveLooks(today), ...liveCheers(today), ...liveBuddies(today), ...liveFrames].map((item) => item.from).filter(Boolean))]
+  const dates = [...new Set([...liveLooks(today), ...liveCheers(today), ...shopBuddies(today), ...liveFrames].map((item) => item.from).filter(Boolean))]
     .filter((date) => date <= today)
     .sort()
     .reverse()
@@ -270,7 +284,7 @@ export function dropSlides(today = boardDate(new Date()), { frames = false } = {
 // A drop that went live today or yesterday, for the one line on Home.
 export function freshDrop(today = boardDate(new Date()), { frames = false } = {}) {
   const yesterday = daysBefore(today, 1)
-  const dates = [...new Set([...ALL_LOOKS, ...ALL_CHEERS, ...ALL_BUDDIES, ...framesIf(frames)].map((item) => item.from))]
+  const dates = [...new Set([...ALL_LOOKS, ...ALL_CHEERS, ...DROP_BUDDIES, ...framesIf(frames)].map((item) => item.from))]
     .filter((date) => date && date >= yesterday && date <= today)
     .sort()
   const date = dates[dates.length - 1]
