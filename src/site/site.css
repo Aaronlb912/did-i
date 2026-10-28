@@ -1865,3 +1865,14 @@ html[data-reduce-motion] .di-site-burger span::after {
     display: none;
   }
 }
+
+.di-log-hunt {
+  display: inline-block;
+  margin-top: 16px;
+}
+
+.di-log-hunt img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
