@@ -391,7 +391,6 @@ export const FRIEND_CHEERS_PER_GEM = 5
 export const FRIEND_CHEER_CAP = 20
 
 export const CHEER_STAGE_MAX = 5
-export const CHEER_STAGE_USES = [0, 0, 5, 10, 15, 20]
 export const CHEER_STAGE_COINS = [0, 0, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN]
 
 // Every id that can be owned, released or not, so a purse loaded before a
@@ -413,7 +412,9 @@ function asFriendCheers(value) {
 
 function asCheerStages(book, owned) {
   const raw = book?.cheerStages && typeof book.cheerStages === 'object' ? book.cheerStages : {}
-  const fallback = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(book?.cheerStage) || 0) || 1))
+  // The old single stage only applies to books saved before per-cheer stages.
+  const legacy = Object.keys(raw).length ? 1 : Math.floor(Number(book?.cheerStage) || 0) || 1
+  const fallback = Math.min(CHEER_STAGE_MAX, Math.max(1, legacy))
   const out = {}
   for (const id of owned) {
     const n = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(raw[id]) || 0) || fallback))
@@ -465,10 +466,8 @@ export function normalizePurse(book) {
   const frame = normalizeWornFrame(book?.frame, frames)
   const cheerUses = asCount(book?.cheerUses)
   const cheerStages = asCheerStages(book, owned)
-  const cheerStage = cheerOn
-    ? Math.max(cheerStages[cheerOn] || 1, stageFromUses(cheerUses))
-    : 1
-  const stages = cheerOn ? { ...cheerStages, [cheerOn]: cheerStage } : cheerStages
+  const cheerStage = cheerOn ? cheerStages[cheerOn] || 1 : 1
+  const stages = cheerStages
   const cheerPlayStages = asCheerPlayStages(book, owned, stages)
   return {
     coins: asCount(book?.coins),
@@ -578,14 +577,6 @@ export function spreadPurseFrom(shelf, book) {
     ...purse,
     boards: shelf.boards.map((item) => stampPurse(item, purse)),
   }
-}
-
-export function stageFromUses(uses) {
-  let stage = 1
-  for (let next = 2; next <= CHEER_STAGE_MAX; next += 1) {
-    if (uses >= CHEER_STAGE_USES[next]) stage = next
-  }
-  return stage
 }
 
 export function nextCheerStage(stage) {
@@ -812,19 +803,8 @@ export function noteCheer(book) {
   const purse = normalizePurse(book)
   const id = purse.cheerOn
   if (!id) return book
-  const cheerUses = purse.cheerUses + 1
-  const fromUse = stageFromUses(cheerUses)
-  const cheerStages = {
-    ...purse.cheerStages,
-    [id]: Math.max(purse.cheerStages[id] || 1, fromUse),
-  }
-  return {
-    ...book,
-    ...purse,
-    cheerUses,
-    cheerStages,
-    cheerStage: cheerStages[id],
-  }
+  // Stages are bought with coins; uses only count plays across every cheer.
+  return { ...book, ...purse, cheerUses: purse.cheerUses + 1 }
 }
 
 export function cheerStageOf(book, id) {
@@ -1080,7 +1060,6 @@ export function buyCheerStage(book, id) {
       coins: purse.coins - cost,
       cheerStages,
       cheerStage: cheerId === purse.cheerOn ? next : purse.cheerStage,
-      cheerUses: Math.max(purse.cheerUses, CHEER_STAGE_USES[next]),
     },
     miss: '',
   }

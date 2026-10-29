@@ -211,6 +211,18 @@ function lamp(id, extra = {}) {
   return { id, question: id, cadence: 'daily', archived: false, createdOn: '2024-01-01', ...extra }
 }
 
+test('a new cheer starts at stage 1, even after another cheer reached stage 5', async () => {
+  const { buyCheerStage, noteCheer, cheerStageOf, wearCheer } = await import('../src/lib/purse.js')
+  let book = { coins: 10000, cheers: ['lime', 'tape'], cheerOn: 'lime', cheerStages: { lime: 1, tape: 1 } }
+  for (let i = 0; i < 4; i += 1) book = buyCheerStage(book, 'lime').book
+  for (let i = 0; i < 25; i += 1) book = noteCheer(book)
+  assert.equal(cheerStageOf(book, 'lime'), 5)
+  book = wearCheer(book, 'tape').book || wearCheer(book, 'tape')
+  book = noteCheer(book)
+  assert.equal(cheerStageOf(book, 'tape'), 1, 'tape stays at 1 until bought')
+  assert.equal(cheerStageOf({ cheers: ['lime', 'tape'], cheerStage: 5, cheerStages: { lime: 5 } }, 'tape'), 1, 'old single stage does not leak to another cheer')
+})
+
 test('a night pays 2 a did, 1 late, new questions too, nothing past 3 taps', () => {
   const clock = new Date('2026-10-04T21:00:00')
   const old = lamp('a', { createdOn: '2026-10-01' })
