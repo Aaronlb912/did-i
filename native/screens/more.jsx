@@ -521,7 +521,9 @@ export function RecentScreen() {
           </Pressable>
         ))
       ) : account.user && inbox > 0 ? null : (
-        <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors} />
+        <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors}>
+          <DidButton small label={t('about.home')} onPress={() => goHash('/tonight')} colors={colors} />
+        </EmptyCard>
       )}
       </View>
     </ScreenShell>
