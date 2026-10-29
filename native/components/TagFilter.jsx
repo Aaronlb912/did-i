@@ -213,9 +213,9 @@ const styles = StyleSheet.create({
   wrap: { marginBottom: 8, alignSelf: 'flex-start' },
   line: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   clear: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

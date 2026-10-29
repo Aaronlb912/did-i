@@ -637,7 +637,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         <Modal visible transparent animationType="fade" onRequestClose={() => setCodeOpen(false)}>
           <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setCodeOpen(false)}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
-              <Text style={[styles.cap, { color: colors.on }]}>{t('people.joinCode')}</Text>
+              <Text accessibilityRole="header" style={[styles.cap, { color: colors.on }]}>{t('people.joinCode')}</Text>
               <Text style={[styles.code, { color: colors.ink }]} selectable>
                 {fam.code}
               </Text>
@@ -676,7 +676,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         <Modal visible transparent animationType="fade" onRequestClose={() => setMenu(null)}>
           <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setMenu(null)}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
-              <Text style={[styles.cap, { color: colors.on }]}>{menu.name}</Text>
+              <Text accessibilityRole="header" style={[styles.cap, { color: colors.on }]}>{menu.name}</Text>
               {menu.items.map((item) => (
                 <Pressable
                   key={item.key}
