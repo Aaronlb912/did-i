@@ -71,7 +71,7 @@ export function StreakMomentHost({ now, look = 'lime', theme = 'dark' }) {
           onPress={(event) => event.stopPropagation()}
         >
           <Text style={[styles.kicker, { color: colors.on }]}>{text.kicker}</Text>
-          <Text style={[styles.title, { color: colors.ink }]}>{text.title}</Text>
+          <Text accessibilityRole="header" style={[styles.title, { color: colors.ink }]}>{text.title}</Text>
           <Text style={[styles.body, { color: colors.inkSoft }]}>{text.body}</Text>
           <View style={styles.row}>
             <DidButton small label={text.yes} onPress={close} colors={colors} />
