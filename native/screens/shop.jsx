@@ -628,6 +628,7 @@ function BuyConfirm({ confirm, onClose, onGo, colors }) {
       kicker: t('shop.buyKicker'),
       title: confirm.title,
       body: confirm.body,
+      preview: confirm.preview,
       goLabel: t('shop.buy'),
       closeLabel: t('settings.neverMind'),
       colors,
@@ -721,6 +722,7 @@ function StagePicks({ owned, play, on, onPick, colors }) {
             key={n}
             accessibilityRole="button"
             accessibilityLabel={t('shop.stage', { n })}
+            accessibilityHint={have ? undefined : n > owned + 1 ? t('shop.stageBuyFirst', { n: owned + 1 }) : t('shop.stageCost', { cost: coinLine(CHEER_STAGE_COINS[n]) })}
             accessibilityState={{ disabled: !have, selected: using }}
             disabled={!have}
             onPress={() => onPick(n)}
@@ -732,7 +734,7 @@ function StagePicks({ owned, play, on, onPick, colors }) {
               },
             ]}
           >
-            <Text style={{ color: using ? colors.on : colors.ink }}>{n}</Text>
+            <Text style={{ color: using ? colors.on : colors.ink, fontFamily: fonts.uiSemi, fontSize: 13 }}>{n}</Text>
           </Pressable>
         )
       })}
@@ -845,7 +847,6 @@ function CheerPlay({ id, coat, colors, stage = 1 }) {
         onPress={play}
         accessibilityRole="button"
         accessibilityLabel={t('shop.cheerPlayA11y', { name: t(cheerText(id, 'name')) })}
-        hitSlop={6}
         style={({ pressed }) => [styles.cheerPlay, { borderColor: colors.line, backgroundColor: colors.panel2 }, pressFx(pressed)]}
       >
         <Text style={[styles.cheerPlayText, { color: colors.ink }]}>{t('shop.cheerPlay')}</Text>
@@ -1315,10 +1316,21 @@ export function ShopCheersScreen({ book, onChange }) {
           if (next) {
             actionLabel = t('shop.nextStage')
             onAction = () => {
+              if (purse.coins < CHEER_STAGE_COINS[next]) {
+                const short = CHEER_STAGE_COINS[next] - purse.coins
+                setMiss({ id: item.id, text: `${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}` })
+                return
+              }
               setMiss(NO_MISS)
               setConfirm({
                 title: t(cheerText(item.id, 'name')),
-                body: t('shop.buyStageBody', { n: next, cost: coinLine(CHEER_STAGE_COINS[next]) }),
+                body: `${t('shop.buyStageBody', { n: next, cost: coinLine(CHEER_STAGE_COINS[next]) })} ${leftAfter(purse, { coins: CHEER_STAGE_COINS[next] })}`,
+                preview: (
+                  <View style={styles.stagePreview}>
+                    <CheerChip id={item.id} stage={next} colors={colors} />
+                    <CheerPlay id={item.id} coat={coat} colors={colors} stage={next} />
+                  </View>
+                ),
                 go: async () => {
                   const out = await buyCheerStageWithCoins(liveBook(book), item.id)
                   take(out, item.id)
@@ -1495,7 +1507,6 @@ function FilterChip({ label, on, onPress, colors }) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
-      hitSlop={4}
       style={[
         styles.filterChip,
         { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.panel3 : colors.panel2 },
@@ -2340,7 +2351,8 @@ const styles = StyleSheet.create({
   popRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   shopCopy: { gap: 4, flex: 1 },
   cheerPlayWrap: { gap: 8, alignSelf: 'stretch' },
-  cheerPlay: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
+  cheerPlay: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, minHeight: 44, justifyContent: 'center' },
+  stagePreview: { alignItems: 'center', gap: 10 },
   cheerPlayText: { fontFamily: fonts.uiSemi, fontSize: 13 },
   cheerStill: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cheerStillText: { flex: 1 },
@@ -2442,8 +2454,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    minWidth: 36,
+    minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   previewBtn: {
     borderWidth: 1,
@@ -2461,7 +2475,7 @@ const styles = StyleSheet.create({
   // Every Collection tab uses this box, so the preview never changes size.
   kitPreviewRoom: { paddingHorizontal: 14, paddingVertical: 22, minHeight: 216, justifyContent: 'center' },
   filterRow: { gap: 8, paddingVertical: 4, paddingRight: 8 },
-  filterChip: { borderWidth: 1, borderRadius: 999, minHeight: 36, paddingHorizontal: 14, justifyContent: 'center' },
+  filterChip: { borderWidth: 1, borderRadius: 999, minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' },
   filterChipText: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
   buddyPreviewGlow: {
     position: 'relative',

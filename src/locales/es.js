@@ -754,6 +754,8 @@ export const es = {
   'shop.gemOne': '1 gema',
   'shop.gems': '{n} gemas',
   'shop.stage': 'Etapa {n}',
+  'shop.stageCost': "Cuesta {cost}",
+  'shop.stageBuyFirst': "Compra primero el nivel {n}",
   'shop.kit': 'Colección',
   'gems.title': 'Conseguir gemas',
   'gems.backShop': 'Tienda',
