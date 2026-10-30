@@ -8708,6 +8708,15 @@ await testAsync('readthrough 9: web reminder tags per question, worker respects 
   assert.equal(swMayPing({ pingsOff: [], quietOn: true, quietFrom: '22:00', quietTo: '07:00' }, new Date(2026, 9, 14, 20, 0)), true)
 })
 
+await testAsync('quiet hours that start and end together move the end on', async () => {
+  const { quietToFor, quietEnd } = await import('../src/lib/quiet.js')
+  assert.equal(quietToFor('22:00', '22:00'), '23:00')
+  assert.equal(quietToFor('23:00', '23:00'), '00:00')
+  assert.equal(quietToFor('22:00', '07:00'), '07:00')
+  const prefs = { quietOn: true, quietFrom: '22:00', quietTo: quietToFor('22:00', '22:00') }
+  assert.notEqual(quietEnd(new Date(2026, 9, 14, 22, 30), prefs).getTime(), new Date(2026, 9, 14, 22, 30).getTime())
+})
+
 await testAsync('readthrough 10: a high one with no time still gets the 21:00 late note, Not yet keeps it, low never', async () => {
   const { upcomingPings } = await import('../src/lib/notify.js')
   const q = (id, extra = {}) => ({ id, question: id, cadence: 'daily', createdOn: '2026-10-01', archived: false, priority: 'high', ...extra })

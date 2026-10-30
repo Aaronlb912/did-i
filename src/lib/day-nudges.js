@@ -6,6 +6,9 @@ export const DAY_NUDGE_LINES = 4
 // With the morning ask on, its nudge takes the first slot at a time the person picks.
 export const MORNING_AT_DEFAULT = '08:00'
 export const MORNING_AT_TIMES = Array.from({ length: 14 }, (_, i) => `${String(5 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`)
+// The afternoon nudge time the person picks.
+export const AFTERNOON_AT_DEFAULT = DAY_NUDGE_TIMES[1]
+export const AFTERNOON_AT_TIMES = Array.from({ length: 12 }, (_, i) => `${String(12 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`)
 const NEAR_MS = 60 * 60 * 1000
 
 // Nudge times for the next `days` days. A day with nothing open (every

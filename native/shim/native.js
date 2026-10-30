@@ -14,7 +14,7 @@ import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
-import { DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges } from '../../src/lib/day-nudges.js'
+import { AFTERNOON_AT_DEFAULT, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges } from '../../src/lib/day-nudges.js'
 import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { readWePings } from '../../src/lib/we-widget.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
@@ -332,8 +332,8 @@ async function schedulePingsNow(books, now = new Date()) {
       const room = PING_CAP - notes.length
       // With the morning ask on, the first one comes at its picked time,
       // asks for today's questions and opens the morning sheet.
-      const { morningAsk: morning, morningAt } = readPrefs()
-      const times = morning ? [morningAt || MORNING_AT_DEFAULT, DAY_NUDGE_TIMES[1]] : DAY_NUDGE_TIMES
+      const { morningAsk: morning, morningAt, afternoonAt } = readPrefs()
+      const times = [morning ? morningAt || MORNING_AT_DEFAULT : DAY_NUDGE_TIMES[0], afternoonAt || AFTERNOON_AT_DEFAULT]
       for (const nudge of dayNudges(list, now, { days: PING_DAYS, reminders, shift: afterQuiet, times }).slice(0, Math.max(0, room))) {
         const ask = morning && nudge.slot === 0
         notes.push({
