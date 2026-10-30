@@ -9362,6 +9362,45 @@ await testAsync('readShelf hands back the same shelf until storage changes, and 
   assert.equal(readShelf().boards[0].title, 'Changed elsewhere')
 })
 
+await testAsync('away mode: the streak holds across away days, 15 days is clamped, reminders and nudges skip them', async () => {
+  const { dueTonight } = await import('../src/lib/recurrence.js')
+  const { writePrefs, awayStart, awayEnd, awayKey, readPrefs } = await import('../src/lib/prefs.js')
+  const { dayNudges } = await import('../src/lib/day-nudges.js')
+  const q = { id: 'a', question: 'a', cadence: 'daily', createdOn: '2026-10-01', archived: false }
+  const day = (n) => '2026-10-' + String(n).padStart(2, '0')
+  const did = (n) => ({ id: 'd' + n, lampId: 'a', periodKey: day(n), status: 'yes', answeredAt: day(n) + 'T20:00:00' })
+  const answers = [1, 2, 3, 4, 5, 11, 12].map(did)
+  const book = { id: 'b', dayFoldHour: 0, lamps: [q], answers }
+  const now = new Date(2026, 9, 12, 22)
+  try {
+    writePrefs({ away: [] })
+    assert.equal(questionStreak(book, q, day(12), 400, now), 2, 'without away the gap breaks it')
+    const key0 = awayKey()
+    writePrefs(awayStart(readPrefs(), day(6), day(11)))
+    assert.deepEqual(readPrefs().away, [[day(6), day(11)]], 'five away days saved')
+    assert.notEqual(awayKey(), key0, 'memo keys see the change')
+    assert.equal(questionStreak(book, q, day(12), 400, now), 7, 'the streak holds across away days')
+    assert.ok(!isDueOn(q, day(8)), 'nothing is due on an away day')
+    assert.ok(isDueOn(q, day(11)), 'the day it ends is asked')
+    // 15 days: refused when started, clamped when read from a synced pref.
+    assert.deepEqual(awayStart(readPrefs(), day(6), '2026-10-21'), {}, '15 days refused')
+    writePrefs({ away: [[day(1), '2026-10-31']] })
+    assert.deepEqual(readPrefs().away, [[day(1), '2026-10-15']], 'a long range is clamped to 14 days')
+    // Reminders and nudges: no nudge on away days, one again when it ends.
+    writePrefs({ away: [[day(14), day(17)]] })
+    const empty = { id: 'e', dayFoldHour: 0, lamps: [q], answers: [] }
+    const days = new Set(dayNudges(empty, new Date(2026, 9, 12, 8, 0)).map((n) => n.at.getDate()))
+    assert.ok(![14, 15, 16].some((d) => days.has(d)), 'no nudges on away days')
+    assert.ok(days.has(13) && days.has(17), 'nudges around them stay')
+    assert.equal(dueTonight(empty, new Date(2026, 9, 15, 12)).length, 0, 'no reminders: nothing due on away days')
+    // Back early.
+    writePrefs(awayEnd(readPrefs(), day(15)))
+    assert.deepEqual(readPrefs().away, [[day(14), day(15)]], 'ending early keeps the days already away')
+  } finally {
+    writePrefs({ away: [] })
+  }
+})
+
 await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an hour clear of reminders, under the iOS cap', async () => {
   const { dayNudges, DAY_NUDGE_TIMES } = await import('../src/lib/day-nudges.js')
   const { PING_KINDS } = await import('../src/lib/prefs.js')

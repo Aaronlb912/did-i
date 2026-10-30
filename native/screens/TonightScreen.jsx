@@ -35,7 +35,7 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
 import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
-import { usePrefs, useTheme } from '../../src/lib/prefs.js'
+import { awayKey, usePrefs, useTheme } from '../../src/lib/prefs.js'
 import { answerFor, isEvery } from '../../src/lib/recurrence.js'
 import { lastTimeLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
@@ -345,7 +345,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const notYetTour = useTourTarget('notYet')
   const frozen = stack.shelf ? freezeState(stack.shelf, stack.clock).frozen : null
   // Best run ever, so a streak reached before frames shipped still earns them.
-  const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
+  const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const frameCtx = { bestStreak: Math.max(stack.streak, bestEver), streak: stack.streak, everFrozen: Boolean(frozen && frozen.size), today: stack.dateIso }
   const wornId = wornFrame(purse, frameCtx)
   // The toast's Wear it runs later, so it reads the book as it is then.

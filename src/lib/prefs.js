@@ -53,7 +53,56 @@ function blankPrefs() {
     morningAt: '08:00',
     // When the afternoon Not yet nudge comes (day-nudges.js AFTERNOON_AT_TIMES, 12:00 to 17:30).
     afternoonAt: '13:30',
+    // Away mode: [from, until) day pairs, each up to AWAY_MAX days, newest 8.
+    // Every question is paused on those days (recurrence.js isDueOn, inPause).
+    away: [],
   }
+}
+
+export const AWAY_MAX = 14
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
+function isoPlus(iso, days) {
+  const d = new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10) + days))
+  return d.toISOString().slice(0, 10)
+}
+function cleanAway(list) {
+  if (!Array.isArray(list)) return []
+  const out = []
+  for (const pair of list) {
+    const [from, until] = Array.isArray(pair) ? pair : []
+    if (!ISO_DAY.test(from || '') || !ISO_DAY.test(until || '') || until <= from) continue
+    const cap = isoPlus(from, AWAY_MAX)
+    out.push([from, until > cap ? cap : until])
+  }
+  return out.slice(-8)
+}
+// Cached for the night math, which asks per day: refreshed on read and write.
+let awayCache = []
+let awayText = ''
+function holdAway(prefs) {
+  awayCache = prefs.away || []
+  awayText = JSON.stringify(awayCache)
+}
+export function awayOn(iso) {
+  for (const [from, until] of awayCache) if (iso >= from && iso < until) return true
+  return false
+}
+// Part of every memo key that walks days, so a change refreshes cached walks.
+export function awayKey() {
+  return awayText
+}
+// The patch that goes away from today until the picked day (1 to 14 days out).
+export function awayStart(prefs, todayIso, untilIso) {
+  if (!ISO_DAY.test(untilIso || '') || untilIso <= todayIso || untilIso > isoPlus(todayIso, AWAY_MAX)) return {}
+  return { away: [...cleanAway(prefs.away).filter(([, until]) => until <= todayIso), [todayIso, untilIso]] }
+}
+// Back now: today is asked again. Days already away stay skipped.
+export function awayEnd(prefs, todayIso) {
+  return { away: cleanAway(prefs.away).flatMap(([from, until]) => (until <= todayIso ? [[from, until]] : from < todayIso ? [[from, todayIso]] : [])) }
+}
+// The range running on a day, or null.
+export function awayNow(prefs, todayIso) {
+  return cleanAway(prefs.away).find(([from, until]) => todayIso >= from && todayIso < until) || null
 }
 
 export function deviceLocale() {
@@ -141,6 +190,7 @@ function cleanPrefs(raw) {
   if (raw?.morningAsk === false) next.morningAsk = false
   if (/^(0[5-9]|1[01]):(00|30)$/.test(raw?.morningAt || '')) next.morningAt = raw.morningAt
   if (/^(1[2-7]):(00|30)$/.test(raw?.afternoonAt || '')) next.afternoonAt = raw.afternoonAt
+  next.away = cleanAway(raw?.away)
   if (Number.isInteger(raw?.familyHour) && raw.familyHour >= 0 && raw.familyHour <= 23) next.familyHour = raw.familyHour
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
@@ -189,7 +239,9 @@ export function readPrefs() {
       localStorage.setItem(KEY, JSON.stringify(next))
       return next
     }
-    return cleanPrefs(JSON.parse(raw))
+    const clean = cleanPrefs(JSON.parse(raw))
+    holdAway(clean)
+    return clean
   } catch {
     return blankPrefs()
   }
@@ -206,6 +258,7 @@ export function writePrefs(patch, fromCloud = false) {
     }
   }
   localStorage.setItem(KEY, JSON.stringify(next))
+  holdAway(next)
   savePrefsForSw(next)
   if (!fromCloud) stampSavedAt()
   clockCache = null
