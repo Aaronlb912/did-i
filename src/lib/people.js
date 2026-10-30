@@ -706,7 +706,15 @@ export async function readKnownPerson(id) {
 
 // A look, cheer or buddy for a friend or family member. The server takes the
 // gems or coins and returns the new balances.
-export async function sendGift(toId, kind, itemId, note = '') {
+// One id per send attempt; a retry reuses it so the server charges once.
+export function newRequestId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.floor(Math.random() * 16)
+    return (c === 'x' ? r : (r & 3) | 8).toString(16)
+  })
+}
+
+export async function sendGift(toId, kind, itemId, note = '', requestId = null) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const { data, error } = await db.rpc('send_gift', {
@@ -714,6 +722,7 @@ export async function sendGift(toId, kind, itemId, note = '') {
     p_kind: kind,
     p_item_id: itemId,
     p_note: String(note || '').trim().slice(0, 60),
+    ...(requestId ? { p_request_id: requestId } : {}),
   })
   if (!error) return { miss: '', gems: Number(data?.gems) || 0, coins: Number(data?.coins) || 0 }
   if (notRunYet(error)) return { miss: 'setup' }
