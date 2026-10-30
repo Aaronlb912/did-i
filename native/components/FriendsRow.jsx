@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: -4,
   },
-  faceText: { fontFamily: fonts.uiSemi, fontSize: 10 },
+  faceText: { fontFamily: fonts.uiSemi, fontSize: 11 },
   faceSlot: { marginRight: 2 },
   count: { fontFamily: fonts.ui, fontSize: 13, marginLeft: 4, flexShrink: 1 },
   cheer: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },

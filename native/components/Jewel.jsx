@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   },
   tag: {
     fontFamily: fonts.mono,
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     marginTop: 1,

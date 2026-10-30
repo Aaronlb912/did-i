@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
   offChip: { width: 36, height: 44, borderRadius: 8, borderWidth: 1, borderStyle: 'dashed' },
   kitName: { fontFamily: fonts.uiSemi, fontSize: 11, maxWidth: '100%', textAlign: 'center' },
   kitTileWorn: { borderWidth: 2, borderRadius: 12 },
-  kitCaption: { fontFamily: fonts.ui, fontSize: 10, maxWidth: '100%' },
+  kitCaption: { fontFamily: fonts.ui, fontSize: 11, maxWidth: '100%' },
   wornBadge: {
     position: 'absolute',
     right: -2,
@@ -664,5 +664,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  wornBadgeText: { fontSize: 10, fontWeight: '700', lineHeight: 12 },
+  wornBadgeText: { fontSize: 11, fontWeight: '700', lineHeight: 12 },
 })

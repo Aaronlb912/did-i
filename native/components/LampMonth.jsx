@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   arrowText: { fontFamily: fonts.ui, fontSize: 20, lineHeight: 22 },
   row: { flexDirection: 'row' },
   cell: { flex: 1, alignItems: 'center', paddingVertical: 2 },
-  letter: { fontFamily: fonts.mono, fontSize: 10, textAlign: 'center' },
+  letter: { fontFamily: fonts.mono, fontSize: 11, textAlign: 'center' },
   day: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   dayText: { fontFamily: fonts.mono, fontSize: 11 },
   key: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 12, rowGap: 4, marginTop: 8 },

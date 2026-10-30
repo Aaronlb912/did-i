@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   list: { gap: 2 },
-  cap: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', paddingHorizontal: 10, paddingTop: 6 },
+  cap: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', paddingHorizontal: 10, paddingTop: 6 },
   capGap: { marginTop: 8 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 10, gap: 12 },
   rowName: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },

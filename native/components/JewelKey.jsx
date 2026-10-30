@@ -43,15 +43,35 @@ function markSeen() {
   writePrefs({ jewelKeySeen: true })
 }
 
+// A second cue besides color: solid, half, barred, thin ring, thick ring.
+function KeyDot({ color, shape }) {
+  if (shape === 'solid') return <View style={[styles.dot, { backgroundColor: color }]} />
+  if (shape === 'half') {
+    return (
+      <View style={[styles.dot, styles.part, { borderColor: color }]}>
+        <View style={[styles.halfFill, { backgroundColor: color }]} />
+      </View>
+    )
+  }
+  if (shape === 'cross') {
+    return (
+      <View style={[styles.dot, styles.part, { borderColor: color, justifyContent: 'center' }]}>
+        <View style={[styles.bar, { backgroundColor: color }]} />
+      </View>
+    )
+  }
+  return <View style={[styles.dot, { borderColor: color, borderWidth: shape === 'ringThick' ? 3 : 1.5 }]} />
+}
+
 // What the dot on each question pill means. Shown once, on a night after the first,
 // as a popup over Home so it never pushes the card around.
 export function JewelKey({ colors, onDone }) {
   const rows = [
-    { color: colors.on, label: t('jewelKey.did') },
-    { color: colors.late, label: t('jewelKey.late') },
-    { color: colors.skip, label: t('jewelKey.notYet') },
-    { color: colors.open, label: t('jewelKey.open') },
-    { color: colors.miss, label: t('jewelKey.due') },
+    { color: colors.on, shape: 'solid', label: t('jewelKey.did') },
+    { color: colors.late, shape: 'half', label: t('jewelKey.late') },
+    { color: colors.skip, shape: 'cross', label: t('jewelKey.notYet') },
+    { color: colors.open, shape: 'ring', label: t('jewelKey.open') },
+    { color: colors.miss, shape: 'ringThick', label: t('jewelKey.due') },
   ]
   const done = () => {
     markSeen()
@@ -66,7 +86,7 @@ export function JewelKey({ colors, onDone }) {
       <View style={styles.grid}>
         {rows.map((row) => (
           <View key={row.label} style={styles.row}>
-            <View style={[styles.dot, { backgroundColor: row.color }]} />
+            <KeyDot color={row.color} shape={row.shape} />
             <Text style={[styles.label, { color: colors.inkSoft }]}>{row.label}</Text>
           </View>
         ))}
@@ -97,6 +117,9 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '50%' },
   dot: { width: 9, height: 9, borderRadius: 5 },
+  part: { borderWidth: 1.5, overflow: 'hidden', justifyContent: 'flex-end' },
+  halfFill: { height: 4, width: '100%' },
+  bar: { height: 2, width: '100%' },
   tap: { marginTop: -4, marginBottom: 10 },
   dash: { width: 16, height: 10, borderRadius: 5, borderWidth: 1, borderStyle: 'dashed' },
   label: { fontFamily: fonts.ui, fontSize: 13 },
