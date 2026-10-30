@@ -741,6 +741,8 @@ export const zh = {
   'shop.gemOne': '1 颗宝石',
   'shop.gems': '{n} gems',
   'shop.stage': '第 {n} 阶段',
+  'shop.stageCost': "需要 {cost}",
+  'shop.stageBuyFirst': "请先购买第 {n} 级",
   'shop.kit': '收藏',
   'gems.title': 'Gems',
   'gems.backShop': '商店',

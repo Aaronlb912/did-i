@@ -743,6 +743,8 @@ export const ja = {
   'shop.gemOne': '1 ジェム',
   'shop.gems': '{n} gems',
   'shop.stage': '段階 {n}',
+  'shop.stageCost': "{cost}かかります",
+  'shop.stageBuyFirst': "先にレベル{n}を買ってください",
   'shop.kit': 'コレクション',
   'gems.title': 'Gems',
   'gems.backShop': 'ショップ',

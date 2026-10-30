@@ -742,6 +742,8 @@ export const ko = {
   'shop.gemOne': '젬 1개',
   'shop.gems': '{n} gems',
   'shop.stage': '단계 {n}',
+  'shop.stageCost': "{cost} 필요",
+  'shop.stageBuyFirst': "먼저 레벨 {n}을 구매하세요",
   'shop.kit': '컬렉션',
   'gems.title': 'Gems',
   'gems.backShop': '상점',

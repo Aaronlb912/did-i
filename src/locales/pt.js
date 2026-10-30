@@ -753,6 +753,8 @@ export const pt = {
   'shop.gemOne': '1 gema',
   'shop.gems': '{n} gems',
   'shop.stage': 'Etapa {n}',
+  'shop.stageCost': "Custa {cost}",
+  'shop.stageBuyFirst': "Compre primeiro o nível {n}",
   'shop.kit': 'Coleção',
   'gems.title': 'Gems',
   'gems.backShop': 'Loja',
