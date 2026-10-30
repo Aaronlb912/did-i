@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuCountText: { fontSize: 10, lineHeight: 12, includeFontPadding: false, textAlign: 'center' },
+  menuCountText: { fontSize: 11, lineHeight: 12, includeFontPadding: false, textAlign: 'center' },
   menuPip: {
     position: 'absolute',
     top: 8,
