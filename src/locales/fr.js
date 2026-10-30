@@ -503,6 +503,7 @@ export const fr = {
   'hang.tagOne': 'Choisis un dossier.',
   'hang.tagPh': 'Accueil',
   'hang.tagNew': 'Nouveau dossier',
+  'hang.tagWillMake': 'Nouveau dossier : {name}',
   'hang.tagLater': 'Dossiers vides',
   'hang.tagLaterHint': 'Pas de questions dessus. Touche un pour le réutiliser.',
   'hang.edit': 'Modifier la question',

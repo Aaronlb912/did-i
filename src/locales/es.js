@@ -502,6 +502,7 @@ export const es = {
   'hang.tagOne': 'Elige una carpeta.',
   'hang.tagPh': 'Inicio',
   'hang.tagNew': 'Nueva carpeta',
+  'hang.tagWillMake': 'Carpeta nueva: {name}',
   'hang.tagLater': 'Carpetas vacías',
   'hang.tagLaterHint': 'No tienen preguntas. Toca una para usarla otra vez.',
   'hang.edit': 'Editar pregunta',

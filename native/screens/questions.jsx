@@ -41,8 +41,8 @@ import {
 import { commitBook } from '../../src/lib/achievements.js'
 import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { isTodayOnce } from '../../src/lib/morning-ask.js'
-import { findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
-import { t } from '../../src/lib/i18n.js'
+import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
+import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery } from '../../src/lib/recurrence.js'
 import { gapLine, lastTimeLine, sinceBadge } from '../../src/lib/every-copy.js'
@@ -107,6 +107,7 @@ import { Glide, pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
 import { missDot } from '../palette.js'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
+const weekdaysFor = (locale) => WEEKDAYS.map((_, i) => (i + firstWeekday(locale)) % 7)
 
 function useHall(book) {
   const colors = useHallColors(book)
@@ -1695,6 +1696,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         wobble.nudge()
         inputRef.current?.focus()
       } else if (SCHEDULE_MISSES.has(problem) && open !== 'when') {
+        Keyboard.dismiss()
         fold('when')
       } else if (problem === 'hang.miss.askAfter') {
         openTime()
@@ -1870,7 +1872,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
             {schedule === 'weekly' ? (
               <View style={styles.pillRow}>
-                {WEEKDAYS.map((day) => (
+                {weekdaysFor(readPrefs().locale).map((day) => (
                   <Pill
                     key={day}
                     label={t(`hang.day.${day}`)}
@@ -1933,7 +1935,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                   <FoldInput
                     label={t('hang.everyDays')}
                     value={String(draft.everyDays || '')}
-                    onChangeText={(value) => hang.change('everyDays', value.replace(/\D/g, ''))}
+                    onChangeText={(value) => hang.change('everyDays', value.replace(/\D/g, '').replace(/^(?:36[6-9]|3[7-9]\d|[4-9]\d\d)$/, '365'))}
                     keyboardType="number-pad"
                     placeholder="10"
                     maxLength={3}
@@ -2120,6 +2122,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                 returnKeyType="done"
                 colors={colors}
               />
+            ) : null}
+            {hang.tagTitle.trim() && !findBookByTitle(boards, hang.tagTitle.trim()) ? (
+              <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.tagWillMake', { name: hang.tagTitle.trim() })}</Text>
             ) : null}
             {hang.parkedTags.length ? (
               <>

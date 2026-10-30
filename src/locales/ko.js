@@ -493,6 +493,7 @@ export const ko = {
   'hang.tagOne': '폴더 하나를 고르세요.',
   'hang.tagPh': '홈',
   'hang.tagNew': '새 폴더',
+  'hang.tagWillMake': '새 폴더: {name}',
   'hang.tagLater': '빈 폴더',
   'hang.tagLaterHint': '질문 없음. 탭하면 다시 써요.',
   'hang.edit': '질문 편집',

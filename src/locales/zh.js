@@ -493,6 +493,7 @@ export const zh = {
   'hang.tagOne': '选一个文件夹。',
   'hang.tagPh': '首页',
   'hang.tagNew': '新文件夹',
+  'hang.tagWillMake': '新文件夹：{name}',
   'hang.tagLater': '空文件夹',
   'hang.tagLaterHint': '没有问题。点一个重新使用。',
   'hang.edit': '编辑问题',
