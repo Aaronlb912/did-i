@@ -1,7 +1,7 @@
 import { answeredAtIso, cleanAmount, duplicateLamp, newAnswerId } from './board-json.js'
 import { activeLook } from './active-look.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
-import { addDaysIso, answerFor, boardDate, didStatusForRow, inPause, nightOpen, openFloorIso, parseIsoDate, periodPassed, stampMs } from './recurrence.js'
+import { addDaysIso, answerFor, boardDate, didStatusForRow, inPause, nightOpen, openFloorIso, periodPassed, stampMs } from './recurrence.js'
 import { readShelf } from './board-shelf.js'
 
 // Pausing notes the day, so the question's record stops counting there.
@@ -39,9 +39,9 @@ export function putAnswer(book, row, status, clock = new Date(), past = false) {
     lampId: row.lamp.id,
     periodKey: row.periodKey,
     status,
-    // An older day is stamped at its own end: out of today's paid taps, and it
-    // still beats that day's closing Not yet.
-    answeredAt: answeredAtIso(past && parseIsoDate(row.dateIso) ? new Date(`${row.dateIso}T23:59:59`) : clock),
+    // Stamped now, so sync keeps it over an older Not yet; past keeps it out of today's paid taps.
+    answeredAt: answeredAtIso(clock),
+    ...(past ? { past: true } : {}),
     // Changing the answer keeps the day's note and amount.
     note: prev?.note || '',
     ...(prev?.note && prev.noteAt ? { noteAt: prev.noteAt } : {}),
@@ -85,6 +85,8 @@ export function pastAnswerOpen(row, clock = new Date()) {
 // in its grace period takes the normal path.
 export function putPastAnswer(book, row, status, clock = new Date()) {
   if (!pastAnswerOpen(row, clock)) return book
+  const cur = answerFor(book, row.lamp.id, row.periodKey)?.status
+  if (status === 'yes' ? cur === 'yes' || cur === 'late' : cur === status) return book
   if (nightOpen(row.dateIso, clock)) return putAnswer(book, row, status === 'yes' ? didStatusForRow(row) : status, clock)
   return putAnswer(book, row, status === 'yes' ? 'late' : status, clock, true)
 }

@@ -570,6 +570,13 @@ test('an answer for a day 3 to 6 back counts in the streak as late, pays nothing
   assert.equal(putPastAnswer(book, rowOn(old), 'yes', clock), book, '8 back is refused')
   assert.equal(putPastAnswer(book, rowOn('2026-10-20'), 'yes', clock), book, 'today takes the normal path')
   assert.equal(putPastAnswer(book, rowOn('2026-10-16', { archived: true }), 'yes', clock), book, 'an archived question is refused')
+  // An on-time Did stays on time, and a past Did beats a Not yet synced later than its day.
+  const onTime = { ...book, answers: [yes('2026-10-16')] }
+  assert.equal(putPastAnswer(onTime, rowOn('2026-10-16'), 'yes', clock), onTime, 'an on-time Did is not turned late')
+  const closed = { ...book, answers: [{ lampId: 'walk', periodKey: '2026-10-16', status: 'skip', answeredAt: '2026-10-17T08:00:00.000Z' }] }
+  const fixed = answerFor(putPastAnswer(closed, rowOn('2026-10-16'), 'yes', clock), 'walk', '2026-10-16')
+  assert.ok(fixed.answeredAt > '2026-10-17T08:00:00.000Z', 'stamped after the synced Not yet')
+  assert.equal(fixed.past, true, 'kept out of the paid taps of today')
 })
 
 test('question search matches every word, and tonight states come from one pass per tag', () => {
