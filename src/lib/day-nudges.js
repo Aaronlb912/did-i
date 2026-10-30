@@ -1,4 +1,5 @@
-import { askedBy, dueTonight, rowDoneTonight } from './recurrence.js'
+import { askedBy, boardDate, dueTonight, rowDoneTonight } from './recurrence.js'
+import { AWAY_MAX, awayOn } from './prefs.js'
 
 // Two daytime nudges, local time, on top of the per-question reminders.
 export const DAY_NUDGE_TIMES = ['09:00', '13:30']
@@ -10,6 +11,18 @@ export const MORNING_AT_TIMES = Array.from({ length: 14 }, (_, i) => `${String(5
 export const AFTERNOON_AT_DEFAULT = DAY_NUDGE_TIMES[1]
 export const AFTERNOON_AT_TIMES = Array.from({ length: 12 }, (_, i) => `${String(12 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`)
 const NEAR_MS = 60 * 60 * 1000
+
+// Which days ahead to set reminders for: the next `count` days that are not
+// away, so reminders still come on the days after an away stretch ends even if
+// the app stays closed. Looks at most AWAY_MAX days further.
+export function pingAheads(now, count) {
+  const out = []
+  for (let ahead = 0; out.length < count && ahead < count + AWAY_MAX; ahead += 1) {
+    const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
+    if (!awayOn(boardDate(day))) out.push(ahead)
+  }
+  return out
+}
 
 // Nudge times for the next `days` days. A day with nothing open (every
 // question Did, or none due) gets none, nor does a time within an hour of a

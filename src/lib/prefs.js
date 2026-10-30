@@ -53,7 +53,105 @@ function blankPrefs() {
     morningAt: '08:00',
     // When the afternoon Not yet nudge comes (day-nudges.js AFTERNOON_AT_TIMES, 12:00 to 17:30).
     afternoonAt: '13:30',
+    // Away mode: [from, until) day pairs, each up to AWAY_MAX days, newest 8.
+    // Every question is paused on those days (recurrence.js isDueOn, inPause).
+    away: [],
   }
+}
+
+export const AWAY_MAX = 14
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
+function isoPlus(iso, days) {
+  const d = new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10) + days))
+  return d.toISOString().slice(0, 10)
+}
+// Ranges merge when they touch. A day counts only while the 59 days before
+// it hold fewer than AWAY_MAX kept days, so one day at a time cannot hold a
+// streak forever. Ranges end more than 400 days back are forgotten.
+export const AWAY_WINDOW = 60
+function cleanAway(list) {
+  if (!Array.isArray(list)) return []
+  const floor = isoPlus(new Date().toISOString().slice(0, 10), -400)
+  const pairs = []
+  for (const pair of list) {
+    const [from, until] = Array.isArray(pair) ? pair : []
+    if (!ISO_DAY.test(from || '') || !ISO_DAY.test(until || '') || until <= from || until < floor) continue
+    const cap = isoPlus(from, AWAY_MAX)
+    pairs.push([from, until > cap ? cap : until])
+  }
+  pairs.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+  const days = new Set()
+  const out = []
+  for (const [from, until] of pairs) {
+    for (let day = from; day < until; day = isoPlus(day, 1)) {
+      if (days.has(day)) continue
+      let near = 0
+      for (let back = 1; back < AWAY_WINDOW; back += 1) if (days.has(isoPlus(day, -back))) near += 1
+      if (near >= AWAY_MAX) continue
+      days.add(day)
+      const last = out[out.length - 1]
+      if (last && last[1] === day) last[1] = isoPlus(day, 1)
+      else out.push([day, isoPlus(day, 1)])
+    }
+  }
+  return out
+}
+// Cached for the night math, which asks per day: refreshed on read and write.
+let awayCache = []
+let awayText = ''
+let awayLoaded = false
+function holdAway(prefs) {
+  awayLoaded = true
+  awayCache = prefs.away || []
+  awayText = JSON.stringify(awayCache)
+}
+// The headless widget task and a wake never read prefs first, so load on first use.
+function loadAway() {
+  if (awayLoaded) return
+  awayLoaded = true
+  readPrefs()
+}
+export function awayOn(iso) {
+  loadAway()
+  for (const [from, until] of awayCache) if (iso >= from && iso < until) return true
+  return false
+}
+// Part of every memo key that walks days, so a change refreshes cached walks.
+export function awayKey() {
+  loadAway()
+  return awayText
+}
+// The days of the picked stretch the 14-in-60 limit still allows (0 to 14).
+export function awayLeft(prefs, startIso) {
+  const have = new Set(awayDays(prefs.away))
+  const after = awayDays(cleanAway([...(prefs.away || []), [startIso, isoPlus(startIso, AWAY_MAX)]]))
+  return after.filter((day) => !have.has(day)).length
+}
+function awayDays(list) {
+  return cleanAway(list).flatMap(([from, until]) => {
+    const days = []
+    for (let day = from; day < until; day = isoPlus(day, 1)) days.push(day)
+    return days
+  })
+}
+// The patch that goes away until the picked day (1 to 14 days out). It starts
+// tomorrow when something was already answered today, so that answer stays.
+// Past the 14-in-60 limit the end is cut short; no days left gives {}.
+export function awayStart(prefs, todayIso, untilIso, answeredToday = false) {
+  if (!ISO_DAY.test(untilIso || '') || untilIso <= todayIso || untilIso > isoPlus(todayIso, AWAY_MAX)) return {}
+  const from = answeredToday ? isoPlus(todayIso, 1) : todayIso
+  if (untilIso <= from) return {}
+  const was = cleanAway(prefs.away)
+  const away = cleanAway([...was, [from, untilIso]])
+  return JSON.stringify(away) === JSON.stringify(was) ? {} : { away }
+}
+// Back now: today is asked again. Days already away stay skipped.
+export function awayEnd(prefs, todayIso) {
+  return { away: cleanAway(prefs.away).flatMap(([from, until]) => (until <= todayIso ? [[from, until]] : from < todayIso ? [[from, todayIso]] : [])) }
+}
+// The range running today or coming up, or null.
+export function awayNow(prefs, todayIso) {
+  return cleanAway(prefs.away).find(([, until]) => until > todayIso) || null
 }
 
 export function deviceLocale() {
@@ -141,6 +239,7 @@ function cleanPrefs(raw) {
   if (raw?.morningAsk === false) next.morningAsk = false
   if (/^(0[5-9]|1[01]):(00|30)$/.test(raw?.morningAt || '')) next.morningAt = raw.morningAt
   if (/^(1[2-7]):(00|30)$/.test(raw?.afternoonAt || '')) next.afternoonAt = raw.afternoonAt
+  next.away = cleanAway(raw?.away)
   if (Number.isInteger(raw?.familyHour) && raw.familyHour >= 0 && raw.familyHour <= 23) next.familyHour = raw.familyHour
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true
@@ -189,7 +288,9 @@ export function readPrefs() {
       localStorage.setItem(KEY, JSON.stringify(next))
       return next
     }
-    return cleanPrefs(JSON.parse(raw))
+    const clean = cleanPrefs(JSON.parse(raw))
+    holdAway(clean)
+    return clean
   } catch {
     return blankPrefs()
   }
@@ -206,6 +307,7 @@ export function writePrefs(patch, fromCloud = false) {
     }
   }
   localStorage.setItem(KEY, JSON.stringify(next))
+  holdAway(next)
   savePrefsForSw(next)
   if (!fromCloud) stampSavedAt()
   clockCache = null

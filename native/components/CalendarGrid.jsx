@@ -4,7 +4,7 @@ import { shortLabel } from '../../src/lib/board-json.js'
 import { firstAnswerMonth, monthStripNights, nightDueRows, nightWhy, yearMonths } from '../../src/lib/hall-pages.js'
 import { openNightWhy } from './NightSheets.jsx'
 import { t } from '../../src/lib/i18n.js'
-import { gentleOn, usePrefs } from '../../src/lib/prefs.js'
+import { awayKey, gentleOn, usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate, nightOpen } from '../../src/lib/recurrence.js'
 import { pastAnswerOpen } from '../../src/lib/board-ops.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
@@ -247,7 +247,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
     setYear(thisYear)
   }, [tagId, thisYear])
 
-  const firstMonth = useMemo(() => firstAnswerMonth(shelf, clock, tagId), [shelf, tagId, dateIso])
+  const firstMonth = useMemo(() => firstAnswerMonth(shelf, clock, tagId), [shelf, tagId, dateIso, awayKey()])
   const firstYear = Number(firstMonth.slice(0, 4))
   // One walk per [shelf, year]; the night changing also refreshes today.
   // The first year starts at the first month with answers, not January.

@@ -6,7 +6,7 @@ import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { amountAverageLine, amountWords, lampAmounts, lampRecord, lastDidTimes } from './lamp-record.js'
 import { pillStatusLabel } from './pill-status.js'
-import { usePrefs } from './prefs.js'
+import { awayKey, usePrefs } from './prefs.js'
 import { formatBoardDate, isEvery, recentPeriodKeys } from './recurrence.js'
 import { gapLine, lastTimeLine, sinceBadge } from './every-copy.js'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
@@ -26,9 +26,9 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
     () => (lamp ? recentPeriodKeys({ ...lamp, archived: false }, dateIso, 7) : []),
     [lamp, dateIso],
   )
-  const record = useMemo(() => lampRecord(book, lamp, dateIso, 30), [book, lamp, dateIso])
+  const record = useMemo(() => lampRecord(book, lamp, dateIso, 30), [book, lamp, dateIso, awayKey()])
   const lastFive = useMemo(() => lastDidTimes(book, lamp, 5), [book, lamp])
-  const amounts = useMemo(() => lampAmounts(book, lamp, dateIso, 14, 30), [book, lamp, dateIso])
+  const amounts = useMemo(() => lampAmounts(book, lamp, dateIso, 14, 30), [book, lamp, dateIso, awayKey()])
   if (!lamp) return null
   const status = lamp.archived
     ? t('lamp.pausedLine')

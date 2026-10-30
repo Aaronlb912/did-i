@@ -47,7 +47,7 @@ import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery } from '../../src/lib/recurrence.js'
 import { gapLine, lastTimeLine, sinceBadge } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
-import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
+import { awayKey, readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { NightNotes } from '../components/NightNotes.jsx'
 import { addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
@@ -2317,11 +2317,11 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const lampBook = findBookHoldingLamp(shelf, lampId) || book
   const { colors, clock, dateIso } = useHall(lampBook)
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
-  const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
-  const best = useMemo(() => bestQuestionStreak(lampBook, lamp, dateIso), [lampBook, lamp, dateIso])
-  const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso])
+  const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso, awayKey()])
+  const best = useMemo(() => bestQuestionStreak(lampBook, lamp, dateIso), [lampBook, lamp, dateIso, awayKey()])
+  const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso, awayKey()])
   const lastFive = useMemo(() => lastDidTimes(lampBook, lamp, 5), [lampBook, lamp])
-  const amounts = useMemo(() => lampAmounts(lampBook, lamp, dateIso, 14, 30), [lampBook, lamp, dateIso])
+  const amounts = useMemo(() => lampAmounts(lampBook, lamp, dateIso, 14, 30), [lampBook, lamp, dateIso, awayKey()])
   // Every so often: no streak, so the tiles say when it was last done and the usual gap.
   const every = useMemo(() => {
     if (!isEvery(lamp)) return null
@@ -2333,7 +2333,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       badge: sinceBadge(lampBook, lamp, dateIso, false),
       gap: gapLine(lampBook, lamp, dateIso),
     }
-  }, [lampBook, lamp, dateIso])
+  }, [lampBook, lamp, dateIso, awayKey()])
   const gentle = usePrefs().gentle === true
   const phone = usePhoneQuiet()
   const account = useAccount()

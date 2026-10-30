@@ -1,6 +1,6 @@
 import { mustSwipeDeadline } from './lamp-deadline.js'
 import { DAY_FOLD, GRACE_END, GRACE_FIRST_UNTIL, wallClock } from './zone.js'
-import { readPrefs } from './prefs.js'
+import { awayOn, readPrefs } from './prefs.js'
 
 function pad(value) {
   return String(value).padStart(2, '0')
@@ -163,13 +163,14 @@ export function keepPastSchedule(old, next, todayIso, answeredToday = false) {
 
 // A day inside a pause since resumed ([from, until) pairs on lamp.pauses).
 export function inPause(lamp, iso) {
-  return Boolean(lamp?.pauses?.some(([from, until]) => iso >= from && iso < until))
+  return Boolean(lamp?.pauses?.some(([from, until]) => iso >= from && iso < until)) || awayOn(iso)
 }
 
 export function isDueOn(lamp, dateIso) {
   if (!lamp || lamp.archived) return false
   const date = parseIsoDate(dateIso)
   if (!date) return false
+  if (awayOn(dateIso)) return false
   if (lamp.was) lamp = scheduleAt(lamp, dateIso)
   switch (lamp.cadence) {
     case 'daily':
@@ -317,7 +318,7 @@ export function everyGap(book, lamp, dateIso) {
 
 // Due on dateIso: never done, or the gap has passed since the last Did.
 export function everyDueOn(book, lamp, dateIso) {
-  if (!isEvery(lamp) || lamp.archived) return false
+  if (!isEvery(lamp) || lamp.archived || awayOn(dateIso)) return false
   const created = String(lamp.createdOn || '').slice(0, 10)
   if (created && dateIso < created) return false
   const last = lastDidNight(book, lamp.id, dateIso)
