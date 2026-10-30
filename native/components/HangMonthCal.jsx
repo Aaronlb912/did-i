@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { t } from '../../src/lib/i18n.js'
+import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, isoDate, parseIsoDate } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
@@ -13,14 +13,14 @@ function dateLocale(code) {
 
 function dowMarks(locale) {
   return [0, 1, 2, 3, 4, 5, 6].map((day) => {
-    const date = new Date(2026, 8, 6 + day)
+    const date = new Date(2026, 8, 6 + ((day + firstWeekday(locale)) % 7))
     return date.toLocaleDateString(dateLocale(locale), { weekday: 'narrow' })
   })
 }
 
-function monthDays(year, month, todayIso) {
+function monthDays(year, month, todayIso, locale) {
   const start = new Date(year, month, 1)
-  const pad = start.getDay()
+  const pad = (start.getDay() - firstWeekday(locale) + 7) % 7
   const last = new Date(year, month + 1, 0).getDate()
   const nights = []
   for (let i = 0; i < pad; i += 1) nights.push({ pad: true, key: `pad-${i}` })
@@ -43,7 +43,7 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
     return {
       start,
       label: start.toLocaleDateString(dateLocale(prefs.locale), { month: 'long', year: 'numeric' }),
-      nights: monthDays(start.getFullYear(), start.getMonth(), todayIso),
+      nights: monthDays(start.getFullYear(), start.getMonth(), todayIso, prefs.locale),
       lastDay: new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate(),
     }
   }, [todayDate, monthShift, todayIso, prefs.locale])

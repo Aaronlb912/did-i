@@ -502,6 +502,7 @@ export const de = {
   'hang.tagOne': 'Wähl einen Ordner.',
   'hang.tagPh': 'Start',
   'hang.tagNew': 'Neuer Ordner',
+  'hang.tagWillMake': 'Neuer Ordner: {name}',
   'hang.tagLater': 'Leere Ordner',
   'hang.tagLaterHint': 'Keine Fragen drauf. Tippe einen, um ihn wieder zu nutzen.',
   'hang.edit': 'Frage bearbeiten',

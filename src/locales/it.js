@@ -500,6 +500,7 @@ export const it = {
   'hang.tagOne': 'Scegli una cartella.',
   'hang.tagPh': 'Casa',
   'hang.tagNew': 'Nuova cartella',
+  'hang.tagWillMake': 'Nuova cartella: {name}',
   'hang.tagLater': 'Cartelle vuote',
   'hang.tagLaterHint': 'Nessuna question. Tocca uno per riusarlo.',
   'hang.edit': 'Modifica domanda',

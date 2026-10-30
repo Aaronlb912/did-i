@@ -493,6 +493,7 @@ export const ja = {
   'hang.tagOne': 'フォルダを1つ選んでください。',
   'hang.tagPh': 'ホーム',
   'hang.tagNew': '新しいフォルダ',
+  'hang.tagWillMake': '新しいフォルダ: {name}',
   'hang.tagLater': '空のフォルダ',
   'hang.tagLaterHint': '質問なし。タップでまた使う。',
   'hang.edit': '質問を編集',

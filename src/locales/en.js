@@ -502,6 +502,7 @@ export const en = {
   'hang.tagOne': 'Pick one folder.',
   'hang.tagPh': 'Home',
   'hang.tagNew': 'New folder',
+  'hang.tagWillMake': 'New folder: {name}',
   'hang.tagLater': 'Empty folders',
   'hang.tagLaterHint': 'No questions on these. Tap one to use it again.',
   'hang.edit': 'Edit question',

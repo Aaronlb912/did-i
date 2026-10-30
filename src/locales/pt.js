@@ -501,6 +501,7 @@ export const pt = {
   'hang.tagOne': 'Escolhe uma pasta.',
   'hang.tagPh': 'Início',
   'hang.tagNew': 'Nova pasta',
+  'hang.tagWillMake': 'Nova pasta: {name}',
   'hang.tagLater': 'Pastas vazias',
   'hang.tagLaterHint': 'Sem questions. Toca num para usar outra vez.',
   'hang.edit': 'Editar pergunta',
