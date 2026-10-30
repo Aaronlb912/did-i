@@ -439,6 +439,8 @@ export const ko = {
   'cal.close': '닫기',
   'cal.open': '미완료',
   'cal.day': '{date}',
+  'cal.markDid': '답하기 Did: {question}, {date}',
+  'cal.markNotYet': '아직: {question}, {date}',
   'boards.kicker': '폴더',
   'boards.title': '내 폴더',
   'boards.thisOne': '이 폴더',

@@ -448,6 +448,8 @@ export const fr = {
   'cal.close': 'Fermer',
   'cal.open': 'ouvert',
   'cal.day': '{date}',
+  'cal.markDid': 'Répondre Did : {question}, {date}',
+  'cal.markNotYet': 'Pas encore: {question}, {date}',
   'boards.kicker': 'Dossiers',
   'boards.title': 'Tes dossiers',
   'boards.thisOne': 'Ce dossier',

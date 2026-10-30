@@ -447,6 +447,8 @@ export const es = {
   'cal.close': 'Cerrar',
   'cal.open': 'sin marcar',
   'cal.day': '{date}',
+  'cal.markDid': 'Responder Did: {question}, {date}',
+  'cal.markNotYet': 'Aún no: {question}, {date}',
   'boards.kicker': 'Carpetas',
   'boards.title': 'Tus carpetas',
   'boards.thisOne': 'Esta carpeta',

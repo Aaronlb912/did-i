@@ -439,6 +439,8 @@ export const ja = {
   'cal.close': '閉じる',
   'cal.open': '未完了',
   'cal.day': '{date}',
+  'cal.markDid': '回答 Did: {question}, {date}',
+  'cal.markNotYet': 'まだ: {question}, {date}',
   'boards.kicker': 'フォルダ',
   'boards.title': 'あなたのフォルダ',
   'boards.thisOne': 'このフォルダ',

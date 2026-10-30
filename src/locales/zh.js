@@ -439,6 +439,8 @@ export const zh = {
   'cal.close': '关闭',
   'cal.open': '未完成',
   'cal.day': '{date}',
+  'cal.markDid': '回答 Did: {question}, {date}',
+  'cal.markNotYet': '还没: {question}, {date}',
   'boards.kicker': '文件夹',
   'boards.title': '你的文件夹',
   'boards.thisOne': '这个文件夹',
