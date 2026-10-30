@@ -56,6 +56,12 @@ export function undoneBook(live, undo) {
   }
 }
 
+// Up to three answers can be taken back, newest first.
+export const UNDO_DEPTH = 3
+export function pushUndo(stack, entry) {
+  return [entry, ...stack].slice(0, UNDO_DEPTH)
+}
+
 export function useTonightStack({
   value,
   boards = [],
@@ -67,13 +73,14 @@ export function useTonightStack({
   focusKey,
 }) {
   const clock = now || new Date()
-  const undoTimer = useRef(null)
+  const undoTimers = useRef(new Map())
   const [faceId, setFaceId] = useState('')
   const [skipReview, setSkipReview] = useState(false)
   const [restNight, setRestNight] = useState(false)
   const [titleEdit, setTitleEdit] = useState(false)
   const [titleDraft, setTitleDraft] = useState(value.title)
-  const [undo, setUndo] = useState(null)
+  const [undoStack, setUndoStack] = useState([])
+  const undo = undoStack[0] || null
   const [holePick, setHolePick] = useState(null)
   const [waitPick, setWaitPick] = useState(null)
   const [pillPick, setPillPick] = useState(null)
@@ -260,7 +267,7 @@ export function useTonightStack({
 
   useEffect(() => {
     return () => {
-      if (undoTimer.current) window.clearTimeout(undoTimer.current)
+      undoTimers.current.forEach((timer) => window.clearTimeout(timer))
     }
   }, [])
 
@@ -291,18 +298,37 @@ export function useTonightStack({
     return row?.book || shelf.find((item) => item.id === row?.boardId) || value
   }
 
+  function expireUndo(entry) {
+    undoTimers.current.set(entry, window.setTimeout(() => {
+      undoTimers.current.delete(entry)
+      setUndoStack((stack) => stack.filter((item) => item !== entry))
+    }, UNDO_MS))
+  }
+
+  function dropUndo(entry) {
+    window.clearTimeout(undoTimers.current.get(entry))
+    undoTimers.current.delete(entry)
+    setUndoStack((stack) => stack.filter((item) => item !== entry))
+  }
+
   function armUndo(payload) {
-    if (undoTimer.current) window.clearTimeout(undoTimer.current)
-    setUndo(payload)
-    undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
+    setUndoStack((stack) => {
+      const next = pushUndo(stack, payload)
+      stack.filter((item) => !next.includes(item)).forEach((item) => {
+        window.clearTimeout(undoTimers.current.get(item))
+        undoTimers.current.delete(item)
+      })
+      return next
+    })
+    expireUndo(payload)
   }
 
   // The undo toast is on screen now: the window to undo starts over from here,
   // so the whole of it can be tapped.
   function holdUndo() {
     if (!undo) return
-    if (undoTimer.current) window.clearTimeout(undoTimer.current)
-    undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
+    window.clearTimeout(undoTimers.current.get(undo))
+    expireUndo(undo)
   }
 
   function applyUndo() {
@@ -319,8 +345,7 @@ export function useTonightStack({
     setRestNight(false)
     // The tap may already be on the account; without this the next pull brings it back.
     takeBackAnswer(undo.book, undo.lampId, undo.periodKey).catch(reportRejection('undo-answer'))
-    setUndo(null)
-    if (undoTimer.current) window.clearTimeout(undoTimer.current)
+    dropUndo(undo)
     feelTap('undo')
   }
 
