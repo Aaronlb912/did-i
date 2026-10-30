@@ -101,12 +101,13 @@ export function SetSwitch({ label, sub, icon, tint, last, on, onPress, colors })
         {sub ? <Text style={[styles.sub, { color: colors.inkDim }]}>{sub}</Text> : null}
       </View>
       {Platform.OS === 'android' ? (
-        <M3Switch on={on} onPress={onPress} label={label} colors={colors} />
+        <M3Switch on={on} onPress={onPress} label={label} hint={sub} colors={colors} />
       ) : (
         <Switch
           value={on}
           onValueChange={onPress}
           accessibilityLabel={label}
+          accessibilityHint={sub || undefined}
           trackColor={{ false: colors.open, true: colors.on }}
           ios_backgroundColor={colors.open}
         />
@@ -118,7 +119,7 @@ export function SetSwitch({ label, sub, icon, tint, last, on, onPress, colors })
 // Android's native Switch is still AppCompat's thin translucent track, so off
 // read as dark grey on dark grey. Material 3's off state has an outlined
 // track and an outline-colored thumb; on fills the track and grows the thumb.
-function M3Switch({ on, onPress, label, colors }) {
+function M3Switch({ on, onPress, label, hint, colors }) {
   const reduce = useReduceMotion()
   const move = useRef(new Animated.Value(on ? 1 : 0)).current
   useEffect(() => {
@@ -137,6 +138,7 @@ function M3Switch({ on, onPress, label, colors }) {
     <Pressable
       accessibilityRole="switch"
       accessibilityLabel={label}
+      accessibilityHint={hint || undefined}
       accessibilityState={{ checked: Boolean(on) }}
       onPress={() => onPress?.(!on)}
       hitSlop={8}

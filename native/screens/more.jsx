@@ -80,7 +80,8 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
+import { AFTERNOON_AT_DEFAULT, AFTERNOON_AT_TIMES, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
+import { quietToFor } from '../../src/lib/quiet.js'
 import { PING_KINDS, afterQuiet, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
@@ -1731,14 +1732,14 @@ export function FirstNightScreen({ book, onChange, now }) {
 const PUSH_KINDS = new Set(['sends', 'we', 'cheers', 'friends', 'family', 'didi'])
 // Morning ask times outside quiet hours: a nudge inside them never rings.
 // The picked one stays listed so the choice never looks empty.
-function morningTimes(prefs) {
-  const free = MORNING_AT_TIMES.filter((id) => {
+function nudgeTimes(prefs, list, picked) {
+  const free = list.filter((id) => {
     const [h, m] = id.split(':').map(Number)
     const at = new Date()
     at.setHours(h, m, 0, 0)
-    return afterQuiet(at, prefs).getTime() === at.getTime() || id === prefs.morningAt
+    return afterQuiet(at, prefs).getTime() === at.getTime() || id === picked
   })
-  return free.length ? free : MORNING_AT_TIMES
+  return free.length ? free : list
 }
 
 const QUIET_HOURS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`)
@@ -1857,7 +1858,7 @@ function PingKinds({ colors, on }) {
                   : kind === 'day'
                     ? t('pings.kind.daySub', {
                         morning: clockWords(prefs.morningAsk !== false ? prefs.morningAt || MORNING_AT_DEFAULT : DAY_NUDGE_TIMES[0]),
-                        afternoon: clockWords(DAY_NUDGE_TIMES[1]),
+                        afternoon: clockWords(prefs.afternoonAt || AFTERNOON_AT_DEFAULT),
                       })
                     : t(`pings.kind.${kind}Sub`)
               }
@@ -1881,10 +1882,22 @@ function PingKinds({ colors, on }) {
               <SetChoice
                 colors={colors}
                 label={t('morning.at')}
-                options={morningTimes(prefs).map((id) => ({ id, label: clockWords(id) }))}
+                options={nudgeTimes(prefs, MORNING_AT_TIMES, prefs.morningAt).map((id) => ({ id, label: clockWords(id) }))}
                 selected={prefs.morningAt || MORNING_AT_DEFAULT}
                 onSelect={(id) => {
                   writePrefs({ morningAt: id })
+                  armLampPings(readShelf().boards).catch(() => {})
+                }}
+              />
+            ) : null}
+            {kind === 'day' && !prefs.pingsOff.includes('day') ? (
+              <SetChoice
+                colors={colors}
+                label={t('morning.afternoonAt')}
+                options={nudgeTimes(prefs, AFTERNOON_AT_TIMES, prefs.afternoonAt).map((id) => ({ id, label: clockWords(id) }))}
+                selected={prefs.afternoonAt || AFTERNOON_AT_DEFAULT}
+                onSelect={(id) => {
+                  writePrefs({ afternoonAt: id })
                   armLampPings(readShelf().boards).catch(() => {})
                 }}
               />
@@ -1937,12 +1950,12 @@ function PingKinds({ colors, on }) {
               label={t('pings.quietFrom')}
               options={QUIET_HOURS.map((id) => ({ id, label: clockWords(id) }))}
               selected={prefs.quietFrom}
-              onSelect={(id) => saveQuiet({ quietFrom: id })}
+              onSelect={(id) => saveQuiet({ quietFrom: id, quietTo: quietToFor(id, prefs.quietTo) })}
             />
             <SetChoice
               colors={colors}
               label={t('pings.quietTo')}
-              options={QUIET_HOURS.map((id) => ({ id, label: clockWords(id) }))}
+              options={QUIET_HOURS.filter((id) => id !== prefs.quietFrom).map((id) => ({ id, label: clockWords(id) }))}
               selected={prefs.quietTo}
               onSelect={(id) => saveQuiet({ quietTo: id })}
               last
@@ -2008,7 +2021,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
     const next = !lampNotifyOn(lamp)
     setSeen((was) => new Map(was).set(fire.id, fire))
     onChange(commitBook({ ...home, lamps: home.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next, at: clock.toISOString() } : item)) }, clock))
-    return confirmDone(next ? t('pings.oneOn') : t('pings.oneOff'))
+    return confirmDone(next ? t('pings.oneOn') : t('pings.oneOffAll'))
   }
 
   return (

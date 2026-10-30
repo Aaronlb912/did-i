@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { stampSavedAt } from './saved-at.js'
 import { savePrefsForSw } from './board-store.js'
-import { quietEnd } from './quiet.js'
+import { quietEnd, quietToFor } from './quiet.js'
 
 const KEY = 'did-i-prefs'
 const THEMES = new Set(['dark', 'light', 'phone'])
@@ -51,6 +51,8 @@ function blankPrefs() {
     morningAsk: true,
     // When its nudge comes (day-nudges.js MORNING_AT_TIMES, 5:00 to 11:30).
     morningAt: '08:00',
+    // When the afternoon Not yet nudge comes (day-nudges.js AFTERNOON_AT_TIMES, 12:00 to 17:30).
+    afternoonAt: '13:30',
   }
 }
 
@@ -134,9 +136,11 @@ function cleanPrefs(raw) {
   if (raw?.quietOn === true) next.quietOn = true
   if (QUIET_TIME.test(raw?.quietFrom || '')) next.quietFrom = raw.quietFrom
   if (QUIET_TIME.test(raw?.quietTo || '')) next.quietTo = raw.quietTo
+  next.quietTo = quietToFor(next.quietFrom, next.quietTo)
   if (raw?.dropPings === true) next.dropPings = true
   if (raw?.morningAsk === false) next.morningAsk = false
   if (/^(0[5-9]|1[01]):(00|30)$/.test(raw?.morningAt || '')) next.morningAt = raw.morningAt
+  if (/^(1[2-7]):(00|30)$/.test(raw?.afternoonAt || '')) next.afternoonAt = raw.afternoonAt
   if (Number.isInteger(raw?.familyHour) && raw.familyHour >= 0 && raw.familyHour <= 23) next.familyHour = raw.familyHour
   // Synced with the account, so a reinstall does not show the dots legend again.
   if (raw?.jewelKeySeen === true) next.jewelKeySeen = true

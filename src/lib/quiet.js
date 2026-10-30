@@ -5,6 +5,12 @@ function minutesOf(hhmm) {
   return h * 60 + m
 }
 
+// Quiet hours that start and end together do nothing, so the end moves an hour on.
+export function quietToFor(from, to) {
+  if (from !== to || !/^\d\d:\d\d$/.test(from)) return to
+  return `${String((Number(from.slice(0, 2)) + 1) % 24).padStart(2, '0')}:${from.slice(3)}`
+}
+
 // A reminder that would land in quiet hours moves to when they end.
 export function quietEnd(at, prefs) {
   if (!prefs?.quietOn) return at
