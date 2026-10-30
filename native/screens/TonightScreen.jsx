@@ -54,7 +54,6 @@ import { useHoldMarks } from '../lib/mark-hold.js'
 import { useAnswerButtons } from '../lib/swipe-wheels.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
 import { TOAST_ROOM } from '../components/ToastHost.jsx'
-import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import { useOnline } from '../hooks/useOnline.js'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
@@ -671,7 +670,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }
   // Marks wait while the night's celebration plays, then come one at a time.
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
-  // Undo joins the one toast line above the tab bar. Shake undo is off (see useShakeUndo).
+  // Undo joins the one toast line above the tab bar.
   // Undo sends the card back the way it left.
   const applyUndo = stack.applyUndo
   const undoAnswer = useCallback(() => {
@@ -690,7 +689,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     return { ...undoNow, extra: { label: t('note.addShort'), onPress: () => openAnswerNote({ ...target, ...noteDeps.current }) } }
   }, [undoNow])
   useUndoToast('tonight', undoToast, undoAnswer, UNDO_MS, t('tonight.undoTap'), stack.holdUndo)
-  useShakeUndo(Boolean(stack.undo), undoAnswer)
   // An answer saved with no signal says where it is, once per offline stretch.
   const online = useOnline()
   // It waits for the undo toast to clear so undo stays on screen, and only says so when signed in.
@@ -1009,6 +1007,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }, [stack.dateIso, graceShowing, Boolean(stack.cheer), Boolean(summary?.recap)])
   const pullWait = Boolean(account.user) && firstPullWaiting(sync) && !stack.cheer && stack.bodyKind !== 'face'
   let face = null
+  const weTop = weSwipe ? weOpenForMe(weCards, new Date(), { early: true })[0] : null
   // The done card grows (note, sign-in, recap). Centred in a fixed slot it
   // spilled under the meter and the tab bar, so it scrolls instead.
   let doneFace = false
@@ -1054,9 +1053,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       />
     )
     if (open) face = withAnswerButtons(face, () => weAns.answer(pickedWe, 'did'), () => weAns.answer(pickedWe, 'nope'))
-  } else if (weSwipe && weOpenForMe(weCards, new Date(), { early: true }).length) {
+  } else if (weTop) {
     // Like Did you: the open Did we is a card in the stack, with the same buttons.
-    const weTop = weOpenForMe(weCards, new Date(), { early: true })[0]
     face = withAnswerButtons(weSwipe, () => weAns.answer(weTop, 'did'), () => weAns.answer(weTop, 'nope'))
   } else if (peopleSwipe) {
     face = withAnswerButtons(peopleSwipe, peopleTop.onDid, peopleTop.onNope)
