@@ -9476,6 +9476,32 @@ test('undo puts back one answer on the live folder and keeps the rest', async ()
   assert.deepEqual(was.answers.map((item) => item.id), ['y', 'z'], 'a nope before the did comes back')
 })
 
+test('undo is a stack of three: each undo takes back only its own answer and coins', async () => {
+  const { undoneBook, pushUndo } = await import('../src/lib/useTonightStack.js?undo-stack')
+  const lamp = (id) => ({ id, question: id, cadence: 'daily', archived: false, createdOn: '2024-01-01' })
+  const pk = '2026-10-02'
+  const b0 = { id: 'b', coins: 4, cheerUses: 0, lamps: [lamp('a'), lamp('b'), lamp('c')], answers: [] }
+  const put = (book, lampId, coins) => ({ ...book, coins: book.coins + coins, answers: [...book.answers, { id: lampId, lampId, periodKey: pk, status: 'yes' }] })
+  const b1 = put(b0, 'a', 1)
+  const b2 = put(b1, 'b', 2)
+  const b3 = put(b2, 'c', 1)
+  let stack = []
+  stack = pushUndo(stack, { book: b0, after: b1, lampId: 'a', periodKey: pk })
+  stack = pushUndo(stack, { book: b1, after: b2, lampId: 'b', periodKey: pk })
+  assert.deepEqual(stack.map((item) => item.lampId), ['b', 'a'], 'newest first')
+  const one = undoneBook(b2, stack[0])
+  assert.deepEqual(one.answers.map((item) => item.lampId), ['a'])
+  assert.equal(one.coins, 5)
+  const two = undoneBook(one, stack[1])
+  assert.equal(two.answers.length, 0)
+  assert.equal(two.coins, 4, 'coins back exactly')
+  const third = undoneBook(b3, stack[0])
+  assert.deepEqual(third.answers.map((item) => item.lampId).sort(), ['a', 'c'], 'a later answer is untouched')
+  assert.equal(third.coins, 6)
+  for (const id of ['x', 'y', 'z']) stack = pushUndo(stack, { lampId: id, periodKey: pk })
+  assert.deepEqual(stack.map((item) => item.lampId), ['z', 'y', 'x'], 'never more than three back')
+})
+
 test('signed in, did then undo then did pays once; signed out undo takes the coins back', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const url = (file) => pathToFileURL(path.join(root, file)).href
