@@ -544,6 +544,41 @@ test('an unanswered night closes as nope when the day turns', () => {
   assert.equal(closePastNights(closed, tomorrow), closed)
 })
 
+test('an answer for a day 3 to 6 back counts in the streak as late, pays nothing, and 8 back is refused', async () => {
+  const { putPastAnswer, pastAnswerOpen } = await import('../src/lib/board-ops.js')
+  const { shelfStreak } = await import('../src/lib/hall-feel.js')
+  const { periodKeyFor } = await import('../src/lib/recurrence.js')
+  const clock = new Date(2026, 9, 20, 21, 0)
+  const item = lamp('walk', { createdOn: '2026-10-01' })
+  const rowOn = (iso, extra = {}) => ({ lamp: { ...item, ...extra }, dateIso: iso, periodKey: periodKeyFor(item, iso) })
+  const days = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => `2026-10-${String(from + i).padStart(2, '0')}`)
+  const yes = (iso) => ({ lampId: 'walk', periodKey: iso, status: 'yes', answeredAt: `${iso}T20:00:00.000Z` })
+  for (const back of [3, 4, 5, 6]) {
+    const gap = `2026-10-${20 - back}`
+    const book = { id: 'b', dayFoldHour: 0, coins: 5, lamps: [item], answers: days(1, 19).map((iso) => (iso === gap || iso === '2026-10-03' ? { ...yes(iso), status: 'skip' } : yes(iso))) }
+    // A freeze covers one missed night, so a second old one makes the gap matter.
+    const before = shelfStreak([book], clock)
+    const next = putPastAnswer(book, rowOn(gap), 'yes', clock)
+    const saved = answerFor(next, 'walk', gap)
+    assert.equal(saved?.status, 'late', `${back} back is marked late`)
+    assert.equal(next.coins, 5, `${back} back pays no coins`)
+    assert.ok(shelfStreak([next], clock) > before, `${back} back counts in the streak`)
+  }
+  const old = '2026-10-12'
+  const book = { id: 'b', dayFoldHour: 0, coins: 5, lamps: [item], answers: [] }
+  assert.equal(pastAnswerOpen(rowOn('2026-10-13'), clock), true, '7 back is open')
+  assert.equal(putPastAnswer(book, rowOn(old), 'yes', clock), book, '8 back is refused')
+  assert.equal(putPastAnswer(book, rowOn('2026-10-20'), 'yes', clock), book, 'today takes the normal path')
+  assert.equal(putPastAnswer(book, rowOn('2026-10-16', { archived: true }), 'yes', clock), book, 'an archived question is refused')
+  // An on-time Did stays on time, and a past Did beats a Not yet synced later than its day.
+  const onTime = { ...book, answers: [yes('2026-10-16')] }
+  assert.equal(putPastAnswer(onTime, rowOn('2026-10-16'), 'yes', clock), onTime, 'an on-time Did is not turned late')
+  const closed = { ...book, answers: [{ lampId: 'walk', periodKey: '2026-10-16', status: 'skip', answeredAt: '2026-10-17T08:00:00.000Z' }] }
+  const fixed = answerFor(putPastAnswer(closed, rowOn('2026-10-16'), 'yes', clock), 'walk', '2026-10-16')
+  assert.ok(fixed.answeredAt > '2026-10-17T08:00:00.000Z', 'stamped after the synced Not yet')
+  assert.equal(fixed.past, true, 'kept out of the paid taps of today')
+})
+
 test('question search matches every word, and tonight states come from one pass per tag', () => {
   const lamp = (id, question, extra = {}) => ({ id, question, cadence: 'daily', archived: false, createdOn: '2020-01-01', ...extra })
   const book = {

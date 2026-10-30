@@ -446,6 +446,8 @@ export const en = {
   'cal.close': 'Close',
   'cal.open': 'open',
   'cal.day': '{date}',
+  'cal.markDid': 'Did: {question}, {date}',
+  'cal.markNotYet': 'Not yet: {question}, {date}',
   'boards.kicker': 'Folders',
   'boards.title': 'Your folders',
   'boards.thisOne': 'This folder',

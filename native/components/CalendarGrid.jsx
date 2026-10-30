@@ -6,6 +6,7 @@ import { openNightWhy } from './NightSheets.jsx'
 import { t } from '../../src/lib/i18n.js'
 import { gentleOn, usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate, nightOpen } from '../../src/lib/recurrence.js'
+import { pastAnswerOpen } from '../../src/lib/board-ops.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
 import { weCardShort } from '../../src/lib/did-we.js'
 import { publishSheet } from './SheetHost.jsx'
@@ -60,7 +61,7 @@ function markOf(answer, when = 0, open = when === 0) {
   return { key: 'hole', label: upFirst(t('cal.open')) }
 }
 
-export function CalendarGrid({ book, boards = [], tagId = '', now, colors, startShift = 0 }) {
+export function CalendarGrid({ book, boards = [], tagId = '', now, colors, startShift = 0, onAnswer }) {
   const prefs = usePrefs()
   // Gentle mode: a missed night reads like any other unlit night, never a warning.
   const missTone = prefs.gentle === true ? colors.open : colors.miss
@@ -83,14 +84,14 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
   for (let i = 0; i < pack.nights.length; i += 7) weeks.push(pack.nights.slice(i, i + 7))
 
   // A day opens its sheet: why it did or did not clear, then each question.
-  function openDay(iso) {
+  function openDay(iso, shelfNow = shelf) {
     setPicked(iso)
     const today = boardDate(clock, book?.dayFoldHour)
     const when = iso > today ? 1 : iso < today ? -1 : 0
-    const why = nightWhy(shelf, iso, clock, tagId)
+    const why = nightWhy(shelfNow, iso, clock, tagId)
     // What broke the night leads: open Did wes, then anything not a Did, then the Dids.
     const done = (row) => ['yes', 'late'].includes(row.answer?.status)
-    const rows = nightDueRows(shelf, iso, tagId)
+    const rows = nightDueRows(shelfNow, iso, tagId)
     const sorted = [...rows.filter((row) => !done(row)), ...rows.filter(done)]
     const weOpen = why.weOpen || []
     const weMark = when < 0 ? { label: t(prefs.gentle === true ? 'jewelKey.open' : 'cal.notAnswered'), tone: missTone } : { label: upFirst(t('cal.open')), tone: colors.open }
@@ -115,6 +116,12 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
           ))}
           {sorted.map((row) => {
             const mark = markOf(row.answer, when, nightOpen(iso, clock))
+            const canAnswer = Boolean(onAnswer) && pastAnswerOpen(row, clock)
+            const date = formatBoardDate(iso)
+            const answer = (status) => {
+              const next = onAnswer(row, status)
+              if (next) openDay(iso, shelfNow.map((item) => (item.id === next.id ? next : item)))
+            }
             return (
               <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
                 <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : mark.key === 'miss' && prefs.gentle !== true ? 'miss' : 'open'] }]} />
@@ -122,6 +129,25 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                   <Text style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
                   <Text style={[styles.markSub, { color: colors.inkDim }]}>{shortLabel(row.lamp)}</Text>
                 </View>
+                {canAnswer ? (
+                  <View style={styles.markBtns}>
+                    {[['yes', t('widget.tonight.did'), 'cal.markDid'], ['skip', t('later.nope'), 'cal.markNotYet']].map(([status, label, key]) => {
+                      const on = status === 'yes' ? row.answer?.status === 'yes' || row.answer?.status === 'late' : row.answer?.status === 'skip'
+                      return (
+                        <Pressable
+                          key={status}
+                          accessibilityRole="button"
+                          accessibilityLabel={t(key, { question: shortLabel(row.lamp), date })}
+                          accessibilityState={{ selected: on }}
+                          onPress={() => answer(status)}
+                          style={[styles.markBtn, { borderColor: colors.line, backgroundColor: on ? colors.line : 'transparent' }]}
+                        >
+                          <Text style={[styles.markBtnText, { color: colors.ink }]}>{label}</Text>
+                        </Pressable>
+                      )
+                    })}
+                  </View>
+                ) : null}
               </View>
             )
           })}
@@ -340,8 +366,11 @@ const styles = StyleSheet.create({
   },
   pip: { width: 6, height: 6, borderRadius: 3 },
   marks: { marginTop: 2 },
-  markRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginBottom: 10 },
+  markRow: { flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 10 },
   markPip: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
   markLabel: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  markBtns: { flexDirection: 'row', gap: 8 },
+  markBtn: { minHeight: 44, minWidth: 44, paddingHorizontal: 12, borderWidth: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  markBtnText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   markSub: { fontFamily: fonts.ui, fontSize: 13 },
 })

@@ -446,6 +446,8 @@ export const pt = {
   'cal.close': 'Fechar',
   'cal.open': 'aberto',
   'cal.day': '{date}',
+  'cal.markDid': 'Responder Did: {question}, {date}',
+  'cal.markNotYet': 'Ainda não: {question}, {date}',
   'boards.kicker': 'Pastas',
   'boards.title': 'As tuas pastas',
   'boards.thisOne': 'Esta pasta',

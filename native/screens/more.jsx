@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native'
 import { commitBook, shelfMarks, streakLength } from '../../src/lib/achievements.js'
+import { putPastAnswer } from '../../src/lib/board-ops.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
 import { EmptyCard } from '../components/PersonCard.jsx'
 import { clearNotices, markNoticesSeen, restoreNotices, useNotices } from '../../src/lib/notices.js'
@@ -757,7 +758,7 @@ export function NotesScreen({ book, boards }) {
   )
 }
 
-export function CalendarScreen({ book, boards, tagId, now }) {
+export function CalendarScreen({ book, boards, tagId, now, onChangeBooks }) {
   const colors = useHallColors()
   const today = useDayNow()
   const clock = now || today
@@ -793,7 +794,22 @@ export function CalendarScreen({ book, boards, tagId, now }) {
           }}
         />
       ) : (
-        <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} startShift={startShift} />
+        <CalendarGrid
+          book={book}
+          boards={boards}
+          tagId={tagId}
+          now={clock}
+          colors={colors}
+          startShift={startShift}
+          onAnswer={onChangeBooks ? (row, status) => {
+            const from = (boards?.length ? boards : [book]).find((item) => item.id === row.boardId) || book
+            const next = putPastAnswer(from, row, status, clock)
+            if (next === from) return null
+            const saved = commitBook(next, clock)
+            onChangeBooks([saved])
+            return saved
+          } : undefined}
+        />
       )}
       <View style={styles.calKey}>
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.on }]} />

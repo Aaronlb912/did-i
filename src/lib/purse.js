@@ -598,6 +598,7 @@ function tapsPaidTonight(book, clock, dayFoldHour = book.dayFoldHour) {
   const today = boardDate(clock, dayFoldHour)
   return (book.answers || []).filter((answer) => {
     if (answer.status !== 'yes' && answer.status !== 'late' && answer.paid !== true) return false
+    if (answer.past) return false
     const period = String(answer.periodKey || '')
     const at = stampDay(answer.answeredAt)
     return period === today || period.startsWith(today) || at.startsWith(today)

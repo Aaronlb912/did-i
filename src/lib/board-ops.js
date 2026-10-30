@@ -1,7 +1,7 @@
 import { answeredAtIso, cleanAmount, duplicateLamp, newAnswerId } from './board-json.js'
 import { activeLook } from './active-look.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
-import { answerFor, boardDate, openFloorIso, periodPassed, stampMs } from './recurrence.js'
+import { addDaysIso, answerFor, boardDate, didStatusForRow, inPause, nightOpen, openFloorIso, periodPassed, stampMs } from './recurrence.js'
 import { readShelf } from './board-shelf.js'
 
 // Pausing notes the day, so the question's record stops counting there.
@@ -24,9 +24,9 @@ function withPause(lamp, archived, clock = new Date()) {
 // Set on every saved answer so a reload never lands mid-answer (native/lib/ota-refresh.js).
 export let lastAnswerAt = 0
 
-export function putAnswer(book, row, status, clock = new Date()) {
+export function putAnswer(book, row, status, clock = new Date(), past = false) {
   if (!row || !row.lamp) return book
-  if (periodPassed(row.lamp, row.periodKey, openFloorIso(clock))) {
+  if (!past && periodPassed(row.lamp, row.periodKey, openFloorIso(clock))) {
     // A past night only takes the closing nope, and only while it is empty.
     if (status !== 'skip' || answerFor(book, row.lamp.id, row.periodKey)) return book
   }
@@ -39,7 +39,9 @@ export function putAnswer(book, row, status, clock = new Date()) {
     lampId: row.lamp.id,
     periodKey: row.periodKey,
     status,
+    // Stamped now, so sync keeps it over an older Not yet; past keeps it out of today's paid taps.
     answeredAt: answeredAtIso(clock),
+    ...(past ? { past: true } : {}),
     // Changing the answer keeps the day's note and amount.
     note: prev?.note || '',
     ...(prev?.note && prev.noteAt ? { noteAt: prev.noteAt } : {}),
@@ -55,6 +57,8 @@ export function putAnswer(book, row, status, clock = new Date()) {
       answer,
     ],
   }
+  // An older day pays no coins and plays no cheer; the streak still counts it.
+  if (past) return next
   const paid = payTap(book, next, row, status, clock, () => (readShelf().boards || []).filter((item) => item.id !== book.id))
   if (status !== 'yes' && status !== 'late') return paid
   const cheered = noteCheer(paid)
@@ -63,6 +67,28 @@ export function putAnswer(book, row, status, clock = new Date()) {
     fireCheer(purse.cheerOn, cheerPlayOf(cheered, purse.cheerOn), activeLook(cheered))
   }
   return cheered
+}
+
+// How many days back the calendar sheet still takes an answer.
+export const PAST_DAYS = 7
+
+// A day inside the last 7, not today: its live, due questions can be answered.
+export function pastAnswerOpen(row, clock = new Date()) {
+  const iso = row?.dateIso
+  if (!row?.lamp || !iso) return false
+  const today = boardDate(clock)
+  if (iso >= today || iso < addDaysIso(today, -PAST_DAYS)) return false
+  return !row.lamp.archived && !inPause(row.lamp, iso)
+}
+
+// The calendar sheet's answer for an older day. Did saves as Late. Last night
+// in its grace period takes the normal path.
+export function putPastAnswer(book, row, status, clock = new Date()) {
+  if (!pastAnswerOpen(row, clock)) return book
+  const cur = answerFor(book, row.lamp.id, row.periodKey)?.status
+  if (status === 'yes' ? cur === 'yes' || cur === 'late' : cur === status) return book
+  if (nightOpen(row.dateIso, clock)) return putAnswer(book, row, status === 'yes' ? didStatusForRow(row) : status, clock)
+  return putAnswer(book, row, status === 'yes' ? 'late' : status, clock, true)
 }
 
 // The gone list is how a sync knows a question was taken off this tag on

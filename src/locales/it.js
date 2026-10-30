@@ -445,6 +445,8 @@ export const it = {
   'cal.close': 'Chiudi',
   'cal.open': 'aperto',
   'cal.day': '{date}',
+  'cal.markDid': 'Rispondi Did: {question}, {date}',
+  'cal.markNotYet': 'Non ancora: {question}, {date}',
   'boards.kicker': 'Cartelle',
   'boards.title': 'Le tue cartelle',
   'boards.thisOne': 'Questa cartella',
