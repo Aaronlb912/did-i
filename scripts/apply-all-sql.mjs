@@ -99,6 +99,7 @@ const files = [
   'supabase/answer-split-merge.sql',
   'supabase/event-items.sql',
   'supabase/signin-carry.sql',
+  'supabase/gift-once.sql',
   'supabase/drop-tonight.sql',
 ]
 

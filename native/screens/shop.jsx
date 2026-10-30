@@ -74,7 +74,7 @@ import { AppTextInput, DidButton, KeyButton, LateMeta, Meta } from '../component
 import { useAccount } from '../../src/lib/account.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { PersonAvatar } from '../components/PersonAvatar.jsx'
-import { listSentGifts, personName, readKnownPerson, reportGift, sendGift, thankGift } from '../../src/lib/people.js'
+import { listSentGifts, newRequestId, personName, readKnownPerson, reportGift, sendGift, thankGift } from '../../src/lib/people.js'
 import { giftTab, sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
 import { doneGift, nextGift, onGift, takeGiftCheer } from '../../src/lib/gift-inbox.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
@@ -2659,6 +2659,7 @@ export function GiftScreen({ book, onChange, toId }) {
   const [busy, setBusy] = useState(false)
   // The sheet keeps the send from when it opened, so a second tap sees busy as false.
   const sending = useRef(false)
+  const attempt = useRef({ key: '', id: '' })
   const items = giftItems()
   const kind = GIFT_TABS.find((item) => item.id === tab)
   const list = items[tab] || []
@@ -2694,7 +2695,9 @@ export function GiftScreen({ book, onChange, toId }) {
     sending.current = true
     let out
     try {
-      out = await sendGift(toId, type, item.id, note)
+      const key = `${toId}|${type}|${item.id}|${note}`
+      if (attempt.current.key !== key) attempt.current = { key, id: newRequestId() }
+      out = await sendGift(toId, type, item.id, note, attempt.current.id)
     } catch {
       sending.current = false
       setBusy(false)
@@ -2704,6 +2707,10 @@ export function GiftScreen({ book, onChange, toId }) {
     }
     sending.current = false
     setBusy(false)
+    // Keep the id only when the answer may have been lost.
+    if (!out.miss || ['gems', 'coins', 'giftCap', 'notFriend', 'gone', 'owned', 'setup'].includes(out.miss)) {
+      attempt.current = { key: '', id: '' }
+    }
     if (out.miss === 'gems') {
       publishSheet(null)
       offerMoreGems(colors)
