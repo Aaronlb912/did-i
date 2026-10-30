@@ -2887,6 +2887,7 @@ export const de = {
   'away.until': "Abwesend bis {date}",
   'away.back': "Jetzt zurück",
   'away.backSub': "Die Fragen starten heute wieder.",
+  'away.left': "Höchstens 14 Tage abwesend in 60 Tagen. Noch {n}.",
   'pings.kind.familySubAt': 'Um {time}, wie viele in jeder Familie fertig sind.',
   'account.rename': 'Umbenennen',
   'account.renameTitle': 'Dieses Handy umbenennen',

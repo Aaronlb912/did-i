@@ -2881,6 +2881,7 @@ export const fr = {
   'away.until': "Absent jusqu’au {date}",
   'away.back': "Revenir maintenant",
   'away.backSub': "Les questions reprennent aujourd’hui.",
+  'away.left': "Jusqu’à 14 jours d’absence sur 60. Il en reste {n}.",
   'pings.kind.familySubAt': 'À {time}, combien ont fini dans chaque famille.',
   'account.rename': 'Renommer',
   'account.renameTitle': 'Renommer ce téléphone',

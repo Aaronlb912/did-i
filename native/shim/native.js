@@ -14,7 +14,7 @@ import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
-import { AFTERNOON_AT_DEFAULT, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges } from '../../src/lib/day-nudges.js'
+import { AFTERNOON_AT_DEFAULT, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges, pingAheads } from '../../src/lib/day-nudges.js'
 import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { readWePings } from '../../src/lib/we-widget.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
@@ -248,8 +248,10 @@ async function schedulePingsNow(books, now = new Date()) {
     })
     const notes = []
     const reminders = pingOn('reminders')
+    // Away days do not use up the week, so reminders come back after they end.
+    const aheads = pingAheads(now, PING_DAYS)
     for (const book of list) {
-      for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
+      for (const ahead of aheads) {
         // Midday of that calendar day sits inside the right board night.
         const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
         // Every open row, so a re-arm after the ask time still keeps the 21:00
@@ -334,7 +336,7 @@ async function schedulePingsNow(books, now = new Date()) {
       // asks for today's questions and opens the morning sheet.
       const { morningAsk: morning, morningAt, afternoonAt } = readPrefs()
       const times = [morning ? morningAt || MORNING_AT_DEFAULT : DAY_NUDGE_TIMES[0], afternoonAt || AFTERNOON_AT_DEFAULT]
-      for (const nudge of dayNudges(list, now, { days: PING_DAYS, reminders, shift: afterQuiet, times }).slice(0, Math.max(0, room))) {
+      for (const nudge of dayNudges(list, now, { days: (aheads[aheads.length - 1] ?? 0) + 1, reminders, shift: afterQuiet, times }).slice(0, Math.max(0, room))) {
         const ask = morning && nudge.slot === 0
         notes.push({
           identifier: String(notifyId('day', nudge.at.toISOString())),

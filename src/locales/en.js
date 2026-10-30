@@ -2868,6 +2868,7 @@ export const en = {
   'away.until': "Away until {date}",
   'away.back': "Back now",
   'away.backSub': "Questions start again today.",
+  'away.left': "Up to 14 days away in any 60. {n} left.",
   'pings.kind.familySubAt': 'At {time}, how many in each family are done.',
   'account.rename': 'Rename',
   'account.renameTitle': 'Rename this phone',

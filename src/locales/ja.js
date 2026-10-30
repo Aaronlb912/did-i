@@ -2836,6 +2836,7 @@ export const ja = {
   'away.until': "{date}まで不在",
   'away.back': "今すぐ戻る",
   'away.backSub': "質問は今日から再開します。",
+  'away.left': "60日のうち最大14日まで不在にできます。残り{n}日。",
   'pings.kind.familySubAt': '{time}に、各家族で何人終わったか。',
   'account.rename': '名前を変更',
   'account.renameTitle': 'この端末の名前を変更',

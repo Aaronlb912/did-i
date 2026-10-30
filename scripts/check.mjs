@@ -9401,6 +9401,49 @@ await testAsync('away mode: the streak holds across away days, 15 days is clampe
   }
 })
 
+await testAsync('away mode limits: old ranges stay, 14 days in 60, starts tomorrow after an answer, widget task loads it cold, pings reach past the end', async () => {
+  const { writePrefs, awayStart, readPrefs, awayLeft } = await import('../src/lib/prefs.js')
+  const { pingAheads } = await import('../src/lib/day-nudges.js')
+  const iso = (base, n) => new Date(Date.UTC(2026, 0, 1 + base + n)).toISOString().slice(0, 10)
+  const total = (list) => list.reduce((sum, [from, until]) => sum + (Date.parse(until) - Date.parse(from)) / 86400000, 0)
+  try {
+    // 1: ten old one-day ranges all stay; touching ones merge; a range from 2020 goes.
+    const ten = Array.from({ length: 10 }, (_, i) => [iso(i * 5, 0), iso(i * 5, 1)])
+    writePrefs({ away: [['2020-01-01', '2020-01-03'], ...ten, [iso(0, 1), iso(0, 2)]] })
+    const kept = readPrefs().away
+    assert.equal(kept.length, 10, 'no range dropped by count, touching ones merged, 2020 gone')
+    assert.deepEqual(kept[0], [iso(0, 0), iso(0, 2)])
+    // 2: one day at a time cannot go past 14 days in 60.
+    writePrefs({ away: [] })
+    for (let i = 0; i < 20; i += 1) {
+      const day = iso(304 + i, 0)
+      writePrefs(awayStart(readPrefs(), day, iso(304 + i, 1)))
+    }
+    assert.equal(total(readPrefs().away), 14, 'refused past 14 days')
+    assert.equal(awayLeft(readPrefs(), iso(304 + 20, 0)), 0, 'the picker shows none left')
+    writePrefs({ away: Array.from({ length: 20 }, (_, i) => [iso(i * 2, 0), iso(i * 2, 1)]) })
+    const num = (d) => Date.parse(d) / 86400000
+    const spread = readPrefs().away.flatMap(([from, until]) => Array.from({ length: num(until) - num(from) }, (_, n) => num(from) + n))
+    assert.ok(spread.every((d) => spread.filter((e) => e >= d && e < d + 60).length <= 14), 'synced data is clamped too')
+    // 3: an answer today keeps today visible.
+    writePrefs({ away: [] })
+    assert.deepEqual(awayStart(readPrefs(), '2026-11-01', '2026-11-04', true).away, [['2026-11-02', '2026-11-04']])
+    assert.deepEqual(awayStart(readPrefs(), '2026-11-01', '2026-11-04', false).away, [['2026-11-01', '2026-11-04']])
+    // 4: a cold copy of prefs (the headless widget task) already knows the range.
+    writePrefs({ away: [['2026-11-05', '2026-11-08']] })
+    const cold = await import('../src/lib/prefs.js?cold')
+    assert.ok(cold.awayOn('2026-11-06'), 'loaded without anyone calling readPrefs first')
+    // 5: reminders are set for the days after the end, not only inside the first seven.
+    const now = new Date(2026, 10, 5, 8)
+    const ahead = pingAheads(now, 7)
+    assert.equal(ahead.length, 7)
+    assert.equal(ahead[0], 3, 'away days are not counted in the window')
+    assert.equal(ahead[6], 9)
+  } finally {
+    writePrefs({ away: [] })
+  }
+})
+
 await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an hour clear of reminders, under the iOS cap', async () => {
   const { dayNudges, DAY_NUDGE_TIMES } = await import('../src/lib/day-nudges.js')
   const { PING_KINDS } = await import('../src/lib/prefs.js')
@@ -9441,7 +9484,7 @@ await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an ho
   // A week of nudges plus question reminders still fits the 60 the phone keeps (iOS holds 64).
   const native = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
   assert.match(native, /const PING_CAP = 60/)
-  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: PING_DAYS, reminders, shift: afterQuiet, times \}\)[\s\S]*notes\.length = Math\.min\(notes\.length, PING_CAP - 1\)/)
+  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: [^,]+, reminders, shift: afterQuiet, times \}\)[\s\S]*notes\.length = Math\.min\(notes\.length, PING_CAP - 1\)/)
   // Nothing re-arms while the app is closed: the last slot asks to open it.
   assert.match(native, /notes\.length = Math\.min\(notes\.length, PING_CAP - 1\)[\s\S]*notifyId\('renew', 'pings'\)[\s\S]*t\('pings\.renew'\)/)
   assert.ok(all.length <= 60)

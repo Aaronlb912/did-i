@@ -83,7 +83,7 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { AFTERNOON_AT_DEFAULT, AFTERNOON_AT_TIMES, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
 import { quietToFor } from '../../src/lib/quiet.js'
-import { PING_KINDS, afterQuiet, awayEnd, awayKey, awayNow, awayStart, gentleOn, readPrefs, usePrefs, uses24h, writePrefs, AWAY_MAX } from '../../src/lib/prefs.js'
+import { PING_KINDS, afterQuiet, awayEnd, awayKey, awayLeft, awayNow, awayStart, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
 import { syncLine } from '../../src/lib/sync-line.js'
@@ -99,7 +99,7 @@ import {
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import { useDayNow } from '../hooks/useDayNow.js'
-import { addDaysIso, boardDate, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { addDaysIso, boardDate, dueTonight, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList } from '../../src/lib/starters.js'
 import { FIRST_TIME, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
 import { FirstPacks } from '../components/FirstPacks.jsx'
@@ -2017,6 +2017,9 @@ function AwayCard({ colors }) {
   const prefs = usePrefs()
   const today = boardDate()
   const range = awayNow(prefs, today)
+  const answered = readShelf().boards.some((book) => dueTonight(book, new Date()).some((row) => row.answer))
+  const first = answered ? addDaysIso(today, 1) : today
+  const left = awayLeft(prefs, first)
   const change = (patch) => {
     writePrefs(patch)
     armLampPings(readShelf().boards).catch(() => {})
@@ -2036,16 +2039,18 @@ function AwayCard({ colors }) {
             last
             onPress={() => change(awayEnd(prefs, today))}
           />
+        ) : left < 1 ? (
+          <SetRow colors={colors} icon="clock" label={t('away.pick')} sub={t('away.left', { n: 0 })} last />
         ) : (
           <SetChoice
             colors={colors}
             icon="clock"
             label={t('away.pick')}
-            sub={t('away.sub')}
-            options={Array.from({ length: AWAY_MAX }, (_, i) => addDaysIso(today, i + 1)).map((id) => ({ id, label: formatBoardDate(id) }))}
+            sub={t('away.sub') + ' ' + t('away.left', { n: left })}
+            options={Array.from({ length: left }, (_, i) => addDaysIso(first, i + 1)).map((id) => ({ id, label: formatBoardDate(id) }))}
             selected=""
             last
-            onSelect={(id) => change(awayStart(prefs, today, id))}
+            onSelect={(id) => change(awayStart(prefs, today, id, answered))}
           />
         )}
       </SetCard>

@@ -2878,6 +2878,7 @@ export const es = {
   'away.until': "Ausente hasta {date}",
   'away.back': "Volver ahora",
   'away.backSub': "Las preguntas vuelven hoy.",
+  'away.left': "Hasta 14 días ausente en cualquier periodo de 60. Quedan {n}.",
   'pings.kind.familySubAt': 'A las {time}, cuántos terminaron en cada familia.',
   'account.rename': 'Cambiar nombre',
   'account.renameTitle': 'Cambiar el nombre de este teléfono',

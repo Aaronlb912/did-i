@@ -2838,6 +2838,7 @@ export const ko = {
   'away.until': "{date}까지 자리 비움",
   'away.back': "지금 돌아오기",
   'away.backSub': "질문이 오늘부터 다시 시작돼요.",
+  'away.left': "60일 중 최대 14일까지 자리를 비울 수 있어요. {n}일 남음.",
   'pings.kind.familySubAt': '{time}에 가족마다 몇 명이 끝냈는지.',
   'account.rename': '이름 바꾸기',
   'account.renameTitle': '이 휴대폰 이름 바꾸기',

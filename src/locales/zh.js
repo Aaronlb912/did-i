@@ -2829,6 +2829,7 @@ export const zh = {
   'away.until': "外出至 {date}",
   'away.back': "现在返回",
   'away.backSub': "问题今天起恢复。",
+  'away.left': "任意60天内最多外出14天。还剩{n}天。",
   'pings.kind.familySubAt': '在 {time}，每个家庭有多少人完成。',
   'account.rename': '重命名',
   'account.renameTitle': '重命名这台手机',
