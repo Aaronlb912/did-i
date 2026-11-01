@@ -993,6 +993,25 @@ test('resuming a paused question keeps its streak', async () => {
   assert.equal(lampRecord(book, rq, '2026-10-10', 60).streak, 21, 'the paused days neither count nor break')
 })
 
+test('the six month grid marks Did, Not yet and missed days and tallies weekdays', async () => {
+  const { lampDays } = await import('../src/lib/lamp-record.js')
+  const q = { ...lamp('g'), cadence: 'daily', createdOn: '2026-10-26' }
+  const book = { id: 'b', lamps: [q], answers: [
+    { id: 'x1', lampId: 'g', periodKey: '2026-10-26', status: 'yes' },
+    { id: 'x2', lampId: 'g', periodKey: '2026-10-27', status: 'skip' },
+  ] }
+  const { days, byDay } = lampDays(book, q, '2026-11-01', 26, 1)
+  const at = (iso) => days.find((d) => d.iso === iso)?.state
+  assert.equal(new Date(days[0].iso + 'T12:00:00').getDay(), 1, 'columns start on Monday')
+  assert.equal(at('2026-10-25'), '', 'before it was added')
+  assert.equal(at('2026-10-26'), 'did')
+  assert.equal(at('2026-10-27'), 'not')
+  assert.equal(at('2026-10-28'), 'miss')
+  assert.equal(at('2026-11-01'), '', 'today still open')
+  assert.deepEqual(byDay[1], { day: 1, due: 1, did: 1 })
+  assert.equal(days.at(-1).iso, '2026-11-01')
+})
+
 test('ten pause and resume rounds keep the first pause', async () => {
   const { toggleArchive } = await import('../src/lib/board-ops.js')
   const { normalizeLamp } = await import('../src/lib/board-json.js')

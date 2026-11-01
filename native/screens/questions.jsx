@@ -72,7 +72,7 @@ import { LampManage, flushCheckOnStops, lampActions, stopCheckOns } from '../com
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampRecord, lampNights, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
+import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampDays, lampRecord, lampNights, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -2344,6 +2344,11 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const account = useAccount()
   const reduce = useReduceMotion()
   const [historyOpen, setHistoryOpen] = useState(false)
+  const firstDay = firstWeekday(readPrefs().locale)
+  const grid = useMemo(
+    () => (historyOpen ? lampDays(lampBook, lamp, dateIso, 26, firstDay) : null),
+    [historyOpen, lampBook, lamp, dateIso, firstDay, awayKey()],
+  )
   const [notesOpen, setNotesOpen] = useState(false)
   const [checkOpen, setCheckOpen] = useState(false)
   const [notePick, setNotePick] = useState(0)
@@ -2563,6 +2568,45 @@ export function LampScreen({ book, boards = [], onChange, route }) {
                 </Text>
               </View>
             ))}
+          </View>
+        </View>
+      ) : null}
+
+      {grid?.days.length ? (
+        <View style={styles.trend}>
+          <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.grid')}</Text>
+          <View style={styles.gridCols} accessible accessibilityLabel={t('lamp.gridA11y', { did: grid.byDay.reduce((n, d) => n + d.did, 0), due: grid.byDay.reduce((n, d) => n + d.due, 0) })}>
+            {Array.from({ length: Math.ceil(grid.days.length / 7) }, (_, w) => (
+              <View key={w} style={styles.gridCol}>
+                {grid.days.slice(w * 7, w * 7 + 7).map((day) => (
+                  <View
+                    key={day.iso}
+                    style={[
+                      styles.gridCell,
+                      {
+                        backgroundColor: day.state === 'did' ? colors.on : day.state === 'not' || day.state === 'miss' ? colors.lineSoft : 'transparent',
+                        borderColor: colors.lineSoft,
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+          <Text style={[styles.trendLabel, { color: colors.inkSoft, marginTop: 8 }]}>{t('lamp.weekdays')}</Text>
+          <View style={styles.trendRow}>
+            {weekdaysFor(readPrefs().locale).map((day) => {
+              const row = grid.byDay[day]
+              return (
+                <View key={day} style={styles.trendWeek} accessible accessibilityLabel={t('lamp.weekdayA11y', { day: t(`hang.day.${day}`), did: row.did, due: row.due })}>
+                  <View style={[styles.trendBar, { backgroundColor: colors.lineSoft }]}>
+                    {row.due ? <View style={[styles.trendFill, { backgroundColor: colors.on, height: `${Math.round((row.did / row.due) * 100)}%` }]} /> : null}
+                  </View>
+                  <Text style={[styles.trendNum, { color: colors.inkDim }]}>{row.due ? `${row.did}/${row.due}` : '-'}</Text>
+                  <Text style={[styles.trendDate, { color: colors.inkDim }]} numberOfLines={1}>{t(`hang.day.${day}`)}</Text>
+                </View>
+              )
+            })}
           </View>
         </View>
       ) : null}
@@ -2842,6 +2886,9 @@ const styles = StyleSheet.create({
   tileCap: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16 },
   trend: { gap: 8, marginBottom: 12 },
   trendLabel: { ...sectionLabel },
+  gridCols: { flexDirection: 'row', gap: 2 },
+  gridCol: { flex: 1, gap: 2 },
+  gridCell: { aspectRatio: 1, borderRadius: 2, borderWidth: StyleSheet.hairlineWidth },
   trendRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 8 },
   trendWeek: { width: 36, alignItems: 'center', gap: 4 },
   trendBar: { width: 24, height: 48, borderRadius: 6, overflow: 'hidden', justifyContent: 'flex-end' },

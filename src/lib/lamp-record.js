@@ -156,6 +156,41 @@ export function lampWeeks(book, lamp, dateIso, weeks = 8) {
   return first < 0 ? [] : out.slice(first)
 }
 
+// One question's last few months as a grid, one cell per day, oldest first and
+// starting on `firstDay` (0 = Sunday). Each cell is did, not (Not yet), miss
+// (due, no answer), or '' (not due, before it was added, paused, away, or
+// today still open). byDay tallies Did of due per weekday. Callers memoize.
+export function lampDays(book, lamp, dateIso, weeks = 26, firstDay = 0) {
+  const empty = { days: [], byDay: [] }
+  if (!lamp || lamp.cadence === 'once' || lamp.cadence === 'monthly' || isEvery(lamp) || !dateIso) return empty
+  const live = { ...lamp, archived: false }
+  const created = String(lamp.createdOn || '').slice(0, 10)
+  const back = (new Date(`${dateIso}T12:00:00`).getDay() - firstDay + 7) % 7
+  const start = addDaysIso(dateIso, -((weeks - 1) * 7 + back))
+  const byDay = [0, 1, 2, 3, 4, 5, 6].map((day) => ({ day, due: 0, did: 0 }))
+  const days = []
+  let any = false
+  for (let i = 0; ; i += 1) {
+    const iso = addDaysIso(start, i)
+    if (iso > dateIso) break
+    let state = ''
+    if (!(created && iso < created) && isDueOn(live, iso)) {
+      const answer = answerFor(book, lamp.id, periodKeyFor(lamp, iso))
+      const status = answer?.status || ''
+      const away = travelSkipped(book, iso) && travelNightState(answer, iso) === 'none'
+      if (!away && !(iso === dateIso && !status) && !pausedOpen(lamp, iso, answer)) {
+        state = didStatus(status) ? 'did' : status ? 'not' : 'miss'
+        const tally = byDay[new Date(`${iso}T12:00:00`).getDay()]
+        tally.due += 1
+        if (state === 'did') tally.did += 1
+        any = true
+      }
+    }
+    days.push({ iso, state })
+  }
+  return any ? { days, byDay } : empty
+}
+
 // This question's answers, newest night first, each with its readable night.
 export function lampNights(book, lamp) {
   if (!lamp) return []
