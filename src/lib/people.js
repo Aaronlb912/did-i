@@ -486,7 +486,8 @@ export async function weSharedCount(other) {
   const db = cloud()
   if (!db) return 0
   const { data, error } = await db.rpc('we_shared_count', { other })
-  return error ? 0 : Number(data) || 0
+  // null: unknown, so the remove sheet still offers leaving them.
+  return error ? null : Number(data) || 0
 }
 
 export async function weLeaveShared(other) {

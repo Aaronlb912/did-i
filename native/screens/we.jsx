@@ -61,7 +61,7 @@ import { useWeCheer } from '../../src/lib/we-cheer.js'
 import { WeNotes } from '../components/WeNotes.jsx'
 import { endWeLinks, makeWeLink, myWeLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
 import { passAlong } from '../../src/lib/native.js'
-import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
 import { readAmount, togetherLine, weMyWeek, wePutAmount, weTrackAmount, weWeekTotals } from '../../src/lib/social-amounts.js'
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
@@ -568,7 +568,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       colors={colors}
       back={false}
       leftAction={{ label: t('hang.cancel'), onPress: leave }}
-      rightAction={{ label: t('we.sendShort'), onPress: () => make(false), disabled: !question || busy }}
+      rightAction={{ label: t('we.sendShort'), onPress: () => once('we-make', () => make(false)), disabled: !question || busy }}
     >
       <HangCard
         ref={inputRef}
@@ -580,7 +580,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
           onBlankChange?.(value)
         }}
         onLeadPress={onLeadPress}
-        onSubmit={() => make(false)}
+        onSubmit={() => once('we-make', () => make(false))}
         leadColor={colors.we}
         placeholder={t('we.blankHint')}
         meta={weWhenWords(draft)}
@@ -691,8 +691,8 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       <WeSheets draft={draft} setDraft={setDraft} sheet={sheet} setSheet={setSheet} colors={colors} />
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.newLead')}</Text>
       {/* The main send, so the link button is never the only one in reach. */}
-      <DidButton colors={colors} label={t('we.make')} disabled={!ready} onPress={() => make(false)} />
-      <KeyButton colors={colors} label={t('weLink.makeShare')} disabled={busy || !question} onPress={() => make(true)} />
+      <DidButton colors={colors} label={t('we.make')} disabled={!ready} onPress={() => once('we-make', () => make(false))} />
+      <KeyButton colors={colors} label={t('weLink.makeShare')} disabled={busy || !question} onPress={() => once('we-make', () => make(true))} />
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('weLink.hint')}</Text>
       {miss ? (
         <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">

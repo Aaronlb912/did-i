@@ -1381,10 +1381,11 @@ export function PeopleConnectScreen({ book, onChange, route }) {
   }
 
   async function newFamily() {
-    const { miss: why, id } = await makeFamily(famDraft || t('people.familyOne'))
+    const name = famDraft || t('people.familyOne')
+    const { miss: why, id } = await makeFamily(name)
     if (why) return setMiss(tMiss(why))
     setFamDraft('')
-    confirmDone(t('confirm.madeFamily', { name: famDraft || t('people.familyOne') }))
+    confirmDone(t('confirm.madeFamily', { name }))
     return goHash('/family', { id })
   }
 

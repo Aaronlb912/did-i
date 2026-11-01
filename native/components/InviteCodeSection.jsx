@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import { t, tMiss } from '../../src/lib/i18n.js'
+import { confirmMiss, once } from '../lib/confirm.js'
 import { inviteFromPaste } from '../../src/lib/invite-link.js'
 import { INVITE_CODE_LEN, formatInvite } from '../../src/lib/people.js'
 import { useReferralCode } from '../../src/lib/useReferralCode.js'
@@ -24,11 +25,14 @@ export function InviteCodeSection({ colors, book, onChange, gemsPaid, joined, hi
     const text = await Clipboard.getStringAsync().catch(() => '')
     const code = inviteFromPaste(text)
     if (code) ref.setDraft(code)
+    else confirmMiss(t('invite.noCode'))
   }
 
-  async function go() {
-    const words = await ref.redeem()
-    if (words) onUsed?.(words)
+  function go() {
+    return once('use-invite', async () => {
+      const words = await ref.redeem()
+      if (words) onUsed?.(words)
+    })
   }
 
   return (
