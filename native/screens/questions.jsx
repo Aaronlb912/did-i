@@ -2603,9 +2603,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         {!lastFive.length ? (
           <>
             <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.lastFiveEmpty')}</Text>
-            <Pressable accessibilityRole="link" onPress={() => goHash('/tonight')} hitSlop={8}>
-              <Text style={[styles.tileCap, { color: colors.on }]}>{t('empty.goTonight')}</Text>
-            </Pressable>
+            <KeyButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
           </>
         ) : null}
         {lastFive.map((row) => (

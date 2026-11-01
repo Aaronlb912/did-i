@@ -1211,7 +1211,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             <TonightNote quiet rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
           </View>
           {wish ? (
-            <Pressable accessibilityRole="link" accessibilityHint={t('shop.wishTitle')} onPress={() => goHash('/kit', { id: 'wish' })} hitSlop={8}>
+            <Pressable accessibilityRole="button" accessibilityHint={t('shop.wishTitle')} onPress={() => goHash('/kit', { id: 'wish' })} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
                 {t(wish.key, { n: wish.n, name: t(wish.nameKey) })} <Text style={{ color: colors.on }}>›</Text>
               </Text>
