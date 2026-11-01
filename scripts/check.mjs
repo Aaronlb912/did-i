@@ -993,6 +993,20 @@ test('resuming a paused question keeps its streak', async () => {
   assert.equal(lampRecord(book, rq, '2026-10-10', 60).streak, 21, 'the paused days neither count nor break')
 })
 
+test('ten pause and resume rounds keep the first pause', async () => {
+  const { toggleArchive } = await import('../src/lib/board-ops.js')
+  const { normalizeLamp } = await import('../src/lib/board-json.js')
+  const q = { ...lamp('p'), cadence: 'daily', createdOn: '2026-01-01' }
+  let book = { id: 'b', lamps: [q], answers: [] }
+  for (let i = 0; i < 10; i++) {
+    book = toggleArchive(book, book.lamps[0], new Date(2026, 0, 5 + i * 20, 12))
+    book = toggleArchive(book, book.lamps[0], new Date(2026, 0, 15 + i * 20, 12))
+  }
+  const pauses = normalizeLamp(book.lamps[0]).pauses
+  assert.equal(pauses.length, 10, 'every pause kept after a reload')
+  assert.deepEqual(pauses[0], ['2026-01-05', '2026-01-15'])
+})
+
 test('a resumed pause is not a miss in days in a row or the year view', async () => {
   const { shelfStreak } = await import('../src/lib/hall-feel.js')
   const { yearMonths } = await import('../src/lib/hall-pages.js')

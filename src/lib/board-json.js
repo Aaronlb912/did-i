@@ -582,11 +582,14 @@ export function addUnlock(book, id) {
 // The short name field's length limit.
 export const SHORT_MAX = 24
 
-// Resumed pauses as [from, until) day pairs, newest 8.
+// A size guard, not a rule: dropping a span would turn its days into misses.
+export const PAUSES_MAX = 64
+
+// Resumed pauses as [from, until) day pairs, newest PAUSES_MAX.
 function asPauses(list) {
   if (!Array.isArray(list)) return []
   const day = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-  return list.filter((pair) => Array.isArray(pair) && day(pair[0]) && day(pair[1]) && pair[0] < pair[1]).map(([from, until]) => [from, until]).slice(-8)
+  return list.filter((pair) => Array.isArray(pair) && day(pair[0]) && day(pair[1]) && pair[0] < pair[1]).map(([from, until]) => [from, until]).slice(-PAUSES_MAX)
 }
 
 export function duplicateLamp(lamp, now = new Date()) {
