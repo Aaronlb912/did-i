@@ -9,7 +9,7 @@ declare
   b uuid := gen_random_uuid();
   anycard uuid;
   allcard uuid;
-  night date := current_date;
+  day0 date := current_date;
 begin
   insert into auth.users (id, email, aud, role)
   values (a, a || '@test.invalid', 'authenticated', 'authenticated'),
@@ -31,16 +31,16 @@ begin
 
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
-  perform public.we_answer(anycard, night, 'did');
-  perform public.we_answer(allcard, night, 'did');
+  perform public.we_answer(anycard, day0, 'did');
+  perform public.we_answer(allcard, day0, 'did');
   execute 'reset role';
 
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
-  if not exists (select 1 from public.my_we_nights() w where w.card_id = anycard and w.night = night and w.done) then
+  if not exists (select 1 from public.my_we_nights() w where w.card_id = anycard and w.night = day0 and w.done) then
     raise exception 'FAIL: an any card Ann finished is not done for Ben';
   end if;
-  if exists (select 1 from public.my_we_nights() w where w.card_id = allcard and w.night = night and w.done) then
+  if exists (select 1 from public.my_we_nights() w where w.card_id = allcard and w.night = day0 and w.done) then
     raise exception 'FAIL: an all card is done with one of two';
   end if;
   execute 'reset role';
