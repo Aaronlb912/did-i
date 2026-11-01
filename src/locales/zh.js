@@ -3569,6 +3569,7 @@ export const zh = {
   'weAmount.unit': '单位',
   'weAmount.unitPh': '杯',
   'cal.hintGentle': "完成的日子有一个点。其他日子留空。",
+  'cal.emptyBody': "今天回答一个问题，它就会显示在这里。",
   'tonight.meterFamily': "+{n} 家人",
   'tonight.meterAsks': "+{n} 来自朋友",
   'weAmount.trackSub': "每个人在 Did 之后可以填一个数字，比如 3 杯或 20 分钟。大家只看到本周的总数，看不到每个人的数字。",

@@ -3621,6 +3621,7 @@ export const fr = {
   'weAmount.unit': 'Unité',
   'weAmount.unitPh': 'verres',
   'cal.hintGentle': "Un point pour chaque jour terminé. Les autres jours restent vides.",
+  'cal.emptyBody': "Réponds à une question aujourd’hui et elle apparaîtra ici.",
   'tonight.meterFamily': "+{n} famille",
   'tonight.meterAsks': "+{n} d’amis",
   'weAmount.trackSub': "Après un Did, chacun peut saisir un nombre, comme 3 verres ou 20 minutes. Tout le monde voit le total du groupe pour la semaine, pas le nombre de chacun.",

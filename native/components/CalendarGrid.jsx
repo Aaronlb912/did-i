@@ -306,12 +306,10 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
                 night.pad ? (
                   <View key={night.iso} style={styles.miniCell} />
                 ) : (
-                  <Pressable
+                  <View
                     key={night.iso}
-                    accessibilityRole="button"
+                    accessible
                     accessibilityLabel={dayLabel(night, locale, prefs.gentle === true)}
-                    onPress={() => openNightWhy({ colors, boards: shelf, iso: night.iso, now: clock, tagId })}
-                    hitSlop={2}
                     style={styles.miniCell}
                   >
                     <View
@@ -324,7 +322,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
                         !night.empty && !night.on && night.miss && !night.isToday ? missDot(colors, missTone) : null,
                       ]}
                     />
-                  </Pressable>
+                  </View>
                 ),
               )}
             </View>
@@ -348,7 +346,7 @@ const styles = StyleSheet.create({
   miniCell: { width: '14.28%', aspectRatio: 1, padding: 1 },
   miniDot: { flex: 1, borderRadius: 2, borderWidth: 1 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  shift: { fontSize: 20, paddingHorizontal: 8 },
+  shift: { fontSize: 20, paddingHorizontal: 8, paddingVertical: 6 },
   month: { fontFamily: fonts.uiSemi, fontSize: 17 },
   grid: {},
   week: { flexDirection: 'row' },

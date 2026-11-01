@@ -3578,6 +3578,7 @@ export const ko = {
   'weAmount.unit': '단위',
   'weAmount.unitPh': '잔',
   'cal.hintGentle': "끝낸 날에는 점이 있어요. 다른 날은 비어 있어요.",
+  'cal.emptyBody': "오늘 질문에 답하면 여기에 표시돼요.",
   'tonight.meterFamily': "+{n} 가족",
   'tonight.meterAsks': "+{n} 친구에게서",
   'weAmount.trackSub': "Did 뒤에 각자 3잔, 20분처럼 숫자를 적을 수 있어요. 모두에게는 그룹의 주간 합계만 보이고, 각자의 숫자는 안 보여요.",

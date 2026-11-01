@@ -101,7 +101,7 @@ import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import { useDayNow } from '../hooks/useDayNow.js'
 import { addDaysIso, boardDate, dueTonight, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList } from '../../src/lib/starters.js'
-import { FIRST_TIME, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
+import { FIRST_TIME, answeredNights, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
 import { FirstPacks } from '../components/FirstPacks.jsx'
 import { cloudSetUp } from '../../src/lib/cloud.js'
 import { authSkipped, clearAuthSkip } from '../../src/lib/auth-gate.js'
@@ -769,6 +769,11 @@ export function CalendarScreen({ book, boards, tagId, now, onChangeBooks }) {
   return (
     <ScreenShell title={t('settings.history')} colors={colors}>
       {isNewShelf(boards) ? <Meta colors={colors}>{t(gentle ? 'cal.hintGentle' : 'cal.hint')}</Meta> : null}
+      {answeredNights(boards, 1) === 0 ? (
+        <EmptyCard title={t('recent.emptyTitle')} body={t('cal.emptyBody')} colors={colors}>
+          <DidButton small label={t('about.home')} onPress={() => goHash('/tonight')} colors={colors} />
+        </EmptyCard>
+      ) : null}
       <ChipRow
         items={[
           { id: 'month', label: t('cal.viewMonth') },
