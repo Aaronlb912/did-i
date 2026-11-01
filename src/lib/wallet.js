@@ -157,6 +157,10 @@ export async function purchaseWithGems(kind, itemId) {
       if (kind === 'frame') return { miss: 'frames.miss.notSold' }
       return { miss: kind === 'buddy' ? 'shop.miss.buddyGone' : 'shop.miss.cheerGone' }
     }
+    // The reply may be lost after the buy landed: read back like coins do.
+    const list = { look: 'looks', cheer: 'cheers', buddy: 'buddies', frame: 'frames' }[kind]
+    const back = list ? await readGemOwned().catch(() => null) : null
+    if (back?.[list]?.includes(itemId)) return { miss: '', owned: back }
     return { miss: 'shop.miss.buyFail' }
   }
   return { miss: '', owned: normalizeGemOwned(data) }
