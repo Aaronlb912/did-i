@@ -1273,7 +1273,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
         <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.emptyKicker')}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.emptyTitle')}</Text>
-        <StarterPicks book={book} onChange={onChange} colors={colors} />
+        {/* The first question opens now, so the first Did and the tour never wait for tonight. */}
+        <StarterPicks book={book} onChange={onChange} colors={colors} readyNow />
         <DidButton label={t('tonight.write')} colors={colors} small onPress={() => goHash('/add')} />
         {firstAdd && !account.user ? (
           // The menu waits for a first question, so signing in has to be here.
