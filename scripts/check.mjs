@@ -3450,6 +3450,11 @@ await testAsync('a widget or reminder Did pays one purse, not one per folder', a
   assert.equal(applyWidgetTapOnce('w', 'did', '2026-09-26', sat, sat.getTime()), null, 'no Did on a day not due')
   assert.equal(mergePurses(readShelf().boards).coins, 16, 'and no coins for it')
 
+  // A tap from another account (question not on this shelf) is kept, not dropped.
+  const away = applyWidgetTapsOnce([{ lampId: 'other-account-q', kind: 'did', night: '2026-09-23', at: at.getTime() }], at)
+  assert.equal(away.kept.length, 1, 'kept for the account that made it')
+  assert.equal(applyWidgetTapsOnce([{ lampId: 'other-account-q', kind: 'did', night: '2026-09-23', at: at.getTime() - 4 * 864e5 }], at).kept.length, 0, 'dropped after 3 days')
+
   // The iOS widget path: answers merged from the widget's saved props.
   const shelf = fresh()
   const merged = mergeWidgetPropsIntoShelf(shelf, { items: [{ lampId: 'b', periodKey: '2026-09-23', status: 'yes' }] }, at)
@@ -3576,7 +3581,7 @@ test('android widget taps made before JS runs are all applied, once each', () =>
   )
   assert.ok(store.includes('JSONArray') && store.includes('MAX_ROWS'), 'native keeps a capped queue')
   const tap = readFileSync(path.join(root, 'native/widget-tap.android.js'), 'utf8')
-  assert.ok(tap.includes('applyWidgetTapsOnce') && tap.includes('JSON.stringify(failed)'))
+  assert.ok(tap.includes('applyWidgetTapsOnce') && tap.includes('JSON.stringify(back)'))
 })
 
 test('over-the-air updates only reach a build with the same app version', () => {
