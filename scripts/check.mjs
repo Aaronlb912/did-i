@@ -1361,6 +1361,26 @@ test('a phone-only shelf survives a sync that finds no session', () => {
   assert.equal(hallEmpty(readShelf()), true, 'a signed-out account phone still starts clean')
 })
 
+test('a session that runs out keeps answers that never sent', () => {
+  const book = {
+    id: 'board-kept',
+    title: 'House',
+    keeperName: '',
+    lamps: [{ id: 'di-cat', question: 'Did I feed the cat?', cadence: 'daily', archived: false }],
+    answers: [{ id: 'a1', lampId: 'di-cat', periodKey: '2026-11-01', status: 'yes', answeredAt: '2026-11-01T20:00:00.000Z', note: '' }],
+  }
+  writeShelf({ currentId: book.id, boards: [book] })
+  localStorage.setItem('did-i-answers-sent', '2026-11-01T10:00:00.000Z')
+  localStorage.setItem('did-i-last-user', 'user-a')
+  sessionMissing()
+  assert.equal(hallEmpty(readShelf()), false, 'the unsent Did stays on the phone')
+  assert.equal(localStorage.getItem('did-i-last-user'), 'user-a', 'a different account signing in still starts clean')
+  localStorage.setItem('did-i-answers-sent', '2026-11-02T10:00:00.000Z')
+  sessionMissing()
+  assert.equal(hallEmpty(readShelf()), true, 'once sent, the phone starts clean')
+  localStorage.removeItem('did-i-answers-sent')
+})
+
 test('enter lands on tonight when the shelf already has questions', () => {
   const book = {
     id: 'board-b',
