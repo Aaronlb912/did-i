@@ -2121,6 +2121,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                 value={hang.tagTitle}
                 onChangeText={hang.setTagTitle}
                 placeholder={t('hang.tagPh')}
+                maxLength={60}
                 autoFocus
                 returnKeyType="done"
                 colors={colors}
@@ -2230,6 +2231,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               value={draft.notes}
               onChangeText={(value) => hang.change('notes', value)}
               placeholder={t('hang.notesPh')}
+              maxLength={500}
               multiline
               colors={colors}
             />
