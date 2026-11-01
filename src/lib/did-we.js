@@ -6,7 +6,7 @@ import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
-import { refreshWeNights } from './we-nights.js'
+import { markWeDone, refreshWeNights } from './we-nights.js'
 import { weekKind, weSlotDay } from './we-look.js'
 import { weDueOn, weNextDue, weNextLabel, wePrevDue, weSlotOf } from './we-next.js'
 
@@ -597,6 +597,8 @@ function loadShared(force, userId) {
       // A failed load keeps the cards already on screen and says so (miss).
       const next = got.miss ? { ...got, cards: shared.cards || [] } : got
       shareMyBuddy(next.cards)
+      const finished = (next.cards || []).filter((card) => card.myState === 'in' && card.due && card.done)
+      if (finished.length) markWeDone(finished.map((card) => card.id), tonightIso())
       shared = next
       loadedAt = Date.now()
       if (!next.miss) storeCards(userId, next.cards || [])

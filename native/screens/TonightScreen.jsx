@@ -1513,8 +1513,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
                 key={`we:${card.id}`}
                 label={weShort(card.question)}
                 tag={t('we.title')}
-                on={mine === 'did'}
-                skip={mine === 'nope'}
+                on={mine === 'did' || Boolean(card.done)}
+                skip={mine === 'nope' && !card.done}
                 face={wePick === card.id}
                 colors={{ ...colors, on: colors.we || colors.on }}
                 onPress={() => {

@@ -397,7 +397,7 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
         </View>
       }
       kicker={weKicker(card)}
-      mark={mine === 'did' || mine === 'nope' ? <MarkStamp status={mine === 'did' ? 'yes' : 'skip'} colors={weColors} /> : null}
+      mark={mine === 'did' || mine === 'nope' || locked ? <MarkStamp status={mine === 'did' || card.done ? 'yes' : 'skip'} colors={weColors} /> : null}
       title={card.question}
       stampDid={t('tonight.swipeDid')}
       stampNope={t('tonight.swipeNope')}
