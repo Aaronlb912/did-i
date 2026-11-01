@@ -35,7 +35,8 @@ public class WidgetTapReceiver extends BroadcastReceiver {
         if (result == WidgetTapStore.WROTE) {
             // Before the widget task starts JS: with no JS running, the tap goes
             // to the account now so other devices see it.
-            AnswerKeyPost.sendLater(context, lampId, kind, night, 0L);
+            // Did we cards are not your own questions; only the app sends them (we_answer).
+            if (!lampId.startsWith("we:")) AnswerKeyPost.sendLater(context, lampId, kind, night, 0L);
             try {
                 WidgetCardStore.advance(context, lampId, kind, night);
             } catch (Exception ignored) {

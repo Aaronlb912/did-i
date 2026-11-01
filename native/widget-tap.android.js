@@ -53,12 +53,13 @@ export async function applyPendingAndroidWidgetTap() {
   }
   const taps = parseWidgetTapQueue(raw)
   if (!taps.length) return null
-  const { shelf, failed, refused } = applyWidgetTapsOnce(taps)
+  const { shelf, failed, kept, refused } = applyWidgetTapsOnce(taps)
   // Wear OS taps are in this queue: tell the watch which ones the phone has.
-  for (const tap of taps) if (!failed.includes(tap)) noteTaken(tap.sent || tap.at)
-  if (failed.length) {
+  const back = [...failed, ...kept]
+  for (const tap of taps) if (!back.includes(tap)) noteTaken(tap.sent || tap.at)
+  if (back.length) {
     try {
-      await mod.restorePending?.(JSON.stringify(failed))
+      await mod.restorePending?.(JSON.stringify(back))
     } catch {
       // The rows are already off disk. The next open cannot see them.
     }

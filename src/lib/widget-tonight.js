@@ -560,17 +560,22 @@ export function parseWidgetTapQueue(raw) {
 export function applyWidgetTapsOnce(taps, clock = new Date()) {
   let shelf = null
   const failed = []
+  const kept = []
   let refused = 0
   for (const tap of taps || []) {
     try {
       const next = applyWidgetTapOnce(tap.lampId, tap.kind, tap.night, clock, tap.at)
       if (!next) refused += 1
+      // A tap made on another account (signed out or switched before the app
+      // applied it) has no question here: keep it for that account, up to 3 days.
+      const lamp = String(tap.lampId || '')
+      if (!next && !lamp.startsWith(WE_ITEM) && clock.getTime() - Number(tap.at || 0) < 3 * 864e5 && !findBookHoldingLamp(readShelf().boards, lamp)) kept.push(tap)
       shelf = next || shelf
     } catch {
       failed.push(tap)
     }
   }
-  return { shelf, failed, refused }
+  return { shelf, failed, kept, refused }
 }
 
 // `night` comes from the tapped card (did:<lampId>|<periodKey>). Old targets
