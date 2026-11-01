@@ -25,6 +25,7 @@ function cleanWas(was) {
       monthDay: old.monthDay === 'last' ? 'last' : Number.isInteger(Number(old.monthDay)) && old.monthDay !== '' ? Number(old.monthDay) : '',
       everyN: Number.isInteger(Number(old.everyN)) && old.everyN !== '' ? Number(old.everyN) : '',
       everyNAnchor: ISO_DAY.test(String(old.everyNAnchor)) ? String(old.everyNAnchor) : '',
+      ...(Number.isInteger(old.perWeek) && old.perWeek >= 1 && old.perWeek <= 6 ? { perWeek: old.perWeek } : {}),
     }))
     .sort((x, y) => (x.until < y.until ? -1 : 1))
     .slice(-WAS_KEEP)
@@ -281,6 +282,8 @@ export function normalizeLamp(raw) {
     // friend you allow): a did counts, a nope or no answer does not count
     // against you. Only set when true, so other questions are unchanged.
     ...(asBool(lamp.optional) ? { optional: true } : {}),
+    // Kept for a later N-times-a-week cadence, so an older build's save does not drop it.
+    ...(Number.isInteger(Number(lamp.perWeek)) && lamp.perWeek !== '' && lamp.perWeek != null && Number(lamp.perWeek) >= 1 && Number(lamp.perWeek) <= 6 ? { perWeek: Number(lamp.perWeek) } : {}),
     // Added from the morning ask (morning-ask.js); the server keeps 30 a day.
     ...(asBool(lamp.morning) && cadence === 'once' ? { morning: true } : {}),
     // Kept from a did you; fromName is who sent it, when known.

@@ -209,7 +209,7 @@ export function findBookHoldingLamp(boards, lampId) {
 }
 
 // Everything a twin must share: same words, same schedule, same ask time.
-const TWIN_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor', 'everyDays', 'onceWhen', 'onceOn', 'dueBy', 'slot', 'askAfter']
+const TWIN_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor', 'everyDays', 'perWeek', 'onceWhen', 'onceOn', 'dueBy', 'slot', 'askAfter']
 
 function foldBook(into, extra) {
   if (!extra || extra.id === into.id) return extra || into

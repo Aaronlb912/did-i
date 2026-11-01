@@ -130,7 +130,7 @@ export function periodPassed(lamp, periodKey, todayIso) {
 // was is oldest first; until is the first day of the next schedule.
 export const WAS_KEEP = 4
 const WAS_CADENCES = new Set(['daily', 'weekly', 'monthly', 'every_n'])
-const WAS_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor']
+const WAS_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor', 'perWeek']
 
 export function scheduleAt(lamp, dateIso) {
   const was = lamp?.was
