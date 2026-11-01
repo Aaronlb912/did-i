@@ -276,12 +276,14 @@ export function AppShell() {
   // out), so nobody has to go looking for it.
   const shelfReady = Boolean(app.book)
   const settingUp = OWN_BACK.has(route.path)
+  // Nothing to remind about yet: a Not now on the empty Today would spend the ask.
+  const hasQuestion = (app.shelf?.boards || []).some((one) => (one.lamps || []).some((lamp) => !lamp.archived))
   useEffect(() => {
-    if (gated || settingUp || !shelfReady || Platform.OS === 'web') return undefined
+    if (gated || settingUp || !shelfReady || !hasQuestion || Platform.OS === 'web') return undefined
     const timer = setTimeout(() => offerFirstPingPrimer(colors).catch(() => {}), 1200)
     return () => clearTimeout(timer)
     // colors only styles the sheet; a theme change should not re-arm the ask.
-  }, [gated, settingUp, shelfReady])
+  }, [gated, settingUp, shelfReady, hasQuestion])
 
   // A Did made in this run is the one later ask for a Not now.
   const didCount = useRef(null)
