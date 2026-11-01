@@ -3626,6 +3626,7 @@ export const de = {
   'weAmount.unit': 'Einheit',
   'weAmount.unitPh': 'Gläser',
   'cal.hintGentle': "Ein Punkt für jeden Tag, den du geschafft hast. Alle anderen Tage bleiben leer.",
+  'cal.emptyBody': "Beantworte heute eine Frage, dann erscheint sie hier.",
   'tonight.meterFamily': "+{n} Familie",
   'tonight.meterAsks': "+{n} von Freunden",
   'weAmount.trackSub': "Nach einem Did kann jede Person eine Zahl eintragen, zum Beispiel 3 Gläser oder 20 Minuten. Alle sehen nur die gemeinsame Summe der Woche, nicht die Zahl jeder Person.",

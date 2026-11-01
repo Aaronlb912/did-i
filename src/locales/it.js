@@ -3614,6 +3614,7 @@ export const it = {
   'weAmount.unit': 'Unità',
   'weAmount.unitPh': 'bicchieri',
   'cal.hintGentle': "Un punto segna ogni giorno che hai finito. Gli altri giorni restano vuoti.",
+  'cal.emptyBody': "Rispondi a una domanda oggi e apparirà qui.",
   'tonight.meterFamily': "+{n} famiglia",
   'tonight.meterAsks': "+{n} dagli amici",
   'weAmount.trackSub': "Dopo un Did, ognuno può scrivere un numero, come 3 bicchieri o 20 minuti. Tutti vedono il totale del gruppo per la settimana, non il numero di ciascuno.",

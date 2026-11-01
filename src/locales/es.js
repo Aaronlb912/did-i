@@ -3618,6 +3618,7 @@ export const es = {
   'weAmount.unit': 'Unidad',
   'weAmount.unitPh': 'vasos',
   'cal.hintGentle': "Un punto marca cada día que terminaste. Los demás días quedan en blanco.",
+  'cal.emptyBody': "Responde una pregunta hoy y aparecerá aquí.",
   'tonight.meterFamily': "+{n} familia",
   'tonight.meterAsks': "+{n} de amigos",
   'weAmount.trackSub': "Después de un Did, cada persona puede escribir un número, como 3 vasos o 20 minutos. Todos ven el total del grupo de la semana, no el número de cada uno.",

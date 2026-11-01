@@ -3608,6 +3608,7 @@ export const en = {
   'weAmount.unit': 'Unit',
   'weAmount.unitPh': 'glasses',
   'cal.hintGentle': "A dot marks each day you finished. Every other day stays blank.",
+  'cal.emptyBody': "Answer a question today and it shows here.",
   'tonight.meterFamily': "+{n} family",
   'tonight.meterAsks': "+{n} from friends",
   'weAmount.trackSub': "After a Did, each person can type a number, like 3 glasses or 20 minutes. Everyone sees the group's total for the week, not each person's number.",

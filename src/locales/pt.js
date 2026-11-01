@@ -3614,6 +3614,7 @@ export const pt = {
   'weAmount.unit': 'Unidade',
   'weAmount.unitPh': 'copos',
   'cal.hintGentle': "Um ponto marca cada dia que você terminou. Os outros dias ficam em branco.",
+  'cal.emptyBody': "Responda uma pergunta hoje e ela aparece aqui.",
   'tonight.meterFamily': "+{n} família",
   'tonight.meterAsks': "+{n} de amigos",
   'weAmount.trackSub': "Depois de um Did, cada pessoa pode digitar um número, como 3 copos ou 20 minutos. Todos veem o total do grupo na semana, não o número de cada um.",

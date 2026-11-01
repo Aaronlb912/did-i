@@ -3576,6 +3576,7 @@ export const ja = {
   'weAmount.unit': '単位',
   'weAmount.unitPh': '杯',
   'cal.hintGentle': "終えた日には点。ほかの日は空白のまま。",
+  'cal.emptyBody': "今日の質問に答えると、ここに表示されます。",
   'tonight.meterFamily': "+{n} 家族",
   'tonight.meterAsks': "+{n} 友だちから",
   'weAmount.trackSub': "Did のあと、各自が3杯や20分のように数を入力できます。見えるのはみんなの週の合計だけで、一人ひとりの数は見えません。",
