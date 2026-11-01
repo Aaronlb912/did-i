@@ -2371,11 +2371,7 @@ export function FriendScreen({ book, onChange, route }) {
           {cheersLeft > 0 ? (
             <Text style={[styles.friendSmall, { color: colors.inkDim }]}>{t('friend.cheersLeft', { n: cheersLeft })}</Text>
           ) : (
-            <Pressable onPress={cheer} accessibilityRole="button" hitSlop={6}>
-              <Text style={[styles.friendSmall, { color: colors.inkDim }]}>
-                {t('friend.noCheersLeft')} · <Text style={{ color: colors.on }}>{t('friend.getMoreCheers')}</Text>
-              </Text>
-            </Pressable>
+            <Text style={[styles.friendSmall, { color: colors.inkDim }]}>{t('friend.noCheersLeft')}</Text>
           )}
         </View>
         <View style={styles.friendAction}>
@@ -2441,14 +2437,15 @@ export function FriendScreen({ book, onChange, route }) {
                         closeLabel: t('settings.neverMind'),
                         colors,
                         onClose: () => publishSheet(null),
-                        onGo: async () => {
-                          publishSheet(null)
-                          const { miss: why } = await blockPerson(otherId, 'photo')
-                          if (why) return setSaid(tMiss(why))
-                          confirmDone(t('confirm.blocked', { name }))
-                          refreshPeople()
-                          return swapHash('/friends')
-                        },
+                        onGo: () =>
+                          once('block:' + otherId, async () => {
+                            publishSheet(null)
+                            const { miss: why } = await blockPerson(otherId, 'photo')
+                            if (why) return confirmMiss(tMiss(why))
+                            confirmDone(t('confirm.blocked', { name }))
+                            refreshPeople()
+                            return swapHash('/friends')
+                          }),
                       }),
                   },
                 ]
@@ -2695,13 +2692,14 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       closeLabel: t('settings.neverMind'),
       colors,
       onClose: () => publishSheet(null),
-      onGo: async () => {
-        publishSheet(null)
-        const { miss: why } = await reportSend(row.id)
-        if (why) setMiss(tMiss(why))
-        else confirmDone(t('we.reported'))
-        load()
-      },
+      onGo: () =>
+        once('we-report:' + row.id, async () => {
+          publishSheet(null)
+          const { miss: why } = await reportSend(row.id)
+          if (why) setMiss(tMiss(why))
+          else confirmDone(t('we.reported'))
+          load()
+        }),
     })
   }
 
