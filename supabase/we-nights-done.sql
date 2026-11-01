@@ -51,7 +51,7 @@ as $$
     group by m.card_id
   ),
   dids as (
-    select a.card_id, a.night, count(*) as n
+    select a.card_id, a.night, count(*) as dn
     from public.we_answers a
     join public.we_members m on m.card_id = a.card_id and m.user_id = a.user_id and m.state = 'in'
     where a.status = 'did' and a.card_id in (select id from mine) and a.night >= current_date - 401
@@ -62,9 +62,9 @@ as $$
     case
       -- Turns rows are only your turn nights, so your did is the done.
       when mine.mode = 'turns' then coalesce(a.status = 'did', false)
-      when mine.mode = 'any' then coalesce(d.n, 0) >= 1
-      when mine.mode = 'most' then coalesce(t.total, 0) >= 2 and coalesce(d.n, 0) * 2 > t.total
-      else coalesce(t.total, 0) >= 2 and coalesce(d.n, 0) = t.total
+      when mine.mode = 'any' then coalesce(d.dn, 0) >= 1
+      when mine.mode = 'most' then coalesce(t.total, 0) >= 2 and coalesce(d.dn, 0) * 2 > t.total
+      else coalesce(t.total, 0) >= 2 and coalesce(d.dn, 0) = t.total
     end
   from mine
   cross join lateral generate_series(mine.since, current_date + 1, interval '1 day') as n
