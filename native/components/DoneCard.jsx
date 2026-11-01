@@ -179,12 +179,15 @@ export function NightWeek({ nights, colors, onNight }) {
 }
 
 /** "Tomorrow: 4 questions from 8:00 PM", so done has a next step. */
-export function tomorrowLine({ count, from, next }) {
+// streak: today's streak when the first week is still being built (else 0).
+export function tomorrowLine({ count, from, next }, streak = 0) {
   if (!count && next) return t('tonight.nextOn', { date: formatBoardDate(next) })
   if (!count) return t('tonight.tomorrowNone')
   const time = from ? clockWords(from) : ''
-  if (count === 1) return time ? t('tonight.tomorrowOne', { time }) : t('tonight.tomorrowOneAny')
-  return time ? t('tonight.tomorrowMany', { n: count, time }) : t('tonight.tomorrowManyAny', { n: count })
+  const line = count === 1
+    ? time ? t('tonight.tomorrowOne', { time }) : t('tonight.tomorrowOneAny')
+    : time ? t('tonight.tomorrowMany', { n: count, time }) : t('tonight.tomorrowManyAny', { n: count })
+  return streak > 0 && streak < 7 ? `${line} ${t('tonight.tomorrowStake', { n: streak + 1 })}` : line
 }
 
 const styles = StyleSheet.create({
