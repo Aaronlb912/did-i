@@ -45,6 +45,17 @@ begin
   end if;
   execute 'reset role';
 
+  -- A settled night stays done even when today's members would not finish it.
+  update public.we_cards set starts_on = day0 - 5 where id = allcard;
+  update public.we_members set joined_at = day0 - 5, asked_at = day0 - 5 where card_id = allcard;
+  insert into public.we_done (card_id, night) values (allcard, day0 - 3) on conflict do nothing;
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  if not exists (select 1 from public.my_we_nights() w where w.card_id = allcard and w.night = day0 - 3 and w.done) then
+    raise exception 'FAIL: a settled done night came back not done';
+  end if;
+  execute 'reset role';
+
   raise exception 'SQL TESTS PASSED';
 end;
 $$;
