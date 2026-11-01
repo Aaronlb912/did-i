@@ -96,6 +96,7 @@ export const en = {
   'settings.foldSub': 'Your clock in {zone}. Nothing to set.',
   'settings.soundOn': 'Sound on Did',
   'settings.hideMarks': 'Hide achievements',
+  'settings.hideMarksSub': "Stops achievement pop-ups and hides the list on this screen. Friends see no change.",
   'settings.install': 'Install the app',
   'settings.lock': 'App PIN on this phone',
   'settings.lockOn': 'On. Did I asks for this PIN when you open the app on this phone. Not your sign-in password.',

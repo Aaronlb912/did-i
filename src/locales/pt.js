@@ -96,6 +96,7 @@ export const pt = {
   'settings.foldSub': 'O teu relógio em {zone}. Nada a ajustar.',
   'settings.soundOn': 'Som no Did',
   'settings.hideMarks': 'Ocultar conquistas',
+  'settings.hideMarksSub': "Para os avisos de conquistas e esconde a lista nesta tela. Nada muda para seus amigos.",
   'settings.install': 'Instalar o app',
   'settings.lock': 'PIN da app neste telemóvel',
   'settings.lockOn': 'Há uma trava de números. Fica neste telefone. Não é senha da internet.',

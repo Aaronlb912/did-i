@@ -96,6 +96,7 @@ export const fr = {
   'settings.foldSub': 'Ton horloge en {zone}. Rien à régler.',
   'settings.soundOn': 'Son sur Did',
   'settings.hideMarks': 'Masquer les succès',
+  'settings.hideMarksSub': "Plus de fenêtres de succès, et la liste est masquée ici. Rien ne change pour tes amis.",
   'settings.install': 'Installer l’app',
   'settings.lock': 'Code PIN sur ce téléphone',
   'settings.lockOn': 'Un verrou à chiffres est en place. Il reste sur ce téléphone. Ce n’est pas un mot de passe internet.',
