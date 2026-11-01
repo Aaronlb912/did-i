@@ -10145,6 +10145,8 @@ await testAsync('a valid perWeek survives normalizeLamp, bad values are dropped'
   const base = { id: 'x', question: 'q', cadence: 'daily' }
   for (const n of [1, 3, 6, '4']) assert.equal(normalizeLamp({ ...base, perWeek: n }).perWeek, Number(n), 'kept ' + n)
   for (const n of [0, 7, 2.5, -1, 'x', '', null, undefined]) assert.ok(!('perWeek' in normalizeLamp({ ...base, perWeek: n })), 'dropped ' + n)
+  const was = normalizeLamp({ ...base, cadence: 'weekdays', weekdays: [1], was: [{ until: '2026-10-01', cadence: 'daily', perWeek: 3 }] }).was
+  assert.equal(was[0].perWeek, 3, 'kept in was history')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
