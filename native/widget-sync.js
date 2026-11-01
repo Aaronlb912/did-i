@@ -12,6 +12,7 @@ import { addDaysIso, boardDate } from '../src/lib/recurrence.js'
 import { recordAppError } from '../src/lib/app-errors.js'
 import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
 import { sendWatchCards } from './watch-sync.js'
+import { readAccountUserId } from '../src/lib/session-id.js'
 
 // The native side takes plain records. undefined, functions or Dates in the
 // props can make the whole update throw, so send a JSON copy.
@@ -109,6 +110,13 @@ let readTimeline = null
 // Taps whose question is not on the shelf yet. The widget still redraws, with
 // these carried along, so a later read merges them once the question arrives.
 let pendingTaps = []
+// The account those taps came from: after a sign out or switch they are dropped,
+// so one account's taps never ride into the next one's widget.
+let pendingFor = ''
+function carriedTaps() {
+  if (pendingTaps.length && pendingFor !== readAccountUserId()) pendingTaps = []
+  return pendingTaps
+}
 
 export function setWidgetTimelineReader(fn) {
   readTimeline = typeof fn === 'function' ? fn : null
@@ -161,7 +169,7 @@ export async function syncTonightWidget(shelf) {
       }))
       if (later.length && api.updateTimeline) {
         // Not in writeWidgetTonightProps above: a carried tap must still read as a tap.
-        const carry = (p) => (pendingTaps.length ? { ...p, items: [...(p.items || []), ...pendingTaps] } : p)
+        const carry = (p) => (carriedTaps().length ? { ...p, items: [...(p.items || []), ...pendingTaps] } : p)
         const entries = [{ date: new Date(), props }, ...later].map((entry) => ({ ...entry, props: carry(entry.props) }))
         await api.updateTimeline(entries.map((entry) => ({ date: entry.date, props: plainProps(entry.props) })))
       } else await api.updateSnapshot(plainProps(props))
@@ -278,7 +286,7 @@ async function timelineHasNewTaps() {
     if (!last) return false
     const mine = new Map((readWidgetTonightProps()?.items || []).map((item) => [`${item.lampId}|${item.periodKey}`, item.status]))
     // A carried tap is already known; counting it would read and redraw forever.
-    const carried = new Set(pendingTaps.map((item) => `${item.lampId}|${item.periodKey}`))
+    const carried = new Set(carriedTaps().map((item) => `${item.lampId}|${item.periodKey}`))
     return (last.items || []).some((item) => {
       const key = `${item.lampId}|${item.periodKey}`
       return !carried.has(key) && mine.get(key) !== item.status
@@ -317,6 +325,7 @@ export async function pullWidgetTimelineIntoShelf(shelf) {
     // Only Did: a carried Not yet would be the widget's lead when nothing else is open.
     const oldest = addDaysIso(boardDate(new Date()), -1)
     const seen = new Set()
+    pendingFor = readAccountUserId()
     pendingTaps = unmatched.filter((item) => {
       const key = `${item.lampId}|${item.periodKey}`
       if (item.status !== 'yes' || seen.has(key) || String(item.periodKey || '') < oldest) return false
