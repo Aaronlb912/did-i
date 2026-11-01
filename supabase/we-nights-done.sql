@@ -62,6 +62,9 @@ as $$
     case
       -- Turns rows are only your turn nights, so your did is the done.
       when mine.mode = 'turns' then coalesce(a.status = 'did', false)
+      -- Settled nights read we_done, which only grows: today's member list
+      -- would undo a finished night when someone joins or leaves later.
+      when n::date < current_date - 1 then exists (select 1 from public.we_done x where x.card_id = mine.id and x.night = n::date)
       when mine.mode = 'any' then coalesce(d.dn, 0) >= 1
       when mine.mode = 'most' then coalesce(t.total, 0) >= 2 and coalesce(d.dn, 0) * 2 > t.total
       else coalesce(t.total, 0) >= 2 and coalesce(d.dn, 0) = t.total
