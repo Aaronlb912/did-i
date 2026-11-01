@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
   veil: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 20 },
   pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
   head: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 6 },
-  moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  moreBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.uiBold, fontSize: 20, lineHeight: 22 },
   menuRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 8 },
   menuRowText: { fontFamily: fonts.uiSemi, fontSize: 16 },

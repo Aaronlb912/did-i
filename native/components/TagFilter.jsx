@@ -213,9 +213,9 @@ const styles = StyleSheet.create({
   wrap: { marginBottom: 8, alignSelf: 'flex-start' },
   line: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   clear: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   // Same height as the question chips it sits in front of.
   // Inline sits in the Questions top row: a long folder name truncates so Edit stays on the same line.
-  pickInline: { minHeight: 40, paddingHorizontal: 12, maxWidth: 120 },
+  pickInline: { minHeight: 44, paddingHorizontal: 12, maxWidth: 120 },
   bars: { fontFamily: fonts.mono, fontSize: 14 },
   name: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', flexShrink: 1 },
   backdrop: { flex: 1 },

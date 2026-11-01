@@ -2433,7 +2433,7 @@ const styles = StyleSheet.create({
   gemFeaturedButtonText: { fontFamily: fonts.uiBold, fontSize: 15 },
   keyOff: {
     borderRadius: 999,
-    minHeight: 40,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
@@ -2587,7 +2587,7 @@ const styles = StyleSheet.create({
   },
   // The worn tile gets a ring in place, so a look that glows on its own is not mistaken for it.
   kitTileWorn: { borderWidth: 2, borderRadius: 12 },
-  kitTileChip: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  kitTileChip: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   kitTileChipBig: { width: 72, height: 72 },
   wornBadge: {
     position: 'absolute',
