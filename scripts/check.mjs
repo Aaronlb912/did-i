@@ -3035,7 +3035,7 @@ test('free event items: claimable in their window, never after, kept by owners',
   assert.ok(!P.buddiesOnOrOwned(normalizePurse({}), '2026-11-02').some((item) => item.id === 'bat'), 'not owned, not offered')
   assert.ok(!P.giftItems().buddies.some((item) => item.id === 'bat') && !P.giftItems().cheers.some((item) => item.id === 'boo'), 'never a gift')
   // A hearted event item is a goal only while it can be claimed, and drops off once it is gone.
-  const hearted = normalizePurse({ wish: ['buddy:bat'] })
+  const hearted = { ...normalizePurse({}), wish: ['buddy:bat'] }
   assert.equal(P.wishGoal(hearted, '2026-10-25'), null)
   assert.equal(P.wishGoal(hearted, '2026-11-02'), null)
   assert.equal(P.wishGoal(hearted, '2026-10-29')?.id, 'bat')
