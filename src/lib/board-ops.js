@@ -1,4 +1,4 @@
-import { answeredAtIso, cleanAmount, duplicateLamp, newAnswerId } from './board-json.js'
+import { PAUSES_MAX, answeredAtIso, cleanAmount, duplicateLamp, newAnswerId } from './board-json.js'
 import { activeLook } from './active-look.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
 import { addDaysIso, answerFor, boardDate, didStatusForRow, inPause, nightOpen, openFloorIso, periodPassed, stampMs } from './recurrence.js'
@@ -17,7 +17,7 @@ function withPause(lamp, archived, clock = new Date()) {
   if (archived) return stampEdit({ ...rest, archived, pausedOn: boardDate(clock) }, clock)
   // Resumed: the paused days stay out of the streak, [from, until).
   const until = boardDate(clock)
-  const pauses = pausedOn && pausedOn < until ? [...(lamp.pauses || []), [pausedOn, until]].slice(-8) : lamp.pauses
+  const pauses = pausedOn && pausedOn < until ? [...(lamp.pauses || []), [pausedOn, until]].slice(-PAUSES_MAX) : lamp.pauses
   return stampEdit({ ...rest, archived, ...(pauses?.length ? { pauses } : {}) }, clock)
 }
 
