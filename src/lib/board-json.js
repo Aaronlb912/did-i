@@ -325,6 +325,8 @@ function decimalText(text) {
   const dot = text.lastIndexOf('.')
   const comma = text.lastIndexOf(',')
   if (dot >= 0 && comma >= 0) return dot > comma ? text.replace(/,/g, '') : text.replace(/\./g, '').replace(',', '.')
+  // There a dot groups thousands: "1.500" is fifteen hundred, not one and a half.
+  if (/^\d{1,3}(\.\d{3})+$/.test(text) && COMMA_DECIMAL.has(readPrefs().locale)) return text.replace(/\./g, '')
   if (/^\d{1,3}(,\d{3})+$/.test(text) && !COMMA_DECIMAL.has(readPrefs().locale)) return text.replace(/,/g, '')
   return text.replace(',', '.')
 }
