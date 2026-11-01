@@ -670,7 +670,10 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
     const folder = folders.find((item) => item.id === targetId)?.title || ''
     // Undo moves each one back to the folder it came from.
-    const n = lampPicks.length
+    const n = moving.length
+    // A pending check-on stop from the last bulk action lands before this undo replaces it.
+    flushCheckOnStops(undo?.stops)
+    if (!n) return stopPicking()
     const label = n === 1 ? t('questions.bulkMovedOne', { folder }) : t('questions.bulkMoved', { n, folder })
     setUndo({ id: Date.now(), label, moved: moving, to: targetId })
     stopPicking()
@@ -746,7 +749,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       setUndo(null)
       return
     }
-    onChangeBooks(undoBulkLamps(readShelf().boards || shelf, undo.before, undo.picks))
+    onChangeBooks(undoBulkLamps(readShelf().boards || shelf, undo.before, undo.picks).map((item) => commitBook(item, clock)))
     setUndo(null)
   }
 
