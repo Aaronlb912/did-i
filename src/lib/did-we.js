@@ -176,7 +176,7 @@ export function weReminders(cards, night = tonightIso()) {
     }))
 }
 
-function notMyTurn(card) {
+export function notMyTurn(card) {
   return card.mode === 'turns' && !!card.turn && card.turn !== weMine(card)?.id
 }
 

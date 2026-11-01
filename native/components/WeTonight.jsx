@@ -9,6 +9,7 @@ import {
   weCheerStageIfDone,
   weClaim,
   weGoal,
+  notMyTurn,
   weMine,
   weNotTonightLine,
   weReply,
@@ -361,7 +362,8 @@ export function useWeAnswer(reload, book) {
 // the ready ones first. Only ever cards asked on this night (card.due).
 export function weOpenForMe(cards, now = new Date(), { early = false } = {}) {
   const open = (cards || []).filter(
-    (card) => card.myState === 'in' && card.due && !card.done && !weMine(card)?.status,
+    // In turns, only whoever's turn it is gets asked: anyone else's swipe would not finish it.
+    (card) => card.myState === 'in' && card.due && !card.done && !weMine(card)?.status && !notMyTurn(card),
   )
   if (!early) return open.filter((card) => weTimeReady(card, now))
   return [...open.filter((card) => weTimeReady(card, now)), ...open.filter((card) => !weTimeReady(card, now))]
@@ -381,7 +383,7 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
   if (!open.length) return null
   const card = open[0]
   const mine = picked ? weMine(card)?.status || '' : ''
-  const locked = Boolean(mine) || Boolean(picked && card.done)
+  const locked = Boolean(mine) || Boolean(picked && (card.done || notMyTurn(card)))
   // Did we wears its own accent, so a shared card reads apart from your own.
   const weColors = { ...colors, on: colors.we || colors.on, line: colors.we || colors.line, onDeep: colors.weDeep || colors.onDeep }
   return (
