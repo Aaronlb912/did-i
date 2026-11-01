@@ -2900,6 +2900,7 @@ export const zh = {
   'freeze.rule5': "被保护的那天显示为这个点。",
   'freeze.rule6': "保护不给金币，也不改变单个问题的连续记录。",
   'freeze.rule7': "商店里买不到。",
+  'freeze.rule8': "保护只守住总的连续记录。文件夹自己的记录仍可能重新开始。",
   'freeze.youHave': "你有 {n} / {max} 个",
   'freeze.nextIn': "再过 {n} 天得到下一个",
   'freeze.nextInOne': "再过 1 天得到下一个",

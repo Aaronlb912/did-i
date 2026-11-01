@@ -2939,6 +2939,7 @@ export const en = {
   'freeze.rule5': "A day a freeze kept shows as this dot.",
   'freeze.rule6': "Freezes do not pay coins and do not change a question’s own streak.",
   'freeze.rule7': "You cannot buy them in the shop.",
+  'freeze.rule8': "They keep your overall streak. A folder’s own streak can still reset.",
   'freeze.youHave': "You have {n} of {max}",
   'freeze.nextIn': "Next one in {n} days",
   'freeze.nextInOne': "Next one in 1 day",

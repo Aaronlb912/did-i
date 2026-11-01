@@ -2945,6 +2945,7 @@ export const it = {
   'freeze.rule5': "Un giorno salvato da una protezione ha questo punto.",
   'freeze.rule6': "Le protezioni non danno monete e non cambiano la serie di una domanda.",
   'freeze.rule7': "Non si comprano nel negozio.",
+  'freeze.rule8': "Proteggono la tua serie generale. La serie di una cartella può comunque ripartire da zero.",
   'freeze.youHave': "Ne hai {n} su {max}",
   'freeze.nextIn': "La prossima tra {n} giorni",
   'freeze.nextInOne': "La prossima tra 1 giorno",

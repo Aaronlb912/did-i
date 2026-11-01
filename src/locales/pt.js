@@ -2945,6 +2945,7 @@ export const pt = {
   'freeze.rule5': "Um dia salvo por uma proteção aparece com este ponto.",
   'freeze.rule6': "Proteções não dão moedas e não mudam a sequência de uma pergunta.",
   'freeze.rule7': "Não dá para comprar na loja.",
+  'freeze.rule8': "Elas protegem sua sequência geral. A sequência de uma pasta ainda pode zerar.",
   'freeze.youHave': "Você tem {n} de {max}",
   'freeze.nextIn': "A próxima em {n} dias",
   'freeze.nextInOne': "A próxima em 1 dia",

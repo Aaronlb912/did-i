@@ -2909,6 +2909,7 @@ export const ko = {
   'freeze.rule5': "보호로 이어진 날은 이 점으로 보여요.",
   'freeze.rule6': "보호는 코인을 주지 않고 질문별 연속 기록도 바꾸지 않아요.",
   'freeze.rule7': "상점에서 살 수 없어요.",
+  'freeze.rule8': "보호는 전체 연속 기록을 지켜요. 폴더별 기록은 다시 시작될 수 있어요.",
   'freeze.youHave': "{max}개 중 {n}개 있어요",
   'freeze.nextIn': "다음은 {n}일 뒤",
   'freeze.nextInOne': "다음은 1일 뒤",

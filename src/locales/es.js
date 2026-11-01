@@ -2949,6 +2949,7 @@ export const es = {
   'freeze.rule5': "Un día salvado por un protector se ve con este punto.",
   'freeze.rule6': "Los protectores no dan monedas y no cambian la racha de una pregunta.",
   'freeze.rule7': "No se pueden comprar en la tienda.",
+  'freeze.rule8': "Protegen tu racha general. La racha propia de una carpeta puede reiniciarse igual.",
   'freeze.youHave': "Tienes {n} de {max}",
   'freeze.nextIn': "El siguiente en {n} días",
   'freeze.nextInOne': "El siguiente en 1 día",
