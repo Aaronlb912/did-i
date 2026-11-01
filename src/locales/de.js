@@ -2957,6 +2957,7 @@ export const de = {
   'freeze.rule5': "Ein Tag, den ein Joker gehalten hat, zeigt diesen Punkt.",
   'freeze.rule6': "Joker bringen keine Münzen und ändern nicht die Serie einer einzelnen Frage.",
   'freeze.rule7': "Du kannst sie nicht im Shop kaufen.",
+  'freeze.rule8': "Sie halten deine Gesamtserie. Die eigene Serie eines Ordners kann trotzdem neu anfangen.",
   'freeze.youHave': "Du hast {n} von {max}",
   'freeze.nextIn': "Der nächste in {n} Tagen",
   'freeze.nextInOne': "Der nächste in 1 Tag",

@@ -2907,6 +2907,7 @@ export const ja = {
   'freeze.rule5': "守りで続いた日はこの点で表示されます。",
   'freeze.rule6': "守りではコインはもらえず、質問ごとの連続記録も変わりません。",
   'freeze.rule7': "ショップでは買えません。",
+  'freeze.rule8': "守りは全体の連続記録を守ります。フォルダごとの記録はリセットされることがあります。",
   'freeze.youHave': "{max}つ中{n}つ持っています",
   'freeze.nextIn': "次は{n}日後",
   'freeze.nextInOne': "次は1日後",
