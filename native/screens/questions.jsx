@@ -2733,7 +2733,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pickTick: { fontFamily: fonts.uiBold, fontSize: 14, lineHeight: 16 },
-  dropBtn: { borderWidth: 1, borderRadius: 999, minHeight: 40, paddingHorizontal: 16, justifyContent: 'center' },
+  dropBtn: { borderWidth: 1, borderRadius: 999, minHeight: 44, paddingHorizontal: 16, justifyContent: 'center' },
   dropText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   blockLabel: {
     fontFamily: fonts.mono,
@@ -2809,7 +2809,7 @@ const styles = StyleSheet.create({
   pill: {
     borderWidth: 1,
     borderRadius: 999,
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: 14,
     justifyContent: 'center',
     alignItems: 'center',

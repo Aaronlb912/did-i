@@ -270,9 +270,9 @@ const styles = StyleSheet.create({
   meta: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20 },
   // overflow: the Android press ripple stays inside the round pill.
   did: { borderRadius: 999, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, overflow: 'hidden' },
-  didSmall: { minHeight: 40 },
+  didSmall: { minHeight: 44 },
   didText: { fontFamily: fonts.uiBold, fontSize: 15 },
-  key: { borderRadius: 999, minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderWidth: 1, overflow: 'hidden' },
+  key: { borderRadius: 999, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderWidth: 1, overflow: 'hidden' },
   keyText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '500' },
   row: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
   rowText: { flex: 1, gap: 4 },

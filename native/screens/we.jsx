@@ -1585,7 +1585,7 @@ const styles = StyleSheet.create({
   weekWord: { fontFamily: fonts.ui, fontSize: 11 },
   weekDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5 },
   headNames: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 19 },
-  moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  moreBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.uiSemi, fontSize: 20, lineHeight: 22 },
   factLine: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 6, gap: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
