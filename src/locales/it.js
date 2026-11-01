@@ -96,6 +96,7 @@ export const it = {
   'settings.foldSub': 'Il tuo orologio in {zone}. Niente da impostare.',
   'settings.soundOn': 'Suono su Did',
   'settings.hideMarks': 'Nascondi traguardi',
+  'settings.hideMarksSub': "Niente più avvisi dei traguardi e la lista resta nascosta qui. Per gli amici non cambia nulla.",
   'settings.install': 'Installa l’app',
   'settings.lock': 'PIN dell’app su questo telefono',
   'settings.lockOn': 'C’è un blocco a numeri. Resta su questo telefono. Non è una password di internet.',

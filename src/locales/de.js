@@ -96,6 +96,7 @@ export const de = {
   'settings.foldSub': 'Deine Uhr in {zone}. Nichts einzustellen.',
   'settings.soundOn': 'Ton bei Did',
   'settings.hideMarks': 'Erfolge ausblenden',
+  'settings.hideMarksSub': "Keine Erfolgs-Pop-ups mehr, die Liste wird hier ausgeblendet. Für Freunde ändert sich nichts.",
   'settings.install': 'App installieren',
   'settings.lock': 'App-PIN auf diesem Handy',
   'settings.lockOn': 'An. Did I fragt nach dieser PIN, wenn du die App auf diesem Handy öffnest. Nicht dein Anmeldepasswort.',

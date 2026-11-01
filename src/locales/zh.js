@@ -96,6 +96,7 @@ export const zh = {
   'settings.foldSub': '你在 {zone} 的时钟。无需设置。',
   'settings.soundOn': '点 Did 出声',
   'settings.hideMarks': '隐藏成就',
+  'settings.hideMarksSub': "停止成就弹窗，并在此页隐藏列表。好友看到的不会变。",
   'settings.install': '安装应用',
   'settings.lock': '锁在这部手机上',
   'settings.lockOn': '数字锁开着。只留在这部手机。不是网上的密码。',

@@ -96,6 +96,7 @@ export const ko = {
   'settings.foldSub': '{zone} 시계. 설정할 필요 없어요.',
   'settings.soundOn': 'Did 소리',
   'settings.hideMarks': '업적 숨기기',
+  'settings.hideMarksSub': "업적 알림을 끄고 이 화면의 목록을 숨겨요. 친구에게는 달라지는 게 없어요.",
   'settings.install': '앱 설치',
   'settings.lock': '이 폰 잠금',
   'settings.lockOn': '숫자 잠금 켜짐. 이 폰만. 인터넷 비밀번호 아님.',

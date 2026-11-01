@@ -96,6 +96,7 @@ export const es = {
   'settings.foldSub': 'Tu reloj en {zone}. No hay nada que ajustar.',
   'settings.soundOn': 'Sonido al marcar Did',
   'settings.hideMarks': 'Ocultar logros',
+  'settings.hideMarksSub': "Quita los avisos de logros y oculta la lista en esta pantalla. Tus amigos no ven ningún cambio.",
   'settings.install': 'Instalar la app',
   'settings.lock': 'PIN de la app en este teléfono',
   'settings.lockOn': 'Activo. Did I lo pide al abrir la app en este teléfono. No es tu contraseña de cuenta.',

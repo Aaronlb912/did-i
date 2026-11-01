@@ -96,6 +96,7 @@ export const ja = {
   'settings.foldSub': '{zone} の時計。設定不要。',
   'settings.soundOn': 'Did で音',
   'settings.hideMarks': '実績を隠す',
+  'settings.hideMarksSub': "実績のお知らせを止め、この画面の一覧を隠します。友だちからの見え方は変わりません。",
   'settings.install': 'アプリを入れる',
   'settings.lock': 'この端末のロック',
   'settings.lockOn': '数字ロックがかかっている。この端末だけ。ネットのパスワードではない。',
