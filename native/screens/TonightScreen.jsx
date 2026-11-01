@@ -88,7 +88,7 @@ import { pickSocialLine } from '../../src/lib/social-line.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { weOpenOn } from '../../src/lib/we-nights.js'
 import { didStatusForRow, graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
-import { saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weClaim, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
+import { notMyTurn, saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weClaim, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
@@ -1039,7 +1039,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     face = graceTop ? withAnswerButtons(graceCard, graceTop.onDid, graceTop.onNope) : graceCard
   } else if (pickedWe && !stack.cheer) {
     // A picked Did we stays up after its answer, with its stamp, like your own pills.
-    const open = !weMine(pickedWe)?.status && !pickedWe.done
+    const open = !weMine(pickedWe)?.status && !pickedWe.done && !notMyTurn(pickedWe)
     face = (
       <WeSwipeCard
         cards={[pickedWe]}
