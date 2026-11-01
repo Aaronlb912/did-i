@@ -358,6 +358,8 @@ export const en = {
   'tonight.tomorrowOneAny': 'Tomorrow: 1 question',
   'tonight.tomorrowManyAny': 'Tomorrow: {n} questions',
   'tonight.tomorrowNone': 'Nothing due tomorrow',
+  'tonight.coinsToday': "+{n} coins today · {total} in all",
+  'tonight.tomorrowStake': "Come back for {n} days in a row.",
   'tonight.weekAria': "{n} of the last 7 days done",
   'tonight.finishKicker': 'Still open',
   'tonight.finishOne': "One question left today.",

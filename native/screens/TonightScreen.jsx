@@ -34,7 +34,7 @@ import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
-import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
+import { coinsToday, fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { awayKey, usePrefs, useTheme } from '../../src/lib/prefs.js'
 import { answerFor, isEvery } from '../../src/lib/recurrence.js'
 import { lastTimeLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
@@ -308,6 +308,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     })
   }, [account.user, we.cards])
   const purse = mergePurses(stack.shelf)
+  const dayCoins = coinsToday(stack.clock)
   const wish = wishLine(wishGoal(purse))
   // Focus comes from navigation events, not useIsFocused: that re-rendered
   // this whole screen as a page opened over it and again as it came back,
@@ -1206,10 +1207,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           ) : null}
           <View style={styles.tomorrowRow}>
             {summary ? (
-              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
+              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow, gentle ? 0 : stack.streak)}</Text>
             ) : null}
             <TonightNote quiet rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
           </View>
+          {dayCoins > 0 ? (
+            <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsToday', { n: dayCoins, total: purse.coins })}</Text>
+          ) : null}
           {wish ? (
             <Pressable accessibilityRole="button" accessibilityHint={t('shop.wishTitle')} onPress={() => goHash('/kit', { id: 'wish' })} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>

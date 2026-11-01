@@ -351,6 +351,8 @@ export const ja = {
   'tonight.tomorrowOneAny': '明日：1問',
   'tonight.tomorrowManyAny': '明日：{n}問',
   'tonight.tomorrowNone': '明日は予定なし',
+  'tonight.coinsToday': "今日 +{n} コイン · 合計 {total}",
+  'tonight.tomorrowStake': "明日も来れば {n} 日連続です。",
   'tonight.weekAria': "直近7日のうち{n}日完了",
   'tonight.finishKicker': 'まだ残り',
   'tonight.finishOne': "今日はあと1問。",

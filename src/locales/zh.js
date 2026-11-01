@@ -351,6 +351,8 @@ export const zh = {
   'tonight.tomorrowOneAny': '明天：1 个问题',
   'tonight.tomorrowManyAny': '明天：{n} 个问题',
   'tonight.tomorrowNone': '明天没有要做的',
+  'tonight.coinsToday': "今天 +{n} 金币 · 共 {total}",
+  'tonight.tomorrowStake': "明天再来就连续 {n} 天。",
   'tonight.weekAria': "最近 7 天完成了 {n} 天",
   'tonight.finishKicker': '还没做完',
   'tonight.finishOne': "今天还剩一个问题。",

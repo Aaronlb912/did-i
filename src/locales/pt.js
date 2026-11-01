@@ -358,6 +358,8 @@ export const pt = {
   'tonight.tomorrowOneAny': 'Amanhã: 1 pergunta',
   'tonight.tomorrowManyAny': 'Amanhã: {n} perguntas',
   'tonight.tomorrowNone': 'Nada para amanhã',
+  'tonight.coinsToday': "+{n} moedas hoje · {total} no total",
+  'tonight.tomorrowStake': "Volte para {n} dias seguidos.",
   'tonight.weekAria': "{n} dos últimos 7 dias feitos",
   'tonight.finishKicker': 'Ainda aberto',
   'tonight.finishOne': "Falta uma pergunta hoje.",

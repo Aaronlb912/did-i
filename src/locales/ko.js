@@ -351,6 +351,8 @@ export const ko = {
   'tonight.tomorrowOneAny': '내일: 질문 1개',
   'tonight.tomorrowManyAny': '내일: 질문 {n}개',
   'tonight.tomorrowNone': '내일은 할 일이 없어요',
+  'tonight.coinsToday': "오늘 +{n} 코인 · 모두 {total}",
+  'tonight.tomorrowStake': "내일 오면 {n}일 연속이에요.",
   'tonight.weekAria': "최근 7일 중 {n}일 완료",
   'tonight.finishKicker': '아직 남음',
   'tonight.finishOne': "오늘 질문이 하나 남았어요.",

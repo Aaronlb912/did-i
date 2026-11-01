@@ -1012,6 +1012,14 @@ test('the six month grid marks Did, Not yet and missed days and tallies weekdays
   assert.equal(days.at(-1).iso, '2026-11-01')
 })
 
+test('coins earned today add up for the done card and reset the next day', async () => {
+  const { coinsToday } = await import('../src/lib/purse.js')
+  localStorage.setItem('did-i-coins-day', JSON.stringify({ day: '2026-11-01', n: 7 }))
+  assert.equal(coinsToday(new Date(2026, 10, 1, 21)), 7)
+  assert.equal(coinsToday(new Date(2026, 10, 2, 21)), 0, 'a new day starts at 0')
+  localStorage.removeItem('did-i-coins-day')
+})
+
 test('ten pause and resume rounds keep the first pause', async () => {
   const { toggleArchive } = await import('../src/lib/board-ops.js')
   const { normalizeLamp } = await import('../src/lib/board-json.js')

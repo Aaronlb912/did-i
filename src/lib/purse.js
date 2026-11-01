@@ -778,6 +778,29 @@ function notePaid(key) {
 }
 
 // otherFolders: () => the shelf's other folders, read only when signed out.
+// Coins earned today on this phone, for the done card. Signed in, the server
+// holds the purse; this is only the "+N today" line.
+const DAY_COINS_KEY = 'did-i-coins-day'
+function noteDayCoins(earned, clock) {
+  if (!(earned > 0)) return
+  try {
+    const day = boardDate(clock)
+    const saved = JSON.parse(localStorage.getItem(DAY_COINS_KEY) || 'null')
+    const n = saved?.day === day ? Number(saved.n) || 0 : 0
+    localStorage.setItem(DAY_COINS_KEY, JSON.stringify({ day, n: n + earned }))
+  } catch {
+    // Only the done card line misses it.
+  }
+}
+export function coinsToday(clock = new Date()) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DAY_COINS_KEY) || 'null')
+    return saved?.day === boardDate(clock) ? Math.max(0, Math.floor(Number(saved.n) || 0)) : 0
+  } catch {
+    return 0
+  }
+}
+
 export function payTap(before, after, row, status, clock = new Date(), otherFolders = () => []) {
   const purse = normalizePurse(after)
   const prev = (before.answers || []).find(
@@ -788,6 +811,7 @@ export function payTap(before, after, row, status, clock = new Date(), otherFold
   let coins = purse.coins
   if (!paid) {
     const earned = coinsFor(status, before, row, clock, accountSessionOn() ? [] : otherFolders())
+    noteDayCoins(earned, clock)
     if (accountSessionOn()) {
       if (earned > 0) notePaid(paidKey)
       // The server takes yesterday or today; a week or month key maps further back.
