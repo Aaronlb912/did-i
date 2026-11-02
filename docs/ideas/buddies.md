@@ -15,5 +15,5 @@ buddy; the axolotl (Lotl, chibi shape, Pink colorway) is the 2027-01-15 drop
 buddy. Its gill fronds wave in the showroom but stay still in the app, since
 the shop sway turns the whole buddy.
 
-Frame ideas from the same page that were not picked (also available):
-Full House (a ring of tiny faces). Linked became the 2026-11-20 coin frame.
+Frame ideas from the same page: Full House became the 2026-11-06 coin frame
+and Linked the 2026-11-20 coin frame.

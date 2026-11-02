@@ -7,7 +7,7 @@
 //   l  [x1, y1, x2, y2, colour, width]
 //   r  [x, y, w, h, fill, corner radius, rotate]  rounded rectangle
 //   o  [cx, cy, rx, ry, colour, line width]       ring
-import { BOPPER_SPRING, CONFETTI, HOLLY, HORN_FRINGE, PLANES, STREAMERS, accessoryById, curl, orbitRing, wornLayers } from './accessories.js'
+import { BOPPER_SPRING, CONFETTI, HOLLY, HORN_FRINGE, PEACOCK, PLANES, STREAMERS, ZZZ, accessoryById, curl, orbitRing, wornLayers } from './accessories.js'
 
 const AT = {
   cat: { ex: [18, 30], ey: 28, er: 3.6, crown: 17, neck: 37, side: 13 },
@@ -213,6 +213,19 @@ const SHAPES = {
       ]
     })
   },
+  peacock: (a) => PEACOCK.flatMap(([deg, fill]) => {
+    const c = mid(a)
+    const th = (deg * Math.PI) / 180
+    const at = (r) => [24 + Math.sin(th) * r, c - Math.cos(th) * r]
+    const [fx, fy] = at(13)
+    const [ex, ey] = at(21.5)
+    return [
+      ['e', fx, fy, 3.8, 12.5, fill, deg],
+      ['e', ex, ey, 3.7, 4.4, GOLD, deg],
+      ['e', ex, ey + 0.3, 2.6, 3.2, '#1fb5b0', deg],
+      ['e', ex, ey + 0.5, 1.4, 1.9, '#24308a', deg],
+    ]
+  }),
   batwings: (a) => {
     const y = mid(a) - 2
     const x0 = a.side - 3
@@ -719,6 +732,17 @@ const SHAPES = {
       ...[19, 24, 29].map((x) => ['l', x, y + 4, x - 0.8, y + 6.4, '#4aa8ff', 1.1]),
     ]
   },
+  // Each Z is its three strokes.
+  zzz: (a) => ZZZ.flatMap(([dx, dy, s]) => {
+    const x = 24 + dx
+    const y = a.ey + dy
+    const w = 0.55 * s + 0.4
+    return [
+      ['l', x - s, y - s, x + s, y - s, '#b6a8ff', w],
+      ['l', x + s, y - s, x - s, y + s, '#b6a8ff', w],
+      ['l', x - s, y + s, x + s, y + s, '#b6a8ff', w],
+    ]
+  }),
   notes: (a, t) => [[-20, -6, 1.3], [19, -12, 1.1], [19, 4, 0.95]].flatMap(([dx, dy, k]) => {
     const x = 24 + dx
     const y = a.ey + dy
