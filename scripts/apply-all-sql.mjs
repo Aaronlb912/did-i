@@ -103,6 +103,7 @@ const files = [
   'supabase/we-nights-done.sql',
   'supabase/cheer-once.sql',
   'supabase/drop-tonight.sql',
+  'supabase/family-leave-hide.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
