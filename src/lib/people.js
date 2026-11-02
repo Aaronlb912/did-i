@@ -601,7 +601,8 @@ export async function sendFriendCheer(toId, note, cheerId = '', about = '') {
   const message = error.message || ''
   if (error.code === 'PGRST202' || /send_friend_cheer/i.test(message)) return cheerDone({ miss: 'setup' })
   if (/need cheers/i.test(message)) return cheerDone({ miss: 'cheers' })
-  if (/not friends|not signed in/i.test(message)) return cheerDone({ miss: 'notFriend' })
+  if (/not signed in/i.test(message)) return cheerDone({ miss: 'people.reach' })
+  if (/not friends/i.test(message)) return cheerDone({ miss: 'notFriend' })
   // Lost or unknown reply: keep the id, so a second tap cannot spend twice.
   return bad(error)
 }
@@ -668,7 +669,8 @@ export async function sendFamilyCheer(toId, note, cheerId = '') {
   const message = error.message || ''
   if (error.code === 'PGRST202' || /send_family_cheer/i.test(message)) return cheerDone({ miss: 'setup' })
   if (/need cheers/i.test(message)) return cheerDone({ miss: 'cheers' })
-  if (/not family|not signed in/i.test(message)) return cheerDone({ miss: 'notFriend' })
+  if (/not signed in/i.test(message)) return cheerDone({ miss: 'people.reach' })
+  if (/not family/i.test(message)) return cheerDone({ miss: 'notFriend' })
   return bad(error)
 }
 
