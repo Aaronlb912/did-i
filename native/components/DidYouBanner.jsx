@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
+import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
 import { feelTap } from '../../src/lib/native.js'
@@ -43,8 +43,16 @@ export function DidYouBanner({ path, colors }) {
         Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: true }),
       ]).start()
     }
-    const timer = setTimeout(dismissPeopleNews, SHOW_MS)
-    return () => clearTimeout(timer)
+    // Screen reader users need time to reach it; they close it themselves.
+    let timer = null
+    let live = true
+    AccessibilityInfo.isScreenReaderEnabled().catch(() => false).then((on) => {
+      if (live && !on) timer = setTimeout(dismissPeopleNews, SHOW_MS)
+    })
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
   }, [newsId, here, reduce, fade, slide])
 
   if (!lines || here) return null
