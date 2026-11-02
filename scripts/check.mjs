@@ -9468,6 +9468,11 @@ test('smooth screens: screen files warm after launch, the shelf is read once per
 
 await testAsync('readShelf hands back the same shelf until storage changes, and sees a write from anywhere', async () => {
   const { readShelf, writeShelf } = await import('../src/lib/board-shelf.js')
+  const { folderNameKey } = await import('../src/lib/board-shelf.js')
+  // Renaming a folder to an old General name would fold it into General.
+  assert.equal(folderNameKey('Did I'), folderNameKey('General'))
+  assert.equal(folderNameKey(' Allgemein '), folderNameKey('general'))
+  assert.notEqual(folderNameKey('Work'), folderNameKey('General'))
   const first = readShelf()
   assert.equal(readShelf(), first, 'unchanged storage: the same object, no reparse')
   const next = writeShelf({ ...first, boards: first.boards.map((b, i) => (i ? b : { ...b, title: 'Changed here' })) })
