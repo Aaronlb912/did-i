@@ -2033,3 +2033,14 @@ export function useFamilyTonight(user) {
 
   return { rows, reload: look }
 }
+
+// Cheers you said Thanks to, newest first (supabase/cheers-got.sql).
+export async function listCheersGot() {
+  const db = cloud()
+  if (!db) return { miss: 'off', rows: [] }
+  const user = await me()
+  if (!user) return { miss: 'out', rows: [] }
+  const { data, error } = await db.rpc('cheers_got_list')
+  if (error) return { miss: appMiss(error), rows: [] }
+  return { miss: '', rows: data || [] }
+}
