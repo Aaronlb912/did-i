@@ -991,7 +991,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
     })
     if (type === 'look') {
       if (purse.lookOn === item.id) return null
-      if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearLook(book, item.id), false) }
+      if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearLook(liveBook(book), item.id), false) }
       return buy(() => buyLookWithCoins(liveBook(book), item.id))
     }
     if (type === 'buddy') {
@@ -1003,7 +1003,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
     if (type === 'accessory') {
       if (tag.owned) {
         const on = purse.worn[item.slot] === item.id
-        return { label: on ? t('shop.takeOff') : t('shop.use'), go: () => done(type, item, wearAccessory(book, item.id), false) }
+        return { label: on ? t('shop.takeOff') : t('shop.use'), go: () => done(type, item, wearAccessory(liveBook(book), item.id), false) }
       }
       return buy(() => buyAccessoryWithCoins(liveBook(book), item.id))
     }
@@ -1622,7 +1622,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
             const label = on ? t('shop.takeOff') : have ? t('shop.use') : t('shop.buy')
             const act = () => {
               if (have) {
-                take(wearAccessory(book, item.id), item.id)
+                take(onLiveBook(wearAccessory(liveBook(book), item.id)), item.id)
                 return
               }
               if (purse.coins < item.coins) {
@@ -1693,7 +1693,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
                 miss={miss.id === item.id ? miss.text : ''}
                 actionLabel={on ? t('shop.takeOff') : t('shop.use')}
                 primary={on}
-                onAction={() => take(wearAccessory(book, item.id), item.id)}
+                onAction={() => take(onLiveBook(wearAccessory(liveBook(book), item.id)), item.id)}
               />
             )
           })}
@@ -2089,7 +2089,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
       : tab === 'cheers'
         ? t('kit.using', { name: purse.cheerOn ? t(cheerText(purse.cheerOn, 'name')) : none })
         : tab === 'buddies'
-          ? t('kit.wearing', { names: purse.buddyOn ? t(buddyText(purse.buddyOn, 'name')) : none })
+          ? t('kit.wearing', { names: t(buddyText(purse.buddyOn || 'ant', 'name')) })
           : tab === 'frames'
             ? t('kit.wearing', { names: frameInfo.worn ? t(frameText(frameInfo.worn, 'name')) : none })
             : tab === 'wish'
@@ -2245,7 +2245,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
                       big
                       caption={isSeasonal(item) ? t('kit.seasonal') : ''}
                       onPress={() =>
-                        wearOn(wearAccessory(book, item.id), purse.worn[item.slot] === item.id ? '' : t(`accessory.${item.id}`))
+                        wearOn(onLiveBook(wearAccessory(liveBook(book), item.id)), purse.worn[item.slot] === item.id ? '' : t(`accessory.${item.id}`))
                       }
                     >
                       <AccessoryChip id={item.id} buddyId={purse.buddyOn || 'ant'} tone={colors.on} big />

@@ -259,7 +259,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
     action = {
       label: on ? t('shop.takeOff') : t('frames.wear'),
       go: () => {
-        const next = wearFrame(book, id, ctx)
+        const next = onLiveBook(wearFrame(liveBook(book), id, ctx))
         if (next.miss) return confirmMiss(frameMiss(next))
         publishSheet(null)
         onChange(next.book)
@@ -301,7 +301,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
     action = {
       label: t('frames.claim'),
       go: () => {
-        const next = claimFrame(book, id, ctx.today)
+        const next = onLiveBook(claimFrame(liveBook(book), id, ctx.today))
         if (next.miss) return confirmMiss(frameMiss(next))
         onChange(next.book)
         reopen(next.book)
@@ -547,7 +547,7 @@ export function FramesCollection({ book, colors, onChange }) {
   const mine = shownFrames(ctx.today, owned).filter((f) => owned.has(f.id))
   const locked = shownFrames(ctx.today).filter((f) => f.kind === 'earned' && !owned.has(f.id))
   function wear(id) {
-    const next = wearFrame(book, id === worn ? '' : id, ctx)
+    const next = onLiveBook(wearFrame(liveBook(book), id === worn ? '' : id, ctx))
     if (next.miss) return confirmMiss(frameMiss(next))
     onChange(next.book)
     if (id && id !== worn) confirmDone(t('confirm.wearing', { name: frameName(id) }))
