@@ -156,7 +156,7 @@ export function useAppShelf() {
       })
     }
     if (accountSessionOn() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
-      grantWeeklyGem(bumped.gemWeek).then((bal) => {
+      grantWeeklyGem(bumped.gemWeek).catch(() => null).then((bal) => {
         if (!sameAccount()) return
         // Not granted: forget the week so the next cleared night asks again.
         if (bal == null) {

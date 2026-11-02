@@ -156,6 +156,7 @@ function creditMissToast() {
         .then((out) => {
           if (out.miss) creditMissToast()
           else if (out.gems > 0) showToast({ id: 'gems-credit-done', kind: 'done', text: t('gems.restored', { n: out.gems }), ms: 4200 })
+          else showToast({ id: 'gems-credit-done', kind: 'done', text: t('gems.restoreNone'), ms: 4200 })
         })
         .catch(() => creditMissToast())
     },
@@ -205,6 +206,8 @@ export async function restoreGemPurchases() {
       try {
         const out = await creditPurchase(purchase)
         gems += out.gems || 0
+        // Paid but not credited (receipt, pending, credit): not "nothing to restore".
+        if (out.miss && !['other', 'test', 'refunded'].includes(out.miss)) failed += 1
       } catch {
         // The next restore or connect tries it again.
         failed += 1

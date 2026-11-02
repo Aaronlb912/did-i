@@ -147,7 +147,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
                 disabled={!cell.state}
                 onPress={() => openDay(cell)}
                 accessibilityRole={cell.state ? 'button' : undefined}
-                accessibilityLabel={cell.state ? `${formatBoardDate(cell.iso)}, ${t(stateWord(cell))}` : undefined}
+                accessibilityLabel={cell.state ? `${formatBoardDate(cell.iso)}, ${t(stateWord(cell))}` : formatBoardDate(cell.iso)}
               >
                 <View
                   style={[

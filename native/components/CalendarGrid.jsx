@@ -75,7 +75,13 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
   }, [tagId])
 
   const shelf = boards.length ? boards : [book]
-  const pack = monthStripNights(shelf, clock, tagId, monthShift)
+  const dayIso = boardDate(clock, book?.dayFoldHour)
+  // Up to 31 day walks: once per shelf, day, folder and month, not on every tap.
+  const pack = useMemo(
+    () => monthStripNights(shelf, clock, tagId, monthShift),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [boards, book, dayIso, tagId, monthShift, awayKey()],
+  )
   const locale = dateLocale(prefs.locale)
   const monthLabel = pack.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
   const dows = dowMarks(prefs.locale)
