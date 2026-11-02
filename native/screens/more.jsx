@@ -1280,15 +1280,32 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
           />
           {showParked
             ? parked.map((item, at) => (
+                <View key={item.id}>
                 <SetRow
-                  key={item.id}
                   colors={colors}
                   icon="folder"
                   label={item.title}
                   chevron
-                  last={at === parked.length - 1}
+                  last={at === parked.length - 1 && item.id !== book?.id}
                   onPress={() => onSelect?.(item.id)}
                 />
+                {/* A parked folder picked here can be renamed too. */}
+                {item.id === book?.id ? (
+                  <View style={styles.tagName}>
+                  <Field
+                    colors={colors}
+                    label={t('boards.name')}
+                    value={titleDraft}
+                    onChangeText={setTitleDraft}
+                    onSubmitEditing={saveName}
+                    returnKeyType="done"
+                    maxLength={60}
+                    autoCapitalize="words"
+                  />
+                  <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={saveName} />
+                  </View>
+                ) : null}
+                </View>
               ))
             : null}
         </SetCard>
