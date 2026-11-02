@@ -550,7 +550,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       {account.user ? (
         <View style={styles.out}>
-          <KeyButton colors={colors} label={t('account.out')} onPress={() => signOut()} />
+          <KeyButton colors={colors} label={t('account.out')} onPress={() => setSure({ title: t('account.outSureTitle'), body: t('account.outSureBody'), yes: t('account.out'), go: () => signOut() })} />
           <Text style={[styles.who, { color: colors.inkDim }]} numberOfLines={1}>
             {t('account.who')} {account.email}
           </Text>
