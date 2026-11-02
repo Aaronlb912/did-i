@@ -1189,7 +1189,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             <Pressable
               onPress={() => goHash('/stats')}
               accessibilityRole="button"
-              accessibilityHint={t('stats.title')}
+              accessibilityLabel={`${t(stack.streak === 1 ? 'tonight.streakOne' : 'tonight.streakMany', { n: stack.streak })}, ${t('stats.title')}`}
               style={styles.streakTap}
             >
               <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
@@ -1219,7 +1219,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsToday', { n: dayCoins, total: purse.coins })}</Text>
           ) : null}
           {wish ? (
-            <Pressable accessibilityRole="button" accessibilityHint={t('shop.wishTitle')} onPress={() => goHash('/kit', { id: 'wish' })} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
+            <Pressable accessibilityRole="button" accessibilityLabel={`${t(wish.key, { n: wish.n, name: t(wish.nameKey) })}, ${t('shop.wishTitle')}`} onPress={() => goHash('/kit', { id: 'wish' })} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
                 {t(wish.key, { n: wish.n, name: t(wish.nameKey) })} <Text style={{ color: colors.on }}>›</Text>
               </Text>
