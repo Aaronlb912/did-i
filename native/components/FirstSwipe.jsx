@@ -36,6 +36,12 @@ export function FirstSwipe({ colors }) {
   const rail = useSharedValue(0)
   const veil = useSharedValue(1)
 
+  // Reduced motion skips the swipe, but it still counts as seen, or the tour
+  // (TourHost waits on openingSeen) never starts.
+  useEffect(() => {
+    if (reduce && firstSwipeDue()) writePrefs({ openingSeen: true })
+  }, [reduce])
+
   useEffect(() => {
     if (gone) return
     // Marked at the start, so closing the app mid-way does not replay it.

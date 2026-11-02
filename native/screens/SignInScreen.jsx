@@ -108,7 +108,7 @@ export function SignInScreen({ onDone }) {
         ) : null}
 
         {auth.miss && (auth.missSource === 'email' || !auth.missSource) ? (
-          <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text>
+          <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text>
         ) : null}
 
         {auth.step === 'start' ? (
