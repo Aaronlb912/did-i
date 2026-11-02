@@ -85,6 +85,7 @@ import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
 import { forgetAccountCaches, forgetPendingLinks } from '../src/lib/account-cache.js'
 import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
+import { lampRate } from '../src/lib/lamp-record.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor, sunRayLayout } from '../src/lib/cheer-pops.js'
 import {
@@ -6173,10 +6174,12 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
   const shelf = {
     boards: [
       {
+        title: 'Home',
         lamps: [{ id: 'l1', question: 'drink water, lots', short: 'Water' }, { id: 'o1', question: 'Call mom', onceOn: '2026-10-04' }],
         answers: [
           { lampId: 'l1', periodKey: '2026-10-02', status: 'skip', note: 'he said "no"' },
           { lampId: 'l1', periodKey: '2026-10-01', status: 'yes', note: '', amount: 5 },
+          { lampId: 'l1', periodKey: '2026-10-01', status: 'skip' },
           { lampId: 'gone', periodKey: '2026-10-03', status: 'late' },
           { lampId: 'o1', periodKey: 'once:o1', status: 'yes' },
         ],
@@ -6185,13 +6188,20 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
   }
   assert.equal(
     answersCsv(shelf),
-    'date,question,short name,answer,note,amount,unit\r\n' +
-      '2026-10-01,"drink water, lots",Water,did,,5,\r\n' +
-      '2026-10-02,"drink water, lots",Water,not yet,"he said ""no""",,\r\n' +
-      '2026-10-03,,,late,,,\r\n' +
-      '2026-10-04,Call mom,,did,,,\r\n',
+    'date,question,short name,answer,note,amount,unit,folder\r\n' +
+      '2026-10-01,"drink water, lots",Water,did,,5,,Home\r\n' +
+      '2026-10-02,"drink water, lots",Water,not yet,"he said ""no""",,,Home\r\n' +
+      '2026-10-03,,,late,,,,Home\r\n' +
+      '2026-10-04,Call mom,,did,,,,Home\r\n',
   )
-  assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount,unit\r\n')
+  assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount,unit,folder\r\n')
+})
+
+test('lampRate is a percent of due days, hidden under 3', () => {
+  assert.equal(lampRate({ did: 1, asked: 2 }), null)
+  assert.equal(lampRate({ did: 2, asked: 3 }), 67)
+  assert.equal(lampRate({ did: 30, asked: 30 }), 100)
+  assert.equal(lampRate(null), null)
 })
 
 test('every t() key the app uses is in English', () => {

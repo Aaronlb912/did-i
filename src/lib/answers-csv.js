@@ -14,7 +14,11 @@ export function answersCsv(shelf) {
   const rows = []
   for (const book of shelf?.boards || []) {
     const lamps = new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
+    const seen = new Set()
     for (const answer of book.answers || []) {
+      const dupe = `${answer.lampId}|${answer.periodKey}`
+      if (answer.periodKey && seen.has(dupe)) continue
+      seen.add(dupe)
       const lamp = lamps.get(answer.lampId)
       rows.push([
         // A once question's key is its id, not a date: write its day.
@@ -25,10 +29,11 @@ export function answersCsv(shelf) {
         answer.note || '',
         typeof answer.amount === 'number' ? answer.amount : '',
         typeof answer.amount === 'number' ? String(lamp?.amountUnit || '') : '',
+        book.title || '',
       ])
     }
   }
   rows.sort((a, b) => a[0].localeCompare(b[0]))
-  const head = ['date', 'question', 'short name', 'answer', 'note', 'amount', 'unit']
+  const head = ['date', 'question', 'short name', 'answer', 'note', 'amount', 'unit', 'folder']
   return [head, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
 }

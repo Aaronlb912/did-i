@@ -126,6 +126,12 @@ export function lampRecord(book, lamp, dateIso, days = 30) {
   return { streak, did, asked: keys.length, tonight, due: !lamp.archived && isDueOn(lamp, dateIso) }
 }
 
+// Percent of due days Did in a lampRecord, or null under 3 due days.
+export function lampRate(record) {
+  if (!record || record.asked < 3) return null
+  return Math.round((record.did / record.asked) * 100)
+}
+
 // One question's last few weeks, oldest first: how many due nights each week
 // were DID. Tonight only counts once it is answered. Once and monthly
 // questions have no weekly shape, so they get none.
