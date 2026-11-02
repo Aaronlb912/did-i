@@ -180,6 +180,11 @@ export function NightWeek({ nights, colors, onNight }) {
   )
 }
 
+// Days 2, 3 and 7 in a row get their own title; every other day keeps the usual one.
+export function doneTitleKey(streak) {
+  return { 2: 'tonight.doneDay2', 3: 'tonight.doneDay3', 7: 'tonight.doneDay7' }[streak] || ''
+}
+
 /** "Tomorrow: 4 questions from 8:00 PM", so done has a next step. */
 // streak: today's streak when the first week is still being built (else 0).
 export function tomorrowLine({ count, from, next }, streak = 0) {

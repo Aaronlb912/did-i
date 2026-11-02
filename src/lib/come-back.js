@@ -28,3 +28,16 @@ export function cameBack(shelf, dateIso) {
   const days = daysSinceLastAnswer(shelf, dateIso)
   return days >= COME_BACK_DAYS && days !== Infinity
 }
+
+// Days since the oldest dated answer, 0 for a shelf with none yet. Gates first-week rows.
+export function daysSinceFirstAnswer(shelf, dateIso) {
+  if (!DATE_KEY.test(String(dateIso || ''))) return 0
+  let oldest = ''
+  for (const item of shelf || []) {
+    for (const answer of item?.answers || []) {
+      const key = String(answer?.periodKey || '')
+      if (DATE_KEY.test(key) && (!oldest || key < oldest)) oldest = key
+    }
+  }
+  return oldest ? dayNumber(dateIso) - dayNumber(oldest) : 0
+}
