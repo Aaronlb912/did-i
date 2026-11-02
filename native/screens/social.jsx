@@ -2673,6 +2673,17 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     answer(row || { id: fromPush[2] }, fromPush[1] === 'keep')
   }, [rows, ready, loaded, route?.id, miss])
 
+  // A cheer plays once when its row shows up, not on Thanks.
+  const played = useRef(new Set())
+  useEffect(() => {
+    if (!ready) return
+    for (const row of rows) {
+      if (row.kind !== 'cheer' || !row.cheer_id || played.current.has(row.id)) continue
+      played.current.add(row.id)
+      fireCheer(row.cheer_id, 1)
+    }
+  }, [rows, ready])
+
   // One answer at a time per row, so a double tap cannot keep it twice.
   const answering = useRef(new Set())
   const [sendingId, setSendingId] = useState(null)
@@ -2700,7 +2711,6 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       if (keep && row.kind === 'todo' && onKeep && keptButMissing(res, row.id)) onKeep(row)
       return load()
     }
-    if (keep && row.kind === 'cheer' && row.cheer_id) fireCheer(row.cheer_id, 1)
     if (keep && row.kind === 'todo' && onKeep) onKeep(row)
     if (row.kind === 'todo') confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
     return load()
@@ -2763,7 +2773,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     <ScreenShell title={t('inbox.title')} colors={colors} onRefresh={load}>
       <OfflineLine colors={colors} />
       <WeAsks colors={colors} />
-      <Meta colors={colors}>{t('inbox.hintAll')}</Meta>
+      {rows.some((row) => row.kind === 'todo') ? <Meta colors={colors}>{t('inbox.hintAll')}</Meta> : null}
       {/* Above the cards so a failed Keep is seen on a long inbox. */}
       <Miss colors={colors} onRetry={load}>{miss}</Miss>
       {rows.map((row) => (
