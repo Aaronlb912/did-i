@@ -9410,7 +9410,7 @@ test('a friend request and its yes reach the other phone live, not on the 5 minu
   assert.match(read('native/screens/FamilyDetail.jsx'), /useLiveReload\(\['family', 'familyInfo'\], load\)/)
   assert.ok(read('native/screens/FamilyDetail.jsx').includes('shownLamps.map((lamp)'), 'a question for someone who left the family is not shown as waiting forever')
   assert.ok(read('native/AppShell.jsx').includes('.finally(() => syncTonightWidget(readShelf())'), 'the widget is rebuilt on return even when the ping check fails')
-  assert.equal(read('native/screens/more.jsx').split('const clock = now || today').length, 3, 'Calendar and Week turn the day over while open')
+  assert.equal(read('native/screens/more.jsx').split('const clock = now || today').length, 6, 'Calendar, Week, Marks, Stats and Streaks turn the day over while open')
   const order = read('scripts/apply-all-sql.mjs')
   assert.ok(order.indexOf('social-live.sql') < order.indexOf('live-more.sql') && order.indexOf('live-more.sql') < order.indexOf('drop-tonight.sql'))
 })

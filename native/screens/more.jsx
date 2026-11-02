@@ -424,7 +424,9 @@ export function LaterScreen({ book, now }) {
 export function MarksScreen({ book, boards = [], now }) {
   const colors = useHallColors()
   const gentle = usePrefs().gentle === true
-  const clock = now || new Date()
+  // Ticks at midnight, so a screen left open moves to the new day.
+  const today = useDayNow()
+  const clock = now || today
   const dateIso = boardDate(clock, book?.dayFoldHour)
   // Best ever, across every folder. hallHeat is a 0 to 5 level, not a streak, and read as a wrong number here.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -586,7 +588,9 @@ function FolderScope({ colors, boards, tagId, path }) {
 export function StatsScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const gentle = usePrefs().gentle === true
-  const clock = now || new Date()
+  // Ticks at midnight, so a screen left open moves to the new day.
+  const today = useDayNow()
+  const clock = now || today
   const dateIso = boardDate(clock, book?.dayFoldHour)
   // Long walks (streak, freezes): once per day, folder or Away change, not every render.
   const { counts, freezesHeld } = useMemo(
@@ -1022,7 +1026,9 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
 export function StreaksScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const gentle = usePrefs().gentle === true
-  const clock = now || new Date()
+  // Ticks at midnight, so a screen left open moves to the new day.
+  const today = useDayNow()
+  const clock = now || today
   // Multi-night walks: once per shelf, folder and minute, not every render.
   const minute = Math.floor(clock.getTime() / 60000)
   const { books, heat, freezes, rows } = useMemo(() => {
@@ -1045,7 +1051,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const longest = rows.length ? rows[0].n : 0
   const breakNight = useMemo(
     () => (longest > heat ? streakBreak(inView(book, boards), clock, tagId, longest + 1) : null),
-    [book, boards, tagId, longest, heat, awayKey()], // eslint-disable-line react-hooks/exhaustive-deps
+    [book, boards, tagId, longest, heat, awayKey(), boardDate(clock)], // eslint-disable-line react-hooks/exhaustive-deps
   )
   const breakLine = breakNight
     ? breakNight.question
