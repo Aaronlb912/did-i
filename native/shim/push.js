@@ -151,7 +151,7 @@ async function bindResponseListener(handlers = {}) {
       const sendId = data.sendId ? String(data.sendId) : ''
       const action = String(response?.actionIdentifier || '')
       const answer = notificationAnswer(response)
-      // The buttons do not open the app, so the reminder is cleared here.
+      // The buttons answer without leaving the reminder in the tray.
       if (answer?.noteId) Notifications.dismissNotificationAsync?.(answer.noteId)?.catch?.(() => {})
       if (sendId && (action === 'keep' || action === 'pass') && typeof handlers.onSend === 'function') {
         handlers.onSend(sendId, action === 'keep')
