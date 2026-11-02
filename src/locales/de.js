@@ -2756,7 +2756,7 @@ export const de = {
   'settings.tonightCap': "Heute und Erinnerungen",
   'settings.helpPrivacy': 'Hilfe und Datenschutz',
   'settings.more': 'Mehr',
-  'settings.moreSub': 'Kopien deiner Daten, Absturzberichte, Rechtliches, Version',
+  'settings.moreSub': 'Kopien deiner Daten, Rechtliches, Version',
   'a11y.answerNight': '{date} beantworten',
   'a11y.preview': '{name} ansehen',
   'a11y.swipeHint': 'Nach rechts wischen für Did, nach links für Noch nicht. Oder die Aktionen nutzen.',

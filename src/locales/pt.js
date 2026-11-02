@@ -2743,7 +2743,7 @@ export const pt = {
   'settings.tonightCap': "Hoje e lembretes",
   'settings.helpPrivacy': 'Ajuda e privacidade',
   'settings.more': 'Mais',
-  'settings.moreSub': 'Cópias dos seus dados, relatórios de falha, termos legais, versão',
+  'settings.moreSub': 'Cópias dos seus dados, termos legais, versão',
   'a11y.answerNight': 'Responder {date}',
   'a11y.preview': 'Ver {name}',
   'a11y.swipeHint': 'Deslize para a direita para Did, para a esquerda para Ainda não. Ou use as ações.',

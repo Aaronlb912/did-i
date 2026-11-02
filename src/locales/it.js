@@ -2743,7 +2743,7 @@ export const it = {
   'settings.tonightCap': "Oggi e promemoria",
   'settings.helpPrivacy': 'Aiuto e privacy',
   'settings.more': 'Altro',
-  'settings.moreSub': 'Copie dei tuoi dati, segnalazioni di crash, note legali, versione',
+  'settings.moreSub': 'Copie dei tuoi dati, note legali, versione',
   'a11y.answerNight': 'Rispondi per {date}',
   'a11y.preview': 'Anteprima di {name}',
   'a11y.swipeHint': 'Scorri a destra per Did, a sinistra per Non ancora. Oppure usa le azioni.',

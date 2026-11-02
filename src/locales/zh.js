@@ -2698,7 +2698,7 @@ export const zh = {
   'settings.tonightCap': "今天和提醒",
   'settings.helpPrivacy': '帮助和隐私',
   'settings.more': '更多',
-  'settings.moreSub': '数据副本、崩溃报告、法律信息、版本',
+  'settings.moreSub': '数据副本、法律信息、版本',
   'a11y.answerNight': '回答 {date}',
   'a11y.preview': '预览 {name}',
   'a11y.swipeHint': '向右滑动表示 Did，向左滑动表示 还没。也可以使用操作菜单。',

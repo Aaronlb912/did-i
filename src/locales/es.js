@@ -2747,7 +2747,7 @@ export const es = {
   'settings.tonightCap': "Hoy y recordatorios",
   'settings.helpPrivacy': 'Ayuda y privacidad',
   'settings.more': 'Más',
-  'settings.moreSub': 'Copias de tus datos, informes de fallos, legal, versión',
+  'settings.moreSub': 'Copias de tus datos, legal, versión',
   'a11y.answerNight': 'Responder {date}',
   'a11y.preview': 'Ver {name}',
   'a11y.swipeHint': 'Desliza a la derecha para Did, a la izquierda para Aún no. O usa las acciones.',
