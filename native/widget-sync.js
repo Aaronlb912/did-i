@@ -11,6 +11,7 @@ import { readShelf } from '../src/lib/board-shelf.js'
 import { addDaysIso, boardDate } from '../src/lib/recurrence.js'
 import { recordAppError } from '../src/lib/app-errors.js'
 import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
+import { buildGridWidgetProps, GRID_WIDGET_NAME } from '../src/lib/widget-grid.js'
 import { sendWatchCards } from './watch-sync.js'
 import { readAccountUserId } from '../src/lib/session-id.js'
 
@@ -153,6 +154,7 @@ export async function syncTonightWidget(shelf) {
   const props = enrichTonightWidgetProps(shelf, built)
   lastTonightKey = tonightWidgetKey(props)
   writeWidgetTonightProps(props)
+  syncGridWidget(shelf).catch(() => {})
   if (Platform.OS === 'ios') {
     // Same cards to the Apple Watch, when one is paired (native/watch-sync.js).
     sendWatchCards(props, shelf)
@@ -271,6 +273,70 @@ export async function syncTogetherWidget(people = readTogetherPeople()) {
       })
     } catch (error) {
       console.warn('together widget android update', error?.message || error)
+    }
+  }
+}
+
+let gridApiPromise = null
+
+function gridWidgetApi() {
+  if (!gridApiPromise) {
+    gridApiPromise = import('../widgets/DidIGridWidget.tsx')
+      .then((mod) => {
+        const api = mod?.default ?? mod
+        if (!api || typeof api.updateSnapshot !== 'function') return null
+        return api
+      })
+      .catch((error) => {
+        gridApiPromise = null
+        throw error
+      })
+  }
+  return gridApiPromise
+}
+
+export function enrichGridWidgetProps(shelf, props) {
+  return enrichTogetherWidgetProps(shelf, props)
+}
+
+// The Grid widget: last 12 weeks, shelf-wide. Redrawn wherever the Today widget is.
+export async function syncGridWidget(shelf = readShelf()) {
+  if (Platform.OS === 'web') return
+  if (!nativeWidgetsEnabled()) return
+  if (Platform.OS === 'ios' && !nativeBridgeReady()) return
+  const props = enrichGridWidgetProps(shelf, buildGridWidgetProps(shelf))
+  if (Platform.OS === 'ios') {
+    try {
+      const api = await gridWidgetApi()
+      if (!api) return
+      // A second entry at midnight moves the grid on without the app open.
+      const midnight = new Date()
+      midnight.setHours(24, 0, 0, 0)
+      const tomorrow = enrichGridWidgetProps(shelf, buildGridWidgetProps(shelf, new Date(midnight.getTime() + 60000)))
+      if (api.updateTimeline) {
+        await api.updateTimeline([
+          { date: new Date(), props: plainProps(props) },
+          { date: midnight, props: plainProps(tomorrow) },
+        ])
+      } else await api.updateSnapshot(plainProps(props))
+    } catch (error) {
+      warnWidget('grid widget updateSnapshot', error)
+    }
+    return
+  }
+  if (Platform.OS === 'android') {
+    try {
+      const widgetMod = await import('react-native-android-widget')
+      const requestWidgetUpdate = widgetMod?.requestWidgetUpdate
+      if (!requestWidgetUpdate) return
+      const { renderDidIGridAndroidWidget } = await import('../widgets/android/DidIGridAndroidWidget.jsx')
+      await requestWidgetUpdate({
+        widgetName: GRID_WIDGET_NAME,
+        renderWidget: (info) => renderDidIGridAndroidWidget(props, info),
+        widgetNotFound: () => {},
+      })
+    } catch (error) {
+      console.warn('grid widget android update', error?.message || error)
     }
   }
 }

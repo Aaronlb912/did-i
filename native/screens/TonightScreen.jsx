@@ -67,6 +67,7 @@ import { flyBackNext } from '../components/SwipeCard.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { DropLine } from '../components/DropLine.jsx'
 import { RateCard } from '../components/RateCard.jsx'
+import { askReviewAtStreak } from '../streak-review.js'
 import { RemindersRow } from '../components/RemindersRow.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
@@ -738,6 +739,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     const timer = setTimeout(stack.cheered, CELEBRATE_MS)
     return () => clearTimeout(timer)
   }, [stack.cheer, stack.cheered])
+  // A Did that clears the day at a shelf streak of 7: the review sheet, after the cheer.
+  useEffect(() => {
+    if (!stack.cheer || tagId || Platform.OS === 'web' || !(stack.cheer.to >= 7)) return undefined
+    const timer = setTimeout(() => askReviewAtStreak(stack.cheer.to), CELEBRATE_MS + 600)
+    return () => clearTimeout(timer)
+  }, [stack.cheer, tagId])
   // The folder and topic filters apply to Did we cards the same way.
   const folderTitles = tagId
     ? (boards || [])

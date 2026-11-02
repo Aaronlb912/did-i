@@ -39,7 +39,7 @@ export function routeFromDeepLink(url) {
     // didi://open/friends and the rest from an app icon shortcut.
     if (host === 'open' || path.startsWith('open/')) {
       const where = path.replace(/^open\/?/, '')
-      const to = { tonight: '/tonight', add: '/add', friends: '/people', scan: '/scan' }[where]
+      const to = { tonight: '/tonight', add: '/add', friends: '/people', scan: '/scan', calendar: '/calendar' }[where]
       if (to) return { path: to }
     }
     // didi://add?q=lock+the+back+door from Google Assistant, a Siri Shortcut or the app shortcut.

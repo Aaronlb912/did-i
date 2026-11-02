@@ -1,6 +1,7 @@
 <resources>
   <string name="widget_diditonight_description">Le domande di oggi della tua cartella. Impostazioni → Widget.</string>
   <string name="widget_diditogether_description">I tuoi amici e la tua famiglia, e chi ha finito oggi.</string>
+  <string name="widget_didigrid_description">Le ultime 12 settimane di giorni Did, a colpo d’occhio.</string>
   <string name="shortcut_add_short">Aggiungi domanda</string>
   <string name="shortcut_add_long">Aggiungi una domanda di Did I</string>
 </resources>

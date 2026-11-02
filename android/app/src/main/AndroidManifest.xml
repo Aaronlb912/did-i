@@ -83,6 +83,13 @@
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_diditogether"/>
     </receiver>
+    <receiver android:name=".widget.DidIGrid" android:exported="true" android:label="Did I calendar">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="com.aaronbryant.didi.WIDGET_CLICK"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_didigrid"/>
+    </receiver>
     <receiver android:name=".widget.WidgetTapReceiver" android:exported="false">
       <intent-filter>
         <action android:name="com.aaronbryant.didi.WIDGET_TAP"/>

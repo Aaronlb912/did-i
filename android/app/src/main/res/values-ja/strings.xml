@@ -1,6 +1,7 @@
 <resources>
   <string name="widget_diditonight_description">フォルダの今日の質問。設定 → ウィジェット。</string>
   <string name="widget_diditogether_description">友達と家族、今日終わった人。</string>
+  <string name="widget_didigrid_description">直近12週間の Did の日を一目で。</string>
   <string name="shortcut_add_short">質問を追加</string>
   <string name="shortcut_add_long">Did I の質問を追加</string>
 </resources>

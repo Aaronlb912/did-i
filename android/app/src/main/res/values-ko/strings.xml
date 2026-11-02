@@ -1,6 +1,7 @@
 <resources>
   <string name="widget_diditonight_description">폴더의 오늘 질문. 설정 → 위젯.</string>
   <string name="widget_diditogether_description">친구와 가족, 그리고 오늘 끝낸 사람.</string>
+  <string name="widget_didigrid_description">최근 12주 동안 Did 한 날을 한눈에.</string>
   <string name="shortcut_add_short">질문 추가</string>
   <string name="shortcut_add_long">Did I 질문 추가</string>
 </resources>
