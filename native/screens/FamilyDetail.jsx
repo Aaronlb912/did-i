@@ -40,7 +40,7 @@ import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/
 import { pickCheer } from '../components/pickCheer.jsx'
 import { AddPill, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
-import { ChipRow, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
+import { ChipRow, DidButton, Field, KeyButton, LateMeta, Meta, OfflineLine } from '../components/ui.jsx'
 import { Reveal } from '../lib/motion.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { PickSheet } from '../components/PickSheet.jsx'
@@ -352,6 +352,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 
   return (
     <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
+      <OfflineLine colors={colors} />
       <View style={[styles.head, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, styles.titleText, { color: colors.ink }]}>{fam.name}</Text>

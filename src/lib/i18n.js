@@ -63,6 +63,8 @@ export function hasLocaleKey(key) {
 export function tMiss(code, vars) {
   if (!code) return ''
   if (hasLocaleKey(code)) return t(code, vars)
+  // A bare code with no key ('off', 'out') would show as that word.
+  if (/^[a-z_]+$/i.test(code)) return t('people.reach')
   return code
 }
 
