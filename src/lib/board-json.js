@@ -1,7 +1,7 @@
 import { t } from './i18n.js'
 import { readPrefs } from './prefs.js'
 import { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
-import { WAS_KEEP, addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
+import { trimWas, addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
 import { capSkips } from './travel.js'
 
@@ -16,7 +16,7 @@ const WAS_CADENCE = new Set(['daily', 'weekly', 'monthly', 'every_n'])
 
 function cleanWas(was) {
   if (!Array.isArray(was)) return []
-  return was
+  return trimWas(was
     .filter((old) => old && ISO_DAY.test(String(old.until)) && WAS_CADENCE.has(old.cadence))
     .map((old) => ({
       until: String(old.until),
@@ -27,8 +27,7 @@ function cleanWas(was) {
       everyNAnchor: ISO_DAY.test(String(old.everyNAnchor)) ? String(old.everyNAnchor) : '',
       ...(Number.isInteger(old.perWeek) && old.perWeek >= 1 && old.perWeek <= 6 ? { perWeek: old.perWeek } : {}),
     }))
-    .sort((x, y) => (x.until < y.until ? -1 : 1))
-    .slice(-WAS_KEEP)
+    .sort((x, y) => (x.until < y.until ? -1 : 1)))
 }
 
 export function newLampId() {

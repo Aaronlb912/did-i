@@ -1076,6 +1076,7 @@ const SCHEDULE_MISSES = new Set([
   'hang.miss.everyN',
   'hang.miss.everyNStart',
   'hang.miss.everyDays',
+  'hang.miss.dayPassed',
 ])
 // Every so often: about a week, two weeks, a month, or any number of days.
 const EVERY_PILLS = [

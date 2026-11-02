@@ -129,6 +129,11 @@ export function periodPassed(lamp, periodKey, todayIso) {
 // changing Mondays to daily does not make every past day a miss.
 // was is oldest first; until is the first day of the next schedule.
 export const WAS_KEEP = 4
+// Over the cap, keep the oldest schedule (it covers the longest stretch of
+// past days) and the newest ones; a short middle stretch reads one edit later.
+export function trimWas(was) {
+  return was.length <= WAS_KEEP ? was : [was[0], ...was.slice(-(WAS_KEEP - 1))]
+}
 const WAS_CADENCES = new Set(['daily', 'weekly', 'monthly', 'every_n'])
 const WAS_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor', 'perWeek']
 
@@ -158,7 +163,7 @@ export function keepPastSchedule(old, next, todayIso, answeredToday = false) {
   const entry = { until: reshaped && isDueOn({ ...old, archived: false }, todayIso) ? addDaysIso(todayIso, 1) : todayIso }
   for (const key of WAS_FIELDS) entry[key] = old[key] ?? ''
   if (old.cadence === 'once') entry.cadence = 'every'
-  return [...was, entry].slice(-WAS_KEEP)
+  return trimWas([...was, entry])
 }
 
 // A day inside a pause since resumed ([from, until) pairs on lamp.pauses).
