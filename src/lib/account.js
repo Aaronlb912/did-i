@@ -239,7 +239,7 @@ export async function deleteAccount() {
   await removeAvatar().catch(() => {})
   // The account's keys went with it (cascade); take this phone's copy too.
   await endAnswerKeys(null)
-  await db.auth.signOut()
+  await db.auth.signOut({ scope: 'local' })
   saveTogetherPeople([])
   forgetAccountCaches()
   forgetPendingLinks()

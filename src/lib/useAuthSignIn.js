@@ -61,6 +61,7 @@ export function useAuthSignIn({ onSignedIn }) {
   }, [finish])
 
   async function askEmail() {
+    if (busy) return
     if (!looksLikeEmail(email)) {
       setMiss(String(email || '').trim() ? t('account.missEmail') : t('account.needEmail'))
       setMissSource('email')
@@ -81,6 +82,7 @@ export function useAuthSignIn({ onSignedIn }) {
   }
 
   async function openEmail() {
+    if (busy) return
     setBusy(true)
     const { miss: bad } = await checkCode(email, code)
     setBusy(false)
@@ -94,6 +96,7 @@ export function useAuthSignIn({ onSignedIn }) {
   }
 
   async function openReviewer() {
+    if (busy) return
     setBusy(true)
     const { miss: bad } = await signInReviewer(email, password)
     setBusy(false)
