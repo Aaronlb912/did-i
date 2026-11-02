@@ -2034,6 +2034,7 @@ export const ko = {
   'familyJoin.members': '{n}명이 있어요.',
   'familyJoin.membersOne': '1명이 있어요.',
   'familyJoin.confirm': '{name}에 참여할까요?',
+  'familyJoin.asKid': '아이로 참여해요. 부모가 나를 부모로 바꿀 수 있어요.',
   'familyJoin.already': '이미 {name}에 있어요.',
   'familyJoin.open': '열기',
   'familyJoin.dontJoin': '참여 안 함',

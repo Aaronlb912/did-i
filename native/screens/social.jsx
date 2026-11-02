@@ -506,16 +506,30 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
   }, [scanned])
   async function look(typed = code) {
     setBusy(true)
-    const result = await lookUpFamily(typed)
-    setBusy(false)
+    let result
+    try {
+      result = await lookUpFamily(typed)
+    } catch {
+      result = { miss: 'off' }
+    } finally {
+      setBusy(false)
+    }
     if (result.miss) return setMiss(familyCodeMiss(result.miss))
-    setMiss('')
+    // A full family says so before Join, not after.
+    setMiss(!result.already && result.members >= 20 ? t('people.familyFull') : '')
     return setFound(result)
   }
   async function join() {
     setBusy(true)
-    const { miss: why, id } = await joinFamily(found.code)
-    setBusy(false)
+    let out
+    try {
+      out = await joinFamily(found.code)
+    } catch {
+      out = { miss: 'off' }
+    } finally {
+      setBusy(false)
+    }
+    const { miss: why, id } = out
     if (why) return setMiss(familyCodeMiss(why))
     setCode('')
     setMiss('')
@@ -535,13 +549,14 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
             : [
                 found.members === 1 ? t('familyJoin.membersOne') : t('familyJoin.members', { n: found.members }),
                 t('familyJoin.confirm', { name }),
+                t('familyJoin.asKid'),
               ].join(' ')}
         </Text>
         <Miss colors={colors}>{miss}</Miss>
         {found.already ? (
           <DidButton colors={colors} small label={t('familyJoin.open')} onPress={() => goHash('/family', { id: found.id })} />
         ) : (
-          <DidButton colors={colors} small label={t('people.join')} disabled={busy} onPress={() => once('join-family', join)} />
+          <DidButton colors={colors} small label={t('people.join')} disabled={busy || found.members >= 20} onPress={() => once('join-family', join)} />
         )}
         <KeyButton
           colors={colors}

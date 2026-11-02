@@ -2032,6 +2032,7 @@ export const ja = {
   'familyJoin.members': '{n}人が参加しています。',
   'familyJoin.membersOne': '1人が参加しています。',
   'familyJoin.confirm': '{name} に参加しますか？',
+  'familyJoin.asKid': '子どもとして参加します。親があなたを親にできます。',
   'familyJoin.already': 'もう {name} に参加しています。',
   'familyJoin.open': '開く',
   'familyJoin.dontJoin': '参加しない',
