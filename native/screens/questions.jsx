@@ -1501,8 +1501,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
   useEffect(() => () => clearTimeout(leave.current), [])
 
-  const [startSnap] = useState(() => JSON.stringify([draft, hang.tagTitle]))
-  const dirty = JSON.stringify([draft, hang.tagTitle]) !== startSnap
+  // Pause saves at once, so it is not an unsaved change.
+  const [startSnap] = useState(() => JSON.stringify([{ ...draft, archived: false }, hang.tagTitle]))
+  const dirty = JSON.stringify([{ ...draft, archived: false }, hang.tagTitle]) !== startSnap
   const leaveRef = useRef(null)
   // Set once Add has saved or Cancel was chosen: the back that leaves is ours, not one to ask about.
   const leaving = useRef(false)

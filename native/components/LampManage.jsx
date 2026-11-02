@@ -128,7 +128,7 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
       onGo: () => {
         publishSheet(null)
         // Like Select's delete, it can be taken back for a few seconds.
-        const before = book
+        const before = liveBook(book) || book
         const after = takeDown(liveBook(book) || book, lamp)
         const now = Date.now()
         onChange(after)
