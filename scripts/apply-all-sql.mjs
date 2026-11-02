@@ -101,6 +101,7 @@ const files = [
   'supabase/signin-carry.sql',
   'supabase/gift-once.sql',
   'supabase/we-nights-done.sql',
+  'supabase/cheer-once.sql',
   'supabase/drop-tonight.sql',
 ]
 
