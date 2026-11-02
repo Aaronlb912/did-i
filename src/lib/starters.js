@@ -108,9 +108,11 @@ export const PACKS = [
   },
 ]
 
-// Each pack in the app's language, with only the questions this tag lacks.
+// Each pack in the app's language, with only the questions this folder lacks.
+// An archived question counts as there: a pack never makes a second copy
+// beside it with a fresh streak.
 export function packList(book) {
-  const hung = (book?.lamps || []).filter((lamp) => !lamp.archived)
+  const hung = book?.lamps || []
   return PACKS.map((pack) => ({
     id: pack.id,
     title: t(`pack.${pack.id}`),
@@ -130,6 +132,8 @@ export function addPack(book, pack, now = new Date()) {
   const ids = []
   for (const item of pack?.items || []) {
     const { idea, ...fields } = item
+    // The list may be from before a sync; skip what is already there now.
+    if (idea && ideaTaken(next.lamps || [], idea)) continue
     const lamp = { ...blankLamp(now), ...fields, ...(idea ? { idea } : {}) }
     ids.push(lamp.id)
     next = hangInto(next, lamp)
