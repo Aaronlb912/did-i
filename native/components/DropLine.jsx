@@ -28,6 +28,13 @@ function itemName({ type, item }) {
   return t(key)
 }
 
+/** True when a drop line would show now. */
+export function dropLineUp() {
+  const today = (typeof __DEV__ !== 'undefined' && __DEV__ && read(TEST_KEY)) || boardDate(new Date())
+  const drop = freshDrop(today, { frames: true })
+  return Boolean(drop && drop.items.length && read(SEEN_KEY) !== drop.date)
+}
+
 // One line on Home the day a shop drop goes live, and the day after.
 export function DropLine({ colors }) {
   const today = (typeof __DEV__ !== 'undefined' && __DEV__ && read(TEST_KEY)) || boardDate(new Date())

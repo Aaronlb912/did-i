@@ -65,7 +65,7 @@ import { StarterPicks } from '../components/StarterPicks.jsx'
 import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { flyBackNext } from '../components/SwipeCard.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
-import { DropLine } from '../components/DropLine.jsx'
+import { DropLine, dropLineUp } from '../components/DropLine.jsx'
 import { RateCard } from '../components/RateCard.jsx'
 import { askReviewAtStreak } from '../streak-review.js'
 import { RemindersRow } from '../components/RemindersRow.jsx'
@@ -774,8 +774,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // Did we takes the card's place.
   const famBusy = useRef(new Set())
   const familyOpen = skippedFamilyRows(family.rows, peopleGone)
-  // Family rows first: leaving your own last one rests the stack.
-  const stillOpenRows = [...familyOpen, ...stack.stillOpen]
+  // Your own first; people asks follow.
+  const stillOpenRows = [...stack.stillOpen, ...familyOpen]
   // Not yets come back as cards only after Look again. Until then the stack
   // rests on the Not yet card, so Did we and people cards are not held back.
   const [lookAgain, setLookAgain] = useState(false)
@@ -982,7 +982,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   )
   // The first time a grace card shows, say what the grace period is.
   useEffect(() => {
-    if (!graceShowing || graceExplained()) return
+    if (!graceShowing || graceExplained() || sheetIsUp()) return
     markGraceExplained()
     publishSheet({
       title: t('grace.title'),
@@ -992,13 +992,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       onClose: () => publishSheet(null),
     })
   }, [graceShowing, colors])
+  const reminderRowUp = !stack.empty && Platform.OS !== 'web' && Boolean(onAskPings) && (pingLabel === 'pings.state.ask' || pingLabel === 'pings.state.blocked')
+  const extraRow = stack.cheer && !pickKey ? '' : reminderRowUp ? 'reminders' : stack.nightDone ? (dropLineUp() ? 'drop' : 'rate') : ''
   // First open of a new week: last week's recap, once. Sunday's done card counts as seen.
   useEffect(() => {
     if (summary?.recap && isRecapNight(stack.dateIso)) {
       markWeekRecapSeen(stack.dateIso)
       return
     }
-    if (graceShowing || stack.cheer || !stack.dateIso) return
+    if (graceShowing || stack.cheer || !stack.dateIso || !stack.nightDone || sheetIsUp()) return
     const sunday = weekRecapDue(stack.dateIso)
     if (!sunday) return
     markWeekRecapSeen(sunday)
@@ -1560,9 +1562,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       {showChips ? null : <Slot>{tagFilter}</Slot>}
 
       {/* A picked card stays put after its answer, so these rows stay too. */}
-      {stack.cheer && !pickKey ? null : <DropLine colors={colors} />}
-      {stack.cheer && !pickKey ? null : <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} />}
-      {stack.empty || Platform.OS === 'web' ? null : <RemindersRow colors={colors} label={pingLabel} onAsk={onAskPings} />}
+      {/* One extra row at most: reminders, then the drop, then the rate card. Drop and rate wait for the last answer. */}
+      {extraRow === 'reminders' ? <RemindersRow colors={colors} label={pingLabel} onAsk={onAskPings} /> : null}
+      {extraRow === 'drop' ? <DropLine colors={colors} /> : null}
+      {extraRow === 'rate' ? <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} /> : null}
 
       {stack.pillPick || stack.waitPick || pickedWe ? (
         <Pressable
@@ -1608,12 +1611,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         {/* A picked card can be taller than the room; these rows would cover its foot. */}
         {pillPicked ? null : (
         <Slot>
-          <WePausedRow cards={weCards} colors={colors} reload={we.reload} />
+          {stack.nightDone ? <WePausedRow cards={weCards} colors={colors} reload={we.reload} /> : null}
         </Slot>
         )}
         {pillPicked ? null : (
         <Slot>
-          <FriendsRow colors={colors} cheer={social?.kind === 'cheer' ? social : null} />
+          {stack.nightDone ? <FriendsRow colors={colors} cheer={social?.kind === 'cheer' ? social : null} /> : null}
         </Slot>
         )}
       </SwipeFlyHost>
