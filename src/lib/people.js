@@ -595,17 +595,26 @@ export async function sendFriendCheer(toId, note, cheerId = '', about = '') {
     want: String(cheerId || '').trim().slice(0, 20),
   }
   const words = String(about || '').trim().slice(0, 200)
-  let { data, error } = await db.rpc('send_friend_cheer', words ? { ...args, about: words } : args)
-  // A server without the note words yet: the plain cheer still goes.
-  if (error && words && (error.code === 'PGRST202' || /send_friend_cheer/i.test(error.message || ''))) {
-    ;({ data, error } = await db.rpc('send_friend_cheer', args))
-  }
-  if (!error) return { miss: '', ...stockFromRpc(data) }
+  args.p_request_id = cheerRequest(`f:${toId}:${args.want}:${words}`)
+  let { data, error } = await db.rpc('send_friend_cheer', { ...args, about: words })
+  if (!error) return cheerDone({ miss: '', ...stockFromRpc(data) })
   const message = error.message || ''
-  if (error.code === 'PGRST202' || /send_friend_cheer/i.test(message)) return { miss: 'setup' }
-  if (/need cheers/i.test(message)) return { miss: 'cheers' }
-  if (/not friends|not signed in/i.test(message)) return { miss: 'notFriend' }
+  if (error.code === 'PGRST202' || /send_friend_cheer/i.test(message)) return cheerDone({ miss: 'setup' })
+  if (/need cheers/i.test(message)) return cheerDone({ miss: 'cheers' })
+  if (/not friends|not signed in/i.test(message)) return cheerDone({ miss: 'notFriend' })
+  // Lost or unknown reply: keep the id, so a second tap cannot spend twice.
   return bad(error)
+}
+
+// One request id per cheer until the server answers for sure.
+let pendingCheer = null
+function cheerRequest(key) {
+  if (pendingCheer?.key !== key) pendingCheer = { key, id: newRequestId() }
+  return pendingCheer.id
+}
+function cheerDone(out) {
+  pendingCheer = null
+  return out
 }
 
 export async function buyCheers(book) {
@@ -653,12 +662,13 @@ export async function sendFamilyCheer(toId, note, cheerId = '') {
     other: toId,
     note: String(note || '').trim(),
     want: String(cheerId || '').trim().slice(0, 20),
+    p_request_id: cheerRequest(`m:${toId}:${String(cheerId || '').trim().slice(0, 20)}`),
   })
-  if (!error) return { miss: '', ...stockFromRpc(data) }
+  if (!error) return cheerDone({ miss: '', ...stockFromRpc(data) })
   const message = error.message || ''
-  if (error.code === 'PGRST202' || /send_family_cheer/i.test(message)) return { miss: 'setup' }
-  if (/need cheers/i.test(message)) return { miss: 'cheers' }
-  if (/not family|not signed in/i.test(message)) return { miss: 'notFriend' }
+  if (error.code === 'PGRST202' || /send_family_cheer/i.test(message)) return cheerDone({ miss: 'setup' })
+  if (/need cheers/i.test(message)) return cheerDone({ miss: 'cheers' })
+  if (/not family|not signed in/i.test(message)) return cheerDone({ miss: 'notFriend' })
   return bad(error)
 }
 
