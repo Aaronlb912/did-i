@@ -1868,10 +1868,12 @@ export function GemShopScreen({ book }) {
     }
   }, [])
 
-  function gemNotice(body) {
+  // A store failure offers Try again; setup and sign-in misses do not.
+  function gemNotice(body, retry) {
     publishSheet({
       title: t('gems.title'),
       body,
+      ...(retry ? { goLabel: t('boot.retry'), onGo: () => { publishSheet(null); retry() } } : {}),
       closeLabel: t('settings.close'),
       colors,
       onClose: () => publishSheet(null),
@@ -1900,7 +1902,7 @@ export function GemShopScreen({ book }) {
     } catch {
       stream.dropBuy()
       setBanner('')
-      gemNotice(t('gems.storeError'))
+      gemNotice(t('gems.storeError'), () => buy(packId))
       return
     }
     if (out.miss === 'signin') {
@@ -1913,7 +1915,7 @@ export function GemShopScreen({ book }) {
       stream.dropBuy()
       setBanner('')
       // The store's own code, so one failed buy can be told from another.
-      gemNotice(out.code ? `${gemMiss(out.miss)} (${out.code})` : gemMiss(out.miss))
+      gemNotice(out.code ? `${gemMiss(out.miss)} (${out.code})` : gemMiss(out.miss), out.miss === 'store' ? () => buy(packId) : null)
       return
     }
     // Cancelled or failed: no gems are coming, so a later rise is not this buy.
