@@ -1317,6 +1317,7 @@ export const en = {
   'pings.kindsCap': 'What to send',
   'pings.kindsNote': 'To quiet one question, open it and turn off its reminder.',
   'pings.kindsMiss': 'Couldn’t save that. Check your connection and try again.',
+  'pings.privateBody': "You have a question waiting.",
   'pings.kind.reminders': 'Question reminders',
   'pings.kind.remindersSub': 'At the time you set for each question.',
   'pings.kind.streakRisk': 'Streak about to break',

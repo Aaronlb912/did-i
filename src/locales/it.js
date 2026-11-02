@@ -1320,6 +1320,7 @@ export const it = {
   'pings.kindsCap': 'Cosa inviare',
   'pings.kindsNote': 'Per silenziare una domanda, aprila e spegni il suo promemoria.',
   'pings.kindsMiss': 'Impossibile salvare. Controlla la connessione e riprova.',
+  'pings.privateBody': "Hai una domanda in attesa.",
   'pings.kind.reminders': 'Promemoria delle domande',
   'pings.kind.remindersSub': 'All’ora che hai scelto per ogni domanda.',
   'pings.kind.streakRisk': 'Serie sul punto di rompersi',

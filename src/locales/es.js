@@ -1320,6 +1320,7 @@ export const es = {
   'pings.kindsCap': 'Qué enviar',
   'pings.kindsNote': 'Para silenciar una pregunta, ábrela y apaga su recordatorio.',
   'pings.kindsMiss': 'No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.',
+  'pings.privateBody': "Tienes una pregunta esperando.",
   'pings.kind.reminders': 'Recordatorios de preguntas',
   'pings.kind.remindersSub': 'A la hora que pusiste para cada pregunta.',
   'pings.kind.streakRisk': 'Racha a punto de romperse',

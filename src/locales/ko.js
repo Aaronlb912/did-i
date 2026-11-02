@@ -1304,6 +1304,7 @@ export const ko = {
   'pings.kindsCap': '보낼 알림',
   'pings.kindsNote': '질문 하나만 조용히 하려면 그 질문을 열고 알림을 끄세요.',
   'pings.kindsMiss': '저장하지 못했어요. 연결을 확인하고 다시 시도하세요.',
+  'pings.privateBody': "기다리는 질문이 있어요.",
   'pings.kind.reminders': '질문 알림',
   'pings.kind.remindersSub': '각 질문에 설정한 시간에.',
   'pings.kind.streakRisk': '연속 기록이 끊기기 직전',

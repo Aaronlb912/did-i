@@ -1303,6 +1303,7 @@ export const zh = {
   'pings.kindsCap': '发送哪些通知',
   'pings.kindsNote': '想让某个问题安静，打开它并关闭提醒。',
   'pings.kindsMiss': '保存失败。请检查网络后再试。',
+  'pings.privateBody': "有一个问题在等你。",
   'pings.kind.reminders': '问题提醒',
   'pings.kind.remindersSub': '在你为每个问题设定的时间。',
   'pings.kind.streakRisk': '连续记录快要中断',
