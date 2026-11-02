@@ -547,7 +547,8 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
     if (share) {
       const link = await makeWeLink(out.id)
       if (link.code) await passAlong(sharedDidYouLine(question, link.code), t('weLink.share'))
-      else setMiss(t(link.miss === 'linkCap' ? 'didYouLink.cap' : 'weLink.shareLater'))
+      // This screen is about to go; the miss has to outlive it.
+      else confirmMiss(t(link.miss === 'linkCap' ? 'didYouLink.cap' : 'weLink.shareLater'))
     }
     setBusy(false)
     if (picked.length) {
@@ -960,7 +961,8 @@ function WeCardPage({ book, cardId, onChange }) {
 
   async function save() {
     setBusy(true)
-    const out = await weEdit(card.id, edit)
+    // A thrown call must not leave Save off for good.
+    const out = await weEdit(card.id, edit).catch(() => ({ miss: 'people.reach' }))
     setBusy(false)
     if (out.miss) return setMiss(tMiss(out.miss))
     setEdit(null)
