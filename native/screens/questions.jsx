@@ -72,7 +72,7 @@ import { LampManage, flushCheckOnStops, lampActions, stopCheckOns } from '../com
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampDays, lampRecord, lampNights, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
+import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampDays, lampRecord, lampNights, lampRate, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -2557,6 +2557,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
           <Text style={[styles.tileNum, { color: colors.ink }]}>{t('lamp.didOf', { did: record.did, n: record.asked })}</Text>
           <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.didCap', { n: 30 })}</Text>
+          {lampRate(record) != null ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.rate', { pct: lampRate(record) })}</Text> : null}
         </View>
       </View>
       )}

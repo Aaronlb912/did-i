@@ -6,6 +6,7 @@ import { openNightWhy } from './NightSheets.jsx'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { awayKey, gentleOn, usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate, nightOpen } from '../../src/lib/recurrence.js'
+import { showToast } from '../lib/toast-queue.js'
 import { pastAnswerOpen } from '../../src/lib/board-ops.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
 import { weCardShort } from '../../src/lib/did-we.js'
@@ -135,7 +136,13 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
               else if (!pastAnswerOpen(row, new Date())) openDay(iso, shelfNow)
             }
             return (
-              <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
+              <Pressable
+                key={`${row.boardId}-${row.lamp.id}`}
+                style={styles.markRow}
+                disabled={!onAnswer || canAnswer || iso >= boardDate(new Date())}
+                accessibilityRole={onAnswer && !canAnswer && iso < boardDate(new Date()) ? 'button' : undefined}
+                onPress={() => showToast({ id: 'cal-old', kind: 'error', text: t('calendar.tooOld'), ms: 3000 })}
+              >
                 <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : mark.key === 'miss' && prefs.gentle !== true ? 'miss' : 'open'] }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
@@ -160,7 +167,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                     })}
                   </View>
                 ) : null}
-              </View>
+              </Pressable>
             )
           })}
         </View>

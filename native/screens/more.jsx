@@ -614,11 +614,12 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   }, [book, boards, dateIso, tagId, awayKey()])
 
   if (!counts.hung) {
+    const filtered = tagIdsOf(tagId).length > 0
     return (
       <ScreenShell title={t('stats.title')} colors={colors}>
         <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
-        <Meta colors={colors}>{t('streaks.empty')}</Meta>
-        <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />
+        <Meta colors={colors}>{t(filtered ? 'stats.folderEmpty' : 'streaks.empty')}</Meta>
+        {filtered ? null : <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />}
       </ScreenShell>
     )
   }
@@ -778,8 +779,9 @@ export function CalendarScreen({ book, boards, tagId, now, onChangeBooks }) {
 
   return (
     <ScreenShell title={t('settings.history')} colors={colors}>
+      <FolderScope colors={colors} boards={boards} tagId={tagId} path="/calendar" />
       {isNewShelf(boards) ? <Meta colors={colors}>{t(gentle ? 'cal.hintGentle' : 'cal.hint')}</Meta> : null}
-      {answeredNights(boards, 1) === 0 ? (
+      {answeredNights(scopedBooks(inView(book, boards), tagId), 1) === 0 ? (
         <EmptyCard title={t('recent.emptyTitle')} body={t('cal.emptyBody')} colors={colors}>
           <DidButton small label={t('about.home')} onPress={() => goHash('/tonight')} colors={colors} />
         </EmptyCard>
