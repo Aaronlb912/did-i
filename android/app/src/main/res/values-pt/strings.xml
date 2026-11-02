@@ -1,6 +1,7 @@
 <resources>
   <string name="widget_diditonight_description">As perguntas de hoje da sua pasta. Ajustes → Widget.</string>
   <string name="widget_diditogether_description">Seus amigos e família, e quem já terminou hoje.</string>
+  <string name="widget_didigrid_description">As últimas 12 semanas de dias com Did, num relance.</string>
   <string name="shortcut_add_short">Adicionar pergunta</string>
   <string name="shortcut_add_long">Adicionar uma pergunta do Did I</string>
 </resources>

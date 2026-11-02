@@ -19,6 +19,8 @@ const NATIVE_SHIMS = [
   ['expo-clipboard', 'clipboard-safe.cjs'],
   ['expo-haptics', 'haptics-safe.cjs'],
   ['expo-store-review', 'store-review-safe.cjs'],
+  ['expo-sharing', 'sharing-safe.cjs'],
+  ['react-native-view-shot', 'view-shot-safe.cjs'],
   ['expo-battery', 'battery-safe.cjs'],
   ['expo-secure-store', 'secure-store-safe.cjs'],
   ['expo-crypto', 'crypto-safe.cjs'],

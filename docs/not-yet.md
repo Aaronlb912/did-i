@@ -5,6 +5,11 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## 1.4.0 native release (branch `native/road-to-ten`, needs a store build)
+
+- **Built:** Share my year sends a picture of the year (react-native-view-shot, expo-sharing; the text share is the fallback). A Calendar grid widget on iOS and Android. A store rating sheet after the Did that takes the streak to 7 (or the first one past it), once ever; it shares the `asked` flag with the Home rate card, so the card then stays away.
+- **Not done:** none of it seen on a phone or a widget. The picture is drawn off screen: check it on Android and iPhone. The rating sheet follows the all-folders streak only (not inside a folder view), and the OS decides whether it shows. The grid widget has no today marker and no Not yet legend.
+
 ## Product Hunt buddy (branch `hunt-buddy`, needs SQL, OTA, then a build)
 
 - Needs `npm run db:apply:all` (adds the rocket row to `event_catalog`).

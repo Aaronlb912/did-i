@@ -360,7 +360,7 @@ function yearIndex(book) {
 // rebuilding the due list per book per night. Daily questions (most of them)
 // skip the date parse.
 const REPEATING = new Set(['daily', 'weekly', 'every_n', 'monthly'])
-function nightMarksMany(books, isos, today, tagId = '') {
+export function nightMarksMany(books, isos, today, tagId = '') {
   const prepped = books.map((book) => {
     const index = yearIndex(book)
     // Answered one-time questions are archived once their day passes; their

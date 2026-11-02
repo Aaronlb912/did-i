@@ -8,7 +8,9 @@ import {
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { renderDidITonightAndroidWidget } from '../widgets/android/DidITonightAndroidWidget.jsx'
 import { onPrefs, readPrefs } from '../src/lib/prefs.js'
-import { enrichTogetherWidgetProps, enrichTonightWidgetProps, syncTogetherWidget, syncTonightWidget } from './widget-sync.js'
+import { enrichGridWidgetProps, enrichTogetherWidgetProps, enrichTonightWidgetProps, syncTogetherWidget, syncTonightWidget } from './widget-sync.js'
+import { renderDidIGridAndroidWidget } from '../widgets/android/DidIGridAndroidWidget.jsx'
+import { buildGridWidgetProps, GRID_WIDGET_NAME } from '../src/lib/widget-grid.js'
 import { renderDidITogetherAndroidWidget } from '../widgets/android/DidITogetherAndroidWidget.jsx'
 import {
   buildTogetherWidgetProps,
@@ -41,6 +43,12 @@ async function tonightPropsForWidget(shelf) {
 }
 
 async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickAction, clickActionData, renderWidget }) {
+  if (widgetInfo?.widgetName === GRID_WIDGET_NAME) {
+    if (widgetAction === 'WIDGET_DELETED') return
+    const shelf = readShelf()
+    renderWidget(renderDidIGridAndroidWidget(enrichGridWidgetProps(shelf, buildGridWidgetProps(shelf)), widgetInfo))
+    return
+  }
   // The Together widget only shows the saved list; a tap opens the app by URI.
   if (widgetInfo?.widgetName === TOGETHER_WIDGET_NAME) {
     if (widgetAction === 'WIDGET_DELETED') return

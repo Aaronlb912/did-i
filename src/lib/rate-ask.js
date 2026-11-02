@@ -42,3 +42,9 @@ export function rateAskDue() {
 export function markRateAsked() {
   write({ ...read(), asked: true })
 }
+
+// The system review sheet at a shelf streak of 7, once ever. Shares the
+// asked flag, so the Home card and the sheet never both show.
+export function streakReviewDue(streak) {
+  return Number(streak) >= RATE_AFTER_NIGHTS && !read().asked
+}

@@ -115,6 +115,12 @@ An every so often question shows one small line under it on both platforms: "Las
 
 The iOS layout is not compiled into the widget extension. `createWidget` hands the function's source to native code, which saves it in the app group (`__expo_widgets_DidITonight_layout`), and WidgetKit evaluates that string. So a layout change that only uses `@expo/ui` views and modifiers the installed build already has ships over the air: the new layout lands the first time the updated app opens and calls `createWidget`. A new native modifier or view needs a build.
 
+## Calendar grid widget (1.4.0, needs a store build)
+
+"Did I calendar" sits next to Today on iOS (small, medium) and Android (default 4x2). It shows the last 12 weeks as day squares, one column per week, shelf-wide: Did in the look color, Not yet in the missed color, no mark dim, days still ahead empty. Gentle mode shows missed days as no mark. The whole card is a tap that opens the calendar (`didi://open/calendar`). It has no buttons and never changes an answer.
+
+`buildGridWidgetProps` (`src/lib/widget-grid.js`) makes one pass over 84 days with the same day rules as the year view, and keeps the result until the shelf, the day or the language changes. `syncGridWidget` (`native/widget-sync.js`) runs from every `syncTonightWidget`, so it redraws wherever Today does. iOS also gets a midnight timeline entry. The Android provider is `DidIGrid` (manifest, `widgetprovider_didigrid.xml`, `app.config.js`).
+
 ## Code map
 
 - `src/lib/widget-tonight.js` — snapshot + merge answers from the widget
@@ -125,7 +131,8 @@ The iOS layout is not compiled into the widget extension. `createWidget` hands t
 - `native/widget-setup.ios.js` / `.android.js` — interaction handlers
 - `android/.../widget/WidgetTapReceiver.java` — Android tap, stored before JS
 - `android/.../widget/WidgetCardStore.java` — next question from the last snapshot, at tap time
-- `native/deep-link.js` — `didi://tonight` → `/tonight`
+- `native/deep-link.js` : `didi://tonight` → `/tonight`, `didi://open/calendar` → `/calendar`
+- `src/lib/widget-grid.js`, `widgets/DidIGridWidget.tsx`, `widgets/android/DidIGridAndroidWidget.jsx` : Calendar grid widget
 
 ## Widget tip (in app)
 

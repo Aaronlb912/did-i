@@ -18,7 +18,8 @@ export function RateCard({ colors, nightDone, dateIso }) {
     if (noteClearedNight(dateIso)) setShow(true)
   }, [nightDone, dateIso, show])
 
-  if (!show) return null
+  // The review sheet may have been asked since (native/streak-review.js).
+  if (!show || !rateAskDue()) return null
   const url = Platform.OS === 'ios' ? APP_STORE_REVIEW_URL : PLAY_STORE_URL
   const hide = () => {
     markRateAsked()

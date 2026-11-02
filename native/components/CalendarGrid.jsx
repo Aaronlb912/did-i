@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { firstAnswerMonth, monthStripNights, nightDueRows, nightWhy, yearMonths, yearTotals } from '../../src/lib/hall-pages.js'
@@ -283,15 +283,49 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
   const totals = useMemo(() => yearTotals(months), [months])
   // Best streak is shelf-wide, so it is left out while a folder is picked.
   const best = useMemo(() => (tagId ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
-  const shareYear = () => {
+  const cardRef = useRef(null)
+  // A picture of the year to share. Falls back to the text when the phone
+  // cannot capture or share an image.
+  const shareYear = async () => {
     const folder = tagId ? scopedBooks(shelf, tagId).map((b) => b.title).join(', ') : ''
-    passAlong(folder
+    const text = folder
       ? t('cal.yearShareFolder', { year, folder, did: totals.did, rate: totals.rate })
-      : t('cal.yearShareText', { year, did: totals.did, rate: totals.rate, best }))
+      : t('cal.yearShareText', { year, did: totals.did, rate: totals.rate, best })
+    try {
+      const [{ captureRef }, Sharing] = await Promise.all([import('react-native-view-shot'), import('expo-sharing')])
+      if (!cardRef.current || !(await Sharing.isAvailableAsync())) throw new Error('no image share')
+      const uri = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile' })
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: t('cal.yearShare'), UTI: 'public.png' })
+    } catch {
+      passAlong(text)
+    }
   }
   const locale = dateLocale(prefs.locale)
   const canBack = year > firstYear
   const canNext = year < thisYear
+
+  const monthDots = (pack) => (
+    <View style={styles.miniGrid}>
+      {pack.nights.map((night) =>
+        night.pad ? (
+          <View key={night.iso} style={styles.miniCell} />
+        ) : (
+          <View key={night.iso} accessible accessibilityLabel={dayLabel(night, locale, prefs.gentle === true)} style={styles.miniCell}>
+            <View
+              style={[
+                styles.miniDot,
+                {
+                  backgroundColor: night.empty ? colors.panel2 : night.on ? colors.on : night.miss ? missTone : colors.open,
+                  borderColor: night.isToday ? colors.ink : 'transparent',
+                },
+                !night.empty && !night.on && night.miss && !night.isToday ? missDot(colors, missTone) : null,
+              ]}
+            />
+          </View>
+        ),
+      )}
+    </View>
+  )
 
   return (
     <View style={styles.wrap}>
@@ -342,31 +376,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
                 {`${pack.start.toLocaleDateString(locale, { month: 'short' })}${onMonth ? ' ›' : ''}`}
               </Text>
             </Pressable>
-            <View style={styles.miniGrid}>
-              {pack.nights.map((night) =>
-                night.pad ? (
-                  <View key={night.iso} style={styles.miniCell} />
-                ) : (
-                  <View
-                    key={night.iso}
-                    accessible
-                    accessibilityLabel={dayLabel(night, locale, prefs.gentle === true)}
-                    style={styles.miniCell}
-                  >
-                    <View
-                      style={[
-                        styles.miniDot,
-                        {
-                          backgroundColor: night.empty ? colors.panel2 : night.on ? colors.on : night.miss ? missTone : colors.open,
-                          borderColor: night.isToday ? colors.ink : 'transparent',
-                        },
-                        !night.empty && !night.on && night.miss && !night.isToday ? missDot(colors, missTone) : null,
-                      ]}
-                    />
-                  </View>
-                ),
-              )}
-            </View>
+            {monthDots(pack)}
           </View>
         ))}
         {/* Fill the last row of three, so a short year keeps its columns. */}
@@ -374,12 +384,33 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
           <View key={`pad${at}`} style={styles.mini} />
         ))}
       </Reveal>
+      {/* Drawn off screen, only to be captured as the picture to share. */}
+      {totals.did ? (
+      <View ref={cardRef} collapsable={false} pointerEvents="none" style={[styles.card, { backgroundColor: colors.bg }]}>
+        <Text style={[styles.cardYear, { color: colors.ink }]}>{String(year)}</Text>
+        <Text style={[styles.cardLine, { color: colors.on }]}>{t('cal.yearTotals', { did: totals.did, rate: totals.rate })}</Text>
+        {best ? <Text style={[styles.cardLine, { color: colors.inkDim }]}>{t('cal.yearBest', { n: best })}</Text> : null}
+        <View style={styles.year}>
+          {months.map((pack) => (
+            <View key={pack.start.getMonth()} style={styles.mini}>
+              <Text style={[styles.miniLabel, { color: colors.inkDim }]}>{pack.start.toLocaleDateString(locale, { month: 'short' })}</Text>
+              {monthDots(pack)}
+            </View>
+          ))}
+        </View>
+        <Text style={[styles.cardMark, { color: colors.inkDim }]}>Did I</Text>
+      </View>
+      ) : null}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
+  card: { position: 'absolute', left: -2000, top: 0, width: 360, padding: 20, gap: 8 },
+  cardYear: { fontFamily: fonts.uiBold, fontSize: 34 },
+  cardLine: { fontFamily: fonts.uiSemi, fontSize: 15 },
+  cardMark: { fontFamily: fonts.uiBold, fontSize: 14, textAlign: 'right', marginTop: 4 },
   year: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
   mini: { width: '31%', gap: 4 },
   miniLabel: { fontFamily: fonts.uiSemi, fontSize: 12 },
