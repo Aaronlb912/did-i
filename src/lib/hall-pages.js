@@ -264,13 +264,13 @@ export function weekStripNights(boards, now = new Date(), tagId = '', weekShift 
   return nights
 }
 
-export function monthStripNights(boards, now = new Date(), tagId = '', monthShift = 0) {
+export function monthStripNights(boards, now = new Date(), tagId = '', monthShift = 0, firstDay = 0) {
   const books = scopedBooks(boards, tagId)
   const fold = (books[0] || boards?.[0])?.dayFoldHour
   const today = boardDate(now, fold)
   const todayDate = parseIsoDate(today) || now
   const start = new Date(todayDate.getFullYear(), todayDate.getMonth() + monthShift, 1)
-  const pad = start.getDay()
+  const pad = (start.getDay() - firstDay + 7) % 7
   const last = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
   const frozen = frozenFor(boards, now, tagId)
   const nights = []
@@ -422,7 +422,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
 
 // Twelve month grids for one year, same shape as monthStripNights. Months
 // after this one are left out.
-export function yearMonths(boards, year, now = new Date(), tagId = '') {
+export function yearMonths(boards, year, now = new Date(), tagId = '', firstDay = 0) {
   const books = scopedBooks(boards, tagId)
   const fold = (books[0] || boards?.[0])?.dayFoldHour
   const today = boardDate(now, fold)
@@ -438,7 +438,7 @@ export function yearMonths(boards, year, now = new Date(), tagId = '') {
   for (let m = 0; m <= lastMonth; m += 1) {
     const start = new Date(year, m, 1)
     const nights = []
-    for (let i = 0; i < start.getDay(); i += 1) nights.push({ iso: `pad-${i}`, pad: true, dayNum: '', isToday: false, on: false, miss: false, empty: true })
+    for (let i = 0; i < (start.getDay() - firstDay + 7) % 7; i += 1) nights.push({ iso: `pad-${i}`, pad: true, dayNum: '', isToday: false, on: false, miss: false, empty: true })
     const last = new Date(year, m + 1, 0).getDate()
     for (let day = 1; day <= last; day += 1) {
       const iso = isoDate(new Date(year, m, day))

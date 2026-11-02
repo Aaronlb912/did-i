@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { firstAnswerMonth, monthStripNights, nightDueRows, nightWhy, yearMonths } from '../../src/lib/hall-pages.js'
 import { openNightWhy } from './NightSheets.jsx'
-import { t } from '../../src/lib/i18n.js'
+import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { awayKey, gentleOn, usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate, nightOpen } from '../../src/lib/recurrence.js'
 import { pastAnswerOpen } from '../../src/lib/board-ops.js'
@@ -37,7 +37,7 @@ export function dayLabel(night, locale, gentle = false) {
 
 function dowMarks(locale) {
   return [0, 1, 2, 3, 4, 5, 6].map((day) => {
-    const date = new Date(2026, 8, 6 + day)
+    const date = new Date(2026, 8, 6 + ((day + firstWeekday(locale)) % 7))
     return date.toLocaleDateString(dateLocale(locale), { weekday: 'narrow' })
   })
 }
@@ -78,10 +78,14 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
   const dayIso = boardDate(clock, book?.dayFoldHour)
   // Up to 31 day walks: once per shelf, day, folder and month, not on every tap.
   const pack = useMemo(
-    () => monthStripNights(shelf, clock, tagId, monthShift),
+    () => monthStripNights(shelf, clock, tagId, monthShift, firstWeekday(prefs.locale)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [boards, book, dayIso, tagId, monthShift, awayKey()],
+    [boards, book, dayIso, tagId, monthShift, awayKey(), prefs.locale],
   )
+  // History starts at the first month with an answer; the back arrow stops there.
+  const firstMonth = useMemo(() => firstAnswerMonth(shelf, clock, tagId), [boards, book, dayIso, tagId])
+  const minShift = (Number(firstMonth.slice(0, 4)) - pack.start.getFullYear()) * 12 + Number(firstMonth.slice(5, 7)) - 1 - pack.start.getMonth() + monthShift
+  const canBack = monthShift > Math.min(0, minShift)
   const locale = dateLocale(prefs.locale)
   const monthLabel = pack.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
   const dows = dowMarks(prefs.locale)
@@ -168,8 +172,8 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.prev')} onPress={() => { setMonthShift((n) => n - 1); setPicked('') }} hitSlop={8}>
-          <Text style={[styles.shift, { color: colors.inkDim }]}>‹</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.prev')} accessibilityState={{ disabled: !canBack }} disabled={!canBack} onPress={() => { setMonthShift((n) => n - 1); setPicked('') }} hitSlop={8}>
+          <Text style={[styles.shift, { color: canBack ? colors.inkDim : colors.line }]}>‹</Text>
         </Pressable>
         <Text style={[styles.month, { color: colors.ink }]}>{monthLabel}</Text>
         <Pressable
@@ -258,11 +262,11 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
   // One walk per [shelf, year]; the night changing also refreshes today.
   // The first year starts at the first month with answers, not January.
   const months = useMemo(() => {
-    const all = yearMonths(shelf, year, clock, tagId)
+    const all = yearMonths(shelf, year, clock, tagId, firstWeekday(prefs.locale))
     if (year !== firstYear) return all
     const from = Number(firstMonth.slice(5, 7)) - 1
     return all.filter((pack) => pack.start.getMonth() >= from)
-  }, [shelf, year, tagId, dateIso, firstMonth, firstYear])
+  }, [shelf, year, tagId, dateIso, firstMonth, firstYear, prefs.locale])
   const locale = dateLocale(prefs.locale)
   const canBack = year > firstYear
   const canNext = year < thisYear
