@@ -724,13 +724,14 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                         flex: 1,
                         backgroundColor: C.skip,
                         borderRadius: 12,
-                        paddingVertical: tight ? 5 : compact ? 6 : 8,
+                        paddingVertical: tight ? 7 : compact ? 6 : 8,
                         marginRight: 6,
                         justifyContent: 'center',
                         alignItems: 'center',
                       }}
                       clickAction="ANSWER"
                       clickActionData={{ lampId: lead.lampId, kind: 'nope', night: String(lead.periodKey || '') }}
+                      accessibilityLabel={`${p.nopeLabel || 'Not yet'}: ${question}`}
                     >
                       <TextWidget
                         text={p.nopeLabel || 'Not yet'}
@@ -743,13 +744,14 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                         flex: 1,
                         backgroundColor: C.on,
                         borderRadius: 12,
-                        paddingVertical: tight ? 5 : compact ? 6 : 8,
+                        paddingVertical: tight ? 7 : compact ? 6 : 8,
                         marginLeft: 6,
                         justifyContent: 'center',
                         alignItems: 'center',
                       }}
                       clickAction="ANSWER"
                       clickActionData={{ lampId: lead.lampId, kind: 'did', night: String(lead.periodKey || '') }}
+                      accessibilityLabel={`${p.didLabel || 'Did'}: ${question}`}
                     >
                       <TextWidget
                         text={p.didLabel || 'Did'}
@@ -826,6 +828,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 style={{ height: 48, justifyContent: 'center', alignItems: 'flex-start', paddingHorizontal: 8 }}
                 clickAction="PEEK"
                 clickActionData={{ dir: 'next' }}
+                accessibilityLabel={p.nextLabel || 'Next'}
               >
               <FlexWidget
                 style={{
