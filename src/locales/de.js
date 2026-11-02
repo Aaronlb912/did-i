@@ -2750,6 +2750,7 @@ export const de = {
   'pings.quietSub': 'Keine Benachrichtigungen in dieser Zeit. Sie kommen, wenn die Ruhezeit endet.',
   'pings.quietFrom': 'Beginnt',
   'pings.quietTo': 'Endet',
+  'pings.quietNoLastCall': "Die Ruhezeit deckt 21:00 ab, letzte Erinnerungen kommen also nicht.",
   'settings.tonightCap': "Heute und Erinnerungen",
   'settings.helpPrivacy': 'Hilfe und Datenschutz',
   'settings.more': 'Mehr',

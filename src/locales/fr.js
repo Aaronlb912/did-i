@@ -2744,6 +2744,7 @@ export const fr = {
   'pings.quietSub': 'Aucune notification pendant ces heures. Elles arrivent à la fin.',
   'pings.quietFrom': 'Début',
   'pings.quietTo': 'Fin',
+  'pings.quietNoLastCall': "Les heures calmes couvrent 21 h, donc pas de dernier rappel.",
   'settings.tonightCap': "Aujourd’hui et rappels",
   'settings.helpPrivacy': 'Aide et confidentialité',
   'settings.more': 'Plus',

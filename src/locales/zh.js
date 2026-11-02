@@ -2692,6 +2692,7 @@ export const zh = {
   'pings.quietSub': '这段时间不发通知。时段结束后再送达。',
   'pings.quietFrom': '开始',
   'pings.quietTo': '结束',
+  'pings.quietNoLastCall': "安静时段包含 21:00，所以最后的提醒不会发出。",
   'settings.tonightCap': "今天和提醒",
   'settings.helpPrivacy': '帮助和隐私',
   'settings.more': '更多',

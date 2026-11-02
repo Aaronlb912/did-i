@@ -1993,6 +1993,9 @@ function PingKinds({ colors, on }) {
           </>
         ) : null}
       </SetCard>
+      {prefs.quietOn && afterQuiet(lastCallAt(), prefs).getTime() !== lastCallAt().getTime() ? (
+        <Meta colors={colors}>{t('pings.quietNoLastCall')}</Meta>
+      ) : null}
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
     </>
   )
@@ -2072,6 +2075,13 @@ function AwayCard({ colors }) {
   )
 }
 
+// 21:00 today: the last call for a high question (src/lib/notify.js).
+function lastCallAt() {
+  const at = new Date()
+  at.setHours(21, 0, 0, 0)
+  return at
+}
+
 export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange }) {
   const colors = useHallColors()
   const clock = now || new Date()
@@ -2084,7 +2094,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
   const [seen, setSeen] = useState(() => new Map())
   const rows = new Map(seen)
   for (const one of books) {
-    for (const fire of upcomingPings(one, clock)) if (!rows.has(fire.id)) rows.set(fire.id, fire)
+    for (const fire of upcomingPings(one, clock)) if (!rows.has(fire.tag)) rows.set(fire.tag, fire)
   }
   const fires = [...rows.values()].sort((a, b) => a.at - b.at)
   const bookOf = (id) => books.find((one) => (one.lamps || []).some((lamp) => lamp.id === id))
@@ -2095,7 +2105,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
     const lamp = home?.lamps.find((item) => item.id === fire.id)
     if (!lamp || !onChange) return confirmMiss(t('confirm.miss'))
     const next = !lampNotifyOn(lamp)
-    setSeen((was) => new Map(was).set(fire.id, fire))
+    setSeen((was) => new Map(was).set(fire.tag, fire))
     onChange(commitBook({ ...home, lamps: home.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next, at: clock.toISOString() } : item)) }, clock))
     return confirmDone(next ? t('pings.oneOn') : t('pings.oneOffAll'))
   }

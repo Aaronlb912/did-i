@@ -2737,6 +2737,7 @@ export const it = {
   'pings.quietSub': 'Nessuna notifica in queste ore. Arrivano quando finiscono.',
   'pings.quietFrom': 'Inizia',
   'pings.quietTo': 'Finisce',
+  'pings.quietNoLastCall': "Le ore di silenzio coprono le 21:00, quindi niente ultimi promemoria.",
   'settings.tonightCap': "Oggi e promemoria",
   'settings.helpPrivacy': 'Aiuto e privacy',
   'settings.more': 'Altro',

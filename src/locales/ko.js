@@ -2701,6 +2701,7 @@ export const ko = {
   'pings.quietSub': '이 시간에는 알림이 오지 않아요. 끝나면 도착해요.',
   'pings.quietFrom': '시작',
   'pings.quietTo': '종료',
+  'pings.quietNoLastCall': "방해 금지 시간이 오후 9시를 포함해 마지막 알림이 오지 않아요.",
   'settings.tonightCap': "오늘과 알림",
   'settings.helpPrivacy': '도움말과 개인정보',
   'settings.more': '더 보기',

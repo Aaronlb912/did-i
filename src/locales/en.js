@@ -2731,6 +2731,7 @@ export const en = {
   'pings.quietSub': 'No notifications in these hours. They come when quiet hours end.',
   'pings.quietFrom': 'Starts',
   'pings.quietTo': 'Ends',
+  'pings.quietNoLastCall': "Quiet hours cover 9:00 PM, so last calls will not come.",
   'settings.tonightCap': "Today and reminders",
   'settings.helpPrivacy': 'Help and privacy',
   'settings.more': 'More',

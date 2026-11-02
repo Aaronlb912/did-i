@@ -2741,6 +2741,7 @@ export const es = {
   'pings.quietSub': 'Sin notificaciones en estas horas. Llegan cuando terminan.',
   'pings.quietFrom': 'Empieza',
   'pings.quietTo': 'Termina',
+  'pings.quietNoLastCall': "Las horas de silencio cubren las 21:00, así que no llegan los últimos avisos.",
   'settings.tonightCap': "Hoy y recordatorios",
   'settings.helpPrivacy': 'Ayuda y privacidad',
   'settings.more': 'Más',
