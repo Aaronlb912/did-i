@@ -5,7 +5,7 @@ import { useNoted } from '../hooks/useNoted.js'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
-import { passAlong } from '../../src/lib/native.js'
+import { copyText, passAlong } from '../../src/lib/native.js'
 import {
   addFamilyLamp,
   answerFamilyLamp,
@@ -661,12 +661,22 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   setMiss('')
                   setSaid('')
                   const how = await passAlong(t('family.codeInvite', { name: fam.name, code: fam.code }), fam.name)
-                  setCodeOpen(false)
+                  // A failed send keeps the sheet open so the miss shows here.
+                  if (how === 'shared' || how === 'copied') setCodeOpen(false)
                   if (how === 'shared') setSaid(t('people.shared'))
                   else if (how === 'copied') setSaid(t('people.copied'))
                   else setMiss(t('confirm.shareMiss'))
                 }}
               />
+              <KeyButton
+                colors={colors}
+                label={t('friendId.copy')}
+                onPress={async () => {
+                  if (await copyText(fam.code)) confirmDone(t('people.copied'))
+                  else confirmMiss(t('confirm.shareMiss'))
+                }}
+              />
+              {miss ? <Meta colors={colors}>{miss}</Meta> : null}
               <KeyButton colors={colors} label={t('settings.close')} onPress={() => setCodeOpen(false)} />
             </Pressable>
           </Pressable>

@@ -2059,6 +2059,7 @@ export const it = {
   'familyJoin.members': 'Ci sono {n} persone.',
   'familyJoin.membersOne': 'C’è 1 persona.',
   'familyJoin.confirm': 'Entrare in {name}?',
+  'familyJoin.asKid': 'Entri come figlio. Un genitore può renderti genitore.',
   'familyJoin.already': 'Sei già in {name}.',
   'familyJoin.open': 'Apri',
   'familyJoin.dontJoin': 'Non entrare',

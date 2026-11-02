@@ -2027,6 +2027,7 @@ export const zh = {
   'familyJoin.members': '里面有 {n} 个人。',
   'familyJoin.membersOne': '里面有 1 个人。',
   'familyJoin.confirm': '加入 {name}？',
+  'familyJoin.asKid': '你以孩子身份加入。家长可以把你设为家长。',
   'familyJoin.already': '你已经在 {name} 里了。',
   'familyJoin.open': '打开',
   'familyJoin.dontJoin': '不加入',

@@ -2060,6 +2060,7 @@ export const es = {
   'familyJoin.members': 'Hay {n} personas.',
   'familyJoin.membersOne': 'Hay 1 persona.',
   'familyJoin.confirm': '¿Unirte a {name}?',
+  'familyJoin.asKid': 'Te unes como niño. Un padre o una madre puede hacerte padre.',
   'familyJoin.already': 'Ya estás en {name}.',
   'familyJoin.open': 'Abrir',
   'familyJoin.dontJoin': 'No unirme',

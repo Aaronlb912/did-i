@@ -2067,6 +2067,7 @@ export const de = {
   'familyJoin.members': '{n} Personen sind dabei.',
   'familyJoin.membersOne': '1 Person ist dabei.',
   'familyJoin.confirm': '{name} beitreten?',
+  'familyJoin.asKid': 'Du trittst als Kind bei. Ein Elternteil kann dich zum Elternteil machen.',
   'familyJoin.already': 'Du bist schon in {name}.',
   'familyJoin.open': 'Öffnen',
   'familyJoin.dontJoin': 'Nicht beitreten',

@@ -2056,6 +2056,7 @@ export const en = {
   'familyJoin.members': '{n} people are in it.',
   'familyJoin.membersOne': '1 person is in it.',
   'familyJoin.confirm': 'Join {name}?',
+  'familyJoin.asKid': 'You join as a kid. A parent can make you a parent.',
   'familyJoin.already': 'You are already in {name}.',
   'familyJoin.open': 'Open it',
   'familyJoin.dontJoin': 'Don’t join',

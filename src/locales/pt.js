@@ -2059,6 +2059,7 @@ export const pt = {
   'familyJoin.members': '{n} pessoas estão nela.',
   'familyJoin.membersOne': '1 pessoa está nela.',
   'familyJoin.confirm': 'Entrar em {name}?',
+  'familyJoin.asKid': 'Você entra como filho. Um pai ou mãe pode tornar você pai ou mãe.',
   'familyJoin.already': 'Você já está em {name}.',
   'familyJoin.open': 'Abrir',
   'familyJoin.dontJoin': 'Não entrar',
