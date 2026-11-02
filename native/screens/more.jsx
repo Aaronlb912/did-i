@@ -1651,8 +1651,8 @@ export function FirstNightScreen({ book, onChange, now }) {
         ? { question, short: shortFromQuestion(question, 24) }
         : null
     const made = firstRunBook(book, picks, own, askAfter, clock)
-    markWelcomeSeen()
     onChange?.(made.book)
+    markWelcomeSeen()
     // No notification ask from here: a sheet opened while /first was still on
     // screen sent Not now back into step 1 with nothing saved. AppShell offers
     // it once Tonight is up (offerFirstPingPrimer).
@@ -1740,7 +1740,7 @@ export function FirstNightScreen({ book, onChange, now }) {
               selectionColor={colors.on}
               cursorColor={colors.on}
               accessibilityLabel={t('first.typeOwn')}
-              autoCapitalize="none"
+              autoCapitalize="sentences"
               returnKeyType="done"
               blurOnSubmit
               multiline

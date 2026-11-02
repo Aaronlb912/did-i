@@ -294,7 +294,8 @@ export function AppShell() {
     const was = didCount.current
     didCount.current = n
     // Not cleared on the next shelf write (sync lands right after a tap); the ask runs once anyway.
-    if (was != null && n > was) setTimeout(() => offerPingPrimerAgain(colors).catch(() => {}), 2500)
+    // Exactly one more: a cloud pull brings several at once, not a tap here.
+    if (was != null && n === was + 1) setTimeout(() => offerPingPrimerAgain(colors).catch(() => {}), 2500)
     return undefined
     // colors only styles the sheet.
   }, [gated, app.shelf])
