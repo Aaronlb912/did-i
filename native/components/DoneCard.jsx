@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -102,6 +102,8 @@ export function StreakCount({ n, from = null, colors }) {
     }
     const timer = setTimeout(() => {
       setShown(n)
+      // The burst is hidden from screen readers; the new count is said aloud.
+      AccessibilityInfo.announceForAccessibility?.(streakNights(n))
       pop.value = withSequence(
         withTiming(1.22, { duration: 140, easing: Easing.out(Easing.quad) }),
         withSpring(1, { damping: 9, stiffness: 220 }),

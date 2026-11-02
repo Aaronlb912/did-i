@@ -192,11 +192,15 @@ export function useTonightStack({
   // first. The Did we nights are kept on the phone, so this is known at once.
   const nightDone = hallOn && weTonight.done >= weTonight.due
   const wasDone = useRef(nightDone)
+  const cheerDays = useRef(new Set())
   useEffect(() => {
     // Your own questions were already done; a Did we just finished the night.
     if (!wasDone.current && nightDone && weTonight.due) {
       const to = shelfStreak(shelf, clock, tagId)
-      if (to > 0) setCheer({ dateIso, from: to - 1, to })
+      if (to > 0 && !cheerDays.current.has(dateIso)) {
+        cheerDays.current.add(dateIso)
+        setCheer({ dateIso, from: to - 1, to })
+      }
     }
     wasDone.current = nightDone
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -438,9 +442,15 @@ export function useTonightStack({
       feelTap('hall-on')
       const afterBooks = shelf.map((item) => (item.id === next.id ? next : item))
       const afterStreak = shelfStreak(afterBooks, clock, tagId)
-      if (afterStreak > 0) setCheer({ dateIso, from: afterStreak - 1, to: afterStreak })
+      const beforeStreak = shelfStreak(shelf, clock, tagId)
+      // Once a day: clear, Undo, Did again does not roll the cheer twice.
+      // A late Did that joins two runs rolls from the real count, not one less.
+      if (afterStreak > 0 && !cheerDays.current.has(dateIso)) {
+        cheerDays.current.add(dateIso)
+        setCheer({ dateIso, from: Math.min(beforeStreak, afterStreak - 1), to: afterStreak })
+      }
       const hit = maybeStreakHit({
-        beforeHeat: shelfStreak(shelf, clock, tagId),
+        beforeHeat: beforeStreak,
         afterHeat: afterStreak,
         clearedTonight: true,
         dateIso,
