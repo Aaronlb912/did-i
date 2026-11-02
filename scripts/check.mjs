@@ -1020,6 +1020,19 @@ test('coins earned today add up for the done card and reset the next day', async
   localStorage.removeItem('did-i-coins-day')
 })
 
+test('all time Missed leaves out today and questions that are never a miss', async () => {
+  const { shelfStatsCounts } = await import('../src/lib/hall-pages.js')
+  const book = { id: 'm', lamps: [
+    { ...lamp('d'), cadence: 'daily', createdOn: '2026-10-01' },
+    { ...lamp('o'), cadence: 'daily', optional: true, createdOn: '2026-10-01' },
+  ], answers: [
+    { id: 'a', lampId: 'd', periodKey: '2026-10-30', status: 'skip' },
+    { id: 'b', lampId: 'd', periodKey: '2026-11-01', status: 'skip' },
+    { id: 'c', lampId: 'o', periodKey: '2026-10-30', status: 'skip' },
+  ] }
+  assert.equal(shelfStatsCounts([book], new Date(2026, 10, 1, 21)).skip, 1)
+})
+
 test('ten pause and resume rounds keep the first pause', async () => {
   const { toggleArchive } = await import('../src/lib/board-ops.js')
   const { normalizeLamp } = await import('../src/lib/board-json.js')
