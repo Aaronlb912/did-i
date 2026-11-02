@@ -117,9 +117,18 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
   }
 
   function askDelete() {
+    const hasAnswers = (book.answers || []).some((item) => item.lampId === lamp.id)
+    const stoppable = hasAnswers && !lamp.archived
     publishSheet({
       title: t('lamp.deleteTitle'),
-      body: deleteNote(book, lamp),
+      body: stoppable ? `${deleteNote(book, lamp)} ${t('lamp.deleteKeep')}` : deleteNote(book, lamp),
+      moreLabel: stoppable ? t('lamp.stop') : undefined,
+      onMore: stoppable
+        ? () => {
+            publishSheet(null)
+            togglePause()
+          }
+        : undefined,
       goLabel: t('lamp.delete'),
       danger: true,
       closeLabel: t('lamp.keep'),

@@ -2954,6 +2954,7 @@ await testAsync('a hand-set question order beats priority, survives normalize, a
   ]).map((r) => r.lamp.id)
   assert.deepEqual(order, ['first', 'second', 'high', 'late'], 'ordered ones first, unmoved after, ask time still wins')
   assert.equal(normalizeLamp({ id: 'a', question: 'Did I?', order: 3 }).order, 3)
+  assert.equal(normalizeLamp({ id: 'a', question: 'x'.repeat(300) }).question.length, 120)
   assert.equal('order' in normalizeLamp({ id: 'a', question: 'Did I?' }), false)
   const books = [
     { id: 'b1', lamps: [{ id: 'x' }, { id: 'y' }] },
