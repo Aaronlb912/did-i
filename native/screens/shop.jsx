@@ -344,7 +344,8 @@ function PriceTag({ tag, colors }) {
 function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) {
   const name = tileName(type, item.id)
   const tag = shopTag(purse, type, item)
-  const price = tag.owned ? t('shop.owned') : tag.gems || tag.coins || (tag.free ? t('shop.free') : '')
+  const worn = (type === 'look' && purse.lookOn === item.id) || (type === 'buddy' && purse.buddyOn === item.id) || (type === 'cheer' && purse.cheerOn === item.id)
+  const price = tag.owned ? t(worn ? 'shop.on' : 'shop.owned') : tag.gems ? gemLine(tag.gems) : tag.coins ? coinLine(tag.coins) : tag.free ? t('shop.free') : ''
   return (
     <Pressable
       onPress={() => onTile(type, item)}
@@ -528,7 +529,7 @@ function KindRow({ type, list, cap, allLabel, onAll, purse, colors, onTile }) {
     <View style={styles.promoShelf}>
       <View style={styles.promoHead}>
         <Cap colors={colors}>{cap}</Cap>
-        <Pressable accessibilityRole="button" onPress={onAll} hitSlop={8}>
+        <Pressable accessibilityRole="button" onPress={onAll} style={styles.promoAllHit}>
           <Text style={[styles.promoAll, { color: colors.on }]}>{allLabel}</Text>
         </Pressable>
       </View>
@@ -553,7 +554,7 @@ function SavedRow({ purse, colors, onTile }) {
     <View style={styles.promoShelf}>
       <View style={styles.promoHead}>
         <Cap colors={colors}>{t('shop.wishTitle')}</Cap>
-        <Pressable accessibilityRole="button" onPress={() => goHash('/kit', { id: 'wish' })} hitSlop={8}>
+        <Pressable accessibilityRole="button" onPress={() => goHash('/kit', { id: 'wish' })} style={styles.promoAllHit}>
           <Text style={[styles.promoAll, { color: colors.on }]}>{t('shop.wishTab')}</Text>
         </Pressable>
       </View>
@@ -2562,6 +2563,7 @@ const styles = StyleSheet.create({
   wishTile: { width: '31%' },
   kindHeart: { fontSize: 22 },
   promoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  promoAllHit: { minHeight: 44, justifyContent: 'center' },
   promoAll: { fontFamily: fonts.uiSemi, fontSize: 13 },
 
 
