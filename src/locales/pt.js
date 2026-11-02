@@ -2424,6 +2424,7 @@ export const pt = {
   'people.nameNudgeGo': 'Adicionar seu nome',
   'friendId.bad': 'Um ID de amigo tem 12 dígitos.',
   'friendId.nobody': 'Ninguém tem esse ID de amigo. Confira os números.',
+  'friendId.own': 'Esse é o seu ID de amigo. Compartilhe para seus amigos adicionarem você.',
   'friendId.tooMany': 'Muitos IDs errados hoje. Tente amanhã.',
   'friendId.copied': 'ID de amigo copiado.',
   'avatar.takePhoto': 'Tirar uma foto',

@@ -675,6 +675,11 @@ function useFriendAsk(onAsked) {
   async function look(code) {
     setMiss('')
     setBusy(true)
+    const mine = await myFriendId().catch(() => ({ id: '' }))
+    if (mine.id && cleanFriendId(code) === cleanFriendId(mine.id)) {
+      setBusy(false)
+      return setMiss(t('friendId.own'))
+    }
     const [result, nameless] = await Promise.all([lookUpFriendId(code), needsName().catch(() => false)])
     setBusy(false)
     if (result.miss) return setMiss(friendIdMiss(result.miss))

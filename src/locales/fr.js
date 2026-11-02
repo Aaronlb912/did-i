@@ -2431,6 +2431,7 @@ export const fr = {
   'people.nameNudgeGo': 'Ajouter ton nom',
   'friendId.bad': 'Un ID ami compte 12 chiffres.',
   'friendId.nobody': 'Personne n’a cet ID ami. Vérifie les chiffres.',
+  'friendId.own': 'C’est ton ID ami. Partage-le pour que tes amis puissent t’ajouter.',
   'friendId.tooMany': 'Trop d’ID erronés aujourd’hui. Réessaie demain.',
   'friendId.copied': 'ID ami copié.',
   'avatar.takePhoto': 'Prendre une photo',

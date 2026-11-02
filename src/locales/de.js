@@ -2437,6 +2437,7 @@ export const de = {
   'people.nameNudgeGo': 'Namen eingeben',
   'friendId.bad': 'Eine Freundes-ID hat 12 Ziffern.',
   'friendId.nobody': 'Niemand hat diese Freundes-ID. Prüf die Ziffern.',
+  'friendId.own': 'Das ist deine Freundes-ID. Teile sie, damit Freunde dich hinzufügen können.',
   'friendId.tooMany': 'Heute zu viele falsche IDs. Versuch es morgen.',
   'friendId.copied': 'Freundes-ID kopiert.',
   'avatar.takePhoto': 'Foto aufnehmen',
