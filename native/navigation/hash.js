@@ -239,8 +239,9 @@ export function goBack(opts = {}) {
     if (!opts.needsEnter) goHash('/')
     return true
   }
-  // The first question has to be added before anything else opens.
-  if (path === '/first') return true
+  // The first question has to be added before anything else opens, so back
+  // has nowhere to go in the app: let Android send it to the background.
+  if (path === '/first') return false
 
   // Includes Questions back to Tonight, the Material way.
   if (ready() && navigationRef.canGoBack()) {
