@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
-import { isNewAccount, onInviteJoined, readPendingInvite, takeInviteJoined } from '../../src/lib/invite-link.js'
+import { isNewAccount, onInviteJoined, readPendingInvite, takeInviteJoined, takeInviteMiss } from '../../src/lib/invite-link.js'
 import { readMine } from '../../src/lib/people.js'
-import { confirmDone } from '../lib/confirm.js'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { goHash } from '../navigation/hash.js'
 import { InviteCodeSection } from './InviteCodeSection.jsx'
 import { tourActive } from '../lib/tour.js'
@@ -14,6 +14,7 @@ import { publishSheet, sheetIsUp, whenNoSheet } from './SheetHost.jsx'
 // when the friend's code is at hand. An account made from an invite link
 // never is; it is told whose invite it joined with instead.
 const TODAY = new Set(['/', '/home', '/tonight'])
+const MISS_TEXT = { used: 'invite.missUsed', self: 'invite.missSelf', bad: 'invite.missBad' }
 
 function askedKey(userId) {
   return `did-i-invite-asked:${userId}`
@@ -93,7 +94,10 @@ export function InviteAskHost({ colors, book, onChange, path }) {
       if (joined) {
         markAsked(userId)
         showJoined(joined.name, colors)
+        return
       }
+      const miss = takeInviteMiss()
+      if (miss) confirmMiss(t(MISS_TEXT[miss] || MISS_TEXT.bad))
     }, 900)
     return () => clearTimeout(timer)
   }, [userId, path, joinedTick])

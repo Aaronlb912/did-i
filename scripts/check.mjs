@@ -10380,3 +10380,15 @@ await testAsync('widget footer: gentle drops the left count, Away says so', asyn
     writePrefs({ gentle: false, away: [] })
   }
 })
+
+test('a tap on an answered or removed question says so once, and a missed invite link says why', () => {
+  const stack = readFileSync(new URL('../src/lib/useTonightStack.js', import.meta.url), 'utf8')
+  assert.ok(stack.includes('focusNoted.current === key'), 'one note per focus id')
+  assert.ok(stack.includes('onFocusNote({ gone: true })'), 'a removed question is named')
+  assert.ok(stack.includes('onFocusNote({ status: row.answer.status'), 'an answered question is named')
+  const invite = readFileSync(new URL('../src/lib/invite-link.js', import.meta.url), 'utf8')
+  assert.ok(invite.includes("MISS_KEY, miss === 'used' || miss === 'self' ? miss : 'bad'"), 'every final miss is kept')
+  const host = readFileSync(new URL('../native/components/InviteAskHost.jsx', import.meta.url), 'utf8')
+  assert.ok(host.includes('takeInviteMiss()'), 'the host shows the kept miss')
+  for (const key of ['invite.missUsed', 'invite.missSelf', 'invite.missBad', 'tonight.focusGone']) assert.ok(t(key) !== key, key)
+})

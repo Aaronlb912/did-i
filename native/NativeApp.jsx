@@ -35,7 +35,6 @@ import { BootView } from './components/BootView.jsx'
 import { Boundary } from './components/Boundary.jsx'
 import { Slot } from './components/Slot.jsx'
 import { StreakMomentHost } from './components/StreakMoment.jsx'
-import { PendingScanHost } from './components/PendingScanHost.jsx'
 import { RootNavigator } from './navigation/RootNavigator.jsx'
 import { goBack, goFromPush, goHash } from './navigation/hash.js'
 import { useAppFonts } from './useAppFonts.js'
@@ -48,7 +47,7 @@ function ThemedStatusBar() {
   const theme = useTheme()
   return <StatusBar style={theme === 'light' ? 'dark' : 'light'} />
 }
-
+
 const wideColumn = { flex: 1, width: '100%', maxWidth: 640, alignSelf: 'center' }
 
 export function NativeApp() {
@@ -175,7 +174,6 @@ export function NativeApp() {
             <View style={wideColumn}>
               <RootNavigator />
             </View>
-            <PendingScanHost />
             <Slot>
               <StreakMomentHost />
             </Slot>

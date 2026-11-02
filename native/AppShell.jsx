@@ -50,6 +50,7 @@ import { SignInScreen } from './screens/SignInScreen.jsx'
 import { FirstSwipe } from './components/FirstSwipe.jsx'
 import { LegalPlain } from './screens/LegalScreen.jsx'
 import { captureInviteOnFirstLaunch } from './invite-capture.js'
+import { takePendingScan } from '../src/lib/qr-links.js'
 import { initGemIap } from '../src/lib/gem-iap.js'
 import { reportRejection } from '../src/lib/report.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
@@ -356,6 +357,13 @@ export function AppShell() {
   const signedIn = Boolean(account.user)
   useEffect(() => {
     if (signedIn && shelfReady) resumeCheckOnStops()
+  }, [signedIn, shelfReady])
+
+  // A friend or family code opened or scanned before sign-in opens Connect once the shelf is up.
+  useEffect(() => {
+    if (!signedIn || !shelfReady) return
+    const id = takePendingScan()
+    if (id) goHash('/people/connect', { id })
   }, [signedIn, shelfReady])
 
   const pingLabel = pingButtonLabel(pingState)

@@ -12,8 +12,11 @@ export function pillStatusLabel(status) {
 // another card. Short name, cut so the toast stays one line.
 const NAME_MAX = 24
 
-export function markedToast(status, lamp) {
+export function toastName(lamp) {
   const name = shortLabel(lamp)
-  const cut = name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1).trimEnd()}…` : name
-  return t('pill.markedWhat', { status: pillStatusLabel(status), name: cut })
+  return name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1).trimEnd()}…` : name
+}
+
+export function markedToast(status, lamp) {
+  return t('pill.markedWhat', { status: pillStatusLabel(status), name: toastName(lamp) })
 }

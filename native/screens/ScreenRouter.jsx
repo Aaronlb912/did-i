@@ -250,6 +250,8 @@ export function ScreenRouter({
       focusLampId={route.face}
       focusKey={route.focusAt}
       firstAdd={firstAdd}
+      onAskPings={onAskPings}
+      pingLabel={pingLabel}
     />
   )
 }
