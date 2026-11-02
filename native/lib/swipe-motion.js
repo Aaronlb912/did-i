@@ -20,6 +20,8 @@ export const DEPTH_SHOWN = 2
 // 1 for DID, -1 for nope, 0 to spring back.
 export function releaseWay(x, vx, blockDid = false, blockNope = false) {
   'worklet'
+  // A short slanted brush on a scroll is not an answer, however fast.
+  if (Math.abs(x) < SWIPE_THRESHOLD * 0.3) return 0
   const headed = x + vx * FLICK_LOOKAHEAD
   if (headed >= SWIPE_THRESHOLD && !blockDid) return 1
   if (headed <= -SWIPE_THRESHOLD && !blockNope) return -1
