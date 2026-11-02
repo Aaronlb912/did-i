@@ -2556,7 +2556,7 @@ export const it = {
   'tonight.nopedMany': "Hai detto non ancora a {n} domande.",
   'tonight.nopedOne': "Hai detto non ancora a «{question}»",
   'people.outComesAlong': 'Le tue domande e la tua serie vengono con te.',
-  'auth.newEmail': 'Sei nuovo? Inserisci la tua email e ti mandiamo un codice.',
+  'auth.newEmail': "La vuoi su ogni telefono? Inserisci la tua email per ricevere un codice.",
   'auth.tryLocal': 'Prova senza account',
   'sent.keptAnon': 'un amico che non ha ancora un nome',
   'friend.linkKept': 'Condiviso come link · l’ha tenuto',

@@ -2556,7 +2556,7 @@ export const pt = {
   'tonight.nopedMany': "Você disse ainda não para {n} perguntas.",
   'tonight.nopedOne': "Você disse ainda não para \"{question}\"",
   'people.outComesAlong': 'Suas perguntas e sua sequência vêm junto.',
-  'auth.newEmail': 'É novo? Digite seu e-mail e enviaremos um código.',
+  'auth.newEmail': "Quer usar em todos os celulares? Digite seu e-mail para receber um código.",
   'auth.tryLocal': 'Experimentar sem conta',
   'sent.keptAnon': 'um amigo que ainda não pôs nome',
   'friend.linkKept': 'Compartilhado como link · guardou',

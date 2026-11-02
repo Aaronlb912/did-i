@@ -2518,7 +2518,7 @@ export const ja = {
   'tonight.nopedMany': "{n}件の質問を「まだ」にしました。",
   'tonight.nopedOne': "「{question}」は「まだ」にしました。",
   'people.outComesAlong': '質問と連続記録はそのまま引き継がれます。',
-  'auth.newEmail': '初めての方はメールアドレスを入力してください。コードを送ります。',
+  'auth.newEmail': "すべてのスマホで使いたい方は、メールアドレスを入力してください。コードを送ります。",
   'auth.tryLocal': 'アカウントなしで試す',
   'sent.keptAnon': '名前未設定の友だち',
   'friend.linkKept': 'リンクで共有 · 受け取り済み',

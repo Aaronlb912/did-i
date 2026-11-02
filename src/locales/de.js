@@ -2569,7 +2569,7 @@ export const de = {
   'tonight.nopedMany': "Du hast bei {n} Fragen Noch nicht gesagt.",
   'tonight.nopedOne': "Du hast bei „{question}“ Noch nicht gesagt.",
   'people.outComesAlong': 'Deine Fragen und deine Serie kommen mit.',
-  'auth.newEmail': 'Neu hier? Gib deine E-Mail ein, wir schicken dir einen Code.',
+  'auth.newEmail': "Auf jedem Handy nutzen? Gib deine E-Mail ein, wir schicken dir einen Code.",
   'auth.tryLocal': 'Ohne Konto ausprobieren',
   'sent.keptAnon': 'einem Freund ohne Namen',
   'friend.linkKept': 'Als Link geteilt · behalten',

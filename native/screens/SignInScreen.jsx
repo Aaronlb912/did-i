@@ -50,6 +50,7 @@ export function SignInScreen({ onDone }) {
 
       {auth.step === 'start' ? (
         <>
+          <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('auth.tagline')}</Text>
           {/* One way in leads: start on this phone. Signing in sits under it. */}
           <DidButton colors={colors} label={t('auth.getStarted')} onPress={useLocalOnly} />
           <Text style={[styles.or, { color: colors.inkSoft }]}>{t('auth.haveAccount')}</Text>

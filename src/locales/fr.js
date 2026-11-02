@@ -2563,7 +2563,7 @@ export const fr = {
   'tonight.nopedMany': "Tu as dit pas encore à {n} questions.",
   'tonight.nopedOne': "Tu as dit pas encore à « {question} »",
   'people.outComesAlong': 'Tes questions et ta série te suivent.',
-  'auth.newEmail': 'Nouveau ? Saisis ton e-mail et on t’envoie un code.',
+  'auth.newEmail': "Tu la veux sur chaque téléphone ? Saisis ton e-mail pour recevoir un code.",
   'auth.tryLocal': 'Essayer sans compte',
   'sent.keptAnon': 'un ami qui n’a pas encore de nom',
   'friend.linkKept': 'Partagé en lien · gardé',
