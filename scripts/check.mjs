@@ -7143,6 +7143,19 @@ test('a freeze keeps the overall streak and shows as its own dot', () => {
   assert.equal(dot.freeze, true)
   assert.equal(dot.miss, false)
   assert.equal(nightWhy(boards, '2026-08-15', now).state, 'freeze')
+  // An Away-day Not yet changing only its time (auto-closed vs tapped) must not reuse the cached walk.
+  const awayShelf = (at) => {
+    const answers = []
+    for (let d = 1; d <= 20; d += 1) {
+      const iso = `2026-08-${String(d).padStart(2, '0')}`
+      answers.push(d === 10 ? { lampId: 'aw', periodKey: iso, status: 'skip', answeredAt: at } : { lampId: 'aw', periodKey: iso, status: 'yes', answeredAt: `${iso}T20:00:00` })
+    }
+    return [{ id: 'aw-b', dayFoldHour: 0, travelSkips: ['2026-08-10'], lamps: [{ id: 'aw', question: 'Did I x?', cadence: 'daily', archived: false, createdOn: '2026-08-01' }], answers }]
+  }
+  const awayNow = new Date(2026, 7, 21, 21, 0)
+  const autoRun = freezeState(awayShelf('2026-08-10T00:00:00.000Z'), awayNow).run
+  const tapRun = freezeState(awayShelf('2026-08-10T21:07:13.000Z'), awayNow).run
+  assert.notEqual(autoRun, tapRun, 'a tapped Not yet on an Away day is a miss; an auto-close is not')
   assert.ok(en['why.freeze'])
   const short = { ...book, lamps: [{ ...book.lamps[0], createdOn: '2026-08-02' }], answers: book.answers.filter((a) => a.periodKey >= '2026-08-02') }
   assert.equal(shelfStreak([short], now), 3, 'only 13 nights before the miss: no freeze, the streak broke')
