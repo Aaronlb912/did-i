@@ -957,7 +957,7 @@ export const ja = {
   'people.doneTonight': "今日完了",
   'people.streakN': "{n} 日の連続記録",
   'people.drop': '外す',
-  'friend.goneBody': "残した Did you は今日にそのままです。フレンドIDやリンクでいつでも追加し直せます。",
+  'friend.goneBody': "相手から届いた質問は今日に残ります。フレンドIDかリンクでもう一度追加できます。",
   'friend.goneTitle': '{name}とはもう友だちではありません',
   'people.dropOnly': '削除だけ',
   'people.dropLeave': '削除して共有中の質問 {n} 個から抜ける',

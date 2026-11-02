@@ -969,7 +969,7 @@ export const en = {
   'people.doneTonight': "done today",
   'people.streakN': "{n} day streak",
   'people.drop': 'Remove',
-  'friend.goneBody': "Did you’s you already kept stay on your Today. Add them again any time with their friend ID or a link.",
+  'friend.goneBody': "Questions they sent you stay on Today. Add them again with their friend ID or a link.",
   'friend.goneTitle': 'You and {name} aren’t friends anymore',
   'people.dropOnly': 'Just remove',
   'people.dropLeave': 'Remove and leave {n} shared questions',

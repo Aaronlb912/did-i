@@ -975,7 +975,7 @@ export const de = {
   'people.doneTonight': 'heute fertig',
   'people.streakN': "{n}-Tage-Serie",
   'people.drop': 'Entfernen',
-  'friend.goneBody': "Did you, die du behalten hast, bleiben auf deinem Heute. Füge die Person jederzeit wieder mit Freundes-ID oder Link hinzu.",
+  'friend.goneBody': "Fragen, die die Person dir geschickt hat, bleiben auf Heute. Füge sie mit Freundes-ID oder Link wieder hinzu.",
   'friend.goneTitle': 'Du und {name} seid keine Freunde mehr',
   'people.dropOnly': 'Nur entfernen',
   'people.dropLeave': 'Entfernen und {n} geteilte Fragen verlassen',

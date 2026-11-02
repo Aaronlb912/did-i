@@ -972,7 +972,7 @@ export const fr = {
   'people.doneTonight': "fini aujourd’hui",
   'people.streakN': "série de {n} jours",
   'people.drop': 'Retirer',
-  'friend.goneBody': "Les Did you gardés restent sur ton Aujourd’hui. Rajoute-le quand tu veux avec son ID ami ou un lien.",
+  'friend.goneBody': "Les questions qu’il ou elle t’a envoyées restent sur Aujourd’hui. Rajoute-le avec son ID ami ou un lien.",
   'friend.goneTitle': '{name} et toi n’êtes plus amis',
   'people.dropOnly': 'Retirer seulement',
   'people.dropLeave': 'Retirer et quitter {n} questions partagées',
