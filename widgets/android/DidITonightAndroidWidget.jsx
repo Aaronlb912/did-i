@@ -547,7 +547,7 @@ export function fitQuestion(text, max, width, height) {
 
 export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const raw = props || {
-    tagTitle: 'Did I',
+    tagTitle: 'Today',
     question: '',
     items: [],
     footer: '',
@@ -557,7 +557,8 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
     left: 0,
     openUri: 'didi://tonight',
   }
-  const p = raw
+  // An older snapshot can lack the open line; never draw it blank.
+  const p = raw.openLabel ? raw : { ...raw, openLabel: 'Open' }
   const C = palette(p)
   const tonightUri = p.openUri || 'didi://tonight'
   const { compact, tight, large } = widgetSize(widgetInfo)
@@ -764,6 +765,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
               : (
               <TextWidget
                 text={p.openLabel}
+                accessibilityLabel={p.openLabel}
                 style={{
                   fontSize: 12,
                   fontWeight: '600',
@@ -780,6 +782,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
             {!compact && String(p.weLine || '').trim() ? (
               <TextWidget
                 text={String(p.weLine).trim()}
+                accessibilityLabel={String(p.weLine).trim()}
                 style={{
                   fontSize: 11,
                   fontWeight: '600',
