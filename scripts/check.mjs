@@ -380,6 +380,15 @@ test('a fifth schedule edit keeps the first schedule for the oldest days', async
   assert.equal(isDueOn(mon, '2026-09-20'), true, 'first-schedule days stay daily')
 })
 
+test('a pack never adds a second copy of an archived or already added question', async () => {
+  const { packList, addPack } = await import('../src/lib/starters.js')
+  const first = packList({ id: 'b', lamps: [] })[0]
+  const added = addPack({ id: 'b', lamps: [], answers: [] }, first)
+  const archived = { ...added.book, lamps: added.book.lamps.map((lamp, i) => (i === 0 ? { ...lamp, archived: true } : lamp)) }
+  assert.equal(packList(archived).find((pack) => pack.id === first.id)?.items.length || 0, 0)
+  assert.equal(addPack(archived, first).ids.length, 0)
+})
+
 test('sync keeps a pause resumed on the other phone', async () => {
   const { mergeBooks } = await import('../src/lib/shelf-merge.js')
   const base = { id: 'q', question: 'Did I read?', cadence: 'daily', createdOn: '2026-10-01' }

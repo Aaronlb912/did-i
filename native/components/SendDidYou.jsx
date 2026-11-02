@@ -153,7 +153,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
           >
             {picking ? (
               <Reveal style={styles.pickList}>
-                <Text style={[styles.popKicker, { color: colors.on }]}>{t("people.sendTitle")}</Text>
+                <Text accessibilityRole="header" style={[styles.popKicker, { color: colors.on }]}>{t("people.sendTitle")}</Text>
                 <Meta colors={colors}>{t("didYouLink.pickWho")}</Meta>
                 {friends === null ? <Meta colors={colors}>{t("family.loading")}</Meta> : null}
                 {friends?.map((row) => (

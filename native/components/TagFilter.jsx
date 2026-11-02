@@ -132,8 +132,9 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
       ) : null}
       </View>
       <Modal visible={open && Boolean(at)} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={t('settings.close')}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessible={false}>
           <Pressable
+            accessible={false}
             style={[
               styles.menu,
               { top: at?.y || 0, left: at?.x || 0, backgroundColor: colors.panel2, borderColor: colors.line },
