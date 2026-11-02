@@ -9,7 +9,7 @@ import { addDaysIso, boardDate } from '../../src/lib/recurrence.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { publishSheet, sheetIsUp } from '../components/SheetHost.jsx'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
-import { AppState, Platform, Pressable,ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { AccessibilityInfo, AppState, Platform, Pressable,ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { firstPullWaiting, pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
@@ -493,6 +493,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const showIntro = !introSeen && !answerButtons && stack.bodyKind === 'face' && !stack.nightDone && !stack.cheer
   // The first answer while the hint is up means the swipe is learned.
   const answeredNow = stack.dueWithWait.filter((row) => row.answer).length
+  // A screen reader hears the answer land and what comes next.
+  const markSpoken = (row, status) => {
+    const left = stack.dueWithWait.filter((item) => !item.answer && stack.rowKey(item) !== stack.rowKey(row)).length
+    stack.mark(row, status)
+    AccessibilityInfo.announceForAccessibility(t(left ? (status === 'skip' ? 'a11y.notYetNext' : 'a11y.didNext') : 'a11y.allDone'))
+  }
   const answeredAtStart = useRef(answeredNow)
   useEffect(() => {
     if (!introSeen && answeredNow > answeredAtStart.current) markSwipeIntroSeen()
@@ -1205,8 +1211,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           kicker: cardKicker(row, t('tonight.didI')),
           title: row.lamp.question,
         }))}
-        onDid={() => stack.mark(faceRow, 'yes')}
-        onNope={() => stack.mark(faceRow, 'skip')}
+        onDid={() => markSpoken(faceRow, 'yes')}
+        onNope={() => markSpoken(faceRow, 'skip')}
         buddy={activeBuddy(faceBook)}
         onEdit={() => goHash('/hang', { id: faceRow.lamp.id })}
         frame={cardFrame}
@@ -1225,7 +1231,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         ) : null}
       </SwipeCardHost>
     )
-    face = withAnswerButtons(face, () => stack.mark(faceRow, 'yes'), () => stack.mark(faceRow, 'skip'))
+    face = withAnswerButtons(face, () => markSpoken(faceRow, 'yes'), () => markSpoken(faceRow, 'skip'))
   } else if (stack.bodyKind === 'hall' && stack.nightDone) {
     doneFace = true
     face = (
@@ -1371,7 +1377,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         wasSkip={stack.holeWasSkip}
         colors={colors}
         onLate={() =>
-          stack.mark(
+          markSpoken(
             { lamp: stack.holePick.lamp, periodKey: stack.holePick.periodKey, book: stack.bookOf(stack.holePick) },
             'late',
           )
@@ -1380,7 +1386,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           stack.holeWasSkip
             ? null
             : () =>
-                stack.mark(
+                markSpoken(
                   { lamp: stack.holePick.lamp, periodKey: stack.holePick.periodKey, book: stack.bookOf(stack.holePick) },
                   'skip',
                 )
@@ -1394,7 +1400,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       <WaitPlate
         row={stack.waitPick}
         colors={colors}
-        onDid={() => stack.mark(stack.waitPick, 'yes')}
+        onDid={() => markSpoken(stack.waitPick, 'yes')}
         wrap={staticWrap}
         penBeside={Boolean(activeBuddy(book))}
       />
@@ -1456,8 +1462,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         stampNope={t('tonight.swipeNope')}
         blockDid={isDid}
         blockNope={status === 'skip' || isDid}
-        onDid={() => stack.mark(pillRow, 'yes')}
-        onNope={() => stack.mark(pillRow, 'skip')}
+        onDid={() => markSpoken(pillRow, 'yes')}
+        onNope={() => markSpoken(pillRow, 'skip')}
         buddy={activeBuddy(pillBook)}
         onEdit={() => goHash('/hang', { id: pillRow.lamp.id })}
         frame={cardFrame}
@@ -1480,7 +1486,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     )
     // Picked from the pills: the same Did and Nope as the stack. A noped one
     // can still take a Did (late), never a second nope.
-    face = withAnswerButtons(face, () => stack.mark(pillRow, 'yes'), status === 'skip' ? null : () => stack.mark(pillRow, 'skip'))
+    face = withAnswerButtons(face, () => markSpoken(pillRow, 'yes'), status === 'skip' ? null : () => markSpoken(pillRow, 'skip'))
   } else if (stack.bodyKind === 'off') {
     face = (
       <GemFaceShell look={premium ? look : ''}
@@ -1519,7 +1525,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // Rename lives in Settings > Folders; the title is only a title here.
   const titleSlot = (
     <View style={styles.titleHit}>
-      <Text style={[headerTitleStyle, { color: colors.ink }]} numberOfLines={1} accessibilityRole="header">
+      <Text maxFontSizeMultiplier={1.4} style={[headerTitleStyle, { color: colors.ink }]} numberOfLines={1} accessibilityRole="header">
         {mastTitle}
       </Text>
     </View>

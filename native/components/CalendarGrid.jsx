@@ -144,13 +144,15 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                 key={`${row.boardId}-${row.lamp.id}`}
                 style={styles.markRow}
                 disabled={!onAnswer || canAnswer || iso >= boardDate(new Date())}
-                accessibilityRole={onAnswer && !canAnswer && iso < boardDate(new Date()) ? 'button' : undefined}
+                accessibilityRole={onAnswer && !canAnswer && iso < boardDate(new Date()) ? 'text' : undefined}
+                accessibilityLabel={`${shortLabel(row.lamp)}, ${mark.label}`}
+                accessibilityHint={onAnswer && !canAnswer && iso < boardDate(new Date()) ? t('calendar.tooOld') : undefined}
                 onPress={() => showToast({ id: 'cal-old', kind: 'error', text: t('calendar.tooOld'), ms: 3000 })}
               >
                 <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : mark.key === 'miss' && prefs.gentle !== true ? 'miss' : 'open'] }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
-                  <Text style={[styles.markSub, { color: colors.inkDim }]}>{shortLabel(row.lamp)}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.markSub, { color: colors.inkDim }]}>{shortLabel(row.lamp)}</Text>
                 </View>
                 {canAnswer ? (
                   <View style={styles.markBtns}>

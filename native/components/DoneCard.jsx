@@ -136,6 +136,13 @@ export function StreakCount({ n, from = null, colors }) {
   )
 }
 
+function nightState(night, gentle) {
+  if (night.empty) return 'a11y.dayNone'
+  if (night.on) return 'jewelKey.did'
+  if (night.miss && !gentle) return 'later.missed'
+  return 'jewelKey.open'
+}
+
 /** The last seven nights as dots, tonight last and ringed. A tap on one asks why. */
 export function NightWeek({ nights, colors, onNight }) {
   // Gentle mode: a missed night looks like a blank one.
@@ -152,7 +159,8 @@ export function NightWeek({ nights, colors, onNight }) {
           onPress={() => onNight?.(night.iso)}
           hitSlop={4}
           accessibilityRole="button"
-          accessibilityLabel={weekdayName(night.iso, 'long', prefs.locale)}
+          accessibilityLabel={`${weekdayName(night.iso, 'long', prefs.locale)}, ${t(nightState(night, gentle))}`}
+          accessibilityState={{ selected: night.isToday }}
         >
           <View style={styles.dotWrap}>
             {night.isToday ? <View style={[styles.ring, { borderColor: night.on ? colors.on : colors.line }]} /> : null}
@@ -171,7 +179,7 @@ export function NightWeek({ nights, colors, onNight }) {
               ]}
             />
           </View>
-          <Text style={[styles.weekday, { color: night.isToday ? colors.ink : colors.inkDim }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.weekday, { color: night.isToday ? colors.ink : colors.inkDim }]}>
             {weekdayName(night.iso, 'narrow', prefs.locale)}
           </Text>
         </Pressable>
@@ -200,7 +208,7 @@ export function tomorrowLine({ count, from, next }, streak = 0) {
 const styles = StyleSheet.create({
   settle: { width: '100%' },
   week: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 18, maxWidth: 300 },
-  night: { alignItems: 'center', gap: 6, minWidth: 24 },
+  night: { alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 44, minHeight: 44 },
   dotWrap: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
   ring: { position: 'absolute', width: 20, height: 20, borderRadius: 10, borderWidth: 1.5 },
   dot: { width: 10, height: 10, borderRadius: 5 },

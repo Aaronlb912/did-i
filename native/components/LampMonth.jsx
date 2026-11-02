@@ -145,6 +145,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
               <Pressable
                 key={cell.iso}
                 style={styles.cell}
+                hitSlop={8}
                 disabled={!cell.state}
                 onPress={() => openDay(cell)}
                 accessibilityRole={cell.state ? 'button' : undefined}
@@ -162,7 +163,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
                         : null,
                   ]}
                 >
-                  <Text style={[styles.dayText, { color: fill && !(cell.state === 'missed' && colors.missRing) ? colors.bg : cell.state ? colors.ink : colors.inkDim }]}>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.dayText, { color: fill && !(cell.state === 'missed' && colors.missRing) ? colors.bg : cell.state ? colors.ink : colors.inkDim }]}>
                     {cell.day}
                   </Text>
                 </View>
