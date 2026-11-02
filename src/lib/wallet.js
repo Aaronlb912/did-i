@@ -327,7 +327,8 @@ export function validateCoinItem(kind, itemId, today = boardDate(new Date())) {
   return false
 }
 
-export async function purchaseWithCoins(kind, itemId) {
+// stage: for a cheer stage, the stage this buy pays for, so a lost reply can be read back.
+export async function purchaseWithCoins(kind, itemId, stage = 0) {
   if (!accountSessionOn()) return { miss: 'shop.miss.buyFail' }
   const db = cloud()
   if (!db) return { miss: 'shop.miss.buyFail' }
@@ -349,6 +350,10 @@ export async function purchaseWithCoins(kind, itemId) {
     const list = { look: 'looks', accessory: 'accessories', frame: 'frames' }[k]
     const back = list ? await readCoinCatalog().catch(() => null) : null
     if (back?.[list]?.includes(id)) return { miss: '', ...back, catalog: back }
+    if (k === 'cheer_stage' && stage > 1) {
+      const seen = await readCoinCatalog().catch(() => null)
+      if (Number(seen?.cheerStages?.[id]) >= stage) return { miss: '', ...seen, catalog: seen }
+    }
     return { miss: 'shop.miss.buyFail' }
   }
   const cat = normalizeCoinCatalog(data)

@@ -1143,6 +1143,19 @@ export function ShopScreen({ book, onChange }) {
   )
 }
 
+// One shop buy at a time: a second confirm while the first is still on the
+// network would send a second buy.
+let shopBuying = false
+async function goOnce(go) {
+  if (shopBuying || typeof go !== 'function') return
+  shopBuying = true
+  try {
+    await go()
+  } finally {
+    shopBuying = false
+  }
+}
+
 export function ShopLooksScreen({ book, onChange }) {
   const [peekLook, setPeekLook] = useState('')
   const colors = useShopColors(book, peekLook)
@@ -1246,7 +1259,7 @@ export function ShopLooksScreen({ book, onChange }) {
         onGo={() => {
           const go = confirm?.go
           setConfirm(null)
-          if (typeof go === 'function') go()
+          goOnce(go)
         }}
       />
     </BoardShell>
@@ -1375,7 +1388,7 @@ export function ShopCheersScreen({ book, onChange }) {
         onGo={() => {
           const go = confirm?.go
           setConfirm(null)
-          if (typeof go === 'function') go()
+          goOnce(go)
         }}
       />
     </BoardShell>
@@ -1472,7 +1485,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
         onGo={() => {
           const go = confirm?.go
           setConfirm(null)
-          if (typeof go === 'function') go()
+          goOnce(go)
         }}
       />
     </BoardShell>
@@ -1711,7 +1724,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
         onGo={() => {
           const go = confirm?.go
           setConfirm(null)
-          if (typeof go === 'function') go()
+          goOnce(go)
         }}
       />
     </BoardShell>

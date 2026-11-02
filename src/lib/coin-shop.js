@@ -48,7 +48,7 @@ async function buyLookWithCoinsRaw(book, id) {
 async function buyCheerStageWithCoinsRaw(book, id) {
   if (accountSessionOn()) {
     const shown = nextCheerStage(normalizePurse(book).cheerStages[id] || 1)
-    const remote = await purchaseWithCoins('cheer_stage', id)
+    const remote = await purchaseWithCoins('cheer_stage', id, shown)
     if (remote.miss) return { book, miss: remote.miss, missN: remote.missN }
     // The server counts bought stages; the phone also counts uses. Keep the stage that was paid for.
     const next = applyPurchaseToBook(book, remote)
