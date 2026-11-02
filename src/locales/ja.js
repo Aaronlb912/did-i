@@ -436,6 +436,8 @@ export const ja = {
   'streak.riskTitle': 'Did I',
   'streak.riskBody': "今日中か、明日の{time}までに終えて連続記録を続けましょう。",
   'streak.graceBody': "昨日の分がまだ残っています。{time}まで回答できます。",
+  'notif.stillOpen': "まだ未回答: {question}",
+  'notif.stillOpenMany': "未回答の質問が{n}件あります",
   'cal.kicker': '連続記録',
   'cal.prev': '前の月',
   'cal.next': '次の月',

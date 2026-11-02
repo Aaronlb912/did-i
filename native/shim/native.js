@@ -292,12 +292,29 @@ async function schedulePingsNow(books, now = new Date()) {
           if (afterQuiet(late).getTime() !== late.getTime()) continue
           notes.push({
             identifier: String(notifyId(row.lamp.id, `${row.periodKey}:late:${row.dateIso}`)),
-            content,
+            content: readPrefs().pingsPrivate ? content : { ...content, body: t('notif.stillOpen', { question: row.lamp.question }) },
             trigger: when(late),
             lateCall: true,
           })
         }
       }
+    }
+    // Several last calls at the same minute: one note, opening Today.
+    const lateAt = new Map()
+    for (const note of notes) {
+      if (!note.lateCall) continue
+      const key = note.trigger.date.getTime()
+      lateAt.set(key, [...(lateAt.get(key) || []), note])
+    }
+    for (const [key, group] of lateAt) {
+      if (group.length < 2) continue
+      for (const note of group) notes.splice(notes.indexOf(note), 1)
+      notes.push({
+        identifier: String(notifyId('late', String(key))),
+        content: { title: 'Did I', body: t('notif.stillOpenMany', { n: group.length }), data: { go: '/tonight' } },
+        trigger: group[0].trigger,
+        lateCall: true,
+      })
     }
     // Did we questions with a time and the reminder on, from the last list
     // the app saved. Skipped on a night you already answered.
@@ -374,12 +391,15 @@ async function schedulePingsNow(books, now = new Date()) {
     // Any folder's streak can be at risk, not only the first one's.
     const streakPings = pingOn('streakRisk') && !gentleOn()
     const heat = streakPings ? shelfStreak(list, now) : null
-    const risk = streakPings ? list.map((item) => streakRiskFire(item, now, heat)).find(Boolean) : null
-    // Quiet hours would move it onto the grace ping. A 21:00 last call for an
-    // open question already says it: one buzz, not two.
-    const riskAt = risk ? new Date(risk.at).getTime() : 0
-    const lateThen = notes.some((note) => note.lateCall && note.trigger.date.getTime() === riskAt)
-    if (risk && !lateThen && afterQuiet(new Date(risk.at)).getTime() === riskAt) {
+    for (const ahead of streakPings ? aheads : []) {
+      const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
+      const risk = list.map((item) => streakRiskFire(item, day, heat)).find(Boolean)
+      if (!risk) continue
+      // Quiet hours would move it onto the grace ping. A 21:00 last call for an
+      // open question already says it: one buzz, not two.
+      const riskAt = new Date(risk.at).getTime()
+      const lateThen = notes.some((note) => note.lateCall && note.trigger.date.getTime() === riskAt)
+      if (lateThen || afterQuiet(new Date(risk.at)).getTime() !== riskAt) continue
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
         content: {

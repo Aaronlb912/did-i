@@ -442,6 +442,8 @@ export const it = {
   'streak.riskTitle': 'Did I',
   'streak.riskBody': "Finisci oggi, o entro le {time} di domani, per mantenere la serie.",
   'streak.graceBody': "Resta ancora qualcosa da ieri. Hai tempo fino alle {time}.",
+  'notif.stillOpen': "Ancora aperta: {question}",
+  'notif.stillOpenMany': "{n} domande ancora aperte",
   'cal.kicker': 'Serie',
   'cal.prev': 'Mese prima',
   'cal.next': 'Mese dopo',

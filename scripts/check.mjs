@@ -8650,7 +8650,13 @@ await testAsync('readthrough 8: the 9 PM warning fires when last night was froze
   // A question that asks at 10 PM is still waiting at 9 PM: nothing is open to warn about.
   const lateBook = { ...book, lamps: [{ ...book.lamps[0], askAfter: '22:00' }] }
   assert.equal(streakRiskFire(lateBook, clock, heat), null, 'no 9 PM warning for a question that asks at 10 PM')
-  assert.ok(graceRiskFire(lateBook, clock, heat), 'the midnight warning still comes for a 10 PM question')
+  const grace = graceRiskFire(lateBook, clock, heat)
+  assert.ok(grace, 'the morning warning still comes for a 10 PM question')
+  assert.equal(new Date(grace.at).getHours(), 7, 'the grace note fires at 7 AM, before the 9 AM cutoff')
+  const nextDay = streakRiskFire(book, new Date(2026, 9, 1, 12), heat)
+  assert.equal(new Date(nextDay.at).getDate(), 1, 'the 9 PM warning can be built for a later day')
+  const nativeShim = readFileSync(path.join(checkRoot, 'native/shim/native.js'), 'utf8')
+  assert.ok(nativeShim.includes('notif.stillOpenMany') && nativeShim.includes('notif.stillOpen\''), 'last calls are merged and prefixed')
   const notify = readFileSync(path.join(checkRoot, 'src/lib/notify.js'), 'utf8')
   assert.ok(notify.includes('shelfStreak([book], now)'), 'web pings pass the real streak')
 })
@@ -9861,7 +9867,7 @@ test('signed in, did then a restart then did still pays once', () => {
 test('the streak-risk ping is skipped when quiet hours move it', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const native = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
-  assert.match(native, /if \(risk && !lateThen && afterQuiet\(new Date\(risk\.at\)\)\.getTime\(\) === riskAt\)/)
+  assert.ok(native.includes('if (lateThen || afterQuiet(new Date(risk.at)).getTime() !== riskAt) continue'))
   // A 21:00 last call already buzzes then: no second streak note on top.
   assert.match(native, /lateThen = notes\.some\(\(note\) => note\.lateCall && note\.trigger\.date\.getTime\(\) === riskAt\)/)
 })

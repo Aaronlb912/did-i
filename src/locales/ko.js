@@ -436,6 +436,8 @@ export const ko = {
   'streak.riskTitle': 'Did I',
   'streak.riskBody': "오늘, 아니면 내일 {time}까지 끝내야 연속 기록이 이어져요.",
   'streak.graceBody': "어제 질문이 아직 남아 있어요. {time}까지 답할 수 있어요.",
+  'notif.stillOpen': "아직 열려 있어요: {question}",
+  'notif.stillOpenMany': "열린 질문이 {n}개 있어요",
   'cal.kicker': '연속 기록',
   'cal.prev': '이전 달',
   'cal.next': '다음 달',
