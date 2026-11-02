@@ -2759,6 +2759,8 @@ export const zh = {
   'questions.reorderHint': "今天按这个顺序提问。",
   'questions.moveUp': '上移{name}',
   'questions.moveDown': '下移{name}',
+  'questions.moveTop': "把{name}移到最上面",
+  'questions.moveBottom': "把{name}移到最下面",
   // round4-polish/shop-round4
   'shop.allOwned.look': '你已拥有商店里的所有外观。',
   'shop.allOwned.cheer': '你已拥有商店里的所有欢呼。',

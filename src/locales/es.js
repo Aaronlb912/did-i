@@ -2808,6 +2808,8 @@ export const es = {
   'questions.reorderHint': "Hoy se preguntan en este orden.",
   'questions.moveUp': 'Subir {name}',
   'questions.moveDown': 'Bajar {name}',
+  'questions.moveTop': "Mover {name} arriba del todo",
+  'questions.moveBottom': "Mover {name} abajo del todo",
   // round4-polish/shop-round4
   'shop.allOwned.look': 'Tienes todos los estilos de la tienda.',
   'shop.allOwned.cheer': 'Tienes todos los ánimos de la tienda.',

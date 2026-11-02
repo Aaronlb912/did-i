@@ -2766,6 +2766,8 @@ export const ja = {
   'questions.reorderHint': "今日はこの順番で聞きます。",
   'questions.moveUp': '{name}を上へ',
   'questions.moveDown': '{name}を下へ',
+  'questions.moveTop': "{name}をいちばん上へ",
+  'questions.moveBottom': "{name}をいちばん下へ",
   // round4-polish/shop-round4
   'shop.allOwned.look': 'ショップの見た目をすべて持っています。',
   'shop.allOwned.cheer': 'ショップの応援をすべて持っています。',

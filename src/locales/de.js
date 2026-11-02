@@ -2817,6 +2817,8 @@ export const de = {
   'questions.reorderHint': "Heute kommen sie in dieser Reihenfolge.",
   'questions.moveUp': '{name} nach oben',
   'questions.moveDown': '{name} nach unten',
+  'questions.moveTop': "{name} ganz nach oben",
+  'questions.moveBottom': "{name} ganz nach unten",
   // round4-polish/shop-round4
   'shop.allOwned.look': 'Du hast jeden Look im Shop.',
   'shop.allOwned.cheer': 'Du hast jeden Jubel im Shop.',

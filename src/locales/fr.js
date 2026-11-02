@@ -2811,6 +2811,8 @@ export const fr = {
   'questions.reorderHint': "Aujourd’hui, elles viennent dans cet ordre.",
   'questions.moveUp': 'Monter {name}',
   'questions.moveDown': 'Descendre {name}',
+  'questions.moveTop': "Mettre {name} tout en haut",
+  'questions.moveBottom': "Mettre {name} tout en bas",
   // round4-polish/shop-round4
   'shop.allOwned.look': 'Tu as tous les looks de la boutique.',
   'shop.allOwned.cheer': 'Tu as toutes les acclamations de la boutique.',
