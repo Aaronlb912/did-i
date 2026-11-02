@@ -817,7 +817,8 @@ export function matchLamps(book, query) {
     const blob = [lamp.question, lamp.short, lamp.kind, lamp.notes, shortLabel(lamp)]
       .join(' ')
       .toLowerCase()
-    return blob.includes(q)
+    // Every word, in any order, like the questions list search.
+    return q.split(/s+/).every((word) => blob.includes(word))
   })
 }
 

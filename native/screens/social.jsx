@@ -2658,9 +2658,11 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
 
   // One answer at a time per row, so a double tap cannot keep it twice.
   const answering = useRef(new Set())
+  const [sendingId, setSendingId] = useState(null)
   async function answer(row, keep) {
     if (answering.current.has(row.id)) return
     answering.current.add(row.id)
+    setSendingId(row.id)
     setMiss('')
     let res
     try {
@@ -2669,6 +2671,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       res = { miss: 'confirm.miss' }
     } finally {
       answering.current.delete(row.id)
+      setSendingId(null)
     }
     const { miss: why, already } = res
     if (why) {
@@ -2744,8 +2747,11 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       <OfflineLine colors={colors} />
       <WeAsks colors={colors} />
       <Meta colors={colors}>{t('inbox.hintAll')}</Meta>
+      {/* Above the cards so a failed Keep is seen on a long inbox. */}
+      <Miss colors={colors} onRetry={load}>{miss}</Miss>
       {rows.map((row) => (
         <Reveal key={row.id}>
+        <View pointerEvents={sendingId === row.id ? 'none' : 'auto'} accessibilityState={{ busy: sendingId === row.id }} style={sendingId === row.id ? { opacity: 0.5 } : null}>
         <PersonRow
           colors={colors}
           person={row.person}
@@ -2774,6 +2780,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
             </Pressable>
           ) : null}
         </PersonRow>
+        </View>
         </Reveal>
       ))}
       {menu ? (
@@ -2784,7 +2791,6 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
           items={[{ key: 'report', label: t('we.report'), danger: true, onPress: () => report(menu) }]}
         />
       ) : null}
-      <Miss colors={colors} onRetry={load}>{miss}</Miss>
     </ScreenShell>
   )
 }
