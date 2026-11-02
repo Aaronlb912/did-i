@@ -619,8 +619,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
               once('fam-leave', async () => {
               publishSheet(null)
               const { miss: why } = await leaveFamily(fam.id)
-              if (why === 'lastparent') return setMiss(t('family.lastParentLeave'))
-              if (why) return setMiss(why)
+              if (why === 'lastparent') return confirmMiss(t('family.lastParentLeave'))
+              if (why === 'unchanged') return confirmMiss(t('confirm.miss'))
+              if (why) return confirmMiss(tMiss(why))
               confirmDone(t('confirm.leftFamily', { name: fam.name || t('people.familyOne') }))
               refreshPeople()
               swapHash('/people')
