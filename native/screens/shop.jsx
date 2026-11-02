@@ -2708,6 +2708,7 @@ export function GiftScreen({ book, onChange, toId }) {
     }
     setBusy(true)
     sending.current = true
+    openPick(type, item, '', true)
     let out
     try {
       const key = `${toId}|${type}|${item.id}|${note}`
@@ -2746,7 +2747,10 @@ export function GiftScreen({ book, onChange, toId }) {
 
   // Short on coins or gems: the same need-more line as the Shop sheet, and
   // Send stays off. The server checks the cost again either way.
-  function openPick(type, item, miss = '') {
+  // `sendingNow` dims Send while the gift is on its way, so the tap reads as taken.
+  function openPick(type, item, miss = '', sendingNow = false) {
+    // The last "Sent" line belongs to the last item, not this one.
+    setSent('')
     const cost = item.gems ? gemLine(item.gems) : coinLine(item.coins)
     const short = !canAfford(item, purse)
     const need = item.gems
@@ -2759,7 +2763,7 @@ export function GiftScreen({ book, onChange, toId }) {
       body: short ? `${cost}\n${need}` : miss || `${cost}\n${leftAfter(purse, item)} ${t('gift.howItWorks')}`,
       quote: note.trim(),
       goLabel: t('gift.send'),
-      goDisabled: short,
+      goDisabled: short || sendingNow,
       onGo: () => send(type, item),
       ...(short && item.gems
         ? {
@@ -2825,7 +2829,7 @@ export function GiftScreen({ book, onChange, toId }) {
         />
         <Text style={[giftStyles.count, { color: colors.inkDim }]}>{note.length}/60</Text>
       </View>
-      {sent ? <Text style={[giftStyles.sent, { color: colors.on }]}>{sent}</Text> : null}
+      {sent ? <Text style={[giftStyles.sent, { color: colors.on }]} accessibilityLiveRegion="polite">{sent}</Text> : null}
       <KitSegment
         items={GIFT_TABS.map((item) => ({ id: item.id, label: t(item.key) }))}
         selected={tab}
