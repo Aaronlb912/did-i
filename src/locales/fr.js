@@ -2750,7 +2750,7 @@ export const fr = {
   'settings.tonightCap': "Aujourd’hui et rappels",
   'settings.helpPrivacy': 'Aide et confidentialité',
   'settings.more': 'Plus',
-  'settings.moreSub': 'Copies de tes données, rapports de plantage, mentions légales, version',
+  'settings.moreSub': 'Copies de tes données, mentions légales, version',
   'a11y.answerNight': 'Répondre pour {date}',
   'a11y.preview': 'Aperçu de {name}',
   'a11y.swipeHint': 'Balayez à droite pour Did, à gauche pour Pas encore. Ou utilisez les actions.',

@@ -2707,7 +2707,7 @@ export const ko = {
   'settings.tonightCap': "오늘과 알림",
   'settings.helpPrivacy': '도움말과 개인정보',
   'settings.more': '더 보기',
-  'settings.moreSub': '데이터 사본, 오류 보고, 법률 정보, 버전',
+  'settings.moreSub': '데이터 사본, 법률 정보, 버전',
   'a11y.answerNight': '{date} 답하기',
   'a11y.preview': '{name} 미리 보기',
   'a11y.swipeHint': '오른쪽으로 밀면 Did, 왼쪽으로 밀면 아직. 동작 메뉴도 쓸 수 있어요.',

@@ -2705,7 +2705,7 @@ export const ja = {
   'settings.tonightCap': "今日とリマインダー",
   'settings.helpPrivacy': 'ヘルプとプライバシー',
   'settings.more': 'その他',
-  'settings.moreSub': 'データのコピー、クラッシュレポート、規約、バージョン',
+  'settings.moreSub': 'データのコピー、規約、バージョン',
   'a11y.answerNight': '{date} に回答',
   'a11y.preview': '{name} をプレビュー',
   'a11y.swipeHint': '右にスワイプで Did、左にスワイプで まだ。操作メニューも使えます。',

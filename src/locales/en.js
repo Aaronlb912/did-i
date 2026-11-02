@@ -2737,7 +2737,7 @@ export const en = {
   'settings.tonightCap': "Today and reminders",
   'settings.helpPrivacy': 'Help and privacy',
   'settings.more': 'More',
-  'settings.moreSub': 'Copies of your data, crash reports, legal, version',
+  'settings.moreSub': 'Copies of your data, legal, version',
   'a11y.answerNight': 'Answer {date}',
   'a11y.preview': 'Preview {name}',
   'a11y.swipeHint': 'Swipe right for Did, left for Not yet. Or use the actions.',
