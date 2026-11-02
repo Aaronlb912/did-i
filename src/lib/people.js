@@ -1392,7 +1392,7 @@ export async function renameFamily(familyId, name) {
   const clean = String(name || '').trim().slice(0, 60)
   if (!clean) return { miss: 'family.nameEmpty' }
   const { data, error } = await db.from('families').update({ name: clean }).eq('id', familyId).select('id')
-  if (error) return { miss: error.message }
+  if (error) return { miss: appMiss(error) }
   if (!data?.length) return { miss: 'family.renameMiss' }
   return { miss: '' }
 }
@@ -1442,7 +1442,7 @@ export async function setRole(familyId, userId, role) {
     .eq('family_id', familyId)
     .eq('user_id', userId)
     .select('user_id')
-  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : appMiss(error) }
   // Nothing changed: no longer a parent, or they already left. No error comes back.
   if (!data?.length) return { miss: 'unchanged' }
   return { miss: '' }
@@ -1457,8 +1457,9 @@ export async function dropMember(familyId, userId) {
     .eq('family_id', familyId)
     .eq('user_id', userId)
     .select('user_id')
-  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : appMiss(error) }
   if (!data?.length) return { miss: 'unchanged' }
+  noteSocialLive('familyInfo')
   return { miss: '' }
 }
 
@@ -1482,7 +1483,7 @@ export async function listFamilyLamps(familyId, periodKey) {
   ])
   // A failed read must not look like a family with no questions.
   const error = lampRows.error || answerRows.error
-  if (error) return { miss: error.message || 'confirm.miss', lamps: [], answers: [] }
+  if (error) return { miss: appMiss(error), lamps: [], answers: [] }
   const lamps = lampRows.data || []
   return { lamps, answers: answerRows.data || [], last: await familyEveryLast(db, lamps) }
 }

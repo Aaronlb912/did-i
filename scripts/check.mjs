@@ -9505,6 +9505,8 @@ await testAsync('readShelf hands back the same shelf until storage changes, and 
   assert.equal(folderNameKey('Did I'), folderNameKey('General'))
   assert.equal(folderNameKey(' Allgemein '), folderNameKey('general'))
   assert.notEqual(folderNameKey('Work'), folderNameKey('General'))
+  // Family misses go through appMiss: no raw server text on screen.
+  assert.ok(!/miss: (\/one parent\/i\.test\(error\.message\) \? 'lastparent' : )?error\.message/.test(readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8')))
   // A question saved into a parked folder brings it back, or it vanishes from Today.
   assert.ok((readFileSync(new URL('../native/hooks/useAppShelf.js', import.meta.url), 'utf8').match(/archived: false/g) || []).length >= 2)
   const first = readShelf()
