@@ -9484,6 +9484,8 @@ await testAsync('readShelf hands back the same shelf until storage changes, and 
   assert.equal(folderNameKey('Did I'), folderNameKey('General'))
   assert.equal(folderNameKey(' Allgemein '), folderNameKey('general'))
   assert.notEqual(folderNameKey('Work'), folderNameKey('General'))
+  // A question saved into a parked folder brings it back, or it vanishes from Today.
+  assert.ok((readFileSync(new URL('../native/hooks/useAppShelf.js', import.meta.url), 'utf8').match(/archived: false/g) || []).length >= 2)
   const first = readShelf()
   assert.equal(readShelf(), first, 'unchanged storage: the same object, no reparse')
   const next = writeShelf({ ...first, boards: first.boards.map((b, i) => (i ? b : { ...b, title: 'Changed here' })) })
