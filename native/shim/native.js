@@ -14,7 +14,7 @@ import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
-import { DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges } from '../../src/lib/day-nudges.js'
+import { AFTERNOON_AT_DEFAULT, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges, pingAheads } from '../../src/lib/day-nudges.js'
 import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { readWePings } from '../../src/lib/we-widget.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
@@ -248,8 +248,10 @@ async function schedulePingsNow(books, now = new Date()) {
     })
     const notes = []
     const reminders = pingOn('reminders')
+    // Away days do not use up the week, so reminders come back after they end.
+    const aheads = pingAheads(now, PING_DAYS)
     for (const book of list) {
-      for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
+      for (const ahead of aheads) {
         // Midday of that calendar day sits inside the right board night.
         const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
         // Every open row, so a re-arm after the ask time still keeps the 21:00
@@ -267,7 +269,8 @@ async function schedulePingsNow(books, now = new Date()) {
           const at = match ? new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0) : null
           const content = {
             title: 'Did I',
-            body: row.lamp.question,
+            // Hide what it says: the lock screen shows no question.
+            body: readPrefs().pingsPrivate ? t('pings.privateBody') : row.lamp.question,
             data: askNoteData(row),
             categoryIdentifier: ASK_CATEGORY,
           }
@@ -311,11 +314,13 @@ async function schedulePingsNow(books, now = new Date()) {
           if (we.cadence === 'weekly' && !(we.weekdays || []).includes(new Date(year, month - 1, date).getDay())) continue
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
           if (at.getTime() <= now.getTime()) continue
+          // Quiet hours can push it into the next day, when this one is closed.
+          if (!nightOpen(night, afterQuiet(at))) continue
           notes.push({
             identifier: String(notifyId(`we:${we.id}`, night)),
             content: {
               title: 'Did we',
-              body: we.question,
+              body: readPrefs().pingsPrivate ? t('pings.privateBody') : we.question,
               data: { go: '/tonight', weId: we.id, night },
               categoryIdentifier: ASK_CATEGORY,
             },
@@ -332,9 +337,9 @@ async function schedulePingsNow(books, now = new Date()) {
       const room = PING_CAP - notes.length
       // With the morning ask on, the first one comes at its picked time,
       // asks for today's questions and opens the morning sheet.
-      const { morningAsk: morning, morningAt } = readPrefs()
-      const times = morning ? [morningAt || MORNING_AT_DEFAULT, DAY_NUDGE_TIMES[1]] : DAY_NUDGE_TIMES
-      for (const nudge of dayNudges(list, now, { days: PING_DAYS, reminders, shift: afterQuiet, times }).slice(0, Math.max(0, room))) {
+      const { morningAsk: morning, morningAt, afternoonAt } = readPrefs()
+      const times = [morning ? morningAt || MORNING_AT_DEFAULT : DAY_NUDGE_TIMES[0], afternoonAt || AFTERNOON_AT_DEFAULT]
+      for (const nudge of dayNudges(list, now, { days: (aheads[aheads.length - 1] ?? 0) + 1, reminders, shift: afterQuiet, times }).slice(0, Math.max(0, room))) {
         const ask = morning && nudge.slot === 0
         notes.push({
           identifier: String(notifyId('day', nudge.at.toISOString())),

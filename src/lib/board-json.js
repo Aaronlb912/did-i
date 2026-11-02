@@ -1,7 +1,7 @@
 import { t } from './i18n.js'
 import { readPrefs } from './prefs.js'
 import { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
-import { WAS_KEEP, addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
+import { trimWas, addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
 import { capSkips } from './travel.js'
 
@@ -16,7 +16,7 @@ const WAS_CADENCE = new Set(['daily', 'weekly', 'monthly', 'every_n'])
 
 function cleanWas(was) {
   if (!Array.isArray(was)) return []
-  return was
+  return trimWas(was
     .filter((old) => old && ISO_DAY.test(String(old.until)) && WAS_CADENCE.has(old.cadence))
     .map((old) => ({
       until: String(old.until),
@@ -25,9 +25,9 @@ function cleanWas(was) {
       monthDay: old.monthDay === 'last' ? 'last' : Number.isInteger(Number(old.monthDay)) && old.monthDay !== '' ? Number(old.monthDay) : '',
       everyN: Number.isInteger(Number(old.everyN)) && old.everyN !== '' ? Number(old.everyN) : '',
       everyNAnchor: ISO_DAY.test(String(old.everyNAnchor)) ? String(old.everyNAnchor) : '',
+      ...(Number.isInteger(old.perWeek) && old.perWeek >= 1 && old.perWeek <= 6 ? { perWeek: old.perWeek } : {}),
     }))
-    .sort((x, y) => (x.until < y.until ? -1 : 1))
-    .slice(-WAS_KEEP)
+    .sort((x, y) => (x.until < y.until ? -1 : 1)))
 }
 
 export function newLampId() {
@@ -281,6 +281,8 @@ export function normalizeLamp(raw) {
     // friend you allow): a did counts, a nope or no answer does not count
     // against you. Only set when true, so other questions are unchanged.
     ...(asBool(lamp.optional) ? { optional: true } : {}),
+    // Kept for a later N-times-a-week cadence, so an older build's save does not drop it.
+    ...(Number.isInteger(Number(lamp.perWeek)) && lamp.perWeek !== '' && lamp.perWeek != null && Number(lamp.perWeek) >= 1 && Number(lamp.perWeek) <= 6 ? { perWeek: Number(lamp.perWeek) } : {}),
     // Added from the morning ask (morning-ask.js); the server keeps 30 a day.
     ...(asBool(lamp.morning) && cadence === 'once' ? { morning: true } : {}),
     // Kept from a did you; fromName is who sent it, when known.
@@ -290,6 +292,7 @@ export function normalizeLamp(raw) {
       : {}),
     // The send it was kept from, so its sender can see the answers
     // (send-answers.js); shareOff when the keeper turned that off.
+    ...(asBool(lamp.fromDidYou) && SEND_ID.test(asString(lamp.fromId)) ? { fromId: asString(lamp.fromId).toLowerCase() } : {}),
     ...(asBool(lamp.fromDidYou) && SEND_ID.test(asString(lamp.sendId)) ? { sendId: asString(lamp.sendId).toLowerCase() } : {}),
     ...(asBool(lamp.fromDidYou) && asBool(lamp.shareOff) ? { shareOff: true } : {}),
     // Put on one night's tonight by Did I itself: answer it if you like, it
@@ -322,6 +325,8 @@ function decimalText(text) {
   const dot = text.lastIndexOf('.')
   const comma = text.lastIndexOf(',')
   if (dot >= 0 && comma >= 0) return dot > comma ? text.replace(/,/g, '') : text.replace(/\./g, '').replace(',', '.')
+  // There a dot groups thousands: "1.500" is fifteen hundred, not one and a half.
+  if (/^\d{1,3}(\.\d{3})+$/.test(text) && COMMA_DECIMAL.has(readPrefs().locale)) return text.replace(/\./g, '')
   if (/^\d{1,3}(,\d{3})+$/.test(text) && !COMMA_DECIMAL.has(readPrefs().locale)) return text.replace(/,/g, '')
   return text.replace(',', '.')
 }
@@ -577,11 +582,14 @@ export function addUnlock(book, id) {
 // The short name field's length limit.
 export const SHORT_MAX = 24
 
-// Resumed pauses as [from, until) day pairs, newest 8.
+// A size guard, not a rule: dropping a span would turn its days into misses.
+export const PAUSES_MAX = 64
+
+// Resumed pauses as [from, until) day pairs, newest PAUSES_MAX.
 function asPauses(list) {
   if (!Array.isArray(list)) return []
   const day = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-  return list.filter((pair) => Array.isArray(pair) && day(pair[0]) && day(pair[1]) && pair[0] < pair[1]).map(([from, until]) => [from, until]).slice(-8)
+  return list.filter((pair) => Array.isArray(pair) && day(pair[0]) && day(pair[1]) && pair[0] < pair[1]).map(([from, until]) => [from, until]).slice(-PAUSES_MAX)
 }
 
 export function duplicateLamp(lamp, now = new Date()) {

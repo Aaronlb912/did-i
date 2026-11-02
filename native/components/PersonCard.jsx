@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   name: { fontFamily: fonts.uiBold, fontSize: 16 },
   line: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 18 },
   pill: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, maxWidth: 120 },
-  pillText: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' },
+  pillText: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   moreBtn: {
     marginLeft: 'auto',

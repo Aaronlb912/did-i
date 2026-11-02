@@ -20,7 +20,7 @@ export function LeadPicker({ value, onPick, onClose, colors, signedIn = true }) 
           onPress={(event) => event.stopPropagation()}
           style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
         >
-          <Text style={[styles.kicker, { color: colors.inkDim }]}>{t('lead.pick')}</Text>
+          <Text accessibilityRole="header" style={[styles.kicker, { color: colors.inkDim }]}>{t('lead.pick')}</Text>
           {LEADS.map((lead) => {
             const on = lead.id === value
             const needsAccount = lead.id !== 'i' && !signedIn

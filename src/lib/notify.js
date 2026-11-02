@@ -40,7 +40,7 @@ const LATE_NUDGE_HOUR = 21
 // (lampBuzzes). Tags are per question and night, so two questions do not
 // replace each other's notification.
 export function upcomingPings(book, now = new Date()) {
-  if (!book) return []
+  if (!book || !pingOn('reminders')) return []
   const dateIso = boardDate(now)
   const [year, month, day] = dateIso.split('-').map(Number)
   const fires = []
@@ -60,7 +60,8 @@ export function upcomingPings(book, now = new Date()) {
         id: row.lamp.id,
         tag: `${row.lamp.id}:${row.periodKey}`,
         question: String(row.lamp.question ?? ''),
-        at: at.getTime(),
+        // When it really rings: quiet hours move it to when they end.
+        at: afterQuiet(at).getTime(),
       })
     }
     if (!lampNudgesLate(row.lamp)) continue

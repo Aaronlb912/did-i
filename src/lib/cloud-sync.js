@@ -17,6 +17,7 @@ import { mergeShelves } from './shelf-merge.js'
 import {
   applyAnswers,
   dropSentAnswers,
+  answersToSend,
   forgetAnswerMarks,
   pruneAnswers,
   pullAnswers,
@@ -228,6 +229,13 @@ export function signedOutSync() {
 // questions someone just added.
 export function sessionMissing() {
   if (readLastUser() || readShelfOwner()) {
+    // A session that ran out on its own (an old refresh token) must not wipe
+    // answers that never reached the server. Keep the shelf and the last user:
+    // the same account signing back in merges them, another one starts clean.
+    if (answersToSend(readShelf()).length) {
+      if (state.how !== 'out' || state.firstPull) setState({ how: 'out', miss: '', firstPull: false })
+      return
+    }
     signedOutSync()
     return
   }

@@ -285,6 +285,7 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                   key={item.key}
                   accessibilityRole="button"
                   accessibilityLabel={item.a11y || item.label}
+                  accessibilityState={{ selected: Boolean(item.on) }}
                   onPress={() => {
                     // Navigate first so the screen starts at once; a new route
                     // drops the menu, the current one shrinks it home.
@@ -467,7 +468,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuCountText: { fontSize: 10, lineHeight: 12, includeFontPadding: false, textAlign: 'center' },
+  menuCountText: { fontSize: 11, lineHeight: 12, includeFontPadding: false, textAlign: 'center' },
   menuPip: {
     position: 'absolute',
     top: 8,

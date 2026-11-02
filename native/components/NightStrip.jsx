@@ -86,5 +86,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 12, marginTop: 14, alignSelf: 'flex-start' },
   cell: { alignItems: 'center', gap: 4 },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  day: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.4 },
+  day: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.4 },
 })

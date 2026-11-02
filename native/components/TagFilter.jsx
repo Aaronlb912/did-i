@@ -132,8 +132,9 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
       ) : null}
       </View>
       <Modal visible={open && Boolean(at)} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={t('settings.close')}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessible={false}>
           <Pressable
+            accessible={false}
             style={[
               styles.menu,
               { top: at?.y || 0, left: at?.x || 0, backgroundColor: colors.panel2, borderColor: colors.line },
@@ -213,9 +214,9 @@ const styles = StyleSheet.create({
   wrap: { marginBottom: 8, alignSelf: 'flex-start' },
   line: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   clear: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
   },
   // Same height as the question chips it sits in front of.
   // Inline sits in the Questions top row: a long folder name truncates so Edit stays on the same line.
-  pickInline: { minHeight: 40, paddingHorizontal: 12, maxWidth: 120 },
+  pickInline: { minHeight: 44, paddingHorizontal: 12, maxWidth: 120 },
   bars: { fontFamily: fonts.mono, fontSize: 14 },
   name: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', flexShrink: 1 },
   backdrop: { flex: 1 },
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   list: { gap: 2 },
-  cap: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', paddingHorizontal: 10, paddingTop: 6 },
+  cap: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', paddingHorizontal: 10, paddingTop: 6 },
   capGap: { marginTop: 8 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 10, gap: 12 },
   rowName: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },

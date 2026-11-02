@@ -389,6 +389,38 @@ const BUDDY_SVG = {
     <ellipse cx="31" cy="45.5" rx="4.5" ry="2.8" fill="#4f4170"/>
   </svg>`,
 
+  rocket: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="19.6,46 28.4,46 24,55" fill="#ff9f1c"/>
+    <polygon points="21.7,46 26.3,46 24,51.5" fill="#ffe27a"/>
+    <ellipse cx="12.8" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(26 12.8 41)"/>
+    <ellipse cx="35.2" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(-26 35.2 41)"/>
+    <ellipse cx="24" cy="31" rx="12.5" ry="15" fill="#ff6154"/>
+    <polygon points="13.8,22 34.2,22 24,6.5" fill="#ff6154"/>
+    <ellipse cx="27.5" cy="32" rx="6" ry="13" fill="#e5493d" opacity="0.55"/>
+    <ellipse cx="18.5" cy="29" rx="1.8" ry="9" fill="#ffffff" transform="rotate(-6 18.5 29)" opacity="0.35"/>
+    <polygon points="19.9,12.8 28.1,12.8 24,6.5" fill="#c7362b"/>
+    <ellipse cx="24" cy="45.3" rx="5.6" ry="1.8" fill="#8f2a22"/>
+    <ellipse cx="24" cy="27" rx="6" ry="6" fill="#fff3e0"/>
+    <ellipse cx="24" cy="27" rx="4.4" ry="4.4" fill="#5fb6f0"/>
+    <ellipse cx="24" cy="27" rx="6" ry="6" fill="none" stroke="#c7362b" stroke-width="1.1"/>
+    <ellipse cx="22.6" cy="25.4" rx="1.4" ry="1" fill="#ffffff" transform="rotate(-30 22.6 25.4)" opacity="0.85"/>
+  </svg>`,
+  rocket: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="19.6,46 28.4,46 24,55" fill="#ff9f1c"/>
+    <polygon points="21.7,46 26.3,46 24,51.5" fill="#ffe27a"/>
+    <ellipse cx="12.8" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(26 12.8 41)"/>
+    <ellipse cx="35.2" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(-26 35.2 41)"/>
+    <ellipse cx="24" cy="31" rx="12.5" ry="15" fill="#ff6154"/>
+    <polygon points="13.8,22 34.2,22 24,6.5" fill="#ff6154"/>
+    <ellipse cx="27.5" cy="32" rx="6" ry="13" fill="#e5493d" opacity="0.55"/>
+    <ellipse cx="18.5" cy="29" rx="1.8" ry="9" fill="#ffffff" transform="rotate(-6 18.5 29)" opacity="0.35"/>
+    <polygon points="19.9,12.8 28.1,12.8 24,6.5" fill="#c7362b"/>
+    <ellipse cx="24" cy="45.3" rx="5.6" ry="1.8" fill="#8f2a22"/>
+    <ellipse cx="24" cy="27" rx="6" ry="6" fill="#fff3e0"/>
+    <ellipse cx="24" cy="27" rx="4.4" ry="4.4" fill="#5fb6f0"/>
+    <ellipse cx="24" cy="27" rx="6" ry="6" fill="none" stroke="#c7362b" stroke-width="1.1"/>
+    <ellipse cx="22.6" cy="25.4" rx="1.4" ry="1" fill="#ffffff" transform="rotate(-30 22.6 25.4)" opacity="0.85"/>
+  </svg>`,
   hive: `<svg viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="11" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" stroke-width="1" transform="rotate(-25 11 18)"/>
     <ellipse cx="37" cy="18" rx="6" ry="8" fill="#dff3ff" opacity="0.9" stroke="#8fb8d4" stroke-width="1" transform="rotate(25 37 18)"/>
@@ -515,7 +547,7 @@ export function fitQuestion(text, max, width, height) {
 
 export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const raw = props || {
-    tagTitle: 'Did I',
+    tagTitle: 'Today',
     question: '',
     items: [],
     footer: '',
@@ -525,7 +557,8 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
     left: 0,
     openUri: 'didi://tonight',
   }
-  const p = raw
+  // An older snapshot can lack the open line; never draw it blank.
+  const p = raw.openLabel ? raw : { ...raw, openLabel: 'Open' }
   const C = palette(p)
   const tonightUri = p.openUri || 'didi://tonight'
   const { compact, tight, large } = widgetSize(widgetInfo)
@@ -692,13 +725,14 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                         flex: 1,
                         backgroundColor: C.skip,
                         borderRadius: 12,
-                        paddingVertical: tight ? 5 : compact ? 6 : 8,
+                        paddingVertical: tight ? 7 : compact ? 6 : 8,
                         marginRight: 6,
                         justifyContent: 'center',
                         alignItems: 'center',
                       }}
                       clickAction="ANSWER"
                       clickActionData={{ lampId: lead.lampId, kind: 'nope', night: String(lead.periodKey || '') }}
+                      accessibilityLabel={`${p.nopeLabel || 'Not yet'}: ${question}`}
                     >
                       <TextWidget
                         text={p.nopeLabel || 'Not yet'}
@@ -711,13 +745,14 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                         flex: 1,
                         backgroundColor: C.on,
                         borderRadius: 12,
-                        paddingVertical: tight ? 5 : compact ? 6 : 8,
+                        paddingVertical: tight ? 7 : compact ? 6 : 8,
                         marginLeft: 6,
                         justifyContent: 'center',
                         alignItems: 'center',
                       }}
                       clickAction="ANSWER"
                       clickActionData={{ lampId: lead.lampId, kind: 'did', night: String(lead.periodKey || '') }}
+                      accessibilityLabel={`${p.didLabel || 'Did'}: ${question}`}
                     >
                       <TextWidget
                         text={p.didLabel || 'Did'}
@@ -730,6 +765,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
               : (
               <TextWidget
                 text={p.openLabel}
+                accessibilityLabel={p.openLabel}
                 style={{
                   fontSize: 12,
                   fontWeight: '600',
@@ -746,6 +782,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
             {!compact && String(p.weLine || '').trim() ? (
               <TextWidget
                 text={String(p.weLine).trim()}
+                accessibilityLabel={String(p.weLine).trim()}
                 style={{
                   fontSize: 11,
                   fontWeight: '600',
@@ -794,6 +831,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 style={{ height: 48, justifyContent: 'center', alignItems: 'flex-start', paddingHorizontal: 8 }}
                 clickAction="PEEK"
                 clickActionData={{ dir: 'next' }}
+                accessibilityLabel={p.nextLabel || 'Next'}
               >
               <FlexWidget
                 style={{

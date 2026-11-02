@@ -5,7 +5,7 @@ import { useNoted } from '../hooks/useNoted.js'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
-import { passAlong } from '../../src/lib/native.js'
+import { copyText, passAlong } from '../../src/lib/native.js'
 import {
   addFamilyLamp,
   answerFamilyLamp,
@@ -40,7 +40,7 @@ import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/
 import { pickCheer } from '../components/pickCheer.jsx'
 import { AddPill, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
-import { ChipRow, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
+import { ChipRow, DidButton, Field, KeyButton, LateMeta, Meta, OfflineLine } from '../components/ui.jsx'
 import { Reveal } from '../lib/motion.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { PickSheet } from '../components/PickSheet.jsx'
@@ -352,6 +352,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
 
   return (
     <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
+      <OfflineLine colors={colors} />
       <View style={[styles.head, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, styles.titleText, { color: colors.ink }]}>{fam.name}</Text>
@@ -619,8 +620,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
               once('fam-leave', async () => {
               publishSheet(null)
               const { miss: why } = await leaveFamily(fam.id)
-              if (why === 'lastparent') return setMiss(t('family.lastParentLeave'))
-              if (why) return setMiss(why)
+              if (why === 'lastparent') return confirmMiss(t('family.lastParentLeave'))
+              if (why === 'unchanged') return confirmMiss(t('confirm.miss'))
+              if (why) return confirmMiss(tMiss(why))
               confirmDone(t('confirm.leftFamily', { name: fam.name || t('people.familyOne') }))
               refreshPeople()
               swapHash('/people')
@@ -637,7 +639,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         <Modal visible transparent animationType="fade" onRequestClose={() => setCodeOpen(false)}>
           <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setCodeOpen(false)}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
-              <Text style={[styles.cap, { color: colors.on }]}>{t('people.joinCode')}</Text>
+              <Text accessibilityRole="header" style={[styles.cap, { color: colors.on }]}>{t('people.joinCode')}</Text>
               <Text style={[styles.code, { color: colors.ink }]} selectable>
                 {fam.code}
               </Text>
@@ -660,12 +662,22 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   setMiss('')
                   setSaid('')
                   const how = await passAlong(t('family.codeInvite', { name: fam.name, code: fam.code }), fam.name)
-                  setCodeOpen(false)
+                  // A failed send keeps the sheet open so the miss shows here.
+                  if (how === 'shared' || how === 'copied') setCodeOpen(false)
                   if (how === 'shared') setSaid(t('people.shared'))
                   else if (how === 'copied') setSaid(t('people.copied'))
                   else setMiss(t('confirm.shareMiss'))
                 }}
               />
+              <KeyButton
+                colors={colors}
+                label={t('friendId.copy')}
+                onPress={async () => {
+                  if (await copyText(fam.code)) confirmDone(t('people.copied'))
+                  else confirmMiss(t('confirm.shareMiss'))
+                }}
+              />
+              {miss ? <Meta colors={colors}>{miss}</Meta> : null}
               <KeyButton colors={colors} label={t('settings.close')} onPress={() => setCodeOpen(false)} />
             </Pressable>
           </Pressable>
@@ -676,7 +688,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         <Modal visible transparent animationType="fade" onRequestClose={() => setMenu(null)}>
           <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setMenu(null)}>
             <Pressable accessible={false} style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]} onPress={(e) => e.stopPropagation()}>
-              <Text style={[styles.cap, { color: colors.on }]}>{menu.name}</Text>
+              <Text accessibilityRole="header" style={[styles.cap, { color: colors.on }]}>{menu.name}</Text>
               {menu.items.map((item) => (
                 <Pressable
                   key={item.key}
@@ -756,7 +768,7 @@ const styles = StyleSheet.create({
   veil: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 20 },
   pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
   head: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 6 },
-  moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  moreBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.uiBold, fontSize: 20, lineHeight: 22 },
   menuRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 8 },
   menuRowText: { fontFamily: fonts.uiSemi, fontSize: 16 },

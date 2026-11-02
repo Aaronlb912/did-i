@@ -74,7 +74,7 @@ import { AppTextInput, DidButton, KeyButton, LateMeta, Meta } from '../component
 import { useAccount } from '../../src/lib/account.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { PersonAvatar } from '../components/PersonAvatar.jsx'
-import { listSentGifts, personName, readKnownPerson, reportGift, sendGift, thankGift } from '../../src/lib/people.js'
+import { listSentGifts, newRequestId, personName, readKnownPerson, reportGift, sendGift, thankGift } from '../../src/lib/people.js'
 import { giftTab, sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
 import { doneGift, nextGift, onGift, takeGiftCheer } from '../../src/lib/gift-inbox.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
@@ -628,6 +628,7 @@ function BuyConfirm({ confirm, onClose, onGo, colors }) {
       kicker: t('shop.buyKicker'),
       title: confirm.title,
       body: confirm.body,
+      preview: confirm.preview,
       goLabel: t('shop.buy'),
       closeLabel: t('settings.neverMind'),
       colors,
@@ -721,6 +722,7 @@ function StagePicks({ owned, play, on, onPick, colors }) {
             key={n}
             accessibilityRole="button"
             accessibilityLabel={t('shop.stage', { n })}
+            accessibilityHint={have ? undefined : n > owned + 1 ? t('shop.stageBuyFirst', { n: owned + 1 }) : t('shop.stageCost', { cost: coinLine(CHEER_STAGE_COINS[n]) })}
             accessibilityState={{ disabled: !have, selected: using }}
             disabled={!have}
             onPress={() => onPick(n)}
@@ -732,7 +734,7 @@ function StagePicks({ owned, play, on, onPick, colors }) {
               },
             ]}
           >
-            <Text style={{ color: using ? colors.on : colors.ink }}>{n}</Text>
+            <Text style={{ color: using ? colors.on : colors.ink, fontFamily: fonts.uiSemi, fontSize: 13 }}>{n}</Text>
           </Pressable>
         )
       })}
@@ -845,7 +847,6 @@ function CheerPlay({ id, coat, colors, stage = 1 }) {
         onPress={play}
         accessibilityRole="button"
         accessibilityLabel={t('shop.cheerPlayA11y', { name: t(cheerText(id, 'name')) })}
-        hitSlop={6}
         style={({ pressed }) => [styles.cheerPlay, { borderColor: colors.line, backgroundColor: colors.panel2 }, pressFx(pressed)]}
       >
         <Text style={[styles.cheerPlayText, { color: colors.ink }]}>{t('shop.cheerPlay')}</Text>
@@ -990,7 +991,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
     })
     if (type === 'look') {
       if (purse.lookOn === item.id) return null
-      if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearLook(book, item.id), false) }
+      if (tag.owned) return { label: t('shop.use'), go: () => done(type, item, wearLook(liveBook(book), item.id), false) }
       return buy(() => buyLookWithCoins(liveBook(book), item.id))
     }
     if (type === 'buddy') {
@@ -1002,7 +1003,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
     if (type === 'accessory') {
       if (tag.owned) {
         const on = purse.worn[item.slot] === item.id
-        return { label: on ? t('shop.takeOff') : t('shop.use'), go: () => done(type, item, wearAccessory(book, item.id), false) }
+        return { label: on ? t('shop.takeOff') : t('shop.use'), go: () => done(type, item, wearAccessory(liveBook(book), item.id), false) }
       }
       return buy(() => buyAccessoryWithCoins(liveBook(book), item.id))
     }
@@ -1142,6 +1143,19 @@ export function ShopScreen({ book, onChange }) {
   )
 }
 
+// One shop buy at a time: a second confirm while the first is still on the
+// network would send a second buy.
+let shopBuying = false
+async function goOnce(go) {
+  if (shopBuying || typeof go !== 'function') return
+  shopBuying = true
+  try {
+    await go()
+  } finally {
+    shopBuying = false
+  }
+}
+
 export function ShopLooksScreen({ book, onChange }) {
   const [peekLook, setPeekLook] = useState('')
   const colors = useShopColors(book, peekLook)
@@ -1245,7 +1259,7 @@ export function ShopLooksScreen({ book, onChange }) {
         onGo={() => {
           const go = confirm?.go
           setConfirm(null)
-          if (typeof go === 'function') go()
+          goOnce(go)
         }}
       />
     </BoardShell>
@@ -1315,10 +1329,21 @@ export function ShopCheersScreen({ book, onChange }) {
           if (next) {
             actionLabel = t('shop.nextStage')
             onAction = () => {
+              if (purse.coins < CHEER_STAGE_COINS[next]) {
+                const short = CHEER_STAGE_COINS[next] - purse.coins
+                setMiss({ id: item.id, text: `${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}` })
+                return
+              }
               setMiss(NO_MISS)
               setConfirm({
                 title: t(cheerText(item.id, 'name')),
-                body: t('shop.buyStageBody', { n: next, cost: coinLine(CHEER_STAGE_COINS[next]) }),
+                body: `${t('shop.buyStageBody', { n: next, cost: coinLine(CHEER_STAGE_COINS[next]) })} ${leftAfter(purse, { coins: CHEER_STAGE_COINS[next] })}`,
+                preview: (
+                  <View style={styles.stagePreview}>
+                    <CheerChip id={item.id} stage={next} colors={colors} />
+                    <CheerPlay id={item.id} coat={coat} colors={colors} stage={next} />
+                  </View>
+                ),
                 go: async () => {
                   const out = await buyCheerStageWithCoins(liveBook(book), item.id)
                   take(out, item.id)
@@ -1363,7 +1388,7 @@ export function ShopCheersScreen({ book, onChange }) {
         onGo={() => {
           const go = confirm?.go
           setConfirm(null)
-          if (typeof go === 'function') go()
+          goOnce(go)
         }}
       />
     </BoardShell>
@@ -1460,7 +1485,7 @@ export function ShopBuddiesScreen({ book, onChange }) {
         onGo={() => {
           const go = confirm?.go
           setConfirm(null)
-          if (typeof go === 'function') go()
+          goOnce(go)
         }}
       />
     </BoardShell>
@@ -1495,7 +1520,6 @@ function FilterChip({ label, on, onPress, colors }) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
-      hitSlop={4}
       style={[
         styles.filterChip,
         { borderColor: on ? colors.onDeep : colors.line, backgroundColor: on ? colors.panel3 : colors.panel2 },
@@ -1598,7 +1622,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
             const label = on ? t('shop.takeOff') : have ? t('shop.use') : t('shop.buy')
             const act = () => {
               if (have) {
-                take(wearAccessory(book, item.id), item.id)
+                take(onLiveBook(wearAccessory(liveBook(book), item.id)), item.id)
                 return
               }
               if (purse.coins < item.coins) {
@@ -1669,7 +1693,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
                 miss={miss.id === item.id ? miss.text : ''}
                 actionLabel={on ? t('shop.takeOff') : t('shop.use')}
                 primary={on}
-                onAction={() => take(wearAccessory(book, item.id), item.id)}
+                onAction={() => take(onLiveBook(wearAccessory(liveBook(book), item.id)), item.id)}
               />
             )
           })}
@@ -1700,7 +1724,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
         onGo={() => {
           const go = confirm?.go
           setConfirm(null)
-          if (typeof go === 'function') go()
+          goOnce(go)
         }}
       />
     </BoardShell>
@@ -1844,10 +1868,12 @@ export function GemShopScreen({ book }) {
     }
   }, [])
 
-  function gemNotice(body) {
+  // A store failure offers Try again; setup and sign-in misses do not.
+  function gemNotice(body, retry) {
     publishSheet({
       title: t('gems.title'),
       body,
+      ...(retry ? { goLabel: t('boot.retry'), onGo: () => { publishSheet(null); retry() } } : {}),
       closeLabel: t('settings.close'),
       colors,
       onClose: () => publishSheet(null),
@@ -1876,7 +1902,7 @@ export function GemShopScreen({ book }) {
     } catch {
       stream.dropBuy()
       setBanner('')
-      gemNotice(t('gems.storeError'))
+      gemNotice(t('gems.storeError'), () => buy(packId))
       return
     }
     if (out.miss === 'signin') {
@@ -1889,7 +1915,7 @@ export function GemShopScreen({ book }) {
       stream.dropBuy()
       setBanner('')
       // The store's own code, so one failed buy can be told from another.
-      gemNotice(out.code ? `${gemMiss(out.miss)} (${out.code})` : gemMiss(out.miss))
+      gemNotice(out.code ? `${gemMiss(out.miss)} (${out.code})` : gemMiss(out.miss), out.miss === 'store' ? () => buy(packId) : null)
       return
     }
     // Cancelled or failed: no gems are coming, so a later rise is not this buy.
@@ -2052,7 +2078,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
   function pickStage(id, n) {
     const next = wearCheerStage(book, id, n)
     if (!next.miss) {
-      fireCheer(id, n, coat, undefined, true)
+      if (!motionOff()) fireCheer(id, n, coat, undefined, true)
       onChange(next.book)
     }
   }
@@ -2065,7 +2091,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
       : tab === 'cheers'
         ? t('kit.using', { name: purse.cheerOn ? t(cheerText(purse.cheerOn, 'name')) : none })
         : tab === 'buddies'
-          ? t('kit.wearing', { names: purse.buddyOn ? t(buddyText(purse.buddyOn, 'name')) : none })
+          ? t('kit.wearing', { names: t(buddyText(purse.buddyOn || 'ant', 'name')) })
           : tab === 'frames'
             ? t('kit.wearing', { names: frameInfo.worn ? t(frameText(frameInfo.worn, 'name')) : none })
             : tab === 'wish'
@@ -2221,7 +2247,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
                       big
                       caption={isSeasonal(item) ? t('kit.seasonal') : ''}
                       onPress={() =>
-                        wearOn(wearAccessory(book, item.id), purse.worn[item.slot] === item.id ? '' : t(`accessory.${item.id}`))
+                        wearOn(onLiveBook(wearAccessory(liveBook(book), item.id)), purse.worn[item.slot] === item.id ? '' : t(`accessory.${item.id}`))
                       }
                     >
                       <AccessoryChip id={item.id} buddyId={purse.buddyOn || 'ant'} tone={colors.on} big />
@@ -2311,7 +2337,7 @@ const styles = StyleSheet.create({
   kindCopy: { flex: 1, minWidth: 0 },
   kindName: { fontFamily: fonts.uiBold, fontSize: 14 },
   kindCount: { fontFamily: fonts.ui, fontSize: 12 },
-  kitTileCaption: { fontFamily: fonts.ui, fontSize: 10, maxWidth: '100%' },
+  kitTileCaption: { fontFamily: fonts.ui, fontSize: 11, maxWidth: '100%' },
   kitWearing: { fontFamily: fonts.uiSemi, fontSize: 14 },
   wishBtn: { alignSelf: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 8 },
   wishText: { fontFamily: fonts.uiSemi, fontSize: 14 },
@@ -2340,7 +2366,8 @@ const styles = StyleSheet.create({
   popRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   shopCopy: { gap: 4, flex: 1 },
   cheerPlayWrap: { gap: 8, alignSelf: 'stretch' },
-  cheerPlay: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
+  cheerPlay: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, minHeight: 44, justifyContent: 'center' },
+  stagePreview: { alignItems: 'center', gap: 10 },
   cheerPlayText: { fontFamily: fonts.uiSemi, fontSize: 13 },
   cheerStill: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cheerStillText: { flex: 1 },
@@ -2421,7 +2448,7 @@ const styles = StyleSheet.create({
   gemFeaturedButtonText: { fontFamily: fonts.uiBold, fontSize: 15 },
   keyOff: {
     borderRadius: 999,
-    minHeight: 40,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
@@ -2442,8 +2469,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    minWidth: 36,
+    minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   previewBtn: {
     borderWidth: 1,
@@ -2461,7 +2490,7 @@ const styles = StyleSheet.create({
   // Every Collection tab uses this box, so the preview never changes size.
   kitPreviewRoom: { paddingHorizontal: 14, paddingVertical: 22, minHeight: 216, justifyContent: 'center' },
   filterRow: { gap: 8, paddingVertical: 4, paddingRight: 8 },
-  filterChip: { borderWidth: 1, borderRadius: 999, minHeight: 36, paddingHorizontal: 14, justifyContent: 'center' },
+  filterChip: { borderWidth: 1, borderRadius: 999, minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' },
   filterChipText: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
   buddyPreviewGlow: {
     position: 'relative',
@@ -2573,7 +2602,7 @@ const styles = StyleSheet.create({
   },
   // The worn tile gets a ring in place, so a look that glows on its own is not mistaken for it.
   kitTileWorn: { borderWidth: 2, borderRadius: 12 },
-  kitTileChip: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  kitTileChip: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   kitTileChipBig: { width: 72, height: 72 },
   wornBadge: {
     position: 'absolute',
@@ -2586,7 +2615,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  wornBadgeText: { fontSize: 10, fontWeight: '700', lineHeight: 12 },
+  wornBadgeText: { fontSize: 11, fontWeight: '700', lineHeight: 12 },
   kitTileName: { fontFamily: fonts.uiSemi, fontSize: 11, maxWidth: '100%' },
   kitOffChip: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderStyle: 'dashed' },
   kitEmpty: { width: '100%', padding: 14 },
@@ -2645,6 +2674,7 @@ export function GiftScreen({ book, onChange, toId }) {
   const [busy, setBusy] = useState(false)
   // The sheet keeps the send from when it opened, so a second tap sees busy as false.
   const sending = useRef(false)
+  const attempt = useRef({ key: '', id: '' })
   const items = giftItems()
   const kind = GIFT_TABS.find((item) => item.id === tab)
   const list = items[tab] || []
@@ -2678,9 +2708,12 @@ export function GiftScreen({ book, onChange, toId }) {
     }
     setBusy(true)
     sending.current = true
+    openPick(type, item, '', true)
     let out
     try {
-      out = await sendGift(toId, type, item.id, note)
+      const key = `${toId}|${type}|${item.id}|${note}`
+      if (attempt.current.key !== key) attempt.current = { key, id: newRequestId() }
+      out = await sendGift(toId, type, item.id, note, attempt.current.id)
     } catch {
       sending.current = false
       setBusy(false)
@@ -2690,6 +2723,10 @@ export function GiftScreen({ book, onChange, toId }) {
     }
     sending.current = false
     setBusy(false)
+    // Keep the id only when the answer may have been lost.
+    if (!out.miss || ['gems', 'coins', 'giftCap', 'notFriend', 'gone', 'owned', 'setup'].includes(out.miss)) {
+      attempt.current = { key: '', id: '' }
+    }
     if (out.miss === 'gems') {
       publishSheet(null)
       offerMoreGems(colors)
@@ -2710,7 +2747,10 @@ export function GiftScreen({ book, onChange, toId }) {
 
   // Short on coins or gems: the same need-more line as the Shop sheet, and
   // Send stays off. The server checks the cost again either way.
-  function openPick(type, item, miss = '') {
+  // `sendingNow` dims Send while the gift is on its way, so the tap reads as taken.
+  function openPick(type, item, miss = '', sendingNow = false) {
+    // The last "Sent" line belongs to the last item, not this one.
+    setSent('')
     const cost = item.gems ? gemLine(item.gems) : coinLine(item.coins)
     const short = !canAfford(item, purse)
     const need = item.gems
@@ -2723,7 +2763,7 @@ export function GiftScreen({ book, onChange, toId }) {
       body: short ? `${cost}\n${need}` : miss || `${cost}\n${leftAfter(purse, item)} ${t('gift.howItWorks')}`,
       quote: note.trim(),
       goLabel: t('gift.send'),
-      goDisabled: short,
+      goDisabled: short || sendingNow,
       onGo: () => send(type, item),
       ...(short && item.gems
         ? {
@@ -2789,7 +2829,7 @@ export function GiftScreen({ book, onChange, toId }) {
         />
         <Text style={[giftStyles.count, { color: colors.inkDim }]}>{note.length}/60</Text>
       </View>
-      {sent ? <Text style={[giftStyles.sent, { color: colors.on }]}>{sent}</Text> : null}
+      {sent ? <Text style={[giftStyles.sent, { color: colors.on }]} accessibilityLiveRegion="polite">{sent}</Text> : null}
       <KitSegment
         items={GIFT_TABS.map((item) => ({ id: item.id, label: t(item.key) }))}
         selected={tab}

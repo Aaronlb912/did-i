@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking'
 import { savePendingInvite } from '../src/lib/invite-link.js'
+import { readHuntLink, savePendingHunt } from '../src/lib/hunt-link.js'
 import { goHash } from './navigation/hash.js'
 import { holdSpoken } from '../src/lib/voice-add.js'
 import { readQrLink } from '../src/lib/qr-links.js'
@@ -16,6 +17,8 @@ export function routeFromDeepLink(url) {
     // https://did-i.app/i/CODE through a universal link or App Link.
     const webInvite = /^https:\/\/(?:www\.)?did-i\.app\/i\/([a-z0-9]{10})\/?$/i.exec(String(url).trim().split(/[?#]/)[0])
     if (webInvite) return { invite: webInvite[1] }
+    // A Product Hunt buddy link: did-i.app/hunt/claim, or didi://hunt from its page.
+    if (readHuntLink(url)) return { hunt: true }
     // A Did you link: did-i.app/d/CODE, or didi://d/CODE from its page.
     const didYou = readDidYouLink(url)
     if (didYou) return { didYou }
@@ -65,6 +68,10 @@ export function goFromDeepLink(url) {
   if (!route) return false
   if (route.invite) {
     savePendingInvite(route.invite)
+    return true
+  }
+  if (route.hunt) {
+    savePendingHunt()
     return true
   }
   if (route.didYou) {

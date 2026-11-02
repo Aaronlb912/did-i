@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { dropGiftsFrom } from './gift-inbox.js'
 import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { noteSocialLive, onSocialLive } from './social-live.js'
@@ -49,7 +50,7 @@ export function sendMiss(error) {
   return 'people.reach'
 }
 
-// A family join code is ten (old families keep six). An invite code is ten.
+// A new family join code is six (older ones may be ten). An invite code is ten.
 // Same alphabet.
 export const FAMILY_CODE_LEN = 6
 export const INVITE_CODE_LEN = 10
@@ -486,7 +487,8 @@ export async function weSharedCount(other) {
   const db = cloud()
   if (!db) return 0
   const { data, error } = await db.rpc('we_shared_count', { other })
-  return error ? 0 : Number(data) || 0
+  // null: unknown, so the remove sheet still offers leaving them.
+  return error ? null : Number(data) || 0
 }
 
 export async function weLeaveShared(other) {
@@ -594,17 +596,27 @@ export async function sendFriendCheer(toId, note, cheerId = '', about = '') {
     want: String(cheerId || '').trim().slice(0, 20),
   }
   const words = String(about || '').trim().slice(0, 200)
-  let { data, error } = await db.rpc('send_friend_cheer', words ? { ...args, about: words } : args)
-  // A server without the note words yet: the plain cheer still goes.
-  if (error && words && (error.code === 'PGRST202' || /send_friend_cheer/i.test(error.message || ''))) {
-    ;({ data, error } = await db.rpc('send_friend_cheer', args))
-  }
-  if (!error) return { miss: '', ...stockFromRpc(data) }
+  args.p_request_id = cheerRequest(`f:${toId}:${args.want}:${words}`)
+  let { data, error } = await db.rpc('send_friend_cheer', { ...args, about: words })
+  if (!error) return cheerDone({ miss: '', ...stockFromRpc(data) })
   const message = error.message || ''
-  if (error.code === 'PGRST202' || /send_friend_cheer/i.test(message)) return { miss: 'setup' }
-  if (/need cheers/i.test(message)) return { miss: 'cheers' }
-  if (/not friends|not signed in/i.test(message)) return { miss: 'notFriend' }
+  if (error.code === 'PGRST202' || /send_friend_cheer/i.test(message)) return cheerDone({ miss: 'setup' })
+  if (/need cheers/i.test(message)) return cheerDone({ miss: 'cheers' })
+  if (/not signed in/i.test(message)) return cheerDone({ miss: 'people.reach' })
+  if (/not friends/i.test(message)) return cheerDone({ miss: 'notFriend' })
+  // Lost or unknown reply: keep the id, so a second tap cannot spend twice.
   return bad(error)
+}
+
+// One request id per cheer until the server answers for sure.
+let pendingCheer = null
+function cheerRequest(key) {
+  if (pendingCheer?.key !== key) pendingCheer = { key, id: newRequestId() }
+  return pendingCheer.id
+}
+function cheerDone(out) {
+  pendingCheer = null
+  return out
 }
 
 export async function buyCheers(book) {
@@ -652,12 +664,14 @@ export async function sendFamilyCheer(toId, note, cheerId = '') {
     other: toId,
     note: String(note || '').trim(),
     want: String(cheerId || '').trim().slice(0, 20),
+    p_request_id: cheerRequest(`m:${toId}:${String(cheerId || '').trim().slice(0, 20)}`),
   })
-  if (!error) return { miss: '', ...stockFromRpc(data) }
+  if (!error) return cheerDone({ miss: '', ...stockFromRpc(data) })
   const message = error.message || ''
-  if (error.code === 'PGRST202' || /send_family_cheer/i.test(message)) return { miss: 'setup' }
-  if (/need cheers/i.test(message)) return { miss: 'cheers' }
-  if (/not family|not signed in/i.test(message)) return { miss: 'notFriend' }
+  if (error.code === 'PGRST202' || /send_family_cheer/i.test(message)) return cheerDone({ miss: 'setup' })
+  if (/need cheers/i.test(message)) return cheerDone({ miss: 'cheers' })
+  if (/not signed in/i.test(message)) return cheerDone({ miss: 'people.reach' })
+  if (/not family/i.test(message)) return cheerDone({ miss: 'notFriend' })
   return bad(error)
 }
 
@@ -706,7 +720,15 @@ export async function readKnownPerson(id) {
 
 // A look, cheer or buddy for a friend or family member. The server takes the
 // gems or coins and returns the new balances.
-export async function sendGift(toId, kind, itemId, note = '') {
+// One id per send attempt; a retry reuses it so the server charges once.
+export function newRequestId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.floor(Math.random() * 16)
+    return (c === 'x' ? r : (r & 3) | 8).toString(16)
+  })
+}
+
+export async function sendGift(toId, kind, itemId, note = '', requestId = null) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const { data, error } = await db.rpc('send_gift', {
@@ -714,6 +736,7 @@ export async function sendGift(toId, kind, itemId, note = '') {
     p_kind: kind,
     p_item_id: itemId,
     p_note: String(note || '').trim().slice(0, 60),
+    ...(requestId ? { p_request_id: requestId } : {}),
   })
   if (!error) return { miss: '', gems: Number(data?.gems) || 0, coins: Number(data?.coins) || 0 }
   if (notRunYet(error)) return { miss: 'setup' }
@@ -1138,6 +1161,7 @@ export async function blockPerson(otherId, why = '') {
   if (error) return bad(error)
   // The server left their shared cards and dropped their sends: show that now.
   dropLoaded({ miss: '' })
+  dropGiftsFrom(otherId)
   refreshPeople()
   return { miss: '' }
 }
@@ -1310,7 +1334,7 @@ export async function joinFamily(code) {
     if (/too many tries/i.test(error.message)) return { miss: 'tooMany' }
     if (/too many people/i.test(error.message)) return { miss: 'full' }
     if (/enough families/i.test(error.message)) return { miss: 'tooManyFamilies' }
-    return { miss: /no family/i.test(error.message) ? 'nofamily' : error.message }
+    return { miss: /no family/i.test(error.message) ? 'nofamily' : appMiss(error) }
   }
   // A wrong code comes back as null, so the miss still counts toward the limit.
   if (!data) return { miss: 'nofamily' }
@@ -1348,12 +1372,14 @@ export async function leaveFamily(familyId) {
   if (!db) return { miss: 'off' }
   const user = await me()
   if (!user) return { miss: 'out' }
-  const { error } = await db
+  const { data, error } = await db
     .from('family_members')
     .delete()
     .eq('family_id', familyId)
     .eq('user_id', user.id)
-  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+    .select('user_id')
+  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : appMiss(error) }
+  if (!data?.length) return { miss: 'unchanged' }
   // No live ping comes for your own leave: Today reloads its family rows now.
   noteSocialLive('familyInfo')
   return { miss: '' }
@@ -1366,7 +1392,7 @@ export async function renameFamily(familyId, name) {
   const clean = String(name || '').trim().slice(0, 60)
   if (!clean) return { miss: 'family.nameEmpty' }
   const { data, error } = await db.from('families').update({ name: clean }).eq('id', familyId).select('id')
-  if (error) return { miss: error.message }
+  if (error) return { miss: appMiss(error) }
   if (!data?.length) return { miss: 'family.renameMiss' }
   return { miss: '' }
 }
@@ -1416,7 +1442,7 @@ export async function setRole(familyId, userId, role) {
     .eq('family_id', familyId)
     .eq('user_id', userId)
     .select('user_id')
-  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : appMiss(error) }
   // Nothing changed: no longer a parent, or they already left. No error comes back.
   if (!data?.length) return { miss: 'unchanged' }
   return { miss: '' }
@@ -1431,8 +1457,9 @@ export async function dropMember(familyId, userId) {
     .eq('family_id', familyId)
     .eq('user_id', userId)
     .select('user_id')
-  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : appMiss(error) }
   if (!data?.length) return { miss: 'unchanged' }
+  noteSocialLive('familyInfo')
   return { miss: '' }
 }
 
@@ -1456,7 +1483,7 @@ export async function listFamilyLamps(familyId, periodKey) {
   ])
   // A failed read must not look like a family with no questions.
   const error = lampRows.error || answerRows.error
-  if (error) return { miss: error.message || 'confirm.miss', lamps: [], answers: [] }
+  if (error) return { miss: appMiss(error), lamps: [], answers: [] }
   const lamps = lampRows.data || []
   return { lamps, answers: answerRows.data || [], last: await familyEveryLast(db, lamps) }
 }
@@ -1547,10 +1574,13 @@ export async function familyTonight() {
   const user = await me()
   if (!user) return []
 
-  const { data: mineRows } = await db
+  // A failed read throws so the hook keeps the rows it had, instead of
+  // wiping them or showing answered cards as open.
+  const { data: mineRows, error: mineError } = await db
     .from('family_members')
     .select('family_id, families(id, name, fold_hour)')
     .eq('user_id', user.id)
+  if (mineError) throw mineError
   const families = (mineRows || []).map((row) => row.families).filter(Boolean)
   if (!families.length) return []
 
@@ -1573,6 +1603,8 @@ export async function familyTonight() {
       .eq('user_id', user.id)
       .in('period_key', [...new Set(nights.values())]),
   ])
+  if (lampRows.error) throw lampRows.error
+  if (answerRows.error) throw answerRows.error
 
   const lastDids = await familyEveryLast(db, lampRows.data || [])
   const out = []

@@ -80,9 +80,14 @@ const ALL_BUDDIES = [
   { id: 'bat', gems: 0, free: true, from: '2026-10-28', until: '2026-11-01' },
   // Never sold. The server gives it at 15 friends joined (claim_invites).
   { id: 'hive', gems: 0, refer: 15 },
+  // Never in the shop. Given to people who found Did I on Product Hunt (src/lib/hunt-link.js, native/components/HuntHost.jsx), free through 2026.
+  { id: 'rocket', gems: 0, free: true, hunt: true, from: '2026-10-27', until: '2027-01-01' },
 ]
 
 export const REFER_BUDDY = 'hive'
+export const HUNT_BUDDY = 'rocket'
+// Drop calendars and the shop carousel never list the Product Hunt buddy.
+const DROP_BUDDIES = ALL_BUDDIES.filter((item) => !item.hunt)
 
 const ALL_LOOKS = [
   { id: 'lime', coins: 0, gems: 0 },
@@ -135,7 +140,7 @@ export const CHEERS = ALL_CHEERS.filter((item) => isLive(item))
 export const OWNABLE_CHEERS = [...CHEERS, ...SPECIAL_CHEERS]
 export const BUDDIES = ALL_BUDDIES.filter((item) => isLive(item))
 // What the shop sells: every buddy but the one earned by referring friends.
-export const SHOP_BUDDIES = BUDDIES.filter((item) => !item.refer)
+export const SHOP_BUDDIES = BUDDIES.filter((item) => !item.refer && !item.hunt)
 
 export function isReferBuddy(id) {
   return Boolean(ALL_BUDDIES.find((item) => item.id === id)?.refer)
@@ -154,8 +159,17 @@ export function liveBuddies(today = boardDate(new Date())) {
   return ALL_BUDDIES.filter((item) => isLive(item, today))
 }
 export function shopBuddies(today = boardDate(new Date())) {
-  return liveBuddies(today).filter((item) => !item.refer)
+  return liveBuddies(today).filter((item) => !item.refer && !item.hunt)
 }
+// The Product Hunt buddy: free while its window is open, claimed outside the shop.
+export function claimHuntBuddy(book, today = boardDate(new Date())) {
+  const buddy = ALL_BUDDIES.find((item) => item.id === HUNT_BUDDY)
+  const purse = normalizePurse(book)
+  if (purse.buddies.includes(HUNT_BUDDY)) return { book: { ...book, ...purse }, miss: '', had: true }
+  if (!isLive(buddy, today)) return { book, miss: 'shop.miss.buddyGone' }
+  return { book: { ...book, ...purse, buddies: [...purse.buddies, HUNT_BUDDY], buddyOn: HUNT_BUDDY }, miss: '', had: false }
+}
+
 export function ownableCheers(today = boardDate(new Date())) {
   return [...liveCheers(today), ...SPECIAL_CHEERS]
 }
@@ -217,11 +231,11 @@ const framesIf = (frames) => (frames ? DROP_FRAMES : [])
 // The next drop inside its teaser week, or null.
 export function comingDrop(today = boardDate(new Date()), { frames = false } = {}) {
   const pick = (list) => list.filter((item) => isTeased(item, today))
-  const all = [...pick(ALL_LOOKS), ...pick(ALL_CHEERS), ...pick(ALL_BUDDIES), ...pick(framesIf(frames))]
+  const all = [...pick(ALL_LOOKS), ...pick(ALL_CHEERS), ...pick(DROP_BUDDIES), ...pick(framesIf(frames))]
   if (!all.length) return null
   const date = all.reduce((low, item) => (item.from < low ? item.from : low), all[0].from)
   const on = (list) => pick(list).filter((item) => item.from === date)
-  return { date, looks: on(ALL_LOOKS), cheers: on(ALL_CHEERS), buddies: on(ALL_BUDDIES) }
+  return { date, looks: on(ALL_LOOKS), cheers: on(ALL_CHEERS), buddies: on(DROP_BUDDIES) }
 }
 
 // Slides for the shop's drop carousel, first to last: the Coming drop (if in
@@ -236,7 +250,7 @@ function daysUntil(iso, today) {
 
 function slideItems(date, frames = false) {
   const at = (list, type) => list.filter((item) => item.from === date).map((item) => ({ type, item }))
-  return [...at(ALL_LOOKS, 'look'), ...at(ALL_CHEERS, 'cheer'), ...at(ALL_BUDDIES, 'buddy'), ...at(framesIf(frames), 'frame')]
+  return [...at(ALL_LOOKS, 'look'), ...at(ALL_CHEERS, 'cheer'), ...at(DROP_BUDDIES, 'buddy'), ...at(framesIf(frames), 'frame')]
 }
 
 export function dropSlides(today = boardDate(new Date()), { frames = false } = {}) {
@@ -246,7 +260,7 @@ export function dropSlides(today = boardDate(new Date()), { frames = false } = {
     slides.push({ kind: 'coming', date: coming.date, days: daysUntil(coming.date, today), items: slideItems(coming.date, frames) })
   }
   const liveFrames = framesIf(frames).filter((frame) => frameLive(frame, today))
-  const dates = [...new Set([...liveLooks(today), ...liveCheers(today), ...liveBuddies(today), ...liveFrames].map((item) => item.from).filter(Boolean))]
+  const dates = [...new Set([...liveLooks(today), ...liveCheers(today), ...shopBuddies(today), ...liveFrames].map((item) => item.from).filter(Boolean))]
     .filter((date) => date <= today)
     .sort()
     .reverse()
@@ -270,7 +284,7 @@ export function dropSlides(today = boardDate(new Date()), { frames = false } = {
 // A drop that went live today or yesterday, for the one line on Home.
 export function freshDrop(today = boardDate(new Date()), { frames = false } = {}) {
   const yesterday = daysBefore(today, 1)
-  const dates = [...new Set([...ALL_LOOKS, ...ALL_CHEERS, ...ALL_BUDDIES, ...framesIf(frames)].map((item) => item.from))]
+  const dates = [...new Set([...ALL_LOOKS, ...ALL_CHEERS, ...DROP_BUDDIES, ...framesIf(frames)].map((item) => item.from))]
     .filter((date) => date && date >= yesterday && date <= today)
     .sort()
   const date = dates[dates.length - 1]
@@ -377,7 +391,6 @@ export const FRIEND_CHEERS_PER_GEM = 5
 export const FRIEND_CHEER_CAP = 20
 
 export const CHEER_STAGE_MAX = 5
-export const CHEER_STAGE_USES = [0, 0, 5, 10, 15, 20]
 export const CHEER_STAGE_COINS = [0, 0, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN, CHEER_STAGE_COIN]
 
 // Every id that can be owned, released or not, so a purse loaded before a
@@ -399,7 +412,9 @@ function asFriendCheers(value) {
 
 function asCheerStages(book, owned) {
   const raw = book?.cheerStages && typeof book.cheerStages === 'object' ? book.cheerStages : {}
-  const fallback = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(book?.cheerStage) || 0) || 1))
+  // The old single stage only applies to books saved before per-cheer stages.
+  const legacy = Object.keys(raw).length ? 1 : Math.floor(Number(book?.cheerStage) || 0) || 1
+  const fallback = Math.min(CHEER_STAGE_MAX, Math.max(1, legacy))
   const out = {}
   for (const id of owned) {
     const n = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(raw[id]) || 0) || fallback))
@@ -451,10 +466,8 @@ export function normalizePurse(book) {
   const frame = normalizeWornFrame(book?.frame, frames)
   const cheerUses = asCount(book?.cheerUses)
   const cheerStages = asCheerStages(book, owned)
-  const cheerStage = cheerOn
-    ? Math.max(cheerStages[cheerOn] || 1, stageFromUses(cheerUses))
-    : 1
-  const stages = cheerOn ? { ...cheerStages, [cheerOn]: cheerStage } : cheerStages
+  const cheerStage = cheerOn ? cheerStages[cheerOn] || 1 : 1
+  const stages = cheerStages
   const cheerPlayStages = asCheerPlayStages(book, owned, stages)
   return {
     coins: asCount(book?.coins),
@@ -566,14 +579,6 @@ export function spreadPurseFrom(shelf, book) {
   }
 }
 
-export function stageFromUses(uses) {
-  let stage = 1
-  for (let next = 2; next <= CHEER_STAGE_MAX; next += 1) {
-    if (uses >= CHEER_STAGE_USES[next]) stage = next
-  }
-  return stage
-}
-
 export function nextCheerStage(stage) {
   const n = Math.min(CHEER_STAGE_MAX, Math.max(1, Math.floor(Number(stage) || 1)))
   return n < CHEER_STAGE_MAX ? n + 1 : 0
@@ -593,6 +598,7 @@ function tapsPaidTonight(book, clock, dayFoldHour = book.dayFoldHour) {
   const today = boardDate(clock, dayFoldHour)
   return (book.answers || []).filter((answer) => {
     if (answer.status !== 'yes' && answer.status !== 'late' && answer.paid !== true) return false
+    if (answer.past) return false
     const period = String(answer.periodKey || '')
     const at = stampDay(answer.answeredAt)
     return period === today || period.startsWith(today) || at.startsWith(today)
@@ -772,6 +778,29 @@ function notePaid(key) {
 }
 
 // otherFolders: () => the shelf's other folders, read only when signed out.
+// Coins earned today on this phone, for the done card. Signed in, the server
+// holds the purse; this is only the "+N today" line.
+const DAY_COINS_KEY = 'did-i-coins-day'
+function noteDayCoins(earned, clock) {
+  if (!(earned > 0)) return
+  try {
+    const day = boardDate(clock)
+    const saved = JSON.parse(localStorage.getItem(DAY_COINS_KEY) || 'null')
+    const n = saved?.day === day ? Number(saved.n) || 0 : 0
+    localStorage.setItem(DAY_COINS_KEY, JSON.stringify({ day, n: n + earned }))
+  } catch {
+    // Only the done card line misses it.
+  }
+}
+export function coinsToday(clock = new Date()) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DAY_COINS_KEY) || 'null')
+    return saved?.day === boardDate(clock) ? Math.max(0, Math.floor(Number(saved.n) || 0)) : 0
+  } catch {
+    return 0
+  }
+}
+
 export function payTap(before, after, row, status, clock = new Date(), otherFolders = () => []) {
   const purse = normalizePurse(after)
   const prev = (before.answers || []).find(
@@ -782,6 +811,7 @@ export function payTap(before, after, row, status, clock = new Date(), otherFold
   let coins = purse.coins
   if (!paid) {
     const earned = coinsFor(status, before, row, clock, accountSessionOn() ? [] : otherFolders())
+    noteDayCoins(earned, clock)
     if (accountSessionOn()) {
       if (earned > 0) notePaid(paidKey)
       // The server takes yesterday or today; a week or month key maps further back.
@@ -798,19 +828,8 @@ export function noteCheer(book) {
   const purse = normalizePurse(book)
   const id = purse.cheerOn
   if (!id) return book
-  const cheerUses = purse.cheerUses + 1
-  const fromUse = stageFromUses(cheerUses)
-  const cheerStages = {
-    ...purse.cheerStages,
-    [id]: Math.max(purse.cheerStages[id] || 1, fromUse),
-  }
-  return {
-    ...book,
-    ...purse,
-    cheerUses,
-    cheerStages,
-    cheerStage: cheerStages[id],
-  }
+  // Stages are bought with coins; uses only count plays across every cheer.
+  return { ...book, ...purse, cheerUses: purse.cheerUses + 1 }
 }
 
 export function cheerStageOf(book, id) {
@@ -1066,7 +1085,6 @@ export function buyCheerStage(book, id) {
       coins: purse.coins - cost,
       cheerStages,
       cheerStage: cheerId === purse.cheerOn ? next : purse.cheerStage,
-      cheerUses: Math.max(purse.cheerUses, CHEER_STAGE_USES[next]),
     },
     miss: '',
   }

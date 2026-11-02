@@ -9,6 +9,7 @@ import {
   weCheerStageIfDone,
   weClaim,
   weGoal,
+  notMyTurn,
   weMine,
   weNotTonightLine,
   weReply,
@@ -291,7 +292,8 @@ export function useWeAnswer(reload, book) {
   const [miss, setMiss] = useState('')
   const [note, setNote] = useState('')
   // State lags a frame: a double tap would answer (and cheer, and claim) twice.
-  const sending = useRef(false)
+  const queue = useRef(Promise.resolve())
+  const queued = useRef(new Set())
 
   async function run(id, job) {
     setBusy(id)
@@ -313,14 +315,18 @@ export function useWeAnswer(reload, book) {
     // A repeat tap on tonight's lit answer does nothing: a Did we answer has
     // no undo, so it must not clear by accident. Taking back is explicit.
     if (!night && status && mine?.status === status) return
-    // One answer at a time: a second tap while one is sending does nothing.
-    if (busy || sending.current) return
-    sending.current = true
-    try {
-      await answerNow(card, status, night)
-    } finally {
-      sending.current = false
-    }
+    // One answer at a time, in order: the next card is swiped away before
+    // the last answer lands, so its answer waits its turn instead of being dropped.
+    // A double tap on the same card still answers (and cheers) once.
+    const key = `${card.id}|${night || ''}`
+    if (queued.current.has(key)) return
+    queued.current.add(key)
+    const turn = queue.current
+      .then(() => answerNow(card, status, night))
+      .catch(() => {})
+      .finally(() => queued.current.delete(key))
+    queue.current = turn
+    await turn
   }
 
   async function answerNow(card, status, night) {
@@ -361,7 +367,8 @@ export function useWeAnswer(reload, book) {
 // the ready ones first. Only ever cards asked on this night (card.due).
 export function weOpenForMe(cards, now = new Date(), { early = false } = {}) {
   const open = (cards || []).filter(
-    (card) => card.myState === 'in' && card.due && !card.done && !weMine(card)?.status,
+    // In turns, only whoever's turn it is gets asked: anyone else's swipe would not finish it.
+    (card) => card.myState === 'in' && card.due && !card.done && !weMine(card)?.status && !notMyTurn(card),
   )
   if (!early) return open.filter((card) => weTimeReady(card, now))
   return [...open.filter((card) => weTimeReady(card, now)), ...open.filter((card) => !weTimeReady(card, now))]
@@ -381,7 +388,7 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
   if (!open.length) return null
   const card = open[0]
   const mine = picked ? weMine(card)?.status || '' : ''
-  const locked = Boolean(mine) || Boolean(picked && card.done)
+  const locked = Boolean(mine) || Boolean(picked && (card.done || notMyTurn(card)))
   // Did we wears its own accent, so a shared card reads apart from your own.
   const weColors = { ...colors, on: colors.we || colors.on, line: colors.we || colors.line, onDeep: colors.weDeep || colors.onDeep }
   return (
@@ -397,7 +404,7 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
         </View>
       }
       kicker={weKicker(card)}
-      mark={mine === 'did' || mine === 'nope' ? <MarkStamp status={mine === 'did' ? 'yes' : 'skip'} colors={weColors} /> : null}
+      mark={mine === 'did' || mine === 'nope' || locked ? <MarkStamp status={mine === 'did' || card.done ? 'yes' : 'skip'} colors={weColors} /> : null}
       title={card.question}
       stampDid={t('tonight.swipeDid')}
       stampNope={t('tonight.swipeNope')}

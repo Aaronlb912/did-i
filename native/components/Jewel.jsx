@@ -73,7 +73,7 @@ export function Jewel({
       accessibilityRole="button"
       accessibilityLabel={[label, tag, pillStatusLabel(late ? 'late' : on ? 'yes' : skip ? 'skip' : '')].filter(Boolean).join(', ')}
       accessibilityHint={t('pill.openHint')}
-      accessibilityState={{ disabled, selected: Boolean(face), checked: Boolean(on) }}
+      accessibilityState={{ disabled, selected: Boolean(face) }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: 14,
     borderRadius: radius.pill,
     borderWidth: 1,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   },
   tag: {
     fontFamily: fonts.mono,
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     marginTop: 1,

@@ -1,6 +1,6 @@
 import { mustSwipeDeadline } from './lamp-deadline.js'
 import { DAY_FOLD, GRACE_END, GRACE_FIRST_UNTIL, wallClock } from './zone.js'
-import { readPrefs } from './prefs.js'
+import { awayOn, readPrefs } from './prefs.js'
 
 function pad(value) {
   return String(value).padStart(2, '0')
@@ -129,8 +129,18 @@ export function periodPassed(lamp, periodKey, todayIso) {
 // changing Mondays to daily does not make every past day a miss.
 // was is oldest first; until is the first day of the next schedule.
 export const WAS_KEEP = 4
+// Over the cap, keep the oldest schedule (it covers the longest stretch of
+// past days) and the newest ones. The dropped middle stretch reads as every so
+// often, so none of its days turn into misses under a later schedule.
+export function trimWas(was) {
+  if (was.length <= WAS_KEEP) return was
+  const gap = { until: was[was.length - WAS_KEEP + 1].until }
+  for (const key of WAS_FIELDS) gap[key] = ''
+  gap.cadence = 'every'
+  return [was[0], gap, ...was.slice(-(WAS_KEEP - 2))]
+}
 const WAS_CADENCES = new Set(['daily', 'weekly', 'monthly', 'every_n'])
-const WAS_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor']
+const WAS_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor', 'perWeek']
 
 export function scheduleAt(lamp, dateIso) {
   const was = lamp?.was
@@ -158,18 +168,19 @@ export function keepPastSchedule(old, next, todayIso, answeredToday = false) {
   const entry = { until: reshaped && isDueOn({ ...old, archived: false }, todayIso) ? addDaysIso(todayIso, 1) : todayIso }
   for (const key of WAS_FIELDS) entry[key] = old[key] ?? ''
   if (old.cadence === 'once') entry.cadence = 'every'
-  return [...was, entry].slice(-WAS_KEEP)
+  return trimWas([...was, entry])
 }
 
 // A day inside a pause since resumed ([from, until) pairs on lamp.pauses).
 export function inPause(lamp, iso) {
-  return Boolean(lamp?.pauses?.some(([from, until]) => iso >= from && iso < until))
+  return Boolean(lamp?.pauses?.some(([from, until]) => iso >= from && iso < until)) || awayOn(iso)
 }
 
 export function isDueOn(lamp, dateIso) {
   if (!lamp || lamp.archived) return false
   const date = parseIsoDate(dateIso)
   if (!date) return false
+  if (awayOn(dateIso)) return false
   if (lamp.was) lamp = scheduleAt(lamp, dateIso)
   switch (lamp.cadence) {
     case 'daily':
@@ -317,7 +328,7 @@ export function everyGap(book, lamp, dateIso) {
 
 // Due on dateIso: never done, or the gap has passed since the last Did.
 export function everyDueOn(book, lamp, dateIso) {
-  if (!isEvery(lamp) || lamp.archived) return false
+  if (!isEvery(lamp) || lamp.archived || awayOn(dateIso)) return false
   const created = String(lamp.createdOn || '').slice(0, 10)
   if (created && dateIso < created) return false
   const last = lastDidNight(book, lamp.id, dateIso)

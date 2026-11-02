@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native'
 import { commitBook, shelfMarks, streakLength } from '../../src/lib/achievements.js'
+import { putPastAnswer } from '../../src/lib/board-ops.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
 import { EmptyCard } from '../components/PersonCard.jsx'
 import { clearNotices, markNoticesSeen, restoreNotices, useNotices } from '../../src/lib/notices.js'
@@ -47,7 +48,7 @@ import {
   shortLabel,
 } from '../../src/lib/board-json.js'
 import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
-import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
+import { currentBook, enterLand, folderNameKey, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
 import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
@@ -80,8 +81,9 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
-import { PING_KINDS, afterQuiet, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
+import { AFTERNOON_AT_DEFAULT, AFTERNOON_AT_TIMES, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
+import { quietToFor } from '../../src/lib/quiet.js'
+import { PING_KINDS, afterQuiet, awayEnd, awayKey, awayLeft, awayNow, awayStart, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
 import { syncLine } from '../../src/lib/sync-line.js'
@@ -97,9 +99,9 @@ import {
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import { useDayNow } from '../hooks/useDayNow.js'
-import { boardDate, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { addDaysIso, boardDate, dueTonight, formatBoardDate, isEvery, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList } from '../../src/lib/starters.js'
-import { FIRST_TIME, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
+import { FIRST_TIME, answeredNights, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
 import { FirstPacks } from '../components/FirstPacks.jsx'
 import { cloudSetUp } from '../../src/lib/cloud.js'
 import { authSkipped, clearAuthSkip } from '../../src/lib/auth-gate.js'
@@ -138,11 +140,12 @@ export function SureModal({ sure, colors, onClose, onGo }) {
       <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
         <Pressable
           accessible={false}
+          accessibilityViewIsModal
           style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
           onPress={(event) => event.stopPropagation()}
         >
           <Text style={[styles.popKicker, { color: colors.on }]}>{t('account.kicker')}</Text>
-          <Text style={[styles.popTitle, { color: colors.ink }]}>{sure?.title}</Text>
+          <Text accessibilityRole="header" style={[styles.popTitle, { color: colors.ink }]}>{sure?.title}</Text>
           <Text style={[styles.popBody, { color: colors.inkSoft }]}>{sure?.body}</Text>
           <View style={styles.popRow}>
             <DidButton small label={sure?.yes} onPress={onGo} colors={colors} />
@@ -421,11 +424,13 @@ export function LaterScreen({ book, now }) {
 export function MarksScreen({ book, boards = [], now }) {
   const colors = useHallColors()
   const gentle = usePrefs().gentle === true
-  const clock = now || new Date()
+  // Ticks at midnight, so a screen left open moves to the new day.
+  const today = useDayNow()
+  const clock = now || today
   const dateIso = boardDate(clock, book?.dayFoldHour)
   // Best ever, across every folder. hallHeat is a 0 to 5 level, not a streak, and read as a wrong number here.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const best = useMemo(() => bestShelfStreak(boards.length ? boards : [book], clock), [boards, book, dateIso])
+  const best = useMemo(() => bestShelfStreak(boards.length ? boards : [book], clock), [boards, book, dateIso, awayKey()])
   const have = useMemo(() => shelfMarks(boards.length ? boards : [book]), [boards, book])
 
   return (
@@ -521,7 +526,9 @@ export function RecentScreen() {
           </Pressable>
         ))
       ) : account.user && inbox > 0 ? null : (
-        <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors} />
+        <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors}>
+          <DidButton small label={t('about.home')} onPress={() => goHash('/tonight')} colors={colors} />
+        </EmptyCard>
       )}
       </View>
     </ScreenShell>
@@ -581,15 +588,22 @@ function FolderScope({ colors, boards, tagId, path }) {
 export function StatsScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const gentle = usePrefs().gentle === true
-  const clock = now || new Date()
-  const counts = shelfStatsCounts(inView(book, boards), clock, tagId)
+  // Ticks at midnight, so a screen left open moves to the new day.
+  const today = useDayNow()
+  const clock = now || today
   const dateIso = boardDate(clock, book?.dayFoldHour)
+  // Long walks (streak, freezes): once per day, folder or Away change, not every render.
+  const { counts, freezesHeld } = useMemo(
+    () => ({ counts: shelfStatsCounts(inView(book, boards), clock, tagId), freezesHeld: freezeState(inView(book, boards), clock).held }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [book, boards, tagId, dateIso, awayKey()],
+  )
   // The last seven nights, walked once per night (the Sunday recap, any day).
   const recap = useMemo(() => {
     const books = inView(book, boards)
     return weekRecap(books, weekStripNights(books, clock, tagId), tagId, clock)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [book, boards, dateIso, tagId])
+  }, [book, boards, dateIso, tagId, awayKey()])
   // The longest run any one question had (nope breaks it), walked once a night.
   const bestRun = useMemo(() => {
     let best = 0
@@ -597,7 +611,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
       for (const lamp of one.lamps || []) best = Math.max(best, bestQuestionStreak(one, lamp, dateIso))
     }
     return best
-  }, [book, boards, dateIso, tagId])
+  }, [book, boards, dateIso, tagId, awayKey()])
 
   if (!counts.hung) {
     return (
@@ -629,7 +643,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
           n={counts.heat}
           label={t('home.streak')}
           line={t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}
-          chip={<FreezeChip colors={colors} held={freezeState(inView(book, boards), clock).held} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
+          chip={<FreezeChip colors={colors} held={freezesHeld} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
         />
       )}
       <View style={styles.tiles}>
@@ -754,7 +768,7 @@ export function NotesScreen({ book, boards }) {
   )
 }
 
-export function CalendarScreen({ book, boards, tagId, now }) {
+export function CalendarScreen({ book, boards, tagId, now, onChangeBooks }) {
   const colors = useHallColors()
   const today = useDayNow()
   const clock = now || today
@@ -765,6 +779,11 @@ export function CalendarScreen({ book, boards, tagId, now }) {
   return (
     <ScreenShell title={t('settings.history')} colors={colors}>
       {isNewShelf(boards) ? <Meta colors={colors}>{t(gentle ? 'cal.hintGentle' : 'cal.hint')}</Meta> : null}
+      {answeredNights(boards, 1) === 0 ? (
+        <EmptyCard title={t('recent.emptyTitle')} body={t('cal.emptyBody')} colors={colors}>
+          <DidButton small label={t('about.home')} onPress={() => goHash('/tonight')} colors={colors} />
+        </EmptyCard>
+      ) : null}
       <ChipRow
         items={[
           { id: 'month', label: t('cal.viewMonth') },
@@ -790,7 +809,22 @@ export function CalendarScreen({ book, boards, tagId, now }) {
           }}
         />
       ) : (
-        <CalendarGrid book={book} boards={boards} tagId={tagId} now={clock} colors={colors} startShift={startShift} />
+        <CalendarGrid
+          book={book}
+          boards={boards}
+          tagId={tagId}
+          now={clock}
+          colors={colors}
+          startShift={startShift}
+          onAnswer={onChangeBooks ? (row, status) => {
+            const from = (boards?.length ? boards : [book]).find((item) => item.id === row.boardId) || book
+            const next = putPastAnswer(from, row, status, clock)
+            if (next === from) return null
+            const saved = commitBook(next, clock)
+            onChangeBooks([saved])
+            return saved
+          } : undefined}
+        />
       )}
       <View style={styles.calKey}>
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.on }]} />
@@ -992,7 +1026,9 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
 export function StreaksScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const gentle = usePrefs().gentle === true
-  const clock = now || new Date()
+  // Ticks at midnight, so a screen left open moves to the new day.
+  const today = useDayNow()
+  const clock = now || today
   // Multi-night walks: once per shelf, folder and minute, not every render.
   const minute = Math.floor(clock.getTime() / 60000)
   const { books, heat, freezes, rows } = useMemo(() => {
@@ -1015,7 +1051,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const longest = rows.length ? rows[0].n : 0
   const breakNight = useMemo(
     () => (longest > heat ? streakBreak(inView(book, boards), clock, tagId, longest + 1) : null),
-    [book, boards, tagId, longest, heat], // eslint-disable-line react-hooks/exhaustive-deps
+    [book, boards, tagId, longest, heat, awayKey(), boardDate(clock)], // eslint-disable-line react-hooks/exhaustive-deps
   )
   const breakLine = breakNight
     ? breakNight.question
@@ -1105,7 +1141,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
     const title = titleDraft.trim()
     if (!title || title === book?.title) return
     // Same name as another folder: saving would merge the two.
-    if ((boards || []).some((item) => item.id !== book?.id && String(item.title || '').trim().toLowerCase() === title.toLowerCase())) {
+    if ((boards || []).some((item) => item.id !== book?.id && folderNameKey(item.title) === folderNameKey(title))) {
       confirmMiss(t('boards.addSame'))
       return
     }
@@ -1120,12 +1156,12 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
       setAddMiss(t('boards.addMiss'))
       return
     }
-    if ((boards || []).some((item) => !item.archived && item.title.trim().toLowerCase() === title.toLowerCase())) {
+    if ((boards || []).some((item) => !item.archived && folderNameKey(item.title) === folderNameKey(title))) {
       setAddMiss(t('boards.addSame'))
       return
     }
     // A parked folder with that name: open it, which brings it back.
-    const asleep = (boards || []).find((item) => item.archived && item.title.trim().toLowerCase() === title.toLowerCase())
+    const asleep = (boards || []).find((item) => item.archived && folderNameKey(item.title) === folderNameKey(title))
     if (asleep) {
       setAdding(false)
       setNewName('')
@@ -1244,15 +1280,32 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
           />
           {showParked
             ? parked.map((item, at) => (
+                <View key={item.id}>
                 <SetRow
-                  key={item.id}
                   colors={colors}
                   icon="folder"
                   label={item.title}
                   chevron
-                  last={at === parked.length - 1}
+                  last={at === parked.length - 1 && item.id !== book?.id}
                   onPress={() => onSelect?.(item.id)}
                 />
+                {/* A parked folder picked here can be renamed too. */}
+                {item.id === book?.id ? (
+                  <View style={styles.tagName}>
+                  <Field
+                    colors={colors}
+                    label={t('boards.name')}
+                    value={titleDraft}
+                    onChangeText={setTitleDraft}
+                    onSubmitEditing={saveName}
+                    returnKeyType="done"
+                    maxLength={60}
+                    autoCapitalize="words"
+                  />
+                  <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={saveName} />
+                  </View>
+                ) : null}
+                </View>
               ))
             : null}
         </SetCard>
@@ -1598,8 +1651,8 @@ export function FirstNightScreen({ book, onChange, now }) {
         ? { question, short: shortFromQuestion(question, 24) }
         : null
     const made = firstRunBook(book, picks, own, askAfter, clock)
-    markWelcomeSeen()
     onChange?.(made.book)
+    markWelcomeSeen()
     // No notification ask from here: a sheet opened while /first was still on
     // screen sent Not now back into step 1 with nothing saved. AppShell offers
     // it once Tonight is up (offerFirstPingPrimer).
@@ -1687,7 +1740,7 @@ export function FirstNightScreen({ book, onChange, now }) {
               selectionColor={colors.on}
               cursorColor={colors.on}
               accessibilityLabel={t('first.typeOwn')}
-              autoCapitalize="none"
+              autoCapitalize="sentences"
               returnKeyType="done"
               blurOnSubmit
               multiline
@@ -1729,14 +1782,14 @@ export function FirstNightScreen({ book, onChange, now }) {
 const PUSH_KINDS = new Set(['sends', 'we', 'cheers', 'friends', 'family', 'didi'])
 // Morning ask times outside quiet hours: a nudge inside them never rings.
 // The picked one stays listed so the choice never looks empty.
-function morningTimes(prefs) {
-  const free = MORNING_AT_TIMES.filter((id) => {
+function nudgeTimes(prefs, list, picked) {
+  const free = list.filter((id) => {
     const [h, m] = id.split(':').map(Number)
     const at = new Date()
     at.setHours(h, m, 0, 0)
-    return afterQuiet(at, prefs).getTime() === at.getTime() || id === prefs.morningAt
+    return afterQuiet(at, prefs).getTime() === at.getTime() || id === picked
   })
-  return free.length ? free : MORNING_AT_TIMES
+  return free.length ? free : list
 }
 
 const QUIET_HOURS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`)
@@ -1802,9 +1855,13 @@ function PingKinds({ colors, on }) {
     const was = readPrefs().pingsPrivate
     writePrefs({ pingsPrivate: !was })
     setMiss('')
+    armLampPings(readShelf()?.boards || []).catch(() => {})
     const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      if (readPrefs().pingsPrivate === !was) writePrefs({ pingsPrivate: was })
+      if (readPrefs().pingsPrivate === !was) {
+        writePrefs({ pingsPrivate: was })
+        armLampPings(readShelf()?.boards || []).catch(() => {})
+      }
       setMiss(t('pings.kindsMiss'))
     }
   }
@@ -1855,7 +1912,7 @@ function PingKinds({ colors, on }) {
                   : kind === 'day'
                     ? t('pings.kind.daySub', {
                         morning: clockWords(prefs.morningAsk !== false ? prefs.morningAt || MORNING_AT_DEFAULT : DAY_NUDGE_TIMES[0]),
-                        afternoon: clockWords(DAY_NUDGE_TIMES[1]),
+                        afternoon: clockWords(prefs.afternoonAt || AFTERNOON_AT_DEFAULT),
                       })
                     : t(`pings.kind.${kind}Sub`)
               }
@@ -1879,10 +1936,22 @@ function PingKinds({ colors, on }) {
               <SetChoice
                 colors={colors}
                 label={t('morning.at')}
-                options={morningTimes(prefs).map((id) => ({ id, label: clockWords(id) }))}
+                options={nudgeTimes(prefs, MORNING_AT_TIMES, prefs.morningAt).map((id) => ({ id, label: clockWords(id) }))}
                 selected={prefs.morningAt || MORNING_AT_DEFAULT}
                 onSelect={(id) => {
                   writePrefs({ morningAt: id })
+                  armLampPings(readShelf().boards).catch(() => {})
+                }}
+              />
+            ) : null}
+            {kind === 'day' && !prefs.pingsOff.includes('day') ? (
+              <SetChoice
+                colors={colors}
+                label={t('morning.afternoonAt')}
+                options={nudgeTimes(prefs, AFTERNOON_AT_TIMES, prefs.afternoonAt).map((id) => ({ id, label: clockWords(id) }))}
+                selected={prefs.afternoonAt || AFTERNOON_AT_DEFAULT}
+                onSelect={(id) => {
+                  writePrefs({ afternoonAt: id })
                   armLampPings(readShelf().boards).catch(() => {})
                 }}
               />
@@ -1935,12 +2004,12 @@ function PingKinds({ colors, on }) {
               label={t('pings.quietFrom')}
               options={QUIET_HOURS.map((id) => ({ id, label: clockWords(id) }))}
               selected={prefs.quietFrom}
-              onSelect={(id) => saveQuiet({ quietFrom: id })}
+              onSelect={(id) => saveQuiet({ quietFrom: id, quietTo: quietToFor(id, prefs.quietTo) })}
             />
             <SetChoice
               colors={colors}
               label={t('pings.quietTo')}
-              options={QUIET_HOURS.map((id) => ({ id, label: clockWords(id) }))}
+              options={QUIET_HOURS.filter((id) => id !== prefs.quietFrom).map((id) => ({ id, label: clockWords(id) }))}
               selected={prefs.quietTo}
               onSelect={(id) => saveQuiet({ quietTo: id })}
               last
@@ -1948,6 +2017,9 @@ function PingKinds({ colors, on }) {
           </>
         ) : null}
       </SetCard>
+      {prefs.quietOn && afterQuiet(lastCallAt(), prefs).getTime() !== lastCallAt().getTime() ? (
+        <Meta colors={colors}>{t('pings.quietNoLastCall')}</Meta>
+      ) : null}
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
     </>
   )
@@ -1981,6 +2053,62 @@ function PingTest({ colors }) {
   )
 }
 
+// Away mode: every question pauses and no reminders come until the picked day.
+function AwayCard({ colors }) {
+  const prefs = usePrefs()
+  const today = boardDate()
+  const range = awayNow(prefs, today)
+  const answered = readShelf().boards.some((book) => dueTonight(book, new Date()).some((row) => row.answer))
+  const first = answered ? addDaysIso(today, 1) : today
+  const left = awayLeft(prefs, first)
+  const change = (patch) => {
+    writePrefs(patch)
+    armLampPings(readShelf().boards).catch(() => {})
+  }
+  return (
+    <>
+      <SetCap colors={colors}>{t('away.cap')}</SetCap>
+      <SetCard colors={colors}>
+        {range ? (
+          <SetRow
+            colors={colors}
+            icon="clock"
+            tint={colors.on}
+            label={t('away.until', { date: formatBoardDate(range[1]) })}
+            sub={t('away.backSub')}
+            value={t('away.back')}
+            last
+            onPress={() => change(awayEnd(prefs, today))}
+          />
+        ) : left < 1 ? (
+          <SetRow colors={colors} icon="clock" label={t('away.pick')} sub={t('away.left', { n: 0 })} last />
+        ) : (
+          <SetChoice
+            colors={colors}
+            icon="clock"
+            label={t('away.pick')}
+            sub={t('away.sub') + ' ' + t('away.left', { n: left })}
+            options={Array.from({ length: left }, (_, i) => addDaysIso(first, i + 1)).map((id) => ({ id, label: formatBoardDate(id) }))}
+            selected=""
+            last
+            onSelect={(id) => {
+              change(awayStart(prefs, today, id, answered))
+              confirmDone(t('away.until', { date: formatBoardDate(id) }))
+            }}
+          />
+        )}
+      </SetCard>
+    </>
+  )
+}
+
+// 21:00 today: the last call for a high question (src/lib/notify.js).
+function lastCallAt() {
+  const at = new Date()
+  at.setHours(21, 0, 0, 0)
+  return at
+}
+
 export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange }) {
   const colors = useHallColors()
   const clock = now || new Date()
@@ -1993,7 +2121,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
   const [seen, setSeen] = useState(() => new Map())
   const rows = new Map(seen)
   for (const one of books) {
-    for (const fire of upcomingPings(one, clock)) if (!rows.has(fire.id)) rows.set(fire.id, fire)
+    for (const fire of upcomingPings(one, clock)) if (!rows.has(fire.tag)) rows.set(fire.tag, fire)
   }
   const fires = [...rows.values()].sort((a, b) => a.at - b.at)
   const bookOf = (id) => books.find((one) => (one.lamps || []).some((lamp) => lamp.id === id))
@@ -2004,9 +2132,9 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
     const lamp = home?.lamps.find((item) => item.id === fire.id)
     if (!lamp || !onChange) return confirmMiss(t('confirm.miss'))
     const next = !lampNotifyOn(lamp)
-    setSeen((was) => new Map(was).set(fire.id, fire))
+    setSeen((was) => new Map(was).set(fire.tag, fire))
     onChange(commitBook({ ...home, lamps: home.lamps.map((item) => (item.id === lamp.id ? { ...item, notify: next, at: clock.toISOString() } : item)) }, clock))
-    return confirmDone(next ? t('pings.oneOn') : t('pings.oneOff'))
+    return confirmDone(next ? t('pings.oneOn') : t('pings.oneOffAll'))
   }
 
   return (
@@ -2038,6 +2166,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
           />
         )}
       </SetCard>
+      <AwayCard colors={colors} />
       <PingKinds colors={colors} on={on && Boolean(onAskPings)} />
       <PingTest colors={colors} />
       <SetCap colors={colors}>{t('pings.waitingTonight')}</SetCap>
@@ -2565,7 +2694,7 @@ function AccountSignedIn({ book, email, onChange }) {
           icon="logout"
           label={t('account.out')}
           last
-          onPress={busy ? undefined : () => leave('out', signOutHere)}
+          onPress={busy ? undefined : () => setSure({ title: t('account.outSureTitle'), body: t('account.outSureBody'), yes: t('account.out'), go: () => leave('out', signOutHere) })}
         />
       </SetCard>
       <View style={styles.dataGap} />
@@ -2662,7 +2791,7 @@ function AccountSignedIn({ book, email, onChange }) {
       ) : null}
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={busy ? undefined : download} />
+        <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} value={busy === 'export' ? t('app.loading') : undefined} chevron last onPress={busy ? undefined : download} />
       </SetCard>
 
       <SetCap colors={colors}>{t('account.leaveCap')}</SetCap>
@@ -2820,8 +2949,8 @@ const styles = StyleSheet.create({
   weekName: { width: 96, paddingRight: 8 },
   weekNameText: { fontFamily: fonts.ui, fontSize: 13 },
   weekHeadCell: { flex: 1, alignItems: 'center', gap: 2 },
-  weekDow: { fontFamily: fonts.mono, fontSize: 10 },
-  weekDay: { fontFamily: fonts.mono, fontSize: 10 },
+  weekDow: { fontFamily: fonts.mono, fontSize: 11 },
+  weekDay: { fontFamily: fonts.mono, fontSize: 11 },
   weekCell: { width: 14, height: 14, borderRadius: 4 },
   weekDot: { width: 5, height: 5, borderRadius: 3, marginTop: 1 },
   weekOff: { height: 2, borderRadius: 1, marginVertical: 6 },

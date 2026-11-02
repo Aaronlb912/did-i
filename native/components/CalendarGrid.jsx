@@ -3,9 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { firstAnswerMonth, monthStripNights, nightDueRows, nightWhy, yearMonths } from '../../src/lib/hall-pages.js'
 import { openNightWhy } from './NightSheets.jsx'
-import { t } from '../../src/lib/i18n.js'
-import { gentleOn, usePrefs } from '../../src/lib/prefs.js'
+import { firstWeekday, t } from '../../src/lib/i18n.js'
+import { awayKey, gentleOn, usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate, nightOpen } from '../../src/lib/recurrence.js'
+import { pastAnswerOpen } from '../../src/lib/board-ops.js'
 import { nightWhyLines } from '../../src/lib/night-why.js'
 import { weCardShort } from '../../src/lib/did-we.js'
 import { publishSheet } from './SheetHost.jsx'
@@ -36,7 +37,7 @@ export function dayLabel(night, locale, gentle = false) {
 
 function dowMarks(locale) {
   return [0, 1, 2, 3, 4, 5, 6].map((day) => {
-    const date = new Date(2026, 8, 6 + day)
+    const date = new Date(2026, 8, 6 + ((day + firstWeekday(locale)) % 7))
     return date.toLocaleDateString(dateLocale(locale), { weekday: 'narrow' })
   })
 }
@@ -60,7 +61,7 @@ function markOf(answer, when = 0, open = when === 0) {
   return { key: 'hole', label: upFirst(t('cal.open')) }
 }
 
-export function CalendarGrid({ book, boards = [], tagId = '', now, colors, startShift = 0 }) {
+export function CalendarGrid({ book, boards = [], tagId = '', now, colors, startShift = 0, onAnswer }) {
   const prefs = usePrefs()
   // Gentle mode: a missed night reads like any other unlit night, never a warning.
   const missTone = prefs.gentle === true ? colors.open : colors.miss
@@ -74,7 +75,17 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
   }, [tagId])
 
   const shelf = boards.length ? boards : [book]
-  const pack = monthStripNights(shelf, clock, tagId, monthShift)
+  const dayIso = boardDate(clock, book?.dayFoldHour)
+  // Up to 31 day walks: once per shelf, day, folder and month, not on every tap.
+  const pack = useMemo(
+    () => monthStripNights(shelf, clock, tagId, monthShift, firstWeekday(prefs.locale)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [boards, book, dayIso, tagId, monthShift, awayKey(), prefs.locale],
+  )
+  // History starts at the first month with an answer; the back arrow stops there.
+  const firstMonth = useMemo(() => firstAnswerMonth(shelf, clock, tagId), [boards, book, dayIso, tagId])
+  const minShift = (Number(firstMonth.slice(0, 4)) - pack.start.getFullYear()) * 12 + Number(firstMonth.slice(5, 7)) - 1 - pack.start.getMonth() + monthShift
+  const canBack = monthShift > Math.min(0, minShift)
   const locale = dateLocale(prefs.locale)
   const monthLabel = pack.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
   const dows = dowMarks(prefs.locale)
@@ -83,14 +94,14 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
   for (let i = 0; i < pack.nights.length; i += 7) weeks.push(pack.nights.slice(i, i + 7))
 
   // A day opens its sheet: why it did or did not clear, then each question.
-  function openDay(iso) {
+  function openDay(iso, shelfNow = shelf) {
     setPicked(iso)
     const today = boardDate(clock, book?.dayFoldHour)
     const when = iso > today ? 1 : iso < today ? -1 : 0
-    const why = nightWhy(shelf, iso, clock, tagId)
+    const why = nightWhy(shelfNow, iso, clock, tagId)
     // What broke the night leads: open Did wes, then anything not a Did, then the Dids.
     const done = (row) => ['yes', 'late'].includes(row.answer?.status)
-    const rows = nightDueRows(shelf, iso, tagId)
+    const rows = nightDueRows(shelfNow, iso, tagId)
     const sorted = [...rows.filter((row) => !done(row)), ...rows.filter(done)]
     const weOpen = why.weOpen || []
     const weMark = when < 0 ? { label: t(prefs.gentle === true ? 'jewelKey.open' : 'cal.notAnswered'), tone: missTone } : { label: upFirst(t('cal.open')), tone: colors.open }
@@ -115,6 +126,14 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
           ))}
           {sorted.map((row) => {
             const mark = markOf(row.answer, when, nightOpen(iso, clock))
+            const canAnswer = Boolean(onAnswer) && pastAnswerOpen(row, new Date())
+            const date = formatBoardDate(iso)
+            const answer = (status) => {
+              const next = onAnswer(row, status)
+              if (next) openDay(iso, shelfNow.map((item) => (item.id === next.id ? next : item)))
+              // A sheet left open past midnight can be outside the window now: redraw without the buttons.
+              else if (!pastAnswerOpen(row, new Date())) openDay(iso, shelfNow)
+            }
             return (
               <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
                 <View style={[styles.markPip, { backgroundColor: colors[mark.key === 'yes' ? 'on' : mark.key === 'late' ? 'late' : mark.key === 'skip' ? 'skip' : mark.key === 'miss' && prefs.gentle !== true ? 'miss' : 'open'] }]} />
@@ -122,6 +141,25 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                   <Text style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
                   <Text style={[styles.markSub, { color: colors.inkDim }]}>{shortLabel(row.lamp)}</Text>
                 </View>
+                {canAnswer ? (
+                  <View style={styles.markBtns}>
+                    {[['yes', t('widget.tonight.did'), 'cal.markDid'], ['skip', t('later.nope'), 'cal.markNotYet']].map(([status, label, key]) => {
+                      const on = status === 'yes' ? row.answer?.status === 'yes' || row.answer?.status === 'late' : row.answer?.status === 'skip'
+                      return (
+                        <Pressable
+                          key={status}
+                          accessibilityRole="button"
+                          accessibilityLabel={t(key, { question: shortLabel(row.lamp), date })}
+                          accessibilityState={{ selected: on }}
+                          onPress={() => answer(status)}
+                          style={[styles.markBtn, { borderColor: colors.line, backgroundColor: on ? colors.line : 'transparent' }]}
+                        >
+                          <Text style={[styles.markBtnText, { color: colors.ink }]}>{label}</Text>
+                        </Pressable>
+                      )
+                    })}
+                  </View>
+                ) : null}
               </View>
             )
           })}
@@ -136,8 +174,8 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.prev')} onPress={() => { setMonthShift((n) => n - 1); setPicked('') }} hitSlop={8}>
-          <Text style={[styles.shift, { color: colors.inkDim }]}>‹</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.prev')} accessibilityState={{ disabled: !canBack }} disabled={!canBack} onPress={() => { setMonthShift((n) => n - 1); setPicked('') }} hitSlop={8}>
+          <Text style={[styles.shift, { color: canBack ? colors.inkDim : colors.line }]}>‹</Text>
         </Pressable>
         <Text style={[styles.month, { color: colors.ink }]}>{monthLabel}</Text>
         <Pressable
@@ -221,16 +259,16 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
     setYear(thisYear)
   }, [tagId, thisYear])
 
-  const firstMonth = useMemo(() => firstAnswerMonth(shelf, clock, tagId), [shelf, tagId, dateIso])
+  const firstMonth = useMemo(() => firstAnswerMonth(shelf, clock, tagId), [shelf, tagId, dateIso, awayKey()])
   const firstYear = Number(firstMonth.slice(0, 4))
   // One walk per [shelf, year]; the night changing also refreshes today.
   // The first year starts at the first month with answers, not January.
   const months = useMemo(() => {
-    const all = yearMonths(shelf, year, clock, tagId)
+    const all = yearMonths(shelf, year, clock, tagId, firstWeekday(prefs.locale))
     if (year !== firstYear) return all
     const from = Number(firstMonth.slice(5, 7)) - 1
     return all.filter((pack) => pack.start.getMonth() >= from)
-  }, [shelf, year, tagId, dateIso, firstMonth, firstYear])
+  }, [shelf, year, tagId, dateIso, firstMonth, firstYear, prefs.locale])
   const locale = dateLocale(prefs.locale)
   const canBack = year > firstYear
   const canNext = year < thisYear
@@ -280,12 +318,10 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
                 night.pad ? (
                   <View key={night.iso} style={styles.miniCell} />
                 ) : (
-                  <Pressable
+                  <View
                     key={night.iso}
-                    accessibilityRole="button"
+                    accessible
                     accessibilityLabel={dayLabel(night, locale, prefs.gentle === true)}
-                    onPress={() => openNightWhy({ colors, boards: shelf, iso: night.iso, now: clock, tagId })}
-                    hitSlop={2}
                     style={styles.miniCell}
                   >
                     <View
@@ -298,7 +334,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
                         !night.empty && !night.on && night.miss && !night.isToday ? missDot(colors, missTone) : null,
                       ]}
                     />
-                  </Pressable>
+                  </View>
                 ),
               )}
             </View>
@@ -322,7 +358,7 @@ const styles = StyleSheet.create({
   miniCell: { width: '14.28%', aspectRatio: 1, padding: 1 },
   miniDot: { flex: 1, borderRadius: 2, borderWidth: 1 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  shift: { fontSize: 20, paddingHorizontal: 8 },
+  shift: { fontSize: 20, paddingHorizontal: 8, paddingVertical: 6 },
   month: { fontFamily: fonts.uiSemi, fontSize: 17 },
   grid: {},
   week: { flexDirection: 'row' },
@@ -340,8 +376,11 @@ const styles = StyleSheet.create({
   },
   pip: { width: 6, height: 6, borderRadius: 3 },
   marks: { marginTop: 2 },
-  markRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginBottom: 10 },
+  markRow: { flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 10 },
   markPip: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
   markLabel: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  markBtns: { flexDirection: 'row', gap: 8 },
+  markBtn: { minHeight: 44, minWidth: 44, paddingHorizontal: 12, borderWidth: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  markBtnText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   markSub: { fontFamily: fonts.ui, fontSize: 13 },
 })

@@ -264,13 +264,13 @@ export function weekStripNights(boards, now = new Date(), tagId = '', weekShift 
   return nights
 }
 
-export function monthStripNights(boards, now = new Date(), tagId = '', monthShift = 0) {
+export function monthStripNights(boards, now = new Date(), tagId = '', monthShift = 0, firstDay = 0) {
   const books = scopedBooks(boards, tagId)
   const fold = (books[0] || boards?.[0])?.dayFoldHour
   const today = boardDate(now, fold)
   const todayDate = parseIsoDate(today) || now
   const start = new Date(todayDate.getFullYear(), todayDate.getMonth() + monthShift, 1)
-  const pad = start.getDay()
+  const pad = (start.getDay() - firstDay + 7) % 7
   const last = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
   const frozen = frozenFor(boards, now, tagId)
   const nights = []
@@ -422,7 +422,7 @@ function nightMarksMany(books, isos, today, tagId = '') {
 
 // Twelve month grids for one year, same shape as monthStripNights. Months
 // after this one are left out.
-export function yearMonths(boards, year, now = new Date(), tagId = '') {
+export function yearMonths(boards, year, now = new Date(), tagId = '', firstDay = 0) {
   const books = scopedBooks(boards, tagId)
   const fold = (books[0] || boards?.[0])?.dayFoldHour
   const today = boardDate(now, fold)
@@ -438,7 +438,7 @@ export function yearMonths(boards, year, now = new Date(), tagId = '') {
   for (let m = 0; m <= lastMonth; m += 1) {
     const start = new Date(year, m, 1)
     const nights = []
-    for (let i = 0; i < start.getDay(); i += 1) nights.push({ iso: `pad-${i}`, pad: true, dayNum: '', isToday: false, on: false, miss: false, empty: true })
+    for (let i = 0; i < (start.getDay() - firstDay + 7) % 7; i += 1) nights.push({ iso: `pad-${i}`, pad: true, dayNum: '', isToday: false, on: false, miss: false, empty: true })
     const last = new Date(year, m + 1, 0).getDate()
     for (let day = 1; day <= last; day += 1) {
       const iso = isoDate(new Date(year, m, day))
@@ -517,16 +517,26 @@ export function shelfNoteRows(boards, tagId = '') {
   return shelfFeedRows(boards, tagId).filter((row) => row.lamp && String(row.answer.note || '').trim())
 }
 
+function countsAsMiss(lamp, answer, floor) {
+  if (lamp && (isEvery(lamp) || lamp.optional)) return false
+  const key = String(answer.periodKey || '')
+  return !(key.length === 10 && key >= floor)
+}
+
 export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
   const books = scopedBooks(boards, tagId)
   const sum = { hung: 0, down: 0, did: 0, late: 0, skip: 0 }
+  const floor = openFloorIso(now)
   for (const book of books) {
+    const lamps = new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
     const answers = book.answers || []
     sum.hung += (book.lamps || []).filter((lamp) => !lamp.archived).length
     sum.down += (book.lamps || []).filter((lamp) => lamp.archived).length
     sum.did += answers.filter((answer) => answer.status === 'yes').length
     sum.late += answers.filter((answer) => answer.status === 'late').length
-    sum.skip += answers.filter((answer) => answer.status === 'skip').length
+    // Missed, same as This week: a Not yet that can still turn into a Did, or
+    // on a question that is never a miss (every so often, optional), is not one.
+    sum.skip += answers.filter((answer) => answer.status === 'skip' && countsAsMiss(lamps.get(answer.lampId), answer, floor)).length
   }
   return { ...sum, heat: books.length ? shelfStreak(boards, now, tagId) : 0 }
 }
@@ -568,6 +578,9 @@ export function weekRecap(boards, week, tagId = '', now) {
         if (key.length === 7) key = stampDay(answer.answeredAt)
         if (key.length !== 10 || key < from || key > to) continue
         if (status === 'skip') {
+          lamps = lamps || new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
+          const lamp = lamps.get(answer.lampId)
+          if (lamp && (isEvery(lamp) || lamp.optional)) continue
           if (!floor || key < floor) nopes += 1
         } else {
           dids += 1
@@ -804,7 +817,8 @@ export function matchLamps(book, query) {
     const blob = [lamp.question, lamp.short, lamp.kind, lamp.notes, shortLabel(lamp)]
       .join(' ')
       .toLowerCase()
-    return blob.includes(q)
+    // Every word, in any order, like the questions list search.
+    return q.split(/s+/).every((word) => blob.includes(word))
   })
 }
 

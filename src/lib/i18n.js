@@ -24,6 +24,17 @@ export function localePack(locale = readPrefs().locale) {
   return packs[locale] ?? packs.en
 }
 
+// First day of the week for a locale as 0-6 (0 is Sunday). Sunday when the runtime cannot say.
+export function firstWeekday(locale) {
+  try {
+    const loc = new Intl.Locale(locale === 'zh' ? 'zh-CN' : locale || 'en')
+    const day = (loc.getWeekInfo ? loc.getWeekInfo() : loc.weekInfo)?.firstDay
+    return Number.isInteger(day) ? day % 7 : 0
+  } catch {
+    return 0
+  }
+}
+
 export function useLocale() {
   const prefs = usePrefs()
   return prefs.locale
@@ -52,6 +63,8 @@ export function hasLocaleKey(key) {
 export function tMiss(code, vars) {
   if (!code) return ''
   if (hasLocaleKey(code)) return t(code, vars)
+  // A bare code with no key ('off', 'out') would show as that word.
+  if (/^[a-z_]+$/i.test(code)) return t('people.reach')
   return code
 }
 

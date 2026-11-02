@@ -7,6 +7,8 @@ import { useTheme } from '../../src/lib/prefs.js'
 import { pressFx, useFadeIn } from '../lib/motion.jsx'
 import { ripple } from '../lib/ripple.js'
 import { fonts, sectionLabel } from '../theme.js'
+import { t } from '../../src/lib/i18n.js'
+import { useOnline } from '../hooks/useOnline.js'
 
 // The one text input every screen renders through: a light keyboard and a
 // blue system cursor read as unfinished on a dark app. keyboardAppearance
@@ -69,6 +71,13 @@ export function Kicker({ children, colors }) {
 
 export function Title({ children, colors }) {
   return <Text style={[styles.title, { color: colors.ink }]}>{children}</Text>
+}
+
+// One quiet line while there is no signal, on screens that need the server.
+export function OfflineLine({ colors }) {
+  const online = useOnline()
+  if (online) return null
+  return <Meta colors={colors}>{t('people.offline')}</Meta>
 }
 
 export function Meta({ children, colors, style }) {
@@ -270,9 +279,9 @@ const styles = StyleSheet.create({
   meta: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20 },
   // overflow: the Android press ripple stays inside the round pill.
   did: { borderRadius: 999, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, overflow: 'hidden' },
-  didSmall: { minHeight: 40 },
+  didSmall: { minHeight: 44 },
   didText: { fontFamily: fonts.uiBold, fontSize: 15 },
-  key: { borderRadius: 999, minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderWidth: 1, overflow: 'hidden' },
+  key: { borderRadius: 999, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderWidth: 1, overflow: 'hidden' },
   keyText: { fontFamily: fonts.ui, fontSize: 14, fontWeight: '500' },
   row: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
   rowText: { flex: 1, gap: 4 },

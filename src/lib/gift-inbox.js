@@ -56,6 +56,14 @@ export function nextGift() {
   return read()[0] || null
 }
 
+// A block hides their gifts still waiting for the pop-up, note and name included.
+export function dropGiftsFrom(fromId) {
+  if (!fromId) return
+  const have = read()
+  const left = have.filter((item) => item.from_id !== fromId)
+  if (left.length !== have.length) write(left)
+}
+
 export function doneGift(id) {
   write(read().filter((item) => item.id !== id))
 }

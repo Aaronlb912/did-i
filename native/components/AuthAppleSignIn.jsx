@@ -17,7 +17,7 @@ export function AuthAppleSignIn({ colors, auth, or = true }) {
         disabled={auth.busy}
       />
       {auth.missSource === 'apple' && auth.miss ? (
-        <Text style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text>
+        <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.miss, { color: colors.miss }]}>{auth.miss}</Text>
       ) : null}
     </View>
   )

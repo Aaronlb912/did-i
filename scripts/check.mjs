@@ -211,6 +211,18 @@ function lamp(id, extra = {}) {
   return { id, question: id, cadence: 'daily', archived: false, createdOn: '2024-01-01', ...extra }
 }
 
+test('a new cheer starts at stage 1, even after another cheer reached stage 5', async () => {
+  const { buyCheerStage, noteCheer, cheerStageOf, wearCheer } = await import('../src/lib/purse.js')
+  let book = { coins: 10000, cheers: ['lime', 'tape'], cheerOn: 'lime', cheerStages: { lime: 1, tape: 1 } }
+  for (let i = 0; i < 4; i += 1) book = buyCheerStage(book, 'lime').book
+  for (let i = 0; i < 25; i += 1) book = noteCheer(book)
+  assert.equal(cheerStageOf(book, 'lime'), 5)
+  book = wearCheer(book, 'tape').book || wearCheer(book, 'tape')
+  book = noteCheer(book)
+  assert.equal(cheerStageOf(book, 'tape'), 1, 'tape stays at 1 until bought')
+  assert.equal(cheerStageOf({ cheers: ['lime', 'tape'], cheerStage: 5, cheerStages: { lime: 5 } }, 'tape'), 1, 'old single stage does not leak to another cheer')
+})
+
 test('a night pays 2 a did, 1 late, new questions too, nothing past 3 taps', () => {
   const clock = new Date('2026-10-04T21:00:00')
   const old = lamp('a', { createdOn: '2026-10-01' })
@@ -341,6 +353,50 @@ test('changing every so often to daily leaves past days not due', async () => {
   next.was = keepPastSchedule(old, next, '2026-10-21')
   assert.equal(isDueOn(next, '2026-10-10'), false, 'a past day is not a miss')
   assert.equal(isDueOn(next, '2026-10-21'), true)
+})
+
+test('a fifth schedule edit keeps the first schedule for the oldest days', async () => {
+  const { keepPastSchedule, isDueOn, WAS_KEEP } = await import('../src/lib/recurrence.js')
+  let cur = lamp('run', { cadence: 'weekly', weekdays: [1], createdOn: '2026-09-01' })
+  const plans = [{ cadence: 'weekly', weekdays: [1, 3] }, { cadence: 'daily' }, { cadence: 'weekly', weekdays: [5] }, { cadence: 'daily' }, { cadence: 'weekly', weekdays: [2] }]
+  plans.forEach((plan, at) => {
+    const next = { ...cur, ...plan }
+    next.was = keepPastSchedule(cur, next, `2026-10-${String(10 + at * 3).padStart(2, '0')}`)
+    cur = next
+  })
+  assert.equal(cur.was.length, WAS_KEEP)
+  assert.equal(isDueOn(cur, '2026-09-07'), true, 'a first-schedule Monday is still due')
+  assert.equal(isDueOn(cur, '2026-09-09'), false, 'a first-schedule Wednesday is not a miss')
+  // A dropped Mondays stretch must not read as daily under the next schedule.
+  let mon = lamp('mon', { cadence: 'daily', createdOn: '2026-09-01' })
+  const steps = [['2026-10-01', { cadence: 'weekly', weekdays: [1] }], ['2026-10-10', { cadence: 'daily', weekdays: [] }], ['2026-10-12', { cadence: 'weekly', weekdays: [1] }], ['2026-10-14', { cadence: 'daily', weekdays: [] }], ['2026-10-16', { cadence: 'weekly', weekdays: [1] }]]
+  for (const [day, plan] of steps) {
+    const next = { ...mon, ...plan }
+    next.was = keepPastSchedule(mon, next, day)
+    mon = next
+  }
+  assert.equal(mon.was.length, WAS_KEEP)
+  assert.equal(isDueOn(mon, '2026-10-02'), false, 'a Friday in the dropped Mondays stretch is not a miss')
+  assert.equal(isDueOn(mon, '2026-09-20'), true, 'first-schedule days stay daily')
+})
+
+test('a pack never adds a second copy of an archived or already added question', async () => {
+  const { packList, addPack } = await import('../src/lib/starters.js')
+  const first = packList({ id: 'b', lamps: [] })[0]
+  const added = addPack({ id: 'b', lamps: [], answers: [] }, first)
+  const archived = { ...added.book, lamps: added.book.lamps.map((lamp, i) => (i === 0 ? { ...lamp, archived: true } : lamp)) }
+  assert.equal(packList(archived).find((pack) => pack.id === first.id)?.items.length || 0, 0)
+  assert.equal(addPack(archived, first).ids.length, 0)
+})
+
+test('sync keeps a pause resumed on the other phone', async () => {
+  const { mergeBooks } = await import('../src/lib/shelf-merge.js')
+  const base = { id: 'q', question: 'Did I read?', cadence: 'daily', createdOn: '2026-10-01' }
+  const a = { id: 'b', title: 'b', lamps: [{ ...base, pauses: [['2026-10-05', '2026-10-08']], at: '2026-10-08T10:00:00.000Z' }], answers: [] }
+  const b = { id: 'b', title: 'b', lamps: [{ ...base, question: 'Did I read a page?', at: '2026-10-09T10:00:00.000Z' }], answers: [] }
+  const merged = mergeBooks(a, b)
+  assert.equal(merged.lamps[0].question, 'Did I read a page?')
+  assert.deepEqual(merged.lamps[0].pauses, [['2026-10-05', '2026-10-08']])
 })
 
 test('changing Mondays to daily keeps the past Mondays streak', async () => {
@@ -506,6 +562,17 @@ test('travel skips on this phone belong to one account', () => {
   localStorage.removeItem('did-i-zone-seen')
 })
 
+test('a question moved to two folders on two phones lands in one', () => {
+  const lamp = (at) => ({ id: 'L', question: 'Did I stretch?', cadence: 'daily', createdOn: '2026-10-01', at })
+  const book = (id, lamps, answers = []) => ({ id, title: id, lamps, answers })
+  const a = { currentId: 'F1', boards: [book('F1', []), book('F2', [lamp('2026-10-20T10:00:00.000Z')], [{ lampId: 'L', periodKey: '2026-10-20', status: 'yes' }]), book('F3', [])] }
+  const b = { currentId: 'F1', boards: [book('F1', []), book('F2', []), book('F3', [lamp('2026-10-20T11:00:00.000Z')])] }
+  const merged = mergeShelves(a, b, '2026-10-21', '2026-10-20')
+  const homes = merged.boards.filter((item) => item.lamps.some((l) => l.id === 'L'))
+  assert.deepEqual(homes.map((item) => item.id), ['F3'], 'the newer move wins')
+  assert.ok(homes[0].answers.some((x) => x.lampId === 'L' && x.periodKey === '2026-10-20'), 'its answers follow')
+})
+
 test('travel-skipped nights union across phones and stay capped', () => {
   const left = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-10-15'])] }
   const right = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-09-02'])] }
@@ -530,6 +597,41 @@ test('an unanswered night closes as nope when the day turns', () => {
   const closed = closePastNights(book, tomorrow)
   assert.equal(answerFor(closed, 'door', today)?.status, 'skip')
   assert.equal(closePastNights(closed, tomorrow), closed)
+})
+
+test('an answer for a day 3 to 6 back counts in the streak as late, pays nothing, and 8 back is refused', async () => {
+  const { putPastAnswer, pastAnswerOpen } = await import('../src/lib/board-ops.js')
+  const { shelfStreak } = await import('../src/lib/hall-feel.js')
+  const { periodKeyFor } = await import('../src/lib/recurrence.js')
+  const clock = new Date(2026, 9, 20, 21, 0)
+  const item = lamp('walk', { createdOn: '2026-10-01' })
+  const rowOn = (iso, extra = {}) => ({ lamp: { ...item, ...extra }, dateIso: iso, periodKey: periodKeyFor(item, iso) })
+  const days = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => `2026-10-${String(from + i).padStart(2, '0')}`)
+  const yes = (iso) => ({ lampId: 'walk', periodKey: iso, status: 'yes', answeredAt: `${iso}T20:00:00.000Z` })
+  for (const back of [3, 4, 5, 6]) {
+    const gap = `2026-10-${20 - back}`
+    const book = { id: 'b', dayFoldHour: 0, coins: 5, lamps: [item], answers: days(1, 19).map((iso) => (iso === gap || iso === '2026-10-03' ? { ...yes(iso), status: 'skip' } : yes(iso))) }
+    // A freeze covers one missed night, so a second old one makes the gap matter.
+    const before = shelfStreak([book], clock)
+    const next = putPastAnswer(book, rowOn(gap), 'yes', clock)
+    const saved = answerFor(next, 'walk', gap)
+    assert.equal(saved?.status, 'late', `${back} back is marked late`)
+    assert.equal(next.coins, 5, `${back} back pays no coins`)
+    assert.ok(shelfStreak([next], clock) > before, `${back} back counts in the streak`)
+  }
+  const old = '2026-10-12'
+  const book = { id: 'b', dayFoldHour: 0, coins: 5, lamps: [item], answers: [] }
+  assert.equal(pastAnswerOpen(rowOn('2026-10-13'), clock), true, '7 back is open')
+  assert.equal(putPastAnswer(book, rowOn(old), 'yes', clock), book, '8 back is refused')
+  assert.equal(putPastAnswer(book, rowOn('2026-10-20'), 'yes', clock), book, 'today takes the normal path')
+  assert.equal(putPastAnswer(book, rowOn('2026-10-16', { archived: true }), 'yes', clock), book, 'an archived question is refused')
+  // An on-time Did stays on time, and a past Did beats a Not yet synced later than its day.
+  const onTime = { ...book, answers: [yes('2026-10-16')] }
+  assert.equal(putPastAnswer(onTime, rowOn('2026-10-16'), 'yes', clock), onTime, 'an on-time Did is not turned late')
+  const closed = { ...book, answers: [{ lampId: 'walk', periodKey: '2026-10-16', status: 'skip', answeredAt: '2026-10-17T08:00:00.000Z' }] }
+  const fixed = answerFor(putPastAnswer(closed, rowOn('2026-10-16'), 'yes', clock), 'walk', '2026-10-16')
+  assert.ok(fixed.answeredAt > '2026-10-17T08:00:00.000Z', 'stamped after the synced Not yet')
+  assert.equal(fixed.past, true, 'kept out of the paid taps of today')
 })
 
 test('question search matches every word, and tonight states come from one pass per tag', () => {
@@ -891,7 +993,9 @@ test('sync pass: pulls overlap, iPhone widget reads new taps first, watch taps w
   assert.match(log, /gte\('undone_at', overlap\(since\)\)/)
   const sync = read('native/widget-sync.js')
   assert.match(sync, /timelineRead && readTimeline && \(await timelineHasNewTaps\(\)\)\) timelineRead = false/, 'a new tap is read before the timeline is written')
-  assert.match(sync, /if \(Platform\.OS === 'ios' && tapsPending\) return/, 'a pending tap is never drawn over')
+  assert.ok(!/tapsPending\) return/.test(sync), 'a tap the shelf cannot place never stops the widget redrawing')
+  assert.match(sync, /items: \[\.\.\.\(p\.items \|\| \[\]\), \.\.\.pendingTaps\]/, 'that tap is carried into the new timeline, not drawn over')
+  assert.match(sync, /return dropNulls\(JSON\.parse\(JSON\.stringify\(props/, 'no null reaches the iPhone widget store: iOS drops the whole timeline')
   const app = read('native/NativeApp.jsx')
   assert.match(app, /if \(!shelf && !\(readShelf\(\)\.boards \|\| \[\]\)\.length\) throw/, 'a watch tap before the shelf loads is retried')
 })
@@ -942,6 +1046,70 @@ test('resuming a paused question keeps its streak', async () => {
   assert.deepEqual(rq.pauses, [['2026-10-01', '2026-10-10']], 'the pause survives a reload')
   const book = { ...back, lamps: [rq], answers: [...answers, did('2026-10-10')] }
   assert.equal(lampRecord(book, rq, '2026-10-10', 60).streak, 21, 'the paused days neither count nor break')
+})
+
+test('the six month grid marks Did, Not yet and missed days and tallies weekdays', async () => {
+  const { lampDays } = await import('../src/lib/lamp-record.js')
+  const q = { ...lamp('g'), cadence: 'daily', createdOn: '2026-10-26' }
+  const book = { id: 'b', lamps: [q], answers: [
+    { id: 'x1', lampId: 'g', periodKey: '2026-10-26', status: 'yes' },
+    { id: 'x2', lampId: 'g', periodKey: '2026-10-27', status: 'skip' },
+  ] }
+  const { days, byDay } = lampDays(book, q, '2026-11-01', 26, 1)
+  const at = (iso) => days.find((d) => d.iso === iso)?.state
+  assert.equal(new Date(days[0].iso + 'T12:00:00').getDay(), 1, 'columns start on Monday')
+  assert.equal(at('2026-10-25'), '', 'before it was added')
+  assert.equal(at('2026-10-26'), 'did')
+  assert.equal(at('2026-10-27'), 'not')
+  assert.equal(at('2026-10-28'), 'miss')
+  assert.equal(at('2026-11-01'), '', 'today still open')
+  assert.deepEqual(byDay[1], { day: 1, due: 1, did: 1 })
+  assert.equal(days.at(-1).iso, '2026-11-01')
+})
+
+test('coins earned today add up for the done card and reset the next day', async () => {
+  const { coinsToday } = await import('../src/lib/purse.js')
+  localStorage.setItem('did-i-coins-day', JSON.stringify({ day: '2026-11-01', n: 7 }))
+  assert.equal(coinsToday(new Date(2026, 10, 1, 21)), 7)
+  assert.equal(coinsToday(new Date(2026, 10, 2, 21)), 0, 'a new day starts at 0')
+  localStorage.removeItem('did-i-coins-day')
+})
+
+test('all time Missed leaves out today and questions that are never a miss', async () => {
+  const { shelfStatsCounts } = await import('../src/lib/hall-pages.js')
+  const book = { id: 'm', lamps: [
+    { ...lamp('d'), cadence: 'daily', createdOn: '2026-10-01' },
+    { ...lamp('o'), cadence: 'daily', optional: true, createdOn: '2026-10-01' },
+  ], answers: [
+    { id: 'a', lampId: 'd', periodKey: '2026-10-30', status: 'skip' },
+    { id: 'b', lampId: 'd', periodKey: '2026-11-01', status: 'skip' },
+    { id: 'c', lampId: 'o', periodKey: '2026-10-30', status: 'skip' },
+  ] }
+  assert.equal(shelfStatsCounts([book], new Date(2026, 10, 1, 21)).skip, 1)
+})
+
+test('a kept Did you remembers who sent it, by id', async () => {
+  const { keptLamp } = await import('../src/lib/send-repeat.js')
+  const { normalizeBook } = await import('../src/lib/board-json.js')
+  const id = '11111111-2222-4333-8444-555555555555'
+  const lamp = keptLamp({ question: 'Did you stretch?', person: { user_id: id, display_name: 'Sam' } }, new Date(2026, 10, 2, 20))
+  assert.equal(lamp.fromId, id)
+  const book = normalizeBook({ id: 'b', title: 'x', lamps: [{ ...lamp, id: 'l1' }], answers: [] })
+  assert.equal(book.lamps[0].fromId, id, 'survives a save')
+})
+
+test('ten pause and resume rounds keep the first pause', async () => {
+  const { toggleArchive } = await import('../src/lib/board-ops.js')
+  const { normalizeLamp } = await import('../src/lib/board-json.js')
+  const q = { ...lamp('p'), cadence: 'daily', createdOn: '2026-01-01' }
+  let book = { id: 'b', lamps: [q], answers: [] }
+  for (let i = 0; i < 10; i++) {
+    book = toggleArchive(book, book.lamps[0], new Date(2026, 0, 5 + i * 20, 12))
+    book = toggleArchive(book, book.lamps[0], new Date(2026, 0, 15 + i * 20, 12))
+  }
+  const pauses = normalizeLamp(book.lamps[0]).pauses
+  assert.equal(pauses.length, 10, 'every pause kept after a reload')
+  assert.deepEqual(pauses[0], ['2026-01-05', '2026-01-15'])
 })
 
 test('a resumed pause is not a miss in days in a row or the year view', async () => {
@@ -1296,6 +1464,26 @@ test('a phone-only shelf survives a sync that finds no session', () => {
   localStorage.setItem('did-i-last-user', 'user-a')
   sessionMissing()
   assert.equal(hallEmpty(readShelf()), true, 'a signed-out account phone still starts clean')
+})
+
+test('a session that runs out keeps answers that never sent', () => {
+  const book = {
+    id: 'board-kept',
+    title: 'House',
+    keeperName: '',
+    lamps: [{ id: 'di-cat', question: 'Did I feed the cat?', cadence: 'daily', archived: false }],
+    answers: [{ id: 'a1', lampId: 'di-cat', periodKey: '2026-11-01', status: 'yes', answeredAt: '2026-11-01T20:00:00.000Z', note: '' }],
+  }
+  writeShelf({ currentId: book.id, boards: [book] })
+  localStorage.setItem('did-i-answers-sent', '2026-11-01T10:00:00.000Z')
+  localStorage.setItem('did-i-last-user', 'user-a')
+  sessionMissing()
+  assert.equal(hallEmpty(readShelf()), false, 'the unsent Did stays on the phone')
+  assert.equal(localStorage.getItem('did-i-last-user'), 'user-a', 'a different account signing in still starts clean')
+  localStorage.setItem('did-i-answers-sent', '2026-11-02T10:00:00.000Z')
+  sessionMissing()
+  assert.equal(hallEmpty(readShelf()), true, 'once sent, the phone starts clean')
+  localStorage.removeItem('did-i-answers-sent')
 })
 
 test('enter lands on tonight when the shelf already has questions', () => {
@@ -2490,7 +2678,7 @@ test('locale placeholders match English', () => {
 test('zh, ja and ko have no stray English words', () => {
   const keep = new Set(('Did I we you coin coins gem gems cheer cheers Google Play Apple App Store Android iPhone iOS Mac Windows ' +
     'Safari Chrome Siri Watch Wear OS Assistant Supabase EAS Expo Firebase Cloud Messaging Vercel React Excel Sheets CSV PIN QR ID AM PM ' +
-    'URL JSON HTTPS IP OK D Hayes Street Jordan Hale Aaron Bryant AQ LBS ' +
+    'Product Hunt URL JSON HTTPS IP OK D Hayes Street Jordan Hale Aaron Bryant AQ LBS ' +
     // Widget names in the phone's widget picker, which is not translated.
     'today tonight questions together').toLowerCase().split(' '))
   const skip = (key) => /^(legal|lang|site\.into|device)\./.test(key) || /^(cheer|look)\.\w+\.name$/.test(key) ||
@@ -2956,7 +3144,7 @@ test('shop drops wait for their day and the server sells the same coin items', (
 
 test('free event items: claimable in their window, never after, kept by owners', async () => {
   const P = await import('../src/lib/purse.js')
-  const free = [...SHOP_CALENDAR.buddies, ...SHOP_CALENDAR.cheers].filter((item) => item.free)
+  const free = [...SHOP_CALENDAR.buddies, ...SHOP_CALENDAR.cheers].filter((item) => item.free && !item.hunt)
   assert.deepEqual(free.map((item) => item.id).sort(), ['bat', 'boo'])
   for (const item of free) {
     assert.equal(item.gems || 0, 0, item.id + ' costs nothing')
@@ -2986,7 +3174,7 @@ test('free event items: claimable in their window, never after, kept by owners',
   assert.ok(!P.buddiesOnOrOwned(normalizePurse({}), '2026-11-02').some((item) => item.id === 'bat'), 'not owned, not offered')
   assert.ok(!P.giftItems().buddies.some((item) => item.id === 'bat') && !P.giftItems().cheers.some((item) => item.id === 'boo'), 'never a gift')
   // A hearted event item is a goal only while it can be claimed, and drops off once it is gone.
-  const hearted = normalizePurse({ wish: ['buddy:bat'] })
+  const hearted = { ...normalizePurse({}), wish: ['buddy:bat'] }
   assert.equal(P.wishGoal(hearted, '2026-10-25'), null)
   assert.equal(P.wishGoal(hearted, '2026-11-02'), null)
   assert.equal(P.wishGoal(hearted, '2026-10-29')?.id, 'bat')
@@ -3027,6 +3215,47 @@ await testAsync('free event items claimed signed out reach the account once per 
   assert.deepEqual(out.first, ['bat'], 'after a failed send the next sync tries again; a local-only bat in window is claimed and the server list comes back')
   assert.equal(out.second, null, 'a second sync does not ask again')
   assert.deepEqual(out.claims, ['rpc:claim_free_item', 'rpc:claim_free_item'], 'one failed call, one good call')
+})
+
+test('the Product Hunt rocket: never in the shop, claimed by link or by the source ask', async () => {
+  const P = await import('../src/lib/purse.js')
+  const { readHuntLink, huntFromText } = await import('../src/lib/hunt-link.js')
+  const { claimFree } = await import('../src/lib/coin-shop.js')
+  const inList = (list) => list.some((item) => item.id === 'rocket')
+  assert.ok(P.BUDDY_IDS.has('rocket'), 'it is a buddy that renders and can be worn')
+  for (const day of ['2026-10-27', '2026-12-01', '2027-03-01']) {
+    assert.ok(!inList(P.shopBuddies(day)), 'not sold on ' + day)
+    assert.ok(!P.dropSlides(day).some((slide) => JSON.stringify(slide).includes('rocket')) && !inList(P.giftItems().buddies), 'not a drop or a gift on ' + day)
+  }
+  assert.ok(!inList(P.SHOP_BUDDIES), 'not in the shop list')
+  const got = P.claimHuntBuddy({}, '2026-11-02')
+  assert.deepEqual([got.miss, got.book.buddyOn, normalizePurse(got.book).buddies.includes('rocket')], ['', 'rocket', true])
+  assert.equal(P.claimHuntBuddy(got.book, '2026-11-02').had, true, 'a second claim keeps it once')
+  assert.equal(P.claimHuntBuddy({}, '2027-01-02').miss, 'shop.miss.buddyGone', 'refused after its window')
+  const signedOut = await claimFree({}, 'buddy', 'rocket')
+  assert.ok(!signedOut.miss || signedOut.miss === 'shop.miss.buddyGone', 'signed out it is kept on the phone')
+  const kept = normalizePurse(applyGemOwnedToBook({ buddies: ['rocket', 'cat'] }, { gems: 1, looks: [], cheers: [], buddies: [] }))
+  assert.deepEqual(kept.buddies, ['ant', 'rocket'], 'a sync keeps the free event buddy and drops the paid one')
+  for (const url of ['https://did-i.app/hunt/claim', 'https://did-i.app/hunt/claim/', 'https://did-i.app/hunt/claim?x=1', 'didi://hunt']) {
+    assert.ok(readHuntLink(url), url)
+  }
+  for (const url of ['https://did-i.app/hunt', 'https://did-i.app/i/ABCDE12345', 'didi://tonight', '']) assert.ok(!readHuntLink(url), url)
+  assert.ok(huntFromText('https://did-i.app/hunt/claim') && huntFromText('hunt=1') && !huntFromText('invite=ABCDE12345'), 'the iPhone clipboard and the Play referrer')
+  const link = readFileSync(new URL('../native/deep-link.js', import.meta.url), 'utf8')
+  assert.match(link, /readHuntLink\(url\)\) return \{ hunt: true \}/, 'the deep link routes the claim link')
+  assert.match(link, /route\.hunt\) \{\s+savePendingHunt\(\)/, 'and keeps it until the app has claimed')
+  assert.match(readFileSync(new URL('../native/invite-capture.js', import.meta.url), 'utf8'), /huntFromText\(referrer\)[\s\S]*huntFromText\(text\)/, 'a fresh install keeps it on both phones')
+  const host = readFileSync(new URL('../native/components/HuntHost.jsx', import.meta.url), 'utf8')
+  for (const key of ['hunt', 'store', 'friend', 'other']) assert.ok(host.includes("'" + key + "'") && en['hunt.src.' + key], 'source choice ' + key)
+  assert.match(host, /if \(id === 'hunt'\)/, 'only Product Hunt claims it')
+  assert.match(host, /huntAsked\(userId\)[\s\S]*markHuntAsked\(userId\)/, 'asked once per account')
+  assert.match(host, /tourActive\(\)/, 'waits for the tour')
+  assert.match(readFileSync(new URL('../native/AppShell.jsx', import.meta.url), 'utf8'), /<HuntHost /, 'mounted in the shell')
+  const sql = readFileSync(new URL('../supabase/event-items.sql', import.meta.url), 'utf8')
+  assert.ok(sql.includes("('buddy', 'rocket', '2026-10-27', '2027-01-01')"), 'the server lists it')
+  const path = await import('../src/site/path.js')
+  assert.ok(['/hunt', '/hunt/claim'].every((route) => readFileSync(new URL('../src/site/path.js', import.meta.url), 'utf8').includes("'" + route + "'")) && path)
+  assert.ok(readFileSync(new URL('../public/sitemap.xml', import.meta.url), 'utf8').includes('did-i.app/hunt<'), 'in the sitemap')
 })
 
 test('an invite link carries its code to the app on both phones', () => {
@@ -3326,6 +3555,11 @@ await testAsync('a widget or reminder Did pays one purse, not one per folder', a
   assert.equal(applyWidgetTapOnce('w', 'did', '2026-09-26', sat, sat.getTime()), null, 'no Did on a day not due')
   assert.equal(mergePurses(readShelf().boards).coins, 16, 'and no coins for it')
 
+  // A tap from another account (question not on this shelf) is kept, not dropped.
+  const away = applyWidgetTapsOnce([{ lampId: 'other-account-q', kind: 'did', night: '2026-09-23', at: at.getTime() }], at)
+  assert.equal(away.kept.length, 1, 'kept for the account that made it')
+  assert.equal(applyWidgetTapsOnce([{ lampId: 'other-account-q', kind: 'did', night: '2026-09-23', at: at.getTime() - 4 * 864e5 }], at).kept.length, 0, 'dropped after 3 days')
+
   // The iOS widget path: answers merged from the widget's saved props.
   const shelf = fresh()
   const merged = mergeWidgetPropsIntoShelf(shelf, { items: [{ lampId: 'b', periodKey: '2026-09-23', status: 'yes' }] }, at)
@@ -3452,7 +3686,7 @@ test('android widget taps made before JS runs are all applied, once each', () =>
   )
   assert.ok(store.includes('JSONArray') && store.includes('MAX_ROWS'), 'native keeps a capped queue')
   const tap = readFileSync(path.join(root, 'native/widget-tap.android.js'), 'utf8')
-  assert.ok(tap.includes('applyWidgetTapsOnce') && tap.includes('JSON.stringify(failed)'))
+  assert.ok(tap.includes('applyWidgetTapsOnce') && tap.includes('JSON.stringify(back)'))
 })
 
 test('over-the-air updates only reach a build with the same app version', () => {
@@ -4476,7 +4710,7 @@ test('welcome, the first question, and the name screen keep their own back', () 
   assert.equal(nav.goBack({ emptyHall: true }), true)
   assert.equal(localStorage.getItem('did-i-welcome'), '1', 'leaving welcome marks it seen')
   assert.equal(stack.top(), '/first', 'an empty hall sends welcome on to the first question')
-  assert.equal(nav.goBack(), true)
+  assert.equal(nav.goBack(), false, 'Android back on the first question leaves the app, not a dead key')
   assert.equal(stack.top(), '/first', 'the first question has to be added before anything else opens')
   nav.goHash('/enter')
   assert.equal(nav.goBack({ needsEnter: true }), true)
@@ -4790,6 +5024,8 @@ test('a flick answers by where it was headed and flies off along its path', () =
   // A short, fast flick counts.
   assert.equal(releaseWay(40, 900), 1)
   assert.equal(releaseWay(-40, -900), -1)
+  // A 30px slanted brush during a scroll, however fast, is not an answer.
+  assert.equal(releaseWay(30, 500), 0)
   // Past the line but thrown back: not answered.
   assert.equal(releaseWay(130, -600), 0)
   // A side that is closed never answers.
@@ -5940,13 +6176,13 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
   }
   assert.equal(
     answersCsv(shelf),
-    'date,question,short name,answer,note,amount\r\n' +
-      '2026-10-01,"drink water, lots",Water,did,,5\r\n' +
-      '2026-10-02,"drink water, lots",Water,not yet,"he said ""no""",\r\n' +
-      '2026-10-03,,,late,,\r\n' +
-      '2026-10-04,Call mom,,did,,\r\n',
+    'date,question,short name,answer,note,amount,unit\r\n' +
+      '2026-10-01,"drink water, lots",Water,did,,5,\r\n' +
+      '2026-10-02,"drink water, lots",Water,not yet,"he said ""no""",,\r\n' +
+      '2026-10-03,,,late,,,\r\n' +
+      '2026-10-04,Call mom,,did,,,\r\n',
   )
-  assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount\r\n')
+  assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount,unit\r\n')
 })
 
 test('every t() key the app uses is in English', () => {
@@ -6030,7 +6266,7 @@ const { readPrefs: readPrefsForCheck } = await import('../src/lib/prefs.js')
 test('the drop push knows every shop drop date, runs in order, and is off by default', () => {
   const sql = readFileSync(path.join(checkRoot, 'supabase/shop-drops.sql'), 'utf8')
   const dates = new Set(
-    [...SHOP_CALENDAR.looks, ...SHOP_CALENDAR.cheers, ...SHOP_CALENDAR.buddies].map((item) => item.from).filter(Boolean),
+    [...SHOP_CALENDAR.looks, ...SHOP_CALENDAR.cheers, ...SHOP_CALENDAR.buddies.filter((item) => !item.hunt)].map((item) => item.from).filter(Boolean),
   )
   for (const date of dates) assert.ok(sql.includes(`('${date}')`), `shop-drops.sql lists ${date}`)
   assert.ok(/enable row level security/.test(sql))
@@ -6948,6 +7184,19 @@ test('a freeze keeps the overall streak and shows as its own dot', () => {
   assert.equal(dot.freeze, true)
   assert.equal(dot.miss, false)
   assert.equal(nightWhy(boards, '2026-08-15', now).state, 'freeze')
+  // An Away-day Not yet changing only its time (auto-closed vs tapped) must not reuse the cached walk.
+  const awayShelf = (at) => {
+    const answers = []
+    for (let d = 1; d <= 20; d += 1) {
+      const iso = `2026-08-${String(d).padStart(2, '0')}`
+      answers.push(d === 10 ? { lampId: 'aw', periodKey: iso, status: 'skip', answeredAt: at } : { lampId: 'aw', periodKey: iso, status: 'yes', answeredAt: `${iso}T20:00:00` })
+    }
+    return [{ id: 'aw-b', dayFoldHour: 0, travelSkips: ['2026-08-10'], lamps: [{ id: 'aw', question: 'Did I x?', cadence: 'daily', archived: false, createdOn: '2026-08-01' }], answers }]
+  }
+  const awayNow = new Date(2026, 7, 21, 21, 0)
+  const autoRun = freezeState(awayShelf('2026-08-10T00:00:00.000Z'), awayNow).run
+  const tapRun = freezeState(awayShelf('2026-08-10T21:07:13.000Z'), awayNow).run
+  assert.notEqual(autoRun, tapRun, 'a tapped Not yet on an Away day is a miss; an auto-close is not')
   assert.ok(en['why.freeze'])
   const short = { ...book, lamps: [{ ...book.lamps[0], createdOn: '2026-08-02' }], answers: book.answers.filter((a) => a.periodKey >= '2026-08-02') }
   assert.equal(shelfStreak([short], now), 3, 'only 13 nights before the miss: no freeze, the streak broke')
@@ -8653,6 +8902,15 @@ await testAsync('readthrough 9: web reminder tags per question, worker respects 
   assert.equal(swMayPing({ pingsOff: [], quietOn: true, quietFrom: '22:00', quietTo: '07:00' }, new Date(2026, 9, 14, 20, 0)), true)
 })
 
+await testAsync('quiet hours that start and end together move the end on', async () => {
+  const { quietToFor, quietEnd } = await import('../src/lib/quiet.js')
+  assert.equal(quietToFor('22:00', '22:00'), '23:00')
+  assert.equal(quietToFor('23:00', '23:00'), '00:00')
+  assert.equal(quietToFor('22:00', '07:00'), '07:00')
+  const prefs = { quietOn: true, quietFrom: '22:00', quietTo: quietToFor('22:00', '22:00') }
+  assert.notEqual(quietEnd(new Date(2026, 9, 14, 22, 30), prefs).getTime(), new Date(2026, 9, 14, 22, 30).getTime())
+})
+
 await testAsync('readthrough 10: a high one with no time still gets the 21:00 late note, Not yet keeps it, low never', async () => {
   const { upcomingPings } = await import('../src/lib/notify.js')
   const q = (id, extra = {}) => ({ id, question: id, cadence: 'daily', createdOn: '2026-10-01', archived: false, priority: 'high', ...extra })
@@ -9222,7 +9480,7 @@ test('a friend request and its yes reach the other phone live, not on the 5 minu
   assert.match(read('native/screens/FamilyDetail.jsx'), /useLiveReload\(\['family', 'familyInfo'\], load\)/)
   assert.ok(read('native/screens/FamilyDetail.jsx').includes('shownLamps.map((lamp)'), 'a question for someone who left the family is not shown as waiting forever')
   assert.ok(read('native/AppShell.jsx').includes('.finally(() => syncTonightWidget(readShelf())'), 'the widget is rebuilt on return even when the ping check fails')
-  assert.equal(read('native/screens/more.jsx').split('const clock = now || today').length, 3, 'Calendar and Week turn the day over while open')
+  assert.equal(read('native/screens/more.jsx').split('const clock = now || today').length, 6, 'Calendar, Week, Marks, Stats and Streaks turn the day over while open')
   const order = read('scripts/apply-all-sql.mjs')
   assert.ok(order.indexOf('social-live.sql') < order.indexOf('live-more.sql') && order.indexOf('live-more.sql') < order.indexOf('drop-tonight.sql'))
 })
@@ -9251,6 +9509,15 @@ test('smooth screens: screen files warm after launch, the shelf is read once per
 
 await testAsync('readShelf hands back the same shelf until storage changes, and sees a write from anywhere', async () => {
   const { readShelf, writeShelf } = await import('../src/lib/board-shelf.js')
+  const { folderNameKey } = await import('../src/lib/board-shelf.js')
+  // Renaming a folder to an old General name would fold it into General.
+  assert.equal(folderNameKey('Did I'), folderNameKey('General'))
+  assert.equal(folderNameKey(' Allgemein '), folderNameKey('general'))
+  assert.notEqual(folderNameKey('Work'), folderNameKey('General'))
+  // Family misses go through appMiss: no raw server text on screen.
+  assert.ok(!/miss: (\/one parent\/i\.test\(error\.message\) \? 'lastparent' : )?error\.message/.test(readFileSync(new URL('../src/lib/people.js', import.meta.url), 'utf8')))
+  // A question saved into a parked folder brings it back, or it vanishes from Today.
+  assert.ok((readFileSync(new URL('../native/hooks/useAppShelf.js', import.meta.url), 'utf8').match(/archived: false/g) || []).length >= 2)
   const first = readShelf()
   assert.equal(readShelf(), first, 'unchanged storage: the same object, no reparse')
   const next = writeShelf({ ...first, boards: first.boards.map((b, i) => (i ? b : { ...b, title: 'Changed here' })) })
@@ -9261,6 +9528,88 @@ await testAsync('readShelf hands back the same shelf until storage changes, and 
   raw.boards[0].title = 'Changed elsewhere'
   localStorage.setItem('did-i-shelf', JSON.stringify(raw))
   assert.equal(readShelf().boards[0].title, 'Changed elsewhere')
+})
+
+await testAsync('away mode: the streak holds across away days, 15 days is clamped, reminders and nudges skip them', async () => {
+  const { dueTonight } = await import('../src/lib/recurrence.js')
+  const { writePrefs, awayStart, awayEnd, awayKey, readPrefs } = await import('../src/lib/prefs.js')
+  const { dayNudges } = await import('../src/lib/day-nudges.js')
+  const q = { id: 'a', question: 'a', cadence: 'daily', createdOn: '2026-10-01', archived: false }
+  const day = (n) => '2026-10-' + String(n).padStart(2, '0')
+  const did = (n) => ({ id: 'd' + n, lampId: 'a', periodKey: day(n), status: 'yes', answeredAt: day(n) + 'T20:00:00' })
+  const answers = [1, 2, 3, 4, 5, 11, 12].map(did)
+  const book = { id: 'b', dayFoldHour: 0, lamps: [q], answers }
+  const now = new Date(2026, 9, 12, 22)
+  try {
+    writePrefs({ away: [] })
+    assert.equal(questionStreak(book, q, day(12), 400, now), 2, 'without away the gap breaks it')
+    const key0 = awayKey()
+    writePrefs(awayStart(readPrefs(), day(6), day(11)))
+    assert.deepEqual(readPrefs().away, [[day(6), day(11)]], 'five away days saved')
+    assert.notEqual(awayKey(), key0, 'memo keys see the change')
+    assert.equal(questionStreak(book, q, day(12), 400, now), 7, 'the streak holds across away days')
+    assert.ok(!isDueOn(q, day(8)), 'nothing is due on an away day')
+    assert.ok(isDueOn(q, day(11)), 'the day it ends is asked')
+    // 15 days: refused when started, clamped when read from a synced pref.
+    assert.deepEqual(awayStart(readPrefs(), day(6), '2026-10-21'), {}, '15 days refused')
+    writePrefs({ away: [[day(1), '2026-10-31']] })
+    assert.deepEqual(readPrefs().away, [[day(1), '2026-10-15']], 'a long range is clamped to 14 days')
+    // Reminders and nudges: no nudge on away days, one again when it ends.
+    writePrefs({ away: [[day(14), day(17)]] })
+    const empty = { id: 'e', dayFoldHour: 0, lamps: [q], answers: [] }
+    const days = new Set(dayNudges(empty, new Date(2026, 9, 12, 8, 0)).map((n) => n.at.getDate()))
+    assert.ok(![14, 15, 16].some((d) => days.has(d)), 'no nudges on away days')
+    assert.ok(days.has(13) && days.has(17), 'nudges around them stay')
+    assert.equal(dueTonight(empty, new Date(2026, 9, 15, 12)).length, 0, 'no reminders: nothing due on away days')
+    // Back early.
+    writePrefs(awayEnd(readPrefs(), day(15)))
+    assert.deepEqual(readPrefs().away, [[day(14), day(15)]], 'ending early keeps the days already away')
+  } finally {
+    writePrefs({ away: [] })
+  }
+})
+
+await testAsync('away mode limits: old ranges stay, 14 days in 60, starts tomorrow after an answer, widget task loads it cold, pings reach past the end', async () => {
+  const { writePrefs, awayStart, readPrefs, awayLeft } = await import('../src/lib/prefs.js')
+  const { pingAheads } = await import('../src/lib/day-nudges.js')
+  const iso = (base, n) => new Date(Date.UTC(2026, 0, 1 + base + n)).toISOString().slice(0, 10)
+  const total = (list) => list.reduce((sum, [from, until]) => sum + (Date.parse(until) - Date.parse(from)) / 86400000, 0)
+  try {
+    // 1: ten old one-day ranges all stay; touching ones merge; a range from 2020 goes.
+    const ten = Array.from({ length: 10 }, (_, i) => [iso(i * 5, 0), iso(i * 5, 1)])
+    writePrefs({ away: [['2020-01-01', '2020-01-03'], ...ten, [iso(0, 1), iso(0, 2)]] })
+    const kept = readPrefs().away
+    assert.equal(kept.length, 10, 'no range dropped by count, touching ones merged, 2020 gone')
+    assert.deepEqual(kept[0], [iso(0, 0), iso(0, 2)])
+    // 2: one day at a time cannot go past 14 days in 60.
+    writePrefs({ away: [] })
+    for (let i = 0; i < 20; i += 1) {
+      const day = iso(304 + i, 0)
+      writePrefs(awayStart(readPrefs(), day, iso(304 + i, 1)))
+    }
+    assert.equal(total(readPrefs().away), 14, 'refused past 14 days')
+    assert.equal(awayLeft(readPrefs(), iso(304 + 20, 0)), 0, 'the picker shows none left')
+    writePrefs({ away: Array.from({ length: 20 }, (_, i) => [iso(i * 2, 0), iso(i * 2, 1)]) })
+    const num = (d) => Date.parse(d) / 86400000
+    const spread = readPrefs().away.flatMap(([from, until]) => Array.from({ length: num(until) - num(from) }, (_, n) => num(from) + n))
+    assert.ok(spread.every((d) => spread.filter((e) => e >= d && e < d + 60).length <= 14), 'synced data is clamped too')
+    // 3: an answer today keeps today visible.
+    writePrefs({ away: [] })
+    assert.deepEqual(awayStart(readPrefs(), '2026-11-01', '2026-11-04', true).away, [['2026-11-02', '2026-11-04']])
+    assert.deepEqual(awayStart(readPrefs(), '2026-11-01', '2026-11-04', false).away, [['2026-11-01', '2026-11-04']])
+    // 4: a cold copy of prefs (the headless widget task) already knows the range.
+    writePrefs({ away: [['2026-11-05', '2026-11-08']] })
+    const cold = await import('../src/lib/prefs.js?cold')
+    assert.ok(cold.awayOn('2026-11-06'), 'loaded without anyone calling readPrefs first')
+    // 5: reminders are set for the days after the end, not only inside the first seven.
+    const now = new Date(2026, 10, 5, 8)
+    const ahead = pingAheads(now, 7)
+    assert.equal(ahead.length, 7)
+    assert.equal(ahead[0], 3, 'away days are not counted in the window')
+    assert.equal(ahead[6], 9)
+  } finally {
+    writePrefs({ away: [] })
+  }
 })
 
 await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an hour clear of reminders, under the iOS cap', async () => {
@@ -9303,7 +9652,7 @@ await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an ho
   // A week of nudges plus question reminders still fits the 60 the phone keeps (iOS holds 64).
   const native = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
   assert.match(native, /const PING_CAP = 60/)
-  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: PING_DAYS, reminders, shift: afterQuiet, times \}\)[\s\S]*notes\.length = Math\.min\(notes\.length, PING_CAP - 1\)/)
+  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: [^,]+, reminders, shift: afterQuiet, times \}\)[\s\S]*notes\.length = Math\.min\(notes\.length, PING_CAP - 1\)/)
   // Nothing re-arms while the app is closed: the last slot asks to open it.
   assert.match(native, /notes\.length = Math\.min\(notes\.length, PING_CAP - 1\)[\s\S]*notifyId\('renew', 'pings'\)[\s\S]*t\('pings\.renew'\)/)
   assert.ok(all.length <= 60)
@@ -9419,6 +9768,32 @@ test('undo puts back one answer on the live folder and keeps the rest', async ()
   const kept = { id: 'z', lampId: 'a', periodKey: '2026-10-02', status: 'skip' }
   const was = undoneBook(live, { book: { ...old, answers: [kept] }, lampId: 'a', periodKey: '2026-10-02' })
   assert.deepEqual(was.answers.map((item) => item.id), ['y', 'z'], 'a nope before the did comes back')
+})
+
+test('undo is a stack of three: each undo takes back only its own answer and coins', async () => {
+  const { undoneBook, pushUndo } = await import('../src/lib/useTonightStack.js?undo-stack')
+  const lamp = (id) => ({ id, question: id, cadence: 'daily', archived: false, createdOn: '2024-01-01' })
+  const pk = '2026-10-02'
+  const b0 = { id: 'b', coins: 4, cheerUses: 0, lamps: [lamp('a'), lamp('b'), lamp('c')], answers: [] }
+  const put = (book, lampId, coins) => ({ ...book, coins: book.coins + coins, answers: [...book.answers, { id: lampId, lampId, periodKey: pk, status: 'yes' }] })
+  const b1 = put(b0, 'a', 1)
+  const b2 = put(b1, 'b', 2)
+  const b3 = put(b2, 'c', 1)
+  let stack = []
+  stack = pushUndo(stack, { book: b0, after: b1, lampId: 'a', periodKey: pk })
+  stack = pushUndo(stack, { book: b1, after: b2, lampId: 'b', periodKey: pk })
+  assert.deepEqual(stack.map((item) => item.lampId), ['b', 'a'], 'newest first')
+  const one = undoneBook(b2, stack[0])
+  assert.deepEqual(one.answers.map((item) => item.lampId), ['a'])
+  assert.equal(one.coins, 5)
+  const two = undoneBook(one, stack[1])
+  assert.equal(two.answers.length, 0)
+  assert.equal(two.coins, 4, 'coins back exactly')
+  const third = undoneBook(b3, stack[0])
+  assert.deepEqual(third.answers.map((item) => item.lampId).sort(), ['a', 'c'], 'a later answer is untouched')
+  assert.equal(third.coins, 6)
+  for (const id of ['x', 'y', 'z']) stack = pushUndo(stack, { lampId: id, periodKey: pk })
+  assert.deepEqual(stack.map((item) => item.lampId), ['z', 'y', 'x'], 'never more than three back')
 })
 
 test('signed in, did then undo then did pays once; signed out undo takes the coins back', () => {
@@ -9931,6 +10306,15 @@ await testAsync('a failed network call shows our words, never the raw error', as
   assert.equal(appMiss(null), 'people.reach')
   const en = await import('../src/locales/en.js')
   assert.ok((en.default || en.en || Object.values(en)[0])['people.reach'], 'the fallback key is translated')
+})
+
+await testAsync('a valid perWeek survives normalizeLamp, bad values are dropped', async () => {
+  const { normalizeLamp } = await import('../src/lib/board-json.js')
+  const base = { id: 'x', question: 'q', cadence: 'daily' }
+  for (const n of [1, 3, 6, '4']) assert.equal(normalizeLamp({ ...base, perWeek: n }).perWeek, Number(n), 'kept ' + n)
+  for (const n of [0, 7, 2.5, -1, 'x', '', null, undefined]) assert.ok(!('perWeek' in normalizeLamp({ ...base, perWeek: n })), 'dropped ' + n)
+  const was = normalizeLamp({ ...base, cadence: 'weekdays', weekdays: [1], was: [{ until: '2026-10-01', cadence: 'daily', perWeek: 3 }] }).was
+  assert.equal(was[0].perWeek, 3, 'kept in was history')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

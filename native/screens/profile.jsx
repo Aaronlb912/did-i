@@ -1,5 +1,6 @@
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { confirmMiss } from '../lib/confirm.js'
+import { startTour } from '../lib/tour.js'
 import { useEffect, useState } from 'react'
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
@@ -357,6 +358,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           icon="eye"
           tint={colors.late}
           label={t('settings.hideMarks')}
+          sub={t('settings.hideMarksSub')}
           on={Boolean(book?.quietMode)}
           onPress={() => onChange?.({ ...book, quietMode: !book.quietMode })}
         />
@@ -461,7 +463,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           sub={Platform.OS === 'android' ? t('settings.phonePrivacySubAndroid') : t('settings.phonePrivacySub')}
           chevron
           last
-          onPress={() => Linking.openSettings()}
+          onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))}
         />
       </SetCard>
       </>,
@@ -502,7 +504,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           tint={colors.on}
           label={t('settings.replayIntro')}
           chevron
-          onPress={() => goHash('/welcome')}
+          onPress={() => startTour('basics', { replay: true })}
         />
         <SetRow
           colors={colors}
@@ -548,7 +550,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       {account.user ? (
         <View style={styles.out}>
-          <KeyButton colors={colors} label={t('account.out')} onPress={() => signOut()} />
+          <KeyButton colors={colors} label={t('account.out')} onPress={() => setSure({ title: t('account.outSureTitle'), body: t('account.outSureBody'), yes: t('account.out'), go: () => signOut() })} />
           <Text style={[styles.who, { color: colors.inkDim }]} numberOfLines={1}>
             {t('account.who')} {account.email}
           </Text>

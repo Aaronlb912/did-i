@@ -150,6 +150,19 @@ export function Landing() {
               ))}
             </div>
             <StoreButtons />
+            <a
+              className="di-log-hunt"
+              href="https://www.producthunt.com/products/did-i-habit-reminders?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-did-i-habit-reminders"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                alt="Did I??? Habit Reminders on Product Hunt"
+                width="250"
+                height="54"
+                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1293446&theme=light"
+              />
+            </a>
           </div>
           <LandingPhone />
         </section>

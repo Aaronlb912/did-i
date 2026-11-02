@@ -86,7 +86,6 @@ import {
   normalizePurse,
 } from '../../src/lib/purse.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
-import { useOnline } from '../hooks/useOnline.js'
 import { useTourTarget } from '../lib/tour.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { isNewShelf } from '../../src/lib/first-run.js'
@@ -112,7 +111,7 @@ import {
   Field,
   KeyButton,
   LateMeta,
-  Meta,
+  Meta, OfflineLine,
   Row,
 } from '../components/ui.jsx'
 import { useHallColors, useLookColors } from '../hooks/useHallColors.js'
@@ -174,12 +173,6 @@ function Miss({ children, colors, onRetry }) {
       {onRetry ? <KeyButton colors={colors} label={t('gift.retry')} onPress={onRetry} /> : null}
     </>
   )
-}
-
-function OfflineLine({ colors }) {
-  const online = useOnline()
-  if (online) return null
-  return <Meta colors={colors}>{t('people.offline')}</Meta>
 }
 
 function FriendMenu({ name, items, colors, onClose }) {
@@ -506,16 +499,30 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
   }, [scanned])
   async function look(typed = code) {
     setBusy(true)
-    const result = await lookUpFamily(typed)
-    setBusy(false)
+    let result
+    try {
+      result = await lookUpFamily(typed)
+    } catch {
+      result = { miss: 'off' }
+    } finally {
+      setBusy(false)
+    }
     if (result.miss) return setMiss(familyCodeMiss(result.miss))
-    setMiss('')
+    // A full family says so before Join, not after.
+    setMiss(!result.already && result.members >= 20 ? t('people.familyFull') : '')
     return setFound(result)
   }
   async function join() {
     setBusy(true)
-    const { miss: why, id } = await joinFamily(found.code)
-    setBusy(false)
+    let out
+    try {
+      out = await joinFamily(found.code)
+    } catch {
+      out = { miss: 'off' }
+    } finally {
+      setBusy(false)
+    }
+    const { miss: why, id } = out
     if (why) return setMiss(familyCodeMiss(why))
     setCode('')
     setMiss('')
@@ -535,13 +542,14 @@ function JoinFamilyCard({ colors, bare = false, scanned = '', onScan }) {
             : [
                 found.members === 1 ? t('familyJoin.membersOne') : t('familyJoin.members', { n: found.members }),
                 t('familyJoin.confirm', { name }),
+                t('familyJoin.asKid'),
               ].join(' ')}
         </Text>
         <Miss colors={colors}>{miss}</Miss>
         {found.already ? (
           <DidButton colors={colors} small label={t('familyJoin.open')} onPress={() => goHash('/family', { id: found.id })} />
         ) : (
-          <DidButton colors={colors} small label={t('people.join')} disabled={busy} onPress={() => once('join-family', join)} />
+          <DidButton colors={colors} small label={t('people.join')} disabled={busy || found.members >= 20} onPress={() => once('join-family', join)} />
         )}
         <KeyButton
           colors={colors}
@@ -1381,10 +1389,11 @@ export function PeopleConnectScreen({ book, onChange, route }) {
   }
 
   async function newFamily() {
-    const { miss: why, id } = await makeFamily(famDraft || t('people.familyOne'))
+    const name = famDraft || t('people.familyOne')
+    const { miss: why, id } = await makeFamily(name)
     if (why) return setMiss(tMiss(why))
     setFamDraft('')
-    confirmDone(t('confirm.madeFamily', { name: famDraft || t('people.familyOne') }))
+    confirmDone(t('confirm.madeFamily', { name }))
     return goHash('/family', { id })
   }
 
@@ -2371,11 +2380,7 @@ export function FriendScreen({ book, onChange, route }) {
           {cheersLeft > 0 ? (
             <Text style={[styles.friendSmall, { color: colors.inkDim }]}>{t('friend.cheersLeft', { n: cheersLeft })}</Text>
           ) : (
-            <Pressable onPress={cheer} accessibilityRole="button" hitSlop={6}>
-              <Text style={[styles.friendSmall, { color: colors.inkDim }]}>
-                {t('friend.noCheersLeft')} · <Text style={{ color: colors.on }}>{t('friend.getMoreCheers')}</Text>
-              </Text>
-            </Pressable>
+            <Text style={[styles.friendSmall, { color: colors.inkDim }]}>{t('friend.noCheersLeft')}</Text>
           )}
         </View>
         <View style={styles.friendAction}>
@@ -2441,14 +2446,15 @@ export function FriendScreen({ book, onChange, route }) {
                         closeLabel: t('settings.neverMind'),
                         colors,
                         onClose: () => publishSheet(null),
-                        onGo: async () => {
-                          publishSheet(null)
-                          const { miss: why } = await blockPerson(otherId, 'photo')
-                          if (why) return setSaid(tMiss(why))
-                          confirmDone(t('confirm.blocked', { name }))
-                          refreshPeople()
-                          return swapHash('/friends')
-                        },
+                        onGo: () =>
+                          once('block:' + otherId, async () => {
+                            publishSheet(null)
+                            const { miss: why } = await blockPerson(otherId, 'photo')
+                            if (why) return confirmMiss(tMiss(why))
+                            confirmDone(t('confirm.blocked', { name }))
+                            refreshPeople()
+                            return swapHash('/friends')
+                          }),
                       }),
                   },
                 ]
@@ -2651,15 +2657,20 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       }
       return
     }
+    // The inbox did not load: a Keep now would land on the account but not
+    // on this phone. Wait for a working load (the miss line has Retry).
+    if (!row && miss && fromPush[1] === 'keep') return
     pushDone.current = route.id
     answer(row || { id: fromPush[2] }, fromPush[1] === 'keep')
-  }, [rows, ready, loaded, route?.id])
+  }, [rows, ready, loaded, route?.id, miss])
 
   // One answer at a time per row, so a double tap cannot keep it twice.
   const answering = useRef(new Set())
+  const [sendingId, setSendingId] = useState(null)
   async function answer(row, keep) {
     if (answering.current.has(row.id)) return
     answering.current.add(row.id)
+    setSendingId(row.id)
     setMiss('')
     let res
     try {
@@ -2668,6 +2679,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       res = { miss: 'confirm.miss' }
     } finally {
       answering.current.delete(row.id)
+      setSendingId(null)
     }
     const { miss: why, already } = res
     if (why) {
@@ -2695,13 +2707,14 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       closeLabel: t('settings.neverMind'),
       colors,
       onClose: () => publishSheet(null),
-      onGo: async () => {
-        publishSheet(null)
-        const { miss: why } = await reportSend(row.id)
-        if (why) setMiss(tMiss(why))
-        else confirmDone(t('we.reported'))
-        load()
-      },
+      onGo: () =>
+        once('we-report:' + row.id, async () => {
+          publishSheet(null)
+          const { miss: why } = await reportSend(row.id).catch(() => ({ miss: 'people.reach' }))
+          if (why) setMiss(tMiss(why))
+          else confirmDone(t('we.reported'))
+          load()
+        }),
     })
   }
 
@@ -2742,8 +2755,11 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       <OfflineLine colors={colors} />
       <WeAsks colors={colors} />
       <Meta colors={colors}>{t('inbox.hintAll')}</Meta>
+      {/* Above the cards so a failed Keep is seen on a long inbox. */}
+      <Miss colors={colors} onRetry={load}>{miss}</Miss>
       {rows.map((row) => (
         <Reveal key={row.id}>
+        <View pointerEvents={sendingId === row.id ? 'none' : 'auto'} accessibilityState={{ busy: sendingId === row.id }} style={sendingId === row.id ? { opacity: 0.5 } : null}>
         <PersonRow
           colors={colors}
           person={row.person}
@@ -2772,6 +2788,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
             </Pressable>
           ) : null}
         </PersonRow>
+        </View>
         </Reveal>
       ))}
       {menu ? (
@@ -2782,7 +2799,6 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
           items={[{ key: 'report', label: t('we.report'), danger: true, onPress: () => report(menu) }]}
         />
       ) : null}
-      <Miss colors={colors} onRetry={load}>{miss}</Miss>
     </ScreenShell>
   )
 }
@@ -3079,7 +3095,7 @@ const styles = StyleSheet.create({
   personTitle: { fontFamily: fonts.uiSemi, fontSize: 15 },
   personNote: { fontFamily: fonts.ui, fontSize: 13 },
   personActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  moreBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.uiBold, fontSize: 20, lineHeight: 22 },
   menuRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 8 },
   menuRowText: { fontFamily: fonts.uiSemi, fontSize: 16 },

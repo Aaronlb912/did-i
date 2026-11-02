@@ -71,5 +71,5 @@ const styles = StyleSheet.create({
   bit: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   sep: { fontFamily: fonts.mono, fontSize: 11 },
   n: { fontFamily: fonts.mono, fontSize: 11 },
-  nMast: { fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: '600' },
+  nMast: { fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: '600' },
 })

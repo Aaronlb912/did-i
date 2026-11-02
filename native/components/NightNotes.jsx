@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { NOTE_MAX, setAnswerNote } from '../../src/lib/board-ops.js'
 import { cleanAmount, shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
@@ -153,7 +153,9 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
           value={count}
           onChangeText={(value) => setCount(value.replace(/[^\d.,]/g, '').slice(0, 9))}
           placeholder="0"
-          keyboardType="decimal-pad"
+          // The iOS decimal pad has no return key, so it could never close or save.
+          keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'decimal-pad'}
+          returnKeyType="done"
           maxLength={9}
           onSubmitEditing={save}
         />
