@@ -111,6 +111,8 @@ async function creditPurchase(purchase) {
     const user = await readUser()
     if (user && owner !== String(user.id).toLowerCase()) return { miss: 'other' }
   }
+  // Signed out: gem-iap would refuse it with no word shown. The buy stays open.
+  if (!(await readUser())) return { miss: 'signin' }
   const out = await submitGemPurchase(purchase)
   // A test buy from an account not on the server's list never credits. Close
   // it with the store anyway, or Play keeps it open and blocks that pack.
@@ -197,6 +199,7 @@ export async function restoreGemPurchases() {
   const api = iapApi(mod)
   let gems = 0
   let failed = 0
+  let pending = 0
   try {
     const open = (await api.getAvailablePurchases?.()) || []
     for (const purchase of open) {
@@ -207,7 +210,8 @@ export async function restoreGemPurchases() {
         const out = await creditPurchase(purchase)
         gems += out.gems || 0
         // Paid but not credited (receipt, pending, credit): not "nothing to restore".
-        if (out.miss && !['other', 'test', 'refunded'].includes(out.miss)) failed += 1
+        if (out.miss === 'pending') pending += 1
+        else if (out.miss && !['other', 'test', 'refunded'].includes(out.miss)) failed += 1
       } catch {
         // The next restore or connect tries it again.
         failed += 1
@@ -219,6 +223,8 @@ export async function restoreGemPurchases() {
   const claimed = await claimAndCredit()
   if (claimed.miss && !gems) return { gems: 0, miss: claimed.miss }
   if (failed && !gems && !claimed.gems) return { gems: 0, miss: 'store' }
+  // A card still clearing is not a failed restore.
+  if (pending && !gems && !claimed.gems) return { gems: 0, miss: 'pending' }
   return { gems: gems + claimed.gems, miss: '' }
 }
 
@@ -294,6 +300,7 @@ async function connectStore() {
       // keeps the buy open, so the next connect retries too.
       if (out?.miss === 'test') testBuyToast()
       else if (out?.miss === 'pending') showToast({ id: 'gems-pending', kind: 'done', text: t('gems.pending'), ms: 4200 })
+      else if (out?.miss === 'signin') showToast({ id: 'gems-signin', kind: 'done', text: t('gems.needSignIn'), ms: 4200 })
       else if (out?.miss && out.miss !== 'other') creditMissToast()
       else if (!out?.miss && !out?.gems && (readShelf()?.boards?.[0]?.gems || 0) > 999899) gemsWaitToast()
     })
