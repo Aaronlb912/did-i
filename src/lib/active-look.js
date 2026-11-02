@@ -3,7 +3,7 @@ export function activeLook(book) {
   if (!book) return 'lime'
   const looks = Array.isArray(book.looks) ? book.looks : ['lime']
   const pick = String(book.lookOn || 'lime')
-  return looks.includes(pick) ? pick : book.lookOn || 'lime'
+  return looks.includes(pick) ? pick : 'lime'
 }
 
 export function activeBuddy(book) {
