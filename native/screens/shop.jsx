@@ -2076,7 +2076,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
   function pickStage(id, n) {
     const next = wearCheerStage(book, id, n)
     if (!next.miss) {
-      fireCheer(id, n, coat, undefined, true)
+      if (!motionOff()) fireCheer(id, n, coat, undefined, true)
       onChange(next.book)
     }
   }
