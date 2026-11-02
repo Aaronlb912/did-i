@@ -6167,13 +6167,13 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
   }
   assert.equal(
     answersCsv(shelf),
-    'date,question,short name,answer,note,amount\r\n' +
-      '2026-10-01,"drink water, lots",Water,did,,5\r\n' +
-      '2026-10-02,"drink water, lots",Water,not yet,"he said ""no""",\r\n' +
-      '2026-10-03,,,late,,\r\n' +
-      '2026-10-04,Call mom,,did,,\r\n',
+    'date,question,short name,answer,note,amount,unit\r\n' +
+      '2026-10-01,"drink water, lots",Water,did,,5,\r\n' +
+      '2026-10-02,"drink water, lots",Water,not yet,"he said ""no""",,\r\n' +
+      '2026-10-03,,,late,,,\r\n' +
+      '2026-10-04,Call mom,,did,,,\r\n',
   )
-  assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount\r\n')
+  assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount,unit\r\n')
 })
 
 test('every t() key the app uses is in English', () => {
