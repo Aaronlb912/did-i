@@ -4,7 +4,7 @@ import { t } from '../../src/lib/i18n.js'
 import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { answerFor, formatBoardDate, isDueOn, isEvery, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
 import { shortLabel } from '../../src/lib/board-json.js'
-import { pausedOpen } from '../../src/lib/lamp-record.js'
+import { amountWords, pausedOpen } from '../../src/lib/lamp-record.js'
 import { travelNightState, travelSkipped } from '../../src/lib/travel.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
@@ -92,12 +92,13 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
   // A skip on a night that is still open reads Not yet.
   const stateWord = (cell) => (cell.state === 'nope' && nightOpen(cell.iso) ? 'jewelKey.notYet' : STATE_WORD[cell.state])
   function openDay(cell) {
-    const note = String(answerFor(book, lamp.id, periodKeyFor(lamp, cell.iso))?.note || '').trim()
+    const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cell.iso))
+    const note = String(answer?.note || '').trim()
     const close = () => publishSheet(null)
     publishSheet({
       kicker: shortLabel(lamp),
       title: formatBoardDate(cell.iso),
-      body: [t(stateWord(cell)), note].filter(Boolean).join('\n'),
+      body: [t(stateWord(cell)), amountWords(answer?.amount, lamp.amountUnit), note].filter(Boolean).join('\n'),
       closeLabel: t('cal.close'),
       colors,
       onClose: close,
