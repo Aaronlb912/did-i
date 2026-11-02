@@ -2028,6 +2028,7 @@ export const de = {
   'widget.tonight.tagFallback': "Heute",
   'widget.tonight.empty': 'Noch keine Fragen',
   'widget.tonight.nextAt': 'Nächste Frage um {time}',
+  'widget.tonight.away': "Du bist weg. Fragen pausieren.",
   'widget.tonight.clear': "Für heute alles erledigt",
   'widget.tonight.oneLeft': "Heute noch eine",
   'widget.tonight.left': "Heute noch {n}",

@@ -1995,6 +1995,7 @@ export const ko = {
   'widget.tonight.tagFallback': "오늘",
   'widget.tonight.empty': '아직 질문이 없어요',
   'widget.tonight.nextAt': '다음 질문은 {time}에',
+  'widget.tonight.away': "쉬는 중이에요. 질문이 잠시 멈췄어요.",
   'widget.tonight.clear': "오늘은 다 끝났어요",
   'widget.tonight.oneLeft': "오늘 하나 남았어요",
   'widget.tonight.left': "오늘 {n}개 남음",

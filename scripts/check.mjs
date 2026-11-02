@@ -3384,6 +3384,7 @@ test('the tonight widget can draw a question without the app', () => {
     Rectangle: view('RectangleView'),
     lineLimit: (n) => ({ lineLimit: n }),
     minimumScaleFactor: (f) => ({ minimumScaleFactor: f }),
+    accessibilityLabel: (l) => ({ accessibilityLabel: l }),
     controlSize: (s) => ({ controlSize: s }),
     allowsTightening: (on) => ({ allowsTightening: on }),
     opacity: (value) => ({ opacity: value }),
@@ -10348,3 +10349,30 @@ await testAsync('a valid perWeek survives normalizeLamp, bad values are dropped'
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
+
+await testAsync('widget footer: gentle drops the left count, Away says so', async () => {
+  const { writePrefs } = await import('../src/lib/prefs.js')
+  const { t } = await import('../src/lib/i18n.js')
+  const book = {
+    id: 't1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'a', question: 'A?', cadence: 'daily', archived: false, createdOn: '2020-01-01' }],
+    answers: [],
+  }
+  const clock = new Date('2026-09-23T20:00:00')
+  try {
+    writePrefs({ gentle: false, away: [] })
+    const plain = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), clock)
+    assert.equal(plain.footer, t('widget.tonight.oneLeft'))
+    writePrefs({ gentle: true, away: [] })
+    const soft = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), clock)
+    assert.ok(!/\d|left/i.test(soft.footer), 'no left count in gentle mode')
+    writePrefs({ gentle: false, away: [['2026-09-20', '2026-09-30']] })
+    const away = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), clock)
+    assert.equal(away.footer, t('widget.tonight.away'))
+    assert.equal(away.emptyLabel, t('widget.tonight.away'))
+  } finally {
+    writePrefs({ gentle: false, away: [] })
+  }
+})

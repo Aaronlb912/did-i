@@ -1988,6 +1988,7 @@ export const zh = {
   'widget.tonight.tagFallback': "今天",
   'widget.tonight.empty': '还没有问题',
   'widget.tonight.nextAt': '下一个问题：{time}',
+  'widget.tonight.away': "你不在。问题已暂停。",
   'widget.tonight.clear': "今天全部完成",
   'widget.tonight.oneLeft': "今天还剩一个",
   'widget.tonight.left': "今天还剩 {n} 个",

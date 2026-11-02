@@ -1,24 +1,24 @@
 # Home screen widgets
 
-Did I ships a **Tonight** widget on iOS (WidgetKit via `expo-widgets`) and
+Did I ships a **Today** widget on iOS (WidgetKit via `expo-widgets`) and
 Android (`react-native-android-widget`). Both read the same snapshot as the
-app shelf: tonight's questions from every tag.
+app shelf: today's questions from every folder.
 
 ## Sizes
 
 - **iOS:** small, medium, large, plus lock accessories (circle, rectangle, inline).
-- **Android:** default **4×2** on the grid (same wide row as iOS medium), resizable down to **2×2** small or up wider. `minHeight` is two rows so the question and Did / Nope fit.
+- **Android:** default **4×2** on the grid (same wide row as iOS medium), resizable down to **2×2** small or up wider. `minHeight` is two rows so the question and Did / Not yet fit.
 
 Home-screen sizes show **one question**, centered, on a dark card with the
-look color as a ring. The name of the tag the showing question belongs to sits at the top in that color. A worn
-buddy sits in the top right. **Nope** then **Did** sit in a row under the
-question and mark tonight from the widget. Nope is the skip gray. Did is
+look color as a ring. The name of the folder the showing question belongs to sits at the top in that color. A worn
+buddy sits in the top right. **Not yet** then **Did** sit in a row under the
+question and mark today from the widget. Not yet is gray. Did is
 the look color, with dark type, same as the Did button in the app.
 The card stays inside the widget's rounded rect: only the outer stack uses
 the widget frame, and that stack is clipped.
-A glow look uses its own ring color. Tap the question to open Tonight with that
+A glow look uses its own ring color. Tap the question to open Today with that
 question focused. The link uses `didi://tonight?face=…` and does not change the
-Tonight tag filter in the app.
+Today folder filter in the app.
 
 ## Pre-build sweep
 
@@ -54,7 +54,7 @@ eas build --profile development --platform ios
 eas build --profile development --platform android
 ```
 
-iOS requires **17.0+**. Did and Nope on the widget write the answer. The
+iOS requires **17.0+**. Did and Not yet on the widget write the answer. The
 phone picks that up when it is open, and again the next time it opens.
 
 ### iOS App Groups + provisioning
@@ -93,25 +93,25 @@ Expo expects this sequence; Did I follows it in `native/widget-bridge.js`:
 
 1. UI is up (`launchReady`).
 2. After ~1.2s, load `DidITonightWidget` (`createWidget` registers the extension).
-3. `installWidgetSetup()` → `addUserInteractionListener` for Did / Nope taps.
-4. `updateSnapshot(props)` from tonight shelf data (not `getTimeline` on cold start).
+3. `installWidgetSetup()` → `addUserInteractionListener` for Did / Not yet taps.
+4. `updateSnapshot(props)` from the shelf (not `getTimeline` on cold start).
 5. `getTimeline` only after that, or when the app returns to foreground, to merge widget answers into the shelf.
 
 Never call WidgetKit from JS before step 2. Builds without the widget extension (`EAS_INCLUDE_WIDGETS=0`) skip all of the above (`nativeWidgetsEnabled()`).
 
 ### Android
 
-`index.js` registers the Did I tonight task while the bundle evaluates, before the iOS bridge delay. Did and Nope are a broadcast. The widget library addresses that click at `DidITonight`, which hands it to `WidgetTapReceiver` before returning. The receiver writes the lamp id, Did or Nope (`did` / `nope`), and the night, calls `commit()` on that row, advances the card to the next question already in the last snapshot, then starts the same headless task. The task, and the next time the app opens, read the row, write it with the shelf answer path, and clear it. The same lamp and night a second time does not write again. If that snapshot has no next question, the card waits for the task. The task redraws the bitmap, including the buddy. The first snapshot from the open app still waits until the UI is up. The receiver waits about 0.7 s before painting its own plainer native layout, and skips it if JS has already saved a newer card, so a warm tap goes straight to the full card with no flash. A saved card never brings back a question the shelf has answered. The card clips to the rounded rect: only the outer frame is `match_parent`, and that frame sets `overflow: 'hidden'`.
+`index.js` registers the Did I widget task while the bundle evaluates, before the iOS bridge delay. Did and Not yet are a broadcast. The widget library addresses that click at `DidITonight`, which hands it to `WidgetTapReceiver` before returning. The receiver writes the lamp id, Did or Not yet (`did` / `nope`), and the night, calls `commit()` on that row, advances the card to the next question already in the last snapshot, then starts the same headless task. The task, and the next time the app opens, read the row, write it with the shelf answer path, and clear it. The same lamp and night a second time does not write again. If that snapshot has no next question, the card waits for the task. The task redraws the bitmap, including the buddy. The first snapshot from the open app still waits until the UI is up. The receiver waits about 0.7 s before painting its own plainer native layout, and skips it if JS has already saved a newer card, so a warm tap goes straight to the full card with no flash. A saved card never brings back a question the shelf has answered. The card clips to the rounded rect: only the outer frame is `match_parent`, and that frame sets `overflow: 'hidden'`.
 
-The card lists tonight's questions from every tag: ready ones first, then ones still waiting on their ask time (the app lets you answer those early too). With two or more open (or, once none are open, two or more did-nots), a Next pill in the top-left corner (opposite the buddy) shows the next one (`PEEK` click, `peekNextTonightCard`). Next only moves the card; it never answers, and it does not go through `WidgetTapReceiver`. The question text is sized to fit the card (`fitQuestion`), so it does not cut off mid-line. Answers land on the tag that holds the question (`findBookHoldingLamp`). The buddy is drawn from the same SVG as the app (`SvgWidget`).
+The card lists today's questions from every folder: ready ones first, then ones still waiting on their ask time (the app lets you answer those early too). With two or more open (or, once none are open, two or more Not yets), a Next pill in the top-left corner (opposite the buddy) shows the next one (`PEEK` click, `peekNextTonightCard`). Next only moves the card; it never answers, and it does not go through `WidgetTapReceiver`. The question text is sized to fit the card (`fitQuestion`), so it does not cut off mid-line. Answers land on the folder that holds the question (`findBookHoldingLamp`). The buddy is drawn from the same SVG as the app (`SvgWidget`).
 
 ### iOS
 
-The iOS card matches Android. The look-color ring is a `ContainerRelativeShape` stroke, so its corner follows the system widget radius for each size instead of a fixed radius. The tag name at the top follows the question showing (`items[].tag`), and after a Did or Nope it moves to the next question's tag. Its type size follows the widget family (small, medium, large), and on the small widget it sits in the row with Next and shrinks to fit. With two or more open questions (or did-nots once none are open), a **Next** pill sits top-left. It is an interactive button (`next:<lampId>`), like Did and Nope, and it only moves the card inside the widget. The app's interaction listener ignores it. WidgetKit does not scroll, so the question wraps and shrinks (`lineLimit` + `minimumScaleFactor`) instead of running as a marquee. SwiftUI in the widget cannot draw SVG, so the buddy is redrawn from the app SVG's own coordinates: ellipses, whisker lines, and triangles clipped from turned squares. The layout is exact; the curved dog mouth is a small triangle. None of this has run on an iPhone yet.
+The iOS card matches Android. The look-color ring is a `ContainerRelativeShape` stroke, so its corner follows the system widget radius for each size instead of a fixed radius. The folder name at the top follows the question showing (`items[].tag`), and after a Did or Not yet it moves to the next question's folder. Its type size follows the widget family (small, medium, large), and on the small widget it sits in the row with Next and shrinks to fit. With two or more open questions (or Not yets once none are open), a **Next** pill sits top-left. It is an interactive button (`next:<lampId>`), like Did and Not yet, and it only moves the card inside the widget. The app's interaction listener ignores it. WidgetKit does not scroll, so the question wraps and shrinks (`lineLimit` + `minimumScaleFactor`) instead of running as a marquee. SwiftUI in the widget cannot draw SVG, so the buddy is redrawn from the app SVG's own coordinates: ellipses, whisker lines, and triangles clipped from turned squares. The layout is exact; the curved dog mouth is a small triangle. None of this has run on an iPhone yet.
 
 Dev client only: tapping the widget right after a force-stop can start the widget task before the dev launcher loads the app ("App react context shouldn't be created before"). Open the app first. Release builds have no dev launcher. On the emulator, a force-stop makes Android send `PACKAGE_UNSTOPPED` on the next launch, which wakes the widget worker first and trips this every time. Use `adb shell am kill com.aaronbryant.didi` from the home screen instead of `am force-stop`, then open the app.
 
-An every so often question shows one small line under it on both platforms: "Last time: 6 days ago" or "Never yet" (`lastTimeLine` in `src/lib/every-copy.js`, tonight left out). `buildTonightWidgetProps` puts it on each item as `since` and on the card as `sinceLine`; Next and a tap move it with the card. Hidden on the tightest Android size and on lock screen sizes.
+An every so often question shows one small line under it on both platforms: "Last time: 6 days ago" or "Never yet" (`lastTimeLine` in `src/lib/every-copy.js`, today left out). `buildTonightWidgetProps` puts it on each item as `since` and on the card as `sinceLine`; Next and a tap move it with the card. Hidden on the tightest Android size and on lock screen sizes.
 
 The iOS layout is not compiled into the widget extension. `createWidget` hands the function's source to native code, which saves it in the app group (`__expo_widgets_DidITonight_layout`), and WidgetKit evaluates that string. So a layout change that only uses `@expo/ui` views and modifiers the installed build already has ships over the air: the new layout lands the first time the updated app opens and calls `createWidget`. A new native modifier or view needs a build.
 
@@ -129,9 +129,9 @@ The iOS layout is not compiled into the widget extension. `createWidget` hands t
 
 ## Widget tip (in app)
 
-`native/lib/widget-pin.js` `showWidgetTip`, run from Tonight. From the 2nd
+`native/lib/widget-pin.js` `showWidgetTip`, run from Today. From the 2nd
 distinct day the app is opened (with a question), when no other sheet is up
-and not on night one. At most twice: the second only after Not now, 3+ days
+and not on day one. At most twice: the second only after Not now, 3+ days
 later. Done ends it. Android skips it when `getWidgetInfo(WIDGET_NAME)` finds
 a placed widget; iOS has no check, so Done counts as placed. Rules and the
 `did-i-widget-tip` key: `shouldShowWidgetTip` in `src/lib/first-run.js`.
@@ -141,11 +141,11 @@ Profile still has the full steps (`showWidgetHow`).
 
 **Settings → Widget** (`did-i-prefs`):
 
-- **Look** — match the tag’s shop look, or pick any look you own on any tag.
+- **Look** — match the folder’s shop look, or pick any look you own on any folder.
 - **Open questions only** — drop answered rows from the widget list.
 
 Changing settings refreshes the widget snapshot on the phone.
-- Answers from the widget use the same `putAnswer` path as tonight in the app.
+- Answers from the widget use the same `putAnswer` path as today in the app.
 - Signed-in accounts: answers push to Supabase right after a widget tap when the
   app or Android widget task can run JS. If iOS answered with the app fully quit,
   the next time Did I opens it merges the widget timeline into the shelf and

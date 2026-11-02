@@ -14,7 +14,7 @@ import {
 } from './widget-config.js'
 import { t } from './i18n.js'
 import { lastTimeLine } from './every-copy.js'
-import { gentleOn } from './prefs.js'
+import { awayOn, gentleOn } from './prefs.js'
 import { alignShelfPurse, normalizePurse, spreadPurseFrom } from './purse.js'
 import { readWeLine, readWeOpen, skipWePing } from './we-widget.js'
 import {
@@ -278,6 +278,12 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   const next = waitingRowsForAllBoards(boards, now)[0]
   const nextLine = next ? t('widget.tonight.nextAt', { time: clockWords(next.lamp.askAfter) }) : ''
   if (nextLine && !openRows.length && !graceOpen.length && !weCard) footer = nextLine
+  // Away: questions are paused, so say that instead of "No questions yet".
+  const away = awayOn(tonightIso) && !openRows.length && !graceOpen.length && !weCard
+  if (away) footer = t('widget.tonight.away')
+  // Gentle mode: the widgets show no count of what is left.
+  const gentle = gentleOn()
+  if (gentle && left > 0 && !away && !nextLine) footer = t('widget.tonight.openApp')
   const colorBook = widgetColorBook(shelf)
   return {
     tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.tagFallback'),
@@ -292,14 +298,14 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     nopeLabel: t('widget.tonight.nope'),
     nextLabel: t('widget.tonight.next'),
     openLabel: t('widget.tonight.openApp'),
-    emptyLabel: nextLine || t('widget.tonight.empty'),
-    clearLabel: nextLine || t('widget.tonight.clear'),
+    emptyLabel: away ? footer : nextLine || t('widget.tonight.empty'),
+    clearLabel: away ? footer : nextLine || t('widget.tonight.clear'),
     openUri: widgetTonightUri(null, lead?.lamp.id || ''),
     buddyId: colorBook ? normalizePurse(colorBook).buddyOn || '' : '',
     buddyWorn: colorBook ? normalizePurse(colorBook).worn : {},
     weLine: readWeLine(boardDate(now)),
     // Gentle mode: the widgets draw no streak numbers.
-    gentle: gentleOn(),
+    gentle,
     updatedAt: now.getTime(),
   }
 }
