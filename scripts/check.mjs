@@ -4983,6 +4983,8 @@ test('a flick answers by where it was headed and flies off along its path', () =
   // A short, fast flick counts.
   assert.equal(releaseWay(40, 900), 1)
   assert.equal(releaseWay(-40, -900), -1)
+  // A 30px slanted brush during a scroll, however fast, is not an answer.
+  assert.equal(releaseWay(30, 500), 0)
   // Past the line but thrown back: not answered.
   assert.equal(releaseWay(130, -600), 0)
   // A side that is closed never answers.
