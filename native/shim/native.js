@@ -269,7 +269,8 @@ async function schedulePingsNow(books, now = new Date()) {
           const at = match ? new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0) : null
           const content = {
             title: 'Did I',
-            body: row.lamp.question,
+            // Hide what it says: the lock screen shows no question.
+            body: readPrefs().pingsPrivate ? t('pings.privateBody') : row.lamp.question,
             data: askNoteData(row),
             categoryIdentifier: ASK_CATEGORY,
           }
@@ -313,11 +314,13 @@ async function schedulePingsNow(books, now = new Date()) {
           if (we.cadence === 'weekly' && !(we.weekdays || []).includes(new Date(year, month - 1, date).getDay())) continue
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
           if (at.getTime() <= now.getTime()) continue
+          // Quiet hours can push it into the next day, when this one is closed.
+          if (!nightOpen(night, afterQuiet(at))) continue
           notes.push({
             identifier: String(notifyId(`we:${we.id}`, night)),
             content: {
               title: 'Did we',
-              body: we.question,
+              body: readPrefs().pingsPrivate ? t('pings.privateBody') : we.question,
               data: { go: '/tonight', weId: we.id, night },
               categoryIdentifier: ASK_CATEGORY,
             },

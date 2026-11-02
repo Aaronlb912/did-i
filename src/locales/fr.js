@@ -1322,6 +1322,7 @@ export const fr = {
   'pings.kindsCap': 'Quoi envoyer',
   'pings.kindsNote': 'Pour faire taire une question, ouvre-la et coupe son rappel.',
   'pings.kindsMiss': 'Impossible d’enregistrer. Vérifie ta connexion et réessaie.',
+  'pings.privateBody': "Une question t’attend.",
   'pings.kind.reminders': 'Rappels des questions',
   'pings.kind.remindersSub': 'À l’heure choisie pour chaque question.',
   'pings.kind.streakRisk': 'Série sur le point de casser',

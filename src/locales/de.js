@@ -1328,6 +1328,7 @@ export const de = {
     'Um eine Frage stumm zu schalten, öffne sie und schalte ihre Erinnerung aus.',
   'pings.kindsMiss':
     'Konnte nicht speichern. Prüfe deine Verbindung und versuche es noch einmal.',
+  'pings.privateBody': "Eine Frage wartet auf dich.",
   'pings.kind.reminders': 'Fragen-Erinnerungen',
   'pings.kind.remindersSub': 'Zur Uhrzeit, die du für jede Frage eingestellt hast.',
   'pings.kind.streakRisk': 'Serie droht zu reißen',

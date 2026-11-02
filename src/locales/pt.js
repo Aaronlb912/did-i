@@ -1319,6 +1319,7 @@ export const pt = {
   'pings.kindsCap': 'O que enviar',
   'pings.kindsNote': 'Para silenciar uma pergunta, abra-a e desligue o lembrete dela.',
   'pings.kindsMiss': 'Não foi possível salvar. Verifique sua conexão e tente de novo.',
+  'pings.privateBody': "Você tem uma pergunta esperando.",
   'pings.kind.reminders': 'Lembretes de perguntas',
   'pings.kind.remindersSub': 'No horário que você definiu para cada pergunta.',
   'pings.kind.streakRisk': 'Sequência prestes a quebrar',

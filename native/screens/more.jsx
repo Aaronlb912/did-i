@@ -1826,9 +1826,13 @@ function PingKinds({ colors, on }) {
     const was = readPrefs().pingsPrivate
     writePrefs({ pingsPrivate: !was })
     setMiss('')
+    armLampPings(readShelf()?.boards || []).catch(() => {})
     const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
     if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      if (readPrefs().pingsPrivate === !was) writePrefs({ pingsPrivate: was })
+      if (readPrefs().pingsPrivate === !was) {
+        writePrefs({ pingsPrivate: was })
+        armLampPings(readShelf()?.boards || []).catch(() => {})
+      }
       setMiss(t('pings.kindsMiss'))
     }
   }

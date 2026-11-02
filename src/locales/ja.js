@@ -1305,6 +1305,7 @@ export const ja = {
   'pings.kindsCap': '送る通知',
   'pings.kindsNote': '特定の質問を静かにするには、その質問を開いてリマインダーをオフにします。',
   'pings.kindsMiss': '保存できませんでした。接続を確認してもう一度お試しください。',
+  'pings.privateBody': "質問が待っています。",
   'pings.kind.reminders': '質問のリマインダー',
   'pings.kind.remindersSub': '質問ごとに設定した時刻に。',
   'pings.kind.streakRisk': '連続記録が途切れそう',
