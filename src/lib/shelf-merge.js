@@ -1,4 +1,4 @@
-import { normalizeBook, normalizeGone } from './board-json.js'
+import { PAUSES_MAX, normalizeBook, normalizeGone } from './board-json.js'
 import { normalizeShelf } from './board-shelf.js'
 import { mergeAnswer } from './board-ops.js'
 import { capSkips } from './travel.js'
@@ -81,7 +81,12 @@ export function mergeBooks(winner, loser) {
   const loseById = byId(lose.lamps)
   win.lamps = win.lamps.map((lamp) => {
     const other = loseById.get(lamp.id)
-    return other && atMs(other) > atMs(lamp) ? other : lamp
+    const keep = other && atMs(other) > atMs(lamp) ? other : lamp
+    // A pause resumed on the other phone stays, or its days read as misses.
+    const both = [...(lamp.pauses || []), ...(other?.pauses || [])]
+    if (!other || !both.length) return keep
+    const pauses = [...new Map(both.map((pair) => [pair.join('|'), pair])).values()].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)).slice(-PAUSES_MAX)
+    return { ...keep, pauses }
   })
   if (atMs(lose) > atMs(win)) {
     win.title = lose.title

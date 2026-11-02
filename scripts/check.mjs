@@ -367,6 +367,27 @@ test('a fifth schedule edit keeps the first schedule for the oldest days', async
   assert.equal(cur.was.length, WAS_KEEP)
   assert.equal(isDueOn(cur, '2026-09-07'), true, 'a first-schedule Monday is still due')
   assert.equal(isDueOn(cur, '2026-09-09'), false, 'a first-schedule Wednesday is not a miss')
+  // A dropped Mondays stretch must not read as daily under the next schedule.
+  let mon = lamp('mon', { cadence: 'daily', createdOn: '2026-09-01' })
+  const steps = [['2026-10-01', { cadence: 'weekly', weekdays: [1] }], ['2026-10-10', { cadence: 'daily', weekdays: [] }], ['2026-10-12', { cadence: 'weekly', weekdays: [1] }], ['2026-10-14', { cadence: 'daily', weekdays: [] }], ['2026-10-16', { cadence: 'weekly', weekdays: [1] }]]
+  for (const [day, plan] of steps) {
+    const next = { ...mon, ...plan }
+    next.was = keepPastSchedule(mon, next, day)
+    mon = next
+  }
+  assert.equal(mon.was.length, WAS_KEEP)
+  assert.equal(isDueOn(mon, '2026-10-02'), false, 'a Friday in the dropped Mondays stretch is not a miss')
+  assert.equal(isDueOn(mon, '2026-09-20'), true, 'first-schedule days stay daily')
+})
+
+test('sync keeps a pause resumed on the other phone', async () => {
+  const { mergeBooks } = await import('../src/lib/shelf-merge.js')
+  const base = { id: 'q', question: 'Did I read?', cadence: 'daily', createdOn: '2026-10-01' }
+  const a = { id: 'b', title: 'b', lamps: [{ ...base, pauses: [['2026-10-05', '2026-10-08']], at: '2026-10-08T10:00:00.000Z' }], answers: [] }
+  const b = { id: 'b', title: 'b', lamps: [{ ...base, question: 'Did I read a page?', at: '2026-10-09T10:00:00.000Z' }], answers: [] }
+  const merged = mergeBooks(a, b)
+  assert.equal(merged.lamps[0].question, 'Did I read a page?')
+  assert.deepEqual(merged.lamps[0].pauses, [['2026-10-05', '2026-10-08']])
 })
 
 test('changing Mondays to daily keeps the past Mondays streak', async () => {
