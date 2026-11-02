@@ -130,7 +130,7 @@ const LOOKS = {
       ink: '#1e1810',
       inkSoft: '#6a5c48',
       inkDim: '#746758',
-      on: '#836517',
+      on: '#7d6016',
       onDeep: '#5c4610',
       late: '#9a7028',
       veil: 'rgba(30, 24, 16, 0.38)',
