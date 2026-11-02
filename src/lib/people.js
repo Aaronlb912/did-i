@@ -1569,10 +1569,13 @@ export async function familyTonight() {
   const user = await me()
   if (!user) return []
 
-  const { data: mineRows } = await db
+  // A failed read throws so the hook keeps the rows it had, instead of
+  // wiping them or showing answered cards as open.
+  const { data: mineRows, error: mineError } = await db
     .from('family_members')
     .select('family_id, families(id, name, fold_hour)')
     .eq('user_id', user.id)
+  if (mineError) throw mineError
   const families = (mineRows || []).map((row) => row.families).filter(Boolean)
   if (!families.length) return []
 
@@ -1595,6 +1598,8 @@ export async function familyTonight() {
       .eq('user_id', user.id)
       .in('period_key', [...new Set(nights.values())]),
   ])
+  if (lampRows.error) throw lampRows.error
+  if (answerRows.error) throw answerRows.error
 
   const lastDids = await familyEveryLast(db, lampRows.data || [])
   const out = []
