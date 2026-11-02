@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { dropGiftsFrom } from './gift-inbox.js'
 import { cadenceLine } from './board-json.js'
 import { cloud, cloudSetUp } from './cloud.js'
 import { noteSocialLive, onSocialLive } from './social-live.js'
@@ -1160,6 +1161,7 @@ export async function blockPerson(otherId, why = '') {
   if (error) return bad(error)
   // The server left their shared cards and dropped their sends: show that now.
   dropLoaded({ miss: '' })
+  dropGiftsFrom(otherId)
   refreshPeople()
   return { miss: '' }
 }
