@@ -126,11 +126,13 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
           ))}
           {sorted.map((row) => {
             const mark = markOf(row.answer, when, nightOpen(iso, clock))
-            const canAnswer = Boolean(onAnswer) && pastAnswerOpen(row, clock)
+            const canAnswer = Boolean(onAnswer) && pastAnswerOpen(row, new Date())
             const date = formatBoardDate(iso)
             const answer = (status) => {
               const next = onAnswer(row, status)
               if (next) openDay(iso, shelfNow.map((item) => (item.id === next.id ? next : item)))
+              // A sheet left open past midnight can be outside the window now: redraw without the buttons.
+              else if (!pastAnswerOpen(row, new Date())) openDay(iso, shelfNow)
             }
             return (
               <View key={`${row.boardId}-${row.lamp.id}`} style={styles.markRow}>
