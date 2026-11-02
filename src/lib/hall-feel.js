@@ -375,7 +375,7 @@ const answerSigns = new WeakMap()
 function answerSign(answer) {
   let sign = answerSigns.get(answer)
   if (sign === undefined) {
-    const text = `${answer.lampId}|${answer.periodKey}|${answer.status}`
+    const text = `${answer.lampId}|${answer.periodKey}|${answer.status}|${answer.answeredAt || ''}`
     sign = 17
     for (let i = 0; i < text.length; i += 1) sign = (Math.imul(sign, 31) + text.charCodeAt(i)) | 0
     answerSigns.set(answer, sign)
