@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { AccessibilityInfo, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { boardDate } from '../../src/lib/recurrence.js'
 import { markStreakSeen, takePendingStreakMoment } from '../../src/lib/streak-moments.js'
 import { gentleOn } from '../../src/lib/prefs.js'
@@ -25,8 +25,8 @@ function copy(moment) {
   }
 }
 
-export function StreakMomentHost({ now, look = 'lime', theme = 'dark' }) {
-  const colors = useHallColors(look, theme)
+export function StreakMomentHost({ now }) {
+  const colors = useHallColors()
   const [moment, setMoment] = useState(null)
   const clock = now || new Date()
   const dateIso = boardDate(clock)
@@ -54,6 +54,10 @@ export function StreakMomentHost({ now, look = 'lime', theme = 'dark' }) {
     return () => globalThis.window?.removeEventListener?.('did-i-streak', onStreak)
   }, [])
 
+  useEffect(() => {
+    if (moment) AccessibilityInfo.announceForAccessibility(copy(moment).title)
+  }, [moment])
+
   if (!moment) return null
   const text = copy(moment)
 
@@ -67,11 +71,12 @@ export function StreakMomentHost({ now, look = 'lime', theme = 'dark' }) {
       <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={close}>
         <Pressable
           accessible={false}
+          accessibilityViewIsModal
           style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}
           onPress={(event) => event.stopPropagation()}
         >
           <Text style={[styles.kicker, { color: colors.on }]}>{text.kicker}</Text>
-          <Text style={[styles.title, { color: colors.ink }]}>{text.title}</Text>
+          <Text accessibilityRole="header" style={[styles.title, { color: colors.ink }]}>{text.title}</Text>
           <Text style={[styles.body, { color: colors.inkSoft }]}>{text.body}</Text>
           <View style={styles.row}>
             <DidButton small label={text.yes} onPress={close} colors={colors} />

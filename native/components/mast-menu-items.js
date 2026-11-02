@@ -16,11 +16,9 @@ export const ADD_ON = new Set(['/add', '/hang'])
 export const HISTORY_ON = new Set(['/calendar', '/notes', '/feed', '/marks', '/stats', '/streaks', '/week'])
 export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/more', '/settings/look', '/settings/nights', '/settings/privacy', '/settings/help', '/settings/seen', '/pings', '/about', '/help', '/privacy', '/terms'])
 
-// Home and Questions already live in the system tab bar; the menu holds only
-// what the tabs don't: Add, Friends and family, Shop, Collection, Settings.
+// Home leads the menu on every screen. Questions lives in the system tab bar; the menu holds only
+// the rest: Add, Friends and family, Shop, Recent, Collection, Settings.
 // Your history has no row; Settings and the streak sheet lead there.
-// Screens pushed over the tabs hide that bar, so there Home leads the menu:
-// one tap back to Tonight from anywhere.
 // Inbox has no row of its own, its count folds into Friends and family's
 // badge. A badge never highlights a row; only where you are does.
 // we: Did we asks to join (and unopened gifts). Did we lives
@@ -48,8 +46,8 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
     },
     { key: 'more', section: true, label: t('mast.menu') },
     // Recent: achievements and Did we moments, in full. Its count is the unseen ones,
-    // plus Did you asks still in the inbox so the row is not blank while they wait.
-    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent + (signedIn ? inbox : 0), icon: 'bell' },
+    // Did you asks count on Friends and family only.
+    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent, icon: 'bell' },
     { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
     {
       key: 'settings',

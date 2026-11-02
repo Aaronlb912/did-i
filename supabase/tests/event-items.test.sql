@@ -19,7 +19,7 @@ begin
   -- Open the window around today so the test does not depend on the date.
   update public.event_catalog
   set live_from = (timezone('utc', now()))::date - 1, live_until = (timezone('utc', now()))::date + 2
-  where item_id in ('bat', 'boo');
+  where item_id in ('bat', 'boo', 'rocket');
 
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
@@ -35,6 +35,13 @@ begin
   if not (out->'cheers' @> '["boo"]') or not (out->'buddies' @> '["bat"]') then
     raise exception 'FAIL: claiming the cheer lost or missed an item: %', out;
   end if;
+
+  -- The Product Hunt rocket claims the same way, and only once.
+  out := public.claim_free_item('buddy', 'rocket');
+  out := public.claim_free_item('buddy', 'rocket');
+  select count(*) into n from jsonb_array_elements_text(out->'buddies') x where x = 'rocket';
+  if n <> 1 then raise exception 'FAIL: the rocket gave % copies', n; end if;
+  if not (out->'buddies' @> '["bat"]') then raise exception 'FAIL: claiming the rocket lost the bat: %', out; end if;
 
   -- Unknown items, items of the wrong kind and paid items are refused.
   begin
@@ -70,7 +77,7 @@ begin
   -- Outside the window it is refused, even for the owner of a new claim.
   update public.event_catalog
   set live_from = (timezone('utc', now()))::date - 10, live_until = (timezone('utc', now()))::date - 5
-  where item_id in ('bat', 'boo');
+  where item_id in ('bat', 'boo', 'rocket');
   update public.profiles set gem_cosmetics = '{"looks":[],"cheers":[],"buddies":[]}' where user_id = a;
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { AccessibilityInfo, findNodeHandle, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
@@ -200,6 +200,27 @@ export function SwipeCard({
   useEffect(() => {
     wasTop.current = topKey
   }, [topKey])
+  // After an answer the old card unmounts; a screen reader moves on to the
+  // next question instead of falling back to the top of the screen.
+  const topRef = useRef(null)
+  const firstTop = useRef(true)
+  useEffect(() => {
+    if (firstTop.current || demo) {
+      firstTop.current = false
+      return undefined
+    }
+    let live = true
+    const id = setTimeout(() => {
+      AccessibilityInfo.isScreenReaderEnabled?.().then((on) => {
+        const node = live && on && topRef.current && findNodeHandle(topRef.current)
+        if (node) AccessibilityInfo.setAccessibilityFocus(node)
+      }).catch(() => {})
+    }, 150)
+    return () => {
+      live = false
+      clearTimeout(id)
+    }
+  }, [topKey, demo])
   const back = !demo && comingBack && comingBack.key === topKey ? comingBack.way : 0
 
   const depth = demo ? [] : behind.slice(0, DEPTH_SHOWN)
@@ -239,6 +260,7 @@ export function SwipeCard({
           blockDid={blockDid}
           blockNope={blockNope}
           onAnswer={answer}
+          focusRef={topRef}
           accessible={!demo}
           // The folder above the question is read too, as it is shown.
           accessibilityLabel={[kicker, title].filter(Boolean).join(', ')}
@@ -261,7 +283,7 @@ export function SwipeCard({
               { borderColor: colors.line, backgroundColor: colors.panel2, opacity: blockNope ? 0.4 : pressed ? 0.8 : 1 },
             ]}
           >
-            <Text style={[styles.answerText, { color: colors.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            <Text style={[styles.answerText, { color: colors.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={2}>
               {nopeLabel || stampNope}
             </Text>
           </Pressable>
@@ -276,7 +298,7 @@ export function SwipeCard({
               { borderColor: colors.on, backgroundColor: colors.on, opacity: blockDid ? 0.4 : pressed ? 0.85 : 1 },
             ]}
           >
-            <Text style={[styles.answerText, { color: colors.bg }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            <Text style={[styles.answerText, { color: colors.bg }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={2}>
               {didLabel || stampDid}
             </Text>
           </Pressable>
@@ -305,6 +327,7 @@ function StackCard({
   blockNope = false,
   onAnswer,
   frame = null,
+  focusRef,
   children,
   ...a11y
 }) {
@@ -452,6 +475,7 @@ function StackCard({
 
   const card = (
     <Animated.View
+      ref={focusRef}
       {...a11y}
       importantForAccessibility={top ? 'auto' : 'no-hide-descendants'}
       accessibilityElementsHidden={!top}

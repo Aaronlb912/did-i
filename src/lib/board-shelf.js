@@ -28,6 +28,13 @@ function migrateDefaultTitle(book) {
   return book.title === title ? book : { ...book, title }
 }
 
+// How a folder name compares: any General name in any language is General,
+// since normalizeShelf would fold that folder into General.
+export function folderNameKey(title) {
+  const name = String(title || '').trim()
+  return (DEFAULT_TITLES.has(name) ? t('tags.general') : name).toLowerCase()
+}
+
 export function currentBook(shelf) {
   if (!shelf || !shelf.boards || !shelf.boards.length) return emptyBoard()
   return shelf.boards.find((book) => book.id === shelf.currentId) || shelf.boards[0]
@@ -209,7 +216,7 @@ export function findBookHoldingLamp(boards, lampId) {
 }
 
 // Everything a twin must share: same words, same schedule, same ask time.
-const TWIN_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor', 'everyDays', 'onceWhen', 'onceOn', 'dueBy', 'slot', 'askAfter']
+const TWIN_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor', 'everyDays', 'perWeek', 'onceWhen', 'onceOn', 'dueBy', 'slot', 'askAfter']
 
 function foldBook(into, extra) {
   if (!extra || extra.id === into.id) return extra || into

@@ -38,6 +38,8 @@ const AT = {
   bat: { ex: [19.5, 28.5], ey: 27, er: 3.7, crown: 17, neck: 40, side: 16 },
   // The tail fan rises behind the head: head items sit on the head, in front of it.
   turkey: { ex: [19.5, 28.5], ey: 28, er: 3.7, crown: 19.5, neck: 41, side: 14 },
+  // A rocket: the nose is narrow, so head items sit up on it.
+  rocket: { ex: [19.5, 28.5], ey: 27, er: 3.5, crown: 13, neck: 41, side: 14, hat: { y: 11, scale: 0.9 } },
 }
 
 const INK = '#2d241c'

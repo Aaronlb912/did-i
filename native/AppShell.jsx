@@ -34,6 +34,7 @@ import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { UpdatePrompt } from './components/UpdatePrompt.jsx'
 import { SheetHost, onSheetUp } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
+import { HuntHost } from './components/HuntHost.jsx'
 import { InviteAskHost } from './components/InviteAskHost.jsx'
 import { TourHost } from './components/TourHost.jsx'
 import { setTourBalanceHandler } from './lib/tour.js'
@@ -275,12 +276,14 @@ export function AppShell() {
   // out), so nobody has to go looking for it.
   const shelfReady = Boolean(app.book)
   const settingUp = OWN_BACK.has(route.path)
+  // Nothing to remind about yet: a Not now on the empty Today would spend the ask.
+  const hasQuestion = (app.shelf?.boards || []).some((one) => (one.lamps || []).some((lamp) => !lamp.archived))
   useEffect(() => {
-    if (gated || settingUp || !shelfReady || Platform.OS === 'web') return undefined
+    if (gated || settingUp || !shelfReady || !hasQuestion || Platform.OS === 'web') return undefined
     const timer = setTimeout(() => offerFirstPingPrimer(colors).catch(() => {}), 1200)
     return () => clearTimeout(timer)
     // colors only styles the sheet; a theme change should not re-arm the ask.
-  }, [gated, settingUp, shelfReady])
+  }, [gated, settingUp, shelfReady, hasQuestion])
 
   // A Did made in this run is the one later ask for a Not now.
   const didCount = useRef(null)
@@ -291,7 +294,8 @@ export function AppShell() {
     const was = didCount.current
     didCount.current = n
     // Not cleared on the next shelf write (sync lands right after a tap); the ask runs once anyway.
-    if (was != null && n > was) setTimeout(() => offerPingPrimerAgain(colors).catch(() => {}), 2500)
+    // Exactly one more: a cloud pull brings several at once, not a tap here.
+    if (was != null && n === was + 1) setTimeout(() => offerPingPrimerAgain(colors).catch(() => {}), 2500)
     return undefined
     // colors only styles the sheet.
   }, [gated, app.shelf])
@@ -492,6 +496,7 @@ export function AppShell() {
         {booted && app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
         {app.book && !gated ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
         {booted && app.book && !gated ? <InviteAskHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
+        {booted && app.book && !gated ? <HuntHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
         {booted && app.book && !gated ? <TourHost path={route.path} hasQuestion={(app.book.lamps || []).some((lamp) => !lamp.archived)} /> : null}
         <SheetHost />
         <CheerBurstHost />

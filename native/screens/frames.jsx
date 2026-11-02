@@ -259,7 +259,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
     action = {
       label: on ? t('shop.takeOff') : t('frames.wear'),
       go: () => {
-        const next = wearFrame(book, id, ctx)
+        const next = onLiveBook(wearFrame(liveBook(book), id, ctx))
         if (next.miss) return confirmMiss(frameMiss(next))
         publishSheet(null)
         onChange(next.book)
@@ -301,7 +301,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
     action = {
       label: t('frames.claim'),
       go: () => {
-        const next = claimFrame(book, id, ctx.today)
+        const next = onLiveBook(claimFrame(liveBook(book), id, ctx.today))
         if (next.miss) return confirmMiss(frameMiss(next))
         onChange(next.book)
         reopen(next.book)
@@ -547,7 +547,7 @@ export function FramesCollection({ book, colors, onChange }) {
   const mine = shownFrames(ctx.today, owned).filter((f) => owned.has(f.id))
   const locked = shownFrames(ctx.today).filter((f) => f.kind === 'earned' && !owned.has(f.id))
   function wear(id) {
-    const next = wearFrame(book, id === worn ? '' : id, ctx)
+    const next = onLiveBook(wearFrame(liveBook(book), id === worn ? '' : id, ctx))
     if (next.miss) return confirmMiss(frameMiss(next))
     onChange(next.book)
     if (id && id !== worn) confirmDone(t('confirm.wearing', { name: frameName(id) }))
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
   offChip: { width: 36, height: 44, borderRadius: 8, borderWidth: 1, borderStyle: 'dashed' },
   kitName: { fontFamily: fonts.uiSemi, fontSize: 11, maxWidth: '100%', textAlign: 'center' },
   kitTileWorn: { borderWidth: 2, borderRadius: 12 },
-  kitCaption: { fontFamily: fonts.ui, fontSize: 10, maxWidth: '100%' },
+  kitCaption: { fontFamily: fonts.ui, fontSize: 11, maxWidth: '100%' },
   wornBadge: {
     position: 'absolute',
     right: -2,
@@ -664,5 +664,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  wornBadgeText: { fontSize: 10, fontWeight: '700', lineHeight: 12 },
+  wornBadgeText: { fontSize: 11, fontWeight: '700', lineHeight: 12 },
 })

@@ -41,13 +41,13 @@ import {
 import { commitBook } from '../../src/lib/achievements.js'
 import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { isTodayOnce } from '../../src/lib/morning-ask.js'
-import { findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
-import { t } from '../../src/lib/i18n.js'
+import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
+import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
 import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery } from '../../src/lib/recurrence.js'
 import { gapLine, lastTimeLine, sinceBadge } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
-import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
+import { awayKey, readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { NightNotes } from '../components/NightNotes.jsx'
 import { addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
@@ -72,7 +72,7 @@ import { LampManage, flushCheckOnStops, lampActions, stopCheckOns } from '../com
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampRecord, lampNights, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
+import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampDays, lampRecord, lampNights, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -105,8 +105,10 @@ import { EditPen } from '../components/SwipeFace.jsx'
 import { checkOnFits, followCheckOn } from '../../src/lib/check-on.js'
 import { Glide, pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
 import { missDot } from '../palette.js'
+import { exactAlarmsOn, openExactAlarms } from '../lib/exact-alarms.js'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
+const weekdaysFor = (locale) => WEEKDAYS.map((_, i) => (i + firstWeekday(locale)) % 7)
 
 function useHall(book) {
   const colors = useHallColors(book)
@@ -337,8 +339,10 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
               </View>
               {onMove ? (
                 <View style={styles.moveKeys}>
+                  <MoveKey glyph="⤒" label={t('questions.moveTop', { name: shortLabel(row.lamp) })} on={index > 0} onPress={() => onMove(index, -items.length)} colors={colors} />
                   <MoveKey glyph="↑" label={t('questions.moveUp', { name: shortLabel(row.lamp) })} on={index > 0} onPress={() => onMove(index, -1)} colors={colors} />
                   <MoveKey glyph="↓" label={t('questions.moveDown', { name: shortLabel(row.lamp) })} on={index < items.length - 1} onPress={() => onMove(index, 1)} colors={colors} />
+                  <MoveKey glyph="⤓" label={t('questions.moveBottom', { name: shortLabel(row.lamp) })} on={index < items.length - 1} onPress={() => onMove(index, items.length)} colors={colors} />
                 </View>
               ) : picking ? null : (
                 <>
@@ -476,7 +480,7 @@ function inHandOrder(rows) {
     .map((item) => item.row)
 }
 
-const SEARCH_FROM = 10
+const SEARCH_FROM = 6
 
 // Chinese and Japanese labels take a full-width colon.
 function labelColon() {
@@ -537,20 +541,19 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     return kinds
   })()
 
-  // Swaps a question with the one next to it on screen, then numbers every
-  // live question so tonight and the widget follow.
+  // Moves a question past `step` rows on screen (one, or to the top or bottom),
+  // then numbers every live question so tonight and the widget follow.
   function move(index, step) {
     const a = hung[index]
-    const b = hung[index + step]
-    if (!a || !b || !onChangeBooks) return
+    const b = hung[Math.max(0, Math.min(hung.length - 1, index + step))]
+    if (!a || !b || a === b || !onChangeBooks) return
     feelTap()
     // Every folder at once, so orders never collide when tonight shows All.
     const ids = inHandOrder(taggedLamps(shelf, '')).filter((row) => !row.lamp.archived).map((row) => row.lamp.id)
-    const ai = ids.indexOf(a.lamp.id)
+    if (!ids.includes(a.lamp.id) || !ids.includes(b.lamp.id)) return
+    ids.splice(ids.indexOf(a.lamp.id), 1)
     const bi = ids.indexOf(b.lamp.id)
-    if (ai < 0 || bi < 0) return
-    ids[ai] = b.lamp.id
-    ids[bi] = a.lamp.id
+    ids.splice(step < 0 ? bi : bi + 1, 0, a.lamp.id)
     const next = setLampOrder(shelf, ids)
     const changed = next.filter((item, at) => item !== shelf[at])
     if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
@@ -564,6 +567,11 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   // Reorder saves as you go; Never mind puts the order back the way it was.
   const orderBefore = useRef(null)
   function startOrdering() {
+    // Reorder shows every question: a hidden search or filter would let a move
+    // jump past rows you cannot see.
+    setQuery('')
+    setTopicPicks([])
+    setDidYouOnly(false)
     orderBefore.current = inHandOrder(taggedLamps(shelf, '')).filter((row) => !row.lamp.archived).map((row) => row.lamp.id)
     setOrdering(true)
   }
@@ -669,7 +677,10 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
     const folder = folders.find((item) => item.id === targetId)?.title || ''
     // Undo moves each one back to the folder it came from.
-    const n = lampPicks.length
+    const n = moving.length
+    // A pending check-on stop from the last bulk action lands before this undo replaces it.
+    flushCheckOnStops(undo?.stops)
+    if (!n) return stopPicking()
     const label = n === 1 ? t('questions.bulkMovedOne', { folder }) : t('questions.bulkMoved', { n, folder })
     setUndo({ id: Date.now(), label, moved: moving, to: targetId })
     stopPicking()
@@ -745,7 +756,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
       setUndo(null)
       return
     }
-    onChangeBooks(undoBulkLamps(readShelf().boards || shelf, undo.before, undo.picks))
+    onChangeBooks(undoBulkLamps(readShelf().boards || shelf, undo.before, undo.picks).map((item) => commitBook(item, clock)))
     setUndo(null)
   }
 
@@ -1032,6 +1043,7 @@ export function SearchScreen({ book }) {
           <Pressable
             key={lamp.id}
             accessibilityRole="button"
+            accessibilityLabel={`${shortLabel(lamp)}. ${lamp.question}`}
             onPress={() => goHash('/lamp', { id: lamp.id })}
             android_ripple={ripple(colors.panel3)}
             style={[styles.lampRow, { borderColor: colors.line, backgroundColor: colors.panel }]}
@@ -1066,6 +1078,7 @@ const SCHEDULE_MISSES = new Set([
   'hang.miss.everyN',
   'hang.miss.everyNStart',
   'hang.miss.everyDays',
+  'hang.miss.dayPassed',
 ])
 // Every so often: about a week, two weeks, a month, or any number of days.
 const EVERY_PILLS = [
@@ -1418,6 +1431,16 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     return first
   })
   const [timeOpen, setTimeOpen] = useState(false)
+  // The one-time ask can be skipped; a timed question says it again.
+  const [exactOff, setExactOff] = useState(false)
+  useEffect(() => {
+    if (!timeOpen) return undefined
+    let live = true
+    exactAlarmsOn().then((on) => live && setExactOff(!on))
+    return () => {
+      live = false
+    }
+  }, [timeOpen])
   const [ideasOpen, setIdeasOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [topicsOn, setTopicsOn] = useState(false)
@@ -1491,8 +1514,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
   useEffect(() => () => clearTimeout(leave.current), [])
 
-  const [startSnap] = useState(() => JSON.stringify([draft, hang.tagTitle]))
-  const dirty = JSON.stringify([draft, hang.tagTitle]) !== startSnap
+  // Pause saves at once, so it is not an unsaved change.
+  const [startSnap] = useState(() => JSON.stringify([{ ...draft, archived: false }, hang.tagTitle]))
+  const dirty = JSON.stringify([{ ...draft, archived: false }, hang.tagTitle]) !== startSnap
   const leaveRef = useRef(null)
   // Set once Add has saved or Cancel was chosen: the back that leaves is ours, not one to ask about.
   const leaving = useRef(false)
@@ -1695,6 +1719,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         wobble.nudge()
         inputRef.current?.focus()
       } else if (SCHEDULE_MISSES.has(problem) && open !== 'when') {
+        Keyboard.dismiss()
         fold('when')
       } else if (problem === 'hang.miss.askAfter') {
         openTime()
@@ -1870,7 +1895,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
             {schedule === 'weekly' ? (
               <View style={styles.pillRow}>
-                {WEEKDAYS.map((day) => (
+                {weekdaysFor(readPrefs().locale).map((day) => (
                   <Pill
                     key={day}
                     label={t(`hang.day.${day}`)}
@@ -1933,7 +1958,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                   <FoldInput
                     label={t('hang.everyDays')}
                     value={String(draft.everyDays || '')}
-                    onChangeText={(value) => hang.change('everyDays', value.replace(/\D/g, ''))}
+                    onChangeText={(value) => hang.change('everyDays', value.replace(/\D/g, '').replace(/^(?:36[6-9]|3[7-9]\d|[4-9]\d\d)$/, '365'))}
                     keyboardType="number-pad"
                     placeholder="10"
                     maxLength={3}
@@ -1977,6 +2002,12 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               <View ref={timeDetail} onLayout={showTimeDetail}>
               <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
               <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
+              {draft.askAfter && exactOff ? (
+                <>
+                  <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('notify.exactBody')}</Text>
+                  <KeyButton colors={colors} label={t('notify.exactGo')} onPress={openExactAlarms} />
+                </>
+              ) : null}
               </View>
             </HangFold>
           {reminderRow(true)}
@@ -2116,10 +2147,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                 value={hang.tagTitle}
                 onChangeText={hang.setTagTitle}
                 placeholder={t('hang.tagPh')}
+                maxLength={60}
                 autoFocus
                 returnKeyType="done"
                 colors={colors}
               />
+            ) : null}
+            {hang.tagTitle.trim() && !findBookByTitle(boards, hang.tagTitle.trim()) ? (
+              <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.tagWillMake', { name: hang.tagTitle.trim() })}</Text>
             ) : null}
             {hang.parkedTags.length ? (
               <>
@@ -2222,6 +2257,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               value={draft.notes}
               onChangeText={(value) => hang.change('notes', value)}
               placeholder={t('hang.notesPh')}
+              maxLength={500}
               multiline
               colors={colors}
             />
@@ -2312,11 +2348,11 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const lampBook = findBookHoldingLamp(shelf, lampId) || book
   const { colors, clock, dateIso } = useHall(lampBook)
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
-  const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso])
-  const best = useMemo(() => bestQuestionStreak(lampBook, lamp, dateIso), [lampBook, lamp, dateIso])
-  const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso])
+  const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso, awayKey()])
+  const best = useMemo(() => bestQuestionStreak(lampBook, lamp, dateIso), [lampBook, lamp, dateIso, awayKey()])
+  const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso, awayKey()])
   const lastFive = useMemo(() => lastDidTimes(lampBook, lamp, 5), [lampBook, lamp])
-  const amounts = useMemo(() => lampAmounts(lampBook, lamp, dateIso, 14, 30), [lampBook, lamp, dateIso])
+  const amounts = useMemo(() => lampAmounts(lampBook, lamp, dateIso, 14, 30), [lampBook, lamp, dateIso, awayKey()])
   // Every so often: no streak, so the tiles say when it was last done and the usual gap.
   const every = useMemo(() => {
     if (!isEvery(lamp)) return null
@@ -2328,12 +2364,17 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       badge: sinceBadge(lampBook, lamp, dateIso, false),
       gap: gapLine(lampBook, lamp, dateIso),
     }
-  }, [lampBook, lamp, dateIso])
+  }, [lampBook, lamp, dateIso, awayKey()])
   const gentle = usePrefs().gentle === true
   const phone = usePhoneQuiet()
   const account = useAccount()
   const reduce = useReduceMotion()
   const [historyOpen, setHistoryOpen] = useState(false)
+  const firstDay = firstWeekday(readPrefs().locale)
+  const grid = useMemo(
+    () => (historyOpen ? lampDays(lampBook, lamp, dateIso, 26, firstDay) : null),
+    [historyOpen, lampBook, lamp, dateIso, firstDay, awayKey()],
+  )
   const [notesOpen, setNotesOpen] = useState(false)
   const [checkOpen, setCheckOpen] = useState(false)
   const [notePick, setNotePick] = useState(0)
@@ -2557,6 +2598,45 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </View>
       ) : null}
 
+      {grid?.days.length ? (
+        <View style={styles.trend}>
+          <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.grid')}</Text>
+          <View style={styles.gridCols} accessible accessibilityLabel={t('lamp.gridA11y', { did: grid.byDay.reduce((n, d) => n + d.did, 0), due: grid.byDay.reduce((n, d) => n + d.due, 0) })}>
+            {Array.from({ length: Math.ceil(grid.days.length / 7) }, (_, w) => (
+              <View key={w} style={styles.gridCol}>
+                {grid.days.slice(w * 7, w * 7 + 7).map((day) => (
+                  <View
+                    key={day.iso}
+                    style={[
+                      styles.gridCell,
+                      {
+                        backgroundColor: day.state === 'did' ? colors.on : day.state === 'not' || day.state === 'miss' ? colors.lineSoft : 'transparent',
+                        borderColor: colors.lineSoft,
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+          <Text style={[styles.trendLabel, { color: colors.inkSoft, marginTop: 8 }]}>{t('lamp.weekdays')}</Text>
+          <View style={styles.trendRow}>
+            {weekdaysFor(readPrefs().locale).map((day) => {
+              const row = grid.byDay[day]
+              return (
+                <View key={day} style={styles.trendWeek} accessible accessibilityLabel={t('lamp.weekdayA11y', { day: t(`hang.day.${day}`), did: row.did, due: row.due })}>
+                  <View style={[styles.trendBar, { backgroundColor: colors.lineSoft }]}>
+                    {row.due ? <View style={[styles.trendFill, { backgroundColor: colors.on, height: `${Math.round((row.did / row.due) * 100)}%` }]} /> : null}
+                  </View>
+                  <Text style={[styles.trendNum, { color: colors.inkDim }]}>{row.due ? `${row.did}/${row.due}` : '-'}</Text>
+                  <Text style={[styles.trendDate, { color: colors.inkDim }]} numberOfLines={1}>{t(`hang.day.${day}`)}</Text>
+                </View>
+              )
+            })}
+          </View>
+        </View>
+      ) : null}
+
       <LampMonth book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
 
       {lamp.trackAmount ? (
@@ -2598,9 +2678,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         {!lastFive.length ? (
           <>
             <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.lastFiveEmpty')}</Text>
-            <Pressable accessibilityRole="link" onPress={() => goHash('/tonight')} hitSlop={8}>
-              <Text style={[styles.tileCap, { color: colors.on }]}>{t('empty.goTonight')}</Text>
-            </Pressable>
+            <KeyButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
           </>
         ) : null}
         {lastFive.map((row) => (
@@ -2728,7 +2806,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pickTick: { fontFamily: fonts.uiBold, fontSize: 14, lineHeight: 16 },
-  dropBtn: { borderWidth: 1, borderRadius: 999, minHeight: 40, paddingHorizontal: 16, justifyContent: 'center' },
+  dropBtn: { borderWidth: 1, borderRadius: 999, minHeight: 44, paddingHorizontal: 16, justifyContent: 'center' },
   dropText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   blockLabel: {
     fontFamily: fonts.mono,
@@ -2804,7 +2882,7 @@ const styles = StyleSheet.create({
   pill: {
     borderWidth: 1,
     borderRadius: 999,
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: 14,
     justifyContent: 'center',
     alignItems: 'center',
@@ -2834,12 +2912,15 @@ const styles = StyleSheet.create({
   tileCap: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16 },
   trend: { gap: 8, marginBottom: 12 },
   trendLabel: { ...sectionLabel },
+  gridCols: { flexDirection: 'row', gap: 2 },
+  gridCol: { flex: 1, gap: 2 },
+  gridCell: { aspectRatio: 1, borderRadius: 2, borderWidth: StyleSheet.hairlineWidth },
   trendRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 8 },
   trendWeek: { width: 36, alignItems: 'center', gap: 4 },
   trendBar: { width: 24, height: 48, borderRadius: 6, overflow: 'hidden', justifyContent: 'flex-end' },
   trendFill: { width: '100%' },
-  trendNum: { fontFamily: fonts.mono, fontSize: 10 },
-  trendDate: { fontFamily: fonts.mono, fontSize: 9 },
+  trendNum: { fontFamily: fonts.mono, fontSize: 11 },
+  trendDate: { fontFamily: fonts.mono, fontSize: 11 },
   amountRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   amounts: { gap: 6, marginBottom: 12 },
   amountAvg: { fontFamily: fonts.uiSemi, fontSize: 15 },

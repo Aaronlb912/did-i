@@ -1,5 +1,6 @@
 -- Free event items (Halloween 2026: the bat buddy and the boo cheer;
--- Thanksgiving 2026: the turkey buddy and the wishbone cheer).
+-- Thanksgiving 2026: the turkey buddy and the wishbone cheer; the
+-- Product Hunt rocket buddy, which is claimed from a link and is not in the shop).
 -- An item listed in event_catalog can be claimed for free while its window is
 -- open (the same day of slack each way as paid drops). Owners keep it forever.
 -- Mirrors `free: true` items in src/lib/purse.js. Runs just before drop-tonight.sql in db:apply:all.
@@ -23,7 +24,8 @@ insert into public.event_catalog (kind, item_id, live_from, live_until) values
   ('buddy', 'bat', '2026-10-28', '2026-11-01'),
   ('cheer', 'boo', '2026-10-28', '2026-11-01'),
   ('buddy', 'turkey', '2026-11-23', '2026-11-27'),
-  ('cheer', 'wishbone', '2026-11-23', '2026-11-27')
+  ('cheer', 'wishbone', '2026-11-23', '2026-11-27'),
+  ('buddy', 'rocket', '2026-10-27', '2027-01-01')
 on conflict (kind, item_id) do nothing;
 
 -- Its coin stages stay on sale for the people who own it, so no live_until.

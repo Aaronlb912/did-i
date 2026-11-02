@@ -62,6 +62,8 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
   const [busy, setBusy] = useState(false);
   // State lags a fast double tap; this does not, so one tap sends once.
   const inFlight = useRef(false);
+  // One link per question text, so a second Share does not spend the cap.
+  const madeLink = useRef(null);
   const [said, setSaid] = useState("");
   const [cadence, setCadence] = useState("once");
   const [days, setDays] = useState([]);
@@ -113,7 +115,9 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
     inFlight.current = true;
     setMiss("");
     setBusy(true);
-    const { code, miss: why } = await makeDidYouLink(question).catch(() => ({ miss: "people.reach" }));
+    const kept = madeLink.current?.question === question ? madeLink.current.code : null;
+    const { code, miss: why } = kept ? { code: kept } : await makeDidYouLink(question).catch(() => ({ miss: "people.reach" }));
+    if (code) madeLink.current = { question, code };
     setBusy(false);
     if (why || !code) {
       inFlight.current = false;
@@ -132,12 +136,12 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
   }
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible transparent animationType="fade" onRequestClose={busy ? () => {} : onClose}>
       <KeyboardLift>
         <Pressable
           accessible={false}
           style={[styles.veil, { backgroundColor: colors.veil }]}
-          onPress={onClose}
+          onPress={busy ? undefined : onClose}
         >
           <Pressable
             accessible={false}
@@ -167,6 +171,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                   </Pressable>
                 ))}
                 {loadMiss ? <Text style={[styles.miss, { color: colors.miss }]}>{loadMiss}</Text> : null}
+                {loadMiss ? <KeyButton colors={colors} label={t("boot.retry")} onPress={() => { setLoadMiss(""); setFriends(null); }} /> : null}
                 <Pressable
                   onPress={() => setAsLink(true)}
                   accessibilityRole="button"
@@ -289,7 +294,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                   colors={colors}
                   small
                   label={t("didYouLink.share")}
-                  disabled={busy || !question.trim()}
+                  disabled={busy}
                   onPress={shareLink}
                 />
                 <KeyButton
@@ -305,14 +310,14 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                     colors={colors}
                     small
                     label={t("people.send")}
-                    disabled={busy || !question.trim()}
+                    disabled={busy}
                     onPress={send}
                   />
                 </View>
                 <KeyButton
                   colors={colors}
                   label={t("didYouLink.share")}
-                  disabled={busy || !question.trim()}
+                  disabled={busy}
                   onPress={shareLink}
                 />
               </>

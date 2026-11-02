@@ -50,8 +50,8 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
 import { weNextCoinsKey, weRuleKey, weModeKey, weSlotDay, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
-import { boardDate, graceNightIso } from '../../src/lib/recurrence.js'
-import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
+import { boardDate, formatBoardDate, graceNightIso } from '../../src/lib/recurrence.js'
+import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta, OfflineLine } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { goHash, swapHash } from '../navigation/hash.js'
@@ -61,7 +61,7 @@ import { useWeCheer } from '../../src/lib/we-cheer.js'
 import { WeNotes } from '../components/WeNotes.jsx'
 import { endWeLinks, makeWeLink, myWeLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
 import { passAlong } from '../../src/lib/native.js'
-import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
 import { readAmount, togetherLine, weMyWeek, wePutAmount, weTrackAmount, weWeekTotals } from '../../src/lib/social-amounts.js'
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
@@ -531,7 +531,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
     }
     Keyboard.dismiss()
     setBusy(true)
-    const out = await weMake({ ...draft, question, ask: picked, alone: share })
+    const out = await weMake({ ...draft, question, ask: picked, alone: share }).catch(() => ({ miss: 'people.reach' }))
     if (out.miss && !out.id) {
       setBusy(false)
       feel.buzz()
@@ -547,7 +547,8 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
     if (share) {
       const link = await makeWeLink(out.id)
       if (link.code) await passAlong(sharedDidYouLine(question, link.code), t('weLink.share'))
-      else setMiss(t(link.miss === 'linkCap' ? 'didYouLink.cap' : 'weLink.shareLater'))
+      // This screen is about to go; the miss has to outlive it.
+      else confirmMiss(t(link.miss === 'linkCap' ? 'didYouLink.cap' : 'weLink.shareLater'))
     }
     setBusy(false)
     if (picked.length) {
@@ -568,7 +569,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       colors={colors}
       back={false}
       leftAction={{ label: t('hang.cancel'), onPress: leave }}
-      rightAction={{ label: t('we.sendShort'), onPress: () => make(false), disabled: !question || busy }}
+      rightAction={{ label: t('we.sendShort'), onPress: () => once('we-make', () => make(false)), disabled: !question || busy }}
     >
       <HangCard
         ref={inputRef}
@@ -580,7 +581,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
           onBlankChange?.(value)
         }}
         onLeadPress={onLeadPress}
-        onSubmit={() => make(false)}
+        onSubmit={() => once('we-make', () => make(false))}
         leadColor={colors.we}
         placeholder={t('we.blankHint')}
         meta={weWhenWords(draft)}
@@ -691,8 +692,8 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       <WeSheets draft={draft} setDraft={setDraft} sheet={sheet} setSheet={setSheet} colors={colors} />
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.newLead')}</Text>
       {/* The main send, so the link button is never the only one in reach. */}
-      <DidButton colors={colors} label={t('we.make')} disabled={!ready} onPress={() => make(false)} />
-      <KeyButton colors={colors} label={t('weLink.makeShare')} disabled={busy || !question} onPress={() => make(true)} />
+      <DidButton colors={colors} label={t('we.make')} disabled={!ready} onPress={() => once('we-make', () => make(false))} />
+      <KeyButton colors={colors} label={t('weLink.makeShare')} disabled={busy || !question} onPress={() => once('we-make', () => make(true))} />
       <Text style={[styles.hint, { color: colors.inkDim }]}>{t('weLink.hint')}</Text>
       {miss ? (
         <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
@@ -811,7 +812,7 @@ function WeWeek({ card, colors }) {
             key={day.night}
             style={styles.weekDay}
             accessible
-            accessibilityLabel={`${day.night}: ${day.together ? t('we.doneTogether') : ''} ${t(`we.dot.${day.mine}`)}`}
+            accessibilityLabel={[formatBoardDate(day.night), day.together ? t('we.doneTogether') : '', t(`we.dot.${day.mine}`)].filter(Boolean).join(', ')}
           >
             <Text style={[styles.weekWord, { color: colors.inkDim }]} numberOfLines={1}>
               {new Date(`${day.night}T12:00:00`).toLocaleDateString(locale, { weekday: 'narrow' })}
@@ -905,11 +906,12 @@ function WeCardPage({ book, cardId, onChange }) {
     if (totals) {
       totals.then((res) => {
         if (!res.miss) setSum(res.totals.get(found.id) || null)
-      })
+      }).catch(() => {})
     }
     if (!night) return setEarly(null)
     const later = await laterAsk
-    if (later.miss) return undefined
+    // A kept card from another day would name the wrong day; this day's stays.
+    if (later.miss) return setEarly((was) => (was?.night === night ? was : null))
     const then = later.cards.find((c) => c.id === cardId)
     return setEarly(then ? { night, card: then } : null)
   }
@@ -959,7 +961,8 @@ function WeCardPage({ book, cardId, onChange }) {
 
   async function save() {
     setBusy(true)
-    const out = await weEdit(card.id, edit)
+    // A thrown call must not leave Save off for good.
+    const out = await weEdit(card.id, edit).catch(() => ({ miss: 'people.reach' }))
     setBusy(false)
     if (out.miss) return setMiss(tMiss(out.miss))
     setEdit(null)
@@ -1032,9 +1035,9 @@ function WeCardPage({ book, cardId, onChange }) {
       onGo: async () => {
         publishSheet(null)
         const out = await weLeave(card.id)
-        if (out.miss) return setMiss(tMiss(out.miss))
+        if (out.miss) return confirmMiss(tMiss(out.miss))
         confirmDone(t('confirm.weLeft'))
-        goHash('/tonight')
+        goHash('/we')
       },
     })
   }
@@ -1051,7 +1054,7 @@ function WeCardPage({ book, cardId, onChange }) {
       onGo: async () => {
         publishSheet(null)
         const out = await weClose(card.id)
-        if (out.miss) return setMiss(tMiss(out.miss))
+        if (out.miss) return confirmMiss(tMiss(out.miss))
         confirmDone(t('confirm.weClosed'))
         goHash('/we')
       },
@@ -1421,6 +1424,7 @@ export function WeHomeScreen({ book, onChange }) {
   if (account.ready && !account.user) return <NeedAccount book={book} colors={colors} />
   return (
     <ScreenShell book={book} title={t('we.title')} colors={colors}>
+      <OfflineLine colors={colors} />
       <WeHomeList book={book} onChange={onChange} />
     </ScreenShell>
   )
@@ -1585,7 +1589,7 @@ const styles = StyleSheet.create({
   weekWord: { fontFamily: fonts.ui, fontSize: 11 },
   weekDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5 },
   headNames: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 19 },
-  moreBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  moreBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.uiSemi, fontSize: 20, lineHeight: 22 },
   factLine: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 6, gap: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

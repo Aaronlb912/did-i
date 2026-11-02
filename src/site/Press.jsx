@@ -13,7 +13,7 @@ const COLORS = [
   { key: 'miss', hex: '#FF6F61' },
 ]
 
-const SHOTS = [1, 2, 3, 4, 5, 6]
+const SHOTS = [1, 2, 3, 4, 5]
 
 function Save({ href, name }) {
   return (
@@ -97,13 +97,13 @@ export function Press() {
           {SHOTS.map((n) => (
             <figure key={n} className="di-press-shot">
               <img
-                src={`/press/shot-${n}.jpg`}
+                src={`/press/shot-${n}.png`}
                 alt={t('web.press.shotAlt', { n })}
                 loading="lazy"
-                width="540"
-                height="1080"
+                width="1270"
+                height="760"
               />
-              <Save href={`/press/shot-${n}.jpg`} name={`did-i-screenshot-${n}.jpg`} />
+              <Save href={`/press/shot-${n}.png`} name={`did-i-screenshot-${n}.png`} />
             </figure>
           ))}
         </div>

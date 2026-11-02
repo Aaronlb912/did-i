@@ -3,6 +3,7 @@ import { applyPrefsToDocument, readPrefs } from '../lib/prefs.js'
 import { usePrefs } from '../lib/prefs.js'
 import { Beta } from './Beta.jsx'
 import { Download } from './Download.jsx'
+import { Hunt } from './Hunt.jsx'
 import { Invite } from './Invite.jsx'
 import { Landing } from './Landing.jsx'
 import { Press } from './Press.jsx'
@@ -36,6 +37,7 @@ function MarketingPage() {
   if (path === '/download') return <Download />
   if (path === '/press') return <Press />
   if (path === '/beta') return <Beta />
+  if (path === '/hunt' || path === '/hunt/claim') return <Hunt />
   const invite = inviteCodeFromPath(path)
   if (invite) return <Invite code={invite} />
   const scan = scanFromPath(path)

@@ -32,6 +32,9 @@ import { graceRowsFor } from './grace.js'
 import { graceFirst as graceFirstAt, graceNightIso } from './recurrence.js'
 import { onWeNights, weNight } from './we-nights.js'
 
+// Yesterday cards set aside with Not yet, by day.
+const graceSetAside = new Map()
+
 // How long an answer can be taken back.
 export const UNDO_MS = ANSWER_UNDO_MS
 
@@ -56,6 +59,12 @@ export function undoneBook(live, undo) {
   }
 }
 
+// Up to three answers can be taken back, newest first.
+export const UNDO_DEPTH = 3
+export function pushUndo(stack, entry) {
+  return [entry, ...stack].slice(0, UNDO_DEPTH)
+}
+
 export function useTonightStack({
   value,
   boards = [],
@@ -67,13 +76,23 @@ export function useTonightStack({
   focusKey,
 }) {
   const clock = now || new Date()
-  const undoTimer = useRef(null)
+  const undoTimers = useRef(new Map())
   const [faceId, setFaceId] = useState('')
   const [skipReview, setSkipReview] = useState(false)
   const [restNight, setRestNight] = useState(false)
   const [titleEdit, setTitleEdit] = useState(false)
   const [titleDraft, setTitleDraft] = useState(value.title)
-  const [undo, setUndo] = useState(null)
+  const [undoStack, setUndoStack] = useState([])
+  const undo = undoStack[0] || null
+  // A folder switch or a new day hides the card an undo would bring back, so it ends here.
+  const undoTag = useRef(`${tagId}|${boardDate(clock)}`)
+  useEffect(() => {
+    if (undoTag.current === `${tagId}|${boardDate(clock)}`) return
+    undoTag.current = `${tagId}|${boardDate(clock)}`
+    undoTimers.current.forEach((timer) => window.clearTimeout(timer))
+    undoTimers.current.clear()
+    setUndoStack([])
+  }, [tagId, boardDate(clock)])
   const [holePick, setHolePick] = useState(null)
   const [waitPick, setWaitPick] = useState(null)
   const [pillPick, setPillPick] = useState(null)
@@ -126,7 +145,16 @@ export function useTonightStack({
   // The grace period for the previous night: its open questions, one card at
   // a time. A nope sets one aside for now; it stays answerable until 9am.
   const graceNight = graceNightIso(clock)
-  const [graceLeft, setGraceLeft] = useState([])
+  const [graceLeft, setGraceLeftState] = useState(() => graceSetAside.get(graceNight) || [])
+  // Kept for the app's life, so leaving Today does not deal a set-aside card again.
+  function setGraceLeft(update) {
+    setGraceLeftState((keys) => {
+      const next = typeof update === 'function' ? update(keys) : update
+      graceSetAside.clear()
+      if (graceNight) graceSetAside.set(graceNight, next)
+      return next
+    })
+  }
   const graceRows = useMemo(
     () => (graceNight ? graceRowsFor(scopedBooks(shelf, tagId), graceNight).filter((row) => hasAnyTopic(row.lamp, topics)) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,7 +162,7 @@ export function useTonightStack({
   )
   const graceOpen = graceRows.filter((row) => !graceLeft.includes(`${rowKey(row)}:${row.periodKey}`))
   useEffect(() => {
-    setGraceLeft([])
+    setGraceLeftState(graceSetAside.get(graceNight) || [])
   }, [graceNight])
 
   function markGrace(row, status) {
@@ -164,11 +192,15 @@ export function useTonightStack({
   // first. The Did we nights are kept on the phone, so this is known at once.
   const nightDone = hallOn && weTonight.done >= weTonight.due
   const wasDone = useRef(nightDone)
+  const cheerDays = useRef(new Set())
   useEffect(() => {
     // Your own questions were already done; a Did we just finished the night.
     if (!wasDone.current && nightDone && weTonight.due) {
       const to = shelfStreak(shelf, clock, tagId)
-      if (to > 0) setCheer({ dateIso, from: to - 1, to })
+      if (to > 0 && !cheerDays.current.has(dateIso)) {
+        cheerDays.current.add(dateIso)
+        setCheer({ dateIso, from: to - 1, to })
+      }
     }
     wasDone.current = nightDone
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -260,7 +292,7 @@ export function useTonightStack({
 
   useEffect(() => {
     return () => {
-      if (undoTimer.current) window.clearTimeout(undoTimer.current)
+      undoTimers.current.forEach((timer) => window.clearTimeout(timer))
     }
   }, [])
 
@@ -291,18 +323,37 @@ export function useTonightStack({
     return row?.book || shelf.find((item) => item.id === row?.boardId) || value
   }
 
+  function expireUndo(entry) {
+    undoTimers.current.set(entry, window.setTimeout(() => {
+      undoTimers.current.delete(entry)
+      setUndoStack((stack) => stack.filter((item) => item !== entry))
+    }, UNDO_MS))
+  }
+
+  function dropUndo(entry) {
+    window.clearTimeout(undoTimers.current.get(entry))
+    undoTimers.current.delete(entry)
+    setUndoStack((stack) => stack.filter((item) => item !== entry))
+  }
+
   function armUndo(payload) {
-    if (undoTimer.current) window.clearTimeout(undoTimer.current)
-    setUndo(payload)
-    undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
+    setUndoStack((stack) => {
+      const next = pushUndo(stack, payload)
+      stack.filter((item) => !next.includes(item)).forEach((item) => {
+        window.clearTimeout(undoTimers.current.get(item))
+        undoTimers.current.delete(item)
+      })
+      return next
+    })
+    expireUndo(payload)
   }
 
   // The undo toast is on screen now: the window to undo starts over from here,
   // so the whole of it can be tapped.
   function holdUndo() {
     if (!undo) return
-    if (undoTimer.current) window.clearTimeout(undoTimer.current)
-    undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
+    window.clearTimeout(undoTimers.current.get(undo))
+    expireUndo(undo)
   }
 
   function applyUndo() {
@@ -313,19 +364,28 @@ export function useTonightStack({
     if (allClearTonight(current, clock) && !allClearTonight(next, clock)) clearStreakSeen('hit', dateIso)
     setOverlay(next)
     change(next)
-    // The card you took back comes to the front, not the one after it.
-    setFaceId(undo.lampId)
+    // The card you took back comes to the front, not the one after it. A
+    // yesterday card is not today's, so today's stack stays as it was.
+    if (!undo.periodKey || undo.periodKey === dateIso) setFaceId(undo.lampId)
     setSkipReview(false)
     setRestNight(false)
     // The tap may already be on the account; without this the next pull brings it back.
     takeBackAnswer(undo.book, undo.lampId, undo.periodKey).catch(reportRejection('undo-answer'))
-    setUndo(null)
-    if (undoTimer.current) window.clearTimeout(undoTimer.current)
+    dropUndo(undo)
     feelTap('undo')
   }
 
+  // Two taps before a render both read the old book: the second would
+  // save again and arm a second undo that takes coins off twice.
+  const marking = useRef('')
+  useEffect(() => {
+    marking.current = ''
+  })
   function mark(row, status) {
     if (!row) return
+    const markKey = `${rowKey(row)}:${row.periodKey}:${status}`
+    if (marking.current === markKey) return
+    marking.current = markKey
     const book = bookOf(row)
     const liveAnswer = answerFor(book, row.lamp.id, row.periodKey)
     if (
@@ -382,9 +442,15 @@ export function useTonightStack({
       feelTap('hall-on')
       const afterBooks = shelf.map((item) => (item.id === next.id ? next : item))
       const afterStreak = shelfStreak(afterBooks, clock, tagId)
-      if (afterStreak > 0) setCheer({ dateIso, from: afterStreak - 1, to: afterStreak })
+      const beforeStreak = shelfStreak(shelf, clock, tagId)
+      // Once a day: clear, Undo, Did again does not roll the cheer twice.
+      // A late Did that joins two runs rolls from the real count, not one less.
+      if (afterStreak > 0 && !cheerDays.current.has(dateIso)) {
+        cheerDays.current.add(dateIso)
+        setCheer({ dateIso, from: Math.min(beforeStreak, afterStreak - 1), to: afterStreak })
+      }
       const hit = maybeStreakHit({
-        beforeHeat: shelfStreak(shelf, clock, tagId),
+        beforeHeat: beforeStreak,
         afterHeat: afterStreak,
         clearedTonight: true,
         dateIso,

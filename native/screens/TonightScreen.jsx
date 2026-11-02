@@ -34,8 +34,8 @@ import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
-import { fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
-import { usePrefs, useTheme } from '../../src/lib/prefs.js'
+import { coinsToday, fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
+import { awayKey, usePrefs, useTheme } from '../../src/lib/prefs.js'
 import { answerFor, isEvery } from '../../src/lib/recurrence.js'
 import { lastTimeLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
@@ -54,7 +54,6 @@ import { useHoldMarks } from '../lib/mark-hold.js'
 import { useAnswerButtons } from '../lib/swipe-wheels.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
 import { TOAST_ROOM } from '../components/ToastHost.jsx'
-import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import { useOnline } from '../hooks/useOnline.js'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
@@ -89,7 +88,7 @@ import { pickSocialLine } from '../../src/lib/social-line.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { weOpenOn } from '../../src/lib/we-nights.js'
 import { didStatusForRow, graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
-import { saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weClaim, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
+import { notMyTurn, saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weClaim, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
@@ -309,6 +308,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     })
   }, [account.user, we.cards])
   const purse = mergePurses(stack.shelf)
+  const dayCoins = coinsToday(stack.clock)
   const wish = wishLine(wishGoal(purse))
   // Focus comes from navigation events, not useIsFocused: that re-rendered
   // this whole screen as a page opened over it and again as it came back,
@@ -346,7 +346,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const notYetTour = useTourTarget('notYet')
   const frozen = stack.shelf ? freezeState(stack.shelf, stack.clock).frozen : null
   // Best run ever, so a streak reached before frames shipped still earns them.
-  const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
+  const bestEver = useMemo(() => (stack.shelf ? bestShelfStreak(stack.shelf, stack.clock) : 0), [stack.shelf, stack.dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const frameCtx = { bestStreak: Math.max(stack.streak, bestEver), streak: stack.streak, everFrozen: Boolean(frozen && frozen.size), today: stack.dateIso }
   const wornId = wornFrame(purse, frameCtx)
   // The toast's Wear it runs later, so it reads the book as it is then.
@@ -671,7 +671,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }
   // Marks wait while the night's celebration plays, then come one at a time.
   useHoldMarks(Boolean(stack.cheer), CELEBRATE_MS)
-  // Undo joins the one toast line above the tab bar. Shake undo is off (see useShakeUndo).
+  // Undo joins the one toast line above the tab bar.
   // Undo sends the card back the way it left.
   const applyUndo = stack.applyUndo
   const undoAnswer = useCallback(() => {
@@ -690,7 +690,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     return { ...undoNow, extra: { label: t('note.addShort'), onPress: () => openAnswerNote({ ...target, ...noteDeps.current }) } }
   }, [undoNow])
   useUndoToast('tonight', undoToast, undoAnswer, UNDO_MS, t('tonight.undoTap'), stack.holdUndo)
-  useShakeUndo(Boolean(stack.undo), undoAnswer)
   // An answer saved with no signal says where it is, once per offline stretch.
   const online = useOnline()
   // It waits for the undo toast to clear so undo stays on screen, and only says so when signed in.
@@ -824,8 +823,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }).map((item) => {
     const { row } = item
     if (item.kind === 'family') {
-      const save = (status) => () =>
-        peopleAnswer(
+      const save = (status) => () => {
+        // A card left open past midnight belongs to yesterday: reload, don't save.
+        if (row.night && row.night !== boardDate()) return family.reload()
+        return peopleAnswer(
           item.key,
           // The day at tap time: Today may have stayed open past midnight.
           () => answerFamilyLamp(row.family.id, row.lamp.id, boardDate(), status),
@@ -836,6 +837,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           status,
           family.reload,
         )
+      }
       return {
         ...item,
         kicker: row.family.name,
@@ -1009,6 +1011,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }, [stack.dateIso, graceShowing, Boolean(stack.cheer), Boolean(summary?.recap)])
   const pullWait = Boolean(account.user) && firstPullWaiting(sync) && !stack.cheer && stack.bodyKind !== 'face'
   let face = null
+  const weTop = weSwipe ? weOpenForMe(weCards, new Date(), { early: true })[0] : null
   // The done card grows (note, sign-in, recap). Centred in a fixed slot it
   // spilled under the meter and the tab bar, so it scrolls instead.
   let doneFace = false
@@ -1040,7 +1043,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     face = graceTop ? withAnswerButtons(graceCard, graceTop.onDid, graceTop.onNope) : graceCard
   } else if (pickedWe && !stack.cheer) {
     // A picked Did we stays up after its answer, with its stamp, like your own pills.
-    const open = !weMine(pickedWe)?.status && !pickedWe.done
+    const open = !weMine(pickedWe)?.status && !pickedWe.done && !notMyTurn(pickedWe)
     face = (
       <WeSwipeCard
         cards={[pickedWe]}
@@ -1054,9 +1057,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       />
     )
     if (open) face = withAnswerButtons(face, () => weAns.answer(pickedWe, 'did'), () => weAns.answer(pickedWe, 'nope'))
-  } else if (weSwipe && weOpenForMe(weCards, new Date(), { early: true }).length) {
+  } else if (weTop) {
     // Like Did you: the open Did we is a card in the stack, with the same buttons.
-    const weTop = weOpenForMe(weCards, new Date(), { early: true })[0]
     face = withAnswerButtons(weSwipe, () => weAns.answer(weTop, 'did'), () => weAns.answer(weTop, 'nope'))
   } else if (peopleSwipe) {
     face = withAnswerButtons(peopleSwipe, peopleTop.onDid, peopleTop.onNope)
@@ -1067,6 +1069,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     const famDid = (row) => {
       const key = famKey(row)
       if (famBusy.current.has(key)) return
+      if (row.night && row.night !== boardDate()) return family.reload()
       famBusy.current.add(key)
       peopleAnswer(
         key,
@@ -1186,7 +1189,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             <Pressable
               onPress={() => goHash('/stats')}
               accessibilityRole="button"
-              accessibilityHint={t('stats.title')}
+              accessibilityLabel={`${t(stack.streak === 1 ? 'tonight.streakOne' : 'tonight.streakMany', { n: stack.streak })}, ${t('stats.title')}`}
               style={styles.streakTap}
             >
               <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
@@ -1208,12 +1211,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           ) : null}
           <View style={styles.tomorrowRow}>
             {summary ? (
-              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow)}</Text>
+              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow, gentle ? 0 : stack.streak)}</Text>
             ) : null}
             <TonightNote quiet rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
           </View>
+          {dayCoins > 0 ? (
+            <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsToday', { n: dayCoins, total: purse.coins })}</Text>
+          ) : null}
           {wish ? (
-            <Pressable accessibilityRole="link" accessibilityHint={t('shop.wishTitle')} onPress={() => goHash('/kit', { id: 'wish' })} hitSlop={8}>
+            <Pressable accessibilityRole="button" accessibilityLabel={`${t(wish.key, { n: wish.n, name: t(wish.nameKey) })}, ${t('shop.wishTitle')}`} onPress={() => goHash('/kit', { id: 'wish' })} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
                 {t(wish.key, { n: wish.n, name: t(wish.nameKey) })} <Text style={{ color: colors.on }}>›</Text>
               </Text>
@@ -1275,7 +1281,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
         <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.emptyKicker')}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.emptyTitle')}</Text>
-        <StarterPicks book={book} onChange={onChange} colors={colors} />
+        <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('first.title')}</Text>
+        {/* The first question opens now, so the first Did and the tour never wait for tonight. */}
+        <StarterPicks book={book} onChange={onChange} colors={colors} readyNow />
         <DidButton label={t('tonight.write')} colors={colors} small onPress={() => goHash('/add')} />
         {firstAdd && !account.user ? (
           // The menu waits for a first question, so signing in has to be here.
@@ -1515,8 +1523,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
                 key={`we:${card.id}`}
                 label={weShort(card.question)}
                 tag={t('we.title')}
-                on={mine === 'did'}
-                skip={mine === 'nope'}
+                on={mine === 'did' || Boolean(card.done)}
+                skip={mine === 'nope' && !card.done}
                 face={wePick === card.id}
                 colors={{ ...colors, on: colors.we || colors.on }}
                 onPress={() => {

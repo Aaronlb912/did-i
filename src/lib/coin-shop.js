@@ -1,5 +1,5 @@
 import { accountSessionOn, readAccountUserId } from './session-id.js'
-import { buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, liveCheers, liveLooks, nextCheerStage, shopBuddies, normalizePurse, wearAccessory } from './purse.js'
+import { buyAccessory, buyBuddy, buyCheer, buyCheerStage, buyLook, claimHuntBuddy, liveBuddies, liveCheers, liveLooks, nextCheerStage, shopBuddies, normalizePurse, wearAccessory } from './purse.js'
 import { accessoryById } from './accessories.js'
 import { applyGemOwnedToBook, applyPurchaseToBook, claimFreeItem, purchaseWithCoins, purchaseWithGems, readGemOwned } from './wallet.js'
 import { buyFrameLocal, frameById, frameForSale } from './frames.js'
@@ -48,7 +48,7 @@ async function buyLookWithCoinsRaw(book, id) {
 async function buyCheerStageWithCoinsRaw(book, id) {
   if (accountSessionOn()) {
     const shown = nextCheerStage(normalizePurse(book).cheerStages[id] || 1)
-    const remote = await purchaseWithCoins('cheer_stage', id)
+    const remote = await purchaseWithCoins('cheer_stage', id, shown)
     if (remote.miss) return { book, miss: remote.miss, missN: remote.missN }
     // The server counts bought stages; the phone also counts uses. Keep the stage that was paid for.
     const next = applyPurchaseToBook(book, remote)
@@ -100,11 +100,16 @@ async function buyWithGemsRaw(book, kind, id) {
   return { book: applyGemOwnedToBook(book, remote.owned, { [how.on]: id }), miss: '' }
 }
 
+function claimLocalBuddy(book, id) {
+  return id === 'rocket' ? claimHuntBuddy(book) : buyBuddy(book, id)
+}
+
 // A free event item (docs/shop-drops.md). Signed in, the server records it
 // while its window is open; signed out, it is kept on this phone, like a
 // season frame. Not live (or not yet): the same "gone" miss as a buy.
 async function claimFreeRaw(book, kind, id) {
-  const how = GEM_KINDS[kind]
+  // The Product Hunt buddy is not in the shop list, so it is looked up in every live buddy.
+  const how = kind === 'buddy' ? { ...GEM_KINDS.buddy, list: liveBuddies, local: claimLocalBuddy } : GEM_KINDS[kind]
   const item = how?.list().find((row) => row.id === id)
   const purse = normalizePurse(book)
   if (!how) return { book, miss: 'shop.miss.buyFail' }
@@ -116,6 +121,8 @@ async function claimFreeRaw(book, kind, id) {
     const owned = await readGemOwned().catch(() => null)
     if (owned?.[how.owned]?.includes(id)) remote = { miss: '', owned }
   }
+  // Offline: the Product Hunt buddy stays on this phone and catchUpFreeClaims sends it later.
+  if (remote.miss === 'shop.miss.buyFail' && item.hunt) return how.local(book, id)
   if (remote.miss) return { book, miss: remote.miss }
   return { book: applyGemOwnedToBook(book, remote.owned, { [how.on]: id }), miss: '' }
 }

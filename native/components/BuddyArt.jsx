@@ -23,6 +23,7 @@ const COAT = {
   reindeer: { body: '#a8703f', belly: '#f0d6b0', ear: '#c9a06a' },
   bat: { body: '#6b5a8e', belly: '#d9ccef', ear: '#f4a6c4' },
   turkey: { body: '#8a5a34', belly: '#d1a271', ear: '#e8862f' },
+  rocket: { body: '#ff6154', belly: '#fff3e0', ear: '#c7362b' },
 }
 
 function spot(box, x, y, w, h, color, radius) {
@@ -198,6 +199,28 @@ export function BuddyPlain({ id, width = 48, height = 58 }) {
         <View style={spot(box, 22.3, 31, 3.4, 2.4, coat.ear)} />
         <View style={spot(box, 12.5, 42.7, 9, 5.6, '#4f4170')} />
         <View style={spot(box, 26.5, 42.7, 9, 5.6, '#4f4170')} />
+      </View>
+    )
+  }
+  if (id === 'rocket') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 8, 36, 7, 14, coat.ear)} />
+        <View style={spot(box, 33, 36, 7, 14, coat.ear)} />
+        <View style={spot(box, 11.5, 16, 25, 30, coat.body)} />
+        <View style={spot(box, 18, 21, 12, 12, coat.belly)} />
+        <View style={spot(box, 19.6, 22.6, 8.8, 8.8, '#5fb6f0')} />
+      </View>
+    )
+  }
+  if (id === 'rocket') {
+    return (
+      <View style={{ width, height }}>
+        <View style={spot(box, 8, 36, 7, 14, coat.ear)} />
+        <View style={spot(box, 33, 36, 7, 14, coat.ear)} />
+        <View style={spot(box, 11.5, 16, 25, 30, coat.body)} />
+        <View style={spot(box, 18, 21, 12, 12, coat.belly)} />
+        <View style={spot(box, 19.6, 22.6, 8.8, 8.8, '#5fb6f0')} />
       </View>
     )
   }
@@ -380,6 +403,8 @@ const EYES = {
     [[19.5, 28, 2.4, 3, DARK], [20.3, 27, 0.8, 1, ...SHINE]],
     [[28.5, 28, 2.4, 3, DARK], [29.3, 27, 0.8, 1, ...SHINE]],
   ],
+  // No face: a plain rocket.
+  rocket: [],
   reindeer: [
     [[19.5, 27, 2.2, 2.8, DARK], [20.2, 26.1, 0.7, 0.9, ...SHINE]],
     [[28.5, 27, 2.2, 2.8, DARK], [29.2, 26.1, 0.7, 0.9, ...SHINE]],
@@ -849,6 +874,48 @@ function BuddyDrawing({ id, width, height, eyes }) {
         <Ellipse cx="31.5" cy="32.2" rx="2.2" ry="1.3" fill="#f59aa8" opacity="0.7" />
         <Ellipse cx="17" cy="45.5" rx="4.5" ry="2.8" fill="#4f4170" />
         <Ellipse cx="31" cy="45.5" rx="4.5" ry="2.8" fill="#4f4170" />
+      </Svg>
+    )
+  }
+
+  if (id === 'rocket') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Polygon points="19.6,46 28.4,46 24,55" fill="#ff9f1c" />
+        <Polygon points="21.7,46 26.3,46 24,51.5" fill="#ffe27a" />
+        <Ellipse cx="12.8" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(26 12.8 41)" />
+        <Ellipse cx="35.2" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(-26 35.2 41)" />
+        <Ellipse cx="24" cy="31" rx="12.5" ry="15" fill="#ff6154" />
+        <Polygon points="13.8,22 34.2,22 24,6.5" fill="#ff6154" />
+        <Ellipse cx="27.5" cy="32" rx="6" ry="13" fill="#e5493d" opacity="0.55" />
+        <Ellipse cx="18.5" cy="29" rx="1.8" ry="9" fill="#ffffff" transform="rotate(-6 18.5 29)" opacity="0.35" />
+        <Polygon points="19.9,12.8 28.1,12.8 24,6.5" fill="#c7362b" />
+        <Ellipse cx="24" cy="45.3" rx="5.6" ry="1.8" fill="#8f2a22" />
+        <Ellipse cx="24" cy="27" rx="6" ry="6" fill="#fff3e0" />
+        <Ellipse cx="24" cy="27" rx="4.4" ry="4.4" fill="#5fb6f0" />
+        <Ellipse cx="24" cy="27" rx="6" ry="6" fill="none" stroke="#c7362b" strokeWidth="1.1" />
+        <Ellipse cx="22.6" cy="25.4" rx="1.4" ry="1" fill="#ffffff" transform="rotate(-30 22.6 25.4)" opacity="0.85" />
+      </Svg>
+    )
+  }
+
+  if (id === 'rocket') {
+    return (
+      <Svg width={width} height={height} viewBox="0 0 48 58">
+        <Polygon points="19.6,46 28.4,46 24,55" fill="#ff9f1c" />
+        <Polygon points="21.7,46 26.3,46 24,51.5" fill="#ffe27a" />
+        <Ellipse cx="12.8" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(26 12.8 41)" />
+        <Ellipse cx="35.2" cy="41" rx="3.2" ry="7.8" fill="#c7362b" transform="rotate(-26 35.2 41)" />
+        <Ellipse cx="24" cy="31" rx="12.5" ry="15" fill="#ff6154" />
+        <Polygon points="13.8,22 34.2,22 24,6.5" fill="#ff6154" />
+        <Ellipse cx="27.5" cy="32" rx="6" ry="13" fill="#e5493d" opacity="0.55" />
+        <Ellipse cx="18.5" cy="29" rx="1.8" ry="9" fill="#ffffff" transform="rotate(-6 18.5 29)" opacity="0.35" />
+        <Polygon points="19.9,12.8 28.1,12.8 24,6.5" fill="#c7362b" />
+        <Ellipse cx="24" cy="45.3" rx="5.6" ry="1.8" fill="#8f2a22" />
+        <Ellipse cx="24" cy="27" rx="6" ry="6" fill="#fff3e0" />
+        <Ellipse cx="24" cy="27" rx="4.4" ry="4.4" fill="#5fb6f0" />
+        <Ellipse cx="24" cy="27" rx="6" ry="6" fill="none" stroke="#c7362b" strokeWidth="1.1" />
+        <Ellipse cx="22.6" cy="25.4" rx="1.4" ry="1" fill="#ffffff" transform="rotate(-30 22.6 25.4)" opacity="0.85" />
       </Svg>
     )
   }

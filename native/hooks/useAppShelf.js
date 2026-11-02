@@ -156,7 +156,7 @@ export function useAppShelf() {
       })
     }
     if (accountSessionOn() && bumped.gemWeek && bumped.gemWeek !== (shelf.gemWeek || '')) {
-      grantWeeklyGem(bumped.gemWeek).then((bal) => {
+      grantWeeklyGem(bumped.gemWeek).catch(() => null).then((bal) => {
         if (!sameAccount()) return
         // Not granted: forget the week so the next cleared night asks again.
         if (bal == null) {
@@ -212,10 +212,12 @@ export function useAppShelf() {
         next = putBook(next, takeDown(source, lamp))
         dest = {
           ...hangInto(target, lamp, false),
+          // A question moving in brings a parked folder back, as moveLamps does.
+          archived: false,
           answers: [...(target.answers || []).filter((item) => item.lampId !== lamp.id), ...answers],
         }
       } else {
-        dest = hangInto(target, lamp, Boolean(source && source.id === target.id))
+        dest = { ...hangInto(target, lamp, Boolean(source && source.id === target.id)), archived: false }
       }
       persist(putBook(next, commitBook(dest, clock)))
     },

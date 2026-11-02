@@ -1,7 +1,8 @@
 // Your own Did we nights: each night a Did we was due for you and what you
 // swiped (my_we_nights). Tonight's count and your streak read these next to
-// your own questions. Only your swipe counts: did is done; nope or no answer
-// leaves the night open, the same as one of your own questions.
+// your own questions. Your did is done, and so is a card someone else
+// finished (an any card one of you swiped): nobody has to swipe it again.
+// Nope or no answer on an unfinished card leaves the night open.
 import { cloud, cloudSetUp } from './cloud.js'
 import { readSavedAt } from './saved-at.js'
 import { tagIdsOf } from './tags.js'
@@ -58,6 +59,36 @@ export function markWeNight(card, night, status) {
   )
 }
 
+// Card+night pairs seen finished, kept so a refresh from a server without
+// my_we_nights.done does not reopen them. The last 60 days only.
+const DONE_KEY = 'did-i-we-done'
+function doneKept() {
+  try {
+    return new Set(JSON.parse(globalThis.localStorage?.getItem(DONE_KEY) || '[]'))
+  } catch {
+    return new Set()
+  }
+}
+function keepDone(ids, night) {
+  const cut = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10)
+  const kept = [...doneKept()].filter((key) => key.slice(-10) >= cut)
+  for (const id of ids) if (!kept.includes(`${id}|${night}`)) kept.push(`${id}|${night}`)
+  try {
+    globalThis.localStorage?.setItem(DONE_KEY, JSON.stringify(kept))
+  } catch {
+    // Kept for this run by the rows themselves.
+  }
+}
+
+// A card finished tonight by someone else, from the live cards, so the day
+// clears before my_we_nights says so. Only rows already there.
+export function markWeDone(ids, night) {
+  const want = new Set(ids)
+  keepDone(ids, night)
+  if (!rows.some((row) => want.has(row.card) && row.night === night && row.status !== 'did')) return
+  setWeNightRows(rows.map((row) => (want.has(row.card) && row.night === night ? { ...row, status: 'did' } : row)))
+}
+
 export function weNightStatus(nightIso, card) {
   return (index().get(nightIso) || []).find((row) => row.card === card)?.status || ''
 }
@@ -68,6 +99,11 @@ let nightsRun = 0
 
 export function clearWeNights() {
   nightsRun += 1
+  try {
+    globalThis.localStorage?.removeItem(DONE_KEY)
+  } catch {
+    // Nothing kept.
+  }
   setWeNightRows([])
 }
 
@@ -140,7 +176,7 @@ export async function refreshWeNights() {
       card: String(row.card_id || ''),
       folder: String(row.folder || ''),
       night: String(row.night || '').slice(0, 10),
-      status: String(row.status || ''),
+      status: row.done === true || doneKept().has(`${row.card_id}|${String(row.night || '').slice(0, 10)}`) ? 'did' : String(row.status || ''),
       paused: row.paused === true,
     })),
   )

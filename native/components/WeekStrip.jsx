@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  shiftBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  shiftBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   shift: { fontSize: 20, lineHeight: 22 },
   labelHit: { flex: 1, alignItems: 'center' },
   open: { fontFamily: fonts.uiSemi, fontSize: 12.5 },

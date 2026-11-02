@@ -35,6 +35,8 @@ export function settleTapEarnings(before, after, clock = new Date(), onShelf) {
   }
   if (shelf.gemWeek && shelf.gemWeek !== (before?.gemWeek || '')) {
     grantWeeklyGem(shelf.gemWeek)
+      // A dropped call is the same as not granted: roll the week back below.
+      .catch(() => null)
       .then((balance) => {
         if (!sameAccount()) return
         // Not granted (offline, signed out): forget the week so the next
