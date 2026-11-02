@@ -38,6 +38,7 @@ import {
   lookUpFamily,
   familyCodeOk,
   listBlocks,
+  listCheersGot,
   listFamilies,
   listFriends,
   listAutoAdds,
@@ -78,6 +79,7 @@ import {
   FRIEND_CHEER_CAP,
   FRIEND_CHEER_GEMS,
   FRIEND_CHEERS_PER_GEM,
+  cheerText,
   fireCheer,
   friendCheerMissKey,
   applyInvitePayout,
@@ -1178,6 +1180,27 @@ export function PeopleScreen({ book, onChange }) {
         </Meta>
       ) : null}
 
+      {got.ready ? (
+        <>
+          <SectionHead colors={colors} label={t('cheersGot.title')} />
+          {got.miss ? <Miss colors={colors} onRetry={load}>{got.miss}</Miss> : null}
+          {!got.miss && !got.rows.length ? <Meta colors={colors}>{t('cheersGot.empty')}</Meta> : null}
+          {got.rows.map((row) => (
+            <Pressable
+              key={row.id}
+              accessibilityRole="button"
+              onPress={() => (row.cheer_id ? fireCheer(row.cheer_id, 1) : undefined)}
+            >
+              <PersonRow
+                colors={colors}
+                title={t('cheersGot.from', { name: row.display_name || t('people.someone') })}
+                note={[t(cheerText(row.cheer_id, 'name')), row.note, gotDay(row.made_at)].filter(Boolean).join(' · ')}
+              />
+            </Pressable>
+          ))}
+        </>
+      ) : null}
+
       <Miss colors={colors}>{miss}</Miss>
       {said ? <Meta colors={colors}>{said}</Meta> : null}
 
@@ -1521,6 +1544,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
   // A friend request push lands on Requests.
   const [tab, setTab] = useState(highlightAsk ? 'requests' : '')
   const [blockedOpen, setBlockedOpen] = useState(false)
+  const [got, setGot] = useState({ rows: [], miss: '', ready: false })
   const cheersLeft = stock == null ? purse.friendCheers : stock
 
   const load = useCallback(async () => {
@@ -1529,12 +1553,14 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
       return
     }
     try {
-      const [friendRows, blockRows, serverCheers, autoRows] = await Promise.all([
+      const [friendRows, blockRows, serverCheers, autoRows, gotRows] = await Promise.all([
         listFriends(),
         listBlocks(),
         readFriendCheers(),
         listAutoAdds(),
+        listCheersGot().catch(() => ({ miss: 'people.reach', rows: [] })),
       ])
+      setGot({ rows: gotRows.rows, miss: gotRows.miss ? tMiss(gotRows.miss) : '', ready: true })
       if (!friendRows.miss) setLinks(friendRows)
       setBlocks(blockRows)
       setAutoAdds(autoRows)
@@ -1920,6 +1946,16 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
       ) : null}
     </ScreenShell>
   )
+}
+
+// Today, Yesterday, then the date.
+function gotDay(iso) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) / 86400000)
+  if (days <= 0) return t('time.today')
+  if (days === 1) return t('time.yesterday')
+  return d.toLocaleDateString()
 }
 
 function FamilyListScreen({ colors }) {

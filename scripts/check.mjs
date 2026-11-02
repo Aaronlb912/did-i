@@ -10392,3 +10392,13 @@ test('a tap on an answered or removed question says so once, and a missed invite
   assert.ok(host.includes('takeInviteMiss()'), 'the host shows the kept miss')
   for (const key of ['invite.missUsed', 'invite.missSelf', 'invite.missBad', 'tonight.focusGone']) assert.ok(t(key) !== key, key)
 })
+
+test('cheers you got: list function is applied before drop-tonight and hides blocked senders', () => {
+  const order = readFileSync(new URL('../scripts/apply-all-sql.mjs', import.meta.url), 'utf8')
+  assert.ok(order.indexOf("'supabase/cheers-got.sql'") > 0)
+  assert.ok(order.indexOf("'supabase/cheers-got.sql'") < order.indexOf("'supabase/drop-tonight.sql'"))
+  const sql = readFileSync(new URL('../supabase/cheers-got.sql', import.meta.url), 'utf8')
+  assert.ok(sql.includes('not public.blocked_with(s.from_id)'), 'blocked senders are hidden')
+  assert.ok(sql.includes('(select auth.uid())') && sql.includes('limit 20'))
+  for (const key of ['cheersGot.title', 'cheersGot.empty', 'cheersGot.from']) assert.ok(t(key) !== key, key)
+})
