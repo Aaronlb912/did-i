@@ -1311,7 +1311,7 @@ function EveryNStep({ draft, dateIso, onChange, colors }) {
         accessible
         accessibilityRole="adjustable"
         accessibilityLabel={t('hang.everyNDays')}
-        accessibilityValue={{ min: 2, max: EVERY_N_MAX, now: n || 2 }}
+        accessibilityValue={{ min: 2, max: EVERY_N_MAX, now: n || 2, text: String(n || 2) }}
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={(event) => {
           if (event.nativeEvent.actionName === 'increment' && n < EVERY_N_MAX) step(1)
@@ -1322,7 +1322,7 @@ function EveryNStep({ draft, dateIso, onChange, colors }) {
           onPress={() => step(-1)}
           disabled={n <= 2}
           accessibilityRole="button"
-          accessibilityLabel={`${t('hang.everyNDays')} −`}
+          accessibilityLabel={t('hang.fewerDays')}
           style={[styles.stepBtn, { borderColor: colors.line, backgroundColor: colors.panel2, opacity: n <= 2 ? 0.5 : 1 }]}
         >
           <Text style={[styles.stepGlyph, { color: colors.ink }]}>−</Text>
@@ -1334,7 +1334,7 @@ function EveryNStep({ draft, dateIso, onChange, colors }) {
           onPress={() => step(1)}
           disabled={n >= EVERY_N_MAX}
           accessibilityRole="button"
-          accessibilityLabel={`${t('hang.everyNDays')} +`}
+          accessibilityLabel={t('hang.moreDays')}
           style={[styles.stepBtn, { borderColor: colors.line, backgroundColor: colors.panel2 }]}
         >
           <Text style={[styles.stepGlyph, { color: colors.ink }]}>+</Text>
@@ -1699,7 +1699,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   }
 
   // another: Add another saves, then starts a blank question on the same screen.
-  function save(another = false) {
+  function save(another = false, confirmed = false) {
     if (stamp) return
     // Deleted somewhere else while this was open: saving would bring it back empty.
     if (lampId && !existing) {
@@ -1731,6 +1731,24 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     Keyboard.dismiss()
     // A blank folder name on an edit keeps the question where it is.
     const target = bookForTag(boards, existing && sourceBook ? sourceBook : book, hang.tagTitle)
+    const words = String(next.question || '').trim().toLowerCase()
+    const twin = (target.lamps || []).some(
+      (item) => !item.archived && !item.paused && item.id !== existing?.id && String(item.question || '').trim().toLowerCase() === words,
+    )
+    if (twin && !confirmed) {
+      publishSheet({
+        title: t('hang.dupTitle'),
+        goLabel: t('hang.dupAdd'),
+        closeLabel: t('hang.cancel'),
+        colors,
+        onClose: () => publishSheet(null),
+        onGo: () => {
+          publishSheet(null)
+          save(another, true)
+        },
+      })
+      return
+    }
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
     // Only an edit moves from its old folder; a copy is new wherever it lands.
     if (onSaveTo) onSaveTo(target, next, existing ? sourceBook : null)
@@ -1740,7 +1758,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
     if (another === true && onAnother && !hang.editing) {
       playClick()
-      confirmDone(t('confirm.questionAdded'))
+      confirmDone(isDueOn(next, dateIso) || everyDueOn(target, next, dateIso) ? t('hang.landTonight') : t('confirm.questionAdded'))
       offerPingPrimer(newTime, colors)
       onAnother()
       return
@@ -2141,6 +2159,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                 />
               ) : null}
             </View>
+            {/* Above the box: the page scrolls the box to just over the keyboard, so a line under it would hide. */}
+            {hang.tagTitle.trim() && !findBookByTitle(boards, hang.tagTitle.trim()) ? (
+              <Text style={[styles.fieldHint, styles.fieldHintTop, { color: colors.inkDim }]}>{t('hang.tagWillMake', { name: hang.tagTitle.trim() })}</Text>
+            ) : null}
             {newTag || !hang.knownTag ? (
               <FoldInput
                 label={t('hang.tagNew')}
@@ -2152,9 +2174,6 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                 returnKeyType="done"
                 colors={colors}
               />
-            ) : null}
-            {hang.tagTitle.trim() && !findBookByTitle(boards, hang.tagTitle.trim()) ? (
-              <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.tagWillMake', { name: hang.tagTitle.trim() })}</Text>
             ) : null}
             {hang.parkedTags.length ? (
               <>
@@ -2855,6 +2874,7 @@ const styles = StyleSheet.create({
   },
   fieldHint: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 17, marginTop: 8 },
   fieldHintTight: { marginTop: -4 },
+  fieldHintTop: { marginBottom: 4 },
   summaryTap: { paddingBottom: 12 },
   summaryRow: { flexDirection: 'row', alignItems: 'flex-start' },
   summaryText: { flex: 1 },
