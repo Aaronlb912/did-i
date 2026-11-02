@@ -905,11 +905,12 @@ function WeCardPage({ book, cardId, onChange }) {
     if (totals) {
       totals.then((res) => {
         if (!res.miss) setSum(res.totals.get(found.id) || null)
-      })
+      }).catch(() => {})
     }
     if (!night) return setEarly(null)
     const later = await laterAsk
-    if (later.miss) return undefined
+    // A kept card from another day would name the wrong day; this day's stays.
+    if (later.miss) return setEarly((was) => (was?.night === night ? was : null))
     const then = later.cards.find((c) => c.id === cardId)
     return setEarly(then ? { night, card: then } : null)
   }
