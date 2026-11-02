@@ -436,6 +436,8 @@ export const zh = {
   'streak.riskTitle': 'Did I',
   'streak.riskBody': "今天完成，或在明天{time}前完成，才能保持连续记录。",
   'streak.graceBody': "昨天还有没回答的问题。{time}前都可以回答。",
+  'notif.stillOpen': "还没回答：{question}",
+  'notif.stillOpenMany': "还有{n}个问题没回答",
   'cal.kicker': '连续记录',
   'cal.prev': '上个月',
   'cal.next': '下个月',

@@ -444,6 +444,8 @@ export const es = {
   'streak.riskTitle': 'Racha en riesgo',
   'streak.riskBody': "Termina hoy, o antes de las {time} de mañana, para mantener tu racha.",
   'streak.graceBody': "Aún queda algo abierto de ayer. Tienes hasta las {time}.",
+  'notif.stillOpen': "Sigue abierta: {question}",
+  'notif.stillOpenMany': "{n} preguntas siguen abiertas",
   'cal.kicker': 'Racha',
   'cal.prev': 'Mes anterior',
   'cal.next': 'Mes siguiente',

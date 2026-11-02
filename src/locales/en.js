@@ -443,6 +443,8 @@ export const en = {
   'streak.riskTitle': 'Did I',
   'streak.riskBody': "Finish today, or by {time} tomorrow, to keep your streak.",
   'streak.graceBody': "Still open from yesterday. You have until {time}.",
+  'notif.stillOpen': "Still open: {question}",
+  'notif.stillOpenMany': "{n} questions still open",
   'cal.kicker': 'Streak',
   'cal.prev': 'Earlier month',
   'cal.next': 'Later month',

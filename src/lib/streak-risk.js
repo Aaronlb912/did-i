@@ -34,13 +34,15 @@ export function streakRiskFire(book, now = new Date(), heat) {
   }
 }
 
-// Midnight, while tonight is still open and a streak is going: the grace
-// period for the previous night has started and runs until 9am.
+// 7am, while tonight is still open and a streak is going: the grace
+// period for the previous night is running and ends at 9am.
+export const GRACE_RISK_HOUR = 7
+
 export function graceRiskFire(book, now = new Date(), heat) {
   if (!streakAtRisk(book, now, heat)) return null
   const dateIso = boardDate(now)
   const [year, month, day] = dateIso.split('-').map(Number)
-  const at = new Date(year, month - 1, day + 1, 0, 0, 0, 0)
+  const at = new Date(year, month - 1, day + 1, GRACE_RISK_HOUR, 0, 0, 0)
   if (at.getTime() <= now.getTime()) return null
   return { at: at.getTime(), tag: `grace-risk:${dateIso}` }
 }
