@@ -50,7 +50,7 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
 import { weNextCoinsKey, weRuleKey, weModeKey, weSlotDay, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
-import { boardDate, graceNightIso } from '../../src/lib/recurrence.js'
+import { boardDate, formatBoardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
@@ -811,7 +811,7 @@ function WeWeek({ card, colors }) {
             key={day.night}
             style={styles.weekDay}
             accessible
-            accessibilityLabel={`${day.night}: ${day.together ? t('we.doneTogether') : ''} ${t(`we.dot.${day.mine}`)}`}
+            accessibilityLabel={[formatBoardDate(day.night), day.together ? t('we.doneTogether') : '', t(`we.dot.${day.mine}`)].filter(Boolean).join(', ')}
           >
             <Text style={[styles.weekWord, { color: colors.inkDim }]} numberOfLines={1}>
               {new Date(`${day.night}T12:00:00`).toLocaleDateString(locale, { weekday: 'narrow' })}
@@ -1032,9 +1032,9 @@ function WeCardPage({ book, cardId, onChange }) {
       onGo: async () => {
         publishSheet(null)
         const out = await weLeave(card.id)
-        if (out.miss) return setMiss(tMiss(out.miss))
+        if (out.miss) return confirmMiss(tMiss(out.miss))
         confirmDone(t('confirm.weLeft'))
-        goHash('/tonight')
+        goHash('/we')
       },
     })
   }
@@ -1051,7 +1051,7 @@ function WeCardPage({ book, cardId, onChange }) {
       onGo: async () => {
         publishSheet(null)
         const out = await weClose(card.id)
-        if (out.miss) return setMiss(tMiss(out.miss))
+        if (out.miss) return confirmMiss(tMiss(out.miss))
         confirmDone(t('confirm.weClosed'))
         goHash('/we')
       },
