@@ -1126,6 +1126,14 @@ test('a resumed pause is not a miss in days in a row or the year view', async ()
   assert.equal(oct.miss, false)
 })
 
+test('year totals count Did and Not yet days, empty year is 0', async () => {
+  const { yearTotals } = await import('../src/lib/hall-pages.js')
+  const nights = [{ pad: true }, { on: true }, { on: true }, { on: false, miss: true }, { on: false, miss: false }]
+  assert.deepEqual(yearTotals([{ nights }]), { did: 2, miss: 1, rate: 67 })
+  assert.deepEqual(yearTotals([]), { did: 0, miss: 0, rate: 0 })
+  assert.deepEqual(yearTotals([{ nights: [{ miss: true }] }]), { did: 0, miss: 1, rate: 0 })
+})
+
 test('reminders are cleared only after the new list is built', () => {
   const src = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
   const body = src.slice(src.indexOf('async function schedulePingsNow'))

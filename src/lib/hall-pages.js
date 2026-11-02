@@ -661,6 +661,20 @@ export function feedSearch(rows, query) {
   )
 }
 
+// Did days, Not yet days and the Did rate (whole percent) from yearMonths output.
+export function yearTotals(months) {
+  let did = 0
+  let miss = 0
+  for (const pack of months || []) {
+    for (const night of pack.nights) {
+      if (night.pad) continue
+      if (night.on) did += 1
+      else if (night.miss) miss += 1
+    }
+  }
+  return { did, miss, rate: did + miss ? Math.round((did / (did + miss)) * 100) : 0 }
+}
+
 export function statsCounts(book, now = new Date()) {
   const answers = book.answers || []
   return {

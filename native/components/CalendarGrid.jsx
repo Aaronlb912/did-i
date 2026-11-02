@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
-import { firstAnswerMonth, monthStripNights, nightDueRows, nightWhy, yearMonths } from '../../src/lib/hall-pages.js'
+import { firstAnswerMonth, monthStripNights, nightDueRows, nightWhy, yearMonths, yearTotals } from '../../src/lib/hall-pages.js'
 import { openNightWhy } from './NightSheets.jsx'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { awayKey, gentleOn, usePrefs } from '../../src/lib/prefs.js'
@@ -14,6 +14,10 @@ import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
 import { missDot } from '../palette.js'
+import { bestShelfStreak } from '../../src/lib/hall-feel.js'
+import { scopedBooks } from '../../src/lib/tags.js'
+import { passAlong } from '../../src/lib/native.js'
+import { KeyButton } from './ui.jsx'
 
 function dateLocale(code) {
   if (code === 'zh') return 'zh-CN'
@@ -276,6 +280,15 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
     const from = Number(firstMonth.slice(5, 7)) - 1
     return all.filter((pack) => pack.start.getMonth() >= from)
   }, [shelf, year, tagId, dateIso, firstMonth, firstYear, prefs.locale])
+  const totals = useMemo(() => yearTotals(months), [months])
+  // Best streak is shelf-wide, so it is left out while a folder is picked.
+  const best = useMemo(() => (tagId ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
+  const shareYear = () => {
+    const folder = tagId ? scopedBooks(shelf, tagId).map((b) => b.title).join(', ') : ''
+    passAlong(folder
+      ? t('cal.yearShareFolder', { year, folder, did: totals.did, rate: totals.rate })
+      : t('cal.yearShareText', { year, did: totals.did, rate: totals.rate, best }))
+  }
   const locale = dateLocale(prefs.locale)
   const canBack = year > firstYear
   const canNext = year < thisYear
@@ -305,6 +318,15 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
           <Text style={[styles.shift, { color: canNext ? colors.inkDim : colors.line }]}>›</Text>
         </Pressable>
       </View>
+      {totals.did ? (
+        <>
+          <Text style={[styles.totals, { color: colors.inkDim }]}>
+            {t('cal.yearTotals', { did: totals.did, rate: totals.rate })}
+            {best ? ` · ${t('cal.yearBest', { n: best })}` : ''}
+          </Text>
+          <KeyButton colors={colors} label={t('cal.yearShare')} onPress={shareYear} />
+        </>
+      ) : null}
       <Reveal key={`y${year}`} style={styles.year} exiting={undefined} layout={false}>
         {months.map((pack) => (
           <View key={pack.start.getMonth()} style={styles.mini}>
@@ -366,6 +388,7 @@ const styles = StyleSheet.create({
   miniDot: { flex: 1, borderRadius: 2, borderWidth: 1 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   shift: { fontSize: 20, paddingHorizontal: 8, paddingVertical: 6 },
+  totals: { fontFamily: fonts.ui, fontSize: 13, textAlign: 'center' },
   month: { fontFamily: fonts.uiSemi, fontSize: 17 },
   grid: {},
   week: { flexDirection: 'row' },

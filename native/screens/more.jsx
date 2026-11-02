@@ -661,6 +661,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
         <NumberTile third colors={colors} label={t(gentle ? 'stats.nope' : 'later.missed')} n={counts.skip} />
         <NumberTile half={!gentle} colors={colors} label={t('stats.questions')} n={counts.hung} />
         {gentle ? null : <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />}
+        {counts.did + counts.late + counts.skip ? <NumberTile half colors={colors} label={t('stats.didRate')} n={`${Math.round(((counts.did + counts.late) / (counts.did + counts.late + counts.skip)) * 100)}%`} /> : null}
       </View>
 
       <SetCap colors={colors}>{t('stats.moreCap')}</SetCap>
