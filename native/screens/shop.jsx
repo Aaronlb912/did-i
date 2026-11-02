@@ -815,7 +815,6 @@ function freeLine(item) {
 }
 
 // coinsFor(): up to two paid taps of up to two coins each.
-const COINS_PER_NIGHT_CAP = NIGHT_COIN_CAP
 
 function previewBody(type, item, purse) {
   const tag = shopTag(purse, type, item)
@@ -824,7 +823,7 @@ function previewBody(type, item, purse) {
   const base = tag.gems ? gemLine(tag.gems) : coinLine(tag.coins)
   if (tag.coins && purse.coins < tag.coins) {
     const short = tag.coins - purse.coins
-    return `${base}\n${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: COINS_PER_NIGHT_CAP })}`
+    return `${base}\n${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
   }
   if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })}`
   return base
@@ -1842,6 +1841,7 @@ export function GemShopScreen({ book }) {
       const out = await restoreGemPurchases()
       if (out.miss === 'signin') confirmMiss(t('gems.restoreSignIn'))
       else if (out.miss === 'setup' || out.miss === 'app') confirmMiss(t('gems.restoreSetup'))
+      else if (out.miss === 'pending') confirmDone(t('gems.pending'))
       else if (out.miss) confirmMiss(t('gems.restoreMiss'))
       else if (out.gems > 0) confirmDone(t('gems.restored', { n: out.gems }))
       else confirmDone(t('gems.restoreNone'))
@@ -1914,8 +1914,9 @@ export function GemShopScreen({ book }) {
     if (out.miss) {
       stream.dropBuy()
       setBanner('')
-      // The store's own code, so one failed buy can be told from another.
-      gemNotice(out.code ? `${gemMiss(out.miss)} (${out.code})` : gemMiss(out.miss), out.miss === 'store' ? () => buy(packId) : null)
+      // The store's own code goes to the log, not on screen.
+      if (out.code) console.warn('gem buy', out.code)
+      gemNotice(gemMiss(out.miss), out.miss === 'store' ? () => buy(packId) : null)
       return
     }
     // Cancelled or failed: no gems are coming, so a later rise is not this buy.
