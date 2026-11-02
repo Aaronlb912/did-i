@@ -2798,6 +2798,8 @@ export const en = {
   'questions.reorderHint': "Today asks them in this order.",
   'questions.moveUp': 'Move {name} up',
   'questions.moveDown': 'Move {name} down',
+  'questions.moveTop': "Move {name} to the top",
+  'questions.moveBottom': "Move {name} to the bottom",
   // round4-polish/shop-round4
   'shop.allOwned.look': 'You own every look in the shop.',
   'shop.allOwned.cheer': 'You own every cheer in the shop.',

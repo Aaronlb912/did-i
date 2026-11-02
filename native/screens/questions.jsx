@@ -338,8 +338,10 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
               </View>
               {onMove ? (
                 <View style={styles.moveKeys}>
+                  <MoveKey glyph="⤒" label={t('questions.moveTop', { name: shortLabel(row.lamp) })} on={index > 0} onPress={() => onMove(index, -items.length)} colors={colors} />
                   <MoveKey glyph="↑" label={t('questions.moveUp', { name: shortLabel(row.lamp) })} on={index > 0} onPress={() => onMove(index, -1)} colors={colors} />
                   <MoveKey glyph="↓" label={t('questions.moveDown', { name: shortLabel(row.lamp) })} on={index < items.length - 1} onPress={() => onMove(index, 1)} colors={colors} />
+                  <MoveKey glyph="⤓" label={t('questions.moveBottom', { name: shortLabel(row.lamp) })} on={index < items.length - 1} onPress={() => onMove(index, items.length)} colors={colors} />
                 </View>
               ) : picking ? null : (
                 <>
@@ -477,7 +479,7 @@ function inHandOrder(rows) {
     .map((item) => item.row)
 }
 
-const SEARCH_FROM = 10
+const SEARCH_FROM = 6
 
 // Chinese and Japanese labels take a full-width colon.
 function labelColon() {
@@ -538,20 +540,19 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     return kinds
   })()
 
-  // Swaps a question with the one next to it on screen, then numbers every
-  // live question so tonight and the widget follow.
+  // Moves a question past `step` rows on screen (one, or to the top or bottom),
+  // then numbers every live question so tonight and the widget follow.
   function move(index, step) {
     const a = hung[index]
-    const b = hung[index + step]
-    if (!a || !b || !onChangeBooks) return
+    const b = hung[Math.max(0, Math.min(hung.length - 1, index + step))]
+    if (!a || !b || a === b || !onChangeBooks) return
     feelTap()
     // Every folder at once, so orders never collide when tonight shows All.
     const ids = inHandOrder(taggedLamps(shelf, '')).filter((row) => !row.lamp.archived).map((row) => row.lamp.id)
-    const ai = ids.indexOf(a.lamp.id)
+    if (!ids.includes(a.lamp.id) || !ids.includes(b.lamp.id)) return
+    ids.splice(ids.indexOf(a.lamp.id), 1)
     const bi = ids.indexOf(b.lamp.id)
-    if (ai < 0 || bi < 0) return
-    ids[ai] = b.lamp.id
-    ids[bi] = a.lamp.id
+    ids.splice(step < 0 ? bi : bi + 1, 0, a.lamp.id)
     const next = setLampOrder(shelf, ids)
     const changed = next.filter((item, at) => item !== shelf[at])
     if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
@@ -565,6 +566,11 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   // Reorder saves as you go; Never mind puts the order back the way it was.
   const orderBefore = useRef(null)
   function startOrdering() {
+    // Reorder shows every question: a hidden search or filter would let a move
+    // jump past rows you cannot see.
+    setQuery('')
+    setTopicPicks([])
+    setDidYouOnly(false)
     orderBefore.current = inHandOrder(taggedLamps(shelf, '')).filter((row) => !row.lamp.archived).map((row) => row.lamp.id)
     setOrdering(true)
   }

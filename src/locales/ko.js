@@ -2768,6 +2768,8 @@ export const ko = {
   'questions.reorderHint': "오늘 이 순서로 물어봐요.",
   'questions.moveUp': '{name} 위로',
   'questions.moveDown': '{name} 아래로',
+  'questions.moveTop': "{name}을(를) 맨 위로",
+  'questions.moveBottom': "{name}을(를) 맨 아래로",
   // round4-polish/shop-round4
   'shop.allOwned.look': '상점의 모든 룩을 가지고 있어요.',
   'shop.allOwned.cheer': '상점의 모든 응원을 가지고 있어요.',

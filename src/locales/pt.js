@@ -2804,6 +2804,8 @@ export const pt = {
   'questions.reorderHint': "Hoje elas vêm nesta ordem.",
   'questions.moveUp': 'Subir {name}',
   'questions.moveDown': 'Descer {name}',
+  'questions.moveTop': "Mover {name} para o topo",
+  'questions.moveBottom': "Mover {name} para o fim",
   // round4-polish/shop-round4
   'shop.allOwned.look': 'Você tem todos os visuais da loja.',
   'shop.allOwned.cheer': 'Você tem todas as torcidas da loja.',
