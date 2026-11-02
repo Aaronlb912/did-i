@@ -2021,6 +2021,7 @@ export const es = {
   'widget.tonight.tagFallback': "Hoy",
   'widget.tonight.empty': 'Todavía no hay preguntas',
   'widget.tonight.nextAt': 'Próxima pregunta a las {time}',
+  'widget.tonight.away': "Estás fuera. Las preguntas están en pausa.",
   'widget.tonight.clear': "Todo listo por hoy",
   'widget.tonight.oneLeft': "Queda una hoy",
   'widget.tonight.left': "Quedan {n} hoy",

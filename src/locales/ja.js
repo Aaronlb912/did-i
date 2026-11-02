@@ -1993,6 +1993,7 @@ export const ja = {
   'widget.tonight.tagFallback': "今日",
   'widget.tonight.empty': 'まだ質問がありません',
   'widget.tonight.nextAt': '次の質問は {time}',
+  'widget.tonight.away': "お休み中です。質問は一時停止中です。",
   'widget.tonight.clear': "今日はすべて完了",
   'widget.tonight.oneLeft': "今日あと1つ",
   'widget.tonight.left': "今日あと {n} 個",

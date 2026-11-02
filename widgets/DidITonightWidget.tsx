@@ -1,5 +1,6 @@
 import { AccessoryWidgetBackground, Button, Ellipse, HStack, Rectangle, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui'
 import {
+  accessibilityLabel,
   allowsTightening,
   background,
   buttonBorderShape,
@@ -162,6 +163,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   const didLabel = String(props?.didLabel || 'Did')
   const nopeLabel = String(props?.nopeLabel || 'Not yet')
   const leadId = String(lead?.lampId || '')
+  const gentle = props?.gentle === true
   const leadNight = String(lead?.periodKey || '')
   // The night rides along so a "Last night" card answers last night.
   const leadTarget = leadNight ? leadId + '|' + leadNight : leadId
@@ -866,7 +868,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   // in the corner the circle clips away, which left it blank.
   if (family === 'accessoryCircular') {
     // No snapshot yet (the widget gallery): the app's question marks, not a check.
-    const glyph = left > 0 ? String(left) : items.length ? '✓' : '???'
+    const glyph = left > 0 ? (gentle ? '…' : String(left)) : items.length ? '✓' : '???'
     return (
       <ZStack modifiers={[containerBackground(c.panel, 'widget'), widgetURL(openUri), grow]}>
         <AccessoryWidgetBackground />
@@ -961,6 +963,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
         tint(c.on),
         font({ size: compact ? 10 : 11, weight: 'bold' }),
         foregroundStyle(on),
+        accessibilityLabel(String(props?.nextLabel || 'Next') + ': ' + questionText),
       ]}
     />
   ) : null
@@ -974,6 +977,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           buttonStyle('borderedProminent'),
           buttonBorderShape('roundedRectangle', 12),
           tint(c.skip),
+          accessibilityLabel(nopeLabel + ': ' + questionText),
           font({ size: compact ? 12 : 15, weight: 'bold' }),
           foregroundStyle(ink),
           controlSize(compact ? 'small' : 'regular'),
@@ -990,6 +994,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           buttonStyle('borderedProminent'),
           buttonBorderShape('roundedRectangle', 12),
           tint(c.on),
+          accessibilityLabel(didLabel + ': ' + questionText),
           font({ size: compact ? 12 : 15, weight: 'bold' }),
           foregroundStyle(c.bg),
           controlSize(compact ? 'small' : 'regular'),

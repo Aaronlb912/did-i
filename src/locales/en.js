@@ -2017,6 +2017,7 @@ export const en = {
   'widget.tonight.tagFallback': "Today",
   'widget.tonight.empty': 'No questions yet',
   'widget.tonight.nextAt': 'Next question at {time}',
+  'widget.tonight.away': "Away. Questions are paused.",
   'widget.tonight.clear': "All clear for today",
   'widget.tonight.oneLeft': "One left today",
   'widget.tonight.left': "{n} left today",
