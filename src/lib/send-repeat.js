@@ -65,6 +65,9 @@ export function keptLamp(item, clock = new Date(), dayFoldHour = 0) {
     base.fromDidYou = true
     const name = String(item?.person?.display_name || item?.person?.handle || '').replace(/\s+/g, ' ').trim().slice(0, 40)
     if (name) base.fromName = name
+    // Who sent it, so removing one of two friends with the same name touches only theirs.
+    const fromId = String(item?.person?.user_id || item?.from_id || '').toLowerCase()
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(fromId)) base.fromId = fromId
     // The send it came from (inbox rows carry id, auto adds sendId), so the
     // sender can see its answers. A Did you link or Did I has none.
     const sendId = String(item?.sendId || item?.id || '').toLowerCase()
