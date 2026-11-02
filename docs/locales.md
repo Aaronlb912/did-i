@@ -9,7 +9,7 @@ only source.** There is no merge or sync step; edit the files directly.
 2. Add it to the other 8 files in the same change, translated.
 3. `npm test`.
 
-Product names can stay English on purpose (Did I, Did we, Look, Cheer, Buddy
+Product names can stay English on purpose (Did I, Did we, Look, Cheer, Buddy, coins, gems, Shop
 in zh/ja/ko, and the like). Add those keys to `PRODUCT_SAME` in
 `scripts/locale-shared.mjs` so the checks allow them.
 
