@@ -6,7 +6,7 @@ import { byAskTime, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-j
 import { putAnswer, setAnswerNote } from './board-ops.js'
 import { takeBackAnswer } from './answer-log.js'
 import { reportRejection } from './report.js'
-import { markedToast } from './pill-status.js'
+import { markedToast, toastName } from './pill-status.js'
 import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
 import { clearStreakSeen, deliverStreakHit, maybeStreakHit } from './streak-moments.js'
 import { clockWords } from './hall-pages.js'
@@ -74,6 +74,7 @@ export function useTonightStack({
   now,
   focusLampId,
   focusKey,
+  onFocusNote,
 }) {
   const clock = now || new Date()
   const undoTimers = useRef(new Map())
@@ -252,6 +253,30 @@ export function useTonightStack({
   useEffect(() => {
     if (focusLampId) setFaceId(focusLampId)
   }, [focusLampId, focusKey])
+
+  // A push or widget tap named a question that is answered or gone: say so
+  // once per tap, since the card on screen is a different one.
+  const focusNoted = useRef('')
+  useEffect(() => {
+    if (!focusLampId || !onFocusNote) return
+    const key = `${focusKey || ''}:${focusLampId}`
+    if (focusNoted.current === key) return
+    // Nothing loaded yet: wait, or a real question reads as removed.
+    if (!shelf.some((book) => (book.lamps || []).length > 0)) return
+    const exists = shelf.some((book) =>
+      (book.lamps || []).some((lamp) => lamp.id === focusLampId && !lamp.archived),
+    )
+    if (!exists) {
+      focusNoted.current = key
+      onFocusNote({ gone: true })
+      return
+    }
+    const row = ready.find((one) => one.lamp.id === focusLampId)
+    if (!row) return
+    focusNoted.current = key
+    if (row.answer?.status) onFocusNote({ status: row.answer.status, name: toastName(row.lamp) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusLampId, focusKey, ready, shelf])
 
   useEffect(() => {
     if (skipReview || faceId === FINISH_FACE || deckClear || !openReady.length) return

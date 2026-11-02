@@ -67,6 +67,7 @@ import { flyBackNext } from '../components/SwipeCard.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { DropLine } from '../components/DropLine.jsx'
 import { RateCard } from '../components/RateCard.jsx'
+import { RemindersRow } from '../components/RemindersRow.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
 import { EditPen, MarkRow, MarkStamp } from '../components/SwipeFace.jsx'
@@ -195,7 +196,13 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
   )
 }
 
-export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, focusLampId, focusKey, firstAdd = false }) {
+// A push or widget tap landed on a question that is answered or gone.
+function sayFocusNote(note) {
+  if (note.gone) return confirmMiss(t('tonight.focusGone'))
+  return confirmDone(t(note.status === 'skip' ? 'tonight.alreadyNotYet' : 'tonight.alreadyDid', { name: note.name }))
+}
+
+export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, focusLampId, focusKey, firstAdd = false, onAskPings, pingLabel }) {
   const theme = useTheme()
   const look = activeLook(book)
   const colors = useHallColors(book)
@@ -212,7 +219,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const gentle = usePrefs().gentle === true
   const topics = useMemo(() => shelfTopics(boards && boards.length ? boards : [book]), [boards, book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
-  const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now })
+  const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now, onFocusNote: sayFocusNote })
   useFreezeToasts(colors, stack.shelf, stack.clock)
   const freezesHeld = stack.shelf ? freezeState(stack.shelf, stack.clock).held : 0
   const we = useWeTonight(account.user)
@@ -1547,6 +1554,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       {/* A picked card stays put after its answer, so these rows stay too. */}
       {stack.cheer && !pickKey ? null : <DropLine colors={colors} />}
       {stack.cheer && !pickKey ? null : <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} />}
+      {stack.empty || Platform.OS === 'web' ? null : <RemindersRow colors={colors} label={pingLabel} onAsk={onAskPings} />}
 
       {stack.pillPick || stack.waitPick || pickedWe ? (
         <Pressable

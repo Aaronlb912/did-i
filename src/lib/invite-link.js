@@ -100,7 +100,14 @@ export async function applyPendingInvite() {
   // Only the server's own answers are final; anything else is a network or auth hiccup.
   if (miss && !['used', 'self', 'nobody', 'code'].includes(miss)) return false
   clearPendingInvite()
-  if (!miss) {
+  if (miss) {
+    try {
+      localStorage.setItem(MISS_KEY, miss === 'used' || miss === 'self' ? miss : 'bad')
+    } catch {
+      // The note is a nicety.
+    }
+    for (const fn of joinedWatchers) fn()
+  } else {
     const name = await inviteOwner(code).catch(() => null)
     try {
       localStorage.setItem(JOINED_KEY, JSON.stringify({ name: name || '' }))
@@ -115,7 +122,18 @@ export async function applyPendingInvite() {
 // The phone says "You joined with Aaron's invite" once a link's code is used.
 // Kept until shown, so a sync that lands before the app is up still says it.
 const JOINED_KEY = 'did-i-invite-joined'
+const MISS_KEY = 'did-i-invite-miss'
 const joinedWatchers = new Set()
+// A link whose code did not count: 'used', 'self' or 'bad'. Kept until shown.
+export function takeInviteMiss() {
+  try {
+    const miss = localStorage.getItem(MISS_KEY) || ''
+    if (miss) localStorage.removeItem(MISS_KEY)
+    return miss
+  } catch {
+    return ''
+  }
+}
 export function onInviteJoined(fn) {
   joinedWatchers.add(fn)
   return () => joinedWatchers.delete(fn)

@@ -1,5 +1,7 @@
 import * as Linking from 'expo-linking'
 import { savePendingInvite } from '../src/lib/invite-link.js'
+import { readAccountUserId } from '../src/lib/session-id.js'
+import { savePendingScan } from '../src/lib/qr-links.js'
 import { readHuntLink, savePendingHunt } from '../src/lib/hunt-link.js'
 import { goHash } from './navigation/hash.js'
 import { holdSpoken } from '../src/lib/voice-add.js'
@@ -8,6 +10,7 @@ import { readDidYouLink, savePendingDidYou } from '../src/lib/did-you-links.js'
 import { matchSpoken, openTonight, spokenAnswer } from '../src/lib/voice-answer.js'
 import { t } from '../src/lib/i18n.js'
 import { showToast } from './lib/toast-queue.js'
+import { confirmDone } from './lib/confirm.js'
 
 export const TONIGHT_WIDGET_URI = 'didi://tonight'
 
@@ -63,21 +66,29 @@ export function routeFromDeepLink(url) {
   return null
 }
 
+// One toast for an invite, hunt or Did you link kept for later.
+function saidSaved() {
+  confirmDone(t(readAccountUserId() ? 'link.savedIn' : 'link.savedOut'), 3600)
+}
+
 export function goFromDeepLink(url) {
   const route = routeFromDeepLink(url)
   if (!route) return false
   if (route.invite) {
-    savePendingInvite(route.invite)
+    if (savePendingInvite(route.invite)) saidSaved()
     return true
   }
   if (route.hunt) {
     savePendingHunt()
+    saidSaved()
     return true
   }
   if (route.didYou) {
-    savePendingDidYou(route.didYou)
+    if (savePendingDidYou(route.didYou)) saidSaved()
     return true
   }
+  // Signed out, Connect is behind sign-in: keep the code and open it after.
+  if (route.path === '/people/connect' && route.id && !readAccountUserId() && savePendingScan(route.id)) return true
   if (route.answer) {
     answerSpoken(route.answer)
     return true
