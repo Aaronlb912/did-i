@@ -28,6 +28,13 @@ function migrateDefaultTitle(book) {
   return book.title === title ? book : { ...book, title }
 }
 
+// How a folder name compares: any General name in any language is General,
+// since normalizeShelf would fold that folder into General.
+export function folderNameKey(title) {
+  const name = String(title || '').trim()
+  return (DEFAULT_TITLES.has(name) ? t('tags.general') : name).toLowerCase()
+}
+
 export function currentBook(shelf) {
   if (!shelf || !shelf.boards || !shelf.boards.length) return emptyBoard()
   return shelf.boards.find((book) => book.id === shelf.currentId) || shelf.boards[0]

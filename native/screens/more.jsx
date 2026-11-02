@@ -48,7 +48,7 @@ import {
   shortLabel,
 } from '../../src/lib/board-json.js'
 import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
-import { currentBook, enterLand, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
+import { currentBook, enterLand, folderNameKey, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
 import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
@@ -1141,7 +1141,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
     const title = titleDraft.trim()
     if (!title || title === book?.title) return
     // Same name as another folder: saving would merge the two.
-    if ((boards || []).some((item) => item.id !== book?.id && String(item.title || '').trim().toLowerCase() === title.toLowerCase())) {
+    if ((boards || []).some((item) => item.id !== book?.id && folderNameKey(item.title) === folderNameKey(title))) {
       confirmMiss(t('boards.addSame'))
       return
     }
@@ -1156,12 +1156,12 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
       setAddMiss(t('boards.addMiss'))
       return
     }
-    if ((boards || []).some((item) => !item.archived && item.title.trim().toLowerCase() === title.toLowerCase())) {
+    if ((boards || []).some((item) => !item.archived && folderNameKey(item.title) === folderNameKey(title))) {
       setAddMiss(t('boards.addSame'))
       return
     }
     // A parked folder with that name: open it, which brings it back.
-    const asleep = (boards || []).find((item) => item.archived && item.title.trim().toLowerCase() === title.toLowerCase())
+    const asleep = (boards || []).find((item) => item.archived && folderNameKey(item.title) === folderNameKey(title))
     if (asleep) {
       setAdding(false)
       setNewName('')
