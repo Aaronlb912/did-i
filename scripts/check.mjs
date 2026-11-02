@@ -10313,7 +10313,7 @@ test('Not yets come back as swipe cards only after Look again; the meter leads w
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
   assert.match(tonight, /if \(finishList && !lookAgain\) stack\.restStack\(true\)/)
-  assert.ok(tonight.includes('const stillOpenRows = [...familyOpen, ...stack.stillOpen]'), 'family first, so leaving your own last one cannot strand them')
+  assert.ok(tonight.includes('const stillOpenRows = [...stack.stillOpen, ...familyOpen]'), 'your own first; people asks follow and are never dropped')
   assert.match(tonight, /\} else if \(finishList && lookAgain\) \{[\s\S]{0,2000}<SwipeCardHost\s+key="look-again"/)
   assert.ok(!existsSync(path.join(root, 'native/components/StillOpen.jsx')), 'no tap-to-Did list')
   const meter = readFileSync(path.join(root, 'native/components/NightMeter.jsx'), 'utf8')
@@ -10409,4 +10409,10 @@ test('cheers you got: list function is applied before drop-tonight and hides blo
   assert.ok(sql.includes('not public.blocked_with(s.from_id)'), 'blocked senders are hidden')
   assert.ok(sql.includes('(select auth.uid())') && sql.includes('limit 20'))
   for (const key of ['cheersGot.title', 'cheersGot.empty', 'cheersGot.from']) assert.ok(t(key) !== key, key)
+})
+
+test('calm Today: the drop line and rate card wait for the last answer, one extra row at a time', () => {
+  const screen = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(screen.includes("stack.nightDone ? (dropLineUp() ? 'drop' : 'rate')"), 'drop and rate are gated on nightDone')
+  assert.ok(screen.includes("{extraRow === 'drop' ?") && screen.includes("{extraRow === 'rate' ?"), 'one extra row at a time')
 })
