@@ -84,15 +84,15 @@ export function useTonightStack({
   const [titleDraft, setTitleDraft] = useState(value.title)
   const [undoStack, setUndoStack] = useState([])
   const undo = undoStack[0] || null
-  // A folder switch hides the card an undo would bring back, so it ends here.
-  const undoTag = useRef(tagId)
+  // A folder switch or a new day hides the card an undo would bring back, so it ends here.
+  const undoTag = useRef(`${tagId}|${boardDate(clock)}`)
   useEffect(() => {
-    if (undoTag.current === tagId) return
-    undoTag.current = tagId
+    if (undoTag.current === `${tagId}|${boardDate(clock)}`) return
+    undoTag.current = `${tagId}|${boardDate(clock)}`
     undoTimers.current.forEach((timer) => window.clearTimeout(timer))
     undoTimers.current.clear()
     setUndoStack([])
-  }, [tagId])
+  }, [tagId, boardDate(clock)])
   const [holePick, setHolePick] = useState(null)
   const [waitPick, setWaitPick] = useState(null)
   const [pillPick, setPillPick] = useState(null)
@@ -371,8 +371,17 @@ export function useTonightStack({
     feelTap('undo')
   }
 
+  // Two taps before a render both read the old book: the second would
+  // save again and arm a second undo that takes coins off twice.
+  const marking = useRef('')
+  useEffect(() => {
+    marking.current = ''
+  })
   function mark(row, status) {
     if (!row) return
+    const markKey = `${rowKey(row)}:${row.periodKey}:${status}`
+    if (marking.current === markKey) return
+    marking.current = markKey
     const book = bookOf(row)
     const liveAnswer = answerFor(book, row.lamp.id, row.periodKey)
     if (
