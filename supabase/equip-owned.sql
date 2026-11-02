@@ -71,3 +71,8 @@ begin
       where s.kind = 'frame' and s.item_id = new.frame_on and s.gems > 0)
     and not own->'frames' @> jsonb_build_array(new.frame_on) then
     new.frame_on := case when tg_op = 'INSERT' then '' else old.frame_on end;
+  end if;
+
+  return new;
+end;
+$$;
