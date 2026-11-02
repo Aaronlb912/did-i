@@ -49,7 +49,7 @@ export function sendMiss(error) {
   return 'people.reach'
 }
 
-// A family join code is ten (old families keep six). An invite code is ten.
+// A new family join code is six (older ones may be ten). An invite code is ten.
 // Same alphabet.
 export const FAMILY_CODE_LEN = 6
 export const INVITE_CODE_LEN = 10
@@ -1330,7 +1330,7 @@ export async function joinFamily(code) {
     if (/too many tries/i.test(error.message)) return { miss: 'tooMany' }
     if (/too many people/i.test(error.message)) return { miss: 'full' }
     if (/enough families/i.test(error.message)) return { miss: 'tooManyFamilies' }
-    return { miss: /no family/i.test(error.message) ? 'nofamily' : error.message }
+    return { miss: /no family/i.test(error.message) ? 'nofamily' : appMiss(error) }
   }
   // A wrong code comes back as null, so the miss still counts toward the limit.
   if (!data) return { miss: 'nofamily' }
@@ -1368,12 +1368,14 @@ export async function leaveFamily(familyId) {
   if (!db) return { miss: 'off' }
   const user = await me()
   if (!user) return { miss: 'out' }
-  const { error } = await db
+  const { data, error } = await db
     .from('family_members')
     .delete()
     .eq('family_id', familyId)
     .eq('user_id', user.id)
-  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : error.message }
+    .select('user_id')
+  if (error) return { miss: /one parent/i.test(error.message) ? 'lastparent' : appMiss(error) }
+  if (!data?.length) return { miss: 'unchanged' }
   // No live ping comes for your own leave: Today reloads its family rows now.
   noteSocialLive('familyInfo')
   return { miss: '' }
