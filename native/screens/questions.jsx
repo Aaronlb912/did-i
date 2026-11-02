@@ -105,6 +105,7 @@ import { EditPen } from '../components/SwipeFace.jsx'
 import { checkOnFits, followCheckOn } from '../../src/lib/check-on.js'
 import { Glide, pressFx, Reveal, useLayoutState } from '../lib/motion.jsx'
 import { missDot } from '../palette.js'
+import { exactAlarmsOn, openExactAlarms } from '../lib/exact-alarms.js'
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 const weekdaysFor = (locale) => WEEKDAYS.map((_, i) => (i + firstWeekday(locale)) % 7)
@@ -1430,6 +1431,16 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     return first
   })
   const [timeOpen, setTimeOpen] = useState(false)
+  // The one-time ask can be skipped; a timed question says it again.
+  const [exactOff, setExactOff] = useState(false)
+  useEffect(() => {
+    if (!timeOpen) return undefined
+    let live = true
+    exactAlarmsOn().then((on) => live && setExactOff(!on))
+    return () => {
+      live = false
+    }
+  }, [timeOpen])
   const [ideasOpen, setIdeasOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [topicsOn, setTopicsOn] = useState(false)
@@ -1991,6 +2002,12 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               <View ref={timeDetail} onLayout={showTimeDetail}>
               <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
               <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
+              {draft.askAfter && exactOff ? (
+                <>
+                  <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('notify.exactBody')}</Text>
+                  <KeyButton colors={colors} label={t('notify.exactGo')} onPress={openExactAlarms} />
+                </>
+              ) : null}
               </View>
             </HangFold>
           {reminderRow(true)}

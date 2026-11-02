@@ -20,6 +20,10 @@ function markAsked() {
   }
 }
 
+export function openExactAlarms() {
+  NativeModules.WidgetTap?.openExactAlarmSettings?.().catch(() => {})
+}
+
 export async function exactAlarmsOn() {
   const mod = NativeModules.WidgetTap
   if (Platform.OS !== 'android' || typeof mod?.canExactAlarms !== 'function') return true
@@ -46,7 +50,7 @@ export async function offerExactAlarms(colors) {
     onClose: () => publishSheet(null),
     onGo: () => {
       publishSheet(null)
-      NativeModules.WidgetTap?.openExactAlarmSettings?.().catch(() => {})
+      openExactAlarms()
     },
   })
 }
