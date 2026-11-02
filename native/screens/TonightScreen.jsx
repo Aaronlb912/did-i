@@ -1292,6 +1292,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         {/* The first question opens now, so the first Did and the tour never wait for tonight. */}
         <StarterPicks book={book} onChange={onChange} colors={colors} readyNow />
         <DidButton label={t('tonight.write')} colors={colors} small onPress={() => goHash('/add')} />
+        <KeyButton label={t('first.orPack')} colors={colors} onPress={() => goHash('/first')} />
         {firstAdd && !account.user ? (
           // The menu waits for a first question, so signing in has to be here.
           <KeyButton label={t('tonight.haveAccount')} colors={colors} onPress={() => goHash('/account')} />

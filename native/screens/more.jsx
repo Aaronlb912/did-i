@@ -1616,6 +1616,8 @@ export function FirstNightScreen({ book, onChange, now }) {
   const [blank, setBlank] = useState('')
   const [focused, setFocused] = useState(false)
   const [wave, setWave] = useState(0)
+  const [hint, setHint] = useState(false)
+  const blankRef = useRef(null)
   const [askAfter, setAskAfter] = useState(FIRST_TIME)
   const reduce = useReduceMotion()
   const packs = packList(book)
@@ -1667,7 +1669,11 @@ export function FirstNightScreen({ book, onChange, now }) {
   function next() {
     playClick()
     if (step === 0) {
-      if (!ready) return
+      if (!ready) {
+        setHint(true)
+        blankRef.current?.focus()
+        return
+      }
       setStep(1)
       return
     }
@@ -1699,10 +1705,9 @@ export function FirstNightScreen({ book, onChange, now }) {
           colors={colors}
           label={step === totalSteps - 1 ? t('first.done') : ready ? t('first.nextCount', { n: count }) : t('first.next')}
           onPress={next}
-          dim={step === 0 && !ready}
         />
         {step === 0 && !ready ? (
-          <Text style={[styles.firstWhy, { color: colors.inkSoft }]}>{t('first.pickFirst')}</Text>
+          <Text style={[styles.firstWhy, { color: colors.inkSoft }]}>{t(hint ? 'first.addHint' : 'first.pickFirst')}</Text>
         ) : null}
       </View>
       {step === 0 ? <KeyButton colors={colors} label={t('first.startEmpty')} onPress={startEmpty} /> : null}
@@ -1734,6 +1739,7 @@ export function FirstNightScreen({ book, onChange, now }) {
           >
             <WaveLead text={t('tonight.didI')} wave={wave} colors={colors} style={faceCardStyles.title} />
             <AppTextInput
+              ref={blankRef}
               colors={colors}
               value={blank}
               onChangeText={setBlank}

@@ -2511,7 +2511,7 @@ export const zh = {
   'tonight.nopedMany': "你对 {n} 个问题选了“还没”。",
   'tonight.nopedOne': "你对“{question}”选了“还没”。",
   'people.outComesAlong': '你的问题和连续记录都会保留。',
-  'auth.newEmail': '新用户？输入邮箱，我们会发送验证码。',
+  'auth.newEmail': "想在每部手机上使用？输入邮箱，我们会发送验证码。",
   'auth.tryLocal': '不注册先试试',
   'sent.keptAnon': '一位还没设置名字的朋友',
   'friend.linkKept': '以链接分享 · 已收下',

@@ -2550,7 +2550,7 @@ export const en = {
   'tonight.nopedMany': "You said Not yet to {n} questions.",
   'tonight.nopedOne': "You said Not yet to \"{question}\"",
   'people.outComesAlong': 'Your questions and streak come with you.',
-  'auth.newEmail': 'New? Enter your email and we’ll send you a code.',
+  'auth.newEmail': "Want it on every phone? Enter your email for a code.",
   'auth.tryLocal': 'Try it without an account',
   'sent.keptAnon': 'someone who hasn’t set a name',
   'friend.linkKept': 'Shared as a link · they kept it',

@@ -2520,7 +2520,7 @@ export const ko = {
   'tonight.nopedMany': "질문 {n}개에 아직을 눌렀어요.",
   'tonight.nopedOne': "\"{question}\"에 아직을 눌렀어요.",
   'people.outComesAlong': '질문과 연속 기록은 그대로 따라와요.',
-  'auth.newEmail': '처음이신가요? 이메일을 입력하면 코드를 보내 드려요.',
+  'auth.newEmail': "모든 휴대폰에서 쓰고 싶나요? 이메일을 입력하면 코드를 보내 드려요.",
   'auth.tryLocal': '계정 없이 써 보기',
   'sent.keptAnon': '아직 이름을 정하지 않은 친구',
   'friend.linkKept': '링크로 공유 · 받음',
