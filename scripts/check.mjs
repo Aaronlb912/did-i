@@ -532,6 +532,17 @@ test('travel skips on this phone belong to one account', () => {
   localStorage.removeItem('did-i-zone-seen')
 })
 
+test('a question moved to two folders on two phones lands in one', () => {
+  const lamp = (at) => ({ id: 'L', question: 'Did I stretch?', cadence: 'daily', createdOn: '2026-10-01', at })
+  const book = (id, lamps, answers = []) => ({ id, title: id, lamps, answers })
+  const a = { currentId: 'F1', boards: [book('F1', []), book('F2', [lamp('2026-10-20T10:00:00.000Z')], [{ lampId: 'L', periodKey: '2026-10-20', status: 'yes' }]), book('F3', [])] }
+  const b = { currentId: 'F1', boards: [book('F1', []), book('F2', []), book('F3', [lamp('2026-10-20T11:00:00.000Z')])] }
+  const merged = mergeShelves(a, b, '2026-10-21', '2026-10-20')
+  const homes = merged.boards.filter((item) => item.lamps.some((l) => l.id === 'L'))
+  assert.deepEqual(homes.map((item) => item.id), ['F3'], 'the newer move wins')
+  assert.ok(homes[0].answers.some((x) => x.lampId === 'L' && x.periodKey === '2026-10-20'), 'its answers follow')
+})
+
 test('travel-skipped nights union across phones and stay capped', () => {
   const left = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-10-15'])] }
   const right = { currentId: 'trip', boards: [travelBook(['2026-10-15'], ['2026-09-02'])] }
