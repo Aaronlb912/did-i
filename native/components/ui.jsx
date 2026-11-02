@@ -7,6 +7,8 @@ import { useTheme } from '../../src/lib/prefs.js'
 import { pressFx, useFadeIn } from '../lib/motion.jsx'
 import { ripple } from '../lib/ripple.js'
 import { fonts, sectionLabel } from '../theme.js'
+import { t } from '../../src/lib/i18n.js'
+import { useOnline } from '../hooks/useOnline.js'
 
 // The one text input every screen renders through: a light keyboard and a
 // blue system cursor read as unfinished on a dark app. keyboardAppearance
@@ -69,6 +71,13 @@ export function Kicker({ children, colors }) {
 
 export function Title({ children, colors }) {
   return <Text style={[styles.title, { color: colors.ink }]}>{children}</Text>
+}
+
+// One quiet line while there is no signal, on screens that need the server.
+export function OfflineLine({ colors }) {
+  const online = useOnline()
+  if (online) return null
+  return <Meta colors={colors}>{t('people.offline')}</Meta>
 }
 
 export function Meta({ children, colors, style }) {

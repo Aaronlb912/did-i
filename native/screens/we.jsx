@@ -51,7 +51,7 @@ import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
 import { weNextCoinsKey, weRuleKey, weModeKey, weSlotDay, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
 import { boardDate, formatBoardDate, graceNightIso } from '../../src/lib/recurrence.js'
-import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
+import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta, OfflineLine } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { goHash, swapHash } from '../navigation/hash.js'
@@ -531,7 +531,7 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
     }
     Keyboard.dismiss()
     setBusy(true)
-    const out = await weMake({ ...draft, question, ask: picked, alone: share })
+    const out = await weMake({ ...draft, question, ask: picked, alone: share }).catch(() => ({ miss: 'people.reach' }))
     if (out.miss && !out.id) {
       setBusy(false)
       feel.buzz()
@@ -1424,6 +1424,7 @@ export function WeHomeScreen({ book, onChange }) {
   if (account.ready && !account.user) return <NeedAccount book={book} colors={colors} />
   return (
     <ScreenShell book={book} title={t('we.title')} colors={colors}>
+      <OfflineLine colors={colors} />
       <WeHomeList book={book} onChange={onChange} />
     </ScreenShell>
   )

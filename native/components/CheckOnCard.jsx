@@ -84,7 +84,7 @@ export function CheckOnCard({ lamp, colors }) {
   async function save() {
     if (!pick) return setMiss(t('checkOn.pickFirst'))
     setBusy(true)
-    const res = await saveCheckOn(lamp, pick, at)
+    const res = await saveCheckOn(lamp, pick, at).catch(() => ({ miss: 'people.reach' }))
     setBusy(false)
     if (res.miss) return setMiss(tMiss(res.miss))
     const fresh = await readCheckOn(lamp.id)
@@ -95,7 +95,7 @@ export function CheckOnCard({ lamp, colors }) {
 
   async function stop() {
     setBusy(true)
-    const res = await stopCheckOn(row.id)
+    const res = await stopCheckOn(row.id).catch(() => ({ miss: 'people.reach' }))
     setBusy(false)
     if (res.miss) return setMiss(tMiss(res.miss))
     setRow(null)

@@ -86,7 +86,6 @@ import {
   normalizePurse,
 } from '../../src/lib/purse.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
-import { useOnline } from '../hooks/useOnline.js'
 import { useTourTarget } from '../lib/tour.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { isNewShelf } from '../../src/lib/first-run.js'
@@ -112,7 +111,7 @@ import {
   Field,
   KeyButton,
   LateMeta,
-  Meta,
+  Meta, OfflineLine,
   Row,
 } from '../components/ui.jsx'
 import { useHallColors, useLookColors } from '../hooks/useHallColors.js'
@@ -174,12 +173,6 @@ function Miss({ children, colors, onRetry }) {
       {onRetry ? <KeyButton colors={colors} label={t('gift.retry')} onPress={onRetry} /> : null}
     </>
   )
-}
-
-function OfflineLine({ colors }) {
-  const online = useOnline()
-  if (online) return null
-  return <Meta colors={colors}>{t('people.offline')}</Meta>
 }
 
 function FriendMenu({ name, items, colors, onClose }) {
