@@ -823,8 +823,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }).map((item) => {
     const { row } = item
     if (item.kind === 'family') {
-      const save = (status) => () =>
-        peopleAnswer(
+      const save = (status) => () => {
+        // A card left open past midnight belongs to yesterday: reload, don't save.
+        if (row.night && row.night !== boardDate()) return family.reload()
+        return peopleAnswer(
           item.key,
           // The day at tap time: Today may have stayed open past midnight.
           () => answerFamilyLamp(row.family.id, row.lamp.id, boardDate(), status),
@@ -835,6 +837,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           status,
           family.reload,
         )
+      }
       return {
         ...item,
         kicker: row.family.name,
@@ -1066,6 +1069,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     const famDid = (row) => {
       const key = famKey(row)
       if (famBusy.current.has(key)) return
+      if (row.night && row.night !== boardDate()) return family.reload()
       famBusy.current.add(key)
       peopleAnswer(
         key,
