@@ -38,7 +38,7 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
 import { coinsToday, fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { awayKey, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
-import { cameBack } from '../../src/lib/come-back.js'
+import { cameBack, daysSinceFirstAnswer } from '../../src/lib/come-back.js'
 import { answerFor, isEvery } from '../../src/lib/recurrence.js'
 import { lastTimeLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
@@ -48,7 +48,7 @@ import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
 import { markSwipeIntroSeen, SwipeIntro, swipeIntroSeen } from '../components/SwipeIntro.jsx'
-import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, tomorrowLine } from '../components/DoneCard.jsx'
+import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, doneTitleKey, tomorrowLine } from '../components/DoneCard.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
 import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
@@ -165,6 +165,17 @@ function eveningShare(clock) {
   return h < 5 ? 1 : Math.min(1, Math.max(0, (h - 17) / 7))
 }
 // The earliest evening reminder among tonight's questions on the same scale, 9 pm if none.
+function WideRow({ label, onPress, colors }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={{ alignSelf: 'stretch', minHeight: 48, marginTop: 10, borderWidth: 1.5, borderColor: colors.on, borderRadius: 999, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 }}
+    >
+      <Text style={{ fontFamily: fonts.uiSemi, fontSize: 15, color: colors.on }}>{label}</Text>
+    </Pressable>
+  )
+}
 function remindShare(due) {
   const times = (due || []).map((row) => String(row.lamp?.askAfter || '')).filter((v) => /^\d{2}:\d{2}$/.test(v)).sort()
   const at = times.find((v) => v >= '17:00') || '21:00'
@@ -675,6 +686,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     nightDone: stack.nightDone,
     dismissed: nudgeGone,
   })
+  // Day N of the first week is the streak the done card already shows.
+  const firstWeek = useMemo(() => daysSinceFirstAnswer(stack.shelf, stack.dateIso) < 7, [stack.shelf, stack.dateIso])
+  const day = gentle || !firstWeek ? 0 : stack.streak
+  const streakDay = gentle ? 0 : stack.streak
+  const [widgetOn, setWidgetOn] = useState(false)
+  useEffect(() => {
+    if (Platform.OS === 'android') widgetPlaced().then(setWidgetOn).catch(() => {})
+  }, [stack.nightDone])
+  const widgetBtn = stack.nightDone && !widgetOn && ((day >= 1 && day <= 3) || (Platform.OS === 'android' && day >= 4 && day <= 7))
   const dropNudge = () => {
     markSignInNudgeSeen()
     setNudgeGone(true)
@@ -1214,7 +1234,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
           <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
           <Text style={[faceCardStyles.title, { color: colors.ink }]}>
-            {nightOne ? t('nightOne.title') : t('tonight.doneTitle')}
+            {nightOne ? t('nightOne.title') : t(doneTitleKey(streakDay) || 'tonight.doneTitle')}
           </Text>
           {nightOne ? (
             <>
@@ -1222,8 +1242,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               <View style={styles.actions}>
                 <DidButton small label={t('nightOne.widget')} colors={colors} onPress={() => pinWidget(colors)} />
               </View>
+              {reminderRowUp ? <WideRow label={t('firstWeek.remind')} colors={colors} onPress={onAskPings} /> : null}
             </>
           ) : null}
+          {!nightOne && day === 2 && reminderRowUp ? <WideRow label={t('firstWeek.remind')} colors={colors} onPress={onAskPings} /> : null}
+          {!nightOne && widgetBtn ? <WideRow label={t('nightOne.widget')} colors={colors} onPress={() => pinWidget(colors)} /> : null}
+          {day === 5 && !nightOne ? <WideRow label={t('firstWeek.invite')} colors={colors} onPress={() => goHash('/people/refer')} /> : null}
           {stack.streak > 0 && !gentle ? (
             <View style={styles.streakRow}>
             <Pressable
@@ -1258,6 +1282,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           {dayCoins > 0 ? (
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsToday', { n: dayCoins, total: purse.coins })}</Text>
           ) : null}
+          {!wish && (day === 2 || day === 3) ? (
+            <Pressable accessibilityRole="button" onPress={() => goHash('/shop')} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
+              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
+                {t('firstWeek.coinsFor')} <Text style={{ color: colors.on }}>›</Text>
+              </Text>
+            </Pressable>
+          ) : null}
           {wish ? (
             <Pressable accessibilityRole="button" accessibilityLabel={`${t(wish.key, { n: wish.n, name: t(wish.nameKey) })}, ${t('shop.wishTitle')}`} onPress={() => goHash('/kit', { id: 'wish' })} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
@@ -1265,7 +1296,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               </Text>
             </Pressable>
           ) : null}
-          {signInNudge && !nightOne ? (
+          {signInNudge && !nightOne && (!firstWeek || day >= 3) ? (
             <View style={[styles.nudge, { borderTopColor: colors.lineSoft }]}>
               <Text style={[faceCardStyles.meta, { color: colors.ink }]}>{t('signInNudge.title')}</Text>
               <View style={styles.actions}>
