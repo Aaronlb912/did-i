@@ -7,7 +7,9 @@ import { t } from '../../src/lib/i18n.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { fonts } from '../theme.js'
-import { DidButton } from './ui.jsx'
+import { readShelf } from '../../src/lib/board-shelf.js'
+import { openFreezeHow } from './FreezeBits.jsx'
+import { DidButton, Row } from './ui.jsx'
 
 function copy(moment) {
   if (moment.kind === 'hit') {
@@ -66,6 +68,12 @@ export function StreakMomentHost({ now }) {
     setMoment(null)
   }
 
+  // The freeze sheet cannot open over this Modal, so close the card first.
+  function openFreeze() {
+    close()
+    openFreezeHow(colors, readShelf()?.boards)
+  }
+
   return (
     <Modal visible transparent animationType="fade" onRequestClose={close}>
       <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={close}>
@@ -78,6 +86,7 @@ export function StreakMomentHost({ now }) {
           <Text style={[styles.kicker, { color: colors.on }]}>{text.kicker}</Text>
           <Text accessibilityRole="header" style={[styles.title, { color: colors.ink }]}>{text.title}</Text>
           <Text style={[styles.body, { color: colors.inkSoft }]}>{text.body}</Text>
+          {moment.kind === 'hit' || gentleOn() ? null : <Row colors={colors} label={t('streak.missFreeze')} onPress={openFreeze} />}
           <View style={styles.row}>
             <DidButton small label={text.yes} onPress={close} colors={colors} />
           </View>

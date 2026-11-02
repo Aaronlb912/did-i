@@ -1047,6 +1047,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
     }
   }, [book, boards, tagId, minute])
   const goal = nextStreakGoal(heat)
+  const bestEver = useMemo(() => bestShelfStreak(inView(book, boards), clock), [book, boards, boardDate(clock), awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   // A question's run can be longer than the overall one: say which night broke it.
   const longest = rows.length ? rows[0].n : 0
   const breakNight = useMemo(
@@ -1079,6 +1080,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         label={t('streaks.aria')}
         line={goal ? t('streaks.nextGoal', { goal }) : null}
       />
+      {bestEver > heat ? <Meta colors={colors}>{t('streaks.best', { n: bestEver })}</Meta> : null}
       {breakLine ? (
         <SetCard colors={colors}>
           <SetRow
