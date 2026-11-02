@@ -85,8 +85,8 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
     <View style={styles.wrap}>
       {monthly ? null : (
       <View style={styles.head}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.prev')} onPress={() => setMonthShift((n) => n - 1)} hitSlop={8}>
-          <Text style={[styles.shift, { color: colors.inkDim }]}>‹</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.prev')} accessibilityState={{ disabled: monthShift <= 0 }} disabled={monthShift <= 0} onPress={() => setMonthShift((n) => Math.max(0, n - 1))} hitSlop={8}>
+          <Text style={[styles.shift, { color: monthShift <= 0 ? colors.line : colors.inkDim }]}>‹</Text>
         </Pressable>
         <Text style={[styles.label, { color: colors.ink }]}>{view.label}</Text>
         <Pressable accessibilityRole="button" accessibilityLabel={t('cal.next')} onPress={() => setMonthShift((n) => n + 1)} hitSlop={8}>
