@@ -293,6 +293,7 @@ export function normalizeLamp(raw) {
       : {}),
     // The send it was kept from, so its sender can see the answers
     // (send-answers.js); shareOff when the keeper turned that off.
+    ...(asBool(lamp.fromDidYou) && SEND_ID.test(asString(lamp.fromId)) ? { fromId: asString(lamp.fromId).toLowerCase() } : {}),
     ...(asBool(lamp.fromDidYou) && SEND_ID.test(asString(lamp.sendId)) ? { sendId: asString(lamp.sendId).toLowerCase() } : {}),
     ...(asBool(lamp.fromDidYou) && asBool(lamp.shareOff) ? { shareOff: true } : {}),
     // Put on one night's tonight by Did I itself: answer it if you like, it

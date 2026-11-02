@@ -1033,6 +1033,16 @@ test('all time Missed leaves out today and questions that are never a miss', asy
   assert.equal(shelfStatsCounts([book], new Date(2026, 10, 1, 21)).skip, 1)
 })
 
+test('a kept Did you remembers who sent it, by id', async () => {
+  const { keptLamp } = await import('../src/lib/send-repeat.js')
+  const { normalizeBook } = await import('../src/lib/board-json.js')
+  const id = '11111111-2222-4333-8444-555555555555'
+  const lamp = keptLamp({ question: 'Did you stretch?', person: { user_id: id, display_name: 'Sam' } }, new Date(2026, 10, 2, 20))
+  assert.equal(lamp.fromId, id)
+  const book = normalizeBook({ id: 'b', title: 'x', lamps: [{ ...lamp, id: 'l1' }], answers: [] })
+  assert.equal(book.lamps[0].fromId, id, 'survives a save')
+})
+
 test('ten pause and resume rounds keep the first pause', async () => {
   const { toggleArchive } = await import('../src/lib/board-ops.js')
   const { normalizeLamp } = await import('../src/lib/board-json.js')

@@ -2649,9 +2649,12 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       }
       return
     }
+    // The inbox did not load: a Keep now would land on the account but not
+    // on this phone. Wait for a working load (the miss line has Retry).
+    if (!row && miss && fromPush[1] === 'keep') return
     pushDone.current = route.id
     answer(row || { id: fromPush[2] }, fromPush[1] === 'keep')
-  }, [rows, ready, loaded, route?.id])
+  }, [rows, ready, loaded, route?.id, miss])
 
   // One answer at a time per row, so a double tap cannot keep it twice.
   const answering = useRef(new Set())
@@ -2696,7 +2699,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       onGo: () =>
         once('we-report:' + row.id, async () => {
           publishSheet(null)
-          const { miss: why } = await reportSend(row.id)
+          const { miss: why } = await reportSend(row.id).catch(() => ({ miss: 'people.reach' }))
           if (why) setMiss(tMiss(why))
           else confirmDone(t('we.reported'))
           load()
