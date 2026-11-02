@@ -7,6 +7,7 @@ import { afterQuiet, gentleOn, pingOn, readPrefs } from './prefs.js'
 import { savePrefsForSw } from './board-store.js'
 import { streakRiskFire } from './streak-risk.js'
 import { shelfStreak } from './hall-feel.js'
+import { daysSinceLastAnswer } from './come-back.js'
 
 const timers = []
 
@@ -109,7 +110,8 @@ export async function armLampPings(book, now = new Date()) {
   savePrefsForSw(readPrefs())
   const reg = await readyWorker()
   const fires = pingOn('reminders') ? [...upcomingPings(book, now)] : []
-  const risk = pingOn('streakRisk') && !gentleOn() ? streakRiskFire(book, now, shelfStreak([book], now)) : null
+  const streakNow = pingOn('streakRisk') && !gentleOn() ? shelfStreak([book], now) : 0
+  const risk = streakNow > 0 && daysSinceLastAnswer([book], boardDate(now)) < 2 ? streakRiskFire(book, now, streakNow) : null
   if (risk) {
     fires.push({ ...risk, question: t('streak.riskBody', { time: clockWords('09:00') }) })
   }

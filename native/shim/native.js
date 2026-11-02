@@ -378,6 +378,19 @@ async function schedulePingsNow(books, now = new Date()) {
     // (cap or end of the week), one last note asks to open the app.
     const over = notes.length > PING_CAP - 1
     notes.length = Math.min(notes.length, PING_CAP - 1)
+    // A week away: the last question reminder in the window becomes one gentle
+    // push. It is never repeated, and the next open sets reminders fresh.
+    const lastAhead = aheads[aheads.length - 1] ?? 0
+    if (reminders && lastAhead >= 3) {
+      const lastDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + lastAhead)
+      const onLastDay = (note) => {
+        const d = note.trigger.date
+        return d.getFullYear() === lastDay.getFullYear() && d.getMonth() === lastDay.getMonth() && d.getDate() === lastDay.getDate()
+      }
+      const finals = notes.filter((note) => !note.lateCall && note.content.categoryIdentifier === ASK_CATEGORY && onLastDay(note))
+      const final = finals.sort((a, b) => b.trigger.date - a.trigger.date)[0]
+      if (final) final.content = { title: t('pings.comeBackTitle'), body: t('pings.comeBackBody'), data: { go: '/tonight' } }
+    }
     if (reminders && notes.length) {
       const last = Math.max(...notes.map((note) => note.trigger.date.getTime()))
       const renewAt = new Date(over ? last + 60 * 1000 : last + 24 * 60 * 60 * 1000)
