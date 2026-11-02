@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frame: Pie Crust</title>
+<style>
+:root{color-scheme:dark;--bg:#07090d;--panel:#111620;--ink:#eef1f6;--soft:#a3abb8;--dim:#5f6876;--line:#1f2632;--gold:#f2c45a;--accent:#c9f24d;
+ --ui:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;--display:Georgia,"Times New Roman",serif;--mono:ui-monospace,Consolas,monospace;--halo:#16203a}
+body.light{color-scheme:light;--bg:#e9ece4;--panel:#f7f8f4;--ink:#171a14;--soft:#4c5446;--dim:#7a8274;--line:#d3d8cb;--gold:#9a6b10;--halo:#ffffff}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 50% -10%,var(--halo) 0,transparent 60%),var(--bg);color:var(--ink);font:400 15px/1.55 var(--ui)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 16px 80px;display:grid;gap:34px}
+header{text-align:center;display:grid;gap:12px;justify-items:center}
+.kicker{font:700 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font:800 clamp(34px,7vw,56px)/1 var(--display);margin:0}
+h3{margin:0;font:800 24px/1.1 var(--display)}
+.lede{color:var(--soft);margin:0;max-width:64ch}
+.controls{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:var(--panel);border:1px solid var(--line);gap:4px}
+.seg button{font:600 13px/1 var(--ui);padding:9px 14px;border-radius:999px;border:0;background:transparent;color:var(--soft);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg i{width:10px;height:10px;border-radius:50%;display:inline-block}
+button:focus-visible{outline:3px solid #6aa8ff;outline-offset:2px}
+section.opt{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:18px;display:grid;gap:14px}
+.tag{font:700 10.5px/1 var(--mono);letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.opt p{margin:0;color:var(--soft);font-size:14.5px;max-width:78ch}
+.feat{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:0;list-style:none;font:600 12.5px/1.4 var(--mono);color:var(--ink)}
+.feat li::before{content:"· ";color:var(--gold)}
+.row{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:flex-start}
+.stage{border-radius:20px;padding:6px;display:grid;justify-items:center;gap:2px}
+.cap{font:700 11px/1.3 var(--mono);letter-spacing:.06em;color:var(--soft);text-align:center;padding-bottom:8px}
+.fw{position:relative;flex:none}
+.fw>.lay{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.card{position:absolute;box-sizing:border-box;overflow:hidden}
+.card .k{font:700 11px/1 var(--mono);letter-spacing:.16em}
+.card .q{font:800 27px/1.12 var(--ui);margin-top:14px;max-width:92%}
+.card .s{font:600 14px/1.3 var(--ui);margin-top:10px}
+.card .pills{position:absolute;left:20px;right:20px;bottom:20px;display:flex;gap:12px}
+.card .pill{flex:1;height:46px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:800 16px/1 var(--ui)}
+.card .chip{position:absolute;right:20px;top:18px;font:700 11px/1 var(--ui);padding:6px 9px;border-radius:999px}
+.tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.tile{width:120px;height:144px;border-radius:16px;position:relative;overflow:hidden;flex:none}
+.tile .fw{position:absolute}
+.tl{font:600 10px/1.2 var(--mono);color:var(--soft);text-align:center;margin-top:4px;max-width:120px}
+.tilecol{display:grid;justify-items:center}
+.cmp{display:grid;gap:10px}
+.cmp h4{margin:0;font:800 18px/1.1 var(--display)}
+.review{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:8px 18px;font-size:13.5px;color:var(--soft)}
+.review b{color:var(--ink)}
+.notes{color:var(--soft);font-size:14px;max-width:80ch;margin:0 auto}
+.buddies{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:flex-end}
+.buddies figure{margin:0;display:grid;justify-items:center;gap:6px;font:600 11px/1 var(--mono);color:var(--soft)}
+/* motion */
+@keyframes breatheO{0%,100%{opacity:.6}50%{opacity:1}}
+.breatheO{animation:breatheO 7s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 7s linear infinite}
+@keyframes sweep{0%,20%{transform:translateX(-70%)}60%,100%{transform:translateX(70%)}}
+.sweep{animation:sweep 4.5s ease-in-out infinite}
+@keyframes pflick{0%,100%{opacity:1}13%{opacity:.88}27%{opacity:.98}41%{opacity:.8}58%{opacity:1}72%{opacity:.9}}
+.pflick{animation:pflick 3s ease-in-out infinite}
+@keyframes steam{0%{transform:translateY(6px) scaleX(.8);opacity:0}25%{opacity:.95}100%{transform:translateY(-16px) scaleX(1.15);opacity:0}}
+.steam{transform-box:fill-box;transform-origin:50% 100%;animation:steam 3.6s ease-out infinite}
+@keyframes warm{0%,100%{opacity:.78}50%{opacity:1}}
+.warm{animation:warm 5s ease-in-out infinite}
+@keyframes twk{0%,100%{opacity:.15;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}
+.twk{transform-box:fill-box;transform-origin:50% 50%;animation:twk 2.8s ease-in-out infinite}
+@keyframes wish{0%{transform:translate(0,30px) scale(.5);opacity:0}10%{transform:translate(0,-6px) scale(1.12);opacity:1}18%{transform:translate(0,0) scale(1)}26%,30%{transform:rotate(-4deg)}28%,32%{transform:rotate(4deg)}36%{transform:rotate(0)}100%{transform:none;opacity:1}}
+@keyframes halfL{0%,40%{transform:none;opacity:1}55%{transform:translate(-14px,-6px) rotate(-26deg)}100%{transform:translate(-26px,30px) rotate(-60deg);opacity:0}}
+@keyframes halfR{0%,40%{transform:none;opacity:1}55%{transform:translate(14px,-8px) rotate(24deg)}100%{transform:translate(24px,26px) rotate(50deg);opacity:0}}
+@keyframes snap{0%,40%{transform:scale(0);opacity:0}46%{transform:scale(1.3);opacity:1}70%{transform:scale(.9);opacity:.9}100%{transform:scale(.4);opacity:0}}
+.wish{animation:wish 2.4s ease-out infinite}.halfL{transform-box:fill-box;transform-origin:50% 100%;animation:halfL 2.4s cubic-bezier(.2,.7,.3,1) infinite}.halfR{transform-box:fill-box;transform-origin:50% 100%;animation:halfR 2.4s cubic-bezier(.2,.7,.3,1) infinite}
+.snap{transform-box:fill-box;transform-origin:50% 50%;animation:snap 2.4s ease-out infinite}
+.still *,body.nomotion *{animation:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+ <span class="kicker">Frame · Thanksgiving 2026</span>
+ <h1>Pie Crust</h1>
+ <p class="lede">A special frame, free Nov 23 to 26 and kept after. Your card sits in a crimped pie crust. It starts as pale dough and bakes a little more golden with every Did today. When today is done, steam rises from the top. Switch theme, look and motion to check it.</p>
+</header>
+<div class="controls" role="group" aria-label="Preview">
+ <div class="seg" id="theme"><button aria-pressed="true" data-v="dark">Dark</button><button aria-pressed="false" data-v="light">Light</button></div>
+ <div class="seg" id="look"><button aria-pressed="true" data-v="lime"><i style="background:#c9f24d"></i>Lime</button><button aria-pressed="false" data-v="sky"><i style="background:#4aa8ff"></i>Sky</button><button aria-pressed="false" data-v="maple"><i style="background:#fa774f"></i>Maple</button></div>
+ <div class="seg" id="motion"><button aria-pressed="true" data-v="on">Motion</button><button aria-pressed="false" data-v="off">Still</button></div>
+</div>
+<div id="out" style="display:grid;gap:34px"></div>
+<p class="notes">Port notes: the crust uses only Path, Ellipse, Circle, LinearGradient and RadialGradient, in card space like art.jsx. The oven glow sits under the card; crust, leaves and steam sit outside it. Motion here is CSS; in the app it becomes Mover worklets and stops for still tiles, reduced motion and low power.</p>
+</div>
+
+<script>
+const PAD=48;
+const fx=n=>Math.round(n*100)/100;
+let N=0;const uid=p=>p+(++N);
+function rrPath(x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));return `M${fx(x)} ${fx(y+h-r)}L${fx(x)} ${fx(y+r)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+r)} ${fx(y)}L${fx(x+w-r)} ${fx(y)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+w)} ${fx(y+r)}L${fx(x+w)} ${fx(y+h-r)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x+w-r)} ${fx(y+h)}L${fx(x+r)} ${fx(y+h)}A${fx(r)} ${fx(r)} 0 0 1 ${fx(x)} ${fx(y+h-r)}Z`}
+function rrLength(w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));return 2*(w-2*r)+2*(h-2*r)+2*Math.PI*r}
+function rrPointAt(x,y,w,h,r,d){r=Math.max(0,Math.min(r,w/2,h/2));const sv=h-2*r,sh=w-2*r,arc=Math.PI*r/2,L=rrLength(w,h,r);let s=((d%L)+L)%L;
+ const out=(px,py,ang)=>({x:px,y:py,ang,nx:Math.sin(ang),ny:-Math.cos(ang)});const onArc=(cx,cy,from,k)=>{const th=from+(r?k/r:0);return out(cx+r*Math.cos(th),cy+r*Math.sin(th),th+Math.PI/2)};
+ if(s<sv)return out(x,y+h-r-s,-Math.PI/2);s-=sv;if(s<arc)return onArc(x+r,y+r,Math.PI,s);s-=arc;if(s<sh)return out(x+r+s,y,0);s-=sh;if(s<arc)return onArc(x+w-r,y+r,-Math.PI/2,s);s-=arc;
+ if(s<sv)return out(x+w,y+r+s,Math.PI/2);s-=sv;if(s<arc)return onArc(x+w-r,y+h-r,0,s);s-=arc;if(s<sh)return out(x+w-r-s,y+h,Math.PI);s-=sh;return onArc(x+r,y+h-r,Math.PI/2,Math.min(s,arc))}
+const ring=(f,o)=>rrPath(-o,-o,f.w+2*o,f.h+2*o,Math.max(0,f.R+o));
+const ringAt=(f,o,d)=>rrPointAt(-o,-o,f.w+2*o,f.h+2*o,f.R+o,d);
+const seeded=s=>{let x=s;return()=>{x=(x*9301+49297)%233280;return x/233280}};
+const lerp=(a,b,t)=>a+(b-a)*t;
+function mix(c1,c2,t){const p=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));const a=p(c1),b=p(c2);return '#'+a.map((v,i)=>Math.round(lerp(v,b[i],t)).toString(16).padStart(2,'0')).join('')}
+function openTopPath(w,h,r,gap){const m=w/2;return `M${m-gap} 0L${r} 0A${r} ${r} 0 0 0 0 ${r}L0 ${h-r}A${r} ${r} 0 0 0 ${r} ${h}L${w-r} ${h}A${r} ${r} 0 0 0 ${w} ${h-r}L${w} ${r}A${r} ${r} 0 0 0 ${w-r} 0L${m+gap} 0`}
+const dotD=(x,y,r)=>`M${fx(x-r)} ${fx(y)}a${r} ${r} 0 1 0 ${fx(2*r)} 0a${r} ${r} 0 1 0 ${fx(-2*r)} 0`;
+const sparkD=(x,y,s)=>`M${fx(x)} ${fx(y-s)}Q${fx(x)} ${fx(y)} ${fx(x+s)} ${fx(y)}Q${fx(x)} ${fx(y)} ${fx(x)} ${fx(y+s)}Q${fx(x)} ${fx(y)} ${fx(x-s)} ${fx(y)}Q${fx(x)} ${fx(y)} ${fx(x)} ${fx(y-s)}Z`;
+function inRR(x,y,X,Y,W,H,r){if(x<X||x>X+W||y<Y||y>Y+H)return false;const cx=Math.min(Math.max(x,X+r),X+W-r),cy=Math.min(Math.max(y,Y+r),Y+H-r);return (x-cx)**2+(y-cy)**2<=r*r}
+
+/* ================= PIE CRUST (special, Nov 23 to 26) ================= */
+// A fluted crust all round the card: a dough band from 1 to 8 px out, a scalloped edge
+// that bulges to about 14 px, a pinch at every flute, and pastry leaves with dough
+// berries on the top left and bottom right corners. Its color goes from raw dough to
+// golden as today's Dids come in (bake = Did / questions). When today is done, three
+// curls of steam rise over the top edge. Under the card: a warm oven glow that grows
+// with the bake.
+const RAW={base:'#f6e6c2',deep:'#e3c690',edge:'#b8925a',lip:'#c9a774'};
+const BAKED={base:'#e9a650',deep:'#c9772a',edge:'#8a4512',lip:'#a95d1c'};
+const OC=9.5,BUMP=7.2;
+function pieLayout(f){
+ const P=f.p,T=Math.max(1,Math.min(12,P.total||4)),A=Math.min(T,P.answered||0),SK=Math.min(T-A,P.skipped||0);
+ const done=f.still?true:(P.total>0&&A+SK>=T);
+ const bake=f.still?1:A/T;
+ const W=f.w+2*OC,H=f.h+2*OC,L=rrLength(W,H,f.R+OC);
+ const n=Math.max(14,Math.round(L/15)),flutes=[];
+ for(let i=0;i<n;i++){const a=rrPointAt(-OC,-OC,W,H,f.R+OC,i*L/n),m=rrPointAt(-OC,-OC,W,H,f.R+OC,(i+.5)*L/n),b=rrPointAt(-OC,-OC,W,H,f.R+OC,(i+1)*L/n);flutes.push({a,m,b,i})}
+ const c=k=>mix(RAW[k],BAKED[k],bake);
+ return{T,A,SK,done,bake,flutes,col:{base:c('base'),deep:c('deep'),edge:c('edge'),lip:c('lip')},tile:f.still&&f.w<=220}}
+function crustOuter(L){const k=BUMP*1.36;let d='';
+ L.flutes.forEach(({a,b},i)=>{if(!i)d+=`M${fx(a.x)} ${fx(a.y)}`;d+=`C${fx(a.x+a.nx*k)} ${fx(a.y+a.ny*k)} ${fx(b.x+b.nx*k)} ${fx(b.y+b.ny*k)} ${fx(b.x)} ${fx(b.y)}`});return d+'Z'}
+// A scored pastry leaf on a 0..len axis, pointing +x.
+function pastryLeaf(len,wd){const s=v=>fx(v);return `M0 0C${s(len*.18)} ${s(-wd*.9)} ${s(len*.48)} ${s(-wd*1.05)} ${s(len*.62)} ${s(-wd*.7)}L${s(len*.66)} ${s(-wd*.86)}C${s(len*.8)} ${s(-wd*.62)} ${s(len*.94)} ${s(-wd*.28)} ${s(len)} 0C${s(len*.94)} ${s(wd*.28)} ${s(len*.8)} ${s(wd*.62)} ${s(len*.66)} ${s(wd*.86)}L${s(len*.62)} ${s(wd*.7)}C${s(len*.48)} ${s(wd*1.05)} ${s(len*.18)} ${s(wd*.9)} 0 0Z`}
+function leafVeins(len,wd){const s=v=>fx(v);let d=`M${s(len*.06)} 0L${s(len*.9)} 0`;[.3,.5,.7].forEach(t=>{d+=`M${s(len*t)} 0L${s(len*(t+.13))} ${s(-wd*.62*(1-t*.4))}M${s(len*t)} 0L${s(len*(t+.13))} ${s(wd*.62*(1-t*.4))}`});return d}
+function leafCluster(id,x,y,rot,L,light){
+ const ink=mix(L.col.edge,'#3a1a06',.3);
+ const leaf=(len,wd,a,dx,dy)=>`<g transform="translate(${fx(dx)} ${fx(dy)}) rotate(${a})"><path d="${pastryLeaf(len,wd)}" transform="translate(.5 1.3)" fill="#2a1406" fill-opacity="${light?.18:.4}"/><path d="${pastryLeaf(len,wd)}" fill="url(#${id}lf)" stroke="${ink}" stroke-width=".8" stroke-linejoin="round"/><path d="${leafVeins(len,wd)}" fill="none" stroke="${ink}" stroke-width=".9" stroke-linecap="round" stroke-opacity=".85"/><path d="${leafVeins(len,wd)}" transform="translate(-.3 -.55)" fill="none" stroke="#fff8e4" stroke-width=".5" stroke-linecap="round" stroke-opacity="${fx(.55-L.bake*.25)}"/><path d="M${fx(len*.12)} ${fx(-wd*.55)}C${fx(len*.3)} ${fx(-wd*.95)} ${fx(len*.5)} ${fx(-wd*.9)} ${fx(len*.58)} ${fx(-wd*.62)}" fill="none" stroke="#fffaf0" stroke-opacity=".6" stroke-width=".8" stroke-linecap="round"/></g>`;
+ const berry=(bx,by,r)=>`<circle cx="${fx(bx+.4)}" cy="${fx(by+1)}" r="${r}" fill="#2a1406" fill-opacity="${light?.18:.4}"/><circle cx="${fx(bx)}" cy="${fx(by)}" r="${r}" fill="url(#${id}br)" stroke="${ink}" stroke-width=".7"/><ellipse cx="${fx(bx-r*.35)}" cy="${fx(by-r*.38)}" rx="${fx(r*.38)}" ry="${fx(r*.26)}" fill="#fffaf0" opacity=".75" transform="rotate(-30 ${fx(bx-r*.35)} ${fx(by-r*.38)})"/>`;
+ return `<g transform="translate(${fx(x)} ${fx(y)}) rotate(${rot}) scale(1.35)">${leaf(22,8.4,-8,-2,0)}${leaf(17,6.4,-62,-1,1)}${leaf(16,6,44,0,0)}${berry(2.4,-1.4,3)}${berry(-2.8,2.6,2.6)}${berry(3.6,4.2,2.3)}</g>`}
+
+function pieDefs(id,L){const c=L.col;return `<defs>
+ <linearGradient id="${id}cr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${mix(c.base,'#ffffff',.18)}"/><stop offset=".45" stop-color="${c.base}"/><stop offset="1" stop-color="${c.deep}"/></linearGradient>
+ <linearGradient id="${id}lf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix(c.base,'#ffffff',.22)}"/><stop offset="1" stop-color="${c.deep}"/></linearGradient>
+ <radialGradient id="${id}br" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="${mix(c.base,'#ffffff',.3)}"/><stop offset="1" stop-color="${c.deep}"/></radialGradient>
+ <radialGradient id="${id}hi" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffbe9" stop-opacity=".85"/><stop offset="1" stop-color="#fffbe9" stop-opacity="0"/></radialGradient></defs>`}
+
+function pieOver(f){
+ const id=f.uid,L=pieLayout(f),c=L.col,light=f.c.light,{w,h,R}=f;
+ const outer=crustOuter(L),crust=`${outer} ${ring(f,1)}`;
+ let o=pieDefs(id,L);
+ // shadow, body, inner lip
+ o+=`<path d="${outer} ${ring(f,3)}" fill-rule="evenodd" transform="translate(0 2)" fill="#1e0d03" fill-opacity="${light?.16:.42}"/>`;
+ o+=`<path d="${crust}" fill-rule="evenodd" fill="url(#${id}cr)"/>`;
+ // flutes: a hollow where the thumb pressed, a pinch line, a lit top, a browned tip
+ let hol='',pin='',pinHi='',lit='',tip='';
+ L.flutes.forEach(({a,m,b})=>{
+  const p=(q,k)=>({x:q.x+q.nx*k,y:q.y+q.ny*k});
+  const ang=Math.atan2(m.ny,m.nx)*180/Math.PI+90;
+  const hc=p(m,2.2);hol+=`<ellipse cx="${fx(hc.x)}" cy="${fx(hc.y)}" rx="4.4" ry="2.3" transform="rotate(${fx(ang)} ${fx(hc.x)} ${fx(hc.y)})"/>`;
+  const p0=p(a,-1.2),p1=p(a,3.2);pin+=`M${fx(p0.x)} ${fx(p0.y)}L${fx(p1.x)} ${fx(p1.y)}`;
+  const tx=b.x-a.x,ty=b.y-a.y,tl=Math.hypot(tx,ty)||1,ux=tx/tl,uy=ty/tl;
+  pinHi+=`M${fx(p0.x+ux*1.1)} ${fx(p0.y+uy*1.1)}L${fx(p1.x+ux*1.1)} ${fx(p1.y+uy*1.1)}`;
+  const lc=p(m,BUMP*.6);lit+=`<ellipse cx="${fx(lc.x-ux*.8)}" cy="${fx(lc.y-uy*.8)}" rx="3.8" ry="1.5" transform="rotate(${fx(ang)} ${fx(lc.x-ux*.8)} ${fx(lc.y-uy*.8)})"/>`;
+  const t0=p(a,1.9),t1=p(m,BUMP*1.02+.2),t2=p(b,1.9);tip+=`M${fx(t0.x+ux*2)} ${fx(t0.y+uy*2)}Q${fx(t1.x)} ${fx(t1.y)} ${fx(t2.x-ux*2)} ${fx(t2.y-uy*2)}`});
+ o+=`<g fill="${c.deep}" fill-opacity=".55">${hol}</g>`;
+ o+=`<path d="${tip}" fill="none" stroke="${c.edge}" stroke-width="2.2" stroke-linecap="round" stroke-opacity="${fx(.18+L.bake*.5)}"/>`;
+ o+=`<path d="${pin}" fill="none" stroke="${c.edge}" stroke-width="1.6" stroke-linecap="round" stroke-opacity=".95"/>`;
+ o+=`<path d="${pinHi}" fill="none" stroke="#fff6dc" stroke-width=".7" stroke-linecap="round" stroke-opacity="${fx(.6-L.bake*.2)}"/>`;
+ o+=`<g fill="url(#${id}hi)">${lit}</g>`;
+ o+=`<path d="${outer}" fill="none" stroke="${c.edge}" stroke-width="${light?1.25:.9}" stroke-opacity=".95"/>`;
+ // the lip where crust meets the card, and a ridge highlight just outside it
+ o+=`<path d="${ring(f,1.4)}" fill="none" stroke="${c.lip}" stroke-width="1.5"/>`;
+ o+=`<path d="${ring(f,4.6)}" fill="none" stroke="${c.deep}" stroke-width="3.4" stroke-opacity=".35"/>`;
+ o+=`<path d="${ring(f,3.4)}" fill="none" stroke="#fff6dc" stroke-width="1.1" stroke-opacity="${fx(.6-L.bake*.2)}"/>`;
+ o+=`<path d="${ring(f,7.6)}" fill="none" stroke="${c.edge}" stroke-width=".7" stroke-opacity=".55"/>`;
+ // egg wash sheen and sugar, both from the bake
+ if(L.bake>0){const rnd=seeded(19),Ls=rrLength(w+12,h+12,R+6),n=Math.round(Ls/18);let sug='',tw='';
+  for(let i=0;i<n;i++){const q=ringAt(f,3.6+rnd()*6.5,(i+rnd()*.6)*Ls/n);if(rnd()<.32)tw+=`<path class="${f.still||!L.done?'':'twk'}" style="animation-delay:${-(rnd()*2.8).toFixed(2)}s" d="${sparkD(q.x,q.y,1.5)}"/>`;else sug+=dotD(q.x,q.y,.42)}
+  o+=`<path d="${sug}" fill="#fffaf0" fill-opacity="${fx(.25+L.bake*.6)}"/><g fill="#fffaf0" fill-opacity="${fx(L.bake)}">${tw}</g>`}
+ // pastry leaves on two corners
+ const cc=off=>R-(R+off)*Math.SQRT1_2;
+ o+=leafCluster(id,cc(11),cc(11),0,L,light)+leafCluster(id,w-cc(11),h-cc(11),180,L,light);
+ // steam when today is done
+ if(L.done){const sc=light?'#b9a48c':'#fff8ea',so=light?.85:.8,curls=[[w*.5-22,-12,1,0,26],[w*.5,-13,-1,1.2,32],[w*.5+22,-12,1,2.4,28]];
+  o+=`<defs><linearGradient id="${id}st" x1="0" y1="-12" x2="0" y2="-46" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${sc}" stop-opacity="${so}"/><stop offset=".55" stop-color="${sc}" stop-opacity="${fx(so*.6)}"/><stop offset="1" stop-color="${sc}" stop-opacity="0"/></linearGradient></defs>`;
+  curls.forEach(([x,y,s,dl,hh])=>{const k=hh/30;const d=`M${fx(x)} ${fx(y)}C${fx(x+6*s)} ${fx(y-7*k)} ${fx(x-6*s)} ${fx(y-12*k)} ${fx(x)} ${fx(y-18*k)}C${fx(x+5*s)} ${fx(y-22*k)} ${fx(x-3*s)} ${fx(y-26*k)} ${fx(x+1.5*s)} ${fx(y-30*k)}`;
+   o+=`<g class="${f.still?'':'steam'}" style="animation-delay:${-dl}s"><path d="${d}" fill="none" stroke="url(#${id}st)" stroke-opacity=".45" stroke-width="7" stroke-linecap="round"/><path d="${d}" fill="none" stroke="url(#${id}st)" stroke-width="3.4" stroke-linecap="round"/></g>`})}
+ return o}
+
+function pieUnder(f){
+ const id=f.uid+'u',L=pieLayout(f),light=f.c.light;if(L.bake<=0&&!L.done)return '';
+ let h='';const steps=f.still?8:26,amt=(light?.07:.1)*(.35+.65*L.bake)*(L.done?1.25:1);
+ for(let i=0;i<steps;i++){const k=-14-i*1;h+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="${light?'#ff9a2e':'#ffb35c'}" stroke-width="3" stroke-opacity="${fx(amt*Math.pow(1-i/steps,1.5))}"/>`}
+ return `<g class="${f.still?'':'warm'}">${h}</g>`}
+
+/* ================= Existing frames for comparison ================= */
+function goldUnder(f){const id=uid('gd');let halo='';for(let i=0;i<3;i++){const k=-10-1-i*2;halo+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="#e2b75a" stroke-width="2" stroke-opacity="${fx(.18*Math.pow(1-i/3,1.6))}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a5414"/><stop offset=".22" stop-color="#f8dc8a"/><stop offset=".4" stop-color="#b8892b"/><stop offset=".52" stop-color="#fff1c2"/><stop offset=".66" stop-color="#a87a24"/><stop offset=".84" stop-color="#f3d27a"/><stop offset="1" stop-color="#7a5414"/></linearGradient></defs>${halo}<path d="${ring(f,10)}" fill="url(#${id})"/><path d="${ring(f,9.5)}" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1"/>`}
+function goldHtml(f){const o=10;return `<div style="position:absolute;left:${PAD-o}px;top:${PAD-o}px;width:${f.w+2*o}px;height:${f.h+2*o}px;border-radius:${f.R+o}px;overflow:hidden"><div class="sweep" style="position:absolute;inset:-40% -60%;background:linear-gradient(100deg,transparent 44%,rgba(255,255,255,.6) 50%,transparent 56%)"></div></div>`}
+const FILI=id=>`<path d="M6 58 C6 26 26 6 58 6" fill="none" stroke="url(#${id})" stroke-width="3"/><path d="M14 54 C16 32 32 16 54 14" fill="none" stroke="url(#${id})" stroke-width="1.6"/><path d="M6 22 q10 -2 12 -12 q2 10 12 12 q-10 2 -12 12 q-2 -10 -12 -12z" fill="url(#${id})"/><circle cx="34" cy="34" r="3" fill="url(#${id})"/><path d="M40 8 q6 4 4 10 M8 40 q4 6 10 4" fill="none" stroke="url(#${id})" stroke-width="1.4"/>`;
+const GDEF=id=>`<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1c2"/><stop offset=".5" stop-color="#e2b75a"/><stop offset="1" stop-color="#8a6420"/></linearGradient></defs>`;
+function corners(f,off,art){return [[off,off,0],[f.w-off,off,90],[f.w-off,f.h-off,180],[off,f.h-off,270]].map(([x,y,a])=>`<g transform="translate(${x} ${y}) rotate(${a})">${art}</g>`).join('')}
+function goldOver(f){const id='gg'+uid('');return GDEF(id)+corners(f,-14,FILI(id))}
+function auroraUnder(f){const id=uid('au');let h='';const steps=f.still?3:15;for(let i=0;i<steps;i++){const k=-3-1-i*2;h+=`<path d="${rrPath(k,k,f.w-2*k,f.h-2*k,f.R-k)}" fill="none" stroke="url(#${id})" stroke-width="2" stroke-opacity="${fx(.42*Math.pow(1-i/steps,1.6))}"/>`}
+ return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#46f0c0"/><stop offset=".35" stop-color="#6aa8ff"/><stop offset=".7" stop-color="#c38bff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient></defs><g class="breatheO">${h}</g>`}
+function auroraHtml(f){const o=3,D=Math.hypot(f.w,f.h)+20;return `<div style="position:absolute;left:${PAD-o}px;top:${PAD-o}px;width:${f.w+2*o}px;height:${f.h+2*o}px;border-radius:${f.R+o}px;overflow:hidden"><div class="spin" style="position:absolute;width:${D}px;height:${D}px;left:${(f.w+2*o-D)/2}px;top:${(f.h+2*o-D)/2}px;background:conic-gradient(#46f0c0,#6aa8ff,#c38bff,#ff7ad9,#46f0c0)"></div></div>`}
+function litPath(p,r){const waxing=p<.5,k=Math.cos(2*Math.PI*p),rx=Math.abs(k)*r,cres=Math.abs(p-.5)>.25;
+ return `M0 ${-r}A${r} ${r} 0 0 ${waxing?1:0} 0 ${r}A${fx(rx)} ${r} 0 0 ${waxing?(cres?0:1):(cres?1:0)} 0 ${-r}Z`}
+function moonDisc(p,r,id){return `<circle r="${r}" fill="#262c3a"/><path d="${litPath(p,r)}" fill="url(#${id})"/><circle r="${r}" fill="none" stroke="rgba(241,230,196,.35)" stroke-width=".8"/>`}
+function moonOver(f){const id=uid('mn'),p=.62;let week='';for(let i=0;i<7;i++){const q=(p-.0339*(6-i)+1)%1,t=i===6;week+=`<g transform="translate(${fx(f.w*(.12+i*.127))} ${f.h+1})">${t?`<circle r="12" fill="none" stroke="rgba(241,230,196,.6)"/>`:''}${moonDisc(q,t?8:6.5,id)}</g>`}
+ return `<defs><radialGradient id="${id}" cx=".4" cy=".35" r=".6"><stop offset="0" stop-color="#fffaf0"/><stop offset=".7" stop-color="#f1e6c4"/><stop offset="1" stop-color="#d8c99a"/></radialGradient><radialGradient id="${id}h"><stop offset="0" stop-color="#f1e6c4" stop-opacity=".43"/><stop offset="1" stop-color="#f1e6c4" stop-opacity="0"/></radialGradient></defs>
+ <path d="${openTopPath(f.w,f.h,f.R,34)}" fill="none" stroke="rgba(241,230,196,.55)" stroke-width="1.5"/><g transform="translate(${f.w/2} -2)"><circle r="44" fill="url(#${id}h)"/>${moonDisc(p,20,id)}<circle r="5" cx="-6" cy="4" fill="rgba(0,0,0,.08)"/><circle r="3" cx="7" cy="-7" fill="rgba(0,0,0,.07)"/></g>${week}`}
+// Gingerbread (coin, 2026-12-18), copied from frames-drop-2026-12-18.html.
+const GUM=[['#ff6b5c','#c8261c','#7a1410'],['#7fd46a','#2f9a4a','#145a28'],['#ffe07a','#e0a21c','#8a5a08']];
+function gumdrop(id,x,y,s,k){const c=GUM[k%3];
+ return `<g transform="translate(${fx(x)} ${fx(y)})"><ellipse cy="${fx(s*.8)}" rx="${fx(s*1.15)}" ry="${fx(s*.38)}" fill="#fffaf0"/>
+ <path d="M${-s} ${fx(s*.7)}C${-s} ${fx(-s*.35)} ${fx(-s*.55)} ${-s} 0 ${-s}C${fx(s*.55)} ${-s} ${s} ${fx(-s*.35)} ${s} ${fx(s*.7)}Q0 ${fx(s*1.05)} ${-s} ${fx(s*.7)}Z" fill="url(#${id}g${k%3})" stroke="${c[2]}" stroke-width=".55"/>
+ <path d="M${fx(-s*.62)} ${fx(-s*.1)}Q${fx(-s*.5)} ${fx(-s*.7)} ${fx(-s*.05)} ${fx(-s*.8)}" fill="none" stroke="#ffffff" stroke-opacity=".8" stroke-width="${fx(s*.22)}" stroke-linecap="round"/></g>`}
+function candyDot(id,x,y,r,k){return `<circle cx="${fx(x)}" cy="${fx(y+.4)}" r="${fx(r+.7)}" fill="#fffaf0"/><circle cx="${fx(x)}" cy="${fx(y)}" r="${r}" fill="url(#${id}g${k%3})" stroke="${GUM[k%3][2]}" stroke-width=".45"/>`}
+function peppermint(id,x,y,r){let sw='';for(let k=0;k<6;k++){const a=k*Math.PI/3,b=a+.62,c=a+1.05;
+  sw+=`M0 0L${fx(r*Math.cos(a))} ${fx(r*Math.sin(a))}A${r} ${r} 0 0 1 ${fx(r*Math.cos(b))} ${fx(r*Math.sin(b))}Q${fx(r*.45*Math.cos(c))} ${fx(r*.45*Math.sin(c))} 0 0Z`}
+ return `<g transform="translate(${fx(x)} ${fx(y)})"><circle r="${fx(r+1.1)}" fill="#fffaf0"/><circle r="${r}" fill="url(#${id}pm)"/><path d="${sw}" fill="#e0342a"/><circle r="${fx(r*.22)}" fill="#ffffff"/><circle r="${r}" fill="none" stroke="#a8221a" stroke-width=".55"/></g>`}
+function gingerOver(f){
+ const {w,h,R}=f,id=uid('gn'),L=f.c.light;
+ const X0=-7,Y0=-6,X1=w+7,Y1=h+13,r=R+6,a0=X1-r,a1=X0+r,ns=Math.max(8,Math.round((a0-a1)/10)),s=(a0-a1)/ns/2;
+ let scal='',pipe='',pdots='';
+ for(let i=0;i<ns;i++){const xr=a0-2*s*i,xl=xr-2*s,xc=xr-s;scal+=`A${fx(s)} ${fx(s)} 0 0 1 ${fx(xl)} ${Y1}`;
+  pipe+=`M${fx(xc+s-2.6)} ${Y1}A${fx(s-2.6)} ${fx(s-2.6)} 0 0 1 ${fx(xc-s+2.6)} ${Y1}`;if(i)pdots+=dotD(xr,Y1+.6,1.25)}
+ const outer=`M${X0} ${Y1-r}L${X0} ${Y0+r}A${r} ${r} 0 0 1 ${X0+r} ${Y0}L${X1-r} ${Y0}A${r} ${r} 0 0 1 ${X1} ${Y0+r}L${X1} ${Y1-r}A${r} ${r} 0 0 1 ${fx(a0)} ${Y1}${scal}A${r} ${r} 0 0 1 ${X0} ${Y1-r}Z`;
+ const cookie=`${outer} ${ring(f,1)}`;
+ const rnd=seeded(31);let dk='',lt='';
+ for(let i=0;i<900&&(dk.length+lt.length)<9000;i++){const x=X0+rnd()*(X1-X0),y=Y0+rnd()*(Y1+4-Y0);if(!inRR(x,y,X0,Y0,X1-X0,Y1-Y0+3,r)||inRR(x,y,-1.5,-1.5,w+3,h+3,R+1.5))continue;const rr=fx(.3+rnd()*.45);if(i%3)dk+=dotD(x,y,rr);else lt+=dotD(x,y,rr)}
+ const iAt=(o,d)=>rrPointAt(-o,-o,w+2*o,h+2*o,R+o,d),LS=rrLength(w+3.2,h+3.2,R+1.6),nsc=Math.round(LS/10);let sc='',sd='';
+ for(let i=0;i<nsc;i++){const a=iAt(1.6,i*LS/nsc),m=iAt(1.6,(i+.5)*LS/nsc),b=iAt(1.6,(i+1)*LS/nsc);sc+=`${i?'':`M${fx(a.x)} ${fx(a.y)}`}Q${fx(m.x+m.nx*4.6)} ${fx(m.y+m.ny*4.6)} ${fx(b.x)} ${fx(b.y)}`;sd+=dotD(a.x+a.nx*.5,a.y+a.ny*.5,1.15)}
+ let candy='';const cc=o=>R-(R+o)*Math.SQRT1_2;
+ for(let y=R+30,i=0;y<h-R-6;y+=50,i++)candy+=gumdrop(id,-3.8,y,3.8,i)+gumdrop(id,w+3.8,y,3.8,i+1);
+ const nt=Math.max(3,Math.round((w-2*R)/46));for(let i=0;i<nt;i++){const x=R+8+(w-2*R-16)*(i+.5)/nt;candy+=candyDot(id,x,-3.2,2.6,i)}
+ const xs=[];for(let x=R+6;x<=w-R-6;x+=36)if(Math.abs(x-w/2)>36)xs.push(x);
+ xs.forEach((x,i)=>{candy+=gumdrop(id,x,h+6.6,4.6,i+2)});
+ candy+=peppermint(id,cc(3.2),cc(3.2),4.6)+peppermint(id,w-cc(3.2),cc(3.2),4.6)+peppermint(id,cc(7),h-cc(7)+1,6.4)+peppermint(id,w-cc(7),h-cc(7)+1,6.4);
+ return `<defs>
+  <linearGradient id="${id}ck" x1="0" y1="${Y0}" x2="0" y2="${Y1+5}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#c97c3a"/><stop offset=".6" stop-color="#b56a2c"/><stop offset="1" stop-color="#93501f"/></linearGradient>
+  <radialGradient id="${id}pm" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6e0d8"/></radialGradient>
+  ${GUM.map((c,i)=>`<radialGradient id="${id}g${i}" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="${c[0]}"/><stop offset="1" stop-color="${c[1]}"/></radialGradient>`).join('')}</defs>
+ <path d="${outer} ${ring(f,4)}" fill-rule="evenodd" transform="translate(0 2.2)" fill="#000" fill-opacity="${L?.15:.4}"/>
+ <path d="${cookie}" fill-rule="evenodd" fill="url(#${id}ck)"/>
+ <path d="${dk}" fill="#5e2c0c" fill-opacity=".38"/><path d="${lt}" fill="#f6c58a" fill-opacity=".4"/>
+ <path d="${outer}" fill="none" stroke="#6a3010" stroke-width="1"/>
+ <path d="${pipe}" fill="none" stroke="#fffaf0" stroke-width="1.8" stroke-linecap="round"/><path d="${pdots}" fill="#fffaf0"/>
+ <path d="${sc}" fill="none" stroke="#fffaf0" stroke-width="1.8" stroke-linecap="round"/><path d="${sd}" fill="#fffaf0"/>${candy}`}
+// Pumpkin Patch (special, Halloween 2026), simplified: pumpkins on a plain vine line.
+function pumpkinsOver(f){const P=f.p,T=Math.max(1,Math.min(8,P.total||4)),A=f.still?T:Math.min(T,P.answered||0),id=f.uid;
+ const W=f.w+24,H=f.h+24,L=rrLength(W,H,f.R+12);let o=`<defs><radialGradient id="${id}lit" cx=".5" cy=".56" r=".68"><stop offset="0" stop-color="#ffb84a"/><stop offset=".45" stop-color="#f77f14"/><stop offset="1" stop-color="#a63d06"/></radialGradient><radialGradient id="${id}dim" cx=".4" cy=".34" r=".85"><stop offset="0" stop-color="#8a4a22"/><stop offset="1" stop-color="#33160a"/></radialGradient></defs><path d="${ring(f,5)}" fill="none" stroke="#2f6128" stroke-width="2.6"/>`;
+ const lobes=[[-9.6,1,4.8,8.2],[9.6,1,4.8,8.2],[-5.5,.2,7.1,9.8],[5.5,.2,7.1,9.8],[0,0,7.4,10.5]];
+ for(let i=0;i<T;i++){const d=50-(2*50+Math.PI*(f.R+12)+f.w-2*f.R)*(i+.5)/T,pt=rrPointAt(-12,-12,W,H,f.R+12,d),lit=i<A;
+  o+=`<g transform="translate(${fx(pt.x+pt.nx*6)} ${fx(pt.y+pt.ny*6)}) scale(${f.still?1.4:.85})">${lobes.map(([cx,cy,rx,ry])=>`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#${id}${lit?'lit':'dim'})" stroke="#3a1200" stroke-width=".7"/>`).join('')}<path d="M-6.5 -1.1L-2.3 -2.3L-3.9 -6.3ZM6.5 -1.1L2.3 -2.3L3.9 -6.3ZM-7.1 3.1Q0 7.4 7.1 3.1L0 8.2Z" fill="${lit?'#ffe45a':'#080301'}"/></g>`}
+ return o}
+
+/* ================= TURKEY buddy (48 by 58, the bat's grid) ================= */
+const TURKEY=[
+ // tail fan: outer feathers (rotated ovals), tips, then an inner brown row
+ ...[-62,-41,-20,0,20,41,62].map((a,i)=>['fe',24,32,a,4.4,9.6,['#c8452c','#e8862f','#f2bf47'][i%3],15]),
+ ...[-62,-41,-20,0,20,41,62].map((a,i)=>['fe',24,32,a,2.6,3.6,['#e8862f','#f2bf47','#ffd98a'][i%3],20.5]),
+ ...[-55,-33,-11,11,33,55].map(a=>['fe',24,32,a,3.4,7.4,'#7a4a26',13]),
+ ['e',24,35,12.5,11.5,'#8a5a34'],
+ ['e',13.4,37,3.4,6.4,'#6f4527',-18],['e',34.6,37,3.4,6.4,'#6f4527',18],
+ ['e',24,39.5,7.6,6.4,'#d1a271'],
+];
+function turkeySvg(size){const s=TURKEY.map(p=>{if(p[0]==='fe'){const [_,cx,cy,a,rx,ry,c,dist,op=1]=p;const rad=(a-90)*Math.PI/180,x=cx+Math.cos(rad)*dist,y=cy+Math.sin(rad)*dist;return `<ellipse cx="${fx(x)}" cy="${fx(y)}" rx="${rx}" ry="${ry}" fill="${c}" opacity="${op}" transform="rotate(${a} ${fx(x)} ${fx(y)})"/>`}
+  const [_,cx,cy,rx,ry,c,rot=0]=p;return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${c}" transform="rotate(${rot} ${cx} ${cy})"/>`}).join('');
+ return `<svg viewBox="0 0 48 58" width="${48*size}" height="${58*size}">${s}
+ <ellipse cx="20" cy="31" rx="2.3" ry="2.8" fill="#2d241c"/><ellipse cx="28" cy="31" rx="2.3" ry="2.8" fill="#2d241c"/>
+ <ellipse cx="20.8" cy="30.1" rx=".75" ry=".95" fill="#fff" opacity=".9"/><ellipse cx="28.8" cy="30.1" rx=".75" ry=".95" fill="#fff" opacity=".9"/>
+ <polygon points="21.8,33.6 26.2,33.6 24,37" fill="#f2a93b"/><polygon points="22.6,33.6 25.4,33.6 24,35.4" fill="#ffd27a"/>
+ <ellipse cx="25.9" cy="37.4" rx="1.3" ry="2.6" fill="#d8372c"/><ellipse cx="25.6" cy="36.6" rx=".45" ry=".9" fill="#ff8a7a" opacity=".8"/>
+ <ellipse cx="16.4" cy="35" rx="2.2" ry="1.3" fill="#f59aa8" opacity=".7"/><ellipse cx="31.6" cy="35" rx="2.2" ry="1.3" fill="#f59aa8" opacity=".7"/>
+ <line x1="18" y1="45.6" x2="18" y2="48.4" stroke="#e39a34" stroke-width="1.4" stroke-linecap="round"/><line x1="30" y1="45.6" x2="30" y2="48.4" stroke="#e39a34" stroke-width="1.4" stroke-linecap="round"/>
+ <polygon points="15.2,49.6 20.8,49.6 18,47.4" fill="#e39a34"/><polygon points="27.2,49.6 32.8,49.6 30,47.4" fill="#e39a34"/></svg>`}
+
+/* ================= WISHBONE cheer (32 by 40 box) ================= */
+const WISH_L='M16 6.2C13.4 4.6 10.8 6.4 11.6 9C12 10.4 13 11 13.4 12.4L6.6 33.6C6 35.6 7.8 37.2 9.6 36.4C11 35.8 11 34.4 10.6 33.2L15.2 15.6L16 14.4Z';
+const WISH_R='M16 6.2C18.6 4.6 21.2 6.4 20.4 9C20 10.4 19 11 18.6 12.4L25.4 33.6C26 35.6 24.2 37.2 22.4 36.4C21 35.8 21 34.4 21.4 33.2L16.8 15.6L16 14.4Z';
+function wishSvg(still){return `<svg viewBox="0 0 32 40" width="96" height="120" style="overflow:visible"><defs><linearGradient id="wb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff8e6"/><stop offset="1" stop-color="#ead7ae"/></linearGradient></defs>
+ <g class="${still?'':'wish'}"><g class="${still?'':'halfL'}"><path d="${WISH_L}" fill="url(#wb)" stroke="#b07a3c" stroke-width="1.2" stroke-linejoin="round"/><path d="M12.6 8.2C12.8 9.4 13.6 10 13.8 11" fill="none" stroke="#fff" stroke-width=".8" stroke-linecap="round"/></g>
+ <g class="${still?'':'halfR'}"><path d="${WISH_R}" fill="url(#wb)" stroke="#b07a3c" stroke-width="1.2" stroke-linejoin="round"/></g>
+ <g class="${still?'':'snap'}" ${still?'opacity="0"':''}><path d="${sparkD(16,9,6)}" fill="#ffd34d" stroke="#fff" stroke-width=".8"/><path d="${sparkD(9,4,2.4)}${sparkD(23,3.5,2)}" fill="#ffd34d"/></g></g></svg>`}
+
+const FR={
+ pie:{name:'Pie Crust',kind:'Special · free Nov 23 to 26 · kept after',under:pieUnder,over:pieOver},
+ pumpkins:{name:'Pumpkin Patch',kind:'Special · Halloween 2026',over:pumpkinsOver},
+ ginger:{name:'Gingerbread',kind:'Coin · still',over:gingerOver},
+ gold:{name:'Gold leaf',under:goldUnder,html:goldHtml,over:goldOver},
+ aurora:{name:'Aurora',under:auroraUnder,html:auroraHtml},
+ moon:{name:"Tonight's moon",over:moonOver},
+};
+const LOOKS={
+ lime:{dark:{bg:'#0e1014',card:'#16191f',line:'#2b3140',on:'#c9f24d',onInk:'#101208',ink:'#f4f6fa',soft:'#99a1b0',dim:'#7c838f',miss:'#ff6f61',chip:'#242935'},
+       light:{bg:'#eef1e6',card:'#ffffff',line:'#cfd4c4',on:'#567510',onInk:'#ffffff',ink:'#1a1d16',soft:'#4a5240',dim:'#697060',miss:'#c44536',chip:'#e8ebdf'}},
+ sky:{dark:{bg:'#0a0d14',card:'#10151f',line:'#253247',on:'#4aa8ff',onInk:'#06121f',ink:'#f4f6fa',soft:'#99a1b0',dim:'#7c838f',miss:'#ff6f61',chip:'#1b2433'},
+      light:{bg:'#e7eff9',card:'#f6faff',line:'#b7cce6',on:'#1766c2',onInk:'#ffffff',ink:'#141a22',soft:'#4a5566',dim:'#6a7486',miss:'#c44536',chip:'#dbe7f5'}},
+ maple:{dark:{bg:'#140c0a',card:'#1f1410',line:'#462d26',on:'#fa774f',onInk:'#1a0904',ink:'#f8f0ec',soft:'#b3a19a',dim:'#8a7770',miss:'#ff6f61',chip:'#32211c'},
+        light:{bg:'#f9ebe7',card:'#fff8f6',line:'#e5c3b8',on:'#be411b',onInk:'#ffffff',ink:'#22140f',soft:'#5e4a42',dim:'#806a62',miss:'#c44536',chip:'#f4e1dc'}}};
+let THEME='dark',LOOK='lime';
+
+function bigCard(pal,f){const P=f.p,all=P.total>0&&P.answered+P.skipped>=P.total;
+ return `<div class="card" style="left:${PAD}px;top:${PAD}px;width:${f.w}px;height:${f.h}px;border-radius:${f.R}px;background:${pal.card};border:1px solid ${pal.line};color:${pal.ink};padding:22px">
+ <span class="k" style="color:${pal.on}">${all?'ALL DONE TODAY':`TODAY · ${P.answered+P.skipped+1} OF ${P.total}`}</span><span class="chip" style="background:${pal.chip};color:${pal.soft}">Health</span>
+ <div class="q">${all?'That was the last one for today.':'Did I take my vitamins?'}</div>
+ <div class="s" style="color:${pal.soft}">6 days in a row</div>
+ ${all?'':`<div class="pills"><span class="pill" style="border:1px solid ${pal.line};color:${pal.ink}">Not yet</span><span class="pill" style="background:${pal.on};color:${pal.onInk}">Did</span></div>`}</div>`}
+function miniCard(pal,f,id){const wk=[1,1,1,1,0,1,1];
+ return `<div class="card" style="left:${PAD}px;top:${PAD}px;width:${f.w}px;height:${f.h}px;border-radius:${f.R}px;background:${pal.card};border:2px solid ${pal.line}">
+ <div style="position:absolute;left:24px;top:28px;width:58px;height:10px;border-radius:5px;background:${pal.on}"></div>
+ <div style="position:absolute;left:24px;top:54px;width:160px;height:18px;border-radius:9px;background:${pal.ink}"></div>
+ <div style="position:absolute;left:24px;top:80px;width:104px;height:18px;border-radius:9px;background:${pal.ink}"></div>
+ ${id==='moon'?'':`<div style="position:absolute;left:24px;right:24px;bottom:30px;display:flex;justify-content:space-between">${wk.map(o=>`<i style="width:16px;height:16px;border-radius:50%;background:${o?pal.on:pal.miss}"></i>`).join('')}</div>`}</div>`}
+
+function framed(id,{theme=THEME,look=LOOK,zoom=1,mini=false,still=false,p={}}={}){
+ const pal=LOOKS[look][theme],light=theme==='light';
+ const w=mini?220:300,h=mini?264:340,R=mini?30:24;
+ const f={uid:uid('pc'),w,h,R,still,c:{light,accent:pal.on,card:pal.card,bg:pal.bg,ink:pal.ink},p:{answered:2,total:4,skipped:0,...p}};
+ const F=FR[id],svg=s=>`<svg class="lay" viewBox="${-PAD} ${-PAD} ${w+2*PAD} ${h+2*PAD}" width="${w+2*PAD}" height="${h+2*PAD}" aria-hidden="true">${s}</svg>`;
+ return `<div class="fw ${still?'still':''}" style="width:${w+2*PAD}px;height:${h+2*PAD}px;zoom:${zoom}">${F.under?svg(F.under(f)):''}${F.html?F.html(f):''}${mini?miniCard(pal,f,id):bigCard(pal,f)}${F.over?svg(F.over(f)):''}</div>`}
+function stage(id,cap,opts){const pal=LOOKS[opts.look||LOOK][opts.theme||THEME];return `<div class="stage" style="background:${pal.bg}">${framed(id,opts)}<div class="cap">${cap}</div></div>`}
+function tile(id,theme,p={},label,look){const pal=LOOKS[look||LOOK][theme];const k=.36,W=316*k,H=360*k;
+ return `<div class="tilecol"><div class="tile" style="background:${pal.bg};border:1px solid ${pal.line}"><div style="position:absolute;left:${(120-W)/2}px;top:${(144-H)/2}px">${framed(id,{theme,look,mini:true,still:true,zoom:k,p})}</div></div><div class="tl">${label||FR[id].name}</div></div>`}
+
+const S0={answered:0,total:4},S2={answered:2,total:4},S4={answered:4,total:4},S3N={answered:3,skipped:1,total:4};
+const NOTES=[
+['1. Would someone want it?','Yes. It is the one dish everyone pictures on Thanksgiving, and it does something every time you answer: the dough bakes a shade more golden with each Did, and when today is done the pie steams. Free for four days and only this year, so it is a reason to open the app that week.'],
+['2. Different from the closest frame?','<b>Gingerbread</b> is the other baked frame: a flat brown cookie slab with white piped icing and candy, the same color all day. <b>Pumpkin Patch</b> is the other holiday frame tied to your day, but it counts with separate objects (a pumpkin per question). <b>Pie Crust</b> has no icing, no candy and no objects to count: the whole crust is one fluted pastry rim whose color is the progress, from raw dough to golden, with steam at the end.'],
+['3. Detail and finish','The crust is one band with a fluted edge (one flute about every 11 px), a thumb hollow and a pinch line with a lit side at every flute, a soft highlight on each flute, a browned tip that darkens with the bake, a lip where it meets the card and a ridge highlight. Sugar crystals and a few twinkles show as it bakes. Two corners get a cluster of three scored pastry leaves (midrib, three pairs of veins, a notch, a lit edge) and three dough berries with a shine. Under the card, a warm oven glow grows with the bake.'],
+['4. Tile','The tile draws it fully baked with steam: a golden fluted ring with the leaf clusters at top left and bottom right. The flutes and leaves still read at 120 px. No motion.'],
+['5. Corners, text, clipping','The crust follows the card radius with the same ring math as other frames: lip at 1.4 px, flutes centred 8 px out, reaching about 13.5 px. The leaf clusters sit on the rounded corners outside the card and do not reach the kicker or the Did button. Steam rises from 13 to 42 px above the top edge, clear of the card.'],
+['6. Looks and themes','Crust colors are fixed pastry colors and never use the accent, so they work in Lime, Sky and Maple. On light pages the shadow and glow are softer and the steam turns warm grey so it still shows.'],
+['7. Animation','Only on the top card: the oven glow breathes slowly (5 s), and when today is done the steam curls rise and fade on a 3.6 s loop and the sugar twinkles. A change in the bake fades between shades. Tiles, cards behind, Less motion and low power draw it still.'],
+['8. Copy','Name: Pie Crust. Description: "Your card in a pie crust. Each Did bakes it a little more golden." Features: "Did bakes the crust golden", "Steam rises when today is done", "Free Nov 23 to 26, yours to keep".']];
+
+function section(title,tag,desc,body){return `<section class="opt"><span class="tag">${tag}</span><h3>${title}</h3><p>${desc}</p>${body}</section>`}
+function render(){
+ const z=.8,out=[];
+ out.push(section('Pie Crust','Special · free Nov 23 to 26 · kept after','Your card sits in a fluted pie crust. It starts as raw dough and bakes a shade more golden with each Did today. When every question is answered, steam rises from the top of the pie.',
+  `<ul class="feat"><li>Did bakes the crust golden</li><li>Not yet leaves it as it is</li><li>Steam rises when today is done</li></ul><div class="row">${stage('pie','0 of 4 answered',{zoom:z,p:S0})+stage('pie','2 of 4, 2 Did',{zoom:z,p:S2})+stage('pie','4 of 4, baked and steaming',{zoom:z,p:S4})}</div>
+  <div class="row">${stage('pie','4 of 4, 3 Did and 1 Not yet',{zoom:z,p:S3N})+stage('pie','3 questions, 1 Did',{zoom:z,p:{answered:1,total:3}})+stage('pie','8 questions, 6 Did',{zoom:z,p:{answered:6,total:8}})}</div>
+  <div class="tiles">${tile('pie','dark',S4,'Dark tile')+tile('pie','light',S4,'Light tile')}</div>`));
+ out.push(section('Three looks, two themes','Looks','Lime, Sky and Maple, dark above and light below, 2 of 4 answered.',
+  ['dark','light'].map(t=>`<div class="row">${['lime','sky','maple'].map(l=>stage('pie',l+' · '+t,{zoom:.62,theme:t,look:l,p:S2})).join('')}</div>`).join('')));
+ const set=['pie','ginger','pumpkins','gold','aurora','moon'];
+ const cmp=(t,p,lab)=>`<div class="cmp"><h4>${lab}</h4><div class="row">${set.map(k=>stage(k,FR[k].name,{zoom:.4,theme:t,p})).join('')}</div></div>`;
+ out.push(section('Next to the best frames','Side by side','Gingerbread (the other baked frame), Pumpkin Patch (the last holiday frame), Gold leaf, Aurora and Tonight\'s moon. Same card, same look.',
+  cmp('dark',S2,'Dark · 2 of 4')+cmp('dark',S4,'Dark · 4 of 4')+cmp('light',S2,'Light · 2 of 4')+cmp('light',S4,'Light · 4 of 4')));
+ out.push(section('All frames, still','Tiles','The shop and Collection tile: a 220 by 264 mini card, no motion. Top dark, bottom light.',
+  `<div class="tiles">${set.map(k=>tile(k,'dark',S4)).join('')}</div><div class="tiles">${set.map(k=>tile(k,'light',S4)).join('')}</div><div class="tiles">${['lime','sky','maple'].map(l=>tile('pie','dark',S4,'Dark '+l,l)+tile('pie','light',S4,'Light '+l,l)).join('')}</div>`));
+ out.push(section('Turkey','Buddy · free Nov 23 to 26','A round brown turkey with a fan of red, orange and gold tail feathers, a small beak and a red wattle. Same 48 by 58 grid, size and flat style as the bat and the owl.',
+  `<div class="buddies"><figure>${turkeySvg(3)}Turkey x3</figure><figure>${turkeySvg(1.4)}Card size</figure><figure>${turkeySvg(.8)}Chip</figure></div>`));
+ out.push(section('Wishbone','Cheer · free Nov 23 to 26','A wishbone pops up, wobbles as if two people tug it, snaps with a gold star and the two halves fly apart.',
+  `<div class="buddies"><figure>${wishSvg(false)}Loop</figure><figure>${wishSvg(true)}Still</figure></div>`));
+ out.push(`<section class="opt"><span class="tag">Self-review</span><h3>Eight checks</h3><div class="review" style="grid-template-columns:1fr">${NOTES.map(([a,b])=>`<div><b>${a}</b> ${b}</div>`).join('')}</div></section>`);
+ document.getElementById('out').innerHTML=out.join('');
+}
+function seg(id,fn){const s=document.getElementById(id);s.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;s.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v);render()})}
+seg('theme',v=>{THEME=v;document.body.classList.toggle('light',v==='light')});
+seg('look',v=>LOOK=v);
+seg('motion',v=>document.body.classList.toggle('nomotion',v==='off'));
+const q=new URLSearchParams(location.search);
+if(q.get('theme')==='light'){THEME='light';document.body.classList.add('light')}
+if(q.get('look')&&LOOKS[q.get('look')])LOOK=q.get('look');
+if(q.get('motion')==='off')document.body.classList.add('nomotion');
+// ?solo=pie&z=3&a=2&t=4&sk=1&theme=light&mini&still&crop=x,y,w,h draws one card big, for close checks.
+if(q.get('solo')){const id=q.get('solo'),z=+(q.get('z')||2);document.querySelector('header').remove();document.querySelector('.controls').remove();
+ const opts={zoom:1,still:q.has('still'),mini:q.has('mini'),theme:q.get('theme')||'dark',p:{answered:+(q.get('a')??2),total:+(q.get('t')??4),skipped:+(q.get('sk')??0)}};
+ const c=(q.get('crop')||'0,0,396,436').split(',').map(Number),pal=LOOKS[LOOK][opts.theme];
+ document.body.innerHTML=`<div style="width:${c[2]*z}px;height:${c[3]*z}px;overflow:hidden;position:relative;background:${pal.bg}"><div style="position:absolute;left:0;top:0;transform-origin:0 0;transform:scale(${z}) translate(${-c[0]}px,${-c[1]}px)">${framed(id,opts)}</div></div>`;}
+else render();
+</script>
+</body></html>

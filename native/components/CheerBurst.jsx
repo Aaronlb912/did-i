@@ -44,6 +44,16 @@ import {
   GHOST_MS,
   GHOST_SPARK,
   GHOST_VIEW,
+  WISH_COLORS,
+  WISH_HALF_KEYS,
+  WISH_KEYS,
+  WISH_LEFT,
+  WISH_MS,
+  WISH_RIGHT,
+  WISH_SHINE,
+  WISH_STAR,
+  WISH_STAR_KEYS,
+  WISH_VIEW,
   GIFT_BAND,
   GIFT_BOW,
   GIFT_BOX,
@@ -2555,7 +2565,7 @@ function Ghost({ delay, x, y, size, swing }) {
   )
 }
 
-function GhostSpark({ delay, x, y, size }) {
+function GhostSpark({ delay, x, y, size, tone }) {
   const progress = useLinear(delay, 1100)
   const px = remPx(size || '0.7')
   const bx = remPx(x)
@@ -2572,10 +2582,72 @@ function GhostSpark({ delay, x, y, size }) {
     >
       {parts ? (
         <parts.Svg width={px} height={px} viewBox="0 0 12 12">
-          <parts.Path d={GHOST_SPARK} fill={GHOST_COLORS.spark} stroke="#ffffff" strokeWidth={0.8} strokeLinejoin="round" />
+          <parts.Path d={GHOST_SPARK} fill={tone === 'gold' ? WISH_COLORS.star : GHOST_COLORS.spark} stroke="#ffffff" strokeWidth={0.8} strokeLinejoin="round" />
         </parts.Svg>
       ) : (
-        <View style={{ width: px, height: px, borderRadius: px / 2, backgroundColor: GHOST_COLORS.spark }} />
+        <View style={{ width: px, height: px, borderRadius: px / 2, backgroundColor: tone === 'gold' ? WISH_COLORS.star : GHOST_COLORS.spark }} />
+      )}
+    </Animated.View>
+  )
+}
+
+// Wishbone: pops up, is tugged side to side, snaps with a gold star and the
+// halves fly apart from the knob (web .di-wish, same WISH_KEYS).
+const WISH_T = WISH_KEYS.map((k) => k[0])
+const WISH_HALF_T = WISH_HALF_KEYS.map((k) => k[0])
+const WISH_STAR_T = WISH_STAR_KEYS.map((k) => k[0])
+
+function WishHalf({ progress, parts, w, h, side }) {
+  const at = (f) => progress.interpolate({ inputRange: WISH_HALF_T, outputRange: WISH_HALF_KEYS.map((k) => f(k)) })
+  const translateX = at((k) => k[1] * w * side)
+  const translateY = at((k) => k[2] * h)
+  const rotate = progress.interpolate({ inputRange: WISH_HALF_T, outputRange: WISH_HALF_KEYS.map((k) => `${k[3] * side}deg`) })
+  const opacity = at((k) => k[4])
+  return (
+    <Animated.View style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, opacity, transformOrigin: '50% 25%', transform: [{ translateX }, { translateY }, { rotate }] }}>
+      <parts.Svg width={w} height={h} viewBox={WISH_VIEW}>
+        <parts.Path d={side > 0 ? WISH_LEFT : WISH_RIGHT} fill={WISH_COLORS.bone} stroke={WISH_COLORS.rim} strokeWidth={1.2} strokeLinejoin="round" />
+        {side > 0 ? <parts.Path d={WISH_SHINE} fill="none" stroke={WISH_COLORS.shine} strokeWidth={0.9} strokeLinecap="round" /> : null}
+      </parts.Svg>
+    </Animated.View>
+  )
+}
+
+function Wish({ delay, x, y, size, swing }) {
+  const progress = useLinear(delay, WISH_MS)
+  const h = remPx(size || '3')
+  const w = h * 0.8
+  const dir = swing < 0 ? -1 : 1
+  const at = (f) => progress.interpolate({ inputRange: WISH_T, outputRange: WISH_KEYS.map((k) => f(k)) })
+  const translateX = at((k) => k[2] * w * dir)
+  const translateY = at((k) => k[1] * h)
+  const rotate = progress.interpolate({ inputRange: WISH_T, outputRange: WISH_KEYS.map((k) => `${k[3] * dir}deg`) })
+  const scaleX = at((k) => k[4])
+  const scaleY = at((k) => k[5])
+  const opacity = at((k) => k[6])
+  const starScale = progress.interpolate({ inputRange: WISH_STAR_T, outputRange: WISH_STAR_KEYS.map((k) => k[1]) })
+  const starOpacity = progress.interpolate({ inputRange: WISH_STAR_T, outputRange: WISH_STAR_KEYS.map((k) => k[2]) })
+  const parts = svgParts()
+  const glow = h * 1.5
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{ position: 'absolute', left: remPx(x) - w / 2, top: -h + remPx(y || '0'), width: w, height: h, opacity, transformOrigin: 'bottom', transform: [{ translateX }, { translateY }, { rotate }, { scaleX }, { scaleY }] }}
+    >
+      <View style={{ position: 'absolute', left: (w - glow) / 2, top: (h - glow) / 2, width: glow, height: glow, borderRadius: glow / 2, backgroundColor: WISH_COLORS.glow, opacity: 0.12 }} />
+      <View style={{ position: 'absolute', left: (w - glow * 0.7) / 2, top: (h - glow * 0.7) / 2, width: glow * 0.7, height: glow * 0.7, borderRadius: glow * 0.35, backgroundColor: WISH_COLORS.glow, opacity: 0.18 }} />
+      {parts ? (
+        <>
+          <Animated.View style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, opacity: starOpacity, transformOrigin: '50% 22.5%', transform: [{ scale: starScale }] }}>
+            <parts.Svg width={w} height={h} viewBox={WISH_VIEW}>
+              <parts.Path d={WISH_STAR} fill={WISH_COLORS.star} stroke="#ffffff" strokeWidth={0.6} strokeLinejoin="round" />
+            </parts.Svg>
+          </Animated.View>
+          <WishHalf progress={progress} parts={parts} w={w} h={h} side={1} />
+          <WishHalf progress={progress} parts={parts} w={w} h={h} side={-1} />
+        </>
+      ) : (
+        <View style={{ width: w, height: h, borderRadius: w / 2, backgroundColor: WISH_COLORS.bone, borderWidth: 1, borderColor: WISH_COLORS.rim }} />
       )}
     </Animated.View>
   )
@@ -2783,7 +2855,8 @@ function Bit({ bit, wait, colors, stageW, stageH, screen = false }) {
     return <Butterfly delay={delay} x={bit.x} y={bit.y} size={bit.size} turn={bit.turn} color={paintColor(bit.tone, colors)} ink={colors.ink} />
   }
   if (bit.ghost) return <Ghost delay={delay} x={bit.x} y={bit.y} size={bit.size} swing={bit.swing} />
-  if (bit.ghostSpark) return <GhostSpark delay={delay} x={bit.x} y={bit.y} size={bit.size} />
+  if (bit.wish) return <Wish delay={delay} x={bit.x} y={bit.y} size={bit.size} swing={bit.swing} />
+  if (bit.ghostSpark) return <GhostSpark delay={delay} x={bit.x} y={bit.y} size={bit.size} tone={bit.tone} />
   if (bit.wisp) return <Wisp delay={delay} x={bit.x} y={bit.y} rise={bit.rise} size={bit.size} />
   if (bit.rubberBall) {
     return <RubberBall delay={delay} x={bit.x} len={bit.len} fall={bit.fall} size={bit.size} color={paintColor(bit.tone, colors)} ink={colors.ink} />

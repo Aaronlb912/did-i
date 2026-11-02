@@ -17,8 +17,9 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 - **Built:** coins, coin looks and accessories earned signed out carry to the account once, at the first sign-in on a phone (`carry_signed_out`, `supabase/signin-carry.sql`). Capped at 300 coins of total value; items are granted cheapest first and cost against the cap.
 - **Not done:** a new account on a fresh install can carry again, so farming is bounded only by real earning (300 coins per account). Tried on no phone yet.
 
-## Free event items (Halloween 2026, branch `drop/2026-10-28-halloween`, needs SQL)
-- **Late signed-out claims stay on the phone.** A bat or boo claimed signed out is sent to the account on the first sync after sign in, up to a day after the window closes. Signing in later than that keeps it on that phone only.
+## Free event items (Halloween 2026; Thanksgiving 2026, branch `drop/2026-11-23-thanksgiving`)
+- **The turkey shows on the iPhone home-screen widget only from the next store build** (widget buddy art is native there); everywhere else it comes with the update.
+- **Late signed-out claims stay on the phone.** A bat, boo, turkey or wishbone claimed signed out is sent to the account on the first sync after sign in, up to a day after the window closes. Signing in later than that keeps it on that phone only.
 - **Web shop is not updated.** The web Shop pages list the free items as 0 gem buys; the phone shop has the Free tag and Claim button.
 - **Owned looks leave Collection when they leave the shop.** Buddies and cheers now always show when owned; looks still use the live list.
 

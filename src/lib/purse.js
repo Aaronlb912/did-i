@@ -53,6 +53,8 @@ const ALL_CHEERS = [
   { id: 'bounce', gems: CHEER_GEMS, from: '2027-01-29' },
   // Halloween 2026: free to claim from 10-28 to 10-31, then never again (owners keep it).
   { id: 'boo', gems: 0, free: true, from: '2026-10-28', until: '2026-11-01' },
+  // Thanksgiving 2026: free to claim from 11-23 to 11-26, then never again (owners keep it).
+  { id: 'wishbone', gems: 0, free: true, from: '2026-11-23', until: '2026-11-27' },
 ]
 
 export const FREE_BUDDY = 'ant'
@@ -78,6 +80,8 @@ const ALL_BUDDIES = [
   { id: 'reindeer', gems: BUDDY_GEMS, from: '2026-12-01' },
   // Halloween 2026: free to claim from 10-28 to 10-31, then never again (owners keep it).
   { id: 'bat', gems: 0, free: true, from: '2026-10-28', until: '2026-11-01' },
+  // Thanksgiving 2026: free to claim from 11-23 to 11-26, then never again (owners keep it).
+  { id: 'turkey', gems: 0, free: true, from: '2026-11-23', until: '2026-11-27' },
   // Never sold. The server gives it at 15 friends joined (claim_invites).
   { id: 'hive', gems: 0, refer: 15 },
   // Never in the shop. Given to people who found Did I on Product Hunt (src/lib/hunt-link.js, native/components/HuntHost.jsx), free through 2026.

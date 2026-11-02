@@ -38,6 +38,9 @@ import {
   GHOST_EYES,
   GHOST_MOUTH,
   GHOST_VIEW,
+  WISH_LEFT,
+  WISH_RIGHT,
+  WISH_VIEW,
   CLINK_COLORS,
   DISCO_COLORS,
   DISCO_GRID,
@@ -843,6 +846,14 @@ function WinterChip({ id, on, onDeep, ink, inkSoft, late }) {
         </Svg>
       )
       break
+    case 'wishbone':
+      art = (
+        <Svg width={h * 0.8} height={h} viewBox={WISH_VIEW}>
+          <Path d={WISH_LEFT} fill={on} stroke={ink} strokeWidth={1.2} strokeLinejoin="round" />
+          <Path d={WISH_RIGHT} fill={on} stroke={ink} strokeWidth={1.2} strokeLinejoin="round" />
+        </Svg>
+      )
+      break
     case 'bounce':
       art = (
         <Svg width={h * (24 / 28)} height={h} viewBox="0 0 24 28">
@@ -1053,6 +1064,7 @@ function CheerChipArt({ id, stage = 1, colors }) {
     case 'butterfly':
     case 'bounce':
     case 'boo':
+    case 'wishbone':
       art = <WinterChip id={id} on={on} onDeep={onDeep} ink={ink} inkSoft={colors?.inkSoft || ink} late={colors?.late || '#6fb7ff'} />
       break
     default: {
@@ -1168,7 +1180,7 @@ function useMyOutfit() {
   return { worn: book ? normalizePurse(book).worn : {}, tone: colors.on }
 }
 
-const TALL_EARS = new Set(['rabbit', 'fox', 'duck', 'reindeer', 'bat', 'rocket'])
+const TALL_EARS = new Set(['rabbit', 'fox', 'duck', 'reindeer', 'bat', 'rocket', 'turkey'])
 
 export function BuddyHang({ id, inline = false, alive = false, worn = null, tone = '' }) {
   const life = useBuddyLife(alive)
