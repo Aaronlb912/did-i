@@ -355,6 +355,20 @@ test('changing every so often to daily leaves past days not due', async () => {
   assert.equal(isDueOn(next, '2026-10-21'), true)
 })
 
+test('a fifth schedule edit keeps the first schedule for the oldest days', async () => {
+  const { keepPastSchedule, isDueOn, WAS_KEEP } = await import('../src/lib/recurrence.js')
+  let cur = lamp('run', { cadence: 'weekly', weekdays: [1], createdOn: '2026-09-01' })
+  const plans = [{ cadence: 'weekly', weekdays: [1, 3] }, { cadence: 'daily' }, { cadence: 'weekly', weekdays: [5] }, { cadence: 'daily' }, { cadence: 'weekly', weekdays: [2] }]
+  plans.forEach((plan, at) => {
+    const next = { ...cur, ...plan }
+    next.was = keepPastSchedule(cur, next, `2026-10-${String(10 + at * 3).padStart(2, '0')}`)
+    cur = next
+  })
+  assert.equal(cur.was.length, WAS_KEEP)
+  assert.equal(isDueOn(cur, '2026-09-07'), true, 'a first-schedule Monday is still due')
+  assert.equal(isDueOn(cur, '2026-09-09'), false, 'a first-schedule Wednesday is not a miss')
+})
+
 test('changing Mondays to daily keeps the past Mondays streak', async () => {
   const { keepPastSchedule } = await import('../src/lib/recurrence.js')
   const mondays = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19']

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
-import { boardDate, isoDate, parseIsoDate } from '../../src/lib/recurrence.js'
+import { boardDate, formatBoardDate, isoDate, parseIsoDate } from '../../src/lib/recurrence.js'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
 
@@ -105,7 +105,7 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
             <Pressable
               key={night.key}
               accessibilityRole="button"
-              accessibilityLabel={night.iso ? t('cal.day', { date: night.iso }) : String(night.dayNum)}
+              accessibilityLabel={night.iso ? t('cal.day', { date: formatBoardDate(night.iso) }) : String(night.dayNum)}
               onPress={() => pickDay(night)}
               disabled={gone(night)}
               accessibilityState={{ disabled: gone(night), selected: isPick(night) }}
