@@ -517,16 +517,26 @@ export function shelfNoteRows(boards, tagId = '') {
   return shelfFeedRows(boards, tagId).filter((row) => row.lamp && String(row.answer.note || '').trim())
 }
 
+function countsAsMiss(lamp, answer, floor) {
+  if (lamp && (isEvery(lamp) || lamp.optional)) return false
+  const key = String(answer.periodKey || '')
+  return !(key.length === 10 && key >= floor)
+}
+
 export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
   const books = scopedBooks(boards, tagId)
   const sum = { hung: 0, down: 0, did: 0, late: 0, skip: 0 }
+  const floor = openFloorIso(now)
   for (const book of books) {
+    const lamps = new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
     const answers = book.answers || []
     sum.hung += (book.lamps || []).filter((lamp) => !lamp.archived).length
     sum.down += (book.lamps || []).filter((lamp) => lamp.archived).length
     sum.did += answers.filter((answer) => answer.status === 'yes').length
     sum.late += answers.filter((answer) => answer.status === 'late').length
-    sum.skip += answers.filter((answer) => answer.status === 'skip').length
+    // Missed, same as This week: a Not yet that can still turn into a Did, or
+    // on a question that is never a miss (every so often, optional), is not one.
+    sum.skip += answers.filter((answer) => answer.status === 'skip' && countsAsMiss(lamps.get(answer.lampId), answer, floor)).length
   }
   return { ...sum, heat: books.length ? shelfStreak(boards, now, tagId) : 0 }
 }
@@ -568,6 +578,9 @@ export function weekRecap(boards, week, tagId = '', now) {
         if (key.length === 7) key = stampDay(answer.answeredAt)
         if (key.length !== 10 || key < from || key > to) continue
         if (status === 'skip') {
+          lamps = lamps || new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
+          const lamp = lamps.get(answer.lampId)
+          if (lamp && (isEvery(lamp) || lamp.optional)) continue
           if (!floor || key < floor) nopes += 1
         } else {
           dids += 1

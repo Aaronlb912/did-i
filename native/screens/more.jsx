@@ -586,14 +586,19 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const gentle = usePrefs().gentle === true
   const clock = now || new Date()
-  const counts = shelfStatsCounts(inView(book, boards), clock, tagId)
   const dateIso = boardDate(clock, book?.dayFoldHour)
+  // Long walks (streak, freezes): once per day, folder or Away change, not every render.
+  const { counts, freezesHeld } = useMemo(
+    () => ({ counts: shelfStatsCounts(inView(book, boards), clock, tagId), freezesHeld: freezeState(inView(book, boards), clock).held }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [book, boards, tagId, dateIso, awayKey()],
+  )
   // The last seven nights, walked once per night (the Sunday recap, any day).
   const recap = useMemo(() => {
     const books = inView(book, boards)
     return weekRecap(books, weekStripNights(books, clock, tagId), tagId, clock)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [book, boards, dateIso, tagId])
+  }, [book, boards, dateIso, tagId, awayKey()])
   // The longest run any one question had (nope breaks it), walked once a night.
   const bestRun = useMemo(() => {
     let best = 0
@@ -601,7 +606,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
       for (const lamp of one.lamps || []) best = Math.max(best, bestQuestionStreak(one, lamp, dateIso))
     }
     return best
-  }, [book, boards, dateIso, tagId])
+  }, [book, boards, dateIso, tagId, awayKey()])
 
   if (!counts.hung) {
     return (
@@ -633,7 +638,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
           n={counts.heat}
           label={t('home.streak')}
           line={t('recap.cleared', { cleared: recap.cleared, n: recap.nights })}
-          chip={<FreezeChip colors={colors} held={freezeState(inView(book, boards), clock).held} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
+          chip={<FreezeChip colors={colors} held={freezesHeld} onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />}
         />
       )}
       <View style={styles.tiles}>
@@ -1039,7 +1044,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const longest = rows.length ? rows[0].n : 0
   const breakNight = useMemo(
     () => (longest > heat ? streakBreak(inView(book, boards), clock, tagId, longest + 1) : null),
-    [book, boards, tagId, longest, heat], // eslint-disable-line react-hooks/exhaustive-deps
+    [book, boards, tagId, longest, heat, awayKey()], // eslint-disable-line react-hooks/exhaustive-deps
   )
   const breakLine = breakNight
     ? breakNight.question
