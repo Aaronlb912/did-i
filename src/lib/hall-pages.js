@@ -617,6 +617,22 @@ export function lastWeekSunday(dateIso) {
   return addDaysIso(dateIso, -(at.getDay() || 7))
 }
 
+// The welcome back sheet shows once a day.
+const COME_BACK_KEY = 'did-i-come-back-seen'
+export function comeBackSeen(dateIso) {
+  try {
+    return localStorage.getItem(COME_BACK_KEY) === dateIso
+  } catch {
+    return true
+  }
+}
+export function markComeBackSeen(dateIso) {
+  try {
+    localStorage.setItem(COME_BACK_KEY, dateIso)
+  } catch {
+    // Shows again next open; harmless.
+  }
+}
 const RECAP_SEEN_KEY = 'did-i-recap-seen'
 // Last week's recap shows once, on the first open of the new week.
 export function weekRecapDue(dateIso) {

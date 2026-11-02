@@ -17,7 +17,9 @@ import { BuddyHang } from '../components/Cosmetic.jsx'
 import {
   clockWords,
   graceExplained,
+  comeBackSeen,
   isRecapNight,
+  markComeBackSeen,
   markGraceExplained,
   markWeekRecapSeen,
   recapLine,
@@ -35,7 +37,8 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
 import { coinsToday, fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
-import { awayKey, usePrefs, useTheme } from '../../src/lib/prefs.js'
+import { awayKey, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
+import { cameBack } from '../../src/lib/come-back.js'
 import { answerFor, isEvery } from '../../src/lib/recurrence.js'
 import { lastTimeLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
@@ -80,7 +83,6 @@ import { useHallColors } from '../hooks/useHallColors.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { HallAmbient } from '../components/HallAmbient.jsx'
 import { NightSky, useSkyClock } from '../components/NightSky.jsx'
-import { isDaytime } from '../lib/night-sky.js'
 import { Slot } from '../components/Slot.jsx'
 import { answerFamilyLamp, answerSend, listInbox, personName, useFamilyTonight } from '../../src/lib/people.js'
 import { peopleTonightItems, peopleWaitingLine, skippedFamilyRows, readPeopleHidden, writePeopleHidden } from '../../src/lib/people-tonight.js'
@@ -930,7 +932,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     return !row || !row.dateIso || row.dateIso === stack.dateIso ? t('tonight.untilTomorrow', { time: words }) : words
   }
   const graceWeOpen = graceNight ? weOpenOn(graceNight) : new Set()
-  const graceItems = [
+  // Back after 3+ missed days: no grace card. Its words promise a streak that is gone.
+  const returning = useMemo(() => cameBack(stack.shelf, stack.dateIso), [stack.shelf, stack.dateIso])
+  const graceItems = returning ? [] : [
     ...stack.graceOpen.map((row) => ({
       key: `grace:${stack.rowKey(row)}:${row.periodKey}`,
       title: row.lamp.question,
@@ -992,6 +996,26 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       onClose: () => publishSheet(null),
     })
   }, [graceShowing, colors])
+  // Back after 3+ missed days: one calm welcome a day.
+  useEffect(() => {
+    if (!returning || graceShowing || stack.cheer || !stack.dateIso || comeBackSeen(stack.dateIso) || sheetIsUp()) return
+    markComeBackSeen(stack.dateIso)
+    publishSheet({
+      title: t('comeBack.title'),
+      body: t('comeBack.body'),
+      goLabel: t('comeBack.start'),
+      moreLabel: t('comeBack.gentle'),
+      noClose: true,
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: () => publishSheet(null),
+      onMore: () => {
+        writePrefs({ gentle: true })
+        publishSheet(null)
+      },
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [returning, graceShowing, Boolean(stack.cheer), stack.dateIso])
   const reminderRowUp = !stack.empty && Platform.OS !== 'web' && Boolean(onAskPings) && (pingLabel === 'pings.state.ask' || pingLabel === 'pings.state.blocked')
   const extraRow = stack.cheer && !pickKey ? '' : reminderRowUp ? 'reminders' : stack.nightDone ? (dropLineUp() ? 'drop' : 'rate') : ''
   // First open of a new week: last week's recap, once. Sunday's done card counts as seen.
@@ -1190,7 +1214,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
           <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
           <Text style={[faceCardStyles.title, { color: colors.ink }]}>
-            {nightOne ? t('nightOne.title') : t(isDaytime(skyNow) ? 'tonight.doneTitle' : 'tonight.doneTitleNight')}
+            {nightOne ? t('nightOne.title') : t('tonight.doneTitle')}
           </Text>
           {nightOne ? (
             <>
