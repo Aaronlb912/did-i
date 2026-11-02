@@ -178,6 +178,19 @@ export function mergeShelves(local, remote, localSavedAt = '', remoteSavedAt = '
 // A question moved to another folder on one phone is gone from the old
 // folder there. Its answers, wherever either phone kept them, go with it.
 function followMovedAnswers(boards, sources) {
+  // Moved to two different folders on two phones: the newest move wins, so it
+  // is asked once.
+  const newest = new Map()
+  boards.forEach((book, index) => {
+    for (const lamp of book.lamps || []) {
+      const was = newest.get(lamp.id)
+      if (!was || atMs(lamp) > was.ms) newest.set(lamp.id, { index, ms: atMs(lamp) })
+    }
+  })
+  boards = boards.map((book, index) => {
+    const lamps = (book.lamps || []).filter((lamp) => newest.get(lamp.id).index === index)
+    return lamps.length === (book.lamps || []).length ? book : { ...book, lamps }
+  })
   const homeOf = new Map()
   boards.forEach((book, index) => {
     for (const lamp of book.lamps || []) homeOf.set(lamp.id, index)
