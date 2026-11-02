@@ -2699,6 +2699,7 @@ export const ja = {
   'pings.quietSub': 'この時間は通知しません。終わったら届きます。',
   'pings.quietFrom': '開始',
   'pings.quietTo': '終了',
+  'pings.quietNoLastCall': "おやすみ時間が21:00にかかるため、最後のお知らせは届きません。",
   'settings.tonightCap': "今日とリマインダー",
   'settings.helpPrivacy': 'ヘルプとプライバシー',
   'settings.more': 'その他',
