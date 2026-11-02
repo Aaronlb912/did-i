@@ -130,9 +130,14 @@ export function periodPassed(lamp, periodKey, todayIso) {
 // was is oldest first; until is the first day of the next schedule.
 export const WAS_KEEP = 4
 // Over the cap, keep the oldest schedule (it covers the longest stretch of
-// past days) and the newest ones; a short middle stretch reads one edit later.
+// past days) and the newest ones. The dropped middle stretch reads as every so
+// often, so none of its days turn into misses under a later schedule.
 export function trimWas(was) {
-  return was.length <= WAS_KEEP ? was : [was[0], ...was.slice(-(WAS_KEEP - 1))]
+  if (was.length <= WAS_KEEP) return was
+  const gap = { until: was[was.length - WAS_KEEP + 1].until }
+  for (const key of WAS_FIELDS) gap[key] = ''
+  gap.cadence = 'every'
+  return [was[0], gap, ...was.slice(-(WAS_KEEP - 2))]
 }
 const WAS_CADENCES = new Set(['daily', 'weekly', 'monthly', 'every_n'])
 const WAS_FIELDS = ['cadence', 'weekdays', 'monthDay', 'everyN', 'everyNAnchor', 'perWeek']
