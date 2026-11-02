@@ -32,6 +32,9 @@ import { graceRowsFor } from './grace.js'
 import { graceFirst as graceFirstAt, graceNightIso } from './recurrence.js'
 import { onWeNights, weNight } from './we-nights.js'
 
+// Yesterday cards set aside with Not yet, by day.
+const graceSetAside = new Map()
+
 // How long an answer can be taken back.
 export const UNDO_MS = ANSWER_UNDO_MS
 
@@ -81,6 +84,15 @@ export function useTonightStack({
   const [titleDraft, setTitleDraft] = useState(value.title)
   const [undoStack, setUndoStack] = useState([])
   const undo = undoStack[0] || null
+  // A folder switch hides the card an undo would bring back, so it ends here.
+  const undoTag = useRef(tagId)
+  useEffect(() => {
+    if (undoTag.current === tagId) return
+    undoTag.current = tagId
+    undoTimers.current.forEach((timer) => window.clearTimeout(timer))
+    undoTimers.current.clear()
+    setUndoStack([])
+  }, [tagId])
   const [holePick, setHolePick] = useState(null)
   const [waitPick, setWaitPick] = useState(null)
   const [pillPick, setPillPick] = useState(null)
@@ -133,7 +145,16 @@ export function useTonightStack({
   // The grace period for the previous night: its open questions, one card at
   // a time. A nope sets one aside for now; it stays answerable until 9am.
   const graceNight = graceNightIso(clock)
-  const [graceLeft, setGraceLeft] = useState([])
+  const [graceLeft, setGraceLeftState] = useState(() => graceSetAside.get(graceNight) || [])
+  // Kept for the app's life, so leaving Today does not deal a set-aside card again.
+  function setGraceLeft(update) {
+    setGraceLeftState((keys) => {
+      const next = typeof update === 'function' ? update(keys) : update
+      graceSetAside.clear()
+      if (graceNight) graceSetAside.set(graceNight, next)
+      return next
+    })
+  }
   const graceRows = useMemo(
     () => (graceNight ? graceRowsFor(scopedBooks(shelf, tagId), graceNight).filter((row) => hasAnyTopic(row.lamp, topics)) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -141,7 +162,7 @@ export function useTonightStack({
   )
   const graceOpen = graceRows.filter((row) => !graceLeft.includes(`${rowKey(row)}:${row.periodKey}`))
   useEffect(() => {
-    setGraceLeft([])
+    setGraceLeftState(graceSetAside.get(graceNight) || [])
   }, [graceNight])
 
   function markGrace(row, status) {
@@ -339,8 +360,9 @@ export function useTonightStack({
     if (allClearTonight(current, clock) && !allClearTonight(next, clock)) clearStreakSeen('hit', dateIso)
     setOverlay(next)
     change(next)
-    // The card you took back comes to the front, not the one after it.
-    setFaceId(undo.lampId)
+    // The card you took back comes to the front, not the one after it. A
+    // yesterday card is not today's, so today's stack stays as it was.
+    if (!undo.periodKey || undo.periodKey === dateIso) setFaceId(undo.lampId)
     setSkipReview(false)
     setRestNight(false)
     // The tap may already be on the account; without this the next pull brings it back.
