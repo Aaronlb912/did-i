@@ -2386,6 +2386,7 @@ export const ja = {
   'people.nameNudgeGo': '名前を入れる',
   'friendId.bad': 'フレンドIDは12桁です。',
   'friendId.nobody': 'そのフレンドIDの人はいません。数字を確かめてください。',
+  'friendId.own': 'これはあなたのフレンドIDです。友だちに伝えて追加してもらいましょう。',
   'friendId.tooMany': '今日は間違ったIDが多すぎます。明日また試してください。',
   'friendId.copied': 'フレンドIDをコピーしました。',
   'avatar.takePhoto': '写真を撮る',

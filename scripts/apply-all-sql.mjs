@@ -104,6 +104,7 @@ const files = [
   'supabase/cheer-once.sql',
   'supabase/family-leave-hide.sql',
   'supabase/equip-owned.sql',
+  'supabase/friend-decline-hold.sql',
   'supabase/drop-tonight.sql',
 ]
 

@@ -2379,6 +2379,7 @@ export const zh = {
   'people.nameNudgeGo': '添加名字',
   'friendId.bad': '好友 ID 是 12 位数字。',
   'friendId.nobody': '没有人使用这个好友 ID。请检查数字。',
+  'friendId.own': '这是你自己的好友 ID。分享给朋友，他们就能添加你。',
   'friendId.tooMany': '今天输错的 ID 太多了，明天再试。',
   'friendId.copied': '好友 ID 已复制。',
   'avatar.takePhoto': '拍照',

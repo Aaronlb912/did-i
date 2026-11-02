@@ -2388,6 +2388,7 @@ export const ko = {
   'people.nameNudgeGo': '이름 넣기',
   'friendId.bad': '친구 ID는 12자리예요.',
   'friendId.nobody': '그 친구 ID를 가진 사람이 없어요. 숫자를 확인해 주세요.',
+  'friendId.own': '이건 내 친구 ID예요. 친구가 나를 추가할 수 있게 공유하세요.',
   'friendId.tooMany': '오늘은 틀린 ID가 너무 많아요. 내일 다시 해 주세요.',
   'friendId.copied': '친구 ID를 복사했어요.',
   'avatar.takePhoto': '사진 찍기',
