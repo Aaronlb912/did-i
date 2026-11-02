@@ -699,12 +699,12 @@ export async function giftCheer(toId, cheerId) {
 }
 
 // A friend's last 7 nights, oldest first, as [{ night, cleared }]. Empty
-// when they do not share, are not a friend, or the server lacks it.
+// when they do not share or are not a friend. null when the read failed.
 export async function friendWeek(otherId, upto) {
   const db = cloud()
-  if (!db || !otherId || !upto) return []
+  if (!db || !otherId || !upto) return null
   const { data, error } = await db.rpc('friend_week', { other: otherId, upto })
-  if (error || !Array.isArray(data)) return []
+  if (error || !Array.isArray(data)) return null
   return data.map((row) => ({ night: String(row.night), cleared: Boolean(row.cleared) }))
 }
 

@@ -970,7 +970,7 @@ export const es = {
   'people.doneTonight': "listo hoy",
   'people.streakN': "racha de {n} días",
   'people.drop': 'Quitar',
-  'friend.goneBody': "Los Did you que guardaste siguen en tu Hoy. Vuelve a añadirle cuando quieras con su ID de amigo o un enlace.",
+  'friend.goneBody': "Las preguntas que te envió siguen en Hoy. Vuelve a añadirle con su ID de amigo o un enlace.",
   'friend.goneTitle': '{name} y tú ya no son amigos',
   'people.dropOnly': 'Solo quitar',
   'people.dropLeave': 'Quitar y salir de {n} preguntas compartidas',

@@ -2186,6 +2186,7 @@ export function FriendScreen({ book, onChange, route }) {
   // Notes they chose to share in the last few nights.
   const [notes, setNotes] = useState([])
   const [loadMiss, setLoadMiss] = useState('')
+  const [weekMiss, setWeekMiss] = useState(false)
   const { cards } = useWeTonight(account.user)
 
   const load = useCallback(async () => {
@@ -2198,7 +2199,7 @@ export function FriendScreen({ book, onChange, route }) {
         stillLinked(otherId),
         myDidYouLinks().catch(() => []),
         readFriendCheers().catch(() => null),
-        friendWeek(otherId, boardDate(new Date())).catch(() => []),
+        friendWeek(otherId, boardDate(new Date())).catch(() => null),
         sharedNotesFrom(otherId).catch(() => []),
       ])
     } catch {
@@ -2209,7 +2210,8 @@ export function FriendScreen({ book, onChange, route }) {
     const [who, both, linked, made, serverCheers, nights, shared] = got
     setNotes(shared)
     if (typeof serverCheers === 'number') setStock(serverCheers)
-    setWeek(nights)
+    setWeekMiss(serverCheers === null || nights === null)
+    if (Array.isArray(nights)) setWeek(nights)
     setKeptLinks(made.filter((link) => link.kept.some((row) => row.user_id === otherId)))
     // A failed or nameless read keeps the name and photo we already show.
     setPerson((was) => (!who?.miss && personName(who) ? who : was?.user_id ? was : who))
@@ -2336,6 +2338,8 @@ export function FriendScreen({ book, onChange, route }) {
                 />
               ))}
             </View>
+          ) : weekMiss ? (
+            <Text style={[styles.tileNote, { color: colors.inkDim }]}>{t('people.reach')}</Text>
           ) : null}
         </View>
         {typeof person?.look_on === 'string' ? <FriendCardPreview person={person} name={name} colors={colors} /> : null}
@@ -2396,7 +2400,7 @@ export function FriendScreen({ book, onChange, route }) {
                 {row.question ? `${row.question}: ` : ''}
                 {row.note}
               </Text>
-              <KeyButton colors={colors} label={t('sharedNote.cheer')} disabled={cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP} onPress={() => cheer(row.question || '')} />
+              <KeyButton colors={colors} label={t('sharedNote.cheer')} onPress={() => cheer(row.question || '')} />
             </View>
           ))}
         </View>

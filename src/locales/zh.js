@@ -955,7 +955,7 @@ export const zh = {
   'people.doneTonight': "今天已完成",
   'people.streakN': "{n} 天连续记录",
   'people.drop': '移除',
-  'friend.goneBody': "你保留的 Did you 仍在今天中。随时可用好友 ID 或链接重新添加。",
+  'friend.goneBody': "对方发给你的问题仍在今天中。可用好友 ID 或链接重新添加。",
   'friend.goneTitle': '你和 {name} 已不再是好友',
   'people.dropOnly': '只移除',
   'people.dropLeave': '移除并退出 {n} 个共享问题',

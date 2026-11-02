@@ -956,7 +956,7 @@ export const ko = {
   'people.doneTonight': "오늘 완료",
   'people.streakN': "{n}일 연속 기록",
   'people.drop': '빼기',
-  'friend.goneBody': "담아 둔 Did you는 오늘에 그대로 있어요. 친구 ID나 링크로 언제든 다시 추가할 수 있어요.",
+  'friend.goneBody': "받은 질문은 오늘에 그대로 있어요. 친구 ID나 링크로 다시 추가할 수 있어요.",
   'friend.goneTitle': '{name}님과 더 이상 친구가 아니에요',
   'people.dropOnly': '삭제만',
   'people.dropLeave': '삭제하고 함께하는 질문 {n}개에서 나가기',
