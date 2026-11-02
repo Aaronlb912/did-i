@@ -2091,7 +2091,10 @@ function AwayCard({ colors }) {
             options={Array.from({ length: left }, (_, i) => addDaysIso(first, i + 1)).map((id) => ({ id, label: formatBoardDate(id) }))}
             selected=""
             last
-            onSelect={(id) => change(awayStart(prefs, today, id, answered))}
+            onSelect={(id) => {
+              change(awayStart(prefs, today, id, answered))
+              confirmDone(t('away.until', { date: formatBoardDate(id) }))
+            }}
           />
         )}
       </SetCard>
@@ -2788,7 +2791,7 @@ function AccountSignedIn({ book, email, onChange }) {
       ) : null}
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} chevron last onPress={busy ? undefined : download} />
+        <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} value={busy === 'export' ? t('app.loading') : undefined} chevron last onPress={busy ? undefined : download} />
       </SetCard>
 
       <SetCap colors={colors}>{t('account.leaveCap')}</SetCap>
