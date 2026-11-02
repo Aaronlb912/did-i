@@ -233,6 +233,8 @@ export const fr = {
   'avatar.reportBody': 'Cela bloque aussi la personne : vous n’êtes plus amis et ne vous voyez plus.',
   'account.export': 'Télécharger mes données',
   'account.out': 'Se déconnecter',
+  'account.outSureTitle': "Se déconnecter sur ce téléphone ?",
+  'account.outSureBody': "Tes réponses restent dans ton compte. Les rappels s’arrêtent sur ce téléphone jusqu’à ta prochaine connexion.",
   'account.outAll': 'Se déconnecter partout',
   'account.outAllTitle': 'Se déconnecter partout ?',
   'account.outAllBody':

@@ -228,6 +228,8 @@ export const ko = {
   'avatar.reportBody': '차단도 돼요. 친구에서 빠지고 서로 볼 수 없게 돼요.',
   'account.export': '데이터 다운로드',
   'account.out': '로그아웃',
+  'account.outSureTitle': "이 휴대폰에서 로그아웃할까요?",
+  'account.outSureBody': "답은 계정에 남아요. 다시 로그인할 때까지 이 휴대폰의 알림은 멈춰요.",
   'account.outAll': '전부 로그아웃',
   'account.outAllTitle': '전부 로그아웃할까요?',
   'account.outAllBody': '이 계정에 로그인된 모든 폰이 로그아웃돼요. 삭제는 하지 않아요.',

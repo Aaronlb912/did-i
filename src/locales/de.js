@@ -232,6 +232,8 @@ export const de = {
   'avatar.reportBody': 'Damit blockierst du die Person auch: Ihr seid keine Freunde mehr und seht euch nicht mehr.',
   'account.export': 'Meine Daten herunterladen',
   'account.out': 'Abmelden',
+  'account.outSureTitle': "Auf diesem Handy abmelden?",
+  'account.outSureBody': "Deine Antworten bleiben in deinem Konto. Erinnerungen stoppen auf diesem Handy, bis du dich wieder anmeldest.",
   'account.outAll': 'Überall abmelden',
   'account.outAllTitle': 'Überall abmelden?',
   'account.outAllBody': 'Jedes Handy mit diesem Konto wird abgemeldet. Nichts wird gelöscht.',

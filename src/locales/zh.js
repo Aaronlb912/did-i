@@ -228,6 +228,8 @@ export const zh = {
   'avatar.reportBody': '这也会屏蔽对方：你们不再是好友，也互相看不到。',
   'account.export': '下载我的数据',
   'account.out': '退出登录',
+  'account.outSureTitle': "要在这台手机上退出吗？",
+  'account.outSureBody': "你的回答会留在账号里。重新登录前，这台手机上的提醒会停止。",
   'account.outAll': '全部退出',
   'account.outAllTitle': '全部退出？',
   'account.outAllBody': '登录此账户的所有手机都会退出。不会删除任何内容。',

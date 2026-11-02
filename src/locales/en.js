@@ -231,6 +231,8 @@ export const en = {
   'avatar.reportBody': 'This also blocks them: they come off your friends and you stop seeing each other.',
   'account.export': 'Download my data',
   'account.out': 'Sign out',
+  'account.outSureTitle': "Sign out of this phone?",
+  'account.outSureBody': "Your answers stay in your account. Reminders stop on this phone until you sign back in.",
   'account.outAll': 'Sign out everywhere',
   'account.outAllTitle': 'Sign out everywhere?',
   'account.outAllBody':

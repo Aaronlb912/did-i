@@ -234,6 +234,8 @@ export const es = {
   'avatar.reportBody': 'También lo bloquea: deja de ser tu amigo y dejan de verse.',
   'account.export': 'Descargar mis datos',
   'account.out': 'Salir de la cuenta',
+  'account.outSureTitle': "¿Cerrar sesión en este teléfono?",
+  'account.outSureBody': "Tus respuestas siguen en tu cuenta. Los recordatorios se detienen en este teléfono hasta que vuelvas a entrar.",
   'account.outAll': 'Salir en todos lados',
   'account.outAllTitle': '¿Salir en todos lados?',
   'account.outAllBody': 'Todos los teléfonos con esta cuenta salen. No se borra nada.',

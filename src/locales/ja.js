@@ -228,6 +228,8 @@ export const ja = {
   'avatar.reportBody': 'ブロックもされます。友だちから外れ、お互いに見えなくなります。',
   'account.export': 'データをダウンロード',
   'account.out': 'ログアウト',
+  'account.outSureTitle': "このスマホからサインアウトしますか？",
+  'account.outSureBody': "答えはアカウントに残ります。もう一度サインインするまで、このスマホのリマインダーは止まります。",
   'account.outAll': '全部ログアウト',
   'account.outAllTitle': '全部ログアウト？',
   'account.outAllBody': 'このアカウントの全スマホがログアウト。削除はしない。',

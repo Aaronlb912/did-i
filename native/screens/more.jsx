@@ -140,11 +140,12 @@ export function SureModal({ sure, colors, onClose, onGo }) {
       <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
         <Pressable
           accessible={false}
+          accessibilityViewIsModal
           style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
           onPress={(event) => event.stopPropagation()}
         >
           <Text style={[styles.popKicker, { color: colors.on }]}>{t('account.kicker')}</Text>
-          <Text style={[styles.popTitle, { color: colors.ink }]}>{sure?.title}</Text>
+          <Text accessibilityRole="header" style={[styles.popTitle, { color: colors.ink }]}>{sure?.title}</Text>
           <Text style={[styles.popBody, { color: colors.inkSoft }]}>{sure?.body}</Text>
           <View style={styles.popRow}>
             <DidButton small label={sure?.yes} onPress={onGo} colors={colors} />
@@ -2667,7 +2668,7 @@ function AccountSignedIn({ book, email, onChange }) {
           icon="logout"
           label={t('account.out')}
           last
-          onPress={busy ? undefined : () => leave('out', signOutHere)}
+          onPress={busy ? undefined : () => setSure({ title: t('account.outSureTitle'), body: t('account.outSureBody'), yes: t('account.out'), go: () => leave('out', signOutHere) })}
         />
       </SetCard>
       <View style={styles.dataGap} />

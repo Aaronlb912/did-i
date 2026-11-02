@@ -232,6 +232,8 @@ export const it = {
   'avatar.reportBody': 'Così lo blocchi anche: non siete più amici e non vi vedete più.',
   'account.export': 'Scarica i miei dati',
   'account.out': 'Esci',
+  'account.outSureTitle': "Uscire su questo telefono?",
+  'account.outSureBody': "Le tue risposte restano nel tuo account. I promemoria si fermano su questo telefono finché non rientri.",
   'account.outAll': 'Esci ovunque',
   'account.outAllTitle': 'Uscire ovunque?',
   'account.outAllBody': 'Ogni telefono con questo account esce. Niente viene cancellato.',

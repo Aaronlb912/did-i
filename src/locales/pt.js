@@ -233,6 +233,8 @@ export const pt = {
   'avatar.reportBody': 'Isso também bloqueia a pessoa: vocês deixam de ser amigos e de se ver.',
   'account.export': 'Descarregar os meus dados',
   'account.out': 'Sair',
+  'account.outSureTitle': "Sair neste telefone?",
+  'account.outSureBody': "Suas respostas ficam na sua conta. Os lembretes param neste telefone até você entrar de novo.",
   'account.outAll': 'Sair em todo o lado',
   'account.outAllTitle': 'Sair em todo o lado?',
   'account.outAllBody': 'Todos os telefones com esta conta saem. Nada é apagado.',
