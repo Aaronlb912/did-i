@@ -292,7 +292,8 @@ export function useWeAnswer(reload, book) {
   const [miss, setMiss] = useState('')
   const [note, setNote] = useState('')
   // State lags a frame: a double tap would answer (and cheer, and claim) twice.
-  const sending = useRef(false)
+  const queue = useRef(Promise.resolve())
+  const queued = useRef(new Set())
 
   async function run(id, job) {
     setBusy(id)
@@ -314,14 +315,18 @@ export function useWeAnswer(reload, book) {
     // A repeat tap on tonight's lit answer does nothing: a Did we answer has
     // no undo, so it must not clear by accident. Taking back is explicit.
     if (!night && status && mine?.status === status) return
-    // One answer at a time: a second tap while one is sending does nothing.
-    if (busy || sending.current) return
-    sending.current = true
-    try {
-      await answerNow(card, status, night)
-    } finally {
-      sending.current = false
-    }
+    // One answer at a time, in order: the next card is swiped away before
+    // the last answer lands, so its answer waits its turn instead of being dropped.
+    // A double tap on the same card still answers (and cheers) once.
+    const key = `${card.id}|${night || ''}`
+    if (queued.current.has(key)) return
+    queued.current.add(key)
+    const turn = queue.current
+      .then(() => answerNow(card, status, night))
+      .catch(() => {})
+      .finally(() => queued.current.delete(key))
+    queue.current = turn
+    await turn
   }
 
   async function answerNow(card, status, night) {
