@@ -231,7 +231,8 @@ export function AppShell() {
   // which is not there yet.
   const legalOut = (route.path === '/terms' || route.path === '/privacy') && authGated('/', account)
   const gated = legalOut || authGated(route.path, account)
-  const [pingState, setPingState] = useState(pingSupport)
+  // Not known until checkPings answers: no 'Reminders are off' flash at launch.
+  const [pingState, setPingState] = useState('checking')
   const [booted, setBooted] = useState(false)
   useAutoAdd(gated ? null : account.user, app.keepSent)
 
@@ -316,7 +317,9 @@ export function AppShell() {
         .then((next) => {
           if (alive) setPingState(next)
         })
-        .catch(() => {})
+        .catch(() => {
+          if (alive) setPingState(pingSupport())
+        })
     })
     return () => {
       alive = false

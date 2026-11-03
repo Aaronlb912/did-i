@@ -214,6 +214,35 @@ function lamp(id, extra = {}) {
   return { id, question: id, cadence: 'daily', archived: false, createdOn: '2024-01-01', ...extra }
 }
 
+// A name used but never declared crashes the screen in Hermes ("Property 'got' doesn't exist").
+test('phone app code uses no undeclared names', () => {
+  const { parse } = require('@babel/parser')
+  const traverse = require('@babel/traverse').default
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const known = new Set([...Object.getOwnPropertyNames(globalThis), 'window', 'document', 'navigator', 'localStorage', 'sessionStorage', '__DEV__', 'require', 'module', 'exports', 'process', 'global', 'fetch', 'alert', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'HermesInternal', 'location', 'history', 'self', 'setImmediate', 'FormData', 'Blob', 'File', 'FileReader', 'Image', 'Response', 'Request', 'Headers', 'AbortController', 'URL', 'URLSearchParams', 'TextEncoder', 'TextDecoder', 'crypto', 'WebSocket', 'XMLHttpRequest', 'Event', 'CustomEvent', 'MutationObserver', 'ResizeObserver', 'IntersectionObserver', 'getComputedStyle', 'matchMedia', 'screen', 'innerWidth', 'innerHeight', 'addEventListener', 'removeEventListener', 'dispatchEvent', 'Notification', 'HTMLElement', 'Element', 'Node', 'caches', 'indexedDB', 'scrollTo', 'open', 'close', 'confirm', 'prompt', 'visualViewport', 'devicePixelRatio'])
+  const misses = []
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const file = path.join(dir, name)
+      if (statSync(file).isDirectory()) {
+        if (name !== 'node_modules') walk(file)
+        continue
+      }
+      if (!/\.jsx?$/.test(name)) continue
+      const ast = parse(readFileSync(file, 'utf8'), { sourceType: 'module', plugins: ['jsx'] })
+      traverse(ast, {
+        ReferencedIdentifier(ref) {
+          const id = ref.node.name
+          if (ref.isJSXIdentifier() && /^[a-z]/.test(id)) return
+          if (!ref.scope.hasBinding(id) && !known.has(id)) misses.push(`${path.relative(root, file)}:${ref.node.loc.start.line} ${id}`)
+        },
+      })
+    }
+  }
+  for (const dir of ['native', 'src/lib']) walk(path.join(root, dir))
+  assert.deepEqual(misses, [])
+})
+
 test('a new cheer starts at stage 1, even after another cheer reached stage 5', async () => {
   const { buyCheerStage, noteCheer, cheerStageOf, wearCheer } = await import('../src/lib/purse.js')
   let book = { coins: 10000, cheers: ['lime', 'tape'], cheerOn: 'lime', cheerStages: { lime: 1, tape: 1 } }

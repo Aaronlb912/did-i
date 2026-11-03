@@ -1181,27 +1181,6 @@ export function PeopleScreen({ book, onChange }) {
         </Meta>
       ) : null}
 
-      {got.ready ? (
-        <>
-          <SectionHead colors={colors} label={t('cheersGot.title')} />
-          {got.miss ? <Miss colors={colors} onRetry={load}>{got.miss}</Miss> : null}
-          {!got.miss && !got.rows.length ? <Meta colors={colors}>{t('cheersGot.empty')}</Meta> : null}
-          {got.rows.map((row) => (
-            <Pressable
-              key={row.id}
-              accessibilityRole="button"
-              onPress={() => (row.cheer_id ? fireCheer(row.cheer_id, 1) : undefined)}
-            >
-              <PersonRow
-                colors={colors}
-                title={t('cheersGot.from', { name: row.display_name || t('people.someone') })}
-                note={[t(cheerText(row.cheer_id, 'name')), row.note, gotDay(row.made_at)].filter(Boolean).join(' · ')}
-              />
-            </Pressable>
-          ))}
-        </>
-      ) : null}
-
       <Miss colors={colors}>{miss}</Miss>
       {said ? <Meta colors={colors}>{said}</Meta> : null}
 
@@ -1924,6 +1903,27 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
             />
             </Reveal>
           )) : null}
+        </>
+      ) : null}
+
+      {got.ready ? (
+        <>
+          <SectionHead colors={colors} label={t('cheersGot.title')} />
+          {got.miss ? <Miss colors={colors} onRetry={load}>{got.miss}</Miss> : null}
+          {!got.miss && !got.rows.length ? <Meta colors={colors}>{t('cheersGot.empty')}</Meta> : null}
+          {got.rows.map((row) => (
+            <Pressable
+              key={row.id}
+              accessibilityRole="button"
+              onPress={() => (row.cheer_id ? fireCheer(row.cheer_id, 1) : undefined)}
+            >
+              <PersonRow
+                colors={colors}
+                title={t('cheersGot.from', { name: row.display_name || t('people.someone') })}
+                note={[t(cheerText(row.cheer_id, 'name')), row.note, gotDay(row.made_at)].filter(Boolean).join(' · ')}
+              />
+            </Pressable>
+          ))}
         </>
       ) : null}
 
