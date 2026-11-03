@@ -18,11 +18,12 @@ export const DEPTH_PEEK = 9
 export const DEPTH_SHOWN = 2
 
 // 1 for DID, -1 for nope, 0 to spring back.
-export function releaseWay(x, vx, blockDid = false, blockNope = false) {
+export function releaseWay(x, vx, blockDid = false, blockNope = false, vy = 0) {
   'worklet'
   // A short slanted brush on a scroll is not an answer, however fast.
-  if (Math.abs(x) < SWIPE_THRESHOLD * 0.3) return 0
-  const headed = x + vx * FLICK_LOOKAHEAD
+  if (Math.abs(x) < SWIPE_THRESHOLD * 0.5) return 0
+  // A diagonal scroll has no sideways lead.
+  const headed = Math.abs(vx) > Math.abs(vy) ? x + vx * FLICK_LOOKAHEAD : x
   if (headed >= SWIPE_THRESHOLD && !blockDid) return 1
   if (headed <= -SWIPE_THRESHOLD && !blockNope) return -1
   return 0

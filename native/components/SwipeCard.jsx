@@ -429,9 +429,11 @@ function StackCard({
     },
     onDeactivate: (event) => {
       'worklet'
+      const edged = zone.value
       zone.value = 0
       pull.value = withTiming(0, { duration: 180 })
-      const way = event.canceled ? 0 : releaseWay(x.value, event.velocityX, blockDid, blockNope)
+      const way = event.canceled ? 0 : releaseWay(x.value, event.velocityX, blockDid, blockNope, event.velocityY)
+      if (way !== 0 && edged === 0) scheduleOnRN(feelEdge)
       if (way !== 0) {
         scheduleOnRN(throwCard, way, {
           x: x.value,
