@@ -2841,6 +2841,17 @@ export const pt = {
   'stats.streaksSub': "Sua sequência e a sequência de cada pergunta",
   'lamp.best': 'Melhor: {n}',
 
+  'streaks.unitWeeks': "semanas",
+  'streaks.unitWeekOne': "semana",
+  'streaks.unitOnTime': "no prazo seguidas",
+  'streaks.unitOnTimeOne': "no prazo",
+  'stats.last30': "Últimos 30 dias",
+  'lamp.shareBtn': "Compartilhar esta sequência",
+  'lamp.shareDays': "{n} dias seguidos em “{what}” com o Did I",
+  'lamp.shareDay': "1 dia seguido em “{what}” com o Did I",
+  'lamp.shareWeeks': "{n} semanas seguidas em “{what}” com o Did I",
+  'lamp.shareWeek': "1 semana seguida em “{what}” com o Did I",
+  'lamp.shareOnTime': "{n} no prazo seguidas em “{what}” com o Did I",
   'lamp.streakCapWeeks': "Semanas seguidas nesta pergunta",
 
   'lamp.bestWeeks': "Melhor: {n} semanas",

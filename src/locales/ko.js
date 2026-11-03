@@ -2805,6 +2805,17 @@ export const ko = {
   'stats.streaksSub': "내 연속 기록과 질문별 연속 기록",
   'lamp.best': '최고: {n}',
 
+  'streaks.unitWeeks': "주",
+  'streaks.unitWeekOne': "주",
+  'streaks.unitOnTime': "회 연속 제때",
+  'streaks.unitOnTimeOne': "회 제때",
+  'stats.last30': "최근 30일",
+  'lamp.shareBtn': "이 연속 기록 공유",
+  'lamp.shareDays': "\"{what}\" {n}일 연속, Did I와 함께",
+  'lamp.shareDay': "\"{what}\" 1일 연속, Did I와 함께",
+  'lamp.shareWeeks': "\"{what}\" {n}주 연속, Did I와 함께",
+  'lamp.shareWeek': "\"{what}\" 1주 연속, Did I와 함께",
+  'lamp.shareOnTime': "\"{what}\" {n}회 연속 제때, Did I와 함께",
   'lamp.streakCapWeeks': "이 질문의 연속 주",
 
   'lamp.bestWeeks': "최고: {n}주",

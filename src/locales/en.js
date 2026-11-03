@@ -2835,6 +2835,17 @@ export const en = {
   'stats.streaksSub': "Your streak and each question’s streak",
   'lamp.best': 'Best: {n}',
 
+  'streaks.unitWeeks': "weeks",
+  'streaks.unitWeekOne': "week",
+  'streaks.unitOnTime': "on time in a row",
+  'streaks.unitOnTimeOne': "on time",
+  'stats.last30': "Last 30 days",
+  'lamp.shareBtn': "Share this streak",
+  'lamp.shareDays': "{n} days in a row on \"{what}\" with Did I",
+  'lamp.shareDay': "1 day in a row on \"{what}\" with Did I",
+  'lamp.shareWeeks': "{n} weeks in a row on \"{what}\" with Did I",
+  'lamp.shareWeek': "1 week in a row on \"{what}\" with Did I",
+  'lamp.shareOnTime': "{n} on time in a row on \"{what}\" with Did I",
   'lamp.streakCapWeeks': "Weeks in a row for this question",
 
   'lamp.bestWeeks': "Best: {n} weeks",

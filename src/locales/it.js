@@ -2841,6 +2841,17 @@ export const it = {
   'stats.streaksSub': "La tua serie e la serie di ogni domanda",
   'lamp.best': 'Migliore: {n}',
 
+  'streaks.unitWeeks': "settimane",
+  'streaks.unitWeekOne': "settimana",
+  'streaks.unitOnTime': "puntuali di fila",
+  'streaks.unitOnTimeOne': "puntuale",
+  'stats.last30': "Ultimi 30 giorni",
+  'lamp.shareBtn': "Condividi questa serie",
+  'lamp.shareDays': "{n} giorni di fila su «{what}» con Did I",
+  'lamp.shareDay': "1 giorno di fila su «{what}» con Did I",
+  'lamp.shareWeeks': "{n} settimane di fila su «{what}» con Did I",
+  'lamp.shareWeek': "1 settimana di fila su «{what}» con Did I",
+  'lamp.shareOnTime': "{n} puntuali di fila su «{what}» con Did I",
   'lamp.streakCapWeeks': "Settimane di fila per questa domanda",
 
   'lamp.bestWeeks': "Migliore: {n} settimane",

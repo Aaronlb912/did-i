@@ -2796,6 +2796,17 @@ export const zh = {
   'stats.streaksSub': "你的连续记录和每个问题的连续记录",
   'lamp.best': '最佳：{n}',
 
+  'streaks.unitWeeks': "周",
+  'streaks.unitWeekOne': "周",
+  'streaks.unitOnTime': "次连续按时",
+  'streaks.unitOnTimeOne': "次按时",
+  'stats.last30': "最近 30 天",
+  'lamp.shareBtn': "分享这个连续记录",
+  'lamp.shareDays': "“{what}”连续 {n} 天，用 Did I",
+  'lamp.shareDay': "“{what}”连续 1 天，用 Did I",
+  'lamp.shareWeeks': "“{what}”连续 {n} 周，用 Did I",
+  'lamp.shareWeek': "“{what}”连续 1 周，用 Did I",
+  'lamp.shareOnTime': "“{what}”连续 {n} 次按时，用 Did I",
   'lamp.streakCapWeeks': "这个问题的连续周数",
 
   'lamp.bestWeeks': "最佳：{n}周",

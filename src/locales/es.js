@@ -2845,6 +2845,17 @@ export const es = {
   'stats.streaksSub': "Tu racha y la racha de cada pregunta",
   'lamp.best': 'Mejor: {n}',
 
+  'streaks.unitWeeks': "semanas",
+  'streaks.unitWeekOne': "semana",
+  'streaks.unitOnTime': "a tiempo seguidas",
+  'streaks.unitOnTimeOne': "a tiempo",
+  'stats.last30': "Últimos 30 días",
+  'lamp.shareBtn': "Compartir esta racha",
+  'lamp.shareDays': "{n} días seguidos en «{what}» con Did I",
+  'lamp.shareDay': "1 día seguido en «{what}» con Did I",
+  'lamp.shareWeeks': "{n} semanas seguidas en «{what}» con Did I",
+  'lamp.shareWeek': "1 semana seguida en «{what}» con Did I",
+  'lamp.shareOnTime': "{n} a tiempo seguidas en «{what}» con Did I",
   'lamp.streakCapWeeks': "Semanas seguidas en esta pregunta",
 
   'lamp.bestWeeks': "Mejor: {n} semanas",

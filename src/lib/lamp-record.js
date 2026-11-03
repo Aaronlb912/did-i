@@ -287,3 +287,24 @@ export function lampAmounts(book, lamp, dateIso, chartDays = 14, avgDays = 30) {
   }
   return { average: count ? roundAmount(sum / count) : null, count, bars, max }
 }
+
+// Questions that run on days (not times a week, not every so often).
+export function isDayCadence(lamp) {
+  return Boolean(lamp) && !isPerWeek(lamp) && !isEvery(lamp)
+}
+
+// Did rate over the last 30 days across live questions, same window as the
+// question page. Null under 3 due days.
+export function shelfRate30(books, dateIso) {
+  let did = 0
+  let asked = 0
+  for (const one of books || []) {
+    for (const lamp of one.lamps || []) {
+      if (lamp.archived) continue
+      const rec = lampRecord(one, lamp, dateIso, 30)
+      did += rec.did
+      asked += rec.asked
+    }
+  }
+  return lampRate({ did, asked })
+}
