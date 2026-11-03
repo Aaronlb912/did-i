@@ -2667,6 +2667,8 @@ export const fr = {
   'confirm.nowKid': '{name} est maintenant un enfant.',
   'confirm.droppedWeMiss': '{name} retiré. Impossible de quitter tes Did we partagés. Quitte-les depuis Did we.',
   'confirm.blocked': '{name} bloqué.',
+  'confirm.blockedReported': "Bloqué et signalé.",
+  'invite.loadFail': "Impossible de vérifier ton code d’invitation. Vérifie ta connexion.",
   'confirm.cheersBought': '+{n} encouragements.',
   'confirm.shareMiss': 'Partage impossible. Réessaie.',
   'confirm.askRemoved': 'Demande retirée.',

@@ -19,6 +19,14 @@ export function InviteCodeSection({ colors, book, onChange, gemsPaid, joined, hi
   const ready = whole && !ref.busy
 
   if (ref.locked === null && gemsPaid == null) return null
+  if (ref.loadFailed) {
+    return (
+      <>
+        <Text style={[styles.miss, { color: colors.miss }]}>{t('invite.loadFail')}</Text>
+        <DidButton colors={colors} label={t('boot.retry')} onPress={ref.refresh} />
+      </>
+    )
+  }
   if (hideDone && ref.locked && !ref.said) return null
 
   async function paste() {
@@ -57,6 +65,11 @@ export function InviteCodeSection({ colors, book, onChange, gemsPaid, joined, hi
           {whole && ref.owner != null ? (
             <Text style={[styles.found, { color: colors.on }]} accessibilityLiveRegion="polite">
               {ref.owner ? t('invite.found', { name: ref.owner }) : t('invite.foundAny')}
+            </Text>
+          ) : null}
+          {whole && ref.looked && ref.owner == null ? (
+            <Text style={[styles.miss, { color: colors.miss }]} accessibilityLiveRegion="polite">
+              {t('people.noInvite')}
             </Text>
           ) : null}
           <View style={styles.buttons}>

@@ -2660,6 +2660,8 @@ export const it = {
   'confirm.nowKid': '{name} ora è un bambino.',
   'confirm.droppedWeMiss': 'Hai rimosso {name}. Non è stato possibile lasciare i Did we condivisi. Lasciali da Did we.',
   'confirm.blocked': 'Hai bloccato {name}.',
+  'confirm.blockedReported': "Bloccato e segnalato.",
+  'invite.loadFail': "Impossibile controllare il tuo codice invito. Controlla la connessione.",
   'confirm.cheersBought': '+{n} incoraggiamenti.',
   'confirm.shareMiss': 'Impossibile condividere. Riprova.',
   'confirm.askRemoved': 'Richiesta rimossa.',

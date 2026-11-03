@@ -39,8 +39,8 @@ export async function askRemoveFriend({ person, colors, onDone, onMiss }) {
   const name = personName(person) || t('people.someone')
   const other = person?.user_id
   if (!other) return
-  // A failed count still opens the sheet, without the Did we choice.
-  const shared = await weSharedCount(other).catch(() => 0)
+  // A failed count is unknown (null), so the sheet still offers leaving Did we.
+  const shared = await weSharedCount(other).catch(() => null)
   const go = async (leave) => {
     publishSheet(null)
     const { miss } = await dropFriend(other)

@@ -2622,6 +2622,8 @@ export const ja = {
   'confirm.nowKid': '{name}を子どもにしました。',
   'confirm.droppedWeMiss': '{name}を削除しました。共有中のDid weは抜けられませんでした。Did weから抜けてください。',
   'confirm.blocked': '{name}をブロックしました。',
+  'confirm.blockedReported': "ブロックして報告しました。",
+  'invite.loadFail': "招待コードを確認できませんでした。接続を確認してください。",
   'confirm.cheersBought': '応援 +{n}。',
   'confirm.shareMiss': '共有できませんでした。もう一度試してください。',
   'confirm.askRemoved': 'リクエストを削除しました。',

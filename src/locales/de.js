@@ -2673,6 +2673,8 @@ export const de = {
   'confirm.nowKid': '{name} ist jetzt ein Kind.',
   'confirm.droppedWeMiss': '{name} entfernt. Eure gemeinsamen Did we konnten nicht verlassen werden. Verlasse sie unter Did we.',
   'confirm.blocked': '{name} blockiert.',
+  'confirm.blockedReported': "Blockiert und gemeldet.",
+  'invite.loadFail': "Dein Einladungscode konnte nicht geprüft werden. Prüfe deine Verbindung.",
   'confirm.cheersBought': '+{n} Jubel.',
   'confirm.shareMiss': 'Teilen hat nicht geklappt. Versuch es noch mal.',
   'confirm.askRemoved': 'Anfrage entfernt.',
