@@ -278,7 +278,7 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
         if let at = tap["at"] as? Double, taken.contains(where: { abs($0 - at) < 1 }) { continue }
       } else if let sentAt = tap["sentAt"] as? Double, sentAt > 0, builtAt > sentAt { continue }
       var stillOpen = false
-      for i in next.items.indices where next.items[i].id == id && next.items[i].night == night && next.items[i].status == "open" {
+      for i in next.items.indices where next.items[i].id == id && next.items[i].night == night && (next.items[i].status == "open" || (answer == "did" && next.items[i].status == "nope")) {
         next.items[i].status = answer
         stillOpen = true
       }
@@ -299,6 +299,11 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
 
   var openCards: [WatchCard] {
     (cards?.items ?? []).filter { $0.status == "open" }
+  }
+
+  // Nothing open: a Not yet can still turn into a Did.
+  var notYetCards: [WatchCard] {
+    (cards?.items ?? []).filter { $0.status == "nope" }
   }
 
   var palette: Palette { Palette(cards?.colors) }
@@ -406,14 +411,9 @@ struct ContentView: View {
         CardView(card: card)
       } else {
         // Said Not yet to some: they are not done, so do not say all clear.
-        let notYet = cards.items.filter { $0.status == "nope" }.count
         let streak = cards.streak ?? 0
-        if notYet > 0 {
-          DoneView(
-            title: fill(cards.notYetLabel, ["n": notYet]) ?? String(localized: "\(notYet) not yet"),
-            text: nonEmpty(cards.openPhoneLabel) ?? String(localized: "Open Did I on your iPhone"),
-            accentText: false
-          )
+        if let card = store.notYetCards.first {
+          CardView(card: card)
         } else if streak > 0 {
           DoneView(
             title: nonEmpty(cards.allDoneLabel) ?? String(localized: "All done"),
@@ -526,6 +526,7 @@ struct CardView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .layoutPriority(-1)
           HStack(alignment: .top, spacing: 18) {
+            if card.status != "nope" {
             RoundAnswer(
               symbol: "clock",
               label: nonEmpty(store.cards?.nopeLabel) ?? String(localized: "Not yet"),
@@ -536,6 +537,7 @@ struct CardView: View {
               labelColor: palette.soft
             ) {
               store.answer(card, did: false)
+            }
             }
             RoundAnswer(
               symbol: "checkmark",

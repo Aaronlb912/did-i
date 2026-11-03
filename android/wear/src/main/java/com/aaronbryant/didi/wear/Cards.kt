@@ -61,6 +61,8 @@ data class WatchCards(
   val offLater: Int = 0,
 ) {
   val openCards: List<WatchCard> get() = items.filter { it.status == "open" }
+  // Nothing open: a Not yet can still turn into a Did.
+  val notYetCards: List<WatchCard> get() = items.filter { it.status == "nope" }
   val answered: Int get() = items.count { it.status != "open" }
   // "2 of 4" and the ring: Today's meter when the phone sends it.
   private val counted: List<WatchCard> get() = if (offDone == null) items else items.filter { it.counted }
