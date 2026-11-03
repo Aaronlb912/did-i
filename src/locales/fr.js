@@ -2836,6 +2836,10 @@ export const fr = {
   'stats.sevenSub': "Chaque question, jour après jour",
   'stats.streaksSub': "Ta série et la série de chaque question",
   'lamp.best': 'Record : {n}',
+
+  'lamp.streakCapWeeks': "Semaines d’affilée pour cette question",
+
+  'lamp.bestWeeks': "Record : {n} semaines",
   'coins.why.cap': 'Seuls les {n} premiers Dids paient.',
   'coins.why.nope': 'Un pas encore paie 0.',
   'coins.why.none': 'Rien de répondu.',

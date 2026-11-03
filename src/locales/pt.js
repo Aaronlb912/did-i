@@ -2829,6 +2829,10 @@ export const pt = {
   'stats.sevenSub': "Cada pergunta, dia a dia",
   'stats.streaksSub': "Sua sequência e a sequência de cada pergunta",
   'lamp.best': 'Melhor: {n}',
+
+  'lamp.streakCapWeeks': "Semanas seguidas nesta pergunta",
+
+  'lamp.bestWeeks': "Melhor: {n} semanas",
   'coins.why.cap': 'Só os primeiros {n} Dids pagam.',
   'coins.why.nope': 'Um ainda não paga 0.',
   'coins.why.none': 'Nada respondido.',

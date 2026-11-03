@@ -2842,6 +2842,10 @@ export const de = {
   'stats.sevenSub': "Jede Frage, Tag für Tag",
   'stats.streaksSub': "Deine Serie und die Serie jeder Frage",
   'lamp.best': 'Beste: {n}',
+
+  'lamp.streakCapWeeks': "Wochen in Folge bei dieser Frage",
+
+  'lamp.bestWeeks': "Beste: {n} Wochen",
   'coins.why.cap': 'Nur die ersten {n} Dids zahlen.',
   'coins.why.nope': 'Ein Noch nicht zahlt 0.',
   'coins.why.none': 'Nichts beantwortet.',

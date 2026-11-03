@@ -2823,6 +2823,10 @@ export const en = {
   'stats.sevenSub': "Each question, day by day",
   'stats.streaksSub': "Your streak and each question’s streak",
   'lamp.best': 'Best: {n}',
+
+  'lamp.streakCapWeeks': "Weeks in a row for this question",
+
+  'lamp.bestWeeks': "Best: {n} weeks",
   'coins.why.cap': 'Only the first {n} Dids paid.',
   'coins.why.nope': 'A Not yet pays 0.',
   'coins.why.none': 'Nothing answered.',

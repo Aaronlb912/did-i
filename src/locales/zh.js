@@ -2784,6 +2784,10 @@ export const zh = {
   'stats.sevenSub': "每个问题，一天一天看",
   'stats.streaksSub': "你的连续记录和每个问题的连续记录",
   'lamp.best': '最佳：{n}',
+
+  'lamp.streakCapWeeks': "这个问题的连续周数",
+
+  'lamp.bestWeeks': "最佳：{n}周",
   'coins.why.cap': '只有前 {n} 个 Did 给金币。',
   'coins.why.nope': '“还没”给 0。',
   'coins.why.none': '没有回答。',

@@ -2791,6 +2791,10 @@ export const ja = {
   'stats.sevenSub': "質問ごとに、1日ずつ",
   'stats.streaksSub': "あなたの連続記録と、質問ごとの連続記録",
   'lamp.best': '最高: {n}',
+
+  'lamp.streakCapWeeks': "この質問の連続週数",
+
+  'lamp.bestWeeks': "最高: {n}週",
   'coins.why.cap': '支払われるのは最初の {n} 回の Did だけです。',
   'coins.why.nope': '「まだ」は 0 です。',
   'coins.why.none': '回答なし。',
