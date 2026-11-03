@@ -12,6 +12,7 @@ export const CADENCE_OPTIONS = [
 export function schedulePick(draft) {
   if (draft?.cadence === 'once' && draft.onceWhen === 'by') return 'deadline'
   if (draft?.cadence === 'once') return 'once_on'
+  if (draft?.cadence === 'daily' && Number(draft.perWeek) >= 1) return 'per_week'
   return draft?.cadence || 'daily'
 }
 
@@ -43,7 +44,9 @@ export function applySchedulePick(draft, pick, today) {
     }
     return next
   }
-  next.cadence = pick
+  // Times a week is a daily question with a count; every other pick drops the count.
+  next.cadence = pick === 'per_week' ? 'daily' : pick
+  next.perWeek = pick === 'per_week' ? (Number(next.perWeek) >= 1 ? Number(next.perWeek) : 3) : ''
   // Every few days starts at the number the field shows, so it is never blank.
   if (pick === 'every_n' && !(Number(next.everyN) >= 2)) next.everyN = 3
   if (pick === 'every_n' && !/^\d{4}-\d{2}-\d{2}$/.test(String(next.everyNAnchor || ''))) next.everyNAnchor = today

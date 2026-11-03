@@ -44,7 +44,7 @@ import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
-import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery } from '../../src/lib/recurrence.js'
+import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
 import { gapLine, lastTimeLine, sinceBadge } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
 import { awayKey, readPrefs, usePrefs } from '../../src/lib/prefs.js'
@@ -1062,6 +1062,7 @@ export function SearchScreen({ book }) {
 
 const SCHEDULES = [
   { id: 'daily', labelKey: 'hang.daily' },
+  { id: 'per_week', labelKey: 'hang.perWeek' },
   { id: 'weekly', labelKey: 'hang.weekly' },
   { id: 'monthly', labelKey: 'hang.monthly' },
   { id: 'every_n', labelKey: 'hang.everyN' },
@@ -1758,7 +1759,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
     if (another === true && onAnother && !hang.editing) {
       playClick()
-      confirmDone(isDueOn(next, dateIso) || everyDueOn(target, next, dateIso) ? t('hang.landTonight') : t('confirm.questionAdded'))
+      confirmDone(isDueOn(next, dateIso) || isPerWeek(next) || everyDueOn(target, next, dateIso) ? t('hang.landTonight') : t('confirm.questionAdded'))
       offerPingPrimer(newTime, colors)
       onAnother()
       return
@@ -1771,7 +1772,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       return
     }
     // The reward: the card stamps itself, "Did I" lights up, and their cheer goes off.
-    const landsTonight = isDueOn(next, dateIso) || everyDueOn(target, next, dateIso)
+    const landsTonight = isDueOn(next, dateIso) || isPerWeek(next) || everyDueOn(target, next, dateIso)
     setStamp(landsTonight ? t('hang.landTonight') : t('hang.landAdded'))
     leaving.current = true
     setWave((count) => count + 1)
@@ -1923,6 +1924,17 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                   />
                 ))}
               </View>
+            ) : null}
+
+            {schedule === 'per_week' ? (
+              <>
+                <View style={styles.pillRow}>
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <Pill key={n} label={String(n)} on={Number(draft.perWeek) === n} onPress={() => hang.change('perWeek', n)} colors={colors} />
+                  ))}
+                </View>
+                <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.perWeekHint')}</Text>
+              </>
             ) : null}
 
             {schedule === 'monthly' ? (

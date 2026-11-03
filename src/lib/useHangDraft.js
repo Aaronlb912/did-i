@@ -124,6 +124,7 @@ export function useHangDraft({
       everyN: draft.cadence === 'every_n' ? Number(draft.everyN) || draft.everyN : '',
       everyNAnchor: draft.cadence === 'every_n' ? draft.everyNAnchor : '',
       everyDays: draft.cadence === 'every' ? Number(draft.everyDays) || draft.everyDays : '',
+      perWeek: draft.cadence === 'daily' && Number(draft.perWeek) >= 1 ? Number(draft.perWeek) : '',
       weekdays: draft.cadence === 'weekly' ? draft.weekdays || [] : [],
       priority,
       notify: notifyOn,

@@ -6,14 +6,14 @@ import { hallHeat, shelfStreak } from './hall-feel.js'
 import { t } from './i18n.js'
 import { usePrefs } from './prefs.js'
 import { nextStreakGoal } from './hall-pages.js'
-import { boardDate, formatBoardDate, isEvery } from './recurrence.js'
+import { boardDate, formatBoardDate } from './recurrence.js'
 
 export function Streaks({ book, boards, now }) {
   const gentle = usePrefs().gentle === true
   const clock = now || new Date()
   // Every folder, like the phone and the streak on Tonight.
   const heat = boards ? shelfStreak(boards, clock) : hallHeat(book, clock)
-  const lamps = (book.lamps || []).filter((lamp) => !lamp.archived && !isEvery(lamp))
+  const lamps = (book.lamps || []).filter((lamp) => !lamp.archived)
   const rows = lamps
     .map((lamp) => ({ lamp, n: streakLength(book, lamp, clock) }))
     .sort((a, b) => b.n - a.n)

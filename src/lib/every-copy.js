@@ -1,5 +1,5 @@
 import { t } from './i18n.js'
-import { daysBetween, daysSinceDid, everyGap, isEvery, learnedGap } from './recurrence.js'
+import { daysBetween, daysSinceDid, everyGap, isEvery, isPerWeek, learnedGap, perWeekDone } from './recurrence.js'
 
 // "Last time: 12 days ago" under an every so often question. upTo counts a
 // Did tonight (the question page); the card leaves tonight out.
@@ -10,6 +10,13 @@ export function lastTimeLine(book, lamp, dateIso, upTo = false) {
   if (days === 0) return t('every.today')
   if (days === 1) return t('every.lastOne')
   return t('every.lastMany', { n: days })
+}
+
+// "2 of 3 this week" under a times-a-week question. The card leaves out a Did
+// tonight unless upTo.
+export function perWeekLine(book, lamp, dateIso, upTo = true) {
+  if (!isPerWeek(lamp)) return ''
+  return t('perWeek.line', { done: Math.min(perWeekDone(book, lamp.id, dateIso, upTo), Number(lamp.perWeek)), n: lamp.perWeek })
 }
 
 // The small pill on the Questions list: "12d", "today", or "Never yet".

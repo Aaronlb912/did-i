@@ -39,8 +39,8 @@ import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
 import { coinsToday, fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { awayKey, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
 import { cameBack, daysSinceFirstAnswer } from '../../src/lib/come-back.js'
-import { answerFor, isEvery } from '../../src/lib/recurrence.js'
-import { lastTimeLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
+import { answerFor, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
+import { lastTimeLine, perWeekLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
 import { DidButton, KeyButton, LateMeta } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
@@ -1219,6 +1219,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       >
         {isEvery(faceRow.lamp) ? (
           <Text style={[styles.everyLine, { color: colors.inkSoft }]}>{lastTimeLine(faceBook, faceRow.lamp, stack.dateIso)}</Text>
+        ) : null}
+        {isPerWeek(faceRow.lamp) ? (
+          <Text style={[styles.everyLine, { color: colors.inkSoft }]}>{perWeekLine(faceBook, faceRow.lamp, stack.dateIso)}</Text>
         ) : null}
         {hasHistory ? (
           <NightStrip
