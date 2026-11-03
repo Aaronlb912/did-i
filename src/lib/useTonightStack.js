@@ -65,6 +65,21 @@ export function pushUndo(stack, entry) {
   return [entry, ...stack].slice(0, UNDO_DEPTH)
 }
 
+// A late Did on a Not yet goes to the next open question, else the next Not yet.
+// The new status stays late either way.
+export function afterLateDid(ready, row) {
+  const open = ready.find((item) => item.lamp.id !== row.lamp.id && !item.answer)
+  if (open) return { faceId: open.lamp.id, skipReview: false }
+  const nextSkip = ready.find((item) => item.lamp.id !== row.lamp.id && item.answer?.status === 'skip')
+  if (nextSkip) return { faceId: nextSkip.lamp.id, skipReview: true }
+  return { faceId: '', skipReview: false }
+}
+
+// Undo of a set-aside grace card: the key leaves the list, so the card comes back.
+export function graceKeysAfterUndo(keys, key) {
+  return keys.filter((item) => item !== key)
+}
+
 export function useTonightStack({
   value,
   boards = [],
@@ -85,15 +100,16 @@ export function useTonightStack({
   const [titleDraft, setTitleDraft] = useState(value.title)
   const [undoStack, setUndoStack] = useState([])
   const undo = undoStack[0] || null
-  // A folder switch or a new day hides the card an undo would bring back, so it ends here.
-  const undoTag = useRef(`${tagId}|${boardDate(clock)}`)
+  // A new day hides the card an undo would bring back, so it ends here. A folder
+  // switch does not: undo restores the answer in its own book, whatever folder is open.
+  const undoTag = useRef(boardDate(clock))
   useEffect(() => {
-    if (undoTag.current === `${tagId}|${boardDate(clock)}`) return
-    undoTag.current = `${tagId}|${boardDate(clock)}`
+    if (undoTag.current === boardDate(clock)) return
+    undoTag.current = boardDate(clock)
     undoTimers.current.forEach((timer) => window.clearTimeout(timer))
     undoTimers.current.clear()
     setUndoStack([])
-  }, [tagId, boardDate(clock)])
+  }, [boardDate(clock)])
   const [holePick, setHolePick] = useState(null)
   const [waitPick, setWaitPick] = useState(null)
   const [pillPick, setPillPick] = useState(null)
@@ -173,14 +189,17 @@ export function useTonightStack({
     const key = `${rowKey(row)}:${row.periodKey}`
     if (status === 'skip') {
       setGraceLeft((keys) => [...keys, key])
-      if (live) return
+      if (live) {
+        armUndo({ book, after: book, graceKey: key, lampId: row.lamp.id, periodKey: row.periodKey, status: 'skip', label: markedToast('skip', row.lamp) })
+        return
+      }
     }
     // A did after midnight is a did; a did after a nope is late, as always.
     const finalStatus = status === 'yes' ? didStatusForRow({ ...row, answer: live || row.answer }) : status
     const next = putAnswer(book, row, finalStatus, clock)
     setOverlay(next)
     change(next)
-    armUndo({ book, after: next, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
+    armUndo({ book, after: next, graceKey: finalStatus === 'skip' ? key : undefined, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
     feelTap(finalStatus === 'skip' ? 'skip' : 'did')
   }
   const hallOn = dueClearTonight(due)
@@ -383,6 +402,12 @@ export function useTonightStack({
 
   function applyUndo() {
     if (!undo) return
+    if (undo.graceKey) setGraceLeft((keys) => graceKeysAfterUndo(keys, undo.graceKey))
+    if (undo.graceKey && undo.after === undo.book) {
+      dropUndo(undo)
+      feelTap('undo')
+      return
+    }
     const current = shelf.find((item) => item.id === undo.book.id) || undo.book
     const next = undoneBook(current, undo)
     // Reopening a cleared day: a real clear later plays the streak moment again.
@@ -432,16 +457,9 @@ export function useTonightStack({
       setFaceId(ids[(at + 1) % ids.length])
       setSkipReview(false)
     } else if (finalStatus === 'late' && wasSkip) {
-      const nextSkip = ready.find(
-        (item) => item.lamp.id !== row.lamp.id && item.answer?.status === 'skip',
-      )
-      if (nextSkip) {
-        setSkipReview(true)
-        setFaceId(nextSkip.lamp.id)
-      } else {
-        setSkipReview(false)
-        setFaceId('')
-      }
+      const go = afterLateDid(ready, row)
+      setSkipReview(go.skipReview)
+      setFaceId(go.faceId)
     } else {
       setFaceId('')
       setSkipReview(false)
@@ -500,6 +518,14 @@ export function useTonightStack({
       return
     }
     setFaceId('')
+  }
+
+  // Open one Not yet question's card from the rest list.
+  function openSkipped(row) {
+    setRestNight(false)
+    setSkipReview(true)
+    setFaceId(row.lamp.id)
+    feelTap('tick')
   }
 
   function restStack(quiet) {
@@ -679,6 +705,7 @@ export function useTonightStack({
     dateIso,
     mark,
     continueStack,
+    openSkipped,
     restStack,
     stillOpen,
     lateFromList,

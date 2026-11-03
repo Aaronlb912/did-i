@@ -27,7 +27,7 @@ export function SwipeFace({ x, head, kicker, mark, title, stampDid, stampNope, b
       ) : kicker ? (
         <Animated.Text style={[faceCardStyles.kicker, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text>
       ) : null}
-      <Text style={[faceCardStyles.title, { color: colors.ink }]} maxFontSizeMultiplier={2}>{title}</Text>
+      <Text style={[faceCardStyles.title, { color: colors.ink }]} maxFontSizeMultiplier={2} numberOfLines={6}>{title}</Text>
       {children}
     </>
   )

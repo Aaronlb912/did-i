@@ -2495,6 +2495,7 @@ export const ja = {
   'shop.teasedFree': "まだ発売前です。{date}から{until}まで無料。",
   'tonight.nextOn': '明日はなし。次の質問は{date}。',
   'tonight.restChange': "もう一度見る",
+  'tonight.restMore': "ほか{n}件",
   'tonight.meterNope': "まだ {n}",
   'settings.phoneSubOut': '名前と自分へのメモ',
   'kit.accOnAnt': '相棒を付けていないので、アリでアクセサリーの見た目を表示しています。',

@@ -2545,6 +2545,7 @@ export const de = {
   'shop.teasedFree': "Noch nicht da. Gratis ab {date} bis {until}.",
   'tonight.nextOn': 'Morgen nichts. Nächste Frage: {date}.',
   'tonight.restChange': "Nochmal ansehen",
+  'tonight.restMore': "und {n} weitere",
   'tonight.meterNope': "{n}× noch nicht",
   'settings.phoneSubOut': 'Dein Name und eine Notiz an dich',
   'kit.accOnAnt': 'Kein Kumpel an, darum zeigt die Ameise, wie Accessoires aussehen.',

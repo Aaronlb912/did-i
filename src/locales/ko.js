@@ -2497,6 +2497,7 @@ export const ko = {
   'shop.teasedFree': "아직 나오지 않았어요. {date}부터 {until}까지 무료.",
   'tonight.nextOn': '내일은 없어요. 다음 질문: {date}.',
   'tonight.restChange': "다시 보기",
+  'tonight.restMore': "외 {n}개",
   'tonight.meterNope': "아직 {n}",
   'settings.phoneSubOut': '이름과 나에게 쓰는 메모',
   'kit.accOnAnt': '친구를 고르지 않아서 개미로 액세서리 모습을 보여 줘요.',
