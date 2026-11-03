@@ -1,6 +1,7 @@
 import { mustSwipeDeadline } from './lamp-deadline.js'
 import { DAY_FOLD, GRACE_END, GRACE_FIRST_UNTIL, wallClock } from './zone.js'
 import { awayOn, readPrefs } from './prefs.js'
+import { travelSkipped } from './travel.js'
 
 function pad(value) {
   return String(value).padStart(2, '0')
@@ -359,38 +360,105 @@ export function perWeekDueOn(book, lamp, dateIso) {
   return perWeekDone(book, lamp.id, dateIso, false) < Number(lamp.perWeek)
 }
 
+// A day the question was not asked: paused, Away, or skipped for travel.
+function closedDay(book, lamp, iso) {
+  return inPause(lamp, iso) || travelSkipped(book, iso)
+}
+
+// Dids a week needs: the full count, less for the days it was not asked.
+// 0 when the whole week was closed (it counts neither way).
+function weekNeed(book, lamp, start) {
+  let open = 0
+  for (let i = 0; i < 7; i += 1) if (!closedDay(book, lamp, addDaysIso(start, i))) open += 1
+  if (!open) return 0
+  return Math.max(1, Math.ceil((Number(lamp.perWeek) * open) / 7))
+}
+
 // Weeks in a row with all their Dids. A finished current week counts; an
-// unfinished one does not break the run yet.
+// unfinished one does not break the run yet. Weeks fully paused or away are
+// stepped past; a part-paused week needs fewer Dids.
 export function perWeekStreak(book, lamp, dateIso, cap = 400) {
   if (!isPerWeek(lamp)) return 0
-  const need = Number(lamp.perWeek)
   const list = didNightsOf(book, lamp.id)
-  const full = (from) => didCountBefore(list, addDaysIso(from, 6), true) - didCountBefore(list, from) >= need
+  const done = (from) => didCountBefore(list, addDaysIso(from, 6), true) - didCountBefore(list, from)
   let start = weekStartOf(dateIso)
-  let count = full(start) ? 1 : 0
+  let count = 0
+  let need = weekNeed(book, lamp, start)
+  if (need && done(start) >= need) count = 1
   start = addDaysIso(start, -7)
-  while (count < cap && full(start)) {
-    count += 1
+  for (let steps = 0; count < cap && steps < cap * 2; steps += 1) {
+    need = weekNeed(book, lamp, start)
+    if (need) {
+      if (done(start) < need) break
+      count += 1
+    }
     start = addDaysIso(start, -7)
   }
   return count
 }
 
+// The longest run of weeks with all their Dids, same rule as perWeekStreak.
+export function perWeekBest(book, lamp, dateIso, cap = 1000) {
+  if (!isPerWeek(lamp)) return 0
+  const list = didNightsOf(book, lamp.id)
+  if (!list.length) return 0
+  const done = (from) => didCountBefore(list, addDaysIso(from, 6), true) - didCountBefore(list, from)
+  const current = weekStartOf(dateIso)
+  let start = weekStartOf(list[0])
+  let best = 0
+  let run = 0
+  for (let steps = 0; start <= current && steps < cap; steps += 1) {
+    const need = weekNeed(book, lamp, start)
+    if (need) {
+      if (done(start) >= need) {
+        run += 1
+        if (run > best) best = run
+      } else if (start !== current) run = 0
+    }
+    start = addDaysIso(start, 7)
+  }
+  return best
+}
+
+// Days between two dates, less the days the question was not asked.
+function openGapDays(book, lamp, from, to) {
+  let days = daysBetween(from, to)
+  for (let iso = addDaysIso(from, 1); iso <= to; iso = addDaysIso(iso, 1)) if (closedDay(book, lamp, iso)) days -= 1
+  return days
+}
+
 // Every so often: Dids in a row, each within the gap of the one before, and
-// the newest within the gap of today.
+// the newest within the gap of today. Paused, away and travel days in between
+// do not count toward a gap.
 export function everyStreak(book, lamp, dateIso, cap = 400) {
   if (!isEvery(lamp)) return 0
   const list = didNightsOf(book, lamp.id)
   let at = didCountBefore(list, dateIso, true) - 1
   if (at < 0) return 0
   const gap = everyGap(book, lamp, dateIso)
-  if (daysBetween(list[at], dateIso) > gap) return 0
+  if (openGapDays(book, lamp, list[at], dateIso) > gap) return 0
   let count = 1
-  while (at > 0 && count < cap && daysBetween(list[at - 1], list[at]) <= gap) {
+  while (at > 0 && count < cap && openGapDays(book, lamp, list[at - 1], list[at]) <= gap) {
     count += 1
     at -= 1
   }
   return count
+}
+
+// The longest run of Dids each within the gap of the one before.
+export function everyBest(book, lamp, dateIso) {
+  if (!isEvery(lamp)) return 0
+  const list = didNightsOf(book, lamp.id)
+  const count = didCountBefore(list, dateIso, true)
+  if (!count) return 0
+  const gap = everyGap(book, lamp, dateIso)
+  let best = 1
+  let run = 1
+  for (let i = 1; i < count; i += 1) {
+    run = openGapDays(book, lamp, list[i - 1], list[i]) <= gap ? run + 1 : 1
+    if (run > best) best = run
+  }
+  return best
 }
 
 // Due on dateIso: never done, or the gap has passed since the last Did.

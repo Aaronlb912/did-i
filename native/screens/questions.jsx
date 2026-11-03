@@ -2555,6 +2555,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           </View>
           <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
             <Text style={[styles.tileCap, { color: colors.ink }]}>{every.gap}</Text>
+            {best ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.best', { n: best })}</Text> : null}
           </View>
         </View>
       ) : (

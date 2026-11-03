@@ -7018,6 +7018,38 @@ await testAsync('every so often: streak of Dids each within the gap', async () =
   assert.equal(questionStreak(broke, { ...broke.lamps[0], everyDays: 7 }, evDay(27)), 2, 'a long gap between Dids ends the run behind it')
 })
 
+await testAsync('times a week: a fully paused week keeps the run, a part-paused week needs fewer Dids', async () => {
+  const base = { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', perWeek: 2, archived: false, createdOn: '2026-08-01' }
+  const mk = (days, per) => everyBook(days.map((d) => ['gym', evDay(d), 'yes']), [per])
+  const full = { ...base, pauses: [['2026-09-14', '2026-09-21']] }
+  assert.equal(questionStreak(mk([7, 9, 21, 23], full), full, evDay(23)), 2, 'a week fully paused is stepped past')
+  assert.equal(questionStreak(mk([7, 9, 21, 23], base), base, evDay(23)), 1, 'without the pause that week breaks it')
+  const part = { ...base, pauses: [['2026-09-14', '2026-09-18']] }
+  assert.equal(questionStreak(mk([7, 9, 19], part), part, evDay(22)), 2, 'three open days need one Did')
+  assert.equal(questionStreak(mk([7, 9, 19], base), base, evDay(22)), 0, 'unpaused, one Did is short')
+})
+
+await testAsync('times a week: best streak walks the weeks', async () => {
+  const per = { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', perWeek: 2, archived: false, createdOn: '2026-08-01' }
+  const book = everyBook([7, 9, 14, 16, 21, 28, 29].map((d) => ['gym', evDay(d), 'yes']), [per])
+  assert.equal(bestQuestionStreak(book, per, '2026-10-05'), 2, 'two good weeks, a short one, then one')
+  assert.equal(questionStreak(book, per, '2026-10-05'), 1, 'the current streak is the last good week')
+})
+
+await testAsync('every so often: an Away trip keeps the run, and best streak counts it', async () => {
+  const book = everyBook([1, 8, 29].map((d) => ['sheets', evDay(d), 'yes']))
+  const lamp = { ...book.lamps[0], everyDays: 7 }
+  try {
+    writePrefs({ away: [] })
+    assert.equal(questionStreak(book, lamp, evDay(29)), 1, 'without Away the 21 day gap ends the run')
+    writePrefs({ away: [[evDay(9), evDay(23)]] })
+    assert.equal(questionStreak(book, lamp, evDay(29)), 3, 'fourteen Away days do not count toward the gap')
+    assert.equal(bestQuestionStreak(book, lamp, evDay(29)), 3, 'best streak holds across it')
+  } finally {
+    writePrefs({ away: [] })
+  }
+})
+
 await testAsync('every so often: the learned gap never goes below the picked one', async () => {
   const { everyGap } = await import('../src/lib/recurrence.js')
   const quick = everyBook([1, 3, 5, 7].map((d) => ['sheets', evDay(d), 'yes']))
