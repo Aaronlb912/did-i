@@ -281,7 +281,7 @@ export function AppShell() {
   const hasQuestion = (app.shelf?.boards || []).some((one) => (one.lamps || []).some((lamp) => !lamp.archived))
   useEffect(() => {
     if (gated || settingUp || !shelfReady || !hasQuestion || Platform.OS === 'web') return undefined
-    const timer = setTimeout(() => offerFirstPingPrimer(colors).catch(() => {}), 1200)
+    const timer = setTimeout(() => offerFirstPingPrimer(colors).catch(() => {}), 3000)
     return () => clearTimeout(timer)
     // colors only styles the sheet; a theme change should not re-arm the ask.
   }, [gated, settingUp, shelfReady, hasQuestion])
