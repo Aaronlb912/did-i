@@ -3,7 +3,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { NOTE_MAX, setAnswerNote } from '../../src/lib/board-ops.js'
 import { cleanAmount, shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { lampNights } from '../../src/lib/lamp-record.js'
+import { amountWords, lampNights } from '../../src/lib/lamp-record.js'
 import { nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { gentleOn } from '../../src/lib/prefs.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
@@ -238,11 +238,13 @@ export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange })
 export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
   const [picking, setPicking] = useLayoutState(false)
   const nights = useMemo(() => lampNights(book, lamp), [book, lamp])
-  const noted = nights.filter((row) => row.answer.note)
+  // A day with only an amount is kept data too, so it lists here, not under Add a note.
+  const kept = (answer) => Boolean(answer.note) || typeof answer.amount === 'number'
+  const noted = nights.filter((row) => kept(row.answer))
   // The newest few, so a question with many notes stays short; the rest on ask.
   const [all, setAll] = useLayoutState(false)
   const shown = all ? noted : noted.slice(0, NOTES_SHOWN)
-  const picks = nights.filter((row) => !row.answer.note).slice(0, PICKS)
+  const picks = nights.filter((row) => !kept(row.answer)).slice(0, PICKS)
 
   function edit(answer) {
     setPicking(false)
@@ -271,7 +273,7 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
       {!nights.length ? <Meta colors={colors}>{t('note.empty')}</Meta> : null}
       {shown.map(({ answer }) => (
         <Reveal key={answer.periodKey}>
-          <Row colors={colors} label={nightLine(lamp, answer)} note={answer.note} onPress={() => edit(answer)} />
+          <Row colors={colors} label={nightLine(lamp, answer)} note={answer.note || amountWords(answer.amount, lamp.amountUnit || '')} onPress={() => edit(answer)} />
         </Reveal>
       ))}
       {noted.length > NOTES_SHOWN ? (
