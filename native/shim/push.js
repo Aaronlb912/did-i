@@ -2,13 +2,13 @@ import { AppState, Platform } from 'react-native'
 import { cloud } from '../../src/lib/cloud.js'
 import { deviceKey } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
-import { SEND_CATEGORY, firstResponse, notificationAnswer, sendActions } from '../../src/lib/notify-answer.js'
+import { SEND_CATEGORY, firstResponse, notificationAnswer, sendActions, snoozeFrom } from '../../src/lib/notify-answer.js'
 import {
   askNotificationPermission,
   notificationPermissionGranted,
   verifyNotificationPermission,
 } from '../lib/notification-perms.js'
-import { isNativeHall } from './native.js'
+import { isNativeHall, snoozeNative } from './native.js'
 import { askMorningFocus } from '../../src/lib/first-run.js'
 import { addNotice, noticesSeenAt, readNotices } from '../../src/lib/notices.js'
 
@@ -151,7 +151,13 @@ async function bindResponseListener(handlers = {}) {
       const sendId = data.sendId ? String(data.sendId) : ''
       const action = String(response?.actionIdentifier || '')
       const answer = notificationAnswer(response)
+      const snooze = snoozeFrom(response)
       // The buttons answer without leaving the reminder in the tray.
+      if (snooze) {
+        Notifications.dismissNotificationAsync?.(String(response?.notification?.request?.identifier || ''))?.catch?.(() => {})
+        snoozeNative(snooze)
+        return
+      }
       if (answer?.noteId) Notifications.dismissNotificationAsync?.(answer.noteId)?.catch?.(() => {})
       if (sendId && (action === 'keep' || action === 'pass') && typeof handlers.onSend === 'function') {
         handlers.onSend(sendId, action === 'keep')

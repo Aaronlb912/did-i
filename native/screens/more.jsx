@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { pingsFailed } from '../shim/native.js'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import {
   Keyboard,
@@ -2177,6 +2178,11 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
           />
         )}
       </SetCard>
+      {pingsFailed() ? (
+        <SetCard colors={colors}>
+          <SetRow colors={colors} icon="bell" tint={colors.miss} label={t('pings.setFailed')} chevron last onPress={() => Linking.openSettings().catch(() => {})} />
+        </SetCard>
+      ) : null}
       <AwayCard colors={colors} />
       <PingKinds colors={colors} on={on && Boolean(onAskPings)} />
       <PingTest colors={colors} />

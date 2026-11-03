@@ -1,4 +1,4 @@
-// Did and Nope buttons on a reminder. They open the app for a moment (a fully
+// Did, Not yet and Later buttons on a reminder. They open the app for a moment (a fully
 // closed app drops background taps without a native task); the answer goes
 // through the same path as a widget tap.
 
@@ -13,6 +13,7 @@ export function askActions(t) {
   return [
     { identifier: 'did', buttonTitle: t('tonight.answerDid'), options: { opensAppToForeground: true } },
     { identifier: 'nope', buttonTitle: t('tonight.answerNope'), options: { opensAppToForeground: true } },
+    { identifier: 'later', buttonTitle: t('tonight.answerLater'), options: { opensAppToForeground: true } },
   ]
 }
 
@@ -23,6 +24,23 @@ export function sendActions(t) {
     { identifier: 'keep', buttonTitle: t('inbox.keep'), options: { opensAppToForeground: true } },
     { identifier: 'pass', buttonTitle: t('inbox.pass'), options: { opensAppToForeground: true } },
   ]
+}
+
+// Later on a reminder: no answer, the same note again in an hour. Same
+// title, body, data and category, so it has the same buttons.
+export const SNOOZE_MS = 60 * 60 * 1000
+export const SNOOZE_KEY = 'did-i-snoozed'
+export function snoozeFrom(response, now = Date.now()) {
+  if (String(response?.actionIdentifier || '') !== 'later') return null
+  const request = response?.notification?.request || {}
+  const c = request.content || {}
+  if (!c.data?.lampId && !c.data?.weId) return null
+  const at = now + SNOOZE_MS
+  return {
+    identifier: 'snooze:' + String(request.identifier || c.data.lampId || c.data.weId),
+    content: { title: c.title, body: c.body, data: c.data, categoryIdentifier: c.categoryIdentifier || ASK_CATEGORY },
+    at,
+  }
 }
 
 // A button press on a reminder, or null for anything else (a plain tap opens
