@@ -31,6 +31,8 @@ function bad(error) {
   if (/enough nudges tonight/i.test(text)) return { miss: 'we.missNudgeCap' }
   if (/too many reports/i.test(text)) return { miss: 'we.missReports' }
   if (/night is closed/i.test(text)) return { miss: 'we.missClosed' }
+  if (/card ended/i.test(text)) return { miss: 'we.missEnded' }
+  if (/kid card is family only/i.test(text)) return { miss: 'we.missKidFamily' }
   if (/ask has closed/i.test(text)) return { miss: 'we.askClosed' }
   if (/only the person who made/i.test(text)) return { miss: 'we.missOwner' }
   if (/schema cache|PGRST202/i.test(text) || error?.code === 'PGRST202') return { miss: 'we.missNotReady' }
@@ -282,8 +284,71 @@ export const weNudge = (card, other, night = tonightIso()) => call('we_nudge', {
 // done: whether the card is now done together, and finished: whether this
 // answer is the one that made it done (the server says 2).
 export async function weAnswer(card, status, night = tonightIso()) {
-  const out = await call('we_answer', { card, on_night: night, want_status: status })
+  const db = cloud()
+  if (!db) return { miss: 'off', done: false, finished: false }
+  const { data, error } = await db.rpc('we_answer', { card, on_night: night, want_status: status })
+  if (error && offline(error)) {
+    const { data: got } = await db.auth.getSession()
+    const userId = got?.session?.user?.id
+    if (userId) {
+      keepWePending(userId, { card, status, night })
+      return { miss: 'we.savedOffline', done: false, finished: false }
+    }
+  }
+  const out = error ? bad(error) : { miss: '', data }
   return { miss: out.miss, done: Number(out.data) > 0, finished: Number(out.data) === 2 }
+}
+
+// A Did we answered with no connection waits here, per account, and is sent
+// on the next good load. A server refusal is not offline: it is dropped.
+const PENDING_KEY = 'did-i-we-pending:'
+
+function offline(error) {
+  return !error?.code && /network request failed|failed to fetch|load failed|networkerror/i.test(error?.message || '')
+}
+
+function readWePending(userId) {
+  try {
+    const list = JSON.parse(localStorage.getItem(PENDING_KEY + userId) || '[]')
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+
+function writeWePending(userId, list) {
+  try {
+    if (list.length) localStorage.setItem(PENDING_KEY + userId, JSON.stringify(list.slice(0, 60)))
+    else localStorage.removeItem(PENDING_KEY + userId)
+  } catch {
+    // Without storage the answer is lost, as before.
+  }
+}
+
+function keepWePending(userId, item) {
+  const rest = readWePending(userId).filter((p) => !(p.card === item.card && p.night === item.night))
+  writeWePending(userId, [...rest, item])
+}
+
+// Sends what waits. Comes back true when one was saved, so the cards reload.
+async function sendWePending(userId, cards) {
+  const list = readWePending(userId)
+  if (!list.length) return false
+  const db = cloud()
+  if (!db) return false
+  const ids = new Set((cards || []).map((card) => card.id))
+  const oldest = addDays(tonightIso(), -2)
+  const keep = []
+  let sent = false
+  for (const item of list) {
+    // The server takes nothing older than two days back, or for a card that is gone.
+    if (!item?.card || !item.night || item.night < oldest || !ids.has(item.card)) continue
+    const { error } = await db.rpc('we_answer', { card: item.card, on_night: item.night, want_status: item.status ?? null })
+    if (error && offline(error)) keep.push(item)
+    else if (!error) sent = true
+  }
+  writeWePending(userId, keep)
+  return sent
 }
 
 export async function weClaim(card, night = tonightIso()) {
@@ -457,7 +522,7 @@ const CARDS_KEY = 'did-i-we-cards:'
 function storedCards(userId) {
   try {
     const raw = JSON.parse(localStorage.getItem(CARDS_KEY + userId) || 'null')
-    if (raw?.day === new Date().toDateString() && Array.isArray(raw.cards)) return { cards: raw.cards, miss: '' }
+    if (raw?.day === tonightIso() && Array.isArray(raw.cards)) return { cards: raw.cards, miss: '' }
   } catch {
     // Loads fresh.
   }
@@ -466,7 +531,7 @@ function storedCards(userId) {
 
 function storeCards(userId, cards) {
   try {
-    const raw = JSON.stringify({ day: new Date().toDateString(), cards })
+    const raw = JSON.stringify({ day: tonightIso(), cards })
     if (raw.length < 200_000) localStorage.setItem(CARDS_KEY + userId, raw)
   } catch {
     // Memory still has them.
@@ -603,6 +668,11 @@ function loadShared(force, userId) {
       loadedAt = Date.now()
       if (!next.miss) storeCards(userId, next.cards || [])
       watchers.forEach((fn) => fn(next))
+      if (!next.miss) {
+        sendWePending(userId, next.cards)
+          .then((sent) => sent && loadShared(true, userId))
+          .catch(() => {})
+      }
       return next
     })
     .finally(() => {
