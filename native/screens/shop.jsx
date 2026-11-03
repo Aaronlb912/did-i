@@ -1681,6 +1681,13 @@ export function ShopAccessoriesScreen({ book, onChange }) {
                 name={t(`accessory.${item.id}`)}
                 note={have ? (on ? t('shop.on') : t('shop.owned')) : coinLine(item.coins)}
                 miss={miss.id === item.id ? miss.text : ''}
+                extra={
+                  miss.id === item.id && !have && !isWished(purse, 'accessory', item.id) ? (
+                    <Pressable accessibilityRole="button" onPress={() => onChange(onLiveBook(toggleWish(liveBook(book), 'accessory', item.id)).book)} style={[styles.wishBtn, { borderColor: colors.line }]}>
+                      <Text style={[styles.wishText, { color: colors.on }]}>{`♡ ${t('shop.wishAdd')}`}</Text>
+                    </Pressable>
+                  ) : null
+                }
                 actionLabel={label}
                 primary={on}
                 onAction={act}
