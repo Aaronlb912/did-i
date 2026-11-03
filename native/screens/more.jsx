@@ -149,6 +149,7 @@ export function SureModal({ sure, colors, onClose, onGo }) {
           <Text style={[styles.popKicker, { color: colors.on }]}>{t('account.kicker')}</Text>
           <Text accessibilityRole="header" style={[styles.popTitle, { color: colors.ink }]}>{sure?.title}</Text>
           <Text style={[styles.popBody, { color: colors.inkSoft }]}>{sure?.body}</Text>
+          {sure?.extra ? <KeyButton label={sure.extra.label} onPress={sure.extra.go} colors={colors} accessibilityLabel={sure.extra.label} /> : null}
           <View style={styles.popRow}>
             <DidButton small label={sure?.yes} onPress={onGo} colors={colors} />
             <KeyButton label={t('settings.neverMind')} onPress={onClose} colors={colors} />
@@ -2926,7 +2927,8 @@ function AccountSignedIn({ book, email, onChange }) {
           onPress={() =>
             setSure({
               title: t('account.deleteTitle'),
-              body: t('account.deleteBody'),
+              body: `${t('account.deleteBody')}\n\n${t('account.deleteGone')}`,
+              extra: { label: t('account.deleteCopy'), go: download },
               yes: t('account.deleteYes'),
               go: () => leave('delete', deleteAccount),
             })
