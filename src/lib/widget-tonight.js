@@ -13,7 +13,7 @@ import {
   widgetTonightUri,
 } from './widget-config.js'
 import { t } from './i18n.js'
-import { lastTimeLine } from './every-copy.js'
+import { lastTimeLine, perWeekLine } from './every-copy.js'
 import { awayOn, gentleOn } from './prefs.js'
 import { alignShelfPurse, normalizePurse, spreadPurseFrom } from './purse.js'
 import { readWeLine, readWeOpen, skipWePing } from './we-widget.js'
@@ -62,8 +62,8 @@ function rowStatus(row) {
 }
 
 function mapRow(row) {
-  // Every so often: "Last time: 6 days ago" under the question, tonight left out.
-  const since = row.book ? lastTimeLine(row.book, row.lamp, row.dateIso) : ''
+  // Every so often: "Last time: 6 days ago"; times a week: "2 of 3 this week".
+  const since = row.book ? lastTimeLine(row.book, row.lamp, row.dateIso) || perWeekLine(row.book, row.lamp, row.dateIso) : ''
   return {
     lampId: row.lamp.id,
     periodKey: row.periodKey,

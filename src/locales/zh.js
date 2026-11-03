@@ -2014,7 +2014,7 @@ export const zh = {
   'web.store.apple': '在 App Store 下载',
   'web.store.androidBeta': '加入 Android 测试版',
   'widget.tonight.tagFallback': "今天",
-  'widget.tonight.empty': '还没有问题',
+  'widget.tonight.empty': '在 Did I 里添加一个问题',
   'widget.tonight.nextAt': '下一个问题：{time}',
   'widget.tonight.away': "你不在。问题已暂停。",
   'widget.tonight.clear': "今天全部完成",

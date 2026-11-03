@@ -2048,7 +2048,7 @@ export const fr = {
   'web.store.apple': 'Télécharger dans l’App Store',
   'web.store.androidBeta': 'Rejoindre la bêta Android',
   'widget.tonight.tagFallback': "Aujourd’hui",
-  'widget.tonight.empty': 'Pas encore de questions',
+  'widget.tonight.empty': 'Ajoute une question dans Did I',
   'widget.tonight.nextAt': 'Prochaine question à {time}',
   'widget.tonight.away': "Tu es absent. Les questions sont en pause.",
   'widget.tonight.clear': "Tout est fait pour aujourd’hui",
