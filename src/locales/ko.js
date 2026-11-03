@@ -2457,6 +2457,8 @@ export const ko = {
   'friend.photoBig': '{name}의 사진 크게 보기',
   'friend.more': '{name} 더 보기',
   'voice.noMatch': "오늘 질문에서 \"{said}\"을(를) 찾지 못했어요. 여기서 답해 주세요.",
+  'voice.tapDid': "저장하려면 Did를 누르세요.",
+  'voice.tapNotYet': "저장하려면 아직을 누르세요.",
   'together.widgetTitle': "오늘 함께",
   'together.widgetCount': '{total}명 중 {n}명 완료',
   'widget.grid.title': "최근 12주",
