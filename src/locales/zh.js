@@ -2028,7 +2028,7 @@ export const zh = {
   'widget.tonight.openApp': '打开',
   'widget.tonight.next': '下一个',
   'watch.allDone': "全部完成",
-  'watch.notYet': "还有 {n} 个没做",
+  'watch.notYet': "还有 {n} 个待做",
   'watch.count': "{b} 个中的 {a} 个",
   'watch.openPhone': "在 iPhone 上打开 Did I",
   'watch.openPhoneAndroid': "在手机上打开 Did I",
