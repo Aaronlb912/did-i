@@ -2563,8 +2563,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         {gentle ? null : (
           <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
             <Text style={[styles.tileNum, { color: colors.on }]}>{record.streak}</Text>
-            <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.streakCap')}</Text>
-            {best ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.best', { n: best })}</Text> : null}
+            <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t(isPerWeek(lamp) ? 'lamp.streakCapWeeks' : 'lamp.streakCap')}</Text>
+            {best ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t(isPerWeek(lamp) ? 'lamp.bestWeeks' : 'lamp.best', { n: best })}</Text> : null}
           </View>
         )}
         <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>

@@ -2793,6 +2793,10 @@ export const ko = {
   'stats.sevenSub': "질문마다, 날마다",
   'stats.streaksSub': "내 연속 기록과 질문별 연속 기록",
   'lamp.best': '최고: {n}',
+
+  'lamp.streakCapWeeks': "이 질문의 연속 주",
+
+  'lamp.bestWeeks': "최고: {n}주",
   'coins.why.cap': '처음 Did {n}개만 코인을 줘요.',
   'coins.why.nope': '아직은 0이에요.',
   'coins.why.none': '답한 게 없어요.',
