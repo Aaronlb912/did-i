@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { pingsFailed } from '../shim/native.js'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
+import { takeSpoken } from '../../src/lib/voice-add.js'
 import {
   Keyboard,
   Linking,
@@ -1706,7 +1707,7 @@ export function FirstNightScreen({ book, onChange, now }) {
   const named = firstName(book)
   const [step, setStep] = useState(0)
   const [picks, setPicks] = useState([])
-  const [blank, setBlank] = useState('')
+  const [blank, setBlank] = useState(() => takeSpoken())
   const [focused, setFocused] = useState(false)
   const [wave, setWave] = useState(0)
   const [hint, setHint] = useState(false)

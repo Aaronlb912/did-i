@@ -5,6 +5,7 @@ import { savePendingScan } from '../src/lib/qr-links.js'
 import { readHuntLink, savePendingHunt } from '../src/lib/hunt-link.js'
 import { goHash } from './navigation/hash.js'
 import { holdSpoken } from '../src/lib/voice-add.js'
+import { freshInstall } from '../src/lib/auth-gate.js'
 import { readQrLink } from '../src/lib/qr-links.js'
 import { readDidYouLink, savePendingDidYou } from '../src/lib/did-you-links.js'
 import { matchSpoken, openTonight, spokenAnswer } from '../src/lib/voice-answer.js'
@@ -111,7 +112,7 @@ function answerSpoken({ said }) {
   const row = matchSpoken(said, openTonight())
   if (!row) {
     goHash('/tonight')
-    showToast({ id: 'voice-answer', kind: 'error', text: t('voice.noMatch', { said }), ms: 5200 })
+    if (!freshInstall()) showToast({ id: 'voice-answer', kind: 'error', text: t('voice.noMatch', { said }), ms: 5200 })
     return
   }
   goHash('/tonight', { face: row.lamp.id, tag: 'all' })

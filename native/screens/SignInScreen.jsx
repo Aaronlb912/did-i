@@ -39,7 +39,7 @@ export function SignInScreen({ onDone }) {
     <View style={styles.panel}>
       <Text style={[styles.title, { color: colors.ink }]}>{t('account.offTitle')}</Text>
       <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.offBody')}</Text>
-      <DidButton colors={colors} label={t('account.stay')} onPress={() => goHash('/tonight')} />
+      <DidButton colors={colors} label={t('account.stay')} onPress={useLocalOnly} />
       <LocalButton colors={colors} onPress={useLocalOnly} />
     </View>
   ) : (
