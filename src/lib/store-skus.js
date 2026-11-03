@@ -26,3 +26,13 @@ export const APP_STORE_URL = 'https://apps.apple.com/app/id6814688066'
 export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${PLAY_PACKAGE}`
 /** Opens the App Store straight on the write-a-review sheet. Play has no such link, so it uses the page. */
 export const APP_STORE_REVIEW_URL = `${APP_STORE_URL}?action=write-review`
+
+/** App Store Connect provider token. With ct=, installs show under Analytics, Campaigns. */
+export const APP_STORE_PROVIDER_TOKEN = '129488388'
+
+/** App Store link tagged with a campaign (Apple allows 40 characters). No campaign gives the plain link. */
+export function appStoreCampaignUrl(campaign) {
+  const ct = String(campaign || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40)
+  if (!ct) return APP_STORE_URL
+  return `${APP_STORE_URL}?pt=${APP_STORE_PROVIDER_TOKEN}&ct=${ct}&mt=8`
+}

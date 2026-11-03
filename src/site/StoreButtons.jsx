@@ -1,6 +1,13 @@
 import { t } from '../lib/i18n.js'
-import { APP_STORE_URL } from '../lib/store-skus.js'
+import { appStoreCampaignUrl } from '../lib/store-skus.js'
 import { BETA_PATH } from '../lib/invite-link.js'
+
+// did-i.app/download?ct=instagram tags the App Store link so App Store Connect counts those installs.
+// Visits with no ct count as "site".
+export function siteAppStoreUrl() {
+  const ct = typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('ct')
+  return appStoreCampaignUrl(ct || 'site')
+}
 
 // Store marks drawn in currentColor so they follow the button's text color.
 export function AppleIcon() {
@@ -28,7 +35,7 @@ export function PlayIcon() {
 export function StoreButtons({ compact = false }) {
   return (
     <div className={['di-land-stores', compact ? 'is-compact' : ''].filter(Boolean).join(' ')}>
-      <a className="di-did di-land-store" href={APP_STORE_URL} target="_blank" rel="noopener noreferrer">
+      <a className="di-did di-land-store" href={siteAppStoreUrl()} target="_blank" rel="noopener noreferrer">
         <AppleIcon />
         {t('web.store.apple')}
       </a>
