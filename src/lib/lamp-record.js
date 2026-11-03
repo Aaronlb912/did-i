@@ -1,6 +1,6 @@
 import { t } from './i18n.js'
 import { readPrefs } from './prefs.js'
-import { addDaysIso, answerFor, graceNightIso, inPause, isDueOn, everyStreak, isEvery, isPerWeek, perWeekStreak, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, answerFor, graceNightIso, inPause, isDueOn, everyBest, everyStreak, isEvery, isPerWeek, perWeekBest, perWeekStreak, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
 import { travelNightState, travelSkipped } from './travel.js'
 
 function didStatus(status) {
@@ -69,7 +69,9 @@ function openGrace(dateIso, now) {
 }
 
 export function bestQuestionStreak(book, lamp, dateIso, cap = 1000, now = new Date()) {
-  if (!lamp || !dateIso || isEvery(lamp)) return 0
+  if (!lamp || !dateIso) return 0
+  if (isEvery(lamp)) return everyBest(book, lamp, dateIso)
+  if (isPerWeek(lamp)) return perWeekBest(book, lamp, dateIso)
   if (lamp.cadence === 'once') return questionStreak(book, lamp, dateIso)
   const live = { ...lamp, archived: false }
   let first = String(lamp.createdOn || '').slice(0, 10)

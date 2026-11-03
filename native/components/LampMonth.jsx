@@ -36,7 +36,7 @@ export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false) {
     // Every so often: only the nights it was done show; nothing reads missed.
     if (isEvery(lamp) || isPerWeek(lamp)) {
       const status = iso <= dateIso ? answerFor(book, lamp.id, iso)?.status : ''
-      state = status === 'yes' ? 'did' : status === 'late' ? 'late' : ''
+      state = status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : ''
     } else if (iso <= dateIso && (!made || iso >= made) && isDueOn(shown, iso)) {
       const answer = answerFor(book, lamp.id, periodKeyFor(lamp, iso))
       const status = answer?.status
