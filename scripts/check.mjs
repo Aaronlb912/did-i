@@ -8272,10 +8272,16 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   assert.match(del, /delete from auth\.users where id = me;/)
   assert.ok(!/public\.(tonight|cheers)\b/.test(del.slice(0, del.indexOf('$;'))), 'delete_me no longer names dropped tables')
   assert.match(del, /grant execute on function public\.delete_me\(\) to authenticated;/)
-  // Runs last, so nothing applied after it can bring delete_me or the tables back.
+  // Runs last but did-we-safety.sql, whose delete_me (this one, plus leaving
+  // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.equal(files.at(-1), 'drop-tonight.sql')
+  assert.deepEqual(files.slice(-2), ['drop-tonight.sql', 'did-we-safety.sql'])
+  const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
+  const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
+  assert.match(del2, /security definer\nset search_path = public, auth/)
+  assert.match(del2, /perform public\.we_leave\(card\);[\s\S]*delete from auth\.users where id = me;/)
+  assert.ok(!/public\.(tonight|cheers)\b/.test(del2))
   assert.ok(!files.includes('tonight.sql') && !files.includes('dit-board.sql'))
   // No other SQL or client code reaches the dropped tables or functions.
   const dropped = /public\.tonight\b|public\.cheers\b|public_tonight|tonight_wall|tonight_tally|sync_tonight|set_public_tonight|report_tonight|sweep_tonight|rpc\(\s*['"]cheer_on['"]|from\(\s*['"](tonight|cheers)['"]/
