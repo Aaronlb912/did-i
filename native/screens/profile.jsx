@@ -1,9 +1,9 @@
 import { clockWords } from '../../src/lib/hall-pages.js'
-import { confirmMiss } from '../lib/confirm.js'
+import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { startTour } from '../lib/tour.js'
 import { useEffect, useState } from 'react'
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
-import { pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
+import { exportAll, pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
 import { syncFailed } from '../../src/lib/sync-line.js'
 import * as DocumentPicker from 'expo-document-picker'
 import { t } from '../../src/lib/i18n.js'
@@ -26,6 +26,7 @@ import { armLampPings } from '../../src/lib/notify.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
 import { legalEmail } from '../../src/lib/legal.js'
 import { shareCsv, shareShelf } from '../../src/lib/native.js'
+import { restoreGemPurchases } from '../../src/lib/gem-buy.js'
 import { answersCsv } from '../../src/lib/answers-csv.js'
 import { mergeBackup } from '../../src/lib/shelf-merge.js'
 import { zoneWords } from '../../src/lib/zone.js'
@@ -109,6 +110,43 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const [loading, setLoading] = useState(false)
   const [outBusy, setOutBusy] = useState(false)
   const [sure, setSure] = useState(null)
+  const [restoring, setRestoring] = useState(false)
+
+  // Signed in, the copy is the whole account, like Account > Download my data.
+  async function sendCopy() {
+    if (!account.user) {
+      if (onSendCopy) return onSendCopy()
+      return shareShelf(readShelf()).catch(() => confirmMiss(t('confirm.shareMiss')))
+    }
+    try {
+      await shareShelf(await exportAll())
+    } catch (error) {
+      if (error?.name !== 'AbortError') confirmMiss(t('confirm.exportMiss'))
+    }
+  }
+
+  // Same steps and messages as Restore purchases in the shop.
+  async function restore() {
+    if (restoring) return
+    if (account.ready && !account.user) {
+      goHash('/account')
+      return
+    }
+    setRestoring(true)
+    try {
+      const out = await restoreGemPurchases()
+      if (out.miss === 'signin') confirmMiss(t('gems.restoreSignIn'))
+      else if (out.miss === 'setup' || out.miss === 'app') confirmMiss(t('gems.restoreSetup'))
+      else if (out.miss === 'pending') confirmDone(t('gems.pending'))
+      else if (out.miss) confirmMiss(t('gems.restoreMiss'))
+      else if (out.gems > 0) confirmDone(t('gems.restored', { n: out.gems }))
+      else confirmDone(t('gems.restoreNone'))
+    } catch {
+      confirmMiss(t('gems.restoreMiss'))
+    } finally {
+      setRestoring(false)
+    }
+  }
 
   // Same sign out as the Account page, without the extra step there.
   async function signOut(force = false) {
@@ -144,9 +182,13 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       const before = readShelf()
       const merged = mergeBackup(before, coming)
       if (onImport) onImport(merged)
-      const was = before.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
-      const now = merged.boards.reduce((n, b) => n + (b.lamps || []).length, 0)
-      setLoadNote(t('settings.loadOk', { n: Math.max(0, now - was) }))
+      const count = (shelf, key) => shelf.boards.reduce((n, b) => n + (b[key] || []).length, 0)
+      setLoadNote(
+        t('settings.loadOkBoth', {
+          q: Math.max(0, count(merged, 'lamps') - count(before, 'lamps')),
+          a: Math.max(0, count(merged, 'answers') - count(before, 'answers')),
+        }),
+      )
     } catch {
       setLoadNote(t('settings.loadMiss'))
     }
@@ -168,7 +210,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             label={t('settings.sendCopy')}
             sub={t('settings.sendCopySub')}
             chevron
-            onPress={onSendCopy || (() => shareShelf(readShelf()).catch(() => confirmMiss(t('confirm.shareMiss'))))}
+            onPress={sendCopy}
           />
           <SetRow
             colors={colors}
@@ -187,9 +229,18 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             sub={t('settings.sendCsvSub')}
             chevron
             onPress={() => shareCsv(answersCsv(readShelf())).catch(() => confirmMiss(t('confirm.shareMiss')))}
+          />
+          <SetRow
+            colors={colors}
+            icon="shop"
+            tint={colors.late}
+            label={t('gems.restore')}
+            value={restoring ? t('gems.restoring') : undefined}
+            onPress={restoring ? undefined : restore}
             last
           />
         </SetCard>
+        {!account.user ? <SetNote colors={colors}>{t('settings.sendCopyAcct')}</SetNote> : null}
         {loadNote ? <SetNote colors={colors}>{loadNote}</SetNote> : null}
 
         <SetCap colors={colors}>{t('settings.legal')}</SetCap>
