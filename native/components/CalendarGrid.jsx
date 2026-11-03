@@ -264,9 +264,12 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
   const missTone = prefs.gentle === true ? colors.open : colors.miss
   const clock = now || new Date()
   const shelf = useMemo(() => (boards?.length ? boards : [book]), [boards, book])
-  const thisYear = clock.getFullYear()
-  const [year, setYear] = useState(thisYear)
+  // The year and month of the day on screen, not the wall clock: just after
+  // midnight the day has not turned yet.
   const dateIso = boardDate(clock, book?.dayFoldHour)
+  const thisYear = Number(dateIso.slice(0, 4))
+  const thisMonth = Number(dateIso.slice(5, 7)) - 1
+  const [year, setYear] = useState(thisYear)
 
   useEffect(() => {
     setYear(thisYear)
@@ -281,7 +284,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
     if (year !== firstYear) return all
     const from = Number(firstMonth.slice(5, 7)) - 1
     return all.filter((pack) => pack.start.getMonth() >= from)
-  }, [shelf, year, tagId, dateIso, firstMonth, firstYear, prefs.locale])
+  }, [shelf, year, tagId, dateIso, firstMonth, firstYear, prefs.locale, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const totals = useMemo(() => yearTotals(months), [months])
   // Best streak is shelf-wide, so it is left out while a folder is picked.
   const best = useMemo(() => (tagId ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -371,7 +374,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
               accessibilityRole="button"
               accessibilityLabel={pack.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
               disabled={!onMonth}
-              onPress={() => onMonth?.((year - thisYear) * 12 + pack.start.getMonth() - clock.getMonth())}
+              onPress={() => onMonth?.((year - thisYear) * 12 + pack.start.getMonth() - thisMonth)}
               hitSlop={8}
             >
               <Text style={[styles.miniLabel, { color: onMonth ? colors.on : colors.inkDim }]}>
