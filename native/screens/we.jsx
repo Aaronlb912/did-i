@@ -1459,11 +1459,14 @@ function WeCardPage({ book, cardId, onChange }) {
       ) : null}
 
       {card.mine && edit ? (
-        <>
-          <RulesForm draft={edit} setDraft={setEdit} colors={colors} />
-          <DidButton colors={colors} label={t('we.save')} disabled={busy || !edit.question.trim()} onPress={save} />
-          <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
-        </>
+        <SetSheet colors={colors} title={t('we.edit')} onClose={() => setEdit(null)}>
+          <ScrollView style={styles.editSheet} contentContainerStyle={styles.editSheetBody} keyboardShouldPersistTaps="handled">
+            <RulesForm draft={edit} setDraft={setEdit} colors={colors} />
+            {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
+            <DidButton colors={colors} label={t('we.save')} disabled={busy || !edit.question.trim()} onPress={save} />
+            <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
+          </ScrollView>
+        </SetSheet>
       ) : null}
 
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
@@ -1616,6 +1619,8 @@ export function WeHomeList({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
+  editSheet: { maxHeight: '80%' },
+  editSheetBody: { padding: 16, gap: 12 },
   earlyKeys: { flexDirection: 'row', gap: 10, marginTop: 0, marginBottom: 8 },
   earlyKey: { flex: 1 },
   earlyFace: { minHeight: 0, paddingTop: 18, paddingBottom: 18 },
