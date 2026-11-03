@@ -10535,10 +10535,6 @@ await testAsync('a valid perWeek survives normalizeLamp, bad values are dropped'
   assert.equal(was[0].perWeek, 3, 'kept in was history')
 })
 
-// Keep this last: every test above counts, and any failure exits non-zero.
-await Promise.all(pendingTests)
-console.log(`\n${ran - failed} of ${ran} passed`)
-if (failed) process.exit(1)
 
 await testAsync('widget footer: gentle drops the left count, Away says so', async () => {
   const { writePrefs } = await import('../src/lib/prefs.js')
@@ -10591,7 +10587,7 @@ test('cheers you got: list function is applied before drop-tonight and hides blo
 
 test('calm Today: the drop line and rate card wait for the last answer, one extra row at a time', () => {
   const screen = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
-  assert.ok(screen.includes("stack.nightDone ? (dropLineUp() ? 'drop' : 'rate')"), 'drop and rate are gated on nightDone')
+  assert.ok(screen.includes("stack.nightDone ? (dropLineUp(book) ? 'drop' : 'rate')"), 'drop and rate are gated on nightDone')
   assert.ok(screen.includes("{extraRow === 'drop' ?") && screen.includes("{extraRow === 'rate' ?"), 'one extra row at a time')
 })
 
@@ -10611,3 +10607,14 @@ test('last call: 21:00, or 30 minutes before quiet hours, or an hour after a lat
   assert.equal(lastCallAt(2026, 11, 2, at(23, 30), off, now), null, 'past the end of the day')
   assert.equal(lastCallAt(2026, 11, 2, at(9, 0), off, new Date(2026, 10, 2, 22, 0)), null, 'already past')
 })
+
+test('check script: no test is added after the pass count', () => {
+  const self = readFileSync(new URL(import.meta.url), 'utf8')
+  const after = self.slice(self.lastIndexOf('// Keep this ' + 'last: every test'))
+  assert.ok(!/\btest(Async)?\(/.test(after), 'tests after the summary line are never counted')
+})
+
+// Keep this last: every test above counts, and any failure exits non-zero.
+await Promise.all(pendingTests)
+console.log(`\n${ran - failed} of ${ran} passed`)
+if (failed) process.exit(1)

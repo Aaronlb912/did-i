@@ -131,7 +131,7 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
   }, [share?.lampId, share?.periodKey])
   const save = () => {
     // Share only a note that was saved on the answer.
-    if (onSave(draft, amount ? count : undefined) === true) shareAfter(share, on, draft)
+    if (onSave(draft, amount ? count : undefined) === true) shareAfter(share, on, draft.replace(/\s+/g, ' ').trim().slice(0, NOTE_MAX))
   }
   return (
     <View style={styles.edit}>
@@ -319,7 +319,7 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
       {noted.length ? (
       <Pressable
         onPress={() => goHash('/notes')}
-        accessibilityRole="link"
+        accessibilityRole="button"
         accessibilityLabel={t('notes.seeAll')}
         style={({ pressed }) => [styles.seeAll, pressFx(pressed)]}
       >
