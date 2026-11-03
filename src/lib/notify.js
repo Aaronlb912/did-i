@@ -133,7 +133,7 @@ export async function armLampPings(book, now = new Date()) {
 }
 
 export function pingButtonLabel(state) {
-  if (state === 'missing') return ''
+  if (state === 'missing' || state === 'checking') return ''
   if (state === 'granted') return 'pings.state.on'
   if (state === 'denied') return 'pings.state.blocked'
   return 'pings.state.ask'
