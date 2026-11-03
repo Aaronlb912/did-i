@@ -32,3 +32,28 @@ export function swMayPing(prefs, now = new Date()) {
   if (Array.isArray(prefs.pingsOff) && prefs.pingsOff.includes('reminders')) return false
   return quietEnd(now, prefs) === now
 }
+
+const LAST_CALL_HOUR = 21
+const MIN = 60 * 1000
+
+// When a high question still open gets its last call, or null for none.
+// Usually 21:00. If quiet hours cover 21:00, 30 minutes before they start,
+// but only past the question's own time plus 30 minutes. A question set for
+// 21:00 or later gets it an hour after its time, if that is before quiet
+// hours and still the same calendar day. `at` is the question's time or null.
+export function lastCallAt(year, month, date, at, prefs, now) {
+  const day = (h, m = 0) => new Date(year, month - 1, date, h, m, 0, 0)
+  const clear = (when) => when.getTime() > now.getTime() && quietEnd(when, prefs).getTime() === when.getTime()
+  if (at && at.getHours() >= LAST_CALL_HOUR) {
+    const when = new Date(at.getTime() + 60 * MIN)
+    return when.getDate() === date && clear(when) ? when : null
+  }
+  const nine = day(LAST_CALL_HOUR)
+  if (at && nine.getTime() <= at.getTime()) return null
+  if (quietEnd(nine, prefs).getTime() === nine.getTime()) return clear(nine) ? nine : null
+  const from = minutesOf(prefs.quietFrom)
+  if (from > LAST_CALL_HOUR * 60) return null
+  const when = day(0, from - 30)
+  if (at && when.getTime() <= at.getTime() + 30 * MIN) return null
+  return clear(when) ? when : null
+}

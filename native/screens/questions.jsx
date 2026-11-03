@@ -2040,6 +2040,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               ) : null}
               </View>
             </HangFold>
+          {!draft.askAfter ? <Text style={[styles.fieldHint, { color: colors.inkDim, paddingHorizontal: 16, paddingBottom: 8 }]}>{t('pings.noTimeSet')}</Text> : null}
           {reminderRow(true)}
             </Glide>
           </SetCard>

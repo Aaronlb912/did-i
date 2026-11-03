@@ -6,8 +6,9 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { ASK_CATEGORY, SEND_CATEGORY, askActions, askNoteData, sendActions } from '../../src/lib/notify-answer.js'
+import { ASK_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, sendActions } from '../../src/lib/notify-answer.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
+import { lastCallAt } from '../../src/lib/quiet.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, nightOpen, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
@@ -139,8 +140,45 @@ const PING_DAYS = 7
 // iOS keeps at most 64 pending; leave room for the streak and cheer pings.
 const PING_CAP = 60
 const CHANNEL_ID = 'did-i'
-// Same as LATE_NUDGE_HOUR in src/lib/notify.js.
-const LATE_NUDGE_HOUR = 21
+// Set when the whole scheduling run threw; the reminders screen shows a row.
+const PING_FAILED_KEY = 'did-i-ping-failed'
+export function pingsFailed() {
+  try {
+    return localStorage.getItem(PING_FAILED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+// Later on a reminder: the same note again in an hour. Kept in storage too,
+// because every re-arm cancels all scheduled notes and would drop it.
+function snoozedNotes(now = Date.now()) {
+  try {
+    const list = JSON.parse(localStorage.getItem(SNOOZE_KEY) || '[]')
+    return Array.isArray(list) ? list.filter((item) => item && item.identifier && item.at > now) : []
+  } catch {
+    return []
+  }
+}
+export async function snoozeNative(snooze) {
+  if (!snooze) return
+  try {
+    const keep = snoozedNotes().filter((item) => item.identifier !== snooze.identifier)
+    localStorage.setItem(SNOOZE_KEY, JSON.stringify([...keep, snooze]))
+  } catch {
+    // ok
+  }
+  try {
+    const Notifications = await notifications()
+    await Notifications.scheduleNotificationAsync({
+      identifier: snooze.identifier,
+      content: snooze.content,
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(snooze.at), channelId: CHANNEL_ID },
+    })
+  } catch {
+    // ok
+  }
+}
 
 // Calls bunch up (a tap and armLampPings land together). The last call in
 // a 500ms window wins, and runs only after the one before it finishes, so a
@@ -284,12 +322,11 @@ async function schedulePingsNow(books, now = new Date()) {
               trigger: when(at),
             })
           }
-          // A high one still open gets a last call at 21:00.
+          // A high one still open gets a last call.
           if (!lampNudgesLate(row.lamp)) continue
-          const late = new Date(year, month - 1, date, LATE_NUDGE_HOUR, 0, 0, 0)
-          if (late.getTime() <= now.getTime() || (at && late.getTime() <= at.getTime())) continue
-          // Quiet hours would push it to morning, which is no last call.
-          if (afterQuiet(late).getTime() !== late.getTime()) continue
+          // 21:00, or around quiet hours and the question's own time (lastCallAt).
+          const late = lastCallAt(year, month, date, at, readPrefs(), now)
+          if (!late) continue
           notes.push({
             identifier: String(notifyId(row.lamp.id, `${row.periodKey}:late:${row.dateIso}`)),
             content: readPrefs().pingsPrivate ? content : { ...content, body: t('notif.stillOpen', { question: row.lamp.question }) },
@@ -443,6 +480,17 @@ async function schedulePingsNow(books, now = new Date()) {
     } catch {
       // ok
     }
+    // A snoozed question answered since then stays quiet.
+    const openNow = new Set(list.flatMap((book) => dueTonight(book, now).filter((row) => !row.answer || row.answer.status === 'skip').map((row) => row.lamp.id)))
+    for (const snooze of snoozedNotes()) {
+      const snoozedLamp = snooze.content?.data?.lampId
+      if (snoozedLamp && !openNow.has(snoozedLamp)) continue
+      notes.push({
+        identifier: snooze.identifier,
+        content: snooze.content,
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(snooze.at), channelId: CHANNEL_ID },
+      })
+    }
     for (const note of notes) {
       try {
         await Notifications.scheduleNotificationAsync({ identifier: note.identifier, content: note.content, trigger: note.trigger })
@@ -454,11 +502,17 @@ async function schedulePingsNow(books, now = new Date()) {
     try {
       localStorage.setItem(PING_ZONE_KEY, pingZone())
       localStorage.setItem(PING_AT_KEY, String(Date.now()))
+      localStorage.removeItem(PING_FAILED_KEY)
     } catch {
       // ok
     }
   } catch {
     // Notifications native module not ready or misconfigured.
+    try {
+      localStorage.setItem(PING_FAILED_KEY, '1')
+    } catch {
+      // ok
+    }
   }
 }
 
