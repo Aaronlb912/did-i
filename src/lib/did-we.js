@@ -35,6 +35,7 @@ function bad(error) {
   if (/kid card is family only/i.test(text)) return { miss: 'we.missKidFamily' }
   if (/ask has closed/i.test(text)) return { miss: 'we.askClosed' }
   if (/only the person who made/i.test(text)) return { miss: 'we.missOwner' }
+  if (/schedule_cap/i.test(text)) return { miss: 'we.missCap' }
   if (/schema cache|PGRST202/i.test(text) || error?.code === 'PGRST202') return { miss: 'we.missNotReady' }
   return { miss: 'people.reach' }
 }
@@ -58,6 +59,13 @@ export async function weTonight(night = tonightIso()) {
   for (const card of cards) {
     // A paused card is not asked tonight: no pill, no swipe card, no reminder.
     if (card.paused) card.due = false
+    card.periodEnd = card.periodEnd ?? card.period_end ?? ''
+    card.scheduleFrom = card.scheduleFrom ?? card.schedule_from ?? ''
+    card.changedBy = card.changedBy ?? card.changed_by ?? ''
+    card.changedAt = card.changedAt ?? card.changed_at ?? ''
+    card.makerName = card.makerName ?? card.maker_name ?? ''
+    card.changedByName = card.changedByName ?? card.changed_by_name ?? ''
+    card.priorCadence = card.priorCadence ?? card.prior_cadence ?? ''
     // Older cards were saved without the "?"; show every one as a question.
     card.question = weQuestion(card.question)
     if (card.total == null) card.total = (card.people || []).filter((p) => p.state === 'in').length
@@ -84,6 +92,10 @@ export function weQuestion(raw) {
   return `${text.slice(0, 199)}?`
 }
 
+function weCadence(cadence) {
+  return cadence === 'weekly' || cadence === 'monthly' ? cadence : 'daily'
+}
+
 export async function weMake({ question, mode, shows, cadence, weekdays, goal, ask, askAfter, remind, note, folder, topics, alone = false }) {
   const db = cloud()
   if (!db) return { miss: 'off' }
@@ -94,7 +106,7 @@ export async function weMake({ question, mode, shows, cadence, weekdays, goal, a
     want_question: text.slice(0, 200),
     want_mode: WE_MODES.includes(mode) ? mode : 'all',
     want_shows: WE_SHOWS.includes(shows) ? shows : 'waiting',
-    want_cadence: cadence === 'weekly' ? 'weekly' : 'daily',
+    want_cadence: weCadence(cadence),
     want_weekdays: cadence === 'weekly' ? weekdays || [] : [],
     want_goal: goal || null,
     ask: ask || [],
@@ -112,12 +124,12 @@ export async function weEdit(card, { question, mode, shows, cadence, weekdays, g
   const text = weQuestion(question)
   if (!text) return { miss: 'we.missBlank' }
   if (cadence === 'weekly' && !(weekdays || []).length) return { miss: 'we.missDays' }
-  const { error } = await db.rpc('we_edit', {
+  const { error } = await db.rpc('we_edit2', {
     card,
     want_question: text.slice(0, 200),
     want_mode: mode,
     want_shows: shows,
-    want_cadence: cadence === 'weekly' ? 'weekly' : 'daily',
+    want_cadence: weCadence(cadence),
     want_weekdays: cadence === 'weekly' ? weekdays || [] : [],
     want_goal: goal || null,
   })
@@ -184,6 +196,31 @@ export function notMyTurn(card) {
 
 export function saveWeReminders(cards) {
   return saveWePings(weReminders(cards))
+}
+
+// Cards someone else changed that this phone has not shown yet. Each shows once.
+const SCHEDULE_SEEN_KEY = 'did-i-we-schedule-seen'
+
+export function takeWeScheduleNote(cards, myId) {
+  let seen = []
+  try {
+    const list = JSON.parse(localStorage.getItem(SCHEDULE_SEEN_KEY) || '[]')
+    if (Array.isArray(list)) seen = list
+  } catch {
+    // Unreadable: treat as nothing seen.
+  }
+  const fresh = (cards || []).filter(
+    (card) => card.changedAt && card.changedBy && card.changedBy !== myId && !seen.includes(`${card.id}:${card.changedAt}`),
+  )
+  if (fresh.length) {
+    const next = [...seen, ...fresh.map((card) => `${card.id}:${card.changedAt}`)].slice(-50)
+    try {
+      localStorage.setItem(SCHEDULE_SEEN_KEY, JSON.stringify(next))
+    } catch {
+      // A convenience only.
+    }
+  }
+  return fresh
 }
 
 async function call(name, args) {
