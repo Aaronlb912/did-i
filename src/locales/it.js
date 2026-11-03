@@ -2889,6 +2889,8 @@ export const it = {
   'shop.wishOn': "Nei tuoi desideri",
   'shop.wishTitle': "I tuoi desideri",
   'shop.wishTab': "Desideri",
+  'shop.buying': "Acquisto in corso…",
+  'shop.stillBuying': "Acquisto ancora in corso",
   'shop.canBuy': "Puoi comprarlo ora",
   'shop.moreCoins': "Mancano {n} monete",
   'shop.moreGems': "Mancano {n} gemme",

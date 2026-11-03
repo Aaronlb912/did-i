@@ -37,7 +37,8 @@ import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
-import { coinsToday, fireCheer, isGemLook, mergePurses, wishGoal, wishLine } from '../../src/lib/purse.js'
+import { LOOKS, NIGHT_COIN_CAP, coinsToday, fireCheer, isGemLook, mergePurses, shopRow, wishGoal, wishLine } from '../../src/lib/purse.js'
+import { ACCESSORIES } from '../../src/lib/accessories.js'
 import { awayKey, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
 import { cameBack, daysSinceFirstAnswer } from '../../src/lib/come-back.js'
 import { answerFor, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
@@ -127,6 +128,16 @@ import { tourActive, useTourTarget } from '../lib/tour.js'
 const WE_SWIPE_OVER = new Set(['hall', 'finish', 'rest', 'off', 'waiting'])
 
 // A kept did you says who sent it next to its tag.
+// With no wishlist: the cheapest coin item not owned yet, as a wish line.
+function nextCoinItem(purse) {
+  const left = [...shopRow('look', LOOKS, purse).map((item) => ['look', item]), ...shopRow('accessory', ACCESSORIES, purse).map((item) => ['accessory', item])]
+    .filter(([, item]) => item.coins > 0)
+    .sort((a, b) => a[1].coins - b[1].coins)[0]
+  if (!left) return null
+  const [type, item] = left
+  return wishLine({ type, id: item.id, kind: 'coins', n: Math.ceil(Math.max(0, item.coins - purse.coins) / NIGHT_COIN_CAP) })
+}
+
 function cardKicker(row, fallback) {
   const from = row.lamp?.fromName ? t('inbox.from', { name: row.lamp.fromName }) : ''
   const today = isTodayOnce(row.lamp, row.dateIso) ? todayLabel(row.lamp) : ''
@@ -332,6 +343,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const purse = mergePurses(stack.shelf)
   const dayCoins = coinsToday(stack.clock)
   const wish = wishLine(wishGoal(purse))
+  const next = wish ? null : nextCoinItem(purse)
   // Focus comes from navigation events, not useIsFocused: that re-rendered
   // this whole screen as a page opened over it and again as it came back,
   // both mid-transition.
@@ -1298,6 +1310,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             <Pressable accessibilityRole="button" onPress={() => goHash('/shop')} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
                 {t('firstWeek.coinsFor')} <Text style={{ color: colors.on }}>›</Text>
+              </Text>
+            </Pressable>
+          ) : null}
+          {next && (day === 0 || day > 3) ? (
+            <Pressable accessibilityRole="button" onPress={() => goHash('/shop')} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
+              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
+                {t(next.key, { n: next.n, name: t(next.nameKey) })} <Text style={{ color: colors.on }}>›</Text>
               </Text>
             </Pressable>
           ) : null}
