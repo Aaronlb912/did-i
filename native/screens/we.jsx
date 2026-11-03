@@ -37,6 +37,7 @@ import {
   weNudge,
   weQuestion,
   weStreak,
+  takeWeScheduleNote,
   weCardKept,
   weTonight,
   weWaiting,
@@ -44,12 +45,13 @@ import {
 } from '../../src/lib/did-we.js'
 import { MenuIcon } from '../components/MenuIcon.jsx'
 import { readPrefs } from '../../src/lib/prefs.js'
+import { showToast } from '../lib/toast-queue.js'
 import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
-import { weNextCoinsKey, weRuleKey, weModeKey, weSlotDay, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
+import { weDot, weNextCoinsKey, weRuleKey, weModeKey, weSlotDay, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
 import { boardDate, formatBoardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta, OfflineLine } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -120,6 +122,7 @@ function PeoplePick({ people, picked, onPick, colors, skip = [] }) {
 
 // The rules of a card. Shared by making one and the owner editing one.
 function whenValue(draft) {
+  if (draft.cadence === 'monthly') return t('we.monthly')
   if (draft.cadence !== 'weekly') return t('we.daily')
   if (!draft.weekdays.length) return t('we.someDays')
   return draft.weekdays.map((day) => t(`we.day.${day}`)).join(' ')
@@ -243,6 +246,7 @@ function ruleParts({ draft, setDraft, open, fold, colors }) {
             <View style={styles.pillRow}>
               <Pill label={t('we.daily')} on={draft.cadence === 'daily'} onPress={() => set('cadence')('daily')} colors={colors} radio />
               <Pill label={t('we.someDays')} on={draft.cadence === 'weekly'} onPress={() => set('cadence')('weekly')} colors={colors} radio />
+              <Pill label={t('we.monthly')} on={draft.cadence === 'monthly'} onPress={() => set('cadence')('monthly')} colors={colors} radio />
             </View>
             {draft.cadence === 'weekly' ? (
               <View style={styles.pillRow}>
@@ -355,6 +359,7 @@ function WeSheets({ draft, setDraft, sheet, setSheet, colors }) {
           <ScheduleTiles label={t('we.when')}>
             <ScheduleTile label={t('we.daily')} sub={t('hang.tileSub.daily')} accent={colors.we} on={draft.cadence === 'daily'} onPress={() => set('cadence')('daily')} colors={colors} />
             <ScheduleTile label={t('we.someDays')} sub={t('hang.tileSub.weekly')} accent={colors.we} on={draft.cadence === 'weekly'} onPress={() => set('cadence')('weekly')} colors={colors} />
+            <ScheduleTile label={t('we.monthly')} sub={t('we.monthlySub')} accent={colors.we} on={draft.cadence === 'monthly'} onPress={() => set('cadence')('monthly')} colors={colors} />
           </ScheduleTiles>
           {draft.cadence === 'weekly' ? (
 <Reveal>
@@ -705,6 +710,13 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
 }
 
 // The rarely used and destructive actions, behind the card's ⋯ button.
+// "By Nov 30", and the days left once it is the last week of the month.
+function monthlyLine(card) {
+  const left = Math.round((Date.parse(card.periodEnd) - Date.parse(boardDate())) / 86400000)
+  if (left === 0 || (left > 0 && left <= 6)) return left === 0 ? t('we.dayLeft') : t('we.daysLeft', { n: left + 1 })
+  return t('we.byDate', { date: formatBoardDate(card.periodEnd) })
+}
+
 function WeMenu({ title, items, colors, onClose }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -799,13 +811,16 @@ function WeWeek({ card, colors }) {
       alive = false
     }
   }, [card.id, night, weMine(card)?.status, again])
-  const days = weWeekDots(card, night, mine)
+  const monthly = card.cadence === 'monthly'
+  const days = monthly
+    ? [{ night: card.periodEnd || night, together: !!card.done, mine: weDot(weMine(card)) }]
+    : weWeekDots(card, night, mine)
   const locale = readPrefs().locale
   const tint = colors.we || colors.on
   const fill = (on) => (on ? { backgroundColor: tint, borderColor: tint } : { backgroundColor: 'transparent', borderColor: colors.line })
   return (
     <View style={styles.factLine}>
-      <Cap colors={colors}>{t('we.lastWeek')}</Cap>
+      <Cap colors={colors}>{monthly ? new Date(`${days[0].night}T12:00:00`).toLocaleDateString(locale, { month: 'long' }) : t('we.lastWeek')}</Cap>
       <View style={styles.week}>
         {days.map((day) => (
           <View
@@ -815,7 +830,7 @@ function WeWeek({ card, colors }) {
             accessibilityLabel={[formatBoardDate(day.night), day.together ? t('we.doneTogether') : '', t(`we.dot.${day.mine}`)].filter(Boolean).join(', ')}
           >
             <Text style={[styles.weekWord, { color: colors.inkDim }]} numberOfLines={1}>
-              {new Date(`${day.night}T12:00:00`).toLocaleDateString(locale, { weekday: 'narrow' })}
+              {monthly ? '' : new Date(`${day.night}T12:00:00`).toLocaleDateString(locale, { weekday: 'narrow' })}
             </Text>
             <View style={[styles.weekDot, fill(day.together)]} />
             <View
@@ -920,6 +935,21 @@ function WeCardPage({ book, cardId, onChange }) {
     load()
   }, [cardId])
 
+  // Someone else changed the schedule: say so once.
+  useEffect(() => {
+    if (!card?.changedAt) return
+    const name = card.changedByName || (card.people || []).find((p) => p.id === card.changedBy)?.name || ''
+    if (!name) return
+    const [fresh] = takeWeScheduleNote([card], uid)
+    if (!fresh) return
+    confirmDone(
+      fresh.cadence === 'monthly'
+        ? t('we.changedToMonthly', { name })
+        : t('we.changedTo', { name, schedule: whenValue(fresh) }),
+      5200,
+    )
+  }, [card?.id, card?.changedAt])
+
   // Your folder and topics for it, saved when you tap Save.
   const [filing, setFiling] = useState({ folder: '', topics: '' })
   const [fileOpen, setFileOpen] = useState('')
@@ -964,10 +994,33 @@ function WeCardPage({ book, cardId, onChange }) {
     // A thrown call must not leave Save off for good.
     const out = await weEdit(card.id, edit).catch(() => ({ miss: 'people.reach' }))
     setBusy(false)
-    if (out.miss) return setMiss(tMiss(out.miss))
+    if (out.miss) {
+      const text = tMiss(out.miss)
+      setMiss(text)
+      return confirmMiss(text)
+    }
+    const before = editFrom(card)
+    const moved = before.cadence !== edit.cadence || before.weekdays.join() !== edit.weekdays.join()
     setEdit(null)
     setMiss('')
-    confirmDone(t('confirm.saved'))
+    if (moved) {
+      const now = Date.now()
+      showToast({
+        id: 'undo:we-schedule',
+        kind: 'undo',
+        rev: now,
+        label: t('confirm.saved'),
+        hint: t('we.changeBack'),
+        until: now + 8000,
+        total: 8000,
+        onPress: async () => {
+          const back = await weEdit(card.id, before).catch(() => ({ miss: 'people.reach' }))
+          if (back.miss) return confirmMiss(tMiss(back.miss))
+          confirmDone(t('confirm.saved'))
+          load()
+        },
+      })
+    } else confirmDone(t('confirm.saved'))
     load()
   }
 
@@ -1082,18 +1135,22 @@ function WeCardPage({ book, cardId, onChange }) {
     })
   }
 
+  function editFrom(c) {
+    return {
+      question: c.question,
+      mode: c.mode,
+      shows: c.shows,
+      cadence: c.cadence,
+      weekdays: c.weekdays || [],
+      goal: c.goal || null,
+      askAfter: c.askAfter || '',
+      remind: c.remind !== false,
+      note: c.note || '',
+    }
+  }
+
   function startEdit() {
-    setEdit({
-      question: card.question,
-      mode: card.mode,
-      shows: card.shows,
-      cadence: card.cadence,
-      weekdays: card.weekdays || [],
-      goal: card.goal || null,
-      askAfter: card.askAfter || '',
-      remind: card.remind !== false,
-      note: card.note || '',
-    })
+    setEdit(editFrom(card))
   }
 
   // The rules and who is on it, kept off the page and shown from the ⋯ menu.
@@ -1251,6 +1308,8 @@ function WeCardPage({ book, cardId, onChange }) {
         <Text style={[styles.weStatus, { color: card.done && card.due ? colors.we : colors.ink }]}>
           {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
         </Text>
+        {!card.mine && card.makerName ? <Meta colors={colors}>{t('we.onlyMaker', { name: card.makerName })}</Meta> : null}
+        {card.cadence === 'monthly' && card.periodEnd ? <Meta colors={colors}>{monthlyLine(card)}</Meta> : null}
         <Meta colors={colors}>{`${t('we.howCounts')}: ${t(weRuleKey(card.mode))}`}</Meta>
         {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
         <WeWeek card={card} colors={colors} />

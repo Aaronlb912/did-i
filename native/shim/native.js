@@ -17,7 +17,7 @@ import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { AFTERNOON_AT_DEFAULT, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges, pingAheads } from '../../src/lib/day-nudges.js'
 import { shelfStreak } from '../../src/lib/hall-feel.js'
-import { readWePings } from '../../src/lib/we-widget.js'
+import { readWePings, weMonthlyPingDay } from '../../src/lib/we-widget.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
 import { makeFeelTap } from '../lib/feel-tap.js'
@@ -362,9 +362,10 @@ async function schedulePingsNow(books, now = new Date()) {
         for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
           const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
           const night = boardDate(day)
-          if (night < String(we.startsOn || '') || night === we.skipNight) continue
+          if (night < String(we.startsOn || '') || (we.cadence !== 'monthly' && night === we.skipNight)) continue
           // The weekday of the app day, not the phone calendar.
           const [year, month, date] = night.split('-').map(Number)
+          if (we.cadence === 'monthly' && !weMonthlyPingDay(night, we.skipNight)) continue
           if (we.cadence === 'weekly' && !(we.weekdays || []).includes(new Date(year, month - 1, date).getDay())) continue
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
           if (at.getTime() <= now.getTime()) continue

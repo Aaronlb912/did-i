@@ -39,6 +39,14 @@ export function skipWePing(card, night) {
   return saveWePings(list.map((ping) => (ping.id === card ? { ...ping, skipNight: night } : ping)))
 }
 
+// Monthly Did we reminders: the last 3 days of the month only, and none once
+// the month has a Did (skipNight in that month).
+export function weMonthlyPingDay(night, skipNight = '') {
+  const [year, month, date] = String(night).split('-').map(Number)
+  if (!year || date < new Date(year, month, 0).getDate() - 2) return false
+  return !(skipNight && String(skipNight).slice(0, 7) === String(night).slice(0, 7))
+}
+
 export function readWePings() {
   try {
     const list = JSON.parse(localStorage.getItem(PINGS_KEY) || '[]')
