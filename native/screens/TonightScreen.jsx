@@ -503,6 +503,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // How to swipe, once, the first time a card is up. The dots key waits until after it.
   const introSeen = swipeIntroSeen(usePrefs())
   const answerButtons = useAnswerButtons()
+  const lastAnswerTap = useRef(0)
   const showIntro = !introSeen && !answerButtons && stack.bodyKind === 'face' && !stack.nightDone && !stack.cheer
   // The first answer while the hint is up means the swipe is learned.
   const answeredNow = stack.dueWithWait.filter((row) => row.answer).length
@@ -1098,6 +1099,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   let doneFace = false
   // Did and Not yet buttons under the card, only for a screen reader.
   let answerBar = null
+  // A fast second tap must not overwrite the first answer (SwipeCard: 700ms).
+  const guardTap = (fn) => fn && (() => {
+    if (Date.now() - lastAnswerTap.current < 700) return
+    lastAnswerTap.current = Date.now()
+    fn()
+  })
   const withAnswerButtons = (card, onDid, onNope) => {
     if (!answerButtons) return card
     answerBar = (
@@ -1105,11 +1112,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       <View style={styles.answerRow}>
         {onNope ? (
           <View style={styles.answerCell}>
-            <KeyButton label={t('tonight.answerNope')} colors={colors} onPress={onNope} />
+            <KeyButton label={t('tonight.answerNope')} colors={colors} onPress={guardTap(onNope)} />
           </View>
         ) : null}
         <View style={styles.answerCell}>
-          <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={onDid} />
+          <DidButton small label={t('tonight.answerDid')} colors={colors} onPress={guardTap(onDid)} />
         </View>
       </View>
     </View>
