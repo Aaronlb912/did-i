@@ -639,6 +639,7 @@ export function cadenceLine(lamp) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(on)) return t('cadence.onceOn', { date: formatBoardDate(on) })
     return t('cadence.once')
   }
+  if (lamp.cadence === 'daily' && Number(lamp.perWeek) >= 1) return Number(lamp.perWeek) === 1 ? t('cadence.perWeekOne') : t('cadence.perWeek', { n: lamp.perWeek })
   if (lamp.cadence === 'every') return Number(lamp.everyDays) >= 1 ? t('cadence.every', { n: lamp.everyDays }) : t('hang.every')
   if (lamp.cadence === 'every_n') return Number(lamp.everyN) >= 2 ? t('cadence.everyN', { n: lamp.everyN }) : t('hang.everyN')
   return lamp.cadence

@@ -6979,6 +6979,53 @@ await testAsync('every so often: the gap is learned from 3+ gaps and shown as us
   assert.equal(sinceBadge(book, lamp, evDay(28)), 'today', 'a Did tonight reads today, not 0d')
 })
 
+await testAsync('times a week: due until N Dids that week, Not yet does not count', async () => {
+  const { dueTonight } = await import('../src/lib/recurrence.js')
+  const per = { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', perWeek: 2, archived: false, createdOn: '2026-08-01' }
+  const mk = (rows) => everyBook(rows.map(([d, st]) => ['gym', evDay(d), st]), [per])
+  const has = (book, d) => dueTonight(book, evAt(d)).some((row) => row.lamp.id === 'gym')
+  // 2026-09-07 is a Monday, 09-13 the Sunday after.
+  assert.ok(has(mk([]), 9), 'no Dids: due')
+  const one = mk([[7, 'yes'], [8, 'skip']])
+  assert.ok(has(one, 10), 'one Did and a Not yet: still due')
+  const two = mk([[7, 'yes'], [8, 'late']])
+  assert.ok(!has(two, 9) && !has(two, 13), 'two Dids: not due the rest of the week')
+  assert.ok(has(two, 14), 'next Monday it asks again')
+  const today = mk([[7, 'yes'], [9, 'yes']])
+  assert.ok(has(today, 9), 'the day it was answered still shows the card')
+  assert.ok(!isDueOn(per, evDay(9)), 'isDueOn stays false so walks leave it out')
+})
+
+await testAsync('times a week: streak counts completed weeks, current week only if done', async () => {
+  const per = { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', perWeek: 2, archived: false, createdOn: '2026-08-01' }
+  const rows = [[7, 'yes'], [9, 'yes'], [14, 'yes'], [16, 'late'], [21, 'yes']]
+  const book = everyBook(rows.map(([d, st]) => ['gym', evDay(d), st]), [per])
+  assert.equal(questionStreak(book, per, evDay(22)), 2, 'an unfinished week does not break it')
+  const done = everyBook([...rows, [23, 'yes']].map(([d, st]) => ['gym', evDay(d), st]), [per])
+  assert.equal(questionStreak(done, per, evDay(23)), 3, 'a finished current week counts')
+  const gap = everyBook([[7, 'yes'], [9, 'yes'], [21, 'yes'], [22, 'yes']].map(([d, st]) => ['gym', evDay(d), st]), [per])
+  assert.equal(questionStreak(gap, per, evDay(22)), 1, 'a week short of its Dids ends the run')
+})
+
+await testAsync('every so often: streak of Dids each within the gap', async () => {
+  const mk = (days) => everyBook(days.map((d) => ['sheets', evDay(d), 'yes']))
+  const book = mk([1, 8, 15, 22])
+  const lamp = { ...book.lamps[0], everyDays: 7 }
+  assert.equal(questionStreak(book, lamp, evDay(22)), 4)
+  assert.equal(questionStreak(book, lamp, evDay(29)), 4, 'the gap from the last Did to today may be the full gap')
+  assert.equal(questionStreak(book, lamp, evDay(30)), 0, 'past the gap since the last Did: ended')
+  const broke = mk([1, 8, 20, 27])
+  assert.equal(questionStreak(broke, { ...broke.lamps[0], everyDays: 7 }, evDay(27)), 2, 'a long gap between Dids ends the run behind it')
+})
+
+await testAsync('every so often: the learned gap never goes below the picked one', async () => {
+  const { everyGap } = await import('../src/lib/recurrence.js')
+  const quick = everyBook([1, 3, 5, 7].map((d) => ['sheets', evDay(d), 'yes']))
+  assert.equal(everyGap(quick, { ...quick.lamps[0], everyDays: 7 }, evDay(10)), 7, 'learned 2 stays at the picked 7')
+  const slow = everyBook([1, 10, 19, 28].map((d) => ['sheets', evDay(d), 'yes']))
+  assert.equal(everyGap(slow, { ...slow.lamps[0], everyDays: 7 }, '2026-10-05'), 9, 'learned 9 may lengthen it')
+})
+
 await testAsync('every so often: saved shape, pack, and the toast note action', async () => {
   const { normalizeLamp, missLamp } = await import('../src/lib/board-json.js')
   const lamp = normalizeLamp({ id: 'x', question: 'Did I water the plants?', cadence: 'every', everyDays: '14' })

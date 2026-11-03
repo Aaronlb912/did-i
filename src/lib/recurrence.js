@@ -182,6 +182,9 @@ export function isDueOn(lamp, dateIso) {
   if (!date) return false
   if (awayOn(dateIso)) return false
   if (lamp.was) lamp = scheduleAt(lamp, dateIso)
+  // Times a week: isDueOn stays false, like every so often. dueTonight asks
+  // perWeekDueOn, which needs the book.
+  if (isPerWeek(lamp)) return false
   switch (lamp.cadence) {
     case 'daily':
       return true
@@ -321,9 +324,73 @@ export function learnedGap(book, lampId, dateIso, upTo = false) {
   return median >= 1 ? median : 0
 }
 
+// The learned gap may lengthen the picked one, never shorten it.
 export function everyGap(book, lamp, dateIso) {
   const days = Number(lamp?.everyDays)
-  return learnedGap(book, lamp?.id, dateIso) || (Number.isInteger(days) && days >= 1 ? days : 7)
+  const picked = Number.isInteger(days) && days >= 1 ? days : 0
+  const learned = learnedGap(book, lamp?.id, dateIso)
+  return learned ? Math.max(learned, picked) : picked || 7
+}
+
+// Times a week (daily cadence with perWeek 1-6): asked each day of the week
+// (Monday first) until it has that many Dids, then not till next week.
+export function isPerWeek(lamp) {
+  const n = Number(lamp?.perWeek)
+  return lamp?.cadence === 'daily' && Number.isInteger(n) && n >= 1 && n <= 6
+}
+
+export function weekStartOf(dateIso) {
+  const date = parseIsoDate(dateIso)
+  return date ? addDaysIso(dateIso, -((date.getDay() + 6) % 7)) : ''
+}
+
+// Dids in the week holding dateIso, up to dateIso (before it with upTo false).
+export function perWeekDone(book, lampId, dateIso, upTo = true) {
+  const start = weekStartOf(dateIso)
+  if (!start) return 0
+  const list = didNightsOf(book, lampId)
+  return didCountBefore(list, dateIso, upTo) - didCountBefore(list, start)
+}
+
+export function perWeekDueOn(book, lamp, dateIso) {
+  if (!isPerWeek(lamp) || lamp.archived || awayOn(dateIso)) return false
+  const created = String(lamp.createdOn || '').slice(0, 10)
+  if (created && dateIso < created) return false
+  return perWeekDone(book, lamp.id, dateIso, false) < Number(lamp.perWeek)
+}
+
+// Weeks in a row with all their Dids. A finished current week counts; an
+// unfinished one does not break the run yet.
+export function perWeekStreak(book, lamp, dateIso, cap = 400) {
+  if (!isPerWeek(lamp)) return 0
+  const need = Number(lamp.perWeek)
+  const list = didNightsOf(book, lamp.id)
+  const full = (from) => didCountBefore(list, addDaysIso(from, 6), true) - didCountBefore(list, from) >= need
+  let start = weekStartOf(dateIso)
+  let count = full(start) ? 1 : 0
+  start = addDaysIso(start, -7)
+  while (count < cap && full(start)) {
+    count += 1
+    start = addDaysIso(start, -7)
+  }
+  return count
+}
+
+// Every so often: Dids in a row, each within the gap of the one before, and
+// the newest within the gap of today.
+export function everyStreak(book, lamp, dateIso, cap = 400) {
+  if (!isEvery(lamp)) return 0
+  const list = didNightsOf(book, lamp.id)
+  let at = didCountBefore(list, dateIso, true) - 1
+  if (at < 0) return 0
+  const gap = everyGap(book, lamp, dateIso)
+  if (daysBetween(list[at], dateIso) > gap) return 0
+  let count = 1
+  while (at > 0 && count < cap && daysBetween(list[at - 1], list[at]) <= gap) {
+    count += 1
+    at -= 1
+  }
+  return count
 }
 
 // Due on dateIso: never done, or the gap has passed since the last Did.
@@ -351,6 +418,11 @@ export function dueTonight(book, now = new Date()) {
       // Answered tonight stays on tonight (Did shows done, Not yet asks again).
       const answer = answerFor(book, lamp.id, dateIso) || null
       if (answer || everyDueOn(book, lamp, dateIso)) lamps.push({ lamp, dateIso, periodKey: dateIso, answer })
+      continue
+    }
+    if (isPerWeek(lamp)) {
+      const answer = answerFor(book, lamp.id, dateIso) || null
+      if (answer || perWeekDueOn(book, lamp, dateIso)) lamps.push({ lamp, dateIso, periodKey: dateIso, answer })
       continue
     }
     if (!isDueOn(lamp, dateIso)) continue

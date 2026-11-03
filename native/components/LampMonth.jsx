@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
-import { answerFor, formatBoardDate, isDueOn, isEvery, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
+import { answerFor, formatBoardDate, isDueOn, isEvery, isPerWeek, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { amountWords, pausedOpen } from '../../src/lib/lamp-record.js'
 import { travelNightState, travelSkipped } from '../../src/lib/travel.js'
@@ -34,7 +34,7 @@ export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false) {
     const iso = `${y}-${pad(m + 1)}-${pad(d)}`
     let state = ''
     // Every so often: only the nights it was done show; nothing reads missed.
-    if (isEvery(lamp)) {
+    if (isEvery(lamp) || isPerWeek(lamp)) {
       const status = iso <= dateIso ? answerFor(book, lamp.id, iso)?.status : ''
       state = status === 'yes' ? 'did' : status === 'late' ? 'late' : ''
     } else if (iso <= dateIso && (!made || iso >= made) && isDueOn(shown, iso)) {

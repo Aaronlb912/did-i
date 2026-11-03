@@ -1,6 +1,6 @@
 import { t } from './i18n.js'
 import { readPrefs } from './prefs.js'
-import { addDaysIso, answerFor, graceNightIso, inPause, isDueOn, isEvery, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, answerFor, graceNightIso, inPause, isDueOn, everyStreak, isEvery, isPerWeek, perWeekStreak, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
 import { travelNightState, travelSkipped } from './travel.js'
 
 function didStatus(status) {
@@ -37,7 +37,9 @@ function monthDueDay(lamp, key) {
 // or a missed night ends it. Tonight counts once answered, and an unanswered
 // tonight does not break it yet. Every per-question streak uses this.
 export function questionStreak(book, lamp, dateIso, cap = 400, now = new Date()) {
-  if (!lamp || !dateIso || isEvery(lamp)) return 0
+  if (!lamp || !dateIso) return 0
+  if (isEvery(lamp)) return everyStreak(book, lamp, dateIso, cap)
+  if (isPerWeek(lamp)) return perWeekStreak(book, lamp, dateIso, cap)
   if (lamp.cadence === 'once') return didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))?.status) ? 1 : 0
   const live = { ...lamp, archived: false }
   let cursor = isDueOn(live, dateIso) ? dateIso : previousDueDate(live, dateIso)
