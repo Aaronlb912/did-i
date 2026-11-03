@@ -2664,6 +2664,8 @@ export const es = {
   'confirm.nowKid': '{name} ahora es niño.',
   'confirm.droppedWeMiss': 'Quitaste a {name}. No se pudieron dejar sus Did we compartidos. Déjalos desde Did we.',
   'confirm.blocked': 'Bloqueaste a {name}.',
+  'confirm.blockedReported': "Bloqueado y reportado.",
+  'invite.loadFail': "No se pudo comprobar tu código de invitación. Revisa tu conexión.",
   'confirm.cheersBought': '+{n} ánimos.',
   'confirm.shareMiss': 'No se pudo compartir. Inténtalo de nuevo.',
   'confirm.askRemoved': 'Solicitud eliminada.',

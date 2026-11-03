@@ -11,13 +11,28 @@ export function useReferralCode({ book, onChange, start = '' }) {
   const [miss, setMiss] = useState('')
   const [said, setSaid] = useState('')
   const [locked, setLocked] = useState(null)
+  // The account could not be read, so we do not know if a code was used.
+  const [loadFailed, setLoadFailed] = useState(false)
+  // The lookup for the whole draft has answered (a name, or none).
+  const [looked, setLooked] = useState(false)
   const [gemsPaid, setGemsPaid] = useState(0)
   const [joined, setJoined] = useState(0)
   // While a code is being checked, so a second tap does not send it twice.
   const [busy, setBusy] = useState(false)
 
   const refresh = useCallback(async () => {
+    try {
+      return await refreshNow()
+    } catch {
+      setLoadFailed(true)
+      setLocked(false)
+      return null
+    }
+  }, [])
+
+  const refreshNow = useCallback(async () => {
     const who = await readMine()
+    setLoadFailed(false)
     setLocked(Boolean(who?.invited_by))
     setGemsPaid(Number(who?.invite_gems_paid) || 0)
     const won = await claimInvites()
@@ -35,11 +50,15 @@ export function useReferralCode({ book, onChange, start = '' }) {
 
   useEffect(() => {
     setOwner(null)
+    setLooked(false)
     if (draft.length !== INVITE_CODE_LEN) return undefined
     let alive = true
     inviteOwner(draft)
       .then((name) => {
-        if (alive) setOwner(name)
+        if (alive) {
+          setOwner(name)
+          setLooked(true)
+        }
       })
       .catch(() => {})
     return () => {
@@ -87,6 +106,8 @@ export function useReferralCode({ book, onChange, start = '' }) {
       setDraft(cleanInvite(value))
     },
     owner,
+    looked,
+    loadFailed,
     miss,
     said,
     locked,

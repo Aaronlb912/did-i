@@ -2654,6 +2654,8 @@ export const en = {
   'confirm.nowKid': '{name} is a kid now.',
   'confirm.droppedWeMiss': 'Removed {name}. Could not leave your shared Did we’s. Leave them from Did we.',
   'confirm.blocked': 'Blocked {name}.',
+  'confirm.blockedReported': "Blocked and reported.",
+  'invite.loadFail': "Could not check your invite code. Check your connection.",
   'confirm.cheersBought': '+{n} cheers.',
   'confirm.shareMiss': 'Could not share. Try again.',
   'confirm.askRemoved': 'Request removed.',

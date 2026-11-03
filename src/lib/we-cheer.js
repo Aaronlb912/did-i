@@ -16,10 +16,17 @@ export function useWeCheer(book, onChange) {
     const cheerOn = normalizePurse(book).cheerOn
     setBusy(person.id)
     setMiss('')
+    setNote('')
     // Friends first; someone only in your family goes the family way.
-    let sent = await cheerFriend(book, person.id, cheerOn)
-    if (sent.miss === 'notFriend') sent = await cheerFamily(book, person.id, '', cheerOn)
-    setBusy('')
+    let sent
+    try {
+      sent = await cheerFriend(book, person.id, cheerOn)
+      if (sent.miss === 'notFriend') sent = await cheerFamily(book, person.id, '', cheerOn)
+    } catch {
+      return setMiss(t('people.reach'))
+    } finally {
+      setBusy('')
+    }
     const known = friendCheerMissKey(sent.miss)
     if (known) return setMiss(t(known.key, known.vars))
     if (sent.miss) return setMiss(tMiss(sent.miss))

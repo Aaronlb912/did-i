@@ -2624,6 +2624,8 @@ export const ko = {
   'confirm.nowKid': '{name}님이 이제 아이예요.',
   'confirm.droppedWeMiss': '{name}님을 삭제했어요. 함께하는 Did we에서 나가지 못했어요. Did we에서 나가세요.',
   'confirm.blocked': '{name}님을 차단했어요.',
+  'confirm.blockedReported': "차단하고 신고했어요.",
+  'invite.loadFail': "초대 코드를 확인하지 못했어요. 연결을 확인해 주세요.",
   'confirm.cheersBought': '응원 +{n}.',
   'confirm.shareMiss': '공유하지 못했어요. 다시 시도하세요.',
   'confirm.askRemoved': '요청을 삭제했어요.',

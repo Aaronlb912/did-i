@@ -229,8 +229,9 @@ function BlockModal({ person, colors, onClose, onDone }) {
     once('block:' + person.user_id, async () => {
       onClose()
       const out = await blockPerson(person.user_id, why)
-      if (out.miss || !part) return onDone(out.miss)
-      onDone((await partFamilies(shared, person.user_id)).miss)
+      if (out.miss) return onDone(out.miss)
+      if (!part) return onDone('', why ? t('confirm.blockedReported') : '')
+      onDone((await partFamilies(shared, person.user_id)).miss, why ? t('confirm.blockedReported') : '')
     })
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -1937,9 +1938,9 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
           person={confirm}
           colors={colors}
           onClose={() => setConfirm(null)}
-          onDone={(why) => {
+          onDone={(why, done) => {
             if (why) setMiss(tMiss(why))
-            else say(t('confirm.blocked', { name: personName(confirm) || t('people.someone') }))
+            else say(done || t('confirm.blocked', { name: personName(confirm) || t('people.someone') }))
             load()
           }}
         />
@@ -2512,9 +2513,9 @@ export function FriendScreen({ book, onChange, route }) {
           person={person}
           colors={colors}
           onClose={() => setBlocking(false)}
-          onDone={(why) => {
+          onDone={(why, done) => {
             if (why && why !== 'block.familyMiss') return setSaid(tMiss(why))
-            confirmDone(why ? tMiss(why) : t('confirm.blocked', { name }))
+            confirmDone(why ? tMiss(why) : done || t('confirm.blocked', { name }))
             refreshPeople()
             return swapHash('/friends')
           }}

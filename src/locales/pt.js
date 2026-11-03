@@ -2660,6 +2660,8 @@ export const pt = {
   'confirm.nowKid': '{name} agora é criança.',
   'confirm.droppedWeMiss': 'Você removeu {name}. Não deu para sair dos Did we em comum. Saia deles em Did we.',
   'confirm.blocked': 'Você bloqueou {name}.',
+  'confirm.blockedReported': "Bloqueado e denunciado.",
+  'invite.loadFail': "Não deu para verificar seu código de convite. Confira sua conexão.",
   'confirm.cheersBought': '+{n} torcidas.',
   'confirm.shareMiss': 'Não deu para compartilhar. Tente de novo.',
   'confirm.askRemoved': 'Pedido removido.',

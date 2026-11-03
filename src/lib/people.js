@@ -1260,7 +1260,8 @@ export async function inviteOwner(code) {
   const want = cleanInvite(code)
   if (!db || want.length !== INVITE_CODE_LEN) return null
   const { data, error } = await db.rpc('invite_owner', { want_code: want })
-  if (error || data == null) return null
+  if (error) throw error
+  if (data == null) return null
   return String(data)
 }
 

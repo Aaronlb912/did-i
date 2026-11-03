@@ -2615,6 +2615,8 @@ export const zh = {
   'confirm.nowKid': '{name}现在是孩子。',
   'confirm.droppedWeMiss': '已移除{name}。无法退出共享的 Did we。请在 Did we 中退出。',
   'confirm.blocked': '已屏蔽{name}。',
+  'confirm.blockedReported': "已屏蔽并举报。",
+  'invite.loadFail': "无法检查你的邀请码。请检查网络连接。",
   'confirm.cheersBought': '加油 +{n}。',
   'confirm.shareMiss': '无法分享。请重试。',
   'confirm.askRemoved': '请求已移除。',
