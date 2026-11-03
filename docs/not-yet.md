@@ -592,3 +592,5 @@ cheer skip under reduce-motion.
   `match_parent`. Did and Did not register when the bundle loads, not after
   the iOS bridge delay. A tap is committed by `WidgetTapReceiver` before the
   headless task runs. The same lamp and night applied again does not write.
+
+- A free holiday item claimed signed out reaches the account only if you sign in within a day of the drop closing. Later, it stays on that phone (and its board sync). Letting the server take late claims would let a changed phone clock claim any past drop.

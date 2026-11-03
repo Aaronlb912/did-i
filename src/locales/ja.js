@@ -1511,6 +1511,7 @@ export const ja = {
   'site.into.back': 'ドアに戻る',
   'device.android': 'Android アプリ',
   'home.dropLine': 'ショップに新登場: {names}',
+  'home.dropLastDay': 'ショップで無料は今日まで: {names}',
   'home.dropHide': '隠す',
   'device.ios': 'iPhone アプリ',
   'device.safariIphone': 'iPhone の Safari',

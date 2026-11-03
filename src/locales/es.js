@@ -1530,6 +1530,7 @@ export const es = {
   'site.into.back': 'Volver a la puerta',
   'device.android': 'App Android',
   'home.dropLine': 'Nuevo en la tienda: {names}',
+  'home.dropLastDay': 'Último día gratis en la tienda: {names}',
   'home.dropHide': 'Ocultar',
   'device.ios': 'App iPhone',
   'device.safariIphone': 'Safari en iPhone',

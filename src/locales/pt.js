@@ -1529,6 +1529,7 @@ export const pt = {
   'site.into.back': 'Voltar à porta',
   'device.android': 'App Android',
   'home.dropLine': 'Novo na loja: {names}',
+  'home.dropLastDay': 'Último dia grátis na loja: {names}',
   'home.dropHide': 'Ocultar',
   'device.ios': 'App iPhone',
   'device.safariIphone': 'Safari no iPhone',

@@ -1538,6 +1538,7 @@ export const de = {
   'site.into.back': 'Zurück zur Tür',
   'device.android': 'Android-App',
   'home.dropLine': 'Neu im Shop: {names}',
+  'home.dropLastDay': 'Letzter Gratis-Tag im Shop: {names}',
   'home.dropHide': 'Ausblenden',
   'device.ios': 'iPhone-App',
   'device.safariIphone': 'Safari auf iPhone',

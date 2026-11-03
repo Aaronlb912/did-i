@@ -1509,6 +1509,7 @@ export const zh = {
   'site.into.back': '回到门口',
   'device.android': 'Android 应用',
   'home.dropLine': '商店上新：{names}',
+  'home.dropLastDay': '商店免费最后一天：{names}',
   'home.dropHide': '隐藏',
   'device.ios': 'iPhone 应用',
   'device.safariIphone': 'iPhone 上的 Safari',

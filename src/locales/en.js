@@ -1527,6 +1527,7 @@ export const en = {
   'site.into.back': 'Back to the door',
   'device.android': 'Android app',
   'home.dropLine': 'New in the shop: {names}',
+  'home.dropLastDay': 'Last day free in the shop: {names}',
   'home.dropHide': 'Hide',
   'device.ios': 'iPhone app',
   'device.safariIphone': 'Safari on iPhone',

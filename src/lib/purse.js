@@ -222,6 +222,15 @@ export function isFreeEventId(kind, id) {
   return list.some((item) => item.id === id && isFreeEvent(item))
 }
 
+// Free cheers and buddies on their last claim day that this board does not own yet.
+export function lastFreeDay(book, today = boardDate(new Date())) {
+  const purse = normalizePurse(book)
+  return [
+    ...ALL_CHEERS.filter((item) => !purse.cheers.includes(item.id)).map((item) => ({ type: 'cheer', item })),
+    ...ALL_BUDDIES.filter((item) => !purse.buddies.includes(item.id)).map((item) => ({ type: 'buddy', item })),
+  ].filter(({ item }) => isFreeEvent(item) && isLive(item, today) && freeLastDay(item) === today)
+}
+
 export function freeEventItem(kind, id) {
   const list = kind === 'cheer' ? ALL_CHEERS : kind === 'buddy' ? ALL_BUDDIES : []
   return list.find((item) => item.id === id && isFreeEvent(item)) || null

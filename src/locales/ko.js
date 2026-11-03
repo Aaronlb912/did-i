@@ -1511,6 +1511,7 @@ export const ko = {
   'site.into.back': '문으로',
   'device.android': 'Android 앱',
   'home.dropLine': '상점 신상품: {names}',
+  'home.dropLastDay': '상점 무료 마지막 날: {names}',
   'home.dropHide': '숨기기',
   'device.ios': 'iPhone 앱',
   'device.safariIphone': 'iPhone Safari',

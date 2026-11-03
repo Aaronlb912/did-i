@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { frameText } from '../../src/lib/frames.js'
-import { buddyText, cheerText, freshDrop, lookText } from '../../src/lib/purse.js'
+import { buddyText, cheerText, freshDrop, lastFreeDay, lookText } from '../../src/lib/purse.js'
 import { boardDate } from '../../src/lib/recurrence.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
@@ -28,17 +28,24 @@ function itemName({ type, item }) {
   return t(key)
 }
 
-/** True when a drop line would show now. */
-export function dropLineUp() {
+// A new drop on its first two days; otherwise a free item on its last claim day.
+function pickDrop(book) {
   const today = (typeof __DEV__ !== 'undefined' && __DEV__ && read(TEST_KEY)) || boardDate(new Date())
   const drop = freshDrop(today, { frames: true })
-  return Boolean(drop && drop.items.length && read(SEEN_KEY) !== drop.date)
+  if (drop && drop.items.length) return { ...drop, key: 'home.dropLine' }
+  const last = lastFreeDay(book, today)
+  return last.length ? { date: 'last:' + today, items: last, key: 'home.dropLastDay' } : null
 }
 
-// One line on Home the day a shop drop goes live, and the day after.
-export function DropLine({ colors }) {
-  const today = (typeof __DEV__ !== 'undefined' && __DEV__ && read(TEST_KEY)) || boardDate(new Date())
-  const drop = freshDrop(today, { frames: true })
+/** True when a drop line would show now. */
+export function dropLineUp(book) {
+  const drop = pickDrop(book)
+  return Boolean(drop && read(SEEN_KEY) !== drop.date)
+}
+
+// One line on Home the day a shop drop goes live and the day after, or on a free item's last day.
+export function DropLine({ colors, book }) {
+  const drop = pickDrop(book)
   const [seen, setSeen] = useState(() => read(SEEN_KEY))
   if (!drop || !drop.items.length || seen === drop.date) return null
   const names = drop.items.slice(0, 3).map(itemName).join(', ')
@@ -54,7 +61,7 @@ export function DropLine({ colors }) {
     <View style={[styles.row, { borderColor: colors.line, backgroundColor: colors.panel2 }]}>
       <Pressable accessibilityRole="button" onPress={() => goHash('/shop')} style={({ pressed }) => [styles.hit, pressed && { opacity: 0.7 }]}>
         <Text style={[styles.text, { color: colors.ink }]} numberOfLines={1}>
-          {t('home.dropLine', { names })}
+          {t(drop.key, { names })}
         </Text>
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={t('home.dropHide')} onPress={close} hitSlop={10} style={styles.x}>
