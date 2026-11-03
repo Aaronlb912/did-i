@@ -390,6 +390,7 @@ export function normalizeBook(raw) {
     clickSound: asBool(book.clickSound),
     inkNote: asString(book.inkNote),
     archived: asBool(book.archived),
+    ...(Number.isFinite(book.order) ? { order: book.order } : {}),
     ...(cleanAt(book.at) ? { at: cleanAt(book.at) } : {}),
     lamps: Array.isArray(book.lamps) ? book.lamps.map(normalizeLamp) : [],
     answers: Array.isArray(book.answers) ? book.answers.map(normalizeAnswer) : [],

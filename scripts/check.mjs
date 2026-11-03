@@ -142,7 +142,9 @@ import { kitCount } from '../native/lib/kit-flight.js'
 import { makeFeelTap } from '../native/lib/feel-tap.js'
 import { phoneMatchMedia } from '../native/lib/reduce-media.js'
 import { readReduceMotion } from '../src/lib/useReduceMotion.js'
-import { joinTagIds, leftoverOn, scopedBooks, tagIdsOf, taggedDue } from '../src/lib/tags.js'
+import { joinTagIds, leftoverOn, moveFolder, moveWithin, scopedBooks, sortFolders, tagIdsOf, taggedDue } from '../src/lib/tags.js'
+import { normalizeBook } from '../src/lib/board-json.js'
+import { mergeBooks } from '../src/lib/shelf-merge.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
@@ -296,6 +298,41 @@ test('a bulk move takes answers along and moves back on undo', () => {
   assert.deepEqual(back.find((book) => book.id === 'home').lamps.map((item) => item.id), ['a', 'b'])
   assert.equal(back.find((book) => book.id === 'home').answers.length, 1)
   assert.deepEqual(moveLamps([home, work], [{ boardId: 'work', lampId: 'c' }], 'work'), [])
+})
+
+test('folders sort by order; without one they keep creation order', () => {
+  const ids = (list) => list.map((book) => book.id)
+  const plain = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+  assert.deepEqual(ids(sortFolders(plain)), ['a', 'b', 'c'])
+  assert.deepEqual(ids(sortFolders([{ id: 'a', order: 2 }, { id: 'b', order: 0 }, { id: 'c', order: 1 }])), ['b', 'c', 'a'])
+  // A folder made after the order was set lands last.
+  assert.deepEqual(ids(sortFolders([{ id: 'a', order: 1 }, { id: 'b', order: 0 }, { id: 'new' }])), ['b', 'a', 'new'])
+  assert.deepEqual(ids(sortFolders(undefined)), [])
+})
+
+test('moving a folder renumbers only what changed, and the order survives normalize and sync', () => {
+  const books = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+  const changed = moveFolder(books, 'c', -1, '2026-11-02T10:00:00.000Z')
+  assert.deepEqual(changed.map((book) => [book.id, book.order]), [['a', 0], ['c', 1], ['b', 2]])
+  assert.equal(changed[1].at, '2026-11-02T10:00:00.000Z')
+  assert.deepEqual(moveFolder(books, 'a', -1), [])
+  assert.deepEqual(moveFolder(books, 'c', 1), [])
+  assert.equal(normalizeBook({ id: 'x', order: 3 }).order, 3)
+  assert.equal('order' in normalizeBook({ id: 'x' }), false)
+  const older = { id: 'a', title: 'A', order: 0, at: '2026-11-01T00:00:00.000Z' }
+  const newer = { id: 'a', title: 'A', order: 4, at: '2026-11-02T00:00:00.000Z' }
+  assert.equal(mergeBooks(older, newer).order, 4)
+  assert.equal(mergeBooks(newer, older).order, 4)
+})
+
+test('reordering one folder moves its questions and leaves every other slot alone', () => {
+  const ids = ['w1', 'h1', 'w2', 'h2', 'w3']
+  const home = ['h1', 'h2']
+  assert.deepEqual(moveWithin(ids, home, 'h2', 'h1', -1), ['w1', 'h2', 'w2', 'h1', 'w3'])
+  assert.deepEqual(moveWithin(ids, home, 'h1', 'h2', 1), ['w1', 'h2', 'w2', 'h1', 'w3'])
+  // Every folder at once: the plain move.
+  assert.deepEqual(moveWithin(ids, ids, 'w3', 'w1', -1), ['w3', 'w1', 'h1', 'w2', 'h2'])
+  assert.deepEqual(moveWithin(ids, home, 'w1', 'h1', -1), ids)
 })
 
 test('a duplicate keeps " copy" inside the short name limit', () => {

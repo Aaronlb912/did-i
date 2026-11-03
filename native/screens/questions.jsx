@@ -56,7 +56,7 @@ import { ripple } from '../lib/ripple.js'
 import { fireCheer, mergePurses } from '../../src/lib/purse.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { bookForTag, useHangDraft } from '../../src/lib/useHangDraft.js'
-import { rowKey, tagIdsOf, taggedLamps } from '../../src/lib/tags.js'
+import { moveWithin, rowKey, sortFolders, tagIdsOf, taggedLamps } from '../../src/lib/tags.js'
 import { HangMonthCal } from '../components/HangMonthCal.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { IdeaPicks, useWobble } from '../components/DidLead.jsx'
@@ -259,11 +259,11 @@ function earlierStates(rows, gentle = false) {
   return states
 }
 
-function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick, onMove, open = true, onToggle }) {
+function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick, onMove, open = true, onToggle, headText }) {
   if (!items.length) return null
   const head = (
     <Text style={[styles.blockLabel, { color: colors.inkDim }]}>
-      {label} · {items.length}
+      {headText || `${label} · ${items.length}`}
       {onToggle ? (open ? '  ▾' : '  ▸') : ''}
     </Text>
   )
@@ -274,8 +274,9 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
           onPress={onToggle}
           hitSlop={8}
           accessibilityRole="button"
+          accessibilityLabel={headText || label}
           accessibilityState={{ expanded: open }}
-          style={({ pressed }) => pressFx(pressed)}
+          style={({ pressed }) => [{ minHeight: 44, justifyContent: 'center' }, pressFx(pressed)]}
         >
           {head}
         </Pressable>
@@ -514,6 +515,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const hasDeadlines = allRows.some((row) => activeDeadline(row.lamp, dateIso))
   const fromOk = (row) => !didYouOnly || row.lamp.fromDidYou
   const [earlierOpen, setEarlierOpen] = useLayoutState(false)
+  const [pausedOpen, setPausedOpen] = useLayoutState(false)
   const liveRows = rows.filter(
     (row) => !row.lamp.archived && !onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row),
   )
@@ -527,7 +529,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const earlier = rows.filter((row) => onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row))
   const pastStates = earlierOpen ? earlierStates(earlier, gentle) : states
   const starters = openStarters(book)
-  const shown = [...hung, ...down, ...(earlierOpen ? earlier : [])]
+  const shown = [...hung, ...(pausedOpen ? down : []), ...(earlierOpen ? earlier : [])]
   // Only what is on screen counts, so a filter change never acts on hidden rows.
   const chosen = shown.filter((row) => picked.has(rowKey(row)))
   const allOn = shown.length > 0 && chosen.length === shown.length
@@ -551,10 +553,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     // Every folder at once, so orders never collide when tonight shows All.
     const ids = inHandOrder(taggedLamps(shelf, '')).filter((row) => !row.lamp.archived).map((row) => row.lamp.id)
     if (!ids.includes(a.lamp.id) || !ids.includes(b.lamp.id)) return
-    ids.splice(ids.indexOf(a.lamp.id), 1)
-    const bi = ids.indexOf(b.lamp.id)
-    ids.splice(step < 0 ? bi : bi + 1, 0, a.lamp.id)
-    const next = setLampOrder(shelf, ids)
+    // Only the rows on screen trade places (one picked folder, or all); every
+    // other question keeps its slot.
+    const next = setLampOrder(shelf, moveWithin(ids, hung.map((row) => row.lamp.id), a.lamp.id, b.lamp.id, step))
     const changed = next.filter((item, at) => item !== shelf[at])
     if (changed.length) onChangeBooks(changed.map((item) => commitBook(item, clock)))
   }
@@ -652,7 +653,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
 
   // Move only makes sense with somewhere else to go. Empty folders are parked
   // (archived) but are still places to move to.
-  const folders = shelf
+  const folders = sortFolders(shelf)
   const { overlayBottom } = useAppInsets()
   const headerBottom = useHeaderBottom()
   // The pinned bars sit under the header. On iOS the large title starts
@@ -907,6 +908,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
 
         {ordering ? null : <LampBlock
           label={t('questions.down')}
+          headText={t('questions.paused', { n: down.length })}
           items={down}
           shelf={shelf}
           states={states}
@@ -916,6 +918,8 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           picking={picking}
           picked={picked}
           onPick={pick}
+          open={pausedOpen}
+          onToggle={() => setPausedOpen((on) => !on)}
         />}
         {ordering ? null : (
           <LampBlock
