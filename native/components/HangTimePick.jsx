@@ -8,11 +8,14 @@ import {
   minuteOptions,
   timeParts,
 } from '../../src/lib/hang-time.js'
+import { clockWords } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { usePrefs, uses24h } from '../../src/lib/prefs.js'
 import { fonts } from '../theme.js'
 import { HangSelect } from './HangSelect.jsx'
 import { KeyButton } from './ui.jsx'
+
+const QUICK_TIMES = ['08:00', '12:00', '18:00', '20:00', '21:00']
 
 export function HangTimePick({ value, onChange, colors }) {
   const [openMenu, setOpenMenu] = useState(null)
@@ -45,6 +48,18 @@ export function HangTimePick({ value, onChange, colors }) {
           picked={timed}
           onPress={() => onChange(value || DEFAULT_TIME)}
         />
+      </View>
+      <View style={styles.chips}>
+        {QUICK_TIMES.map((time) => (
+          <KeyButton
+            key={time}
+            label={clockWords(time)}
+            accessibilityLabel={t('hang.askAt') + ' ' + clockWords(time)}
+            colors={colors}
+            picked={value === time}
+            onPress={() => onChange(time)}
+          />
+        ))}
       </View>
       {timed ? (
         <View style={styles.picks}>

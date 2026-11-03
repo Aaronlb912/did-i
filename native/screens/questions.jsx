@@ -1066,11 +1066,11 @@ export function SearchScreen({ book }) {
 
 const SCHEDULES = [
   { id: 'daily', labelKey: 'hang.daily' },
-  { id: 'per_week', labelKey: 'hang.perWeek' },
   { id: 'weekly', labelKey: 'hang.weekly' },
-  { id: 'monthly', labelKey: 'hang.monthly' },
-  { id: 'every_n', labelKey: 'hang.everyN' },
+  { id: 'per_week', labelKey: 'hang.perWeek' },
   { id: 'every', labelKey: 'hang.every' },
+  { id: 'every_n', labelKey: 'hang.everyN' },
+  { id: 'monthly', labelKey: 'hang.monthly' },
   { id: 'once_on', labelKey: 'hang.once' },
   { id: 'deadline', labelKey: 'hang.dueByPick' },
 ]
@@ -1550,7 +1550,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   }, [dirty, open])
 
   // The iPhone edge swipe can't be asked about, so it is off while there are
-  // unsaved changes. Add keeps its swipe.
+  // unsaved changes, on both Add and Edit.
   const navigation = useNavigation()
   useEffect(() => {
     navigation.setOptions?.({ gestureEnabled: !dirty })
@@ -1703,6 +1703,16 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     }
   }
 
+  // One toast after a save: "On today", or the next day it is asked.
+  function doneMessage(target, next, fallbackKey) {
+    if (isDueOn(next, dateIso) || isPerWeek(next) || everyDueOn(target, next, dateIso)) return t('hang.landTonight')
+    for (let day = 1; day <= 62; day += 1) {
+      const iso = addDaysIso(dateIso, day)
+      if (isDueOn(next, iso)) return t('hang.nextAsked', { date: formatBoardDate(iso) })
+    }
+    return t(fallbackKey)
+  }
+
   // another: Add another saves, then starts a blank question on the same screen.
   function save(another = false, confirmed = false) {
     if (stamp) return
@@ -1763,14 +1773,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
     if (another === true && onAnother && !hang.editing) {
       playClick()
-      confirmDone(isDueOn(next, dateIso) || isPerWeek(next) || everyDueOn(target, next, dateIso) ? t('hang.landTonight') : t('confirm.questionAdded'))
+      confirmDone(doneMessage(target, next, 'confirm.questionAdded'))
       offerPingPrimer(newTime, colors)
       onAnother()
       return
     }
     if (hang.editing) {
       playClick()
-      confirmDone(t('confirm.questionSaved'))
+      confirmDone(doneMessage(target, next, 'confirm.questionSaved'))
       swapHash('/lamp', { id: next.id })
       offerPingPrimer(newTime, colors)
       return
@@ -1792,7 +1802,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         else if (from === '/tonight' || from === '/' || from === '/home') goHash('/tonight', landsTonight ? { face: next.id } : '')
         else if (from && !wasEmpty && canGoBack()) goBack()
         else goHash(wasEmpty ? '/tonight' : '/lamps')
-        confirmDone(t('confirm.questionAdded'))
+        confirmDone(doneMessage(target, next, 'confirm.questionAdded'))
         offerPingPrimer(newTime, colors)
       },
       reduce ? LAND_HOLD_STILL : LAND_HOLD,
@@ -1817,15 +1827,16 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   // Topics stay out of the way until someone uses them.
   const topicsShown = topicsOn || topicCount > 0 || shelfTopics(boards.length ? boards : [book]).length > 0
   // Shown in the main rows, and in When next to the time while that is open.
-  const reminderRow = (last) =>
+  const reminderRow = (last, inSheet = false) =>
     hang.priority === 'low' ? (
-      <SetRow colors={colors} icon="bell" label={t('hang.reminder')} sub={t('hang.remindLowNote')} value={t('hang.remindOff')} last={last} />
+      <SetRow colors={colors} icon="bell" label={t('hang.reminder')} sub={t('hang.priority.hint.low')} value={t('hang.remindOff')} last={last} />
     ) : phone.quiet ? (
       <QuietReminderRow colors={colors} onTurnOn={() => phone.turnOn(colors)} last={last} />
     ) : (
       <SetSwitch
         label={t('hang.reminder')}
-        sub={reminderLine(draft)}
+        // In the time sheet, "No reminder: set a time" sits right under the picker.
+        sub={inSheet && !draft.askAfter && lampNotifyOn(draft) && lampBuzzes(draft) ? undefined : reminderLine(draft)}
         icon="bell"
         last={last}
         // With no time it cannot buzz, so it reads off; turning it on opens the time.
@@ -2045,7 +2056,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               </View>
             </HangFold>
           {!draft.askAfter ? <Text style={[styles.fieldHint, { color: colors.inkDim, paddingHorizontal: 16, paddingBottom: 8 }]}>{t('pings.noTimeSet')}</Text> : null}
-          {reminderRow(true)}
+          {reminderRow(true, true)}
             </Glide>
           </SetCard>
       </PickSheet>
@@ -2150,7 +2161,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           >
             <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.tagOne')}</Text>
             <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.folderHint')}</Text>
-            <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.folderVsTopic')}</Text>
+            {topicsShown ? (
+              <Text style={[styles.fieldHint, styles.fieldHintTight, { color: colors.inkDim }]}>{t('hang.folderVsTopic')}</Text>
+            ) : null}
             <View style={styles.pillRow} accessibilityRole="radiogroup" accessibilityLabel={t('hang.tag')}>
               {hang.liveTags.map((item) => (
                 <Pill
@@ -2233,7 +2246,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                   key={id}
                   label={t(`hang.priority.${id}`)}
                   on={hang.priority === id}
-                  onPress={() => hang.change('priority', id)}
+                  onPress={() => {
+                    hang.change('priority', id)
+                    if (id === 'low' && draft.askAfter) confirmDone(t('hang.priority.hint.low'))
+                  }}
                   colors={colors}
                 />
               ))}
@@ -2248,7 +2264,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           <HangFold
             label={t('hang.kind')}
             value={topicCount ? topicsOf({ kind: draft.kind }).map(topicLabel).join(', ') : t('hang.detailsNone')}
-            icon="tag"
+            icon="note"
             open={open === 'topics'}
             onToggle={() => fold('topics')}
             onShown={showFold}
