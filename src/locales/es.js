@@ -2536,6 +2536,7 @@ export const es = {
   'shop.teasedFree': "Aún no ha salido. Gratis del {date} al {until}.",
   'tonight.nextOn': 'Mañana nada. Próxima pregunta: {date}.',
   'tonight.restChange': "Mirar otra vez",
+  'tonight.restMore': "y {n} más",
   'tonight.meterNope': "{n} en aún no",
   'settings.phoneSubOut': 'Tu nombre y una nota personal',
   'kit.accOnAnt': 'No llevas compañero, así que la hormiga muestra cómo quedan los accesorios.',

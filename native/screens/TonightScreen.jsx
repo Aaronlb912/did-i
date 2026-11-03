@@ -6,6 +6,7 @@ import { frameText, keepEarnedFrames, takeFramesToAnnounce, wearFrame, wornFrame
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { nightProgress } from '../../src/lib/night-progress.js'
 import { addDaysIso, boardDate } from '../../src/lib/recurrence.js'
+import { GRACE_END } from '../../src/lib/zone.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { publishSheet, sheetIsUp } from '../components/SheetHost.jsx'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -956,7 +957,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const graceNight = graceNightIso()
   // The 9am cutoff is tomorrow for today's rows, and this morning for yesterday's.
   const untilWords = (row) => {
-    const words = clockWords('09:00')
+    const words = clockWords(GRACE_TIME)
     return !row || !row.dateIso || row.dateIso === stack.dateIso ? t('tonight.untilTomorrow', { time: words }) : words
   }
   const graceWeOpen = graceNight ? weOpenOn(graceNight) : new Set()
@@ -984,7 +985,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         buddy: activeBuddy(book),
       })),
   ]
-  const graceKicker = t('tonight.graceKicker', { time: clockWords('09:00') })
+  const graceKicker = t('tonight.graceKicker', { time: clockWords(GRACE_TIME) })
   const graceTop = graceItems[0] || null
   const graceCard = graceTop ? (
     <SwipeCardHost
@@ -1018,7 +1019,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     markGraceExplained()
     publishSheet({
       title: t('grace.title'),
-      body: t('grace.body', { time: clockWords('09:00') }),
+      body: t('grace.body', { time: clockWords(GRACE_TIME) }),
       closeLabel: t('grace.gotIt'),
       colors,
       onClose: () => publishSheet(null),
@@ -1328,6 +1329,22 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           {stack.finishCount === 1 ? t('tonight.restOne') : t('tonight.restTitle', { n: stack.finishCount })}
         </Text>
         <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restHint', { time: untilWords() })}</Text>
+        {stack.stillOpen.slice(0, 10).map((row) => (
+          <Pressable
+            key={stack.rowKey(row)}
+            accessibilityRole="button"
+            accessibilityLabel={row.lamp.question}
+            onPress={() => stack.openSkipped(row)}
+            style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}
+          >
+            <Text style={[faceCardStyles.meta, { color: colors.ink }]} numberOfLines={2}>
+              {row.lamp.question} <Text style={{ color: colors.on }}>›</Text>
+            </Text>
+          </Pressable>
+        ))}
+        {stack.stillOpen.length > 10 ? (
+          <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restMore', { n: stack.stillOpen.length - 10 })}</Text>
+        ) : null}
         <View style={styles.actions}>
           <DidButton label={t('tonight.restChange')} colors={colors} small onPress={startLookAgain} />
         </View>
@@ -1752,6 +1769,9 @@ function DoneIn({ children, style: box }) {
   if (reduce) return box ? <View style={box}>{children}</View> : children
   return <Animated.View style={[box, style]}>{children}</Animated.View>
 }
+
+// GRACE_END is an hour; clockWords wants HH:MM.
+const GRACE_TIME = `${String(GRACE_END).padStart(2, '0')}:00`
 
 const styles = StyleSheet.create({
   everyLine: { fontFamily: fonts.ui, fontSize: 14, marginTop: 6 },

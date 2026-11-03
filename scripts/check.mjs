@@ -9964,6 +9964,18 @@ test('undo is a stack of three: each undo takes back only its own answer and coi
   assert.deepEqual(stack.map((item) => item.lampId), ['z', 'y', 'x'], 'never more than three back')
 })
 
+test('late Did on a Not yet goes to the next open question, else the next Not yet; grace undo brings the card back', async () => {
+  const { afterLateDid, graceKeysAfterUndo } = await import('../src/lib/useTonightStack.js?late-did')
+  const row = (id, status) => ({ lamp: { id }, answer: status ? { status } : null })
+  const a = row('a', 'skip')
+  const none = afterLateDid([a, row('b', 'skip'), row('c', 'yes')], a)
+  assert.deepEqual(none, { faceId: 'b', skipReview: true }, 'next Not yet when nothing is open')
+  const open = afterLateDid([a, row('b', 'skip'), row('c')], a)
+  assert.deepEqual(open, { faceId: 'c', skipReview: false }, 'an open question comes first')
+  assert.deepEqual(afterLateDid([a], a), { faceId: '', skipReview: false })
+  assert.deepEqual(graceKeysAfterUndo(['x:1', 'y:1'], 'x:1'), ['y:1'], 'the card key leaves the set-aside list')
+})
+
 test('signed in, did then undo then did pays once; signed out undo takes the coins back', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const url = (file) => pathToFileURL(path.join(root, file)).href

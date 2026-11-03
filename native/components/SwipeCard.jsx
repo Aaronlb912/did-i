@@ -242,7 +242,7 @@ export function SwipeCard({
               {card.kicker ? (
                 <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{card.kicker}</Text>
               ) : null}
-              <Text style={[faceCardStyles.title, { color: colors.ink }]} numberOfLines={3}>
+              <Text style={[faceCardStyles.title, { color: colors.ink }]} numberOfLines={3} maxFontSizeMultiplier={2}>
                 {card.title}
               </Text>
             </StackCard>

@@ -2526,6 +2526,7 @@ export const en = {
   'shop.teasedFree': "Not out yet. Free from {date} until {until}.",
   'tonight.nextOn': 'Nothing tomorrow. Next question: {date}.',
   'tonight.restChange': "Look again",
+  'tonight.restMore': "and {n} more",
   'tonight.meterNope': "{n} Not yet",
   'settings.phoneSubOut': 'Your name and a note to self',
   'kit.accOnAnt': 'No buddy on, so the ant shows how accessories look.',

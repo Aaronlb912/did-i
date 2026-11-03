@@ -2488,6 +2488,7 @@ export const zh = {
   'shop.teasedFree': "还没上架。{date} 至 {until} 免费。",
   'tonight.nextOn': '明天没有。下一个问题：{date}。',
   'tonight.restChange': "再看一遍",
+  'tonight.restMore': "还有 {n} 个",
   'tonight.meterNope': "{n} 个还没",
   'settings.phoneSubOut': '你的名字和给自己的备注',
   'kit.accOnAnt': '没有戴伙伴，所以用蚂蚁展示配饰效果。',

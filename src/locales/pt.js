@@ -2532,6 +2532,7 @@ export const pt = {
   'shop.teasedFree': "Ainda não saiu. Grátis de {date} até {until}.",
   'tonight.nextOn': 'Nada amanhã. Próxima pergunta: {date}.',
   'tonight.restChange': "Ver de novo",
+  'tonight.restMore': "e mais {n}",
   'tonight.meterNope': "{n} em ainda não",
   'settings.phoneSubOut': 'Seu nome e uma nota pessoal',
   'kit.accOnAnt': 'Nenhum parceiro em uso, então a formiga mostra como ficam os acessórios.',

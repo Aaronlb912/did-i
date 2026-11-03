@@ -2539,6 +2539,7 @@ export const fr = {
   'shop.teasedFree': "Pas encore sorti. Gratuit du {date} au {until}.",
   'tonight.nextOn': 'Rien demain. Prochaine question : {date}.',
   'tonight.restChange': "Revoir",
+  'tonight.restMore': "et {n} de plus",
   'tonight.meterNope': "{n} en pas encore",
   'settings.phoneSubOut': 'Ton nom et une note perso',
   'kit.accOnAnt': 'Aucun compagnon, alors la fourmi montre le rendu des accessoires.',
