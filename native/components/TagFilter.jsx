@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { topicLabel } from '../../src/lib/board-json.js'
-import { joinTagIds, leftoverOn, tagIdsOf } from '../../src/lib/tags.js'
+import { joinTagIds, leftoverOn, sortFolders, tagIdsOf } from '../../src/lib/tags.js'
 import { t } from '../../src/lib/i18n.js'
 import { ripple } from '../lib/ripple.js'
 import { goHash } from '../navigation/hash.js'
@@ -19,7 +19,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
   const ids = tagIdsOf(tagId)
   // Parked folders (empty, once the list is crowded) step aside here too,
   // unless one is picked right now. Your folders still lists them.
-  const live = (boards || []).filter((book) => !book.archived || ids.includes(book.id))
+  const live = sortFolders((boards || []).filter((book) => !book.archived || ids.includes(book.id)))
   const showTopics = Boolean(onTopics) && topics.length > 0
   const showFolders = live.length >= 2
   // One folder: nothing to pick, but the menu still names it above the

@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native'
 import { commitBook, shelfMarks, streakLength } from '../../src/lib/achievements.js'
-import { putPastAnswer } from '../../src/lib/board-ops.js'
+import { moveLamps, putPastAnswer } from '../../src/lib/board-ops.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
 import { EmptyCard } from '../components/PersonCard.jsx'
 import { clearNotices, markNoticesSeen, restoreNotices, useNotices } from '../../src/lib/notices.js'
@@ -107,7 +107,8 @@ import { FirstPacks } from '../components/FirstPacks.jsx'
 import { cloudSetUp } from '../../src/lib/cloud.js'
 import { authSkipped, clearAuthSkip } from '../../src/lib/auth-gate.js'
 import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
-import { leftoverOn, scopedBooks, tagIdsOf } from '../../src/lib/tags.js'
+import { leftoverOn, moveFolder, scopedBooks, sortFolders, tagIdsOf } from '../../src/lib/tags.js'
+import { ripple } from '../lib/ripple.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
@@ -1126,7 +1127,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   )
 }
 
-export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange, onStartEmpty }) {
+export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorder, onChange, onChangeBooks, onStartEmpty }) {
   const colors = useHallColors()
   const [titleDraft, setTitleDraft] = useState(book?.title || '')
   const [addMiss, setAddMiss] = useState('')
@@ -1139,7 +1140,18 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
   const [removed, setRemoved] = useState(null)
   // Remove has an undo: the folder comes back with its questions and answers.
   useUndoToast('folders', removed, () => {
-    if (removed?.book) onChange?.(removed.book)
+    // The folder comes back, and the one its questions moved into goes back too.
+    if (removed?.folder) {
+      const folder = removed.folder
+      if (removed.moveTo && onChangeBooks) {
+        const empty = { ...folder, lamps: [], answers: [] }
+        const current = (readShelf().boards || []).filter((item) => item.id !== folder.id)
+        const picks = removed.lampIds.map((lampId) => ({ boardId: removed.moveTo, lampId }))
+        const moved = moveLamps([...current, empty], picks, folder.id)
+        onChangeBooks(moved.length ? moved : [folder])
+      } else if (onChangeBooks) onChangeBooks([folder])
+      else onChange?.(folder)
+    }
     setRemoved(null)
   }, DELETE_UNDO_MS, t('tonight.undoTap'))
 
@@ -1180,11 +1192,61 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
     setNewName('')
     setAddMiss('')
   }
-  const live = (boards || []).filter((item) => !item.archived)
+  const live = sortFolders((boards || []).filter((item) => !item.archived))
   // Empty folders parked once the list is crowded: kept behind one row, so
   // they can still be opened (which brings one back) or removed.
   const parked = (boards || []).filter((item) => item.archived)
   const [showParked, setShowParked] = useState(false)
+
+  function shift(item, step) {
+    const changed = moveFolder(live, item.id, step)
+    if (changed.length) onReorder?.(changed)
+  }
+
+  function removeFolder(moveTo) {
+    publishSheet(null)
+    const saved = readShelf().boards || []
+    const target = moveTo ? saved.find((item) => item.id === moveTo) : null
+    const folder = saved.find((item) => item.id === book.id) || book
+    // With a move, undo takes the questions back out of the current target
+    // (answers since then kept), not a saved copy of it.
+    setRemoved({ id: Date.now(), label: t('confirm.folderRemoved', { title: book.title }), folder, moveTo: target ? moveTo : '', lampIds: (folder.lamps || []).map((item) => item.id) })
+    onRemove?.(book.id, moveTo)
+  }
+
+  function askRemove() {
+    const n = (book.lamps || []).length
+    const others = (boards || []).filter((item) => item.id !== book.id)
+    const home =
+      others.find((item) => folderNameKey(item.title) === folderNameKey(t('tags.general'))) ||
+      others.find((item) => !item.archived) ||
+      others[0]
+    if (!n || !home) {
+      publishSheet({
+        title: t('boards.removeTitle', { title: book.title }),
+        body: t('boards.removeEmpty'),
+        goLabel: t('boards.removeNamed', { title: book.title }),
+        danger: true,
+        closeLabel: t('settings.neverMind'),
+        colors,
+        onClose: () => publishSheet(null),
+        onGo: () => removeFolder(null),
+      })
+      return
+    }
+    publishSheet({
+      title: t('boards.removeTitle', { title: book.title }),
+      body: t('boards.removeHolds', { count: n === 1 ? t('boards.qOne') : t('boards.qMany', { n }) }),
+      goLabel: t('boards.removeMove', { folder: home.title }),
+      onGo: () => removeFolder(home.id),
+      moreLabel: t('boards.removeWith'),
+      moreDanger: true,
+      onMore: () => removeFolder(null),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
+  }
 
   useEffect(() => {
     setTitleDraft(book?.title || '')
@@ -1240,21 +1302,50 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
           left === 0 ? t('boards.leftNone') : left === 1 ? t('boards.leftOne') : t('boards.leftMany', { n: left })
         return (
           <View key={item.id}>
-            <SetRow
-              colors={colors}
-              tint={on ? colors.on : undefined}
-              icon="folder"
-              label={item.title}
-              sub={on ? `${t('boards.addsHere')} · ${countNote} · ${leftNote}` : `${countNote} · ${leftNote}`}
-              chevron
-              last={at === live.length - 1 && !on}
-              onPress={() => {
-                onSelect?.(item.id)
-                goHash('/tonight', { tag: item.id })
-              }}
-            />
+            <View style={styles.folderLine}>
+              <View style={styles.folderMain}>
+                <SetRow
+                  colors={colors}
+                  tint={on ? colors.on : undefined}
+                  icon="folder"
+                  label={item.title}
+                  sub={on ? `${t('boards.addsHere')} · ${countNote} · ${leftNote}` : `${countNote} · ${leftNote}`}
+                  last={at === live.length - 1 && !on}
+                  onPress={() => onSelect?.(item.id)}
+                />
+              </View>
+              {live.length > 1 ? (
+                <View style={styles.folderMoves}>
+                  {[-1, 1].map((step) => {
+                    const off = step < 0 ? at === 0 : at === live.length - 1
+                    const label = t(step < 0 ? 'boards.moveUp' : 'boards.moveDown', { title: item.title })
+                    return (
+                      <Pressable
+                        key={step}
+                        disabled={off}
+                        onPress={() => shift(item, step)}
+                        accessibilityRole="button"
+                        accessibilityLabel={label}
+                        accessibilityState={{ disabled: off }}
+                        android_ripple={ripple(colors.panel3)}
+                        style={[styles.moveBtn, { opacity: off ? 0.3 : 1 }]}
+                      >
+                        <Text style={{ color: colors.ink, fontSize: 16 }}>{step < 0 ? '▲' : '▼'}</Text>
+                      </Pressable>
+                    )
+                  })}
+                </View>
+              ) : null}
+            </View>
             {on ? (
               <View style={styles.tagName}>
+              <DidButton
+                colors={colors}
+                label={t('boards.openNamed', { title: item.title })}
+                accessibilityLabel={t('boards.openNamed', { title: item.title })}
+                onPress={() => goHash('/tonight', { tag: item.id })}
+              />
+              <View style={styles.openGap} />
               <Field
                 colors={colors}
                 label={t('boards.name')}
@@ -1375,22 +1466,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onChange
         <KeyButton
           colors={colors}
           label={t('boards.removeNamed', { title: book.title })}
-          onPress={() =>
-            publishSheet({
-              title: t('boards.removeTitle', { title: book.title }),
-              body: t('boards.removeBody'),
-              goLabel: t('boards.removeNamed', { title: book.title }),
-              danger: true,
-              closeLabel: t('settings.neverMind'),
-              colors,
-              onClose: () => publishSheet(null),
-              onGo: () => {
-                publishSheet(null)
-                setRemoved({ id: Date.now(), label: t('confirm.folderRemoved', { title: book.title }), book: readShelf().boards.find((item) => item.id === book.id) || book })
-                onRemove?.(book.id)
-              },
-            })
-          }
+          onPress={askRemove}
         />
       ) : null}
       {onStartEmpty && book ? (
@@ -2906,6 +2982,11 @@ const styles = StyleSheet.create({
   beforeBtn: { marginBottom: 6 },
   foldHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   tagName: { paddingHorizontal: 14, paddingBottom: 10 },
+  openGap: { height: 10 },
+  folderLine: { flexDirection: 'row', alignItems: 'center' },
+  folderMain: { flex: 1 },
+  folderMoves: { flexDirection: 'row' },
+  moveBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   addRow: { flexDirection: 'row', gap: 10 },
   addCell: { flex: 1 },
   enterFields: { padding: 14, gap: 8 },

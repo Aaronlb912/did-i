@@ -91,6 +91,8 @@ export function mergeBooks(winner, loser) {
   if (atMs(lose) > atMs(win)) {
     win.title = lose.title
     win.archived = lose.archived
+    // An older app drops order; keep ours rather than reset it.
+    if (lose.order !== undefined) win.order = lose.order
     win.at = lose.at
   }
 

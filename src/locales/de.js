@@ -331,7 +331,7 @@ export const de = {
   'jewelKey.due': 'Heute fällig',
   'jewelKey.wait': 'Noch nicht dran',
   'jewelKey.ok': 'Verstanden',
-  'tags.openHint': "Umbenennen, Zahlen sehen, wegräumen.",
+  'tags.openHint': "Umbenennen, Zahlen sehen, entfernen.",
   'tags.putAway': 'Leere Ordner',
   'tags.putAwayHint':
     'Keine Fragen drauf, also bleiben sie heute aus. Wähle einen beim Hinzufügen oder entferne ihn hier.',
@@ -484,6 +484,14 @@ export const de = {
   'boards.removeBody':
     'Dieser Ordner und seine Fragen gehen weg. Speichere zuerst eine Kopie in den Einstellungen, wenn du eine willst.',
   'boards.removeYes': 'Entfernen',
+  'boards.removeEmpty': 'Dieser Ordner ist leer.',
+  'boards.removeHolds': 'Dieser Ordner enthält {count}. Verschiebe sie zuerst oder entferne sie mit ihm.',
+  'boards.removeMove': 'Fragen nach {folder} verschieben',
+  'boards.removeWith': 'Mit den Fragen entfernen',
+  'boards.moveUp': '{title} nach oben',
+  'boards.moveDown': '{title} nach unten',
+  'boards.openNamed': '{title} öffnen',
+  'questions.paused': 'Pausiert ({n})',
   'boards.look': 'Zurückschauen',
   'boards.calendar': 'Kalender',
   'boards.feed': 'Feed',

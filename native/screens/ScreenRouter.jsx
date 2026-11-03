@@ -112,6 +112,7 @@ export function ScreenRouter({
   switchBoard,
   addBoard,
   removeBoard,
+  reorderBoards,
   onImport,
   onStartEmpty,
   onSendCopy,
@@ -217,7 +218,9 @@ export function ScreenRouter({
         onSelect={switchBoard}
         onAdd={addBoard}
         onRemove={removeBoard}
+        onReorder={reorderBoards}
         onChange={change}
+        onChangeBooks={changeBooks}
         onStartEmpty={onStartEmpty}
       />
     )

@@ -14,7 +14,7 @@ import {
   selectBook,
   writeShelf,
 } from '../../src/lib/board-shelf.js'
-import { bulkLamps, hangInto, putAnswer, takeDown } from '../../src/lib/board-ops.js'
+import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown } from '../../src/lib/board-ops.js'
 import { blankLamp } from '../../src/lib/board-json.js'
 import { keptLamp } from '../../src/lib/send-repeat.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from '../../src/lib/daily.js'
@@ -270,12 +270,17 @@ export function useAppShelf() {
     )
   }, [live.keeperName, persist])
   const removeBoard = useCallback(
-    (id) => {
+    (id, moveTo) => {
       // Friends' check-ons on its questions stop once the undo window ends,
-      // unless the folder came back.
-      const lampIds = (shelfRef.current.boards || []).find((book) => book.id === id)?.lamps?.map((lamp) => lamp.id) || []
-      if (lampIds.length) stopCheckOns(lampIds)
-      persist(dropBook(shelfRef.current, id))
+      // unless the folder came back. Moved questions keep theirs.
+      let base = shelfRef.current
+      const gone = (base.boards || []).find((book) => book.id === id)
+      const lampIds = gone?.lamps?.map((lamp) => lamp.id) || []
+      if (moveTo) {
+        const picks = lampIds.map((lampId) => ({ boardId: id, lampId }))
+        base = moveLamps(base.boards, picks, moveTo).reduce((next, one) => putBook(next, commitBook(one, new Date())), base)
+      } else if (lampIds.length) stopCheckOns(lampIds)
+      persist(dropBook(base, id))
       const now = readRoute()
       if (tagIdsOf(now.tag).includes(id)) {
         const rest = joinTagIds(tagIdsOf(now.tag).filter((other) => other !== id))
@@ -283,6 +288,16 @@ export function useAppShelf() {
         const stay = now.path === '/lamps' || now.path === '/me'
         goHash(stay ? now.path : '/', { tag: rest || 'all' })
       }
+    },
+    [persist],
+  )
+
+  // New folder order: swaps in the changed folders without picking one.
+  const reorderBoards = useCallback(
+    (books) => {
+      if (!books.length) return
+      const latest = shelfRef.current
+      persist({ ...latest, boards: latest.boards.map((item) => books.find((one) => one.id === item.id) || item) })
     },
     [persist],
   )
@@ -430,6 +445,7 @@ export function useAppShelf() {
     switchBoard,
     addBoard,
     removeBoard,
+    reorderBoards,
     importShelf,
     startEmpty,
     sendCopy,
