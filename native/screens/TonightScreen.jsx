@@ -1059,7 +1059,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [returning, graceShowing, Boolean(stack.cheer), stack.dateIso])
   const reminderRowUp = !stack.empty && Platform.OS !== 'web' && Boolean(onAskPings) && (pingLabel === 'pings.state.ask' || pingLabel === 'pings.state.blocked')
-  const extraRow = stack.cheer && !pickKey ? '' : reminderRowUp ? 'reminders' : stack.nightDone ? (dropLineUp() ? 'drop' : 'rate') : ''
+  const extraRow = stack.cheer && !pickKey ? '' : reminderRowUp ? 'reminders' : stack.nightDone ? (dropLineUp(book) ? 'drop' : 'rate') : ''
   // First open of a new week: last week's recap, once. Sunday's done card counts as seen.
   useEffect(() => {
     if (summary?.recap && isRecapNight(stack.dateIso)) {
@@ -1672,7 +1672,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       {/* A picked card stays put after its answer, so these rows stay too. */}
       {/* One extra row at most: reminders, then the drop, then the rate card. Drop and rate wait for the last answer. */}
       {extraRow === 'reminders' ? <RemindersRow colors={colors} label={pingLabel} onAsk={onAskPings} /> : null}
-      {extraRow === 'drop' ? <DropLine colors={colors} /> : null}
+      {extraRow === 'drop' ? <DropLine colors={colors} book={book} /> : null}
       {extraRow === 'rate' ? <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} /> : null}
 
       {stack.pillPick || stack.waitPick || pickedWe ? (
