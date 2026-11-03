@@ -594,3 +594,5 @@ cheer skip under reduce-motion.
   headless task runs. The same lamp and night applied again does not write.
 
 - A free holiday item claimed signed out reaches the account only if you sign in within a day of the drop closing. Later, it stays on that phone (and its board sync). Letting the server take late claims would let a changed phone clock claim any past drop.
+
+- Siri and Google Assistant answers open the card and ask for a tap; they do not save on their own. Saving from Siri needs a store build with an App Intent that writes natively (Streaks and Habitify do this). Siri phrases are English only, and the Assistant phrases in android res/values/arrays.xml still say nope, did not and tonight; both change with that build.

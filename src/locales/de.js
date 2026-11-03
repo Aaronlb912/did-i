@@ -2505,6 +2505,8 @@ export const de = {
   'friend.photoBig': 'Foto von {name} größer ansehen',
   'friend.more': 'Mehr zu {name}',
   'voice.noMatch': "Did I hat „{said}“ heute nicht gefunden. Beantworte es hier.",
+  'voice.tapDid': "Tippe auf Did, um es zu speichern.",
+  'voice.tapNotYet': "Tippe auf Noch nicht, um es zu speichern.",
   'together.widgetTitle': "Gemeinsam heute",
   'together.widgetCount': '{n} von {total} fertig',
   'widget.grid.title': "Letzte 12 Wochen",

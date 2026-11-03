@@ -2448,6 +2448,8 @@ export const zh = {
   'friend.photoBig': '查看 {name} 的大图',
   'friend.more': '{name}的更多操作',
   'voice.noMatch': "今天没找到“{said}”。请在这里回答。",
+  'voice.tapDid': "点 Did 保存。",
+  'voice.tapNotYet': "点 还没 保存。",
   'together.widgetTitle': "今天一起",
   'together.widgetCount': '{total} 人中 {n} 人已完成',
   'widget.grid.title': "最近 12 周",

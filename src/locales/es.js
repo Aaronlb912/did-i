@@ -2496,6 +2496,8 @@ export const es = {
   'friend.photoBig': 'Ver la foto de {name} más grande',
   'friend.more': 'Más sobre {name}',
   'voice.noMatch': "Did I no encontró «{said}» hoy. Respóndela aquí.",
+  'voice.tapDid': "Toca Did para guardarlo.",
+  'voice.tapNotYet': "Toca Aún no para guardarlo.",
   'together.widgetTitle': "Juntos hoy",
   'together.widgetCount': '{n} de {total} listos',
   'widget.grid.title': "Últimas 12 semanas",

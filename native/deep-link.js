@@ -108,7 +108,7 @@ export function goFromDeepLink(url) {
 // could not copy, so the person taps Did or Not yet themselves. Saving
 // straight from Siri needs a store build where the intent writes the answer
 // natively instead of opening a link.
-function answerSpoken({ said }) {
+function answerSpoken({ said, kind }) {
   const row = matchSpoken(said, openTonight())
   if (!row) {
     goHash('/tonight')
@@ -116,4 +116,6 @@ function answerSpoken({ said }) {
     return
   }
   goHash('/tonight', { face: row.lamp.id, tag: 'all' })
+  // Siri closes on what sounds like a save, so say plainly that it is not saved yet.
+  showToast({ id: 'voice-answer', text: t(kind === 'nope' ? 'voice.tapNotYet' : 'voice.tapDid'), ms: 5200 })
 }

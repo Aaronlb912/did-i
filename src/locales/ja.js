@@ -2455,6 +2455,8 @@ export const ja = {
   'friend.photoBig': '{name} の写真を大きく見る',
   'friend.more': '{name}のその他の操作',
   'voice.noMatch': "今日の質問に「{said}」が見つかりませんでした。ここで答えてください。",
+  'voice.tapDid': "保存するには Did をタップ。",
+  'voice.tapNotYet': "保存するには まだ をタップ。",
   'together.widgetTitle': "今日のみんな",
   'together.widgetCount': '{total}人中{n}人が完了',
   'widget.grid.title': "直近12週間",
