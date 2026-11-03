@@ -76,7 +76,7 @@ import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, freezeLine, openFreezeHow } from '../components/FreezeBits.jsx'
 import { weCardState, weCardsOn } from '../../src/lib/we-nights.js'
 import { weCardShort } from '../../src/lib/did-we.js'
-import { bestQuestionStreak } from '../../src/lib/lamp-record.js'
+import { bestQuestionStreak, isDayCadence, shelfRate30 } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { readMine, usePeoplePulse } from '../../src/lib/people.js'
@@ -100,7 +100,7 @@ import {
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import { useDayNow } from '../hooks/useDayNow.js'
-import { addDaysIso, boardDate, dueTonight, formatBoardDate, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { addDaysIso, boardDate, dueTonight, formatBoardDate, isEvery, isPerWeek, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList } from '../../src/lib/starters.js'
 import { FIRST_TIME, answeredNights, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
 import { FirstPacks } from '../components/FirstPacks.jsx'
@@ -610,10 +610,12 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
   const bestRun = useMemo(() => {
     let best = 0
     for (const one of scopedBooks(inView(book, boards), tagId)) {
-      for (const lamp of one.lamps || []) best = Math.max(best, bestQuestionStreak(one, lamp, dateIso))
+      for (const lamp of one.lamps || []) if (isDayCadence(lamp)) best = Math.max(best, bestQuestionStreak(one, lamp, dateIso))
     }
     return best
   }, [book, boards, dateIso, tagId, awayKey()])
+
+  const rate30 = useMemo(() => shelfRate30(scopedBooks(inView(book, boards), tagId), dateIso), [book, boards, tagId, dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!counts.hung) {
     const filtered = tagIdsOf(tagId).length > 0
@@ -626,15 +628,19 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
     )
   }
 
+  if (!(counts.did + counts.late + counts.skip)) {
+    return (
+      <ScreenShell title={t('stats.title')} colors={colors}>
+        <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
+        <Meta colors={colors}>{t('stats.empty')}</Meta>
+        <DidButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
+      </ScreenShell>
+    )
+  }
+
   return (
     <ScreenShell title={t('stats.title')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/stats" />
-      {!(counts.did + counts.late + counts.skip) ? (
-        <>
-          <Meta colors={colors}>{t('stats.empty')}</Meta>
-          <DidButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
-        </>
-      ) : null}
       {/* This week first, then everything since you started, each with the
           same three tiles so the two read the same way. */}
       <SetCap colors={colors}>{t('recap.kicker')}</SetCap>
@@ -652,7 +658,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
       <View style={styles.tiles}>
         <NumberTile third colors={colors} label={t('stats.did')} n={recap.dids - recap.late} />
         <NumberTile third colors={colors} label={t('stats.late')} n={recap.late} />
-        <NumberTile third colors={colors} label={t(gentle ? 'stats.nope' : 'later.missed')} n={recap.nopes} />
+        {gentle ? null : <NumberTile third colors={colors} label={t('stats.nope')} n={recap.nopes} />}
       </View>
       <KeyButton colors={colors} label={t('recap.shareBtn')} onPress={() => shareRecap(recap)} />
 
@@ -660,16 +666,17 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
       <View style={styles.tiles}>
         <NumberTile third colors={colors} label={t('stats.did')} n={counts.did} />
         <NumberTile third colors={colors} label={t('stats.late')} n={counts.late} />
-        <NumberTile third colors={colors} label={t(gentle ? 'stats.nope' : 'later.missed')} n={counts.skip} />
+        {gentle ? null : <NumberTile third colors={colors} label={t('stats.nope')} n={counts.skip} />}
         <NumberTile half={!gentle} colors={colors} label={t('stats.questions')} n={counts.hung} />
         {gentle ? null : <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />}
-        {counts.did + counts.late + counts.skip ? <NumberTile half colors={colors} label={t('stats.didRate')} n={`${Math.round(((counts.did + counts.late) / (counts.did + counts.late + counts.skip)) * 100)}%`} /> : null}
+        {gentle || rate30 == null ? null : <NumberTile half colors={colors} label={t('stats.last30')} n={`${rate30}%`} />}
       </View>
 
       <SetCap colors={colors}>{t('stats.moreCap')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="flag" label={t('stats.marks')} sub={t('stats.marksSub')} chevron onPress={() => goHash('/marks')} />
         <SetRow colors={colors} icon="week" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
+        <SetRow colors={colors} icon="chart" label={t('settings.history')} chevron onPress={() => goHash('/calendar')} />
         <SetRow colors={colors} icon="priority" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron last onPress={() => goHash('/streaks')} />
       </SetCard>
     </ScreenShell>
@@ -1028,6 +1035,13 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   )
 }
 
+function streakUnit(lamp, n) {
+  const one = n === 1
+  if (isPerWeek(lamp)) return t(one ? 'streaks.unitWeekOne' : 'streaks.unitWeeks')
+  if (isEvery(lamp)) return t(one ? 'streaks.unitOnTimeOne' : 'streaks.unitOnTime')
+  return t(one ? 'streaks.unitOne' : 'streaks.unit')
+}
+
 export function StreaksScreen({ book, boards, tagId = '', now }) {
   const colors = useHallColors()
   const gentle = usePrefs().gentle === true
@@ -1048,13 +1062,14 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         .flatMap((one) =>
           (one.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => ({ lamp, n: streakLength(one, lamp, at) })),
         )
-        .sort((a, b) => b.n - a.n),
+        // Days first, so weeks or on-time counts never outrank a day count.
+        .sort((a, b) => Number(isDayCadence(b.lamp)) - Number(isDayCadence(a.lamp)) || b.n - a.n),
     }
   }, [book, boards, tagId, minute])
   const goal = nextStreakGoal(heat)
   const bestEver = useMemo(() => bestShelfStreak(inView(book, boards), clock), [book, boards, boardDate(clock), awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   // A question's run can be longer than the overall one: say which night broke it.
-  const longest = rows.length ? rows[0].n : 0
+  const longest = rows.length && isDayCadence(rows[0].lamp) ? rows[0].n : 0
   const breakNight = useMemo(
     () => (longest > heat ? streakBreak(inView(book, boards), clock, tagId, longest + 1) : null),
     [book, boards, tagId, longest, heat, awayKey(), boardDate(clock)], // eslint-disable-line react-hooks/exhaustive-deps
@@ -1114,7 +1129,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
               colors={colors}
               label={shortLabel(row.lamp)}
               n={row.n}
-              unit={row.n === 1 ? t('streaks.unitOne') : t('streaks.unit')}
+              unit={streakUnit(row.lamp, row.n)}
               onPress={() => goHash('/lamp', { id: row.lamp.id })}
             />
           ))}

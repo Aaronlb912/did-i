@@ -2848,6 +2848,17 @@ export const fr = {
   'stats.streaksSub': "Ta série et la série de chaque question",
   'lamp.best': 'Record : {n}',
 
+  'streaks.unitWeeks': "semaines",
+  'streaks.unitWeekOne': "semaine",
+  'streaks.unitOnTime': "à l’heure d’affilée",
+  'streaks.unitOnTimeOne': "à l’heure",
+  'stats.last30': "30 derniers jours",
+  'lamp.shareBtn': "Partager cette série",
+  'lamp.shareDays': "{n} jours d’affilée sur « {what} » avec Did I",
+  'lamp.shareDay': "1 jour d’affilée sur « {what} » avec Did I",
+  'lamp.shareWeeks': "{n} semaines d’affilée sur « {what} » avec Did I",
+  'lamp.shareWeek': "1 semaine d’affilée sur « {what} » avec Did I",
+  'lamp.shareOnTime': "{n} à l’heure d’affilée sur « {what} » avec Did I",
   'lamp.streakCapWeeks': "Semaines d’affilée pour cette question",
 
   'lamp.bestWeeks': "Record : {n} semaines",

@@ -51,7 +51,7 @@ import { awayKey, readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { NightNotes } from '../components/NightNotes.jsx'
 import { addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../../src/lib/starters.js'
 import { schedulePick } from '../../src/lib/hang-schedule.js'
-import { feelTap, playClick } from '../../src/lib/native.js'
+import { feelTap, passAlong, playClick } from '../../src/lib/native.js'
 import { ripple } from '../lib/ripple.js'
 import { fireCheer, mergePurses } from '../../src/lib/purse.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -2407,6 +2407,14 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const reduce = useReduceMotion()
   const [historyOpen, setHistoryOpen] = useState(false)
   const firstDay = firstWeekday(readPrefs().locale)
+  async function shareStreak() {
+    const n = record.streak
+    const what = shortLabel(lamp)
+    const key = isEvery(lamp) ? 'lamp.shareOnTime' : isPerWeek(lamp) ? (n === 1 ? 'lamp.shareWeek' : 'lamp.shareWeeks') : n === 1 ? 'lamp.shareDay' : 'lamp.shareDays'
+    const how = await passAlong(t(key, { n, what }), t('recap.kicker'))
+    if (how === 'copied') confirmDone(t('recap.copied'))
+    else if (!how) confirmMiss(t('confirm.shareMiss'))
+  }
   const grid = useMemo(
     () => (historyOpen ? lampDays(lampBook, lamp, dateIso, 26, firstDay) : null),
     [historyOpen, lampBook, lamp, dateIso, firstDay, awayKey()],
@@ -2606,8 +2614,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         ) : null}
       </SetCard>
 
-      {historyOpen ? (
-      <Reveal>
+      {gentle || !record.streak ? null : <KeyButton colors={colors} label={t('lamp.shareBtn')} onPress={shareStreak} />}
+
       {weeks.length > 1 ? (
         <View style={styles.trend}>
           <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.trend')}</Text>
@@ -2636,6 +2644,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </View>
       ) : null}
 
+      {historyOpen ? (
+      <Reveal>
       {grid?.days.length ? (
         <View style={styles.trend}>
           <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.grid')}</Text>

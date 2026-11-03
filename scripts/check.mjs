@@ -85,7 +85,7 @@ import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
 import { forgetAccountCaches, forgetPendingLinks } from '../src/lib/account-cache.js'
 import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
-import { lampRate } from '../src/lib/lamp-record.js'
+import { isDayCadence, lampRate, shelfRate30 } from '../src/lib/lamp-record.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor, sunRayLayout } from '../src/lib/cheer-pops.js'
 import {
@@ -6248,6 +6248,15 @@ test('lampRate is a percent of due days, hidden under 3', () => {
   assert.equal(lampRate({ did: 2, asked: 3 }), 67)
   assert.equal(lampRate({ did: 30, asked: 30 }), 100)
   assert.equal(lampRate(null), null)
+})
+
+test('best run counts day questions only; shelf rate is a 30 day figure', () => {
+  assert.equal(isDayCadence({ cadence: 'daily' }), true)
+  assert.equal(isDayCadence({ cadence: 'daily', perWeek: 3 }), false)
+  assert.equal(isDayCadence({ cadence: 'every', everyDays: 5 }), false)
+  assert.equal(isDayCadence(null), false)
+  assert.equal(shelfRate30([], '2026-11-02'), null)
+  assert.equal(shelfRate30([{ lamps: [] }], '2026-11-02'), null)
 })
 
 test('every t() key the app uses is in English', () => {

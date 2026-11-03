@@ -2803,6 +2803,17 @@ export const ja = {
   'stats.streaksSub': "あなたの連続記録と、質問ごとの連続記録",
   'lamp.best': '最高: {n}',
 
+  'streaks.unitWeeks': "週",
+  'streaks.unitWeekOne': "週",
+  'streaks.unitOnTime': "回連続で予定どおり",
+  'streaks.unitOnTimeOne': "回予定どおり",
+  'stats.last30': "直近30日",
+  'lamp.shareBtn': "この連続記録を共有",
+  'lamp.shareDays': "「{what}」を{n}日連続 Did I で",
+  'lamp.shareDay': "「{what}」を1日連続 Did I で",
+  'lamp.shareWeeks': "「{what}」を{n}週連続 Did I で",
+  'lamp.shareWeek': "「{what}」を1週連続 Did I で",
+  'lamp.shareOnTime': "「{what}」を{n}回連続で予定どおり Did I で",
   'lamp.streakCapWeeks': "この質問の連続週数",
 
   'lamp.bestWeeks': "最高: {n}週",
