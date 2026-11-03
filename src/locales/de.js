@@ -2053,7 +2053,7 @@ export const de = {
   'web.store.apple': 'Im App Store laden',
   'web.store.androidBeta': 'Der Android-Beta beitreten',
   'widget.tonight.tagFallback': "Heute",
-  'widget.tonight.empty': 'Noch keine Fragen',
+  'widget.tonight.empty': 'Füge in Did I eine Frage hinzu',
   'widget.tonight.nextAt': 'Nächste Frage um {time}',
   'widget.tonight.away': "Du bist weg. Fragen pausieren.",
   'widget.tonight.clear': "Für heute alles erledigt",

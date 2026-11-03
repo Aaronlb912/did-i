@@ -2045,7 +2045,7 @@ export const pt = {
   'web.store.apple': 'Baixar na App Store',
   'web.store.androidBeta': 'Entre no beta do Android',
   'widget.tonight.tagFallback': "Hoje",
-  'widget.tonight.empty': 'Nenhuma pergunta ainda',
+  'widget.tonight.empty': 'Adicione uma pergunta no Did I',
   'widget.tonight.nextAt': 'Próxima pergunta às {time}',
   'widget.tonight.away': "Você está fora. As perguntas estão pausadas.",
   'widget.tonight.clear': "Tudo certo por hoje",

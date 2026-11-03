@@ -536,6 +536,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const hasQuestion = (stack.shelf || []).some((item) => (item.lamps || []).length > 0)
   const nightOneRef = useRef(nightOne)
   nightOneRef.current = nightOne
+  const nightDoneRef = useRef(stack.nightDone)
+  nightDoneRef.current = stack.nightDone
   useEffect(() => {
     if (!hasQuestion) return undefined
     let timer
@@ -550,7 +552,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         const state = readWidgetTip()
         if (placed && !state.done) writeWidgetTip({ ...state, done: true })
         const busy = tourActive() || sheetIsUp() || nightOneRef.current || navigation.isFocused?.() === false
-        if (!shouldShowWidgetTip({ state, today, hasQuestion: true, widgetPlaced: placed, busy })) return
+        if (!shouldShowWidgetTip({ state, today, hasQuestion: true, widgetPlaced: placed, busy, allClear: nightDoneRef.current })) return
         writeWidgetTip({ ...state, shown: (state.shown || 0) + 1, shownDay: today })
         showWidgetTip(colors, () => writeWidgetTip({ ...readWidgetTip(), done: true }))
       }, 2500)
@@ -564,7 +566,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       sub.remove()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasQuestion])
+  }, [hasQuestion, stack.nightDone])
   // The morning ask: before noon, a card to add one-day questions for today.
   // After an add it stays until Tonight is left; Not today hides it for the day.
   const morningOn = usePrefs().morningAsk !== false

@@ -2019,7 +2019,7 @@ export const ja = {
   'web.store.apple': 'App Storeでダウンロード',
   'web.store.androidBeta': 'Androidベータに参加',
   'widget.tonight.tagFallback': "今日",
-  'widget.tonight.empty': 'まだ質問がありません',
+  'widget.tonight.empty': 'Did I で質問を追加しよう',
   'widget.tonight.nextAt': '次の質問は {time}',
   'widget.tonight.away': "お休み中です。質問は一時停止中です。",
   'widget.tonight.clear': "今日はすべて完了",

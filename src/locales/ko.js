@@ -2021,7 +2021,7 @@ export const ko = {
   'web.store.apple': 'App Store에서 다운로드',
   'web.store.androidBeta': 'Android 베타 참여하기',
   'widget.tonight.tagFallback': "오늘",
-  'widget.tonight.empty': '아직 질문이 없어요',
+  'widget.tonight.empty': 'Did I에서 질문을 추가하세요',
   'widget.tonight.nextAt': '다음 질문은 {time}에',
   'widget.tonight.away': "쉬는 중이에요. 질문이 잠시 멈췄어요.",
   'widget.tonight.clear': "오늘은 다 끝났어요",

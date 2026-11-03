@@ -2042,7 +2042,7 @@ export const en = {
   'web.store.apple': 'Download on the App Store',
   'web.store.androidBeta': 'Join the Android beta',
   'widget.tonight.tagFallback': "Today",
-  'widget.tonight.empty': 'No questions yet',
+  'widget.tonight.empty': 'Add a question in Did I',
   'widget.tonight.nextAt': 'Next question at {time}',
   'widget.tonight.away': "Away. Questions are paused.",
   'widget.tonight.clear': "All clear for today",

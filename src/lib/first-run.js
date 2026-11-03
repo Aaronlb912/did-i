@@ -160,11 +160,10 @@ export function showSignInNudge({ signedIn, cloud, nightDone, dismissed }) {
   return Boolean(cloud && nightDone && !signedIn && !dismissed)
 }
 
-// The widget tip: one sheet from the 2nd day the app is opened, once there is
-// a question. Not now brings it back once, 3 or more days later. Done, or a
-// widget already on the home screen, ends it.
+// The widget tip: one sheet, once ever, after the first day every question is
+// Did (all clear). Any show, or a widget already on the home screen, ends it.
 const WIDGET_TIP_KEY = 'did-i-widget-tip'
-export const WIDGET_TIP_MAX = 2
+export const WIDGET_TIP_MAX = 1
 export const WIDGET_TIP_GAP_DAYS = 3
 
 function dayNumber(iso) {
@@ -178,14 +177,10 @@ export function countWidgetTipDay(state, today) {
   return { ...tip, days: (tip.days || 0) + 1, lastDay: today }
 }
 
-export function shouldShowWidgetTip({ state, today, hasQuestion, widgetPlaced, busy }) {
+export function shouldShowWidgetTip({ state, today, hasQuestion, widgetPlaced, busy, allClear }) {
   const tip = state || {}
-  if (tip.done || widgetPlaced || !hasQuestion || busy) return false
-  if ((tip.days || 0) < 2) return false
-  const shown = tip.shown || 0
-  if (shown >= WIDGET_TIP_MAX) return false
-  if (shown === 0) return true
-  return dayNumber(today) - dayNumber(tip.shownDay) >= WIDGET_TIP_GAP_DAYS
+  if (tip.done || widgetPlaced || !hasQuestion || busy || !allClear) return false
+  return (tip.shown || 0) < WIDGET_TIP_MAX
 }
 
 export function readWidgetTip() {

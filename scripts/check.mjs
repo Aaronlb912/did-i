@@ -4565,12 +4565,12 @@ test('night one and the sign-in card show once', () => {
   localStorage.removeItem('did-i-sign-in-nudge')
 })
 
-test('widget tip shows from day 2, never with a widget, at most twice, 3 days apart', () => {
+test('widget tip shows once, after the first all-clear day, never with a widget', () => {
   const ask = (state, today, more = {}) =>
-    shouldShowWidgetTip({ state, today, hasQuestion: true, widgetPlaced: false, busy: false, ...more })
+    shouldShowWidgetTip({ state, today, hasQuestion: true, widgetPlaced: false, busy: false, allClear: true, ...more })
   let tip = countWidgetTipDay({}, '2026-10-01')
   assert.equal(countWidgetTipDay(tip, '2026-10-01'), tip)
-  assert.equal(ask(tip, '2026-10-01'), false)
+  assert.equal(ask(tip, '2026-10-01', { allClear: false }), false)
   tip = countWidgetTipDay(tip, '2026-10-02')
   assert.equal(tip.days, 2)
   assert.equal(ask(tip, '2026-10-02'), true)
@@ -4579,9 +4579,6 @@ test('widget tip shows from day 2, never with a widget, at most twice, 3 days ap
   assert.equal(ask(tip, '2026-10-02', { busy: true }), false)
   assert.equal(ask({ ...tip, done: true }, '2026-10-02'), false)
   tip = { ...tip, shown: 1, shownDay: '2026-10-02' }
-  assert.equal(ask(tip, '2026-10-04'), false)
-  assert.equal(ask(tip, '2026-10-05'), true)
-  tip = { ...tip, shown: 2, shownDay: '2026-10-05' }
   assert.equal(ask(tip, '2026-12-01'), false)
 })
 
@@ -7040,6 +7037,14 @@ await testAsync('times a week: due until N Dids that week, Not yet does not coun
   const today = mk([[7, 'yes'], [9, 'yes']])
   assert.ok(has(today, 9), 'the day it was answered still shows the card')
   assert.ok(!isDueOn(per, evDay(9)), 'isDueOn stays false so walks leave it out')
+})
+
+await testAsync('times a week question gets a "{a} of {b} this week" since line', async () => {
+  const { perWeekLine } = await import('../src/lib/every-copy.js')
+  const per = { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', perWeek: 3, archived: false, createdOn: '2026-08-01' }
+  const book = everyBook([['gym', evDay(7), 'yes']], [per])
+  assert.equal(perWeekLine(book, per, evDay(8)), '1 of 3 this week')
+  assert.equal(perWeekLine(book, { ...per, perWeek: undefined }, evDay(8)), '')
 })
 
 await testAsync('times a week: streak counts completed weeks, current week only if done', async () => {
