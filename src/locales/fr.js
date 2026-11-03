@@ -2896,6 +2896,8 @@ export const fr = {
   'shop.wishOn': "Dans tes envies",
   'shop.wishTitle': "Tes envies",
   'shop.wishTab': "Envies",
+  'shop.buying': "Achat en cours…",
+  'shop.stillBuying': "Achat en cours",
   'shop.canBuy': "Tu peux l’acheter",
   'shop.moreCoins': "Encore {n} pièces",
   'shop.moreGems': "Encore {n} gemmes",

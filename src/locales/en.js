@@ -2883,6 +2883,8 @@ export const en = {
   'shop.wishOn': "On your wishlist",
   'shop.wishTitle': "Your wishlist",
   'shop.wishTab': "Wishlist",
+  'shop.buying': "Buying…",
+  'shop.stillBuying': "Still buying",
   'shop.canBuy': "Can buy now",
   'shop.moreCoins': "{n} more coins",
   'shop.moreGems': "{n} more gems",

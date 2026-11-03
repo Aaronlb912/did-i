@@ -2902,6 +2902,8 @@ export const de = {
   'shop.wishOn': "Auf deiner Wunschliste",
   'shop.wishTitle': "Deine Wunschliste",
   'shop.wishTab': "Wunschliste",
+  'shop.buying': "Wird gekauft…",
+  'shop.stillBuying': "Kauf läuft noch",
   'shop.canBuy': "Jetzt kaufbar",
   'shop.moreCoins': "Noch {n} Münzen",
   'shop.moreGems': "Noch {n} Edelsteine",

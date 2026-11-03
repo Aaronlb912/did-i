@@ -92,6 +92,7 @@ import { askSignIn, confirmBuy, offerMoreGems, publishSheet } from '../component
 import { accountSessionOn } from '../../src/lib/session-id.js'
 import { CoinIcon, GemFaceMark, GemIcon } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
+import { dropToast, showToast } from '../lib/toast-queue.js'
 import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
@@ -1147,12 +1148,18 @@ export function ShopScreen({ book, onChange }) {
 // network would send a second buy.
 let shopBuying = false
 async function goOnce(go) {
-  if (shopBuying || typeof go !== 'function') return
+  if (typeof go !== 'function') return
+  if (shopBuying) {
+    showToast({ id: 'shop-buying', kind: 'error', text: t('shop.stillBuying'), ms: 2500 })
+    return
+  }
   shopBuying = true
+  showToast({ id: 'shop-buying', kind: 'done', text: t('shop.buying'), ms: 60000 })
   try {
     await go()
   } finally {
     shopBuying = false
+    dropToast('shop-buying')
   }
 }
 
@@ -1202,6 +1209,13 @@ export function ShopLooksScreen({ book, onChange }) {
         name={t(lookText(item.id, 'name'))}
         note={t(lookText(item.id, 'line'))}
         miss={miss.id === item.id ? miss.text : ''}
+        extra={
+          miss.id === item.id && !have && !item.gems && !isWished(purse, 'look', item.id) ? (
+            <Pressable accessibilityRole="button" onPress={() => onChange(onLiveBook(toggleWish(liveBook(book), 'look', item.id)).book)} style={[styles.wishBtn, { borderColor: colors.line }]}>
+              <Text style={[styles.wishText, { color: colors.on }]}>{`♡ ${t('shop.wishAdd')}`}</Text>
+            </Pressable>
+          ) : null
+        }
         actionLabel={label}
         primary={on}
         disabled={on}

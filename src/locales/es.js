@@ -2893,6 +2893,8 @@ export const es = {
   'shop.wishOn': "En tu lista de deseos",
   'shop.wishTitle': "Tu lista de deseos",
   'shop.wishTab': "Lista de deseos",
+  'shop.buying': "Comprando…",
+  'shop.stillBuying': "Aún comprando",
   'shop.canBuy': "Ya puedes comprarlo",
   'shop.moreCoins': "Faltan {n} monedas",
   'shop.moreGems': "Faltan {n} gemas",

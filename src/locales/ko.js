@@ -2854,6 +2854,8 @@ export const ko = {
   'shop.wishOn': "위시리스트에 있음",
   'shop.wishTitle': "내 위시리스트",
   'shop.wishTab': "위시리스트",
+  'shop.buying': "구매 중…",
+  'shop.stillBuying': "아직 구매 중",
   'shop.canBuy': "지금 살 수 있어요",
   'shop.moreCoins': "코인 {n}개 더",
   'shop.moreGems': "보석 {n}개 더",

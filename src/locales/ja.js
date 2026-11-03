@@ -2852,6 +2852,8 @@ export const ja = {
   'shop.wishOn': "ほしいものリスト済み",
   'shop.wishTitle': "ほしいものリスト",
   'shop.wishTab': "ほしいもの",
+  'shop.buying': "購入中…",
+  'shop.stillBuying': "購入中です",
   'shop.canBuy': "今すぐ買えます",
   'shop.moreCoins': "あと{n}コイン",
   'shop.moreGems': "あと{n}ジェム",

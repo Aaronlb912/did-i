@@ -2845,6 +2845,8 @@ export const zh = {
   'shop.wishOn': "已在心愿单",
   'shop.wishTitle': "我的心愿单",
   'shop.wishTab': "心愿单",
+  'shop.buying': "正在购买…",
+  'shop.stillBuying': "仍在购买",
   'shop.canBuy': "现在就能买",
   'shop.moreCoins': "还差 {n} 金币",
   'shop.moreGems': "还差 {n} 宝石",
