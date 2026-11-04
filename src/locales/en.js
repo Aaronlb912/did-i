@@ -401,6 +401,7 @@ export const en = {
   'tonight.lastNight': "Yesterday",
   'tonight.undo': 'Undo',
   'tonight.undoTap': 'Tap to undo',
+  'tonight.undoMore': 'Tap to undo ({n} more)',
   'tonight.boardName': 'Folder name',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'Did',

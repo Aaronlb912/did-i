@@ -395,6 +395,7 @@ export const ko = {
   'tonight.lastNight': "어제",
   'tonight.undo': '되돌리기',
   'tonight.undoTap': '탭하여 실행 취소',
+  'tonight.undoMore': '탭하여 실행 취소 ({n}개 더)',
   'tonight.boardName': '폴더 이름',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'Did',

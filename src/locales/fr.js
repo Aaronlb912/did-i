@@ -403,6 +403,7 @@ export const fr = {
   'tonight.lastNight': "Hier",
   'tonight.undo': 'Annuler',
   'tonight.undoTap': 'Touche pour annuler',
+  'tonight.undoMore': 'Touche pour annuler ({n} de plus)',
   'tonight.boardName': 'Nom du dossier',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'Did',

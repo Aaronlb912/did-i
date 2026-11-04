@@ -395,6 +395,7 @@ export const ja = {
   'tonight.lastNight': "昨日",
   'tonight.undo': '取り消す',
   'tonight.undoTap': 'タップして取り消す',
+  'tonight.undoMore': 'タップして取り消す（あと{n}件）',
   'tonight.boardName': 'フォルダの名前',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'Did',

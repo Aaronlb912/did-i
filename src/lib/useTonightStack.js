@@ -702,6 +702,7 @@ export function useTonightStack({
     setTitleEdit,
     setTitleDraft,
     undo,
+    undoCount: undoStack.length,
     holdUndo,
     dateIso,
     mark,

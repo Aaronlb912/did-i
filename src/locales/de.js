@@ -401,6 +401,7 @@ export const de = {
   'tonight.lastNight': "Gestern",
   'tonight.undo': 'Rückgängig',
   'tonight.undoTap': 'Tippen zum Rückgängigmachen',
+  'tonight.undoMore': 'Tippen zum Rückgängigmachen ({n} weitere)',
   'tonight.boardName': 'Ordnername',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'Did',
