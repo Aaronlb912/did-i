@@ -3090,6 +3090,8 @@ export const ja = {
   'cal.yearBest': "最長の連続 {n}日",
   'cal.yearShare': "今年を共有",
   'cal.yearShareText': "Did I の{year}年: Did の日 {did}日、Did 率 {rate}%、最長の連続 {best}日。",
+
+  'cal.yearShareNoBest': "Did I の{year}年: Did の日 {did}日、Did 率 {rate}%。",
   'cal.yearShareFolder': "Did I の{year}年（{folder}）: Did の日 {did}日、Did 率 {rate}%。",
   'stats.didRate': "Did 率",
   'freeze.dot': "フリーズ",

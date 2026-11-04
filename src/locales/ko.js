@@ -3092,6 +3092,8 @@ export const ko = {
   'cal.yearBest': "최장 연속 {n}일",
   'cal.yearShare': "내 한 해 공유",
   'cal.yearShareText': "Did I의 {year}년: Did 한 날 {did}일, Did 비율 {rate}%, 최장 연속 {best}일.",
+
+  'cal.yearShareNoBest': "Did I의 {year}년: Did 한 날 {did}일, Did 비율 {rate}%.",
   'cal.yearShareFolder': "Did I의 {year}년 ({folder}): Did 한 날 {did}일, Did 비율 {rate}%.",
   'stats.didRate': "Did 비율",
   'freeze.dot': "프리즈",

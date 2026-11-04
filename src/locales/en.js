@@ -3120,6 +3120,8 @@ export const en = {
   'cal.yearBest': "Best streak {n} days",
   'cal.yearShare': "Share my year",
   'cal.yearShareText': "My {year} in Did I: {did} Did days, {rate}% Did, best streak {best} days.",
+
+  'cal.yearShareNoBest': "My {year} in Did I: {did} Did days, {rate}% Did.",
   'cal.yearShareFolder': "My {year} in Did I ({folder}): {did} Did days, {rate}% Did.",
   'stats.didRate': "Did rate",
   'freeze.dot': "Freeze",

@@ -300,7 +300,7 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
   }, [shelf, year, tagId, dateIso, firstMonth, firstYear, prefs.locale, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const totals = useMemo(() => yearTotals(months), [months])
   // Best streak is shelf-wide, so it is left out while a folder is picked.
-  const best = useMemo(() => (tagId || lampId || prefs.gentle === true ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, lampId, dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
+  const best = useMemo(() => (tagId || lampId || prefs.gentle === true ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, lampId, dateIso, prefs.gentle, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const cardRef = useRef(null)
   // A picture of the year to share. Falls back to the text when the phone
   // cannot capture or share an image.
@@ -308,7 +308,7 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
     const folder = tagId ? scopedBooks(shelf, tagId).map((b) => b.title).join(', ') : ''
     const text = folder
       ? t('cal.yearShareFolder', { year, folder, did: totals.did, rate: totals.rate })
-      : t('cal.yearShareText', { year, did: totals.did, rate: totals.rate, best })
+      : t(best ? 'cal.yearShareText' : 'cal.yearShareNoBest', { year, did: totals.did, rate: totals.rate, best })
     try {
       const [{ captureRef }, Sharing] = await Promise.all([import('react-native-view-shot'), import('expo-sharing')])
       if (!cardRef.current || !(await Sharing.isAvailableAsync())) throw new Error('no image share')

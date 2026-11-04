@@ -3083,6 +3083,8 @@ export const zh = {
   'cal.yearBest': "最长连续 {n} 天",
   'cal.yearShare': "分享我的一年",
   'cal.yearShareText': "我在 Did I 的 {year} 年：Did {did} 天，Did 率 {rate}%，最长连续 {best} 天。",
+
+  'cal.yearShareNoBest': "我在 Did I 的 {year} 年：Did {did} 天，Did 率 {rate}%。",
   'cal.yearShareFolder': "我在 Did I 的 {year} 年（{folder}）：Did {did} 天，Did 率 {rate}%。",
   'stats.didRate': "Did 率",
   'freeze.dot': "冻结",
