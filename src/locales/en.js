@@ -895,7 +895,7 @@ export const en = {
   'lamp.keepMany': 'Keep them',
   'lamp.paused': 'not being asked',
   'lamp.secManage': 'Manage',
-  'lamp.stopSub': 'Stays in your list. It stops coming up on Home.',
+  'lamp.stopSub': 'Stays in your list. It stops coming up on Today.',
   'lamp.askAgainSub': 'It comes back on Home.',
   'lamp.deleteSub': 'Removes it and its answers.',
   'lamp.pausedLine': 'Not being asked right now.',
@@ -2170,7 +2170,7 @@ export const en = {
   'questions.bulkDeleteBody': '{n} picked. Their answers go too. You can undo for a few seconds.',
   'questions.bulkDeleted': "Deleted {n} questions",
   'questions.bulkDeletedOne': "Deleted 1 question",
-  'questions.bulkStopped': 'Questions no longer asked: {n}.',
+  'questions.bulkStopped': 'Paused: {n}.',
   'questions.bulkAsked': 'Questions asked again: {n}.',
   'notify.primerKicker': 'Reminders',
   'notify.primerTitle': 'Get a tap at {time}?',
@@ -3083,7 +3083,7 @@ export const en = {
   // round7
   'questions.editMenu': "Edit",
   'questions.editTitle': "Edit your questions",
-  'questions.pickSub': "Pick several to move, stop or delete.",
+  'questions.pickSub': "Pick several to move, pause or delete.",
 
   // r10-friends
   'friend.cheersLeft': '{n} cheers left',
@@ -3490,7 +3490,7 @@ export const en = {
   'frames.seasonFree': "Free during its season. Claim it and keep it after.",
   'friend.cardLook': "{look} look, {frame} frame",
   'friend.cardLookNone': "{look} look, no frame",
-  'questions.pickSubNoMove': "Pick several to stop or delete.",
+  'questions.pickSubNoMove': "Pick several to pause or delete.",
   'ach.deadline.nameOne': "Met 1 due date",
   'ach.deadline.lineOne': "You finished a question by its due date.",
   'ach.deadline.howOne': "Finish a question by its due date.",

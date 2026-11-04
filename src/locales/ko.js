@@ -885,7 +885,7 @@ export const ko = {
   'lamp.keepMany': '남기기',
   'lamp.paused': '더 이상 묻지 않아요',
   'lamp.secManage': '관리',
-  'lamp.stopSub': '목록에는 남아요. 홈에는 더 이상 안 나와요.',
+  'lamp.stopSub': '목록에는 남아요. 오늘에는 더 이상 안 나와요.',
   'lamp.askAgainSub': '홈에 다시 나와요.',
   'lamp.deleteSub': '질문과 답을 지워요.',
   'lamp.pausedLine': '지금은 묻지 않아요.',
@@ -2149,7 +2149,7 @@ export const ko = {
   'questions.bulkDeleteBody': '{n}개 선택. 답도 함께 사라져요. 몇 초 동안은 되돌릴 수 있어요.',
   'questions.bulkDeleted': "질문 {n}개를 삭제했어요",
   'questions.bulkDeletedOne': "질문 1개를 삭제했어요",
-  'questions.bulkStopped': '{n}개 더 이상 묻지 않음.',
+  'questions.bulkStopped': '{n}개 일시중지됨.',
   'questions.bulkAsked': '{n}개 다시 묻기.',
   'notify.primerKicker': '리마인더',
   'notify.primerTitle': '{time}에 알려 드릴까요?',
@@ -3055,7 +3055,7 @@ export const ko = {
   // round7
   'questions.editMenu': "편집",
   'questions.editTitle': "질문 편집",
-  'questions.pickSub': "여러 개를 골라 옮기거나 멈추거나 지울 수 있어요.",
+  'questions.pickSub': "여러 개를 골라 옮기거나 일시중지하거나 지울 수 있어요.",
 
   // r10-friends
   'friend.cheersLeft': '응원 {n}개 남음',
@@ -3462,7 +3462,7 @@ export const ko = {
   'frames.seasonFree': "시즌 동안 무료예요. 받아 두면 그 뒤에도 계속 써요.",
   'friend.cardLook': "룩: {look}, 프레임: {frame}",
   'friend.cardLookNone': "룩: {look}, 프레임 없음",
-  'questions.pickSubNoMove': "여러 개를 골라 멈추거나 지울 수 있어요.",
+  'questions.pickSubNoMove': "여러 개를 골라 일시중지하거나 지울 수 있어요.",
   'ach.deadline.nameOne': "기한 1번 지킴",
   'ach.deadline.lineOne': "질문 하나를 기한 안에 끝냈어요.",
   'ach.deadline.howOne': "질문 하나를 기한 안에 끝내세요.",
