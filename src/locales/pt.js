@@ -3367,7 +3367,7 @@ export const pt = {
   "frame.vine.f2": "Envolve o cartão em 60 dias",
   'frame.vine.f3': "Flores depois das folhas",
   "frame.ember.name": "Brasa",
-  "frame.ember.desc": "Brasas acesas numa borda de carvão, um tremor quente de luz e faíscas que sobem pelos lados. Só para uma sequência de 30 dias.",
+  "frame.ember.desc": "Para uma sequência pegando fogo. Luz quente embaixo e faíscas que sobem e somem.",
   'frame.ember.f1': "Luz quente na parte de baixo",
   "frame.ember.f2": "Faíscas a noite toda",
   "frame.ember.f3": "Tremula como fogo de verdade",

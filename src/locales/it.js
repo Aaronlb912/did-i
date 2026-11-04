@@ -3367,7 +3367,7 @@ export const it = {
   "frame.vine.f2": "Avvolge la carta a 60 giorni",
   'frame.vine.f3': "Fiori dopo le foglie",
   "frame.ember.name": "Brace",
-  "frame.ember.desc": "Braci incandescenti in un bordo di carbone, un tremolio caldo e scintille che salgono ai lati. Solo per una serie di 30 giorni.",
+  "frame.ember.desc": "Per una serie in fiamme. Luce calda in basso e scintille che salgono e svaniscono.",
   'frame.ember.f1': "Luce calda lungo il fondo",
   "frame.ember.f2": "Scintille tutta la notte",
   "frame.ember.f3": "Tremola come un vero fuoco",

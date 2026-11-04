@@ -3330,7 +3330,7 @@ export const ja = {
   "frame.vine.f2": "60日でカードをひと回り",
   'frame.vine.f3': "葉のあとに花が咲く",
   "frame.ember.name": "残り火",
-  "frame.ember.desc": "炭色のふちで赤く光る燠、あたたかなゆらぎ、横を舞い上がる火の粉。30日連続の人だけに。",
+  "frame.ember.desc": "燃えている連続記録に。下にあたたかな光、舞い上がって消える火の粉。",
   'frame.ember.f1': "下のふちに暖かい光",
   "frame.ember.f2": "一晩中火の粉が舞う",
   "frame.ember.f3": "本物の火のようにゆらぐ",

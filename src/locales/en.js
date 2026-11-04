@@ -3361,7 +3361,7 @@ export const en = {
   "frame.vine.f2": "Wraps the card by 60 days",
   'frame.vine.f3': "Flowers after the leaves",
   "frame.ember.name": "Ember",
-  "frame.ember.desc": "Glowing coals in a charcoal band, a warm flicker, and sparks that drift up the sides. Only for a 30-day streak.",
+  "frame.ember.desc": "For a streak on fire. Warm light along the bottom of your card and sparks that rise and fade.",
   'frame.ember.f1': "Warm light along the bottom",
   "frame.ember.f2": "Sparks rise all night",
   "frame.ember.f3": "Flickers like a real fire",

@@ -3371,7 +3371,7 @@ export const es = {
   "frame.vine.f2": "Rodea la tarjeta a los 60 días",
   'frame.vine.f3': "Flores después de las hojas",
   "frame.ember.name": "Brasa",
-  "frame.ember.desc": "Brasas encendidas en un borde de carbón, un parpadeo cálido y chispas que suben por los lados. Solo para una racha de 30 días.",
+  "frame.ember.desc": "Para una racha encendida. Luz cálida abajo y chispas que suben y se apagan.",
   'frame.ember.f1': "Luz cálida por abajo",
   "frame.ember.f2": "Chispas toda la noche",
   "frame.ember.f3": "Titila como un fuego real",

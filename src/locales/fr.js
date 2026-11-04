@@ -3374,7 +3374,7 @@ export const fr = {
   "frame.vine.f2": "Fait le tour à 60 jours",
   'frame.vine.f3': "Des fleurs après les feuilles",
   "frame.ember.name": "Braise",
-  "frame.ember.desc": "Des braises rougeoyantes dans un cadre de charbon, une lueur chaude qui vacille et des étincelles qui montent sur les côtés. Seulement pour une série de 30 jours.",
+  "frame.ember.desc": "Pour une série en feu. Une lumière chaude en bas et des étincelles qui montent et s’éteignent.",
   'frame.ember.f1': "Lumière chaude en bas",
   "frame.ember.f2": "Des étincelles toute la nuit",
   "frame.ember.f3": "Vacille comme un vrai feu",

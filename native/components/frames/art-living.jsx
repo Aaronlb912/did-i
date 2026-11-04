@@ -820,7 +820,7 @@ export function SunnyOver({ f }) {
 }
 
 // Royal (100-day streak): a velvet band in a bevelled gold rim, a jeweled
-// crown, gems at the corners, full laurels and a slow glint round the gold.
+// crown, gems at the corners, and full laurels.
 function gemTwinkle(time, it) {
   'worklet'
   const q = (((time - it.i) / 7) % 1 + 1) % 1
@@ -833,19 +833,12 @@ function crownPulse(time, it) {
   const k = 0.5 + 0.5 * Math.sin(time * 2.6)
   return { x: it.x, y: it.y, o: 0.25 + 0.5 * k, s: 0.9 + 0.7 * k }
 }
-function glintAt(time, it, w, h) {
-  'worklet'
-  const p = edgeAt(time * it.speed + it.start, -it.o, -it.o, w + 2 * it.o, h + 2 * it.o, it.R + it.o)
-  return { x: p.x, y: p.y, o: 0.85 + 0.15 * Math.sin(time * 3), s: 1 }
-}
 export function RoyalOver({ f }) {
   const S = svgAll()
   const k = 15
   const cx = f.w / 2
   const y = -11
   const o = 10
-  const loop = rrLength(f.w + 2 * o, f.h + 2 * o, f.R + o)
-  const glint = { o, R: f.R, speed: loop / 6, start: 0 }
   const sparks = useMemo(() => {
     const r = seeded(33)
     return spots(f, o, 5, 0.1).map((p) => ({ x: p.x, y: p.y, r: 1.3, sp: 1.6 + r() * 1.6, ph: r() * 6, col: '#fff3c4' }))
@@ -940,12 +933,6 @@ export function RoyalOver({ f }) {
           </S.Svg>
         </Particle>
       ))}
-      <Particle clock={f.clock} item={glint} fn={glintAt} w={f.w} h={f.h} size={40}>
-        <View style={{ position: 'absolute', left: 4, top: 4, width: 32, height: 32, borderRadius: 16, backgroundColor: '#fff3c4', opacity: 0.4 }} />
-        <View style={{ position: 'absolute', left: 0, top: 19, width: 40, height: 2, borderRadius: 1, backgroundColor: '#ffffff', opacity: 0.8 }} />
-        <View style={{ position: 'absolute', left: 19, top: 0, width: 2, height: 40, borderRadius: 1, backgroundColor: '#ffffff', opacity: 0.8 }} />
-        <View style={{ position: 'absolute', left: 14, top: 14, width: 12, height: 12, borderRadius: 6, backgroundColor: '#ffffff' }} />
-      </Particle>
     </>
   )
 }
@@ -1422,108 +1409,6 @@ export function VineOver({ f }) {
           <S.Svg width={14} height={14} viewBox="-7 -7 14 14">
             <BudArt S={S} />
           </S.Svg>
-        </Particle>
-      ))}
-    </>
-  )
-}
-
-// Ember (30-day streak): a charcoal band with glowing coals, two coal groups
-// that flicker out of step, a warm glow along the bottom and a few sparks that
-// drift up the sides, clear of the card's text.
-function coalA(time) {
-  'worklet'
-  return { opacity: 0.6 + 0.4 * Math.sin(time * 4.6) * Math.sin(time * 1.3 + 0.5) }
-}
-function coalB(time) {
-  'worklet'
-  return { opacity: 0.6 + 0.4 * Math.sin(time * 5.4 + 2) * Math.sin(time * 1.7) }
-}
-function glowFlicker(time) {
-  'worklet'
-  return { opacity: 0.72 + 0.28 * Math.sin(time * 6) * Math.sin(time * 2.3 + 1) }
-}
-function sparkUp(time, it, w, h) {
-  'worklet'
-  const p = (((time + it.off) / it.life) % 1 + 1) % 1
-  const age = p * it.life
-  return { x: it.x + Math.sin(time * 2 + it.off * 5) * 4 + it.vx * age, y: h + 4 - it.vy * age, o: Math.sin(Math.min(1, p * 5) * Math.PI * 0.5) * (1 - p) }
-}
-export function EmberOver({ f }) {
-  const S = svgAll()
-  const o = 9
-  const coals = useMemo(() => {
-    const r = seeded(30)
-    return spots(f, o / 2, 26, 0.02).map((p, i) => ({ x: p.x, y: p.y, r: 2.1 + r() * 1.1, grp: i % 2, hot: p.y > f.h * 0.5 }))
-  }, [f.w, f.h, f.R])
-  const sparks = useMemo(() => {
-    const r = seeded(31)
-    return Array.from({ length: 8 }, (_, i) => ({
-      x: i % 2 ? f.w + 2 + r() * 6 : -2 - r() * 6,
-      vx: (i % 2 ? 1 : -1) * (2 + r() * 4),
-      vy: 20 + r() * 22,
-      life: 2.6 + r() * 1.6,
-      off: i * 0.55 + r(),
-      r: 1 + r() * 1.3,
-      warm: i % 3 !== 0,
-    }))
-  }, [f.w, f.h])
-  const cores = (grp) =>
-    coals
-      .filter((c) => c.grp === grp)
-      .map((c, i) => (
-        <S.G key={i}>
-          <S.Circle cx={c.x} cy={c.y} r={c.r + 1.4} fill="#ff5a1e" opacity={0.3} />
-          <S.Circle cx={c.x} cy={c.y} r={c.r} fill={c.hot ? '#ff8a2a' : '#e8561c'} />
-          <S.Circle cx={c.x} cy={c.y} r={c.r * 0.45} fill="#ffe08a" />
-        </S.G>
-      ))
-  return (
-    <>
-      <Layer f={f}>
-        <S.Defs>
-          <S.LinearGradient id="emvB" x1="0" y1="0" x2="0" y2="1">
-            <S.Stop offset="0" stopColor="#2a1512" />
-            <S.Stop offset="1" stopColor="#4a1c0a" />
-          </S.LinearGradient>
-          <S.LinearGradient id="emvR" x1="0" y1="0" x2="0" y2="1">
-            <S.Stop offset="0" stopColor="#8a3a1a" />
-            <S.Stop offset="1" stopColor="#ff8a2a" />
-          </S.LinearGradient>
-        </S.Defs>
-        <S.Path d={band(f, o)} fillRule="evenodd" fill="url(#emvB)" />
-        <S.Path d={ring(f, o)} fill="none" stroke="url(#emvR)" strokeWidth={2.4} />
-        <S.Path d={ring(f, 0.8)} fill="none" stroke="#ff9a4a" strokeOpacity={0.55} strokeWidth={1} />
-        {coals.map((c, i) => (
-          <S.Circle key={i} cx={c.x} cy={c.y} r={c.r} fill="#6a2a10" />
-        ))}
-      </Layer>
-      <Moving clock={f.clock} fn={coalA} style={FILL}>
-        <Layer f={f}>{cores(0)}</Layer>
-      </Moving>
-      <Moving clock={f.clock} fn={coalB} style={FILL}>
-        <Layer f={f}>{cores(1)}</Layer>
-      </Moving>
-      <Moving clock={f.clock} fn={glowFlicker} style={FILL}>
-        <Layer f={f}>
-          <S.Defs>
-            <S.LinearGradient id="emvG" x1="0" y1="0" x2="0" y2="1">
-              <S.Stop offset="0" stopColor="#ff7828" stopOpacity="0" />
-              <S.Stop offset="1" stopColor="#ff6e28" stopOpacity="0.35" />
-            </S.LinearGradient>
-            <S.ClipPath id="emvC">
-              <S.Path d={rrPath(0, 0, f.w, f.h, f.R)} />
-            </S.ClipPath>
-          </S.Defs>
-          <S.G clipPath="url(#emvC)">
-            <S.Rect x={0} y={f.h - 44} width={f.w} height={44} fill="url(#emvG)" />
-          </S.G>
-          <S.Path d={ring(f, o + 3)} fill="none" stroke="#ff6a1e" strokeOpacity={0.22} strokeWidth={5} />
-        </Layer>
-      </Moving>
-      {sparks.map((it, i) => (
-        <Particle key={i} clock={f.clock} item={it} fn={sparkUp} w={f.w} h={f.h} size={it.r * 2}>
-          <View style={{ width: it.r * 2, height: it.r * 2, borderRadius: it.r, backgroundColor: it.warm ? '#ffd27a' : '#ff7a2a' }} />
         </Particle>
       ))}
     </>
