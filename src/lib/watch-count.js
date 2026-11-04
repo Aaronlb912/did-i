@@ -1,5 +1,6 @@
 import { boardDate, countedTonightRows, dueTonight, rowDoneTonight } from './recurrence.js'
-import { weNight } from './we-nights.js'
+import { weOpenPastList } from './did-we.js'
+import { weNight, weOpenOn } from './we-nights.js'
 
 // The watch's "2 of 4" and ring, counted the way Today's meter counts them
 // (nightProgress): tonight's counted questions on every folder plus Did wes,
@@ -25,5 +26,9 @@ export function watchCount(shelf, items, now = new Date()) {
   const we = weNight(boardDate(now))
   done += we.done
   later += Math.max(0, we.due - we.done)
+  // A monthly one past its slot day stays open until the month ends.
+  const night = boardDate(now)
+  const onNight = weOpenOn(night)
+  later += weOpenPastList(night).filter((card) => !onNight.has(card.id)).length
   return { counted, done, later }
 }
