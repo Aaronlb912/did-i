@@ -87,6 +87,12 @@ export function addBonusPending(days, streak = null) {
   if (STREAK_BONUS[days] && streak != null && Number(streak) > 0) writeStreakMap({ ...readStreakMap(), [days]: Math.floor(Number(streak)) })
 }
 
+// Sign-out: a waiting claim belongs to the account that left.
+export function clearBonusPending() {
+  writeBonusPending([])
+  writeStreakMap({})
+}
+
 export function dropBonusPending(days) {
   writeBonusPending(readBonusPending().filter((item) => item !== days))
   const map = readStreakMap()

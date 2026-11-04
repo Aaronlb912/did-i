@@ -440,7 +440,9 @@ export async function claimStreakBonus(days, streak = null) {
   if (streak != null) {
     const user = await readUser()
     if (!user) return null
-    const { error: saveError } = await db.from('profiles').update({ streak: Math.max(0, Math.floor(Number(streak) || 0)) }).eq('user_id', user.id)
+    const n = Math.max(0, Math.floor(Number(streak) || 0))
+    // Only raises it: a late retry never puts an older streak over today's.
+    const { error: saveError } = await db.from('profiles').update({ streak: n }).eq('user_id', user.id).or(`streak.is.null,streak.lt.${n}`)
     if (saveError) return null
   }
   const { data, error } = await db.rpc('claim_streak_bonus', { days })
