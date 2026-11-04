@@ -3379,7 +3379,7 @@ export const de = {
   "frame.vine.f2": "Umschließt die Karte nach 60 Tagen",
   'frame.vine.f3': "Erst Blätter, dann Blüten",
   "frame.ember.name": "Glut",
-  "frame.ember.desc": "Glühende Kohlen in einem dunklen Rand, ein warmes Flackern und Funken, die an den Seiten aufsteigen. Nur für eine Serie von 30 Tagen.",
+  "frame.ember.desc": "Für eine Serie in Flammen. Warmes Licht unten und Funken, die aufsteigen und verglühen.",
   'frame.ember.f1': "Warmes Licht am unteren Rand",
   "frame.ember.f2": "Funken die ganze Nacht",
   "frame.ember.f3": "Flackert wie echtes Feuer",

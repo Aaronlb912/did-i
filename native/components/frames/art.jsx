@@ -46,7 +46,6 @@ import {
   SunnyOver,
   RoyalOver,
   VineOver,
-  EmberOver,
   GemsOver,
   WrappedOver,
   GalaxyOver,
@@ -1065,11 +1064,65 @@ function RingOver({ f }) {
 
 /* ---------- Earned frames ---------- */
 
+function emberAt(time, it, w, h) {
+  'worklet'
+  const p = (((time + it.off) / it.life) % 1 + 1) % 1
+  const age = p * it.life
+  const y = h - it.vy * age
+  return { x: it.x * w + it.vx * age + Math.sin(time * 3 + y * 0.05) * 6, y, o: 1 - p }
+}
+
 function EmberUnder({ f }) {
   return (
     <Layer f={f}>
       <Halo f={f} from={0} spread={26} color="#ff5a1e" opacity={0.22} />
     </Layer>
+  )
+}
+
+function EmberOver({ f }) {
+  const S = svgAll()
+  const items = useItems(() => {
+    const rnd = seeded(30)
+    return Array.from({ length: 26 }, (_, i) => ({
+      x: rnd(),
+      vx: (rnd() - 0.5) * 36,
+      vy: 36 + rnd() * 84,
+      life: 1.7 + rnd() * 1.1,
+      off: rnd() * 3,
+      r: 1 + rnd() * 2.2,
+      warm: i % 2 === 0,
+    }))
+  }, [])
+  const flicker = (time) => {
+    'worklet'
+    return { opacity: 0.78 + 0.22 * Math.sin(time * 6) }
+  }
+  return (
+    <>
+      <Mover f={f} fn={flicker}>
+        <Layer f={f}>
+          <S.Defs>
+            <S.LinearGradient id="eg" x1="0" y1="0" x2="0" y2="1">
+              <S.Stop offset="0" stopColor="#ff7828" stopOpacity="0" />
+              <S.Stop offset="1" stopColor="#ff6e28" stopOpacity="0.45" />
+            </S.LinearGradient>
+          </S.Defs>
+          {/* Trimmed to the card's round corners, so the glow never pokes past them. */}
+          <RoundClip f={f} o={0} id="ebc">
+            <S.Rect x={0} y={f.h - 70} width={f.w} height={70} fill="url(#eg)" />
+          </RoundClip>
+        </Layer>
+      </Mover>
+      <Layer f={f}>
+        <Ring f={f} k={0.5} color="rgba(255,140,60,0.55)" width={1} />
+      </Layer>
+      {items.map((it, i) => (
+        <Particle key={i} clock={f.clock} item={it} fn={emberAt} w={f.w} h={f.h} size={it.r * 2}>
+          <View style={{ width: it.r * 2, height: it.r * 2, borderRadius: it.r, backgroundColor: it.warm ? '#ffd27a' : '#ff7a2a' }} />
+        </Particle>
+      ))}
+    </>
   )
 }
 

@@ -3323,7 +3323,7 @@ export const zh = {
   "frame.vine.f2": "60 天绕满整张卡",
   'frame.vine.f3': "先长叶，再开花",
   "frame.ember.name": "余烬",
-  "frame.ember.desc": "炭色边框里闪着炽热的炭火，暖光轻轻闪烁，火星从两侧升起。只送给连续30天的人。",
+  "frame.ember.desc": "献给火热的连续天数。卡片底部暖光，火星升起又熄灭。",
   'frame.ember.f1': "底部一抹暖光",
   "frame.ember.f2": "火星整晚升起",
   "frame.ember.f3": "像真火一样摇曳",

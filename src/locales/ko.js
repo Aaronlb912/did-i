@@ -3332,7 +3332,7 @@ export const ko = {
   "frame.vine.f2": "60일이면 카드를 감싸요",
   'frame.vine.f3': "잎 다음엔 꽃",
   "frame.ember.name": "불씨",
-  "frame.ember.desc": "숯빛 테두리 속에서 빛나는 불씨, 따뜻하게 깜박이는 빛, 옆으로 피어오르는 불꽃. 30일 연속 기록을 세운 사람만 받아요.",
+  "frame.ember.desc": "불타는 연속 기록을 위해. 아래쪽 따뜻한 빛과 피어올랐다 사라지는 불꽃.",
   'frame.ember.f1': "아래쪽을 따라 따뜻한 빛",
   "frame.ember.f2": "밤새 불꽃이 피어나요",
   "frame.ember.f3": "진짜 불처럼 일렁여요",
