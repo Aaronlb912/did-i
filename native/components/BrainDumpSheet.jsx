@@ -22,10 +22,11 @@ function BrainDump({ book, colors, onChange, onClose }) {
     setLines(null)
   }
   const items = lines || splitDump(text)
+  const kept = items.map((item) => item.trim()).filter(Boolean)
   const shelf = readShelf().boards || [book]
   const room = Math.max(0, MORNING_CAP - morningCount(shelf, boardDate(new Date())))
-  const fits = items.slice(0, room)
-  const over = items.length > room
+  const fits = kept.slice(0, room)
+  const over = kept.length > room
 
   const edit = (i, value) => setLines(items.map((item, at) => (at === i ? value : item)))
   const remove = (i) => setLines(items.filter((_, at) => at !== i))
