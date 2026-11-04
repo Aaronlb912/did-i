@@ -10656,6 +10656,7 @@ test('brain dump: the morning cap holds when adding a list', async () => {
     made += 1
   }
   assert.equal(made, MORNING_CAP)
+})
 
 test('one free miss a week keeps the first missed day of each week', () => {
   const wk = (...keys) => keys
