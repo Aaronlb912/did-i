@@ -25,7 +25,7 @@ export const FREE_FRAME = 'first'
 
 const coin = (id, coins, extra = {}) => ({ id, kind: 'coin', price: { coins }, coins, gems: 0, animated: false, season: null, earn: null, ...extra })
 const gem = (id, gems, extra = {}) => ({ id, kind: 'gem', price: { gems }, coins: 0, gems, animated: true, season: null, earn: null, ...extra })
-const earned = (id, earn, need, extra = {}) => ({ id, kind: 'earned', price: null, coins: 0, gems: 0, animated: id !== 'vine', season: null, earn, need, ...extra })
+const earned = (id, earn, need, extra = {}) => ({ id, kind: 'earned', price: null, coins: 0, gems: 0, animated: true, season: null, earn, need, ...extra })
 const season = (id, from, until, extra = {}) => ({ id, kind: 'season', price: null, coins: 0, gems: 0, animated: true, season: { from, until }, earn: null, ...extra })
 
 const RAW = [
