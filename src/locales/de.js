@@ -2695,7 +2695,7 @@ export const de = {
   'help.groupShop': 'Laden',
   'help.groupSocial': 'Freunde und Familie',
   'help.groupDaily': 'Täglich',
-  'account.privacySub': 'Kopie sichern, abmelden oder löschen.',
+  'account.privacySub': 'Telefone und Sync.',
   'account.privacyRow': 'Daten und Privatsphäre',
   'account.syncPhonesCap': 'Synchronisierung und Handys',
   'friend.didYouHint': 'Frag {name}, ob etwas erledigt ist.',

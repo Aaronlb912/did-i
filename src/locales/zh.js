@@ -2638,7 +2638,7 @@ export const zh = {
   'help.groupShop': '商店',
   'help.groupSocial': '朋友和家人',
   'help.groupDaily': '每天',
-  'account.privacySub': '保存副本、退出或删除。',
+  'account.privacySub': '手机和同步。',
   'account.privacyRow': '数据与隐私',
   'account.syncPhonesCap': '同步与手机',
   'friend.didYouHint': '问 {name} 有没有做。',

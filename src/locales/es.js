@@ -2686,7 +2686,7 @@ export const es = {
   'help.groupShop': 'Tienda',
   'help.groupSocial': 'Amigos y familia',
   'help.groupDaily': 'Cada día',
-  'account.privacySub': 'Guarda una copia, cierra sesión o elimina.',
+  'account.privacySub': 'Teléfonos y sincronización.',
   'account.privacyRow': 'Datos y privacidad',
   'account.syncPhonesCap': 'Sincronizar y teléfonos',
   'friend.didYouHint': 'Pregunta a {name} si hizo algo.',

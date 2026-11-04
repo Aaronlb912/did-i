@@ -2689,7 +2689,7 @@ export const fr = {
   'help.groupShop': 'Boutique',
   'help.groupSocial': 'Amis et famille',
   'help.groupDaily': 'Chaque jour',
-  'account.privacySub': 'Garder une copie, se déconnecter ou supprimer.',
+  'account.privacySub': 'Téléphones et synchronisation.',
   'account.privacyRow': 'Données et confidentialité',
   'account.syncPhonesCap': 'Synchro et téléphones',
   'friend.didYouHint': 'Demande à {name} si c’est fait.',
