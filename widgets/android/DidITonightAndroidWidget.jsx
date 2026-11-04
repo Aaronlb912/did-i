@@ -895,6 +895,8 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
               </FlexWidget>
             </FlexWidget>
           ) : null}
+          {/* Only on all clear: with a question up it sat on the Did button. */}
+          {!lead ? (
           <FlexWidget
             style={{
               width: 'match_parent',
@@ -915,6 +917,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
               <SvgWidget svg={micSvg(C.on)} style={{ width: 20, height: 20 }} />
             </FlexWidget>
           </FlexWidget>
+          ) : null}
         </OverlapWidget>
       </FlexWidget>
     </FlexWidget>
