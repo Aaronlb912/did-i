@@ -2175,7 +2175,7 @@ export const pt = {
   'notify.exactGo': 'Abrir ajustes',
   'notify.firstTitle': "Quer um lembrete diário?",
   'notify.firstBody':
-    'O Did I pode te lembrar quando chega a hora de uma pergunta e avisar quando um amigo ou familiar te manda um Did you ou uma torcida. Dá para mudar quando quiser em Ajustes.',
+    'Receba um lembrete quando for hora de responder.',
   'pings.offNote':
     'As notificações estão desligadas neste telefone, então estes botões esperam você ligá-las.',
   'pings.openSettings': 'Abrir ajustes do telefone',

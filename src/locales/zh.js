@@ -2140,7 +2140,7 @@ export const zh = {
   'notify.exactBody': '如果不允许 Did I 设置闹钟，Android 会把提醒和小组件推迟几分钟。请为 Did I 打开“闹钟和提醒”。',
   'notify.exactGo': '打开设置',
   'notify.firstTitle': "每天提醒你一下？",
-  'notify.firstBody': '问题到时间时，Did I 会提醒你；朋友或家人发来 Did you 或加油时，也会告诉你。你可以随时在设置里更改。',
+  'notify.firstBody': '到了回答的时间，我们会提醒你。',
   'pings.offNote': '这台手机的通知已关闭，打开通知后这些开关才会生效。',
   'pings.openSettings': '打开手机设置',
   'we.title': 'Did we',

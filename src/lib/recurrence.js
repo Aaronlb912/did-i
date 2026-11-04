@@ -537,6 +537,7 @@ export function oncePastCounts(lamp, answer) {
 // A morning question's time is only its reminder: it is on Tonight all day.
 export function askAfterPassed(lamp, now = new Date()) {
   if (lamp?.morning) return true
+  if (lamp?.askFrom && boardDate(now) < lamp.askFrom) return true
   const after = String(lamp?.askAfter || '').trim()
   if (!after) return true
   const match = after.match(/^([01]\d|2[0-3]):([0-5]\d)$/)

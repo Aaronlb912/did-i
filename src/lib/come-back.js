@@ -24,9 +24,9 @@ export function daysSinceLastAnswer(shelf, dateIso) {
 }
 
 // A real gap, but not a brand new shelf with nothing answered yet.
-export function cameBack(shelf, dateIso) {
+export function cameBack(shelf, dateIso, minDays = COME_BACK_DAYS) {
   const days = daysSinceLastAnswer(shelf, dateIso)
-  return days >= COME_BACK_DAYS && days !== Infinity
+  return days >= minDays && days !== Infinity
 }
 
 // Days since the oldest dated answer, 0 for a shelf with none yet. Gates first-week rows.

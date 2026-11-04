@@ -2184,7 +2184,7 @@ export const de = {
   'notify.exactGo': 'Einstellungen öffnen',
   'notify.firstTitle': "Täglich erinnert werden?",
   'notify.firstBody':
-    'Did I kann dich erinnern, wenn eine Frage fällig ist, und dir sagen, wenn dir jemand aus Freunden oder Familie ein Did you oder einen Jubel schickt. Du kannst das jederzeit in den Einstellungen ändern.',
+    'Bekomm einen Hinweis, wenn es Zeit zum Antworten ist.',
   'pings.offNote':
     'Mitteilungen sind auf diesem Handy aus. Diese Schalter greifen, sobald du sie einschaltest.',
   'pings.openSettings': 'Handy-Einstellungen öffnen',
