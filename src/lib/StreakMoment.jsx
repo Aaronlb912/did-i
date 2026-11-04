@@ -13,6 +13,14 @@ function copy(moment) {
       yes: t('streak.hitOk'),
     }
   }
+  if (moment.kind === 'back') {
+    return {
+      kicker: t('streak.backKicker'),
+      title: t('streak.backTitle'),
+      body: t('streak.backBody'),
+      yes: t('streak.missOk'),
+    }
+  }
   return {
     kicker: t('streak.missKicker'),
     title: t('streak.missTitle'),

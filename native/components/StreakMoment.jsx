@@ -19,6 +19,14 @@ function copy(moment) {
       yes: t('streak.hitOk'),
     }
   }
+  if (moment.kind === 'back') {
+    return {
+      kicker: t('streak.backKicker'),
+      title: t('streak.backTitle'),
+      body: t('streak.backBody'),
+      yes: t('streak.missOk'),
+    }
+  }
   return {
     kicker: t('streak.missKicker'),
     title: t('streak.missTitle'),
@@ -86,7 +94,7 @@ export function StreakMomentHost({ now }) {
           <Text style={[styles.kicker, { color: colors.on }]}>{text.kicker}</Text>
           <Text accessibilityRole="header" style={[styles.title, { color: colors.ink }]}>{text.title}</Text>
           <Text style={[styles.body, { color: colors.inkSoft }]}>{text.body}</Text>
-          {moment.kind === 'hit' || gentleOn() ? null : <Row colors={colors} label={t('streak.missFreeze')} onPress={openFreeze} />}
+          {moment.kind !== 'miss' || gentleOn() ? null : <Row colors={colors} label={t('streak.missFreeze')} onPress={openFreeze} />}
           <View style={styles.row}>
             <DidButton small label={text.yes} onPress={close} colors={colors} />
           </View>
