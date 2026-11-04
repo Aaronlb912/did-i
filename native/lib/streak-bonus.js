@@ -1,6 +1,6 @@
 import { readShelf, writeShelf } from '../../src/lib/board-shelf.js'
 import { SHELF_IN } from '../../src/lib/cloud-sync.js'
-import { addBonusPending, dropBonusPending, readBonusPending } from '../../src/lib/streak-milestones.js'
+import { addBonusPending, dropBonusPending, readBonusPending, readBonusStreak } from '../../src/lib/streak-milestones.js'
 import { applyGemBalanceToShelf, claimStreakBonus } from '../../src/lib/wallet.js'
 
 // Gems paid for a streak milestone, 0 when none. A claim that does not go
@@ -8,7 +8,7 @@ import { applyGemBalanceToShelf, claimStreakBonus } from '../../src/lib/wallet.j
 export async function payStreakBonus(days, streak) {
   const res = await claimStreakBonus(days, streak).catch(() => null)
   if (!res) {
-    addBonusPending(days)
+    addBonusPending(days, streak)
     return 0
   }
   dropBonusPending(days)
@@ -24,5 +24,5 @@ export async function payStreakBonus(days, streak) {
 }
 
 export function retryStreakBonus() {
-  for (const days of readBonusPending()) payStreakBonus(days, null)
+  for (const days of readBonusPending()) payStreakBonus(days, readBonusStreak(days))
 }

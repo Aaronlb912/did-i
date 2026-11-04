@@ -7,6 +7,7 @@ export const STREAK_MILESTONES = [7, 30, 100, 365]
 // Gems the server pays once per account (supabase/streak-bonus.sql).
 export const STREAK_BONUS = { 30: 1, 100: 2 }
 const PENDING = 'did-i-streak-bonus-pending'
+const PENDING_STREAK = 'did-i-streak-bonus-streak'
 
 export function isStreakMilestone(n) {
   return STREAK_MILESTONES.includes(Math.floor(Number(n)) || 0)
@@ -56,11 +57,39 @@ function writeBonusPending(list) {
   }
 }
 
-export function addBonusPending(days) {
+function readStreakMap() {
+  try {
+    const map = JSON.parse(localStorage.getItem(PENDING_STREAK) || '{}')
+    return map && typeof map === 'object' ? map : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeStreakMap(map) {
+  try {
+    if (Object.keys(map).length) localStorage.setItem(PENDING_STREAK, JSON.stringify(map))
+    else localStorage.removeItem(PENDING_STREAK)
+  } catch {
+    // ok: a retry sends no streak
+  }
+}
+
+// The streak a waiting claim was made with, or null.
+export function readBonusStreak(days) {
+  const n = Number(readStreakMap()[days])
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null
+}
+
+export function addBonusPending(days, streak = null) {
   const list = readBonusPending()
   if (STREAK_BONUS[days] && !list.includes(days)) writeBonusPending([...list, days])
+  if (STREAK_BONUS[days] && streak != null && Number(streak) > 0) writeStreakMap({ ...readStreakMap(), [days]: Math.floor(Number(streak)) })
 }
 
 export function dropBonusPending(days) {
   writeBonusPending(readBonusPending().filter((item) => item !== days))
+  const map = readStreakMap()
+  delete map[days]
+  writeStreakMap(map)
 }

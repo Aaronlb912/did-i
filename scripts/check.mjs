@@ -10858,6 +10858,34 @@ test('buddy push names the card and skips anyone who answered or was nudged', ()
   }
 })
 
+test('free miss: patching freeMiss stamps the spans it changed, and an empty-span free miss keeps a fixed start', async () => {
+  const { mergePrefs } = await import('../src/lib/prefs.js')
+  writePrefs({ freeMiss: false, freeMissSpans: [] })
+  writePrefs({ freeMiss: true })
+  const p = readPrefs()
+  assert.equal(p.freeMissSpans.length, 1)
+  assert.ok(p.at.freeMissSpans, 'spans changed with freeMiss, so they are stamped')
+  const stale = { freeMiss: false, freeMissSpans: [], at: { freeMiss: '2000-01-01T00:00:00.000Z', freeMissSpans: '2000-01-01T00:00:00.000Z' } }
+  assert.equal(mergePrefs(p, stale).freeMissSpans.length, 1, 'older empty spans do not win')
+  const raw = JSON.parse(localStorage.getItem('did-i-prefs'))
+  localStorage.setItem('did-i-prefs', JSON.stringify({ ...raw, freeMiss: true, freeMissSpans: [], at: { ...raw.at, freeMiss: '2026-07-01T12:00:00', freeMissSpans: undefined } }))
+  assert.equal(readPrefs().freeMissSpans[0][0], '2026-07-01', 'the span starts at the day it was turned on, not today')
+  writePrefs({ freeMiss: false, freeMissSpans: [] })
+})
+
+test('streak bonus retry sends the streak it was claimed with; the 100+ sheet shows once per mark', async () => {
+  const m = await import('../src/lib/streak-milestones.js')
+  m.addBonusPending(30, 31)
+  assert.equal(m.readBonusStreak(30), 31, 'the pending claim keeps its streak')
+  const bonus = readFileSync(new URL('../native/lib/streak-bonus.js', import.meta.url), 'utf8')
+  assert.ok(bonus.includes('payStreakBonus(days, readBonusStreak(days))'), 'a retry sends the stored streak')
+  m.dropBonusPending(30)
+  assert.equal(m.readBonusStreak(30), null)
+  const shell = readFileSync(new URL('../native/AppShell.jsx', import.meta.url), 'utf8')
+  assert.ok(shell.includes('shownMark.current === mark.id'), 'a repeat run does not reopen the sheet')
+  assert.ok(shell.includes('colorsRef'), 'colors are read from a ref, not a dependency')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
