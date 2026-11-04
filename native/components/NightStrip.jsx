@@ -9,7 +9,7 @@ import { missDot } from '../palette.js'
 function jewelColor(state, colors) {
   if (state === 'yes') return colors.on
   if (state === 'late') return colors.late || colors.on
-  if (state === 'skip') return colors.miss
+  if (state === 'skip') return colors.skip
   return colors.open
 }
 
@@ -53,7 +53,7 @@ export function NightStrip({ book, lamp, keys, colors, onPickHole, noPickKeys = 
               state === 'hole'
                 ? { borderColor: tonight ? colors.inkSoft : colors.line, borderWidth: tonight ? 2 : 1.5 }
                 : state === 'skip'
-                  ? missDot(colors)
+                  ? { backgroundColor: colors.skip }
                   : { backgroundColor: jewelColor(state, colors) },
             ]}
           />

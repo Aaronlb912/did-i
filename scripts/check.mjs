@@ -8235,7 +8235,7 @@ test('gentle mode: a missed night is blank on Home, week, month, list and why sh
   assert.ok(!lines.includes(t('why.missed')), 'no streak broke line')
   assert.ok(lines.some((line) => line.includes('Water')), 'still names what was left')
   writePrefs({ gentle: false })
-  assert.match(readSrc('native/components/DoneCard.jsx'), /night\.miss && !gentle\s*\?\s*missDot\(colors\)/)
+  assert.match(readSrc('native/components/DoneCard.jsx'), /night\.miss && !gentle\s*\?\s*missDot\(colors, colors\.open\)/)
   assert.ok(!readSrc('native/components/WeekStrip.jsx').includes('colors.miss'), 'phone week strip: missed days never red')
   assert.match(readSrc('src/lib/WeekStrip.jsx'), /night\.miss && prefs\.gentle !== true \? 'is-miss'/)
   const month = readSrc('native/components/LampMonth.jsx')

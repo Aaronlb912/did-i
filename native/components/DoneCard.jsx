@@ -174,7 +174,7 @@ export function NightWeek({ nights, colors, onNight }) {
                   : night.on
                     ? { backgroundColor: colors.on }
                     : night.miss && !gentle
-                      ? missDot(colors)
+                      ? missDot(colors, colors.open)
                       : { backgroundColor: colors.open },
               ]}
             />

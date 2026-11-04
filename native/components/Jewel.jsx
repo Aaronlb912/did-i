@@ -51,9 +51,9 @@ export function Jewel({
     face
       ? colors.on
       : dueToday
-        ? colors.miss
+        ? colors.late
         : dueSoon
-          ? colors.late
+          ? colors.inkSoft
           : colors.line
   const glassColor = late
     ? colors.late
@@ -62,9 +62,9 @@ export function Jewel({
       : skip
         ? colors.skip
         : dueToday
-          ? colors.miss
+          ? colors.late
           : dueSoon
-            ? colors.late
+            ? colors.inkSoft
             : // open is too pale on a white pill in Light.
               colors.openRing || colors.open
 
