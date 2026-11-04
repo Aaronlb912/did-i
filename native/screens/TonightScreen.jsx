@@ -1257,7 +1257,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       </SwipeCardHost>
     )
     face = withAnswerButtons(face, () => markSpoken(faceRow, 'yes'), () => markSpoken(faceRow, 'skip'))
-  } else if (stack.bodyKind === 'hall' && stack.nightDone) {
+  } else if (stack.bodyKind === 'hall') {
+    // Your own are done and no Did we card is left to show: the done card,
+    // even if a Did we still counts as open, so Today is never blank.
     doneFace = true
     face = (
       <CardSettle play={Boolean(stack.cheer)}>

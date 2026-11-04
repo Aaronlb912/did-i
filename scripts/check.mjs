@@ -5263,6 +5263,44 @@ await testAsync('the widget shows the open Did we once your own questions are do
   }
 })
 
+await testAsync('Not yet on a monthly Did we hides it for today, so Today and the widget go clear', async () => {
+  const { setWeNightRows, clearWeNights, hideWeFor, weNight } = await import('../src/lib/we-nights.js')
+  const { weAskMe } = await import('../src/lib/did-we.js')
+  const { saveWeOpen } = await import('../src/lib/we-widget.js')
+  const clock = new Date(2026, 10, 1, 21, 0)
+  const night = boardDate(clock)
+  const book = {
+    id: 'b1',
+    title: 'General',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-01-01' }],
+    answers: [{ lampId: 'door', periodKey: night, status: 'yes', answeredAt: `${night}T20:00:00` }],
+  }
+  const card = { id: 'm1', question: 'Did we pay rent?', myState: 'in', due: true, done: false, periodEnd: '2026-11-30', people: [{ id: 'me', me: true, status: 'nope' }] }
+  try {
+    saveWeOpen([card], night)
+    setWeNightRows([{ card: 'm1', folder: '', night, status: 'nope' }])
+    // Before the hide: open, not done. Today would rest on a card it does not show.
+    assert.equal(weNight(night).done + weNight(night).hidden, 0)
+    hideWeFor('m1', night)
+    const we = weNight(night)
+    assert.equal(we.done + we.hidden >= we.due, true, 'hidden for today: the day can clear')
+    assert.equal(we.done, 0, 'hidden is not a did for the streak')
+    assert.equal(weAskMe(card, night), false, 'not asked again today')
+    assert.equal(weAskMe(card, '2026-11-02'), true, 'back tomorrow while the month is open')
+    assert.equal(weAskMe({ ...card, periodEnd: night }, night), false, 'a daily Not yet stays answered')
+    assert.equal(weAskMe({ ...card, done: true }, '2026-11-02'), false, 'gone once the card is done')
+    const props = buildTonightWidgetProps({ currentId: 'b1', boards: [book] }, clock)
+    assert.equal(props.left, 0)
+    assert.equal(props.footer, en['widget.tonight.clear'], 'the widget says all clear, like Today')
+    hideWeFor('x', '2026-11-02')
+    assert.equal(weAskMe(card, night), true, 'past days are pruned from the hide list')
+  } finally {
+    clearWeNights()
+    saveWeOpen([], night)
+  }
+})
+
 await testAsync('a skip reads Not yet while its night is open, Said not yet once it closed', async () => {
   const { answerWord, nightOpen } = await import('../src/lib/recurrence.js')
   const { nightWhyLines } = await import('../src/lib/night-why.js')

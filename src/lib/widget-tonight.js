@@ -258,12 +258,14 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   // for you) stays on the widget to answer, but is not "left" until you did it.
   // A Did we due tonight counts too, until you said did on it in the app.
   const we = weNight(boardDate(now))
-  const left = finishStackCount(countedTonightRows(rows)) + (we.due - we.done) + graceOpen.length
+  // One hidden for today (Not yet on a monthly card) is off it, as on Today.
+  const weLeft = Math.max(0, we.due - we.done - we.hidden)
+  const left = finishStackCount(countedTonightRows(rows)) + weLeft + graceOpen.length
   // Same test as Tonight's done card, across every tag, so the widget never
   // says "no questions" while the app says done (the open-only setting hides
   // answered rows).
   const ownClear = dueClearTonight(boards.flatMap((book) => dueTonight(book, now)))
-  const allClear = ownClear && (!we.due || we.clear) && graceOpen.length === 0
+  const allClear = ownClear && weLeft === 0 && graceOpen.length === 0
   let footer = ''
   if (allClear) {
     footer = t('widget.tonight.clear')
