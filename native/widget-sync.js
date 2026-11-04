@@ -123,6 +123,18 @@ export function setWidgetTimelineReader(fn) {
   readTimeline = typeof fn === 'function' ? fn : null
 }
 
+// Leaving the account: the stored timeline holds its pending taps, and a
+// relaunch would carry them into the next account. Replace it with the emptied shelf.
+export async function clearWidgetTimelineTaps(shelf = readShelf()) {
+  pendingTaps = []
+  if (Platform.OS !== 'ios') return
+  const api = await tonightWidgetApi()
+  if (!api) return
+  const props = plainProps(enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf)))
+  if (api.updateTimeline) await api.updateTimeline([{ date: new Date(), props }])
+  else await api.updateSnapshot(props)
+}
+
 export function markWidgetTimelineRead(read = true) {
   timelineRead = read
 }

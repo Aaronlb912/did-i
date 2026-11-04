@@ -610,6 +610,9 @@ async function schedulePingsNow(books, now = new Date()) {
     if (spill > 0) notes.splice(Math.max(0, regularCount - spill), spill)
     let failed = 0
     for (const note of notes) {
+      // A time already past is not a failure; it would never fire.
+      const at = note.trigger?.date
+      if (at instanceof Date && at.getTime() <= Date.now()) continue
       try {
         await Notifications.scheduleNotificationAsync({ identifier: note.identifier, content: note.content, trigger: note.trigger })
       } catch {
@@ -699,7 +702,7 @@ export async function copyText(text) {
 export async function shareShelf(shelf) {
   const stamp = boardDate(new Date(), 4)
   const text = JSON.stringify(shelf, null, 2)
-  await Share.share({ title: 'Did I', message: text })
+  return Share.share({ title: 'Did I', message: text })
 }
 
 // Same share path as the text copy; paste into a .csv or a sheet.

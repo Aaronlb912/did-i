@@ -11219,6 +11219,21 @@ test('widget: footer says questions waiting, empty list opens add, Not yet card 
   assert.ok(w.includes("!lamp.startsWith(WE_ITEM) && clock.getTime()"), 'a refused Did we tap is not kept: it has no account signal')
 })
 
+test('bugs 1104b: leaving the account clears iOS widget taps; past pings skipped; closed share sheet saves no date; active twin first', async () => {
+  const { readFileSync } = await import('node:fs')
+  const leave = readFileSync('native/lib/leave-account.js', 'utf8')
+  const sync = readFileSync('native/widget-sync.js', 'utf8')
+  const nat = readFileSync('native/shim/native.js', 'utf8')
+  const more = readFileSync('native/screens/more.jsx', 'utf8')
+  const qs = readFileSync('native/screens/questions.jsx', 'utf8')
+  assert.ok(leave.includes('clearWidgetTimelineTaps') && sync.includes('export async function clearWidgetTimelineTaps'), 'sign out clears the iOS timeline taps')
+  const loop = nat.slice(nat.indexOf('let failed = 0'))
+  assert.ok(loop.indexOf('<= Date.now()') > 0 && loop.indexOf('<= Date.now()') < loop.indexOf('scheduleNotificationAsync('), 'a past trigger is skipped before scheduling')
+  assert.ok(nat.includes("return Share.share({ title: 'Did I', message: text })"), 'shareShelf returns the share result')
+  assert.ok(more.includes('res?.action !== Share.dismissedAction'), 'a closed share sheet saves no copy date')
+  assert.ok(qs.includes('!item.archived && sameWords(item)'), 'an active twin wins over a paused one')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
