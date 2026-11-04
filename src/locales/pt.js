@@ -943,6 +943,8 @@ export const pt = {
   'friends.seeSub': "Quem terminou hoje",
   'friends.waiting': 'À espera de resposta',
   'friends.notYet': 'ainda não respondeu',
+  'friends.unsendNote': 'Você pode cancelar e enviar de novo.',
+  'cheersGot.back': 'Retribuir o ânimo',
   'friends.unsend': 'Cancelar',
   'friends.unsendTitle': 'Cancelar seu pedido para {name}?',
   'friends.unsendBody': 'Ele some dos pedidos da pessoa. Você pode mandar outro depois.',

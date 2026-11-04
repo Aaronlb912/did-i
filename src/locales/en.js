@@ -943,6 +943,8 @@ export const en = {
   'friends.seeSub': "Who is done today",
   'friends.waiting': 'Waiting to hear back',
   'friends.notYet': 'has not answered yet',
+  'friends.unsendNote': 'You can unsend and send again.',
+  'cheersGot.back': 'Cheer back',
   'friends.unsend': 'Unsend',
   'friends.unsendTitle': 'Unsend your request to {name}?',
   'friends.unsendBody': 'It disappears from their requests. You can send a new one later.',

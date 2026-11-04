@@ -932,6 +932,8 @@ export const ko = {
   'friends.seeSub': "오늘 끝낸 사람",
   'friends.waiting': '답 기다림',
   'friends.notYet': '아직 답 없음',
+  'friends.unsendNote': '취소하고 다시 보낼 수 있어요.',
+  'cheersGot.back': '응원 돌려주기',
   'friends.unsend': '취소',
   'friends.unsendTitle': '{name}님에게 보낸 요청을 취소할까요?',
   'friends.unsendBody': '상대의 요청 목록에서 사라져요. 나중에 다시 보낼 수 있어요.',

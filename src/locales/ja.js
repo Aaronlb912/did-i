@@ -933,6 +933,8 @@ export const ja = {
   'friends.seeSub': "今日終わった人",
   'friends.waiting': '返事待ち',
   'friends.notYet': 'まだ返事なし',
+  'friends.unsendNote': '取り消して、もう一度送れます。',
+  'cheersGot.back': '応援を返す',
   'friends.unsend': '取り消す',
   'friends.unsendTitle': '{name} へのリクエストを取り消しますか？',
   'friends.unsendBody': '相手のリクエスト一覧から消えます。あとでまた送れます。',

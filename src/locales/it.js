@@ -944,6 +944,8 @@ export const it = {
   'friends.seeSub': "Chi ha finito oggi",
   'friends.waiting': 'In attesa di risposta',
   'friends.notYet': 'non ha ancora risposto',
+  'friends.unsendNote': 'Puoi annullare e inviare di nuovo.',
+  'cheersGot.back': 'Ricambia l’incoraggiamento',
   'friends.unsend': 'Annulla',
   'friends.unsendTitle': 'Annullare la richiesta a {name}?',
   'friends.unsendBody': 'Sparisce dalle sue richieste. Potrai inviarne un’altra più tardi.',
