@@ -11272,6 +11272,17 @@ test('findable: Other settings, Frames and buddies, topic folds, People waiting 
   assert.ok(readFileSync('native/screens/profile.jsx', 'utf8').includes("goHash('/pings')"), 'Settings top card has a Reminders row')
 })
 
+test('findable 2: look again Done, widget help and settings row, brain dump below the list', async () => {
+  const { readFileSync } = await import('node:fs')
+  const tonight = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
+  assert.ok(tonight.includes("t('tonight.lookDone')") && tonight.includes('setLookAgain(false); stack.restStack(true)'), 'look again has a Done button')
+  assert.ok(!tonight.includes('New people see Did and Nope buttons'), 'stale buttons comment is gone')
+  const more = readFileSync('native/screens/more.jsx', 'utf8')
+  assert.ok(more.includes('onPress={() => pinWidget(colors)}') && more.includes("'help.widgetPIos'") && more.includes("'help.widgetPAndroid'"), 'help widget button pins; steps differ by platform')
+  const questions = readFileSync('native/screens/questions.jsx', 'utf8')
+  assert.ok(questions.split("t('dump.title')").length === 3, 'Brain dump row shows with and without questions')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
