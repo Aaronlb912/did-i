@@ -310,6 +310,14 @@ export function readPrefs() {
       return next
     }
     const clean = cleanPrefs(JSON.parse(raw))
+    if (clean.freeMiss === true && !clean.freeMissSpans.length) {
+      // Pin the start once, so the free miss does not move with today.
+      const stamp = clean.at?.freeMiss
+      const from = stamp && !Number.isNaN(new Date(stamp).getTime()) ? new Date(stamp) : new Date()
+      clean.freeMissSpans = [[boardDate(from), null]]
+      clean.at = { ...clean.at, freeMissSpans: stamp || new Date().toISOString() }
+      localStorage.setItem(KEY, JSON.stringify(clean))
+    }
     holdAway(clean)
     return clean
   } catch {
@@ -336,7 +344,7 @@ export function writePrefs(patch, fromCloud = false) {
   if (!fromCloud) {
     const now = new Date().toISOString()
     next.at = { ...next.at }
-    for (const key of Object.keys(patch || {})) {
+    for (const key of new Set([...Object.keys(patch || {}), 'freeMissSpans'])) {
       if (key !== 'at' && JSON.stringify(was[key]) !== JSON.stringify(next[key])) next.at[key] = now
     }
   }

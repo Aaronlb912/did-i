@@ -222,14 +222,18 @@ export function AppShell() {
   const toasts = useToastQueue()
   const mark = marksHeld || undoUp(toasts) ? null : app.markNote
   const clearMark = app.clearMark
+  const colorsRef = useRef(colors)
+  colorsRef.current = colors
+  const shownMark = useRef('')
   useEffect(() => {
     if (!mark) return
     const big = markInfo(mark.id)?.n >= 100 && markInfo(mark.id)?.group === 'streak'
+    if (big && shownMark.current === mark.id) return
     if (big && !sheetIsUp()) {
-      const done = () => {
-        publishSheet(null)
-        clearMark()
-      }
+      shownMark.current = mark.id
+      // Shown now, so the mark is spent here; closing never clears the next one.
+      const done = () => publishSheet(null)
+      clearMark()
       publishSheet({
         kicker: t('marks.new'),
         title: markLabel(mark.id, 'name'),
@@ -238,12 +242,12 @@ export function AppShell() {
         onGo: done,
         noClose: true,
         onClose: done,
-        colors,
+        colors: colorsRef.current,
       })
       return
     }
     showToast({ id: `mark:${mark.id || 'mark'}`, kind: 'mark', mark, ms: 5200, onGone: clearMark })
-  }, [clearMark, mark, colors])
+  }, [clearMark, mark])
   const account = useAccount()
   const sync = useSync()
   // Terms and privacy before sign-in open over sign-in, not in the navigator,
