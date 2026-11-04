@@ -45,7 +45,7 @@ export function newAnswerId() {
 const LEGACY_KINDS = ['house', 'pills', 'money', 'people', 'other']
 // Topics live in lamp.kind as one comma-separated string ("Pets, Morning").
 const KIND_MAX = 160
-const QUESTION_MAX = 120
+export const QUESTION_MAX = 120
 const TOPICS_MAX = 8
 const CADENCES = ['daily', 'weekly', 'monthly', 'once', 'every_n', 'every']
 const SLOTS = ['morning', 'whenever', 'night']

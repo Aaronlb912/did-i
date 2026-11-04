@@ -10625,6 +10625,39 @@ test('check script: no test is added after the pass count', () => {
   assert.ok(!/\btest(Async)?\(/.test(after), 'tests after the summary line are never counted')
 })
 
+test('brain dump: splits on commas, new lines, semicolons and "and"', async () => {
+  const { splitDump } = await import('../src/lib/brain-dump.js')
+  assert.deepEqual(splitDump('laundry, call mom; pay rent\nwalk dog and feed cat'), ['laundry', 'call mom', 'pay rent', 'walk dog', 'feed cat'])
+  assert.deepEqual(splitDump(' , ;\n '), [])
+  assert.deepEqual(splitDump('sandy beach'), ['sandy beach'])
+})
+
+test('brain dump: strips did i and ?, drops repeats, caps length', async () => {
+  const { splitDump } = await import('../src/lib/brain-dump.js')
+  const { QUESTION_MAX } = await import('../src/lib/board-json.js')
+  assert.deepEqual(splitDump('Did I call mom?, did i pay rent?, CALL MOM, call mom'), ['call mom', 'pay rent'])
+  assert.equal(splitDump('x'.repeat(QUESTION_MAX + 50))[0].length, QUESTION_MAX)
+})
+
+test('brain dump: the morning cap holds when adding a list', async () => {
+  const { splitDump } = await import('../src/lib/brain-dump.js')
+  const { addMorning, MORNING_CAP } = await import('../src/lib/morning-ask.js')
+  const { blankBook } = await import('../src/lib/board-json.js')
+  const now = new Date()
+  let book = blankBook(now)
+  let made = 0
+  for (const q of splitDump(Array.from({ length: MORNING_CAP + 3 }, (_, i) => 'task ' + i).join(', '))) {
+    const out = addMorning(book, [book], q, now)
+    if (out.error) {
+      assert.equal(out.error, 'full')
+      continue
+    }
+    book = out.book
+    made += 1
+  }
+  assert.equal(made, MORNING_CAP)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
