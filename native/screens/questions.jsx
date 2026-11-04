@@ -1761,7 +1761,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     const words = String(next.question || '').trim().toLowerCase()
     const sameWords = (item) => item.id !== existing?.id && String(item.question || '').trim().toLowerCase() === words
     const twin = (target.lamps || []).find((item) => !item.archived && sameWords(item)) || (target.lamps || []).find(sameWords)
-    if (twin?.archived && !confirmed) {
+    if (twin?.archived && !confirmed && !hang.editing) {
       publishSheet({
         title: t('hang.dupPaused'),
         goLabel: t('hang.dupResume'),
@@ -1782,7 +1782,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       })
       return
     }
-    if (twin && !twin.archived && !confirmed) {
+    if (twin && !twin.archived && !confirmed && !hang.editing) {
       publishSheet({
         title: t('hang.dupTitle'),
         goLabel: t('hang.dupAdd'),
