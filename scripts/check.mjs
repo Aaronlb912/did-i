@@ -11125,6 +11125,17 @@ test('friends screen: cheer errors show at the tap, sent requests show the day, 
   }
 })
 
+test('watch: a Not yet question reaches the watch and can still be answered Did', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const swift = readFileSync(path.join(root, 'targets/watch/DidIWatchApp.swift'), 'utf8')
+  assert.ok(swift.includes('struct NotYetStack') && swift.includes('NotYetStack('), 'the watch shows Not yet cards with Did')
+  assert.ok(swift.includes('answer == "did"'), 'a held Did tap applies to a Not yet card')
+  const sync = readFileSync(path.join(root, 'native/watch-sync.js'), 'utf8')
+  assert.ok(sync.includes("item.status === 'skip' ? 'nope'"), 'the phone sends Not yet cards')
+  const tonight = readFileSync(path.join(root, 'src/lib/widget-tonight.js'), 'utf8')
+  assert.ok(tonight.includes("row.answer.status === 'skip' && status === 'yes'"), 'the phone turns a Not yet into Did')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
