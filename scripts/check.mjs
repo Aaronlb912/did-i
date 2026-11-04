@@ -8276,7 +8276,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-3), ['drop-tonight.sql', 'did-we-safety.sql', 'we-monthly.sql'])
+  assert.deepEqual(files.slice(-4), ['drop-tonight.sql', 'did-we-safety.sql', 'we-monthly.sql', 'we-buddy.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -10221,7 +10221,7 @@ test('every table says how people hear about it: a push, or why not', () => {
     friend_links: 'queue_ask_push queue_yes_push',
     we_members: 'queue_we_ask_push queue_we_joined_push',
     we_cards: 'queue_we_closed_push',
-    we_answers: 'we_settle',
+    we_answers: 'we_settle we_buddy_push',
     we_nudges: 'we_nudge',
     family_members: 'queue_family_joined_push queue_family_left_push',
     profiles: 'queue_invite_used_push',
@@ -10235,7 +10235,7 @@ test('every table says how people hear about it: a push, or why not', () => {
   }
   const quiet = {
     'own data, no one else': 'admins answer_keys answer_log answer_undos app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims signin_carries',
-    'counters, caps and logs': 'check_on_pushed family_code_misses family_miss_days family_summary_sent friend_ask_log friend_declines friend_id_misses push_queue push_to_counts send_counts we_done_pushed we_schedule_log we_slot_repair_ran report_mail_queue shop_drop_sent',
+    'counters, caps and logs': 'check_on_pushed family_code_misses family_miss_days family_summary_sent friend_ask_log friend_declines friend_id_misses push_queue push_to_counts send_counts we_done_pushed we_buddy_pings we_schedule_log we_slot_repair_ran report_mail_queue shop_drop_sent',
     'catalogs': 'gift_catalog shop_catalog event_catalog',
     'quiet on purpose: a block, a pass or a leave would tell someone they were dropped': 'blocks send_answers app_send_answers we_turns',
     'shown when opened, no event of its own': 'did_you_links we_links families family_lamps family_tags shared_notes we_notes reports waitlist',
