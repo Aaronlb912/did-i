@@ -119,6 +119,14 @@ export function weStatus(card, locale) {
   const day = kind === 'multi' ? weSlotDay(card, locale) : ''
   const vars = day ? { day } : {}
   if (card?.done) return { key: weRule(card.mode) === 'all' ? (week ? 'we.doneAllWeek' : day ? 'we.doneAllDay' : 'we.doneAll') : 'we.doneTogether', vars }
+  // Done needs two people. Alone on a card, it waits for whoever was asked.
+  const people = card?.people || []
+  const inN = people.length ? people.filter((p) => p.state === 'in').length : card?.total || 0
+  if (inN < 2) {
+    const asked = people.filter((p) => p.state === 'asked' && p.name)
+    return asked.length === 1 ? { key: 'we.waitingJoin', vars: { name: asked[0].name } } : { key: 'we.waitingJoinAny', vars: {} }
+  }
+
   if (card?.mode === 'turns') {
     const whose = (card.people || []).find((p) => p.id === card.turn)
     if (whose?.me) return { key: day ? 'we.yourTurnDay' : 'we.yourTurnShort', vars }

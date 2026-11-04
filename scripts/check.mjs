@@ -8346,7 +8346,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-5), ['drop-tonight.sql', 'did-we-safety.sql', 'we-monthly.sql', 'we-buddy.sql', 'streak-bonus.sql'])
+  assert.deepEqual(files.slice(-5), ['did-we-safety.sql', 'we-monthly.sql', 'we-buddy.sql', 'streak-bonus.sql', 'we-left-push.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -10289,7 +10289,7 @@ test('every table says how people hear about it: a push, or why not', () => {
   const pushed = {
     sends: 'queue_send_push queue_send_kept_push edit_send',
     friend_links: 'queue_ask_push queue_yes_push',
-    we_members: 'queue_we_ask_push queue_we_joined_push',
+    we_members: 'queue_we_ask_push queue_we_joined_push queue_we_left_push',
     we_cards: 'queue_we_closed_push',
     we_answers: 'we_settle we_buddy_push',
     we_nudges: 'we_nudge',
@@ -10969,6 +10969,35 @@ test('android widget: the Remind me mic never covers the Did button', () => {
 test('streak bonus pays up to the 999999 gem limit, never cuts a big balance', () => {
   const sql = readFileSync(new URL('../supabase/streak-bonus.sql', import.meta.url), 'utf8')
   assert.ok(sql.includes('least(gem_balance + pay, 999999)') && !/least(gem_balance + pay, 9999)/.test(sql))
+})
+
+test('a Did we card with one person in waits for someone to join', async () => {
+  const { weStatus } = await import('../src/lib/we-look.js')
+  const alone = { total: 1, people: [{ state: 'in', me: true }] }
+  assert.deepEqual(weStatus(alone, 'en'), { key: 'we.waitingJoinAny', vars: {} })
+  const asked = { total: 1, people: [{ state: 'in', me: true }, { state: 'asked', name: 'Sam' }] }
+  assert.deepEqual(weStatus(asked, 'en'), { key: 'we.waitingJoin', vars: { name: 'Sam' } })
+  const two = { total: 2, dids: 1, people: [{ state: 'in' }, { state: 'in' }] }
+  assert.equal(weStatus(two, 'en').key, 'we.ofDid')
+})
+
+test('leaving a Did we pushes the people who stay, respecting blocks and push_wanted', () => {
+  const sql = readFileSync(new URL('../supabase/we-left-push.sql', import.meta.url), 'utf8')
+  assert.match(sql, /"we_left": "{name} left: {q}"/)
+  assert.equal(sql.match(/"we_left":/g).length, 9)
+  assert.match(sql, /public.blocks b/)
+  assert.ok(sql.includes("push_wanted(m.user_id, 'we')"))
+})
+
+test('reminder copy has no fixed 9:00 PM and the new reminder keys are set', () => {
+  assert.ok(!/9:00 PM/.test(en['pings.kind.familySub']) && !/9:00 PM/.test(en['pings.quietNoLastCall']))
+  assert.match(en['pings.quietNoLastCall'], /{time}/)
+  assert.match(en['pings.kind.familySub'], /{time}/)
+  assert.equal(en['pings.privateSub'], 'Notifications don’t show the question.')
+  assert.equal(en['pings.kind.sends'], 'Questions from friends')
+  assert.ok(en['pings.stopNote'])
+  const row = readFileSync(new URL('../native/components/RemindersRow.jsx', import.meta.url), 'utf8')
+  assert.ok(row.includes("t('pings.rowBlocked')"))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

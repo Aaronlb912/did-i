@@ -2125,7 +2125,7 @@ function PingKinds({ colors, on }) {
         ) : null}
       </SetCard>
       {prefs.quietOn && afterQuiet(lastCallAt(), prefs).getTime() !== lastCallAt().getTime() ? (
-        <Meta colors={colors}>{t('pings.quietNoLastCall')}</Meta>
+        <Meta colors={colors}>{t('pings.quietNoLastCall', { time: clockWords(lastCallClock(prefs.quietFrom)) })}</Meta>
       ) : null}
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
     </>
@@ -2209,6 +2209,13 @@ function AwayCard({ colors }) {
   )
 }
 
+// Quiet hours that cover 21:00 move the last call to 30 minutes before they start (src/lib/quiet.js).
+function lastCallClock(from) {
+  const [h, m] = String(from || '21:00').split(':').map(Number)
+  const mins = (((h * 60 + (m || 0) - 30) % 1440) + 1440) % 1440
+  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
+}
+
 // 21:00 today: the last call for a high question (src/lib/notify.js).
 function lastCallAt() {
   const at = new Date()
@@ -2221,6 +2228,8 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
   const clock = now || new Date()
   const labelKey = pingLabel || 'pings.state.on'
   const on = labelKey === 'pings.state.on'
+  // The notifications module is missing: asking again cannot help, so point at settings.
+  const unavailable = pingLabel === '' && pingsFailed()
   // Every folder pings (armLampPings gets the whole shelf), so list them all.
   const books = boards?.length ? boards : book ? [book] : []
   // One row per question. Rows you switch off stay here until you leave, so
@@ -2248,7 +2257,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
     <ScreenShell title={t('pings.title')} colors={colors}>
       <Text style={[styles.subtitle, { color: colors.inkDim }]}>{t('pings.body')}</Text>
       <SetCard colors={colors}>
-        {onAskPings && labelKey !== 'pings.state.blocked' ? (
+        {onAskPings && labelKey !== 'pings.state.blocked' && !unavailable ? (
           // On: the phone owns the off switch, so tapping opens its settings.
           <SetSwitch
             colors={colors}
@@ -2273,7 +2282,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
           />
         )}
       </SetCard>
-      {pingsFailed() ? (
+      {pingsFailed() || unavailable ? (
         <SetCard colors={colors}>
           <SetRow colors={colors} icon="bell" tint={colors.miss} label={t('pings.setFailed')} chevron last onPress={() => Linking.openSettings().catch(() => {})} />
         </SetCard>
@@ -2281,6 +2290,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
       <AwayCard colors={colors} />
       <PingKinds colors={colors} on={on && Boolean(onAskPings)} />
       <PingTest colors={colors} />
+      <Meta colors={colors}>{t('pings.stopNote')}</Meta>
       <SetCap colors={colors}>{t('pings.waitingTonight')}</SetCap>
       {!fires.length ? (
         <Meta colors={colors}>{t('pings.emptyTonight')}</Meta>
