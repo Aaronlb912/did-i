@@ -929,7 +929,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
         foregroundStyle(ink),
         multilineTextAlignment('center'),
         lineLimit(compact ? 5 : 6),
-        minimumScaleFactor(0.35),
+        minimumScaleFactor(0.6),
         allowsTightening(true),
         frame({ maxWidth: 10000 }),
       ]}
@@ -969,6 +969,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   ) : null
   const buttons = lead ? (
     <HStack spacing={compact ? 4 : 8} modifiers={[frame({ maxWidth: 10000 })]}>
+      {lead.status === 'skip' ? null : (
       <Button
         label={nopeLabel}
         target={'nope:' + leadTarget}
@@ -986,6 +987,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           frame({ maxWidth: 10000 }),
         ]}
       />
+      )}
       <Button
         label={didLabel}
         target={'did:' + leadTarget}

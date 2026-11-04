@@ -2081,7 +2081,7 @@ export const fr = {
   'widget.tonight.lastNight': "Hier",
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "Pas encore",
-  'widget.tonight.openApp': 'Ouvrir',
+  'widget.tonight.waiting': "Questions en attente aujourd'hui",
   'widget.tonight.next': 'Suivante',
   'watch.allDone': "Tout est fait",
   'watch.notYet': "{n} pas encore",

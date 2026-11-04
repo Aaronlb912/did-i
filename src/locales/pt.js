@@ -2078,7 +2078,7 @@ export const pt = {
   'widget.tonight.lastNight': "Ontem",
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "Ainda não",
-  'widget.tonight.openApp': 'Abrir',
+  'widget.tonight.waiting': 'Perguntas esperando hoje',
   'widget.tonight.next': 'Próxima',
   'watch.allDone': "Tudo feito",
   'watch.notYet': "{n} ainda não",

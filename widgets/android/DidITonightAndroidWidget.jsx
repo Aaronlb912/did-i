@@ -594,12 +594,12 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
     footer: '',
     didLabel: 'Did',
     nopeLabel: 'Not yet',
-    openLabel: 'Open',
+    openLabel: 'Questions waiting today',
     left: 0,
     openUri: 'didi://tonight',
   }
   // An older snapshot can lack the open line; never draw it blank.
-  const p = raw.openLabel ? raw : { ...raw, openLabel: 'Open' }
+  const p = raw.openLabel ? raw : { ...raw, openLabel: 'Questions waiting today' }
   const C = palette(p)
   const tonightUri = p.openUri || 'didi://tonight'
   const { compact, tight, large } = widgetSize(widgetInfo)
@@ -761,7 +761,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                       marginTop: actionGap,
                     }}
                   >
-                    <FlexWidget
+                    lead.status === 'skip' ? null : <FlexWidget
                       style={{
                         flex: 1,
                         backgroundColor: C.skip,
@@ -787,7 +787,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                         backgroundColor: C.on,
                         borderRadius: 12,
                         paddingVertical: tight ? 7 : compact ? 6 : 8,
-                        marginLeft: 6,
+                        marginLeft: lead.status === 'skip' ? 0 : 6,
                         justifyContent: 'center',
                         alignItems: 'center',
                       }}
