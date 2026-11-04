@@ -23,6 +23,7 @@ export function StarterPicks({ book, onChange, now, colors, label, readyNow = fa
           <KeyButton
             key={starter.short}
             label={starter.short}
+            accessibilityLabel={t('first.pickHint', { name: starter.short })}
             colors={colors}
             onPress={() => {
               const from = base()

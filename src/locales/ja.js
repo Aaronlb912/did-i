@@ -171,6 +171,8 @@ export const ja = {
   'account.sent': '6 桁が {email} に届く。コードは 1 時間有効。',
   'account.code': 'コード',
   'account.signIn': 'ログイン',
+  'account.working': "少々お待ちください...",
+  'first.pickHint': "{name}。この質問を今日に追加します",
   'account.again': 'もう一度送る',
   'account.other': '別のメール',
   'account.stay': '今はしない',

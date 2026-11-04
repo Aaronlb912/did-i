@@ -30,7 +30,7 @@ export function AuthSignInActions({ colors, auth }) {
   if (auth.step === 'reviewer') {
     return (
       <View style={styles.actions}>
-        <DidButton colors={colors} label={t('account.signIn')} disabled={auth.busy} onPress={auth.openReviewer} />
+        <DidButton colors={colors} label={auth.busy ? t('account.working') : t('account.signIn')} disabled={auth.busy} onPress={auth.openReviewer} />
         <KeyButton colors={colors} label={t('account.other')} onPress={auth.useDifferentEmail} />
       </View>
     )
@@ -38,7 +38,7 @@ export function AuthSignInActions({ colors, auth }) {
 
   return (
     <View style={styles.actions}>
-      <DidButton colors={colors} label={t('account.signIn')} disabled={auth.busy} onPress={auth.openEmail} />
+      <DidButton colors={colors} label={auth.busy ? t('account.working') : t('account.signIn')} disabled={auth.busy} onPress={auth.openEmail} />
       <KeyButton colors={colors} label={t('account.again')} disabled={auth.busy} onPress={auth.askEmail} />
       <KeyButton colors={colors} label={t('account.other')} onPress={auth.useDifferentEmail} />
     </View>

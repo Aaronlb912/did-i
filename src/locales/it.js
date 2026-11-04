@@ -174,6 +174,8 @@ export const it = {
   'account.sent': 'Sei cifre in arrivo su {email}. Il codice vale un’ora.',
   'account.code': 'Codice',
   'account.signIn': 'Accedi',
+  'account.working': "Un momento...",
+  'first.pickHint': "{name}. Aggiunge questa domanda a Oggi",
   'account.again': 'Invia di nuovo',
   'account.other': 'Altra email',
   'account.stay': 'Non ora',

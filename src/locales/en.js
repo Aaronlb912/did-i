@@ -173,6 +173,8 @@ export const en = {
   'account.sent': 'Six digits are on the way to {email}. The code is good for an hour.',
   'account.code': 'Code',
   'account.signIn': 'Confirm',
+  'account.working': "One moment...",
+  'first.pickHint': "{name}. Adds this question to Today",
   'account.again': 'Send it again',
   'account.other': 'Different email',
   'account.stay': 'Not now',

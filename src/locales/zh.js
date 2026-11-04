@@ -171,6 +171,8 @@ export const zh = {
   'account.sent': '六位验证码已发往 {email}。验证码一小时内有效。',
   'account.code': '验证码',
   'account.signIn': '登录',
+  'account.working': "请稍候...",
+  'first.pickHint': "{name}。把这个问题加到今天",
   'account.again': '重新发送',
   'account.other': '其他邮箱',
   'account.stay': '暂不',

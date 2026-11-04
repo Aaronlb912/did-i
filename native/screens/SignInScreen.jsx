@@ -8,6 +8,7 @@ import { t } from '../../src/lib/i18n.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
+import { showToast } from '../lib/toast-queue.js'
 import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
 import { AuthMark } from '../components/AuthMark.jsx'
 import { AuthSignInStage } from '../components/AuthSignInStage.jsx'
@@ -29,7 +30,13 @@ function LocalButton({ colors, onPress }) {
 export function SignInScreen({ onDone }) {
   const colors = useHallColors()
   const insets = useSafeAreaInsets()
-  const auth = useAuthSignIn({ onSignedIn: onDone })
+  // A pull that failed after sign-in: say so on Today, since this screen closes.
+  const auth = useAuthSignIn({
+    onSignedIn: (miss) => {
+      onDone?.()
+      if (miss) setTimeout(() => showToast({ id: 'sign-in-sync', kind: 'error', text: miss, ms: 6000 }), 400)
+    },
+  })
   // First look is Get started and one full row for people with an account.
   const [signInOpen, setSignInOpen] = useState(false)
   const showSignIn = auth.step !== 'start' || signInOpen
@@ -44,7 +51,6 @@ export function SignInScreen({ onDone }) {
       <Text style={[styles.title, { color: colors.ink }]}>{t('account.offTitle')}</Text>
       <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('account.offBody')}</Text>
       <DidButton colors={colors} label={t('account.stay')} onPress={useLocalOnly} />
-      <LocalButton colors={colors} onPress={useLocalOnly} />
     </View>
   ) : (
     <View style={styles.panel}>
@@ -59,7 +65,6 @@ export function SignInScreen({ onDone }) {
           <DidButton colors={colors} label={t('auth.getStarted')} onPress={useLocalOnly} />
           {signInOpen ? (
             <>
-              <Text style={[styles.or, { color: colors.inkSoft }]}>{t('auth.haveAccount')}</Text>
               <AuthSignInActions colors={colors} auth={auth} />
             </>
           ) : (
@@ -70,7 +75,7 @@ export function SignInScreen({ onDone }) {
 
       {showSignIn ? (
       <View style={[styles.emailBlock, auth.step === 'start' && styles.emailOption]}>
-        {auth.step === 'start' ? (
+        {auth.step === 'start' && !signInOpen ? (
           <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newEmail')}</Text>
         ) : null}
         <Field
@@ -124,7 +129,7 @@ export function SignInScreen({ onDone }) {
         ) : null}
 
         {auth.step === 'start' ? (
-          <KeyButton colors={colors} label={t('account.send')} disabled={auth.busy} onPress={auth.askEmail} />
+          <KeyButton colors={colors} label={auth.busy ? t('account.working') : t('account.send')} disabled={auth.busy} onPress={auth.askEmail} />
         ) : (
           <AuthSignInActions colors={colors} auth={auth} />
         )}

@@ -39,12 +39,14 @@ export function useAuthSignIn({ onSignedIn }) {
     clearAuthSkip()
     armSyncForUser()
     // Signed in either way: a pull that throws must not leave them on this screen.
+    let pullMiss = ''
     try {
       await pullAndMerge()
     } catch {
-      setMiss(t('tonight.syncMiss'))
+      pullMiss = t('tonight.syncMiss')
+      setMiss(pullMiss)
     }
-    signedIn.current?.()
+    signedIn.current?.(pullMiss)
   }, [])
 
   useEffect(() => {
