@@ -456,11 +456,19 @@ export function HelpScreen() {
   )
 }
 
-export function LaterScreen({ book, now }) {
+export function LaterScreen({ book, boards = [], now }) {
   const colors = useHallColors()
-  const clock = now || new Date()
-  const nights = comingDays(book, clock, 7).filter((night) => night.due.length)
-  const hung = (book?.lamps || []).filter((lamp) => !lamp.archived)
+  // Ticks at midnight, so a screen left open moves to the new day.
+  const today = useDayNow()
+  const clock = now || today
+  // Every folder, like Marks; rows name their folder when there is more than one.
+  const books = boards.length ? boards : [book]
+  const many = books.length > 1
+  const nights = books
+    .map((b) => comingDays(b, clock, 7).map((night) => ({ ...night, due: night.due.map((row) => ({ ...row, folder: many ? b.title : '' })) })))
+    .reduce((all, list) => all.map((night, i) => ({ ...night, due: [...night.due, ...(list[i]?.due || [])] })))
+    .filter((night) => night.due.length)
+  const hung = books.flatMap((b) => (b?.lamps || []).filter((lamp) => !lamp.archived))
 
   return (
     <ScreenShell book={book} title={t('later.title')} colors={colors}>
@@ -480,9 +488,9 @@ export function LaterScreen({ book, now }) {
             </Text>
             {night.due.map((row) => (
               <Row
-                key={row.lamp.id}
+                key={`${row.folder}:${row.lamp.id}`}
                 colors={colors}
-                label={shortLabel(row.lamp)}
+                label={row.folder ? `${shortLabel(row.lamp)} · ${row.folder}` : shortLabel(row.lamp)}
                 note={answerLabel(row, night.iso)}
                 onPress={() =>
                   night.isToday

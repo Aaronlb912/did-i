@@ -867,7 +867,7 @@ export const de = {
   'streaks.seven': "Sieben Tage",
   'later.kicker': 'Demnächst',
   'later.title': "Die nächsten Tage",
-  'later.body':"Was Did I fragen wird. Heute bleibt der Tap. Diese Seite ist die Woche voraus, damit eine wartende Frage kein leerer Screen ist.",
+  'later.body':"Was Did I in den nächsten sieben Tagen fragt.",
   'later.empty': 'Füge zuerst eine Frage hinzu.',
   'later.emptyWeek': "In den nächsten sieben Tagen ist nichts geplant.",
   'later.tonight': "Heute",

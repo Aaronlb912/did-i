@@ -147,7 +147,7 @@ export function ScreenRouter({
   if (path === '/help') return <HelpScreen />
   if (path === '/ideas') return <IdeasScreen />
   if (path === '/recent') return <RecentScreen />
-  if (path === '/later') return <LaterScreen book={book} />
+  if (path === '/later') return <LaterScreen book={book} boards={boards} />
   if (path === '/marks') return <MarksScreen book={book} boards={boards} />
   if (path === '/shop') return <ShopScreen book={book} onChange={change} />
   if (path === '/shop/looks') return <ShopLooksScreen book={book} onChange={change} />
