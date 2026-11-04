@@ -6,7 +6,7 @@ import { goHash, redirectFrom } from '../navigation/hash.js'
 import { lazyScreen } from '../lib/lazy-screen.jsx'
 import { afterIdle } from '../lib/launch-ready.js'
 import { LegalScreen } from './LegalScreen.jsx'
-import { LampScreen, QuestionsScreen, SearchScreen } from './questions.jsx'
+import { LampScreen, QuestionsScreen } from './questions.jsx'
 import { TonightScreen } from './TonightScreen.jsx'
 
 // Everything off the two tabs loads the first time it opens.
@@ -204,7 +204,7 @@ export function ScreenRouter({
       />
     )
   }
-  if (path === '/search') return <SearchScreen book={book} />
+  if (path === '/search') return <GoTo path="/lamps" from={path} />
   if (path === '/week') return <WeekGridScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/calendar') return <CalendarScreen key={route.id || ''} book={book} boards={boards} tagId={tagId} route={route} onChangeBooks={changeBooks} />
   if (path === '/streaks') return <StreaksScreen book={book} boards={boards} tagId={tagId} />

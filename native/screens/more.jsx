@@ -496,7 +496,7 @@ export function LaterScreen({ book, now }) {
         ))
       )}
       <DidButton colors={colors} label={t('nav.home')} onPress={() => goHash('/tonight')} />
-      <KeyButton colors={colors} label={t('tonight.add')} onPress={() => goHash('/add')} />
+      {hung.length ? <KeyButton colors={colors} label={t('tonight.add')} onPress={() => goHash('/add')} /> : null}
     </ScreenShell>
   )
 }
@@ -796,7 +796,7 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
           <KeyButton colors={colors} label={t('empty.goTonight')} onPress={() => goHash('/tonight')} />
         </>
       ) : !rows.length ? (
-        <Meta colors={colors}>{t('feed.noMatch')}</Meta>
+        <><Meta colors={colors}>{t('feed.noMatch')}</Meta><KeyButton colors={colors} label={t('questions.searchClear')} onPress={() => setQuery('')} /></>
       ) : (
         <>
         {page.shown.map((row) => (
@@ -836,7 +836,7 @@ export function NotesScreen({ book, boards }) {
           <KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />
         </>
       ) : !rows.length ? (
-        <Meta colors={colors}>{t('feed.noMatch')}</Meta>
+        <><Meta colors={colors}>{t('feed.noMatch')}</Meta><KeyButton colors={colors} label={t('questions.searchClear')} onPress={() => setQuery('')} /></>
       ) : (
         <>
         {page.shown.map((row) => {
