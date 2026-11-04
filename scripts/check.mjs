@@ -6431,6 +6431,7 @@ test('dim and soft text stay readable on the panel in every look, dark and light
       for (const key of ['inkDim', 'inkSoft']) {
         const r = contrastRatio(c[key], c.panel)
         if (r < BODY_CONTRAST) low.push(`${look} ${theme} ${key} ${r.toFixed(2)}`)
+        if (key === 'inkDim' && contrastRatio(c.inkDim, c.panel3) < BODY_CONTRAST) low.push(`${look} ${theme} inkDim on panel3`)
       }
     }
   }
