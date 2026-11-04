@@ -157,21 +157,21 @@ export default ({ config }) => ({
         enableBackgroundRemoteNotifications: false,
       },
     ],
-    // Profile pictures from the library or the camera. No mic.
+    // Profile pictures from the library or the camera. The mic string is for Remind me; false here deletes it from the plist.
     [
       'expo-image-picker',
       {
         photosPermission: 'Did I uses a photo you pick as your profile picture.',
         cameraPermission: 'Did I uses the camera to take your profile picture and to scan friend and family codes.',
-        microphonePermission: false,
+        microphonePermission: 'Did I listens when you tap the mic to hear your reminder.',
       },
     ],
-    // Scans friend and family QR codes. No mic, no video.
+    // Scans friend and family QR codes. No video. Same mic string as Remind me so this plugin keeps it.
     [
       'expo-camera',
       {
         cameraPermission: 'Did I uses the camera to take your profile picture and to scan friend and family codes.',
-        microphonePermission: false,
+        microphonePermission: 'Did I listens when you tap the mic to hear your reminder.',
         recordAudioAndroid: false,
         barcodeScannerEnabled: true,
       },
