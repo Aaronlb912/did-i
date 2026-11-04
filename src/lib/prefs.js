@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { stampSavedAt } from './saved-at.js'
 import { savePrefsForSw } from './board-store.js'
 import { quietEnd, quietToFor } from './quiet.js'
+import { boardDate } from './recurrence.js'
 
 const KEY = 'did-i-prefs'
 const THEMES = new Set(['dark', 'light', 'phone'])
@@ -30,6 +31,8 @@ function blankPrefs() {
     gentle: false,
     // One free miss a week: the first missed day each week is kept like a freeze.
     freeMiss: false,
+    // App days the free miss was on: [from, to|null]. Days outside a span never get one.
+    freeMissSpans: [],
     diagnosticsAsked: false,
     shareDiagnostics: false,
     widgetLookMode: 'tag',
@@ -171,6 +174,20 @@ export function deviceLocale() {
   }
 }
 
+const MISS_SPANS_MAX = 20
+function cleanMissSpans(list) {
+  if (!Array.isArray(list)) return []
+  const out = []
+  for (const pair of list) {
+    const [from, to] = Array.isArray(pair) ? pair : []
+    if (!ISO_DAY.test(from || '')) continue
+    if (to !== null && (!ISO_DAY.test(to || '') || to <= from)) continue
+    out.push([from, to])
+  }
+  out.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+  return out.slice(-MISS_SPANS_MAX)
+}
+
 function cleanPrefs(raw) {
   const next = blankPrefs()
   if (THEMES.has(raw?.theme)) next.theme = raw.theme
@@ -179,6 +196,7 @@ function cleanPrefs(raw) {
   if (raw?.lessMotion === true) next.lessMotion = true
   if (raw?.gentle === true) next.gentle = true
   if (raw?.freeMiss === true) next.freeMiss = true
+  next.freeMissSpans = cleanMissSpans(raw?.freeMissSpans)
   if (raw?.diagnosticsAsked === true) next.diagnosticsAsked = true
   if (raw?.shareDiagnostics === true) next.shareDiagnostics = true
   if (raw?.widgetLookMode === 'pick') next.widgetLookMode = 'pick'
@@ -301,7 +319,20 @@ export function readPrefs() {
 
 export function writePrefs(patch, fromCloud = false) {
   const was = readPrefs()
-  const next = cleanPrefs({ ...was, ...patch })
+  let merged = { ...was, ...patch }
+  if (!fromCloud && patch && 'freeMiss' in patch && (patch.freeMiss === true) !== (was.freeMiss === true)) {
+    const today = boardDate(new Date())
+    const spans = cleanMissSpans(patch.freeMissSpans ?? was.freeMissSpans).map((s) => [...s])
+    const open = spans[spans.length - 1]
+    if (patch.freeMiss === true) {
+      if (!open || open[1] !== null) spans.push([today, null])
+    } else if (open && open[1] === null) {
+      if (today > open[0]) open[1] = today
+      else spans.pop()
+    }
+    merged = { ...merged, freeMissSpans: spans }
+  }
+  const next = cleanPrefs(merged)
   if (!fromCloud) {
     const now = new Date().toISOString()
     next.at = { ...next.at }

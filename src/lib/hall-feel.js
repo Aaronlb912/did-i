@@ -333,8 +333,13 @@ export function freezeState(boards, now = new Date()) {
   if (!books.length) return NO_FREEZE
   const today = boardDate(now, books[0].dayFoldHour)
   const grace = graceNightIso(now)
-  const weekly = readPrefs().freeMiss === true
-  const key = `${today}|${grace}|${weNightsStamp()}|${weekly ? 'w' : ''}`
+  const prefs = readPrefs()
+  let spans = prefs.freeMissSpans || []
+  if (prefs.freeMiss === true && !spans.length) spans = [[today, null]]
+  const weekly = spans.length > 0
+  const spanKey = weekly ? `w${JSON.stringify(spans)}` : ''
+  const inSpan = (iso) => spans.some(([from, to]) => from <= iso && (to === null || iso < to))
+  const key = `${today}|${grace}|${weNightsStamp()}|${spanKey}`
   let byKey = freezeMemo.get(boards)
   if (!byKey) {
     byKey = new Map()
@@ -354,13 +359,13 @@ export function freezeState(boards, now = new Date()) {
       states.push(!due ? 'none' : clear ? 'clear' : cursor === today || cursor === grace ? 'none' : 'miss')
       cursor = addDaysIso(cursor, 1)
     }
-    const walk = walkFreezes(states, FREEZE_EVERY, FREEZE_MAX, start, weekly ? isos.map(weekStartOf) : null)
+    const walk = walkFreezes(states, FREEZE_EVERY, FREEZE_MAX, start, weekly ? isos.map((iso) => (inSpan(iso) ? weekStartOf(iso) : '')) : null)
     return { run: walk.run, held: walk.held, weekUsed: walk.weekUsed, frozen: [...(start?.frozen || []), ...walk.frozen.map((i) => isos[i])] }
   }
   // Nights before last night are settled. Their walk is kept by what they
   // hold, so a tap tonight (a new shelf object) walks only the last nights.
   const settledTo = addDaysIso(today, -1)
-  const sign = `${weekly ? 'w' : ''}|${settledTo}|${weNightsStamp()}|${pastSign(books, settledTo)}`
+  const sign = `${spanKey}|${settledTo}|${weNightsStamp()}|${pastSign(books, settledTo)}`
   let past = settledMemo.get(sign)
   if (!past) {
     let first = startOf(books, today)

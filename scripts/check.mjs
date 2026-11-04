@@ -10703,21 +10703,42 @@ test('one free miss a week keeps the first missed day of each week', () => {
   }
   const boards = [book]
   const now = new Date(2026, 7, 4, 21, 0)
-  const was = readPrefs().freeMiss
+  const prev = readPrefs()
+  const was = prev.freeMiss
   try {
-    writePrefs({ freeMiss: false })
+    writePrefs({ freeMiss: false, freeMissSpans: [] })
     const plain = freezeState(boards, now)
     assert.equal(plain.frozen.size, 0, 'off by default: no miss is kept')
-    writePrefs({ freeMiss: true })
+    writePrefs({ freeMiss: true, freeMissSpans: [['2026-07-01', null]] })
     const saved = freezeState(boards, now)
     assert.notEqual(saved, plain, 'flipping the pref does not reuse the cached walk')
     assert.ok(saved.frozen.has('2026-07-30'), 'first miss of the week is kept')
     assert.ok(!saved.frozen.has('2026-08-01'), 'second miss in that week (crossing into August) is not')
     assert.ok(saved.frozen.has('2026-08-03'), 'the next week keeps its own first miss')
-    writePrefs({ freeMiss: false })
+    writePrefs({ freeMiss: false, freeMissSpans: [] })
     assert.equal(freezeState(boards, now), plain, 'flipping back returns the cached off walk')
+    writePrefs({ freeMiss: true, freeMissSpans: [['2026-08-02', null]] })
+    const late = freezeState(boards, now)
+    assert.ok(!late.frozen.has('2026-07-30'), 'an old miss before turning it on still breaks')
+    assert.ok(late.frozen.has('2026-08-03'), 'a miss after turning it on is kept')
+    writePrefs({ freeMiss: false, freeMissSpans: [['2026-07-01', '2026-08-02']] })
+    assert.ok(freezeState(boards, now).frozen.has('2026-07-30'), 'turning it off keeps a streak an earlier free miss saved')
+    assert.ok(!freezeState(boards, now).frozen.has('2026-08-03'), 'days after it was turned off get none')
+    writePrefs({ freeMiss: false, freeMissSpans: [] })
+    writePrefs({ freeMiss: true })
+    const spans = readPrefs().freeMissSpans
+    assert.equal(spans.length, 1, 'turning it on records a span')
+    assert.equal(spans[0][1], null, 'the span is open')
+    writePrefs({ freeMiss: false })
+    assert.equal(readPrefs().freeMissSpans.length, 0, 'on and off the same day leaves no span')
+    const junk = [['2026-01-01', '2026-01-05'], ['bad', null], ['2026-02-02', '2026-02-01'], [1, 2], 'x', ['2026-03-01', 'nope']]
+    for (let i = 0; i < 25; i += 1) junk.push(['2025-01-' + String(i + 1).padStart(2, '0'), null])
+    writePrefs({ freeMissSpans: junk })
+    const clean = readPrefs().freeMissSpans
+    assert.equal(clean.length, 20, 'spans are capped at 20')
+    assert.ok(clean.every(([a, b]) => /^\d{4}-\d{2}-\d{2}$/.test(a) && (b === null || /^\d{4}-\d{2}-\d{2}$/.test(b))), 'junk spans are dropped')
   } finally {
-    writePrefs({ freeMiss: was })
+    writePrefs({ freeMiss: was, freeMissSpans: prev.freeMissSpans })
   }
   assert.equal(readPrefs().freeMiss, was, 'the pref cleans to a boolean and defaults off')
 })
