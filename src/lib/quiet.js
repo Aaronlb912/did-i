@@ -77,7 +77,8 @@ export function hoursLeft(at, fold = FOLD) {
 // The note text key and values for "{n} left" at that moment.
 export function leftNote(n, at, fold = FOLD) {
   const h = hoursLeft(at, fold)
-  return h < 1 ? { key: 'notif.leftSoon', vars: { n } } : { key: 'notif.leftHours', vars: { n, h } }
+  if (h < 1) return { key: 'notif.leftSoon', vars: { n } }
+  return h === 1 ? { key: 'notif.leftHour', vars: { n } } : { key: 'notif.leftHours', vars: { n, h } }
 }
 
 // The earlier grouped note, 3 hours before the day folds. Quiet hours that
@@ -88,7 +89,8 @@ export function earlyCallAt(year, month, date, prefs, now, fold = FOLD) {
   const want = new Date(end.getTime() - EARLY_HOURS * HOUR)
   if (quietEnd(want, prefs).getTime() === want.getTime()) return clear(want) ? want : null
   const when = new Date(year, month - 1, date, 0, minutesOf(prefs.quietFrom) - 30, 0, 0)
-  if (when.getTime() >= want.getTime()) return null
+  // A quiet range that starts after midnight would put the note at the start of the day.
+  if (when.getTime() >= want.getTime() || when.getTime() < new Date(year, month - 1, date, fold, 0, 0, 0).getTime()) return null
   return clear(when) ? when : null
 }
 

@@ -458,6 +458,7 @@ export const it = {
   'notif.stillOpen': "Ancora aperta: {question}",
   'notif.stillOpenMany': "{n} domande ancora aperte",
   'notif.leftHours': "Ne restano {n}, mancano {h} h",
+  'notif.leftHour': "Ne restano {n}, manca 1 h",
   'notif.leftSoon': "Ne restano {n}, manca meno di un'ora",
   'we.startTogether': "Si parte. Anche {name} partecipa.",
   'we.startTogetherMany': "Si parte. Partecipano anche altre {n} persone.",

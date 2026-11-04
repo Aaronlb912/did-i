@@ -453,6 +453,7 @@ export const zh = {
   'notif.stillOpen': "还没回答：{question}",
   'notif.stillOpenMany': "还有{n}个问题没回答",
   'notif.leftHours': "还剩{n}个，还有{h}小时",
+  'notif.leftHour': "还剩{n}个，还有1小时",
   'notif.leftSoon': "还剩{n}个，不到1小时",
   'we.startTogether': "现在开始。{name}也加入了。",
   'we.startTogetherMany': "现在开始。另外{n}人也加入了。",
