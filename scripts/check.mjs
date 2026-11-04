@@ -11000,6 +11000,17 @@ test('reminder copy has no fixed 9:00 PM and the new reminder keys are set', () 
   assert.ok(row.includes("t('pings.rowBlocked')"))
 })
 
+test('quiet settings line uses the shared last call rule', async () => {
+  const { lastCallAt: quietLastCall } = await import('../src/lib/quiet.js')
+  const src = readFileSync(new URL('../native/screens/more.jsx', import.meta.url), 'utf8')
+  assert.ok(src.includes('sharedLastCallAt('))
+  assert.ok(!src.includes('function lastCallClock'))
+  const prefs = { quietOn: true, quietFrom: '23:00', quietTo: '22:00' }
+  assert.equal(quietLastCall(2026, 11, 3, null, prefs, new Date(2026, 10, 3)), null)
+  const sql = readFileSync(new URL('../supabase/we-left-push.sql', import.meta.url), 'utf8')
+  assert.ok(sql.includes('shares_family_of(new.user_id, m.user_id)'))
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

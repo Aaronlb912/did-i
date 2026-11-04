@@ -84,7 +84,7 @@ import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { AFTERNOON_AT_DEFAULT, AFTERNOON_AT_TIMES, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
-import { quietToFor } from '../../src/lib/quiet.js'
+import { lastCallAt as sharedLastCallAt, quietToFor } from '../../src/lib/quiet.js'
 import { PING_KINDS, afterQuiet, awayEnd, awayKey, awayLeft, awayNow, awayStart, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
@@ -2124,8 +2124,8 @@ function PingKinds({ colors, on }) {
           </>
         ) : null}
       </SetCard>
-      {prefs.quietOn && afterQuiet(lastCallAt(), prefs).getTime() !== lastCallAt().getTime() ? (
-        <Meta colors={colors}>{t('pings.quietNoLastCall', { time: clockWords(lastCallClock(prefs.quietFrom)) })}</Meta>
+      {movedLastCall(prefs) ? (
+        <Meta colors={colors}>{t('pings.quietNoLastCall', { time: clockWords(movedLastCall(prefs)) })}</Meta>
       ) : null}
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
     </>
@@ -2209,18 +2209,13 @@ function AwayCard({ colors }) {
   )
 }
 
-// Quiet hours that cover 21:00 move the last call to 30 minutes before they start (src/lib/quiet.js).
-function lastCallClock(from) {
-  const [h, m] = String(from || '21:00').split(':').map(Number)
-  const mins = (((h * 60 + (m || 0) - 30) % 1440) + 1440) % 1440
-  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
-}
-
-// 21:00 today: the last call for a high question (src/lib/notify.js).
-function lastCallAt() {
-  const at = new Date()
-  at.setHours(21, 0, 0, 0)
-  return at
+// Quiet hours that cover 21:00 move the last call. Same rule as the reminder (src/lib/quiet.js); null hides the line.
+function movedLastCall(prefs) {
+  if (!prefs.quietOn) return null
+  const now = new Date()
+  const when = sharedLastCallAt(now.getFullYear(), now.getMonth() + 1, now.getDate(), null, prefs, new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+  if (!when || (when.getHours() === 21 && when.getMinutes() === 0)) return null
+  return `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`
 }
 
 export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange }) {
