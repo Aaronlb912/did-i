@@ -82,7 +82,7 @@ export function DidYouBanner({ path, colors }) {
             {lines.title}
           </Text>
           {lines.body ? (
-            <Text style={[styles.body, { color: colors.inkSoft }]} numberOfLines={2}>
+            <Text style={[styles.body, { color: colors.inkSoft }]} numberOfLines={4}>
               {lines.body}
             </Text>
           ) : null}

@@ -17,7 +17,7 @@
   --di-line-soft: #21262f;
   --di-ink: #f4f6fa;
   --di-ink-soft: #99a1b0;
-  --di-ink-dim: #848b97;
+  --di-ink-dim: #8a909c;
   --di-on: #c9f24d;
   --di-on-deep: #8fae2c;
   /* Text on a --di-on fill (Did buttons). */
@@ -99,7 +99,7 @@
   --di-line-soft: #24282e;
   --di-ink: #e8e4dc;
   --di-ink-soft: #9a9588;
-  --di-ink-dim: #878480;
+  --di-ink-dim: #8e8b86;
   --di-on: #a8b878;
   --di-on-deep: #6a7848;
   --di-late: #7eb0c0;
@@ -116,7 +116,7 @@
   --di-line-soft: #2e261c;
   --di-ink: #f4ece0;
   --di-ink-soft: #a89880;
-  --di-ink-dim: #908375;
+  --di-ink-dim: #95887a;
   --di-on: #e2c36a;
   --di-on-deep: #9a7a28;
   --di-late: #c0a060;
@@ -133,7 +133,7 @@
   --di-line-soft: #161e2c;
   --di-ink: #e0e4f0;
   --di-ink-soft: #8898b0;
-  --di-ink-dim: #74828e;
+  --di-ink-dim: #778591;
   --di-on: #e8d070;
   --di-on-deep: #a88830;
   --di-late: #88b8e8;
@@ -150,7 +150,7 @@
   --di-line-soft: #2e221c;
   --di-ink: #f2e6de;
   --di-ink-soft: #a89486;
-  --di-ink-dim: #908176;
+  --di-ink-dim: #95867b;
   --di-on: #d97a5c;
   --di-on-deep: #9c4a30;
   --di-late: #c8a078;
@@ -167,7 +167,7 @@
   --di-line-soft: #2a2a29;
   --di-ink: #f2f0eb;
   --di-ink-soft: #a3a09a;
-  --di-ink-dim: #878782;
+  --di-ink-dim: #8e8e89;
   --di-on: #ecebe6;
   --di-on-deep: #8e8c86;
   --di-late: #b8b2a4;
@@ -184,7 +184,7 @@
   --di-line-soft: #262523;
   --di-ink: #f8ecdb;
   --di-ink-soft: #a99c8a;
-  --di-ink-dim: #878177;
+  --di-ink-dim: #8f887e;
   --di-on: #f0e6d8;
   --di-on-deep: #928878;
   --di-late: #cbb087;
@@ -201,7 +201,7 @@
   --di-line-soft: #1f2c28;
   --di-ink: #e6f2ec;
   --di-ink-soft: #93aaa1;
-  --di-ink-dim: #738881;
+  --di-ink-dim: #7c908a;
   --di-on: #8fd1b5;
   --di-on-deep: #5a8f7a;
   --di-late: #c7b27c;
@@ -218,7 +218,7 @@
   --di-line-soft: #2f271f;
   --di-ink: #f6ede4;
   --di-ink-soft: #b0a191;
-  --di-ink-dim: #8e8274;
+  --di-ink-dim: #95897c;
   --di-on: #cfa577;
   --di-on-deep: #8a6844;
   --di-late: #7eb0c0;
@@ -235,7 +235,7 @@
   --di-line-soft: #242933;
   --di-ink: #eaeff9;
   --di-ink-soft: #9ba4b6;
-  --di-ink-dim: #7d8594;
+  --di-ink-dim: #848b9a;
   --di-on: #8895b9;
   --di-on-deep: #4e6194;
   --di-late: #e0a24a;
@@ -252,7 +252,7 @@
   --di-line-soft: #2b2630;
   --di-ink: #f1ecf7;
   --di-ink-soft: #a89fb2;
-  --di-ink-dim: #898190;
+  --di-ink-dim: #908897;
   --di-on: #c7b2dc;
   --di-on-deep: #7d6a9c;
   --di-late: #c7b27c;
@@ -269,7 +269,7 @@
   --di-line-soft: #322524;
   --di-ink: #f9ebea;
   --di-ink-soft: #b59d9b;
-  --di-ink-dim: #937f7d;
+  --di-ink-dim: #9a8785;
   --di-on: #c7918c;
   --di-on-deep: #8a5552;
   --di-late: #c7b27c;
@@ -286,7 +286,7 @@
   --di-line-soft: #24292e;
   --di-ink: #eaeff5;
   --di-ink-soft: #9ca5ae;
-  --di-ink-dim: #7d868d;
+  --di-ink-dim: #848c93;
   --di-on: #b9c2cc;
   --di-on-deep: #6d7a88;
   --di-late: #e0a24a;
@@ -1128,7 +1128,7 @@ html[data-theme='light'] .di-hall,
   --di-line-soft: #dde1d4;
   --di-ink: #1a1d16;
   --di-ink-soft: #4a5240;
-  --di-ink-dim: #686f5f;
+  --di-ink-dim: #5c6354;
   --di-on: #567510;
   --di-on-ink: #ffffff;
   --di-on-deep: #3d5608;
@@ -1163,7 +1163,7 @@ html[data-theme='light'] .di-hall[data-look='ink'],
   --di-line-soft: #d8d4c8;
   --di-ink: #1c1a16;
   --di-ink-soft: #5a5448;
-  --di-ink-dim: #6a655b;
+  --di-ink-dim: #676258;
   --di-on: #5a6240;
   --di-on-deep: #3d442c;
   --di-late: #3a7890;
@@ -1181,7 +1181,7 @@ html[data-theme='light'] .di-hall[data-look='brass'],
   --di-line-soft: #e0d4c4;
   --di-ink: #1e1810;
   --di-ink-soft: #6a5c48;
-  --di-ink-dim: #746758;
+  --di-ink-dim: #6c6051;
   --di-on: #8a6a18;
   --di-on-deep: #5c4610;
   --di-late: #9a7028;
@@ -1199,7 +1199,7 @@ html[data-theme='light'] .di-hall[data-look='night'],
   --di-line-soft: #ccd8e4;
   --di-ink: #101820;
   --di-ink-soft: #485868;
-  --di-ink-dim: #596774;
+  --di-ink-dim: #586673;
   --di-on: #6e5c28;
   --di-on-deep: #4a3d18;
   --di-late: #2868a8;
@@ -1217,7 +1217,7 @@ html[data-theme='light'] .di-hall[data-look='clay'],
   --di-line-soft: #e4d2c7;
   --di-ink: #22160f;
   --di-ink-soft: #6c5244;
-  --di-ink-dim: #7b6458;
+  --di-ink-dim: #735d51;
   --di-on: #9c4028;
   --di-on-deep: #6e2a18;
   --di-late: #8a6a40;
@@ -1235,7 +1235,7 @@ html[data-theme='light'] .di-hall[data-look='chalk'],
   --di-line-soft: #dddbd5;
   --di-ink: #161614;
   --di-ink-soft: #56544f;
-  --di-ink-dim: #6c6a65;
+  --di-ink-dim: #676560;
   --di-on: #262624;
   --di-on-deep: #6c6a64;
   --di-late: #8a8474;
@@ -1253,7 +1253,7 @@ html[data-theme='light'] .di-hall[data-look='oat'],
   --di-line-soft: #e2d7c5;
   --di-ink: #12100d;
   --di-ink-soft: #585043;
-  --di-ink-dim: #70665a;
+  --di-ink-dim: #6c6257;
   --di-on: #23201d;
   --di-on-deep: #6f6557;
   --di-late: #9c8158;
@@ -1271,7 +1271,7 @@ html[data-theme='light'] .di-hall[data-look='pine'],
   --di-line-soft: #ccdcd5;
   --di-ink: #0b1411;
   --di-ink-soft: #45584f;
-  --di-ink-dim: #5b6d65;
+  --di-ink-dim: #586961;
   --di-on: #2c6b55;
   --di-on-deep: #5c8a78;
   --di-late: #8f7a45;
@@ -1289,7 +1289,7 @@ html[data-theme='light'] .di-hall[data-look='cocoa'],
   --di-line-soft: #e1d6ca;
   --di-ink: #16110b;
   --di-ink-soft: #5d5043;
-  --di-ink-dim: #73675a;
+  --di-ink-dim: #6e6356;
   --di-on: #6e4929;
   --di-on-deep: #a08060;
   --di-late: #3a7890;
@@ -1307,7 +1307,7 @@ html[data-theme='light'] .di-hall[data-look='denim'],
   --di-line-soft: #d1d8e5;
   --di-ink: #0f1219;
   --di-ink-soft: #4c5363;
-  --di-ink-dim: #626978;
+  --di-ink-dim: #5f6574;
   --di-on: #333e6a;
   --di-on-deep: #6c7da8;
   --di-late: #9a6418;
@@ -1325,7 +1325,7 @@ html[data-theme='light'] .di-hall[data-look='lilac'],
   --di-line-soft: #dbd4e2;
   --di-ink: #131017;
   --di-ink-soft: #574f5f;
-  --di-ink-dim: #6d6675;
+  --di-ink-dim: #686270;
   --di-on: #6d5c8c;
   --di-on-deep: #9384b0;
   --di-late: #8f7a45;
@@ -1343,7 +1343,7 @@ html[data-theme='light'] .di-hall[data-look='rosewood'],
   --di-line-soft: #e4d3d1;
   --di-ink: #180f0f;
   --di-ink-soft: #624d4b;
-  --di-ink-dim: #776462;
+  --di-ink-dim: #73605f;
   --di-on: #7c4441;
   --di-on-deep: #b08480;
   --di-late: #8f7a45;
@@ -1361,7 +1361,7 @@ html[data-theme='light'] .di-hall[data-look='fog'],
   --di-line-soft: #d2d8df;
   --di-ink: #0f1216;
   --di-ink-soft: #4c545c;
-  --di-ink-dim: #636a72;
+  --di-ink-dim: #60666e;
   --di-on: #465364;
   --di-on-deep: #7f8c9a;
   --di-late: #9a6418;
