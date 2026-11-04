@@ -1349,6 +1349,7 @@ export const ko = {
   'pings.day.1': 'Did I로 하루를 시작해요.',
   'pings.day.morning': "오늘 무엇을 기억하고 싶나요?",
   'pings.renew': "알림을 계속 받으려면 Did I를 열어 주세요.",
+  'pings.noRush': "서두르지 않아도 돼요. 오늘은 언제든 열려 있어요.",
   'comeBack.title': "다시 오셨네요",
   'comeBack.body': "놓친 날이 있어도 오늘은 시작할 수 있어요. 질문 하나부터 해 보세요.",
   'comeBack.start': "시작",

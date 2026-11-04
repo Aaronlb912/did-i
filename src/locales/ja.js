@@ -1350,6 +1350,7 @@ export const ja = {
   'pings.day.1': 'Did I で一日を始めよう。',
   'pings.day.morning': "今日は何を覚えておきたい？",
   'pings.renew': "リマインダーを続けて受け取るには Did I を開いてください。",
+  'pings.noRush': "急がなくて大丈夫。今日はいつでも開いています。",
   'comeBack.title': "おかえりなさい",
   'comeBack.body': "お休みした日があっても、今日は始められます。まず1つ答えてみましょう。",
   'comeBack.start': "はじめる",

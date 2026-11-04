@@ -1361,6 +1361,7 @@ export const en = {
   'pings.day.1': 'Start the day with Did I.',
   'pings.day.morning': "What do you want to remember today?",
   'pings.renew': "Open Did I to keep your reminders coming.",
+  'pings.noRush': "No rush. Today is open whenever you are.",
   'comeBack.title': "Welcome back",
   'comeBack.body': "Missed days don't block today. Start with one question.",
   'comeBack.start': "Start",

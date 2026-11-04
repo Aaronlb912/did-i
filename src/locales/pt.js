@@ -1363,6 +1363,7 @@ export const pt = {
   'pings.day.1': 'Comece o dia com Did I.',
   'pings.day.morning': "O que você quer lembrar hoje?",
   'pings.renew': "Abra o Did I para continuar recebendo seus lembretes.",
+  'pings.noRush': "Sem pressa. Hoje está aberto quando você quiser.",
   'comeBack.title': "Bem-vindo de volta",
   'comeBack.body': "Dias perdidos não bloqueiam hoje. Comece com uma pergunta.",
   'comeBack.start': "Começar",
