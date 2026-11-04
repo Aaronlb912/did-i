@@ -237,12 +237,24 @@ export function weDoneStyle(card, colors) {
   return card.due && card.done ? { backgroundColor: colors.weSoft || colors.panel2, borderColor: colors.we || colors.on } : null
 }
 
+// How often a card repeats.
+export function whenValue(draft) {
+  if (draft.cadence === 'monthly') return t('we.monthly')
+  if (draft.cadence !== 'weekly') return t('we.daily')
+  if (!draft.weekdays?.length) return t('we.someDays')
+  return draft.weekdays.map((day) => t(`we.day.${day}`)).join(' ')
+}
+
+// The card's schedule line: how often, then the time.
+export function weWhenWords(draft) {
+  return [whenValue(draft), draft.askAfter ? clockWords(draft.askAfter) : t('hang.askAny')].join(' · ')
+}
+
 // Did we asks waiting on you, for the inbox. Nothing when there are none.
 export function WeAsks({ colors }) {
   const account = useAccount()
   const { cards, reload } = useWeTonight(account.user)
   const [busy, setBusy] = useState('')
-  const [miss, setMiss] = useState('')
   // State lags a frame: a double tap would send twice without this.
   const sending = useRef(false)
   const asks = cards.filter((card) => card.myState === 'asked')
@@ -255,8 +267,8 @@ export function WeAsks({ colors }) {
     const out = await weReply(card.id, yes).catch(() => ({ miss: 'confirm.miss' }))
     sending.current = false
     setBusy('')
-    setMiss(out.miss ? tMiss(out.miss) : '')
-    if (!out.miss) confirmDone(t(yes ? 'confirm.weJoined' : 'confirm.weDeclined'))
+    if (out.miss) confirmMiss(tMiss(out.miss))
+    else confirmDone(t(yes ? 'confirm.weJoined' : 'confirm.weDeclined'))
     reload()
   }
 
@@ -273,18 +285,13 @@ export function WeAsks({ colors }) {
             </Text>
             <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
             <Text style={[styles.meta, { color: colors.inkDim }]}>
-              {t(`we.mode.${card.mode}`)} · {t(`we.shows.${card.shows}`)}
+              {t(`we.mode.${card.mode}`)} · {t(`we.shows.${card.shows}`)} · {weWhenWords(card)}
             </Text>
           </View>
           <DidButton colors={colors} small label={t('we.join')} disabled={busy === card.id} onPress={() => reply(card, true)} />
           <KeyButton colors={colors} label={t('we.noThanks')} disabled={busy === card.id} onPress={() => reply(card, false)} />
         </View>
       ))}
-      {miss ? (
-        <Text style={[styles.note, { color: colors.miss }]} accessibilityRole="alert">
-          {miss}
-        </Text>
-      ) : null}
     </View>
   )
 }
