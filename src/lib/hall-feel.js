@@ -1,5 +1,5 @@
 import { weFirstNight, weNight, weNightsStamp } from './we-nights.js'
-import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor, weekStartOf } from './recurrence.js'
+import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor, periodPassed, weekStartOf } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { travelNightState, travelSkipped, travelWe } from './travel.js'
 import { readPrefs } from './prefs.js'
@@ -13,9 +13,13 @@ import { LOOKS_LATE, wallClock } from './zone.js'
 // keeps its answer, missed or not, so a miss does not vanish with it.
 // On a night skipped by travel only answered questions count: a Did as
 // usual, a tapped Not yet as a Not yet. The rest are not due, as before the start.
-export function dueThatNight(book, iso, at) {
+// A monthly question due earlier this month and still unanswered is not a miss
+// until the month ends, same as the grace night.
+export function dueThatNight(book, iso, at, now = new Date()) {
   const skipped = travelSkipped(book, iso)
+  const today = boardDate(now, book.dayFoldHour)
   return dueTonight(withPastOnce(book), at).filter((row) => {
+    if (row.lamp.cadence === 'monthly' && !row.answer && !periodPassed(row.lamp, row.periodKey, today)) return false
     if (skipped && travelNightState(row.answer, iso) === 'none') return false
     if (isEvery(row.lamp) || (row.lamp.createdOn && row.lamp.createdOn > iso)) return false
     if (row.lamp.pauses && inPause(row.lamp, iso) && row.answer?.status !== 'yes' && row.answer?.status !== 'late') return false
@@ -72,7 +76,7 @@ export function hallHeat(book, now = new Date()) {
   for (let step = 0; step < 40 && heat < 5; step += 1) {
     const at = noonOn(cursor)
     if (!at) break
-    const rows = dueThatNight(book, cursor, at)
+    const rows = dueThatNight(book, cursor, at, now)
     if (countedTonightRows(rows).length === 0) {
       cursor = addDaysIso(cursor, -1)
       continue
@@ -134,7 +138,7 @@ export function lastBrokenNight(boards, now = new Date()) {
   for (let step = 0; step < 40 && !found; step += 1) {
     const at = noonOn(night)
     if (!at) return null
-    if (weNight(night).due || books.some((book) => countedTonightRows(dueThatNight(book, night, at)).length)) found = true
+    if (weNight(night).due || books.some((book) => countedTonightRows(dueThatNight(book, night, at, now)).length)) found = true
     else night = addDaysIso(night, -1)
   }
   if (!found) return null
@@ -161,7 +165,7 @@ export function daysAway(boards, now = new Date()) {
     if (floor && night < floor) break
     const at = noonOn(night)
     if (!at) break
-    const { due, clear } = nightTally(books, night, at, '')
+    const { due, clear } = nightTally(books, night, at, '', now)
     if (due && (clear || frozen.has(night))) break
     if (due) days += 1
     night = addDaysIso(night, -1)
@@ -174,18 +178,20 @@ export function daysAway(boards, now = new Date()) {
 // answer only changes when the book does: every edit makes a new book object,
 // so the WeakMap drops stale nights on its own.
 const nightsByBook = new WeakMap()
-function nightOf(book, iso, at) {
+function nightOf(book, iso, at, now = new Date()) {
   let nights = nightsByBook.get(book)
   if (!nights) {
     nights = new Map()
     nightsByBook.set(book, nights)
   }
-  let night = nights.get(iso)
+  // The month is part of the key: an open month turns into a miss when it ends.
+  const memoKey = `${iso}|${boardDate(now, book.dayFoldHour).slice(0, 7)}`
+  let night = nights.get(memoKey)
   if (!night) {
-    const rows = dueThatNight(book, iso, at)
+    const rows = dueThatNight(book, iso, at, now)
     const counted = countedTonightRows(rows).length
     night = { counted, clear: counted > 0 && dueClearTonight(rows) }
-    nights.set(iso, night)
+    nights.set(memoKey, night)
   }
   return night
 }
@@ -205,7 +211,7 @@ function clearNightsInARow(boards, now, tagId, cap, lookBack, waitTonight = true
     if (floor && cursor < floor) break
     const at = noonOn(cursor)
     if (!at) break
-    const { due: dueCount, clear } = nightTally(books, cursor, at, tagId)
+    const { due: dueCount, clear } = nightTally(books, cursor, at, tagId, now)
     if (dueCount === 0) {
       cursor = addDaysIso(cursor, -1)
       continue
@@ -243,7 +249,7 @@ export function bestShelfStreak(boards, now = new Date(), lookBack = 1100) {
     if (floor && cursor < floor) break
     const at = noonOn(cursor)
     if (!at) break
-    const { due, clear } = nightTally(books, cursor, at, '')
+    const { due, clear } = nightTally(books, cursor, at, '', now)
     if (due && clear) {
       run += 1
       if (run > best) best = run
@@ -256,11 +262,11 @@ export function bestShelfStreak(boards, now = new Date(), lookBack = 1100) {
 }
 
 // How many things were due on a night across books, and whether all were did.
-function nightTally(books, iso, at, tagId = '') {
+function nightTally(books, iso, at, tagId = '', now = new Date()) {
   let due = 0
   let clear = true
   for (const book of books) {
-    const night = nightOf(book, iso, at)
+    const night = nightOf(book, iso, at, now)
     due += night.counted
     if (night.counted && !night.clear) clear = false
   }
@@ -354,7 +360,7 @@ export function freezeState(boards, now = new Date()) {
     for (let step = 0; step <= 1100 && cursor < to; step += 1) {
       const at = noonOn(cursor)
       if (!at) break
-      const { due, clear } = nightTally(books, cursor, at)
+      const { due, clear } = nightTally(books, cursor, at, '', now)
       isos.push(cursor)
       states.push(!due ? 'none' : clear ? 'clear' : cursor === today || cursor === grace ? 'none' : 'miss')
       cursor = addDaysIso(cursor, 1)

@@ -171,7 +171,7 @@ function stateDot(kind, colors) {
   if (kind === 'nope' || kind === 'pastNope') return { backgroundColor: colors.skip || colors.inkDim, borderColor: colors.skip || colors.inkDim }
   if (kind === 'due') return { backgroundColor: 'transparent', borderColor: colors.miss }
   if (kind === 'open') return { backgroundColor: 'transparent', borderColor: colors.openRing || colors.open || colors.on }
-  if (kind === 'missed') return { ...missDot(colors), borderColor: colors.miss }
+  if (kind === 'missed') return { ...missDot(colors, colors.open), borderColor: colors.open }
   return { backgroundColor: 'transparent', borderColor: colors.line }
 }
 
