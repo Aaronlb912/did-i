@@ -2244,6 +2244,7 @@ export const ko = {
   'we.tonightsTurn': "오늘 차례",
   'we.countOnly': '{total}명이 참여 중. 답은 비공개예요.',
   'we.askMore': '다른 사람 초대',
+  'we.pickName': "{name}님에게 묻기",
   'we.sendAsk': '초대 보내기',
   'we.edit': '규칙 바꾸기',
   'we.save': '저장',

@@ -30,7 +30,6 @@ import {
   reportWe,
   weMine,
   weMonth,
-  weNextMilestone,
   weEarly,
   weSlotLocked,
   weNextNight,
@@ -51,12 +50,13 @@ import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine, whenValue, weWhenWords } from '../components/WeTonight.jsx'
-import { weDot, weNextCoinsKey, weRuleKey, weModeKey, weSlotDay, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
+import { weDot, weRuleKey, weModeKey, weSlotDay, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
 import { boardDate, formatBoardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta, OfflineLine } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { goHash, swapHash } from '../navigation/hash.js'
+import { useOnline } from '../hooks/useOnline.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { useWeCheer } from '../../src/lib/we-cheer.js'
@@ -90,8 +90,10 @@ export function usePeople() {
 
 // Pick people: friends and family only. Tapping a name toggles it.
 function PeoplePick({ people, picked, onPick, colors, skip = [] }) {
+  const online = useOnline()
   if (people === null) return <Meta colors={colors}>{t('we.loadingPeople')}</Meta>
   const open = people.filter((p) => !skip.includes(p.id))
+  if (!open.length && !online) return <Meta colors={colors}>{t('people.offline')}</Meta>
   if (!open.length) {
     return (
       <View style={styles.gap}>
@@ -109,6 +111,7 @@ function PeoplePick({ people, picked, onPick, colors, skip = [] }) {
             key={p.id}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: on }}
+            accessibilityLabel={t('we.pickName', { name: p.name })}
             onPress={() => onPick(on ? picked.filter((id) => id !== p.id) : [...picked, p.id])}
             style={[styles.chip, { borderColor: on ? colors.onDeep : colors.line }]}
           >
@@ -883,7 +886,12 @@ function WeCardPage({ book, cardId, onChange }) {
       alive = false
     }
   }, [cardId, linkTry])
-  const [miss, setMiss] = useState('')
+  const [miss, setMissText] = useState('')
+  // A miss also toasts: the line at the bottom is often off screen.
+  const setMiss = (text) => {
+    setMissText(text)
+    if (text) confirmMiss(text)
+  }
   const ans = useWeAnswer(() => load(), book)
   // Not asked tonight: its next asked night can be answered early.
   // Both kept per card, so they are on the page as it opens, not one after
@@ -965,7 +973,6 @@ function WeCardPage({ book, cardId, onChange }) {
 
   const streak = weStreak(card)
   const best = weBest(card)
-  const next = weNextMilestone(streak)
   const month = weMonth(card)
   const lastMonthIso = (() => {
     const date = new Date()
@@ -985,8 +992,7 @@ function WeCardPage({ book, cardId, onChange }) {
     setBusy(false)
     if (out.miss) {
       const text = tMiss(out.miss)
-      setMiss(text)
-      return confirmMiss(text)
+      return setMiss(text)
     }
     const before = editFrom(card)
     const moved = before.cadence !== edit.cadence || before.weekdays.join() !== edit.weekdays.join()
@@ -1020,7 +1026,7 @@ function WeCardPage({ book, cardId, onChange }) {
     setBusy(true)
     let sent = []
     for (const id of asking) {
-      const out = await weAsk(card.id, id)
+      const out = await weAsk(card.id, id).catch(() => ({ miss: 'people.reach' }))
       if (out.miss) {
         setMiss(tMiss(out.miss))
         break
@@ -1315,7 +1321,7 @@ function WeCardPage({ book, cardId, onChange }) {
     .join(', ')
 
   return (
-    <ScreenShell book={book} title={t('we.title')} colors={colors}>
+    <ScreenShell book={book} title={t('we.title')} colors={colors} onRefresh={load}>
       {shareFirst ? shareCard : null}
       <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }, weDoneStyle(card, colors)]}>
         <View style={styles.headTop}>
@@ -1426,7 +1432,6 @@ function WeCardPage({ book, cardId, onChange }) {
         {sum ? <Text style={[styles.hint, styles.tight, { color: colors.we }]}>{togetherLine(sum) || t('weAmount.none')}</Text> : null}
         <Meta colors={colors}>
           {t('we.best', { n: best })}
-          {next ? ` · ${(() => { const w = weNextCoinsKey(card, next - streak); return t(w.key, w.vars) })()}` : ''}
         </Meta>
       </View>
 
@@ -1642,7 +1647,7 @@ const styles = StyleSheet.create({
   weEmptyTitle: { fontFamily: fonts.display, fontSize: 20, fontWeight: '700', textAlign: 'center' },
   cap: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', marginTop: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, minHeight: 44, justifyContent: 'center' },
   gap: { gap: 8 },
   question: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700' },
   panel: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4 },

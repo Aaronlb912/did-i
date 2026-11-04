@@ -2237,6 +2237,7 @@ export const zh = {
   'we.tonightsTurn': "今天轮到",
   'we.countOnly': '{total} 人参与。回答保持私密。',
   'we.askMore': '邀请其他人',
+  'we.pickName': "邀请 {name}",
   'we.sendAsk': '发送邀请',
   'we.edit': '修改规则',
   'we.save': '保存',

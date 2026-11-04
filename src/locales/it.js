@@ -2275,6 +2275,7 @@ export const it = {
   'we.tonightsTurn': "tocca oggi",
   'we.countOnly': '{total} persone qui. Le risposte restano private.',
   'we.askMore': 'Invita qualcun altro',
+  'we.pickName': "Invita {name}",
   'we.sendAsk': 'Invia',
   'we.edit': 'Cambia le regole',
   'we.save': 'Salva',

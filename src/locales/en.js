@@ -2269,6 +2269,7 @@ export const en = {
   'we.tonightsTurn': "today’s turn",
   'we.countOnly': '{total} people on this. Answers stay private.',
   'we.askMore': 'Ask someone else',
+  'we.pickName': "Ask {name}",
   'we.sendAsk': 'Send ask',
   'we.edit': 'Change the rules',
   'we.save': 'Save',

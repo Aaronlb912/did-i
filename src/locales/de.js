@@ -2284,6 +2284,7 @@ export const de = {
   'we.tonightsTurn': 'heute dran',
   'we.countOnly': '{total} Leute dabei. Antworten bleiben privat.',
   'we.askMore': 'Noch jemanden fragen',
+  'we.pickName': "{name} fragen",
   'we.sendAsk': 'Anfrage senden',
   'we.edit': 'Regeln ändern',
   'we.save': 'Speichern',

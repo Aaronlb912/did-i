@@ -2273,6 +2273,7 @@ export const pt = {
   'we.tonightsTurn': 'vez de hoje',
   'we.countOnly': '{total} pessoas nisso. As respostas ficam privadas.',
   'we.askMore': 'Convidar mais alguém',
+  'we.pickName': "Convidar {name}",
   'we.sendAsk': 'Enviar',
   'we.edit': 'Mudar as regras',
   'we.save': 'Salvar',
