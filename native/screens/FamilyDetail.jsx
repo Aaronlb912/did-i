@@ -437,7 +437,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   <DidButton
                     colors={colors}
                     small
-                    label={t('people.sendDidYou')}
+                    label={t('friend.sendDidYou')}
                     onPress={() => setSheet({ person: row.person })}
                   />
                   {done ? (
