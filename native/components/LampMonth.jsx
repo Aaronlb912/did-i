@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
-import { answerFor, formatBoardDate, isDueOn, isEvery, isPerWeek, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
+import { answerFor, formatBoardDate, isDueOn, isEvery, isPerWeek, nightOpen, periodKeyFor, periodPassed } from '../../src/lib/recurrence.js'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { amountWords, pausedOpen } from '../../src/lib/lamp-record.js'
 import { travelNightState, travelSkipped } from '../../src/lib/travel.js'
@@ -41,7 +41,7 @@ export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false) {
       const answer = answerFor(book, lamp.id, periodKeyFor(lamp, iso))
       const status = answer?.status
       // A day skipped for travel and left open is not a miss, same as the streak.
-      const away = (travelSkipped(book, iso) && travelNightState(answer, iso) === 'none') || pausedOpen(lamp, periodKeyFor(lamp, iso), answer)
+      const away = (travelSkipped(book, iso) && travelNightState(answer, iso) === 'none') || (lamp.cadence === 'monthly' && !answer && !periodPassed(lamp, periodKeyFor(lamp, iso), dateIso)) || pausedOpen(lamp, periodKeyFor(lamp, iso), answer)
       state = away
         ? ''
         : status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? (gentle || nightOpen(iso) ? 'nope' : 'missed') : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'
@@ -55,7 +55,7 @@ function cellColor(state, colors) {
   if (state === 'did') return colors.on
   if (state === 'late') return colors.late || colors.on
   if (state === 'nope') return colors.skip || colors.inkDim
-  if (state === 'missed') return colors.miss
+  if (state === 'missed') return colors.open
   return ''
 }
 
@@ -178,10 +178,10 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
           { id: 'did', color: colors.on, label: t('jewelKey.did') },
           { id: 'late', color: colors.late || colors.on, label: t('jewelKey.late') },
           { id: 'nope', color: colors.skip || colors.inkDim, label: t(gentle ? 'jewelKey.nope' : 'jewelKey.notYet') },
-          ...(gentle ? [] : [{ id: 'missed', color: colors.miss, label: t('later.missed') }]),
+          ...(gentle ? [] : [{ id: 'missed', color: colors.open, label: t('later.missed') }]),
         ].map((item) => (
           <View key={item.id} style={styles.keyItem}>
-            <View style={[styles.keyDot, item.id === 'missed' ? missDot(colors) : { backgroundColor: item.color }]} />
+            <View style={[styles.keyDot, item.id === 'missed' ? missDot(colors, colors.open) : { backgroundColor: item.color }]} />
             <Text style={[styles.keyText, { color: colors.inkSoft }]}>{item.label}</Text>
           </View>
         ))}

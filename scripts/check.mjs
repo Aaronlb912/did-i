@@ -11322,6 +11322,22 @@ test('reminder cap: question reminders win slots over last calls and nudges', as
   assert.equal(capNotes([], 5).over, false)
 })
 
+test('a monthly question still open this month does not break the streaks', () => {
+  const rent = lamp('rent', { cadence: 'monthly', monthDay: 15, createdOn: '2026-08-01' })
+  const answers = ['2026-08', '2026-09', '2026-10'].map((key) => ({ id: key, lampId: 'rent', periodKey: key, status: 'yes' }))
+  const book = { id: 'b', lamps: [rent], answers }
+  const nov20 = new Date(2026, 10, 20, 12)
+  const dec1 = new Date(2026, 11, 1, 12)
+  assert.equal(questionStreak(book, rent, '2026-11-20', 400, nov20), 3, 'due Nov 15, open Nov 20: question streak holds')
+  assert.equal(bestQuestionStreak(book, rent, '2026-11-20', 1000, nov20), 3, 'best streak holds')
+  const open = shelfStreak([book], nov20)
+  assert.equal(questionStreak(book, rent, '2026-12-01', 400, dec1), 0, 'month ended unanswered: question streak breaks')
+  assert.ok(shelfStreak([book], dec1) < open, 'month ended unanswered: overall streak breaks')
+  const nope = { ...book, answers: [...answers, { id: '2026-11', lampId: 'rent', periodKey: '2026-11', status: 'yes' }] }
+  assert.equal(shelfStreak([nope], nov20), open + 1, 'open month: overall streak holds, answered adds one')
+  assert.equal(questionStreak(nope, rent, '2026-11-20', 400, nov20), 4, 'answered counts')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

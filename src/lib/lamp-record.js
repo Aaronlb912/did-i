@@ -1,6 +1,6 @@
 import { t } from './i18n.js'
 import { readPrefs } from './prefs.js'
-import { addDaysIso, answerFor, graceNightIso, inPause, isDueOn, everyBest, everyStreak, isEvery, isPerWeek, perWeekBest, perWeekStreak, periodKeyFor, periodNight, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, answerFor, graceNightIso, inPause, isDueOn, everyBest, everyStreak, isEvery, isPerWeek, perWeekBest, perWeekStreak, periodKeyFor, periodNight, periodPassed, previousDueDate, recentPeriodKeys } from './recurrence.js'
 import { travelNightState, travelSkipped } from './travel.js'
 
 function didStatus(status) {
@@ -50,7 +50,7 @@ export function questionStreak(book, lamp, dateIso, cap = 400, now = new Date())
   while (cursor && count < cap) {
     const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cursor))
     // Left open on a night skipped by travel, or last night still in grace: neither counts nor breaks.
-    if ((travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') || (cursor === grace && !answer) || pausedOpen(lamp, periodKeyFor(lamp, cursor), answer)) {
+    if ((travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') || (cursor === grace && !answer) || monthOpen(lamp, periodKeyFor(lamp, cursor), answer, dateIso) || pausedOpen(lamp, periodKeyFor(lamp, cursor), answer)) {
       cursor = previousDueDate(live, cursor)
       continue
     }
@@ -63,6 +63,11 @@ export function questionStreak(book, lamp, dateIso, cap = 400, now = new Date())
 
 // The longest run this question ever had, same rule as questionStreak.
 // Walks due nights back to the question's first; callers memoize it.
+// A monthly question left open this month neither counts nor breaks until the month ends.
+function monthOpen(lamp, key, answer, todayIso) {
+  return lamp.cadence === 'monthly' && !answer && !periodPassed(lamp, key, todayIso)
+}
+
 function openGrace(dateIso, now) {
   const grace = graceNightIso(now)
   return grace && addDaysIso(grace, 1) === dateIso ? grace : ''
@@ -90,7 +95,7 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000, now = new Da
   let steps = 0
   while (cursor && steps < cap && (!first || cursor >= first)) {
     const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cursor))
-    if ((travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') || pausedOpen(lamp, periodKeyFor(lamp, cursor), answer)) {
+    if ((travelSkipped(book, cursor) && travelNightState(answer, cursor) === 'none') || monthOpen(lamp, periodKeyFor(lamp, cursor), answer, dateIso) || pausedOpen(lamp, periodKeyFor(lamp, cursor), answer)) {
       steps += 1
       cursor = previousDueDate(live, cursor)
       continue
