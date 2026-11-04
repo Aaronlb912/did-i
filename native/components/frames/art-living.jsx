@@ -819,18 +819,44 @@ export function SunnyOver({ f }) {
   )
 }
 
+// Royal (100-day streak): a velvet band in a bevelled gold rim, a jeweled
+// crown, gems at the corners, full laurels and a slow glint round the gold.
+function glintAt(time, it, w, h) {
+  'worklet'
+  const p = edgeAt(time * it.speed + it.start, -it.o, -it.o, w + 2 * it.o, h + 2 * it.o, it.R + it.o)
+  return { x: p.x, y: p.y, o: 0.55 + 0.45 * Math.sin(time * 3), s: 1 }
+}
 export function RoyalOver({ f }) {
   const S = svgAll()
-  const k = 12
+  const k = 15
   const cx = f.w / 2
-  const y = -8
+  const y = -11
+  const o = 10
+  const loop = rrLength(f.w + 2 * o, f.h + 2 * o, f.R + o)
+  const glint = { o, R: f.R, speed: loop / 11, start: 0 }
+  const sparks = useMemo(() => {
+    const r = seeded(33)
+    return spots(f, o, 5, 0.1).map((p) => ({ x: p.x, y: p.y, r: 1.3, sp: 0.8 + r() * 1.4, ph: r() * 6, col: '#fff3c4' }))
+  }, [f.w, f.h, f.R])
+  const corners = [
+    [f.R, f.R, -1, -1],
+    [f.w - f.R, f.R, 1, -1],
+    [f.w - f.R, f.h - f.R, 1, 1],
+    [f.R, f.h - f.R, -1, 1],
+  ].map(([x, yy, sx, sy], i) => ({ x: x + sx * (f.R + o) * 0.7071, y: yy + sy * (f.R + o) * 0.7071, col: i % 2 ? '#4aa3ff' : '#ff5a6e' }))
   const laurel = (x0, y0, dir) => {
-    const R0 = 22
-    const leaves = Array.from({ length: 5 }, (_, i) => {
-      const t = i / 4
+    const R0 = 28
+    const leaves = Array.from({ length: 8 }, (_, i) => {
+      const t = i / 7
       const px = x0 + dir * R0 * Math.sin((Math.PI / 2) * t)
       const py = y0 + R0 * Math.cos((Math.PI / 2) * t)
-      return <S.Ellipse key={i} cx={px} cy={py} rx={5.5} ry={2.6} fill="#e2b75a" transform={`rotate(${dir * (90 * t - 60)} ${px} ${py})`} />
+      const rot = dir * (90 * t - 60)
+      return (
+        <S.G key={i}>
+          <S.Ellipse cx={px} cy={py} rx={6} ry={2.8} fill="#e2b75a" stroke="#b98a2f" strokeWidth={0.5} transform={`rotate(${rot} ${px} ${py})`} />
+          <S.Ellipse cx={px - dir * 3} cy={py - 3} rx={4.6} ry={2.2} fill="#f3d27c" transform={`rotate(${rot - dir * 50} ${px - dir * 3} ${py - 3})`} />
+        </S.G>
+      )
     })
     return (
       <S.G key={dir}>
@@ -839,45 +865,156 @@ export function RoyalOver({ f }) {
       </S.G>
     )
   }
+  const jewel = (x, yy, r, col) => (
+    <S.G key={`${x}${yy}`}>
+      <S.Circle cx={x} cy={yy} r={r} fill={col} stroke="#6b4d14" strokeWidth={0.8} />
+      <S.Circle cx={x - r * 0.3} cy={yy - r * 0.3} r={r * 0.3} fill="#ffffff" opacity={0.8} />
+    </S.G>
+  )
   return (
-    <Layer f={f}>
-      <S.Defs>
-        <S.LinearGradient id="ryl" x1="0" y1="0" x2="1" y2="1">
-          <S.Stop offset="0" stopColor="#fff1c2" />
-          <S.Stop offset="0.5" stopColor="#e2b75a" />
-          <S.Stop offset="1" stopColor="#8a6420" />
-        </S.LinearGradient>
-      </S.Defs>
-      <S.Path d={ring(f, 7)} fill="none" stroke="url(#ryl)" strokeWidth={4} />
-      {laurel(-7, -7, 1)}
-      {laurel(f.w + 7, -7, -1)}
-      <S.Path
-        d={`M${cx - k} ${y + k * 0.5}L${cx - k} ${y - k * 0.4}L${cx - k * 0.5} ${y}L${cx} ${y - k * 0.7}L${cx + k * 0.5} ${y}L${cx + k} ${y - k * 0.4}L${cx + k} ${y + k * 0.5}Z`}
-        fill="url(#ryl)"
-        stroke="#6b4d14"
-        strokeWidth={1.2}
-      />
-      <S.Circle cx={cx} cy={y - k * 0.7} r={k * 0.15} fill="#ef6a5b" />
-    </Layer>
+    <>
+      <Layer f={f}>
+        <S.Defs>
+          <S.LinearGradient id="royG" x1="0" y1="0" x2="1" y2="1">
+            <S.Stop offset="0" stopColor="#fff1c2" />
+            <S.Stop offset="0.5" stopColor="#e2b75a" />
+            <S.Stop offset="1" stopColor="#8a6420" />
+          </S.LinearGradient>
+          <S.LinearGradient id="royV" x1="0" y1="0" x2="1" y2="1">
+            <S.Stop offset="0" stopColor="#5a2a8a" />
+            <S.Stop offset="0.5" stopColor="#3a1763" />
+            <S.Stop offset="1" stopColor="#6a1f4a" />
+          </S.LinearGradient>
+        </S.Defs>
+        <S.Path d={band(f, o)} fillRule="evenodd" fill="url(#royV)" />
+        <S.Path d={ring(f, 1.5)} fill="none" stroke="#d9a8ff" strokeOpacity={0.35} strokeWidth={1} strokeDasharray="1 4" />
+        <S.Path d={ring(f, o)} fill="none" stroke="url(#royG)" strokeWidth={4} />
+        <S.Path d={ring(f, o + 2.4)} fill="none" stroke="#6b4d14" strokeWidth={0.8} />
+        <S.Path d={ring(f, o - 2.4)} fill="none" stroke="#fff1c2" strokeOpacity={0.8} strokeWidth={0.8} />
+        {laurel(-7, -2, 1)}
+        {laurel(f.w + 7, -2, -1)}
+        {corners.map((c, i) => (
+          <S.G key={i}>
+            <S.Path d={`M${c.x} ${c.y - 6}L${c.x + 5} ${c.y}L${c.x} ${c.y + 6}L${c.x - 5} ${c.y}Z`} fill="url(#royG)" stroke="#6b4d14" strokeWidth={0.8} />
+            {jewel(c.x, c.y, 2.8, c.col)}
+          </S.G>
+        ))}
+        <S.Path
+          d={`M${cx - k * 1.1} ${y + k * 0.6}L${cx - k * 1.2} ${y - k * 0.6}L${cx - k * 0.6} ${y - k * 0.1}L${cx - k * 0.3} ${y - k * 0.85}L${cx} ${y - k * 0.2}L${cx + k * 0.3} ${y - k * 0.85}L${cx + k * 0.6} ${y - k * 0.1}L${cx + k * 1.2} ${y - k * 0.6}L${cx + k * 1.1} ${y + k * 0.6}Z`}
+          fill="url(#royG)"
+          stroke="#6b4d14"
+          strokeWidth={1.2}
+        />
+        <S.Rect x={cx - k * 1.1} y={y + k * 0.3} width={k * 2.2} height={k * 0.35} fill="#8a6420" opacity={0.55} />
+        {[cx - k * 1.2, cx - k * 0.3, cx + k * 0.3, cx + k * 1.2].map((x, i) => jewel(x, i % 3 ? y - k * 0.85 : y - k * 0.6, 1.8, '#fff1c2'))}
+        {jewel(cx - k * 0.6, y + k * 0.35, 2.4, '#4aa3ff')}
+        {jewel(cx, y + k * 0.3, 3.2, '#ff5a6e')}
+        {jewel(cx + k * 0.6, y + k * 0.35, 2.4, '#4ade9a')}
+      </Layer>
+      <Star f={f} items={sparks} />
+      <Particle clock={f.clock} item={glint} fn={glintAt} w={f.w} h={f.h} size={22}>
+        <View style={{ position: 'absolute', left: 3, top: 3, width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff3c4', opacity: 0.35 }} />
+        <View style={{ position: 'absolute', left: 8, top: 8, width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffffff' }} />
+      </Particle>
+    </>
   )
 }
 
+// Wrapped (10 gifts sent): striped paper in the band, a gold ribbon across it,
+// a full bow that sways, a gift tag, and a small sparkle puff now and then.
+function bowSway(time, it) {
+  'worklet'
+  return { x: it.x, y: it.y, o: 1, r: Math.sin(time * 1.6) * 0.06 }
+}
+function puffAt(time, it) {
+  'worklet'
+  const q = (((time + it.off) / 6) % 1 + 1) % 1
+  if (q > 0.25) return { x: it.x, y: it.y, o: 0, r: 0 }
+  const k = q / 0.25
+  return { x: it.x + it.dx * k, y: it.y + it.dy * k + 10 * k * k, o: 1 - k, r: k * 3 }
+}
+function BowArt({ S, col, dark, gold }) {
+  const k = 15
+  return (
+    <>
+      <S.Path d={`M-2 2 L${-k * 0.9} ${k * 1.25} L${-k * 0.45} ${k * 1.1} L-1 ${k * 0.5}Z`} fill={gold} stroke={dark} strokeWidth={0.8} />
+      <S.Path d={`M2 2 L${k * 0.9} ${k * 1.25} L${k * 0.45} ${k * 1.1} L1 ${k * 0.5}Z`} fill={gold} stroke={dark} strokeWidth={0.8} />
+      <S.Path d={`M0 0 C${-k * 1.9} ${-k * 1.5} ${-k * 2.4} ${k * 0.9} 0 0Z`} fill={col} stroke={dark} strokeWidth={1} />
+      <S.Path d={`M0 0 C${k * 1.9} ${-k * 1.5} ${k * 2.4} ${k * 0.9} 0 0Z`} fill={col} stroke={dark} strokeWidth={1} />
+      <S.Path d={`M${-k * 0.4} ${-k * 0.2} C${-k * 1.1} ${-k * 0.7} ${-k * 1.3} ${-k * 0.1} ${-k * 0.5} ${-k * 0.05}`} fill="none" stroke="#ffd6cf" strokeWidth={1.2} strokeLinecap="round" />
+      <S.Path d={`M${k * 0.4} ${-k * 0.2} C${k * 1.1} ${-k * 0.7} ${k * 1.3} ${-k * 0.1} ${k * 0.5} ${-k * 0.05}`} fill="none" stroke="#ffd6cf" strokeWidth={1.2} strokeLinecap="round" />
+      <S.Circle r={k * 0.4} fill={gold} stroke={dark} strokeWidth={1} />
+    </>
+  )
+}
 export function WrappedOver({ f }) {
   const S = svgAll()
   const cx = f.w / 2
-  const k = 14
   const col = '#ef6a5b'
   const dark = '#b8443a'
-  const y = -7
+  const gold = '#f2c35c'
+  const cream = '#fff3d6'
+  const o = 10
+  const y = -13
+  const stripes = useMemo(() => {
+    const n = Math.ceil((f.w + f.h + 40) / 13)
+    return Array.from({ length: n }, (_, i) => -f.h - 20 + i * 13)
+  }, [f.w, f.h])
+  const puffs = useMemo(() => {
+    const r = seeded(5)
+    return [0, 1.7, 3.4].map((off, i) => ({
+      off,
+      x: f.w * (0.2 + 0.3 * i) + r() * 10,
+      y: -14,
+      dx: (r() - 0.5) * 30,
+      dy: -14 - r() * 8,
+    }))
+  }, [f.w])
   return (
-    <Layer f={f}>
-      <S.Path d={ring(f, 7)} fill="none" stroke={col} strokeWidth={3} />
-      <S.Line x1={cx} y1={f.h + 1} x2={cx} y2={f.h + 8} stroke={col} strokeWidth={6} />
-      <S.Path d={`M${cx} ${y} C${cx - k * 2} ${y - k * 1.4} ${cx - k * 2.2} ${y + k * 0.8} ${cx} ${y}Z`} fill={col} stroke={dark} strokeWidth={1} />
-      <S.Path d={`M${cx} ${y} C${cx + k * 2} ${y - k * 1.4} ${cx + k * 2.2} ${y + k * 0.8} ${cx} ${y}Z`} fill={col} stroke={dark} strokeWidth={1} />
-      <S.Path d={`M${cx} ${y} l${-k * 0.8} ${k * 1.4} M${cx} ${y} l${k * 0.8} ${k * 1.4}`} stroke={col} strokeWidth={3} strokeLinecap="round" />
-      <S.Circle cx={cx} cy={y} r={k * 0.42} fill={dark} />
-    </Layer>
+    <>
+      <Layer f={f}>
+        <S.Defs>
+          <S.ClipPath id="wrpK">
+            <S.Path d={band(f, o)} clipRule="evenodd" />
+          </S.ClipPath>
+        </S.Defs>
+        <S.Path d={band(f, o)} fillRule="evenodd" fill={col} />
+        <S.G clipPath="url(#wrpK)">
+          {stripes.map((x) => (
+            <S.Line key={x} x1={x} y1={f.h + 20} x2={x + f.h + 40} y2={-20} stroke={cream} strokeOpacity={0.5} strokeWidth={4} />
+          ))}
+        </S.G>
+        <S.Path d={ring(f, o)} fill="none" stroke={dark} strokeWidth={1.4} />
+        <S.Path d={ring(f, 0.7)} fill="none" stroke={gold} strokeWidth={1.4} />
+        <S.Rect x={cx - 7} y={f.h - 1} width={14} height={o + 2} fill={gold} stroke={dark} strokeWidth={0.8} />
+        <S.Rect x={-o - 1} y={f.h * 0.55 - 6} width={o + 2} height={12} fill={gold} stroke={dark} strokeWidth={0.8} />
+        <S.Rect x={f.w - 1} y={f.h * 0.55 - 6} width={o + 2} height={12} fill={gold} stroke={dark} strokeWidth={0.8} />
+        <S.Line x1={f.w - 12} y1={f.h + o} x2={f.w - 24} y2={f.h + o + 8} stroke={dark} strokeWidth={1} />
+        <S.G transform={`rotate(-14 ${f.w - 24} ${f.h + o + 8})`}>
+          <S.Path d={`M${f.w - 38} ${f.h + o + 8}L${f.w - 33} ${f.h + o + 2}L${f.w - 14} ${f.h + o + 2}L${f.w - 14} ${f.h + o + 18}L${f.w - 33} ${f.h + o + 18}Z`} fill={cream} stroke={dark} strokeWidth={1} />
+          <S.Circle cx={f.w - 33} cy={f.h + o + 8} r={1.4} fill={dark} />
+          <S.Line x1={f.w - 29} y1={f.h + o + 8} x2={f.w - 18} y2={f.h + o + 8} stroke={col} strokeWidth={1.2} />
+          <S.Line x1={f.w - 29} y1={f.h + o + 12} x2={f.w - 21} y2={f.h + o + 12} stroke={col} strokeWidth={1.2} />
+        </S.G>
+        {f.still ? (
+          <S.G transform={`translate(${cx} ${y})`}>
+            <BowArt S={S} col={col} dark={dark} gold={gold} />
+          </S.G>
+        ) : null}
+      </Layer>
+      <Particle clock={f.clock} item={{ x: cx, y }} fn={bowSway} w={f.w} h={f.h} size={90}>
+        <S.Svg width={90} height={90} viewBox="-45 -45 90 90">
+          <BowArt S={S} col={col} dark={dark} gold={gold} />
+        </S.Svg>
+      </Particle>
+      {puffs.map((p, i) => (
+        <Particle key={i} clock={f.clock} item={p} fn={puffAt} w={f.w} h={f.h} size={14}>
+          <S.Svg width={14} height={14} viewBox="-7 -7 14 14">
+            <S.Path d={starD(0, 0, 5)} fill={i % 2 ? gold : cream} />
+          </S.Svg>
+        </Particle>
+      ))}
+    </>
   )
 }
 
