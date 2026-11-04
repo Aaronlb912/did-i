@@ -6,7 +6,7 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { activeBuddy, activeLook } from '../../src/lib/active-look.js'
 import { previewSample, readShelf } from '../../src/lib/board-shelf.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
-import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
+import { FREEZE_EVERY, bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
 import { NIGHT_COIN_CAP, isWished, normalizePurse, toggleWish } from '../../src/lib/purse.js'
 import { SIGN_IN_MISS, buyFrame } from '../../src/lib/coin-shop.js'
 import { accountSessionOn } from '../../src/lib/session-id.js'
@@ -43,12 +43,13 @@ import { fonts } from '../theme.js'
 export function frameCtxFor(boards, now = new Date()) {
   const list = Array.isArray(boards) ? boards : []
   const today = boardDate(now, list[0]?.dayFoldHour)
-  if (!list.length) return { bestStreak: 0, streak: 0, everFrozen: false, today, giftsSent: readGiftsSent() }
+  if (!list.length) return { bestStreak: 0, streak: 0, everFrozen: false, freezesHeld: 0, today, giftsSent: readGiftsSent() }
   return {
     giftsSent: readGiftsSent(),
     streak: shelfStreak(list, now),
     bestStreak: Math.max(shelfStreak(list, now), bestShelfStreak(list, now)),
     everFrozen: freezeState(list, now).frozen.size > 0,
+    freezesHeld: freezeState(list, now).held,
     today,
   }
 }
@@ -91,7 +92,7 @@ export function frameStatus(frame, purse, ctx) {
   if (frame.kind === 'earned') {
     const p = frameProgress(frame, ctx)
     if (frame.earn === 'refer') return { text: t('frames.earnRefer', { n: frame.need }) }
-    return { text: frame.earn === 'freeze' ? t('frames.earnFreeze') : t('frames.progress', { n: p.n, of: p.of }) }
+    return { text: frame.earn === 'freeze' ? (ctx.freezesHeld > 0 ? t('frames.earnFreezeUse') : t('frames.earnFreezeAt', { n: FREEZE_EVERY })) : t('frames.progress', { n: p.n, of: p.of }) }
   }
   if (frame.kind === 'season') {
     if (seasonOpen(frame, ctx.today)) return { text: t('frames.freeNow') }

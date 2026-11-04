@@ -466,6 +466,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           publishSheet(null)
           goHash('/kit', { id: 'frames' })
         },
+        content: (
+          <View>
+            <DidButton label={t('frames.share')} colors={colors} onPress={() => passAlong(t('frames.shareLine', { frame: t(frameText(popId, 'name')) }), 'Did I')} />
+          </View>
+        ),
         colors,
       })
     }

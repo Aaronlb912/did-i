@@ -10838,6 +10838,15 @@ test('streak milestones: line names the frame, shows once, gems paid by the serv
   assert.ok(freeze.includes("body: t('freeze.earnedBody')"), 'a freeze earned gets the pop-up')
 })
 
+test('big streak achievements open a sheet, frames can be shared, frost shows the freeze path', () => {
+  const shell = readFileSync(new URL('../native/AppShell.jsx', import.meta.url), 'utf8')
+  assert.ok(shell.includes("group === 'streak'") && shell.includes('>= 100') && shell.includes('!sheetIsUp()'), 'streak 100+ opens a sheet when none is up')
+  const tonight = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(tonight.includes("t('frames.shareLine'"), 'the earned frame sheet has a Share button')
+  const frames = readFileSync(new URL('../native/screens/frames.jsx', import.meta.url), 'utf8')
+  assert.ok(frames.includes('frames.earnFreezeUse') && frames.includes('frames.earnFreezeAt') && frames.includes('freezesHeld'), 'frost progress reads the freeze count')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
