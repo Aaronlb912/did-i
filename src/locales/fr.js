@@ -521,7 +521,7 @@ export const fr = {
   'boards.marks': 'Succès',
   'help.kicker': 'Aide',
   'help.title': 'Comment ça marche',
-  'help.lead': "Accueil montre les questions du jour : réponds à chacune par Did ou Pas encore. Questions est ta liste. Le menu contient la boutique, les amis et les réglages.",
+  'help.lead': "Réponds à chaque question par Did ou Pas encore.",
   'help.tonight': "Aujourd’hui",
   'help.tonightP1': 'Glisse à droite si tu l’as fait. Glisse à gauche pour Pas encore sinon.',
   'help.tonightP2': "Une question peut attendre une heure précise. Un pas encore changé en Did s’affiche Fait en retard et compte aussi.",

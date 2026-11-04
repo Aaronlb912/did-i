@@ -520,7 +520,7 @@ export const es = {
   'boards.marks': 'Logros',
   'help.kicker': 'Ayuda',
   'help.title': 'Cómo funciona',
-  'help.lead': "Inicio muestra las preguntas de hoy: responde cada una con Did o Aún no. Preguntas es tu lista. El menú tiene la tienda, amigos y ajustes.",
+  'help.lead': "Responde cada pregunta con Did o Aún no.",
   'help.tonight': "Hoy",
   'help.tonightP1': 'Desliza a la derecha si lo hiciste. Desliza a la izquierda para Aún no si todavía no.',
   'help.tonightP2': "Una pregunta puede esperar hasta una hora. Un aún no que cambias a Did aparece como Hecho tarde y también cuenta.",
