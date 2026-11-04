@@ -6,7 +6,7 @@ import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
-import { markWeDone, refreshWeNights } from './we-nights.js'
+import { markWeDone, refreshWeNights, weHiddenOn } from './we-nights.js'
 import { weekKind, weSlotDay } from './we-look.js'
 import { weDueOn, weNextDue, weNextLabel, wePrevDue, weSlotOf } from './we-next.js'
 
@@ -521,6 +521,20 @@ export function weWaiting(card) {
 
 export function weMine(card) {
   return (card.people || []).find((p) => p.me) || null
+}
+
+// Still yours to answer today. A Not yet on a card that stays open past
+// today (a monthly card before its month ends) hides it for today only;
+// it comes back tomorrow until the month ends or the card is done.
+export function weAskMe(card, night = tonightIso()) {
+  if (card.myState !== 'in' || !card.due || card.done || notMyTurn(card)) return false
+  const mine = weMine(card)?.status
+  if (!mine) return true
+  return mine === 'nope' && weOpenPastToday(card, night) && !weHiddenOn(card.id, night)
+}
+
+export function weOpenPastToday(card, night = tonightIso()) {
+  return Boolean(card.periodEnd) && String(card.periodEnd).slice(0, 10) > night
 }
 
 // One line for the home screen widget.

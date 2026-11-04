@@ -89,6 +89,42 @@ export function markWeDone(ids, night) {
   setWeNightRows(rows.map((row) => (want.has(row.card) && row.night === night ? { ...row, status: 'did' } : row)))
 }
 
+// Did wes you said Not yet to today that stay open past today (a monthly
+// card before its month ends). Hidden for the rest of the day, back
+// tomorrow. Keys are card|day; past days are dropped on each write.
+const HIDE_KEY = 'did-i-we-hidden'
+let hidden = readHidden()
+function readHidden() {
+  try {
+    const list = JSON.parse(globalThis.localStorage?.getItem(HIDE_KEY) || '[]')
+    return Array.isArray(list) ? list.filter((key) => typeof key === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export function weHiddenOn(card, night) {
+  return hidden.includes(`${card}|${night}`)
+}
+
+export function hideWeFor(card, night) {
+  if (!card || !night || weHiddenOn(card, night)) return
+  hidden = [...hidden.filter((key) => key.slice(-10) >= night), `${card}|${night}`]
+  try {
+    globalThis.localStorage?.setItem(HIDE_KEY, JSON.stringify(hidden))
+  } catch {
+    // Kept in memory for this run.
+  }
+  stamp += 1
+  listeners.forEach((fn) => {
+    try {
+      fn()
+    } catch {
+      // One listener failing does not stop the rest.
+    }
+  })
+}
+
 export function weNightStatus(nightIso, card) {
   return (index().get(nightIso) || []).find((row) => row.card === card)?.status || ''
 }
@@ -99,8 +135,10 @@ let nightsRun = 0
 
 export function clearWeNights() {
   nightsRun += 1
+  hidden = []
   try {
     globalThis.localStorage?.removeItem(DONE_KEY)
+    globalThis.localStorage?.removeItem(HIDE_KEY)
   } catch {
     // Nothing kept.
   }
@@ -161,7 +199,9 @@ export function weNight(nightIso, tagId = '') {
   const list = (index().get(nightIso) || []).filter((row) => inPicked(row, titles))
   const due = list.length
   const done = list.filter((row) => row.status === 'did').length
-  return { due, done, clear: due > 0 && done === due }
+  // Hidden for today: off Today and the widget, but not done for the streak.
+  const hid = list.filter((row) => row.status !== 'did' && weHiddenOn(row.card, nightIso)).length
+  return { due, done, hidden: hid, clear: due > 0 && done === due }
 }
 
 export async function refreshWeNights() {
@@ -190,7 +230,9 @@ export function onWeNights(fn) {
 
 // Did we cards still open for you on a night (due, and no did from you yet).
 export function weOpenOn(nightIso) {
-  return new Set((index().get(nightIso) || []).filter((row) => row.status !== 'did').map((row) => row.card))
+  return new Set(
+    (index().get(nightIso) || []).filter((row) => row.status !== 'did' && !weHiddenOn(row.card, nightIso)).map((row) => row.card),
+  )
 }
 
 // Every Did we card due for you on any of these nights, same tag rule as

@@ -210,12 +210,13 @@ export function useTonightStack({
   // Tonight is done only once your Did wes due tonight are done too. Until
   // then the done look (sky, glow, cheer) waits and the Did we card comes
   // first. The Did we nights are kept on the phone, so this is known at once.
-  const nightDone = hallOn && weTonight.done >= weTonight.due
+  // A Did we hidden for today (Not yet on a monthly card) does not hold it.
+  const nightDone = hallOn && weTonight.done + (weTonight.hidden || 0) >= weTonight.due
   const wasDone = useRef(nightDone)
   const cheerDays = useRef(new Set())
   useEffect(() => {
     // Your own questions were already done; a Did we just finished the night.
-    if (!wasDone.current && nightDone && weTonight.due) {
+    if (!wasDone.current && nightDone && weTonight.due && weTonight.done >= weTonight.due) {
       const to = shelfStreak(shelf, clock, tagId)
       if (to > 0 && !cheerDays.current.has(dateIso)) {
         cheerDays.current.add(dateIso)

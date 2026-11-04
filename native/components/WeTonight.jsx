@@ -6,6 +6,8 @@ import { pullAndMerge } from '../../src/lib/cloud-sync.js'
 import {
   useWeTonight,
   weAnswer,
+  weAskMe,
+  weOpenPastToday,
   weCheerStageIfDone,
   weClaim,
   weGoal,
@@ -18,6 +20,8 @@ import {
   wePausedCards,
   weRestart,
 } from '../../src/lib/did-we.js'
+import { boardDate } from '../../src/lib/recurrence.js'
+import { hideWeFor } from '../../src/lib/we-nights.js'
 import { weFaceFor, weFaceRow, weMissKey, wePersonKey, weSlotDay, weStatus, weWeekKey } from '../../src/lib/we-look.js'
 import { refreshTogether } from '../../src/lib/people.js'
 import { onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
@@ -312,6 +316,8 @@ export function useWeAnswer(reload, book) {
   // `night` answers a later night early; tonight when left out.
   async function answer(card, status, night) {
     const mine = weMine(card)
+    // Not yet on a card open past today hides it until tomorrow.
+    if (!night && status === 'nope' && weOpenPastToday(card, boardDate())) hideWeFor(card.id, boardDate())
     // A repeat tap on tonight's lit answer does nothing: a Did we answer has
     // no undo, so it must not clear by accident. Taking back is explicit.
     if (!night && status && mine?.status === status) return
@@ -368,7 +374,7 @@ export function useWeAnswer(reload, book) {
 export function weOpenForMe(cards, now = new Date(), { early = false } = {}) {
   const open = (cards || []).filter(
     // In turns, only whoever's turn it is gets asked: anyone else's swipe would not finish it.
-    (card) => card.myState === 'in' && card.due && !card.done && !weMine(card)?.status && !notMyTurn(card),
+    (card) => weAskMe(card),
   )
   if (!early) return open.filter((card) => weTimeReady(card, now))
   return [...open.filter((card) => weTimeReady(card, now)), ...open.filter((card) => !weTimeReady(card, now))]
