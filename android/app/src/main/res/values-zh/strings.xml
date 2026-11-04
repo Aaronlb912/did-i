@@ -4,4 +4,6 @@
   <string name="widget_didigrid_description">最近 12 周的 Did 天数，一目了然。</string>
   <string name="shortcut_add_short">添加问题</string>
   <string name="shortcut_add_long">添加一个 Did I 问题</string>
+  <string name="shortcut_remind_short">提醒我</string>
+  <string name="shortcut_remind_long">在 Did I 中提醒我</string>
 </resources>

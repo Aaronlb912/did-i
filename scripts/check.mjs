@@ -10951,6 +10951,15 @@ test('a waiting streak bonus is dropped on sign-out and a retry never lowers the
   assert.ok(readFileSync(new URL('../src/lib/wallet.js', import.meta.url), 'utf8').includes('streak.is.null,streak.lt.'), 'only raises the saved streak')
 })
 
+test('the Android Remind me shortcut is static and a reminder is restored when the shelf is not loaded', () => {
+  const xml = readFileSync(new URL('../android/app/src/main/res/xml/shortcuts.xml', import.meta.url), 'utf8')
+  assert.ok(xml.includes('android:data="didi://open/remind"'), 'static shortcut opens Remind')
+  const qa = readFileSync(new URL('../native/quick-actions.js', import.meta.url), 'utf8')
+  assert.ok(qa.includes("ios ? [{ id: 'remind'"), 'Android dynamic list leaves remind out')
+  const app = readFileSync(new URL('../native/NativeApp.jsx', import.meta.url), 'utf8')
+  assert.ok(app.includes("added.error === 'full' || !book"), 'no shelf yet restores the reminder')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

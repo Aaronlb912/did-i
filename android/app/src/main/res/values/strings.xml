@@ -8,4 +8,6 @@
   <string name="widget_didigrid_description">The last 12 weeks of Did days, at a glance.</string>
   <string name="shortcut_add_short">Add a question</string>
   <string name="shortcut_add_long">Add a Did I question</string>
+  <string name="shortcut_remind_short">Remind me</string>
+  <string name="shortcut_remind_long">Remind me in Did I</string>
 </resources>

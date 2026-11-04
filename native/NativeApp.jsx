@@ -40,13 +40,13 @@ async function answerRemind(id, action) {
   const shelf = readShelf()
   const book = currentBook(shelf)
   const added = book ? addMorning(book, shelf.boards, item.text, new Date()) : { error: 'empty' }
-  if (added.error && added.error !== 'dupe' && added.error !== 'full') {
+  if (added.error && added.error !== 'dupe' && added.error !== 'full' && book) {
     // Nothing to retry (no folder, empty text): drop it and say so.
     showToast({ id: 'remind', kind: 'error', text: t('noteAnswer.notSaved'), ms: 5200 })
     return
   }
-  if (added.error === 'full') {
-    // Today is full: keep it and ask once more rather than lose it.
+  if (added.error === 'full' || !book) {
+    // Today is full, or the shelf has not loaded yet: keep it and ask once more rather than lose it.
     const again = { ...item, tries: REMIND_TRIES - 1, at: Date.now() + REMIND_AGAIN_MIN * 60 * 1000 }
     restoreRemind(again)
     scheduleRemind(again).catch(() => {})

@@ -4,4 +4,6 @@
   <string name="widget_didigrid_description">直近12週間の Did の日を一目で。</string>
   <string name="shortcut_add_short">質問を追加</string>
   <string name="shortcut_add_long">Did I の質問を追加</string>
+  <string name="shortcut_remind_short">リマインド</string>
+  <string name="shortcut_remind_long">Did I でリマインド</string>
 </resources>
