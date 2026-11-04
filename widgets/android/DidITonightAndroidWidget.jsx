@@ -767,6 +767,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                         backgroundColor: C.skip,
                         borderRadius: 12,
                         paddingVertical: tight ? 7 : compact ? 6 : 8,
+                        minHeight: 44,
                         marginRight: 6,
                         justifyContent: 'center',
                         alignItems: 'center',
@@ -787,6 +788,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                         backgroundColor: C.on,
                         borderRadius: 12,
                         paddingVertical: tight ? 7 : compact ? 6 : 8,
+                        minHeight: 44,
                         marginLeft: lead.status === 'skip' ? 0 : 6,
                         justifyContent: 'center',
                         alignItems: 'center',
@@ -872,7 +874,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 style={{ height: 48, justifyContent: 'center', alignItems: 'flex-start', paddingHorizontal: 8 }}
                 clickAction="PEEK"
                 clickActionData={{ dir: 'next' }}
-                accessibilityLabel={p.nextLabel || 'Next'}
+                accessibilityLabel={`${p.nextLabel || 'Next'}: ${question}`}
               >
               <FlexWidget
                 style={{
