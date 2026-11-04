@@ -10966,6 +10966,11 @@ test('android widget: the Remind me mic never covers the Did button', () => {
   assert.ok(w.lastIndexOf('{!lead ? (', at) > w.lastIndexOf(') : null}', at - 600), 'mic only shows on all clear')
 })
 
+test('streak bonus pays up to the 999999 gem limit, never cuts a big balance', () => {
+  const sql = readFileSync(new URL('../supabase/streak-bonus.sql', import.meta.url), 'utf8')
+  assert.ok(sql.includes('least(gem_balance + pay, 999999)') && !/least(gem_balance + pay, 9999)/.test(sql))
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

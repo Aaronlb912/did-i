@@ -62,7 +62,7 @@ begin
   end if;
 
   update public.profiles
-  set gem_balance = least(gem_balance + pay, 9999)
+  set gem_balance = least(gem_balance + pay, 999999)
   where user_id = who
   returning gem_balance into bal;
 
