@@ -5,7 +5,7 @@ import { readShelf } from './board-shelf.js'
 import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
-import { saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
+import { readWeOpen, saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
 import { markWeDone, refreshWeNights, weHiddenOn } from './we-nights.js'
 import { weekKind, weSlotDay } from './we-look.js'
 import { weDueOn, weNextDue, weNextLabel, wePrevDue, weSlotOf } from './we-next.js'
@@ -537,6 +537,14 @@ export function weOpenPastToday(card, night = tonightIso()) {
   return Boolean(card.periodEnd) && String(card.periodEnd).slice(0, 10) > night
 }
 
+// Saved Did wes still yours past today: a monthly card before its month ends,
+// with no Did from you. The widget and the watch count these like Today does.
+export function weOpenPastList(night) {
+  return readWeOpen(night).filter(
+    (card) => !card.done && card.mine !== 'did' && weOpenPastToday(card, night) && !weHiddenOn(card.id, night),
+  )
+}
+
 // One line for the home screen widget.
 export function weWidgetLine(cards) {
   const live = (cards || []).filter((card) => card.myState === 'in' && card.due)
@@ -557,7 +565,13 @@ export function weWidgetLine(cards) {
 export function saveWeWidgetLine(cards, night = tonightIso()) {
   const due = (cards || [])
     .filter((card) => card.myState === 'in' && card.due)
-    .map((card) => ({ id: card.id, question: String(card.question || '') }))
+    .map((card) => ({
+      id: card.id,
+      question: String(card.question || ''),
+      periodEnd: card.periodEnd || '',
+      done: Boolean(card.done),
+      mine: weMine(card)?.status || '',
+    }))
   const openChanged = saveWeOpen(due, night)
   return saveWeLine(weWidgetLine(cards), night) || openChanged
 }

@@ -8375,7 +8375,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-5), ['did-we-safety.sql', 'we-monthly.sql', 'we-buddy.sql', 'streak-bonus.sql', 'we-left-push.sql'])
+  assert.deepEqual(files.slice(-6), ['did-we-safety.sql', 'we-monthly.sql', 'we-buddy.sql', 'streak-bonus.sql', 'we-left-push.sql', 'we-month-open.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -11243,6 +11243,17 @@ test('folder screen: top and bottom keys, Remove inside the selected folder, Ope
   assert.ok(folders.indexOf('askRemove}') < folders.indexOf('settings.emptyBoard'), 'Remove folder sits above the start over row')
   assert.equal(folders.split("t('boards.openNamed'").length - 1, 4, 'live and parked folders both have Open')
   assert.ok(folders.includes("t('boards.addQuestionHere')") && folders.includes("goHash('/add', { tag: item.id })"), 'an empty folder has a full row that opens add')
+})
+
+test('monthly Did we: slot day is paused until the month ends, and the widget and watch count it open', async () => {
+  const { readFileSync } = await import('node:fs')
+  const sql = readFileSync('supabase/we-month-open.sql', 'utf8')
+  assert.match(sql, /security definer/)
+  assert.match(sql, /set search_path = public/)
+  assert.ok(sql.includes("s.how = 'monthly' and not s.done and s.night >= date_trunc('month', current_date)::date"))
+  assert.ok(sql.includes("grant execute on function public.my_we_nights() to authenticated;"))
+  assert.match(readFileSync('src/lib/watch-count.js', 'utf8'), /weOpenPastList/)
+  assert.match(readFileSync('src/lib/widget-tonight.js', 'utf8'), /weOpenPastList/)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

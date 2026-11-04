@@ -16,6 +16,7 @@ import { t } from './i18n.js'
 import { lastTimeLine, perWeekLine } from './every-copy.js'
 import { awayOn, gentleOn } from './prefs.js'
 import { alignShelfPurse, normalizePurse, spreadPurseFrom } from './purse.js'
+import { weOpenPastList } from './did-we.js'
 import { readWeLine, readWeOpen, skipWePing } from './we-widget.js'
 import {
   answerFor,
@@ -233,7 +234,8 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   // the app to answer it. It comes before a question you said nope to.
   const tonightIso = boardDate(now)
   const weOpenIds = weOpenOn(tonightIso)
-  const weCard = openOrdered.length ? null : readWeOpen(tonightIso).find((card) => weOpenIds.has(card.id)) || null
+  const wePast = weOpenPastList(tonightIso).filter((card) => !weOpenIds.has(card.id))
+  const weCard = openOrdered.length ? null : readWeOpen(tonightIso).find((card) => weOpenIds.has(card.id)) || wePast[0] || null
   const lead = openOrdered[0] || (weCard ? null : rows.find((row) => row.answer?.status === 'skip')) || null
   // The widgets only show a question that has a card in items, so the Did we
   // goes in first. Its Did and Nope answer the Did we (applyWeTap).
@@ -259,7 +261,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   // A Did we due tonight counts too, until you said did on it in the app.
   const we = weNight(boardDate(now))
   // One hidden for today (Not yet on a monthly card) is off it, as on Today.
-  const weLeft = Math.max(0, we.due - we.done - we.hidden)
+  const weLeft = Math.max(0, we.due - we.done - we.hidden) + wePast.length
   const left = finishStackCount(countedTonightRows(rows)) + weLeft + graceOpen.length
   // Same test as Tonight's done card, across every tag, so the widget never
   // says "no questions" while the app says done (the open-only setting hides
