@@ -2895,7 +2895,7 @@ export const en = {
   // round4-fix/stats-agree
   'streaks.nextGoal': 'Next goal: {goal}',
   'week.tapHint': "Tap a day to see why it cleared or not.",
-  'stats.bestRun': 'Best question streak',
+  'stats.bestRun': 'Best streak, one question',
   'stats.marksSub': "What you earned and how to get the rest",
   'stats.sevenSub': "Each question, day by day",
   'stats.streaksSub': "Your streak and each question’s streak",
@@ -2906,6 +2906,7 @@ export const en = {
   'streaks.unitOnTime': "on time in a row",
   'streaks.unitOnTimeOne': "on time",
   'stats.last30': "Last 30 days",
+  'stats.last30Of': '{did} of {n} days',
   'lamp.shareBtn': "Share this streak",
   'lamp.shareDays': "{n} days in a row on \"{what}\" with Did I",
   'lamp.shareDay': "1 day in a row on \"{what}\" with Did I",

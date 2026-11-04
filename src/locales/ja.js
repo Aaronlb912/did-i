@@ -2864,7 +2864,7 @@ export const ja = {
   // round4-fix/stats-agree
   'streaks.nextGoal': '次の目標: {goal}',
   'week.tapHint': "日をタップすると、クリアできたかどうかの理由が見られます。",
-  'stats.bestRun': '質問ごとの最高連続',
+  'stats.bestRun': '最高連続（1つの質問）',
   'stats.marksSub': "獲得したものと、残りの取り方",
   'stats.sevenSub': "質問ごとに、1日ずつ",
   'stats.streaksSub': "あなたの連続記録と、質問ごとの連続記録",
@@ -2875,6 +2875,7 @@ export const ja = {
   'streaks.unitOnTime': "回連続で予定どおり",
   'streaks.unitOnTimeOne': "回予定どおり",
   'stats.last30': "直近30日",
+  'stats.last30Of': '{n}日中{did}日',
   'lamp.shareBtn': "この連続記録を共有",
   'lamp.shareDays': "「{what}」を{n}日連続 Did I で",
   'lamp.shareDay': "「{what}」を1日連続 Did I で",

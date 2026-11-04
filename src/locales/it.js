@@ -2901,7 +2901,7 @@ export const it = {
   // round4-fix/stats-agree
   'streaks.nextGoal': 'Prossimo obiettivo: {goal}',
   'week.tapHint': "Tocca un giorno per vedere perché è completo o no.",
-  'stats.bestRun': 'Miglior serie di una domanda',
+  'stats.bestRun': 'Miglior serie, una domanda',
   'stats.marksSub': "Cosa hai ottenuto e come avere il resto",
   'stats.sevenSub': "Ogni domanda, giorno per giorno",
   'stats.streaksSub': "La tua serie e la serie di ogni domanda",
@@ -2912,6 +2912,7 @@ export const it = {
   'streaks.unitOnTime': "puntuali di fila",
   'streaks.unitOnTimeOne': "puntuale",
   'stats.last30': "Ultimi 30 giorni",
+  'stats.last30Of': '{did} giorni su {n}',
   'lamp.shareBtn': "Condividi questa serie",
   'lamp.shareDays': "{n} giorni di fila su «{what}» con Did I",
   'lamp.shareDay': "1 giorno di fila su «{what}» con Did I",

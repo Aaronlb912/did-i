@@ -375,7 +375,34 @@ export function nightMarksMany(books, isos, today, tagId = '') {
       lamps.push(lamp.archived ? { ...lamp, archived: false, ...(keptDids ? { keptDids } : {}) } : lamp)
       if (onceKey) doneOn.set(lamp.id, onceDoneNight(lamp, index.onceAnswer.get(lamp.id)))
     }
-    return { start: startNight(book), lamps, index, doneOn, book }
+    // Plain daily questions are counted per day from one index instead of
+    // being checked one by one on every day.
+    const rest = []
+    const plain = []
+    const created = new Map()
+    let noDate = 0
+    for (const lamp of lamps) {
+      const simple =
+        lamp.cadence === 'daily' && !lamp.was && !lamp.pauses && !lamp.fromDidI && !lamp.keptDids && !countsOnlyOnDid(lamp)
+      if (!simple) {
+        rest.push(lamp)
+        continue
+      }
+      plain.push(lamp)
+      if (lamp.createdOn) created.set(lamp.createdOn, (created.get(lamp.createdOn) || 0) + 1)
+      else noDate += 1
+    }
+    const doneDays = new Map()
+    for (const lamp of plain) {
+      const nights = index.byLamp.get(lamp.id)
+      if (!nights) continue
+      for (const [key, status] of nights) {
+        if (status !== 'yes' && status !== 'late') continue
+        if (lamp.createdOn && lamp.createdOn > key) continue
+        doneDays.set(key, (doneDays.get(key) || 0) + 1)
+      }
+    }
+    return { start: startNight(book), lamps, rest, plain: plain.length, created: [...created], noDate, doneDays, index, doneOn, book }
   })
   const out = new Map()
   for (const iso of isos) {
@@ -388,7 +415,15 @@ export function nightMarksMany(books, isos, today, tagId = '') {
     for (const book of prepped) {
       if (book.start ? iso < book.start : iso !== today) continue
       const skipped = travelSkipped(book.book, iso)
-      for (const lamp of book.lamps) {
+      let each = book.lamps
+      if (!skipped && book.plain) {
+        let plainDue = book.noDate
+        for (const [made, count] of book.created) if (made <= iso) plainDue += count
+        dueCount += plainDue
+        if ((book.doneDays.get(iso) || 0) < plainDue) clear = false
+        each = book.rest
+      }
+      for (const lamp of each) {
         if (lamp.createdOn && lamp.createdOn > iso) continue
         const daily = lamp.cadence === 'daily' && !lamp.was
         if (!daily && !isDueOn(lamp, iso)) continue

@@ -2866,7 +2866,7 @@ export const ko = {
   // round4-fix/stats-agree
   'streaks.nextGoal': '다음 목표: {goal}',
   'week.tapHint': "날을 누르면 완료됐는지, 왜 아닌지 볼 수 있어요.",
-  'stats.bestRun': '질문 최고 연속',
+  'stats.bestRun': '최고 연속, 질문 하나',
   'stats.marksSub': "받은 것과 나머지를 받는 방법",
   'stats.sevenSub': "질문마다, 날마다",
   'stats.streaksSub': "내 연속 기록과 질문별 연속 기록",
@@ -2877,6 +2877,7 @@ export const ko = {
   'streaks.unitOnTime': "회 연속 제때",
   'streaks.unitOnTimeOne': "회 제때",
   'stats.last30': "최근 30일",
+  'stats.last30Of': '{n}일 중 {did}일',
   'lamp.shareBtn': "이 연속 기록 공유",
   'lamp.shareDays': "\"{what}\" {n}일 연속, Did I와 함께",
   'lamp.shareDay': "\"{what}\" 1일 연속, Did I와 함께",

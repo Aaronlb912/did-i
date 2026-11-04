@@ -2901,7 +2901,7 @@ export const pt = {
   // round4-fix/stats-agree
   'streaks.nextGoal': 'Próxima meta: {goal}',
   'week.tapHint': "Toque num dia para ver por que fechou ou não.",
-  'stats.bestRun': 'Melhor sequência de uma pergunta',
+  'stats.bestRun': 'Melhor sequência, uma pergunta',
   'stats.marksSub': "O que você ganhou e como pegar o resto",
   'stats.sevenSub': "Cada pergunta, dia a dia",
   'stats.streaksSub': "Sua sequência e a sequência de cada pergunta",
@@ -2912,6 +2912,7 @@ export const pt = {
   'streaks.unitOnTime': "no prazo seguidas",
   'streaks.unitOnTimeOne': "no prazo",
   'stats.last30': "Últimos 30 dias",
+  'stats.last30Of': '{did} de {n} dias',
   'lamp.shareBtn': "Compartilhar esta sequência",
   'lamp.shareDays': "{n} dias seguidos em “{what}” com o Did I",
   'lamp.shareDay': "1 dia seguido em “{what}” com o Did I",

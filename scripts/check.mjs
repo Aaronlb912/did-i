@@ -6351,6 +6351,35 @@ test('best run counts day questions only; shelf rate is a 30 day figure', () => 
   assert.equal(shelfRate30([{ lamps: [] }], '2026-11-02'), null)
 })
 
+test('shelf rate 30 returns the Did count and the days it counted', () => {
+  const lamp = { id: 'q1', question: 'Q', cadence: 'daily', createdOn: '2026-09-01' }
+  const answers = []
+  for (let d = 4; d <= 13; d += 1) answers.push({ id: 'a' + d, lampId: 'q1', periodKey: '2026-10-' + String(d).padStart(2, '0'), status: 'yes', answeredAt: '2026-10-' + String(d).padStart(2, '0') + 'T20:00:00' })
+  const out = shelfRate30([{ id: 'b', lamps: [lamp], answers }], '2026-11-02')
+  assert.equal(out.did, 10)
+  assert.equal(out.asked, 29)
+  assert.equal(out.rate, 34)
+})
+
+test('year view counts plain daily questions from the day index like the per-question walk', async () => {
+  const { yearMonths } = await import('../src/lib/hall-pages.js')
+  const mk = (id, extra) => ({ id, question: id, cadence: 'daily', createdOn: '2026-01-01', ...extra })
+  const lamps = [mk('a'), mk('b', { createdOn: '2026-02-10' }), mk('c', { cadence: 'weekly', weekdays: [1, 3] })]
+  const key = (m, d) => '2026-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0')
+  const answers = []
+  for (let d = 1; d <= 20; d += 1) answers.push({ id: 'x' + d, lampId: 'a', periodKey: key(3, d), status: 'yes', answeredAt: key(3, d) + 'T20:00:00' })
+  for (let d = 1; d <= 5; d += 1) answers.push({ id: 'y' + d, lampId: 'b', periodKey: key(3, d), status: 'yes', answeredAt: key(3, d) + 'T20:00:00' })
+  answers.push({ id: 'z', lampId: 'b', periodKey: key(2, 5), status: 'yes', answeredAt: key(2, 5) + 'T20:00:00' })
+  const book = { id: 'b1', lamps, answers, dayFoldHour: 0 }
+  const days = yearMonths([book], 2026, new Date(2026, 4, 15, 12)).flatMap((m) => m.nights).filter((n) => !n.pad)
+  const day = (iso) => days.find((n) => n.iso === iso)
+  assert.equal(day('2026-03-03').on, true, 'a and b done, the weekly question is not due on a Tuesday')
+  assert.equal(day('2026-03-04').miss, true, 'a and b done but the Wednesday question is open')
+  assert.equal(day('2026-03-06').on, false, 'b not done on the 6th')
+  assert.equal(day('2026-02-05').empty, false, 'b made on the 10th is not due, a is')
+  assert.equal(day('2026-03-02').miss, true)
+})
+
 test('every t() key the app uses is in English', () => {
   const files = []
   const walk = (dir) => {

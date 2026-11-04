@@ -2868,6 +2868,7 @@ export const zh = {
   'streaks.unitOnTime': "次连续按时",
   'streaks.unitOnTimeOne': "次按时",
   'stats.last30': "最近 30 天",
+  'stats.last30Of': '{n} 天中 {did} 天',
   'lamp.shareBtn': "分享这个连续记录",
   'lamp.shareDays': "“{what}”连续 {n} 天，用 Did I",
   'lamp.shareDay': "“{what}”连续 1 天，用 Did I",

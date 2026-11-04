@@ -552,7 +552,7 @@ function StreakHero({ colors, n, label, line, chip }) {
   )
 }
 
-function NumberTile({ colors, label, n, unit = '', onPress, third = false, half = false }) {
+function NumberTile({ colors, label, n, unit = '', sub = '', onPress, third = false, half = false }) {
   return (
     <Pressable
       disabled={!onPress}
@@ -565,6 +565,7 @@ function NumberTile({ colors, label, n, unit = '', onPress, third = false, half 
         {unit ? <Text style={[styles.tileUnit, { color: colors.inkSoft }]}>{` ${unit}`}</Text> : null}
       </Text>
       <Text style={[styles.tileLabel, { color: colors.inkDim }]} numberOfLines={2}>{label}</Text>
+      {sub ? <Text style={[styles.tileLabel, { color: colors.inkDim }]} numberOfLines={1}>{sub}</Text> : null}
     </Pressable>
   )
 }
@@ -671,7 +672,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
         {gentle ? null : <NumberTile third colors={colors} label={t('stats.nope')} n={counts.skip} />}
         <NumberTile half={!gentle} colors={colors} label={t('stats.questions')} n={counts.hung} />
         {gentle ? null : <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />}
-        {gentle || rate30 == null ? null : <NumberTile half colors={colors} label={t('stats.last30')} n={`${rate30}%`} />}
+        {gentle || rate30 == null ? null : <NumberTile half colors={colors} label={t('stats.last30')} n={`${rate30.rate}%`} sub={t('stats.last30Of', { did: rate30.did, n: rate30.asked })} />}
       </View>
 
       <SetCap colors={colors}>{t('stats.moreCap')}</SetCap>
@@ -788,12 +789,14 @@ export function CalendarScreen({ book, boards, tagId, now, onChangeBooks }) {
   const [view, setView] = useState('month')
   const [startShift, setStartShift] = useState(0)
   const gentle = usePrefs().gentle === true
+  const newShelf = useMemo(() => isNewShelf(boards), [boards])
+  const noAnswers = useMemo(() => answeredNights(scopedBooks(inView(book, boards), tagId), 1) === 0, [book, boards, tagId])
 
   return (
     <ScreenShell title={t('settings.history')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/calendar" />
-      {isNewShelf(boards) ? <Meta colors={colors}>{t('cal.hintGentle')}</Meta> : null}
-      {answeredNights(scopedBooks(inView(book, boards), tagId), 1) === 0 ? (
+      {newShelf ? <Meta colors={colors}>{t('cal.hintGentle')}</Meta> : null}
+      {noAnswers ? (
         <EmptyCard title={t('recent.emptyTitle')} body={t('cal.emptyBody')} colors={colors}>
           <DidButton small label={t('about.home')} onPress={() => goHash('/tonight')} colors={colors} />
         </EmptyCard>
