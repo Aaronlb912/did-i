@@ -11234,6 +11234,17 @@ test('bugs 1104b: leaving the account clears iOS widget taps; past pings skipped
   assert.ok(qs.includes('!item.archived && sameWords(item)'), 'an active twin wins over a paused one')
 })
 
+test('folder screen: top and bottom keys, Remove inside the selected folder, Open on parked, add row for an empty folder', async () => {
+  const { readFileSync } = await import('node:fs')
+  const more = readFileSync('native/screens/more.jsx', 'utf8')
+  const folders = more.slice(more.indexOf('function BoardsScreen'))
+  assert.ok(folders.includes("'boards.moveTop'") && folders.includes("'boards.moveBottom'"), 'folder reorder has top and bottom keys')
+  assert.ok(folders.includes("t('boards.lastFolder')"), 'the only folder shows why it cannot be removed')
+  assert.ok(folders.indexOf('askRemove}') < folders.indexOf('settings.emptyBoard'), 'Remove folder sits above the start over row')
+  assert.equal(folders.split("t('boards.openNamed'").length - 1, 4, 'live and parked folders both have Open')
+  assert.ok(folders.includes("t('boards.addQuestionHere')") && folders.includes("goHash('/add', { tag: item.id })"), 'an empty folder has a full row that opens add')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
