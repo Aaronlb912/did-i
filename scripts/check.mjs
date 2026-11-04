@@ -11011,6 +11011,13 @@ test('quiet settings line uses the shared last call rule', async () => {
   assert.ok(sql.includes('shares_family_of(new.user_id, m.user_id)'))
 })
 
+test('widget fixes: foreign carried taps, leave-account card, kept taps noted', () => {
+  const read = (f) => readFileSync(path.join(checkRoot, f), 'utf8')
+  assert.ok(read('native/widget-sync.js').includes('foreign ? [] : unmatched.filter'))
+  assert.ok(read('native/lib/leave-account.js').includes('await clearAndroidWidget()'))
+  assert.ok(read('native/widget-tap.android.js').includes('if (!failed.includes(tap)) noteTaken'))
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

@@ -56,7 +56,7 @@ export async function applyPendingAndroidWidgetTap() {
   const { shelf, failed, kept, refused } = applyWidgetTapsOnce(taps)
   // Wear OS taps are in this queue: tell the watch which ones the phone has.
   const back = [...failed, ...kept]
-  for (const tap of taps) if (!back.includes(tap)) noteTaken(tap.sent || tap.at)
+  for (const tap of taps) if (!failed.includes(tap)) noteTaken(tap.sent || tap.at)
   if (back.length) {
     try {
       await mod.restorePending?.(JSON.stringify(back))

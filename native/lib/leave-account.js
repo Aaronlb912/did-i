@@ -1,3 +1,6 @@
+import { Platform } from 'react-native'
+import { readShelf } from '../../src/lib/board-shelf.js'
+import { buildTonightWidgetProps } from '../../src/lib/widget-tonight.js'
 import { saveBeforeSignOut, signedOutSync } from '../../src/lib/cloud-sync.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { clearReminds } from '../../src/lib/remind-me.js'
@@ -16,6 +19,20 @@ function clearTray() {
   clearNativePings()
 }
 
+// The Android card is drawn from the shelf: redraw it from the emptied shelf
+// so it stops showing the old account's questions.
+async function clearAndroidWidget() {
+  if (Platform.OS !== 'android') return
+  try {
+    const shelf = readShelf()
+    const { saveAndroidWidgetCard } = await import('../widget-tap.android.js')
+    const { enrichTonightWidgetProps } = await import('../widget-sync.js')
+    await saveAndroidWidgetCard(enrichTonightWidgetProps(shelf, buildTonightWidgetProps(shelf)))
+  } catch {
+    // The next redraw reads the shelf.
+  }
+}
+
 // Leaving the account: say it worked, or say what went wrong.
 // Account and the first Settings page both sign out through this.
 // Returns 'unsaved' when answers did not reach the account; the caller asks
@@ -31,6 +48,7 @@ export async function leaveAccount(kind, run, force = false) {
     confirmDone(t(kind === 'delete' ? 'confirm.deleted' : 'confirm.signedOut'))
     signedOutSync()
     clearTray()
+    await clearAndroidWidget()
     return true
   } catch {
     confirmMiss(t('confirm.miss'))
