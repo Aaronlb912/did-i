@@ -77,6 +77,7 @@ import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { SheetHost, publishSheet } from '../components/SheetHost.jsx'
+import { openBrainDump } from '../components/BrainDumpSheet.jsx'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { setSendShare } from '../../src/lib/send-answers.js'
 import { askPingsNow, offerPingPrimer } from '../lib/ping-primer.js'
@@ -883,6 +884,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           <>
             <Meta colors={colors}>{t('questions.hint')}</Meta>
             {allRows.length ? null : <DidButton colors={colors} label={t('home.add')} onPress={() => goHash('/add')} />}
+            {onChange ? <Row colors={colors} label={t('dump.title')} note={t('dump.hint')} onPress={() => openBrainDump({ book: (readShelf().boards || []).find((item) => item.id === book.id) || book, colors, onChange })} /> : null}
             {starters.length && onChange ? (
               <View style={styles.starters}>
                 <Text style={[styles.blockLabel, { color: colors.inkDim }]}>{t('first.picks')}</Text>
