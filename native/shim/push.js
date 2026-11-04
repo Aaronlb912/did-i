@@ -2,6 +2,7 @@ import { AppState, Platform } from 'react-native'
 import { cloud } from '../../src/lib/cloud.js'
 import { deviceKey } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
+import { readPrefs } from '../../src/lib/prefs.js'
 import { REMIND_CATEGORY, SEND_CATEGORY, firstResponse, notificationAnswer, remindActions, sendActions, snoozeFrom } from '../../src/lib/notify-answer.js'
 import {
   askNotificationPermission,
@@ -157,7 +158,7 @@ async function bindResponseListener(handlers = {}) {
         if (typeof handlers.onRemind === 'function') handlers.onRemind(answer.id, answer.action, data.remindText)
         return
       }
-      const snooze = snoozeFrom(response)
+      const snooze = snoozeFrom(response, Date.now(), readPrefs())
       // The buttons answer without leaving the reminder in the tray.
       if (snooze) {
         Notifications.dismissNotificationAsync?.(String(response?.notification?.request?.identifier || ''))?.catch?.(() => {})

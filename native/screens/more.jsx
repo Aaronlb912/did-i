@@ -84,6 +84,7 @@ import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { AFTERNOON_AT_DEFAULT, AFTERNOON_AT_TIMES, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
+import { LATER_MINUTES } from '../../src/lib/notify-answer.js'
 import { lastCallAt as sharedLastCallAt, quietToFor } from '../../src/lib/quiet.js'
 import { PING_KINDS, afterQuiet, awayEnd, awayKey, awayLeft, awayNow, awayStart, gentleOn, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
@@ -326,6 +327,7 @@ export function HelpScreen() {
         <KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.pings')}</Text>
         <Meta colors={colors} style={styles.beforeBtn}>{t('help.pingsP')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{t('help.pingsZone')}</Meta>
         <KeyButton colors={colors} label={t('help.pingsGo')} onPress={() => goHash('/pings')} />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.widget')}</Text>
         <Meta colors={colors}>{t('help.widgetP')}</Meta>
@@ -2144,9 +2146,23 @@ function PingKinds({ colors, on }) {
           </>
         ) : null}
       </SetCard>
-      {movedLastCall(prefs) ? (
+      {movedLastCall(prefs) === 'none' ? (
+        <Meta colors={colors}>{t('pings.quietNoLast')}</Meta>
+      ) : movedLastCall(prefs) ? (
         <Meta colors={colors}>{t('pings.quietNoLastCall', { time: clockWords(movedLastCall(prefs)) })}</Meta>
       ) : null}
+      <SetCap colors={colors}>{t('pings.laterCap')}</SetCap>
+      <SetCard colors={colors}>
+        <SetChoice
+          colors={colors}
+          label={t('tonight.answerLater')}
+          sub={t('pings.laterSub')}
+          options={LATER_MINUTES.map((id) => ({ id, label: t('pings.laterOpt', { n: id }) }))}
+          selected={prefs.laterMin}
+          onSelect={(id) => writePrefs({ laterMin: id })}
+          last
+        />
+      </SetCard>
       {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
     </>
   )
@@ -2229,12 +2245,13 @@ function AwayCard({ colors }) {
   )
 }
 
-// Quiet hours that cover 21:00 move the last call. Same rule as the reminder (src/lib/quiet.js); null hides the line.
+// Quiet hours that cover 21:00 move the last call. Same rule as the reminder (src/lib/quiet.js); null hides the line, 'none' means no last call today.
 function movedLastCall(prefs) {
   if (!prefs.quietOn) return null
   const now = new Date()
   const when = sharedLastCallAt(now.getFullYear(), now.getMonth() + 1, now.getDate(), null, prefs, new Date(now.getFullYear(), now.getMonth(), now.getDate()))
-  if (!when || (when.getHours() === 21 && when.getMinutes() === 0)) return null
+  if (!when) return 'none'
+  if (when.getHours() === 21 && when.getMinutes() === 0) return null
   return `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`
 }
 

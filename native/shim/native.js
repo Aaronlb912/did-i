@@ -192,7 +192,7 @@ export async function snoozeNative(snooze) {
     await Notifications.scheduleNotificationAsync({
       identifier: snooze.identifier,
       content: snooze.content,
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(snooze.at), channelId: CHANNEL_ID },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: afterQuiet(new Date(snooze.at)), channelId: CHANNEL_ID },
     })
   } catch {
     // ok
@@ -602,24 +602,30 @@ async function schedulePingsNow(books, now = new Date()) {
       notes.push({
         identifier: snooze.identifier,
         content: snooze.content,
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(snooze.at), channelId: CHANNEL_ID },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: afterQuiet(new Date(snooze.at)), channelId: CHANNEL_ID },
       })
     }
     // iOS keeps 64 and drops the last to fire (renew, no rush), so extras push out the latest regular notes.
     const spill = notes.length - (PING_CAP - waitingReminds)
     if (spill > 0) notes.splice(Math.max(0, regularCount - spill), spill)
+    let failed = 0
     for (const note of notes) {
       try {
         await Notifications.scheduleNotificationAsync({ identifier: note.identifier, content: note.content, trigger: note.trigger })
       } catch {
         // Some ROMs block exact alarms.
+        failed += 1
       }
     }
-    // Saved only once set, so a run cut short is tried again.
+    // Saved only once all are set, so a run cut short or a failed note is tried again on the next open.
     try {
-      localStorage.setItem(PING_ZONE_KEY, pingZone())
-      localStorage.setItem(PING_AT_KEY, String(Date.now()))
-      localStorage.removeItem(PING_FAILED_KEY)
+      if (failed) {
+        localStorage.setItem(PING_FAILED_KEY, '1')
+      } else {
+        localStorage.setItem(PING_ZONE_KEY, pingZone())
+        localStorage.setItem(PING_AT_KEY, String(Date.now()))
+        localStorage.removeItem(PING_FAILED_KEY)
+      }
     } catch {
       // ok
     }
