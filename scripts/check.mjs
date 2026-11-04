@@ -10722,6 +10722,13 @@ test('one free miss a week keeps the first missed day of each week', () => {
   assert.equal(readPrefs().freeMiss, was, 'the pref cleans to a boolean and defaults off')
 })
 
+test('hours left note: 1 hour is singular, under an hour says soon', async () => {
+  const { leftNote } = await import('../src/lib/quiet.js')
+  assert.equal(leftNote(3, new Date(2026, 10, 3, 22, 30), 0).key, 'notif.leftHour')
+  assert.equal(leftNote(3, new Date(2026, 10, 3, 23, 30), 0).key, 'notif.leftSoon')
+  assert.deepEqual(leftNote(3, new Date(2026, 10, 3, 20, 30), 0), { key: 'notif.leftHours', vars: { n: 3, h: 3 } })
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

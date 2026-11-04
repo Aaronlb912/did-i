@@ -453,6 +453,7 @@ export const ko = {
   'notif.stillOpen': "아직 열려 있어요: {question}",
   'notif.stillOpenMany': "열린 질문이 {n}개 있어요",
   'notif.leftHours': "{n}개 남음, {h}시간 남았어요",
+  'notif.leftHour': "{n}개 남음, 1시간 남았어요",
   'notif.leftSoon': "{n}개 남음, 1시간도 안 남았어요",
   'we.startTogether': "지금 시작해요. {name}님도 함께해요.",
   'we.startTogetherMany': "지금 시작해요. 다른 {n}명도 함께해요.",

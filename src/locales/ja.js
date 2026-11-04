@@ -453,6 +453,7 @@ export const ja = {
   'notif.stillOpen': "まだ未回答: {question}",
   'notif.stillOpenMany': "未回答の質問が{n}件あります",
   'notif.leftHours': "あと{n}件、終わりまで{h}時間",
+  'notif.leftHour': "あと{n}件、終わりまで1時間",
   'notif.leftSoon': "あと{n}件、残り1時間未満",
   'we.startTogether': "今から始めます。{name}さんも参加しています。",
   'we.startTogetherMany': "今から始めます。ほか{n}人も参加しています。",

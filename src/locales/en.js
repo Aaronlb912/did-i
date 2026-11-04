@@ -459,6 +459,7 @@ export const en = {
   'notif.stillOpen': "Still open: {question}",
   'notif.stillOpenMany': "{n} questions still open",
   'notif.leftHours': "{n} left, {h} hours to go",
+  'notif.leftHour': "{n} left, 1 hour to go",
   'notif.leftSoon': "{n} left, under an hour to go",
   'we.startTogether': "Starting now. {name} is in too.",
   'we.startTogetherMany': "Starting now. {n} others are in too.",
