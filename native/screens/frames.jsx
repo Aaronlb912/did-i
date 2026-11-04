@@ -90,9 +90,9 @@ export function frameStatus(frame, purse, ctx) {
   if (frame.kind === 'coin') return { coins: frame.coins }
   if (frame.kind === 'gem') return { gems: frame.gems }
   if (frame.kind === 'earned') {
-    const p = frameProgress(frame, ctx)
+    // No "n of N" count: no next-reward lines anywhere (Aaron, 2026-11-04). How to earn sits in the sheet.
     if (frame.earn === 'refer') return { text: t('frames.earnRefer', { n: frame.need }) }
-    return { text: frame.earn === 'freeze' ? (ctx.freezesHeld > 0 ? t('frames.earnFreezeUse') : t('frames.earnFreezeAt', { n: FREEZE_EVERY })) : t('frames.progress', { n: p.n, of: p.of }) }
+    return { text: frame.earn === 'freeze' ? (ctx.freezesHeld > 0 ? t('frames.earnFreezeUse') : t('frames.earnFreezeAt', { n: FREEZE_EVERY })) : t('frames.notEarned') }
   }
   if (frame.kind === 'season') {
     if (seasonOpen(frame, ctx.today)) return { text: t('frames.freeNow') }
@@ -415,7 +415,7 @@ export function FramesShopRow({ book, colors, onChange }) {
     <View style={styles.promoShelf}>
       <View style={styles.promoHead}>
         <Text style={[styles.cap, { color: colors.inkDim }]}>{t('frames.title')}</Text>
-        <Pressable accessibilityRole="button" onPress={() => goHash('/shop/frames')} hitSlop={8}>
+        <Pressable accessibilityRole="button" onPress={() => goHash('/shop/frames')} style={styles.allBtn}>
           <Text style={[styles.promoAll, { color: colors.on }]}>{t('frames.all')}</Text>
         </Pressable>
       </View>
@@ -476,7 +476,7 @@ export function ShopFramesScreen({ book, onChange }) {
     <BoardShell book={book} title={t('frames.all')} date={formatBoardDate(ctx.today)} colors={colors} showPurse>
       <Meta colors={colors}>{t('frames.hint')}</Meta>
       {lists.mineCount ? (
-        <Pressable accessibilityRole="button" onPress={() => goHash('/kit', { id: 'frames' })} hitSlop={6}>
+        <Pressable accessibilityRole="button" onPress={() => goHash('/kit', { id: 'frames' })} style={styles.mineRow}>
           <Text style={[styles.mineLine, { color: colors.inkSoft }]}>
             {lists.mineCount === 1 ? t('frames.mineOne') : t('frames.mine', { n: lists.mineCount })}{' '}
             <Text style={{ color: colors.on }}>{t('frames.wearThem')} ›</Text>
@@ -606,6 +606,8 @@ export function framesOwnedCount(book) {
 }
 
 const styles = StyleSheet.create({
+  allBtn: { minHeight: 44, minWidth: 44, paddingHorizontal: 8, justifyContent: 'center' },
+  mineRow: { minHeight: 44, justifyContent: 'center', alignSelf: 'stretch' },
   mineLine: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, marginTop: 4 },
   promoShelf: { gap: 8, marginTop: 4 },
   promoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
