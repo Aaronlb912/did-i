@@ -202,12 +202,11 @@ function foldClock(at) {
 }
 
 // A skip reads Not yet while its day is open. Once the day is over it is
-// Missed, like a day never answered: Not yet is only for today. Gentle mode
-// never says missed, so there it stays Not yet.
+// A past Not yet stays a Not yet, as in the calendar day sheet.
 function statusWord(status, open = false) {
   if (status === 'yes') return t('feed.status.did')
   if (status === 'late') return t('feed.status.late')
-  if (status === 'skip') return t(open ? 'jewelKey.notYet' : gentleOn() ? 'feed.status.nope' : 'later.missed')
+  if (status === 'skip') return t(open ? 'jewelKey.notYet' : 'feed.status.nope')
   return status
 }
 

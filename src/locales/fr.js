@@ -3132,6 +3132,8 @@ export const fr = {
   'cal.yearBest': "Meilleure série {n} jours",
   'cal.yearShare': "Partager mon année",
   'cal.yearShareText': "Mon {year} dans Did I : {did} jours Did, {rate}% Did, meilleure série {best} jours.",
+
+  'cal.yearShareNoBest': "Mon {year} dans Did I : {did} jours Did, {rate}% Did.",
   'cal.yearShareFolder': "Mon {year} dans Did I ({folder}) : {did} jours Did, {rate}% Did.",
   'stats.didRate': "Taux de Did",
   'freeze.dot': "Gel",
