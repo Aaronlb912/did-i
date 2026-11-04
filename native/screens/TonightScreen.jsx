@@ -858,7 +858,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     else if (!finishList && lookAgain && stack.bodyKind !== 'finish') setLookAgain(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finishList, lookAgain, stack.bodyKind])
+  const lookFirstKey = useRef(null)
   const startLookAgain = () => {
+    lookFirstKey.current = null
     setLookAgain(true)
     stack.reopenStillOpen()
   }
@@ -1090,6 +1092,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // Earliest reminder time on any open question, for the day-one line.
   const firstAsk = (stack.shelf || []).flatMap((item) => (item.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => String(lamp.askAfter || ''))).filter((v) => /^\d{2}:\d{2}$/.test(v)).sort()[0] || ''
   const reminderRowUp = !stack.empty && Platform.OS !== 'web' && Boolean(onAskPings) && (pingLabel === 'pings.state.ask' || pingLabel === 'pings.state.blocked')
+  const ctaRow = nightOne ? '' : day === 2 && reminderRowUp ? 'remind' : widgetBtn ? 'widget' : signInNudge && (!firstWeek || day >= 3) ? 'signin' : day === 5 ? 'invite' : ''
   const extraRow = stack.cheer && !pickKey ? '' : reminderRowUp ? 'reminders' : stack.nightDone ? (dropLineUp(book) ? 'drop' : 'rate') : ''
   // First open of a new week: last week's recap, once. Sunday's done card counts as seen.
   useEffect(() => {
@@ -1205,6 +1208,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     // left keeps the Not yet and lets the card go for today.
     const keyOf = (row) => (row.family ? famKey(row) : stack.rowKey(row))
     const top = stillOpenRows[0]
+    if (lookFirstKey.current === null) lookFirstKey.current = keyOf(top)
     const onDid = () => (top.family ? famDid(top) : stack.lateFromList(top))
     const onNope = () => {
       if (!top.family) return stack.leaveFromList(top)
@@ -1232,9 +1236,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           buddy={activeBuddy(book)}
           frame={cardFrame}
         >
-          <Text style={[faceCardStyles.meta, styles.graceLate, { color: colors.inkSoft }]}>
-            {t('tonight.nopedChange', { time: untilWords(top) })}
-          </Text>
+          {lookFirstKey.current === keyOf(top) ? (
+            <Text style={[faceCardStyles.meta, styles.graceLate, { color: colors.inkSoft }]}>
+              {t('tonight.nopedChange', { time: untilWords(top) })}
+            </Text>
+          ) : null}
         </SwipeCardHost>
         <View style={styles.actions}>
           <DidButton small label={t('tonight.lookDone')} colors={colors} onPress={() => { setLookAgain(false); stack.restStack(true) }} />
@@ -1317,9 +1323,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               {reminderRowUp ? <WideRow label={t('firstWeek.remind')} colors={colors} onPress={onAskPings} /> : null}
             </>
           ) : null}
-          {!nightOne && day === 2 && reminderRowUp ? <WideRow label={t('firstWeek.remind')} colors={colors} onPress={onAskPings} /> : null}
-          {!nightOne && widgetBtn ? <WideRow label={t('nightOne.widget')} colors={colors} onPress={() => pinWidget(colors)} /> : null}
-          {day === 5 && !nightOne ? <WideRow label={t('firstWeek.invite')} colors={colors} onPress={() => goHash('/people/refer')} /> : null}
+          {ctaRow === 'remind' ? <WideRow label={t('firstWeek.remind')} colors={colors} onPress={onAskPings} /> : null}
+          {ctaRow === 'widget' ? <WideRow label={t('nightOne.widget')} colors={colors} onPress={() => pinWidget(colors)} /> : null}
+          {ctaRow === 'invite' ? <WideRow label={t('firstWeek.invite')} colors={colors} onPress={() => goHash('/people/refer')} /> : null}
           {stack.streak > 0 && !gentle ? (
             <View style={styles.streakRow}>
             <Pressable
@@ -1350,32 +1356,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{tomorrowLine(summary.tomorrow, gentle ? 0 : stack.streak)}</Text>
             ) : null}
             <TonightNote quiet rows={stack.dueWithWait} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
-          </View>
           {dayCoins > 0 ? (
             <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.coinsToday', { n: dayCoins, total: purse.coins })}</Text>
           ) : null}
-          {!wish && (day === 2 || day === 3) ? (
-            <Pressable accessibilityRole="button" onPress={() => goHash('/shop')} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
-              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
-                {t('firstWeek.coinsFor')} <Text style={{ color: colors.on }}>›</Text>
-              </Text>
-            </Pressable>
-          ) : null}
-          {next && (day === 0 || day > 3) ? (
-            <Pressable accessibilityRole="button" onPress={() => goHash('/shop')} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
-              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
-                {t(next.key, { n: next.n, name: t(next.nameKey) })} <Text style={{ color: colors.on }}>›</Text>
-              </Text>
-            </Pressable>
-          ) : null}
-          {wish ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={`${t(wish.key, { n: wish.n, name: t(wish.nameKey) })}, ${t('shop.wishTitle')}`} onPress={() => goHash('/kit', { id: 'wish' })} style={{ alignSelf: 'stretch', minHeight: 44, justifyContent: 'center' }}>
-              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
-                {t(wish.key, { n: wish.n, name: t(wish.nameKey) })} <Text style={{ color: colors.on }}>›</Text>
-              </Text>
-            </Pressable>
-          ) : null}
-          {signInNudge && !nightOne && (!firstWeek || day >= 3) ? (
+          </View>
+          {ctaRow === 'signin' ? (
             <View style={[styles.nudge, { borderTopColor: colors.lineSoft }]}>
               <Text style={[faceCardStyles.meta, { color: colors.ink }]}>{t('signInNudge.title')}</Text>
               <View style={styles.actions}>
