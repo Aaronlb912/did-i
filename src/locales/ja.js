@@ -854,7 +854,7 @@ export const ja = {
   'streaks.seven': "7 日",
   'later.kicker': 'これから',
   'later.title': "この先の日々",
-  'later.body': "Did I がこれから聞くこと。今日はまだそのタップ。このページは先の一週間で、待っている質問が空白画面にならないようにする。",
+  'later.body': "Did I がこの先7日間に聞くこと。",
   'later.empty': '先に質問を追加。',
   'later.emptyWeek': "次の 7 日に予定なし。",
   'later.tonight': "今日",

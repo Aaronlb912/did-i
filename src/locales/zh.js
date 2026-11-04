@@ -852,7 +852,7 @@ export const zh = {
   'streaks.seven': "七天",
   'later.kicker': '即将到来',
   'later.title': "接下来的日子",
-  'later.body': "Did I 接下来会问什么。今天仍是那一下。这一页是前面的一周，好让等着的问题不是空白屏。",
+  'later.body': "Did I 在接下来七天会问的问题。",
   'later.empty': '先添加问题。',
   'later.emptyWeek': "未来七天没有安排。",
   'later.tonight': "今天",

@@ -23,10 +23,10 @@ export function SwipeIntro({ colors, onDone }) {
     onDone?.()
   }
   return (
-    <Pressable onPress={done} accessibilityRole="button" accessibilityHint={t('swipeIntro.ok')} hitSlop={6} style={styles.row}>
-      <Text style={[styles.arrow, { color: colors.skip }]}>←</Text>
+    <Pressable onPress={done} accessibilityRole="button" accessibilityLabel={t('swipeIntro.line')} accessibilityHint={t('swipeIntro.ok')} hitSlop={6} style={styles.row}>
+      <Text accessibilityElementsHidden importantForAccessibility="no" style={[styles.arrow, { color: colors.skip }]}>←</Text>
       <Text style={[styles.line, { color: colors.inkSoft }]}>{t('swipeIntro.line')}</Text>
-      <Text style={[styles.arrow, { color: colors.on }]}>→</Text>
+      <Text accessibilityElementsHidden importantForAccessibility="no" style={[styles.arrow, { color: colors.on }]}>→</Text>
     </Pressable>
   )
 }

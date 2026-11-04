@@ -853,7 +853,7 @@ export const ko = {
   'streaks.seven': "7일",
   'later.kicker': '앞으로',
   'later.title': "다음 날들",
-  'later.body':"Did I가 앞으로 물어볼 것들이에요. 오늘은 여전히 그 탭이에요. 이 페이지는 앞으로 일주일을 보여줘서 기다리는 질문이 빈 화면이 되지 않아요.",
+  'later.body':"Did I가 앞으로 7일 동안 물어볼 것들이에요.",
   'later.empty': '먼저 질문을 추가하세요.',
   'later.emptyWeek': "다음 7일에 예정 없음.",
   'later.tonight': "오늘",
