@@ -12,6 +12,7 @@ import { authGated } from '../src/lib/auth-gate.js'
 import { armLampPings, checkPings, pingButtonLabel, pingSupport, requestPings } from '../src/lib/notify.js'
 import { useAutoAdd } from '../src/lib/people.js'
 import { t } from '../src/lib/i18n.js'
+import { markInfo, markLabel } from '../src/lib/achievements.js'
 import { usePrefs } from '../src/lib/prefs.js'
 import { useHallColors } from './hooks/useHallColors.js'
 import { useAppShelf } from './hooks/useAppShelf.js'
@@ -32,7 +33,7 @@ import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { UpdatePrompt } from './components/UpdatePrompt.jsx'
-import { SheetHost, onSheetUp } from './components/SheetHost.jsx'
+import { SheetHost, onSheetUp, publishSheet, sheetIsUp } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
 import { HuntHost } from './components/HuntHost.jsx'
 import { InviteAskHost } from './components/InviteAskHost.jsx'
@@ -214,6 +215,7 @@ export function AppShell() {
     setTourBalanceHandler(app.applyCoinBalance)
     return () => setTourBalanceHandler(null)
   }, [app.applyCoinBalance])
+  const colors = useHallColors(app.book)
   const marksHeld = useMarksHeld()
   // A new mark joins the toast line once the night's celebration is over.
   // It also waits while an undo is up, so a tap on Undo never lands on it.
@@ -222,11 +224,28 @@ export function AppShell() {
   const clearMark = app.clearMark
   useEffect(() => {
     if (!mark) return
+    const big = markInfo(mark.id)?.n >= 100 && markInfo(mark.id)?.group === 'streak'
+    if (big && !sheetIsUp()) {
+      const done = () => {
+        publishSheet(null)
+        clearMark()
+      }
+      publishSheet({
+        kicker: t('marks.new'),
+        title: markLabel(mark.id, 'name'),
+        body: markLabel(mark.id, 'line'),
+        goLabel: t('freeze.earnedOk'),
+        onGo: done,
+        noClose: true,
+        onClose: done,
+        colors,
+      })
+      return
+    }
     showToast({ id: `mark:${mark.id || 'mark'}`, kind: 'mark', mark, ms: 5200, onGone: clearMark })
-  }, [clearMark, mark])
+  }, [clearMark, mark, colors])
   const account = useAccount()
   const sync = useSync()
-  const colors = useHallColors(app.book)
   // Terms and privacy before sign-in open over sign-in, not in the navigator,
   // which is not there yet.
   const legalOut = (route.path === '/terms' || route.path === '/privacy') && authGated('/', account)
