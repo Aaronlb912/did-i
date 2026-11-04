@@ -2645,7 +2645,7 @@ export const ja = {
   'help.groupShop': 'ショップ',
   'help.groupSocial': '友だちと家族',
   'help.groupDaily': '毎日',
-  'account.privacySub': 'コピーを保存、サインアウト、削除。',
+  'account.privacySub': '電話と同期。',
   'account.privacyRow': 'データとプライバシー',
   'account.syncPhonesCap': '同期と端末',
   'friend.didYouHint': '{name} にやったか聞く。',

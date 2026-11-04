@@ -2647,7 +2647,7 @@ export const ko = {
   'help.groupShop': '상점',
   'help.groupSocial': '친구와 가족',
   'help.groupDaily': '매일',
-  'account.privacySub': '사본 저장, 로그아웃 또는 삭제.',
+  'account.privacySub': '휴대폰과 동기화.',
   'account.privacyRow': '데이터와 개인정보',
   'account.syncPhonesCap': '동기화와 휴대폰',
   'friend.didYouHint': '{name}님에게 했는지 물어봐요.',

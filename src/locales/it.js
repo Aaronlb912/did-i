@@ -2682,7 +2682,7 @@ export const it = {
   'help.groupShop': 'Negozio',
   'help.groupSocial': 'Amici e famiglia',
   'help.groupDaily': 'Ogni giorno',
-  'account.privacySub': 'Salva una copia, esci o elimina.',
+  'account.privacySub': 'Telefoni e sincronizzazione.',
   'account.privacyRow': 'Dati e privacy',
   'account.syncPhonesCap': 'Sincronizzazione e telefoni',
   'friend.didYouHint': 'Chiedi a {name} se l’ha fatto.',

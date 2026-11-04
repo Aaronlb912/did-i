@@ -2173,7 +2173,7 @@ function PingTest({ colors }) {
       {state === 'off' ? (
         <>
           <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">{t('pings.testOff')}</Text>
-          <DidButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => {})} />
+          <DidButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))} />
         </>
       ) : null}
     </>
@@ -2282,7 +2282,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
             sub={on ? t('pings.rowOn') : t('pings.rowAsk')}
             on={on}
             last
-            onPress={on ? () => Linking.openSettings().catch(() => {}) : onAskPings}
+            onPress={on ? () => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss'))) : onAskPings}
           />
         ) : (
           <SetRow
@@ -2293,13 +2293,13 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
             sub={t('pings.rowBlocked')}
             chevron
             last
-            onPress={() => Linking.openSettings().catch(() => {})}
+            onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))}
           />
         )}
       </SetCard>
       {pingsFailed() || unavailable ? (
         <SetCard colors={colors}>
-          <SetRow colors={colors} icon="bell" tint={colors.miss} label={t('pings.setFailed')} chevron last onPress={() => Linking.openSettings().catch(() => {})} />
+          <SetRow colors={colors} icon="bell" tint={colors.miss} label={t('pings.setFailed')} chevron last onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))} />
         </SetCard>
       ) : null}
       <AwayCard colors={colors} />
@@ -2616,6 +2616,18 @@ function AccountSignedIn({ book, email, onChange }) {
     setBusy('')
   }
 
+  async function syncNow() {
+    if (busy) return
+    setBusy('sync')
+    try {
+      await pullAndMerge()
+      confirmDone(t('account.syncJust'))
+    } catch {
+      confirmMiss(t('tonight.syncMiss'))
+    }
+    setBusy('')
+  }
+
   // Leaving the account: say it worked, or keep them here with what went wrong.
   async function leave(kind, run, force = false) {
     if (busy) return
@@ -2846,7 +2858,7 @@ function AccountSignedIn({ book, email, onChange }) {
         />
         <SetRow
           colors={colors}
-          icon="shield"
+          icon="eye"
           label={t('account.privacyRow')}
           sub={t('account.privacySub')}
           chevron={!dataOpen}
@@ -2858,7 +2870,14 @@ function AccountSignedIn({ book, email, onChange }) {
         <Reveal>
       <SetCap colors={colors}>{t('account.syncPhonesCap')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="globe" label={t('account.syncNow')} sub={syncNote} onPress={() => pullAndMerge()} />
+        <SetRow
+          colors={colors}
+          icon="globe"
+          label={t('account.syncNow')}
+          sub={syncNote}
+          value={busy === 'sync' ? t('app.loading') : undefined}
+          onPress={busy ? undefined : syncNow}
+        />
         {phones.length ? (
           shownPhones.map((row, at) => (
             <Reveal key={row.device_key}>
@@ -2889,8 +2908,12 @@ function AccountSignedIn({ book, email, onChange }) {
           onClose={() => setRenaming(null)}
           onSaved={async () => {
             setRenaming(null)
-            const rows = await listDevices()
-            if (rows) setDevices(rows)
+            try {
+              const rows = await listDevices()
+              if (rows) setDevices(rows)
+            } catch {
+              confirmMiss(t('confirm.miss'))
+            }
           }}
         />
       ) : null}
@@ -2926,6 +2949,8 @@ function AccountSignedIn({ book, email, onChange }) {
         />
         </SetCard>
       ) : null}
+        </Reveal>
+      ) : null}
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} value={busy === 'export' ? t('app.loading') : undefined} chevron last onPress={busy ? undefined : download} />
@@ -2956,15 +2981,13 @@ function AccountSignedIn({ book, email, onChange }) {
             setSure({
               title: t('account.deleteTitle'),
               body: `${t('account.deleteBody')}\n\n${t('account.deleteGone')}`,
-              extra: { label: t('account.deleteCopy'), go: download },
+              extra: { label: t('account.deleteCopy'), go: () => { setSure(null); download() } },
               yes: t('account.deleteYes'),
               go: () => leave('delete', deleteAccount),
             })
           }
         />
       </SetCard>
-        </Reveal>
-      ) : null}
       <SureModal
         sure={sure}
         colors={colors}

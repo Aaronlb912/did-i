@@ -11099,6 +11099,17 @@ test('shop copy: no per-gem price line in gem hints, off-sale accessory tile sho
   assert.ok(shop.includes('coming={coming}'), 'the price tag shows the coming date when off sale')
 })
 
+test('account settings: data and sign-out cards sit outside the fold, sync shows busy', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const src = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
+  const fold = src.indexOf('{dataOpen ? (')
+  const foldEnd = src.indexOf('</Reveal>', fold)
+  assert.ok(src.indexOf("t('account.data')") > foldEnd, 'Your data card is below the fold')
+  assert.ok(src.indexOf("t('account.leaveCap')") > foldEnd, 'sign out or delete card is below the fold')
+  assert.ok(src.includes("busy === 'sync'"), 'Sync now shows busy')
+  assert.ok(!src.includes('openSettings().catch(() => {})'), 'openSettings failures are not silent')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
