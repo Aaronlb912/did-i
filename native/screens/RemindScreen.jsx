@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, Pressable, StyleSheet, Text, View } from 'react-native'
+import { AppState, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated'
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition'
 import { clockWords } from '../../src/lib/hall-pages.js'
@@ -21,6 +21,7 @@ import { goBack } from '../navigation/hash.js'
 import { cancelRemind, checkNativePings, scheduleRemind } from '../shim/native.js'
 import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
+import { answerRemind } from '../lib/remind-answer.js'
 
 const SPEECH_LANG = {
   en: 'en-US',
@@ -43,7 +44,8 @@ const CHIPS = [
 function clockOf(at) {
   const date = new Date(at)
   const pad = (value) => String(value).padStart(2, '0')
-  return clockWords(`${pad(date.getHours())}:${pad(date.getMinutes())}`)
+  const time = clockWords(`${pad(date.getHours())}:${pad(date.getMinutes())}`)
+  return date.toDateString() === new Date().toDateString() ? time : t('tonight.untilTomorrow', { time })
 }
 
 function Pulse({ colors, on, still }) {
@@ -208,6 +210,13 @@ export function RemindScreen({ book, route }) {
     return () => sub.remove()
   }, [])
 
+  // A note that already rang: answer it here (tapping the note opens this screen).
+  async function answer(item, action) {
+    await once(`remind-answer:${item.id}`, () => answerRemind(item.id, action).catch(() => confirmMiss(t('confirm.miss'))))
+    if (action === 'did') confirmDone(t('confirm.saved'))
+    refresh()
+  }
+
   function remove(item) {
     const gone = removeRemind(item.id)
     cancelRemind(item).catch(() => {})
@@ -295,8 +304,12 @@ export function RemindScreen({ book, route }) {
         />
       ) : null}
 
+      {chip === 'custom' && custom && !minutesOk ? <Text style={[styles.note, { color: colors.inkSoft }]}>{t('remind.minutesRange')}</Text> : null}
       {full ? <Text style={[styles.note, { color: colors.inkSoft }]}>{t('remind.full')}</Text> : null}
       {miss ? <Text style={[styles.note, { color: colors.miss }]}>{miss}</Text> : null}
+      {miss === t('remind.notifOff') ? (
+        <KeyButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))} />
+      ) : null}
       <DidButton colors={colors} label={t('remind.save')} onPress={save} disabled={!canSave} />
 
       <Text style={[styles.head, { color: colors.inkSoft }]} accessibilityRole="header">
@@ -307,7 +320,13 @@ export function RemindScreen({ book, route }) {
           <View key={item.id} style={[styles.row, { borderColor: colors.line, backgroundColor: colors.panel2 }]}>
             <Text style={[styles.rowText, { color: colors.ink }]}>{item.text}</Text>
             <Text style={[styles.rowTime, { color: colors.inkSoft }]}>{clockOf(item.at)}</Text>
-            <KeyButton colors={colors} label={t('remind.remove')} onPress={() => remove(item)} />
+            {item.at <= Date.now() ? (
+              <>
+                <KeyButton colors={colors} label={t('widget.tonight.nope')} accessibilityLabel={`${t('widget.tonight.nope')}: ${item.text}`} onPress={() => answer(item, 'nope')} />
+                <KeyButton colors={colors} label={t('widget.tonight.did')} accessibilityLabel={`${t('widget.tonight.did')}: ${item.text}`} onPress={() => answer(item, 'did')} />
+              </>
+            ) : null}
+            <KeyButton colors={colors} label={t('remind.remove')} accessibilityLabel={`${t('remind.remove')}: ${item.text}`} onPress={() => remove(item)} />
           </View>
         ))
       ) : (

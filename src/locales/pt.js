@@ -2536,6 +2536,7 @@ export const pt = {
   'remind.hour1': '1 hora',
   'remind.custom': 'Outro',
   'remind.minutes': 'Minutos',
+  'remind.minutesRange': "Escolha de 5 a 720 minutos.",
   'remind.save': 'Me lembre',
   'remind.saved': 'Vou perguntar às {time}',
   'remind.ask': 'Did I: {text}?',

@@ -2503,6 +2503,7 @@ export const ko = {
   'remind.hour1': '1시간',
   'remind.custom': '직접 입력',
   'remind.minutes': '분',
+  'remind.minutesRange': "5분에서 720분 사이로 고르세요.",
   'remind.save': '알려 줘',
   'remind.saved': '{time}에 물어볼게요',
   'remind.ask': 'Did I: {text}?',
