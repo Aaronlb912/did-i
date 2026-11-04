@@ -278,7 +278,7 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
         if let at = tap["at"] as? Double, taken.contains(where: { abs($0 - at) < 1 }) { continue }
       } else if let sentAt = tap["sentAt"] as? Double, sentAt > 0, builtAt > sentAt { continue }
       var stillOpen = false
-      for i in next.items.indices where next.items[i].id == id && next.items[i].night == night && next.items[i].status == "open" {
+      for i in next.items.indices where next.items[i].id == id && next.items[i].night == night && (next.items[i].status == "open" || (next.items[i].status == "nope" && answer == "did")) {
         next.items[i].status = answer
         stillOpen = true
       }
@@ -409,10 +409,8 @@ struct ContentView: View {
         let notYet = cards.items.filter { $0.status == "nope" }.count
         let streak = cards.streak ?? 0
         if notYet > 0 {
-          DoneView(
-            title: fill(cards.notYetLabel, ["n": notYet]) ?? String(localized: "\(notYet) not yet"),
-            text: nonEmpty(cards.openPhoneLabel) ?? String(localized: "Open Did I on your iPhone"),
-            accentText: false
+          NotYetStack(
+            notYetTitle: fill(cards.notYetLabel, ["n": notYet]) ?? String(localized: "\(notYet) not yet")
           )
         } else if streak > 0 {
           DoneView(
@@ -481,9 +479,28 @@ struct ProgressRing: View {
   }
 }
 
+// After the waiting cards: the Not yet ones again, Did to finish one, Not yet
+// to keep it for now. Kept ones are remembered only while this view lives.
+// Did goes through store.answer, the same tap the phone applies as a late Did.
+struct NotYetStack: View {
+  @EnvironmentObject var store: CardStore
+  var notYetTitle: String
+  @State private var kept: Set<String> = []
+
+  var body: some View {
+    let waiting = (store.cards?.items ?? []).filter { $0.status == "nope" && !kept.contains($0.id + "|" + $0.night) }
+    if let card = waiting.first {
+      CardView(card: card, onNope: { kept.insert(card.id + "|" + card.night) })
+    } else {
+      DoneView(title: notYetTitle, text: "", accentText: false)
+    }
+  }
+}
+
 struct CardView: View {
   @EnvironmentObject var store: CardStore
   var card: WatchCard
+  var onNope: (() -> Void)? = nil
 
   var body: some View {
     let palette = store.palette
@@ -535,7 +552,7 @@ struct CardView: View {
               iconColor: palette.soft,
               labelColor: palette.soft
             ) {
-              store.answer(card, did: false)
+              if let onNope { onNope() } else { store.answer(card, did: false) }
             }
             RoundAnswer(
               symbol: "checkmark",
