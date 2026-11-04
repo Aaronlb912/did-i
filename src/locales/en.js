@@ -2094,6 +2094,8 @@ export const en = {
   'watch.count': "{a} of {b}",
   'watch.openPhone': "Open Did I on your iPhone",
   'watch.openPhoneAndroid': "Open Did I on your phone",
+  'watch.waiting': "{n} waiting on your phone",
+  'watch.lookAgain': "Look again",
   'widget.settings.cap': 'Widget',
   'widget.settings.tagSub': 'Which folder the home screen widget follows.',
   "widget.settings.look": "Look",

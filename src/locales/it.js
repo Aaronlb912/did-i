@@ -2097,6 +2097,8 @@ export const it = {
   'watch.count': "{a} di {b}",
   'watch.openPhone': "Apri Did I sul tuo iPhone",
   'watch.openPhoneAndroid': "Apri Did I sul tuo telefono",
+  'watch.waiting': "{n} in attesa sul tuo telefono",
+  'watch.lookAgain': "Guarda ancora",
   'widget.settings.cap': 'Widget',
   'widget.settings.tagSub': 'La cartella che segue il widget della schermata Home.',
   "widget.settings.look": "Aspetto",

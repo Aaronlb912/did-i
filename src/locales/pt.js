@@ -2097,6 +2097,8 @@ export const pt = {
   'watch.count': "{a} de {b}",
   'watch.openPhone': "Abra o Did I no seu iPhone",
   'watch.openPhoneAndroid': "Abra o Did I no seu celular",
+  'watch.waiting': "{n} esperando no seu celular",
+  'watch.lookAgain': "Ver de novo",
   'widget.settings.cap': 'Widget',
   'widget.settings.tagSub': 'A pasta que o widget do ecrã principal segue.',
   "widget.settings.look": "Aparência",

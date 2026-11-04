@@ -2100,6 +2100,8 @@ export const fr = {
   'watch.count': "{a} sur {b}",
   'watch.openPhone': "Ouvre Did I sur ton iPhone",
   'watch.openPhoneAndroid': "Ouvre Did I sur ton téléphone",
+  'watch.waiting': "{n} en attente sur ton téléphone",
+  'watch.lookAgain': "Revoir",
   'widget.settings.cap': 'Widget',
   'widget.settings.tagSub': 'Le dossier que suit le widget de l’écran d’accueil.',
   "widget.settings.look": "Apparence",
