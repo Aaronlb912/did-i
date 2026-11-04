@@ -108,7 +108,10 @@ export async function checkNativePings() {
   try {
     const { verifyNotificationPermission } = await import('../lib/notification-perms.js')
     const check = await verifyNotificationPermission()
-    if (!check.ok) return 'missing'
+    if (!check.ok) {
+      flagPingsFailed()
+      return 'missing'
+    }
     if (check.status === 'granted') return 'granted'
     // Android reports denied before it has ever asked; canAskAgain tells the two apart.
     if (check.status === 'denied' && !check.canAskAgain) return 'denied'
@@ -129,7 +132,10 @@ export async function requestNativePings() {
       return 'granted'
     }
     if (status === 'denied') return 'denied'
-    if (status === 'missing') return 'missing'
+    if (status === 'missing') {
+      flagPingsFailed()
+      return 'missing'
+    }
     return 'default'
   } catch {
     return 'denied'
@@ -148,6 +154,13 @@ function leftBody(n, at) {
 const CHANNEL_ID = 'did-i'
 // Set when the whole scheduling run threw; the reminders screen shows a row.
 const PING_FAILED_KEY = 'did-i-ping-failed'
+export function flagPingsFailed() {
+  try {
+    localStorage.setItem(PING_FAILED_KEY, '1')
+  } catch {
+    // ok
+  }
+}
 export function pingsFailed() {
   try {
     return localStorage.getItem(PING_FAILED_KEY) === '1'
