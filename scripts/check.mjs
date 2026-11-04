@@ -5902,8 +5902,8 @@ test('gentle mode: missed nights are plain on the calendar and week', () => {
   assert.ok(read('src/lib/Calendar.jsx').includes("night.miss && prefs.gentle !== true ? 'is-miss'"), 'web calendar')
   assert.ok(read('src/lib/WeekGrid.jsx').includes("gentle && cell.state === 'hole' ? 'open'"), 'web week')
   const grid = read('native/components/CalendarGrid.jsx')
-  assert.ok(grid.includes('prefs.gentle === true ? colors.open : colors.miss') && !/night\.miss \? colors\.miss/.test(grid), 'phone calendar and year')
-  assert.ok(read('native/screens/more.jsx').includes("if (state === 'hole') return gentle ? colors.open : colors.miss"), 'phone week')
+  assert.ok(grid.includes('const missTone = colors.open') && !grid.includes('colors.miss'), 'phone calendar and year: missed days never red')
+  assert.ok(read('native/screens/more.jsx').includes("if (state === 'hole') return colors.open"), 'phone week')
 })
 
 test('web first run: a welcome with Get started and sign in', () => {
@@ -8146,7 +8146,7 @@ test('gentle mode: a missed night is blank on Home, week, month, list and why sh
   assert.match(list, /const missed = gentle \? '' : 'missed'/)
   assert.match(readSrc('native/components/CalendarGrid.jsx'), /t\(gentleOn\(\) \? 'jewelKey\.open' : 'cal\.notAnswered'\)/)
   assert.match(readSrc('src/lib/Calendar.jsx'), /prefs\.gentle === true \? 'cal\.hintGentle' : 'cal\.hint'/)
-  assert.match(readSrc('native/screens/more.jsx'), /gentle \? 'cal\.hintGentle' : 'cal\.hint'/)
+  assert.ok(readSrc('native/screens/more.jsx').includes("t('cal.hintGentle')"))
 })
 
 test('new Did we form: Track an amount with a unit, saved right after the card is made', () => {
