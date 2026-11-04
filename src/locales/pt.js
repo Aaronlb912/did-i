@@ -3076,6 +3076,8 @@ export const pt = {
   'shop.cheerStill': "Menos movimento está ativado, então é uma imagem parada. Depois de um Did, esta torcida explode em volta do seu cartão.",
   'cal.viewMonth': "Mês",
   'cal.viewYear': "Ano",
+  'lamp.yearGrid': "Ano em dias",
+  'lamp.yearGridSub': "Cada dia desta pergunta",
   'cal.prevYear': "Ano anterior",
   'cal.nextYear': "Ano seguinte",
   'cal.yearTotals': "{did} dias com Did · {rate}%",

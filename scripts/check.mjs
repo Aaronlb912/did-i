@@ -11078,6 +11078,14 @@ test('first day copy and fixes: reminder-only ask line, folder fallback, early c
   assert.ok(tonight.includes('isNewShelf(stack.shelf) ? 2 : COME_BACK_DAYS'), 'a new shelf gets the come-back card after one missed day')
 })
 
+test('one question year grid: lampId filter, calendar route, menu row', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const grid = readFileSync(path.join(root, 'native/components/CalendarGrid.jsx'), 'utf8')
+  assert.ok(grid.includes('l.id === lampId'), 'YearGrid keeps only the picked question')
+  assert.ok(readFileSync(path.join(root, 'native/screens/questions.jsx'), 'utf8').includes("goHash('/calendar', { id: lamp.id })"), 'the question menu opens its year')
+  assert.ok(readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8').includes('lampId={lampId}'), 'the calendar screen passes the question')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

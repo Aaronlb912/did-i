@@ -3076,6 +3076,8 @@ export const it = {
   'shop.cheerStill': "Meno movimento è attivo, quindi è un fermo immagine. Dopo un Did, questo applauso esplode intorno alla tua scheda.",
   'cal.viewMonth': "Mese",
   'cal.viewYear': "Anno",
+  'lamp.yearGrid': "Anno in giorni",
+  'lamp.yearGridSub': "Ogni giorno di questa domanda",
   'cal.prevYear': "Anno precedente",
   'cal.nextYear': "Anno successivo",
   'cal.yearTotals': "{did} giorni Did · {rate}%",

@@ -3041,6 +3041,8 @@ export const ko = {
   'shop.cheerStill': "동작 줄이기가 켜져 있어 정지 화면입니다. Did 후에 이 응원이 카드 주위에서 터집니다.",
   'cal.viewMonth': "월",
   'cal.viewYear': "연도",
+  'lamp.yearGrid': "1년의 하루하루",
+  'lamp.yearGridSub': "이 질문의 모든 날",
   'cal.prevYear': "이전 연도",
   'cal.nextYear': "다음 연도",
   'cal.yearTotals': "Did 한 날 {did}일 · {rate}%",

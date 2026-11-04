@@ -259,11 +259,16 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
 
 // A whole year: twelve small month grids of cleared and not cleared nights.
 // Arrows go back to the year of the first answer. A day opens its sheet.
-export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
+export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, onMonth }) {
   const prefs = usePrefs()
   const missTone = colors.open
   const clock = now || new Date()
-  const shelf = useMemo(() => (boards?.length ? boards : [book]), [boards, book])
+  // With a lampId, every book keeps only that question, so the walk counts its days alone.
+  const shelf = useMemo(() => {
+    const all = boards?.length ? boards : [book]
+    if (!lampId) return all
+    return all.map((b) => ({ ...b, lamps: (b.lamps || []).filter((l) => l.id === lampId) }))
+  }, [boards, book, lampId])
   // The year and month of the day on screen, not the wall clock: just after
   // midnight the day has not turned yet.
   const dateIso = boardDate(clock, book?.dayFoldHour)
@@ -287,7 +292,7 @@ export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
   }, [shelf, year, tagId, dateIso, firstMonth, firstYear, prefs.locale, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const totals = useMemo(() => yearTotals(months), [months])
   // Best streak is shelf-wide, so it is left out while a folder is picked.
-  const best = useMemo(() => (tagId ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
+  const best = useMemo(() => (tagId || lampId ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, lampId, dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const cardRef = useRef(null)
   // A picture of the year to share. Falls back to the text when the phone
   // cannot capture or share an image.

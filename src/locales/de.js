@@ -3088,6 +3088,8 @@ export const de = {
   'shop.cheerStill': "Weniger Bewegung ist an, daher ein Standbild. Nach einem Did platzt dieser Jubel um deine Karte.",
   'cal.viewMonth': "Monat",
   'cal.viewYear': "Jahr",
+  'lamp.yearGrid': "Jahr in Tagen",
+  'lamp.yearGridSub': "Jeder Tag dieser Frage",
   'cal.prevYear': "Früheres Jahr",
   'cal.nextYear': "Späteres Jahr",
   'cal.yearTotals': "{did} Did-Tage · {rate}%",
