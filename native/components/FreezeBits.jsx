@@ -8,7 +8,7 @@ import { addDaysIso, boardDate } from '../../src/lib/recurrence.js'
 import { showToast } from '../lib/toast-queue.js'
 import { pressFx } from '../lib/motion.jsx'
 import { fonts, withAlpha } from '../theme.js'
-import { publishSheet } from './SheetHost.jsx'
+import { publishSheet, sheetIsUp } from './SheetHost.jsx'
 
 export const FREEZE_GLYPH = '❄'
 export const FREEZE_RULES = [
@@ -66,6 +66,32 @@ export function openFreezeHow(colors, boards, now = new Date()) {
   })
 }
 
+// A freeze just earned: the same pop-up a new frame gets. A toast while
+// another sheet is up, so it never covers one.
+function freezeEarned(colors, boards, now) {
+  if (sheetIsUp()) {
+    showToast({
+      id: 'freeze-earned',
+      kind: 'done',
+      text: t('freeze.earned'),
+      ms: 5200,
+      onPress: () => openFreezeHow(colors, boards, now),
+    })
+    return
+  }
+  const close = () => publishSheet(null)
+  publishSheet({
+    preview: <Text style={[styles.art, { color: colors.freeze }]} accessibilityElementsHidden importantForAccessibility="no">{FREEZE_GLYPH}</Text>,
+    title: t('freeze.earned'),
+    body: t('freeze.earnedBody'),
+    goLabel: t('freeze.earnedOk'),
+    onGo: close,
+    noClose: true,
+    onClose: close,
+    colors,
+  })
+}
+
 // Snowflake and count. Shows nothing when none are held.
 export function FreezeChip({ colors, held, onPress }) {
   // Shown at 0 too, faint, so people find out freezes exist.
@@ -114,15 +140,7 @@ export function useFreezeToasts(colors, boards, now) {
   useEffect(() => {
     if (!state || held < 0) return
     const seen = readKey(SEEN_HELD)
-    if (seen != null && held > Number(seen)) {
-      showToast({
-        id: 'freeze-earned',
-        kind: 'done',
-        text: t('freeze.earned'),
-        ms: 5200,
-        onPress: () => openFreezeHow(colors, boards, now),
-      })
-    }
+    if (seen != null && held > Number(seen)) freezeEarned(colors, boards, now)
     writeKey(SEEN_HELD, held)
     if (lastFrozen && readKey(SEEN_USED) !== lastFrozen) {
       // Only the night just gone, not old freezes found on a first look.
@@ -150,5 +168,6 @@ const styles = StyleSheet.create({
   dotRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 10, height: 10, borderRadius: 5 },
   chip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  art: { fontSize: 56, lineHeight: 68, textAlign: 'center' },
   chipText: { fontFamily: fonts.uiSemi, fontSize: 13 },
 })

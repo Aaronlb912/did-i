@@ -37,7 +37,7 @@ import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
-import { LOOKS, NIGHT_COIN_CAP, coinsToday, fireCheer, isGemLook, mergePurses, shopRow, wishGoal, wishLine } from '../../src/lib/purse.js'
+import { CHEER_STAGE_MAX, LOOKS, NIGHT_COIN_CAP, coinsToday, fireCheer, isGemLook, mergePurses, shopRow, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { ACCESSORIES } from '../../src/lib/accessories.js'
 import { awayKey, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
 import { cameBack, daysSinceFirstAnswer } from '../../src/lib/come-back.js'
@@ -54,6 +54,8 @@ import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, doneTitleKey, tomorro
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
 import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
+import { STREAK_BONUS, milestoneGemLine, milestoneLine, takeStreakMilestone } from '../../src/lib/streak-milestones.js'
+import { payStreakBonus, retryStreakBonus } from '../lib/streak-bonus.js'
 import { TonightNote, openAnswerNote } from '../components/NightNotes.jsx'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { useAnswerButtons } from '../lib/swipe-wheels.js'
@@ -712,6 +714,27 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const firstWeek = useMemo(() => daysSinceFirstAnswer(stack.shelf, stack.dateIso) < 7, [stack.shelf, stack.dateIso])
   const day = gentle || !firstWeek ? 0 : stack.streak
   const streakDay = gentle ? 0 : stack.streak
+  // 7, 30, 100 and 365 days: a milestone line on the done card, once each,
+  // with the biggest cheer (CheerBurst skips it under reduced motion).
+  // 30 and 100 also ask the server for their gems.
+  const [milestone, setMilestone] = useState(null)
+  useEffect(() => {
+    retryStreakBonus()
+  }, [])
+  useEffect(() => {
+    if (!stack.nightDone || gentle) return
+    const n = stack.streak
+    if (!takeStreakMilestone(n)) return
+    setMilestone({ n, gems: 0 })
+    feelTap('did')
+    if (purse.cheerOn) fireCheer(purse.cheerOn, CHEER_STAGE_MAX)
+    if (!STREAK_BONUS[n]) return
+    payStreakBonus(n, n).then((paid) => {
+      if (paid > 0) setMilestone((prev) => (prev && prev.n === n ? { ...prev, gems: paid } : prev))
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stack.nightDone, stack.streak, gentle])
+  const milestoneUp = Boolean(milestone && stack.nightDone && !gentle && milestone.n === stack.streak)
   const [widgetOn, setWidgetOn] = useState(false)
   useEffect(() => {
     if (Platform.OS === 'android') widgetPlaced().then(setWidgetOn).catch(() => {})
@@ -1267,8 +1290,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
           <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.doneKicker')}</Text>
           <Text style={[faceCardStyles.title, { color: colors.ink }]}>
-            {nightOne ? t('nightOne.title') : t(doneTitleKey(streakDay) || 'tonight.doneTitle')}
+            {nightOne ? t('nightOne.title') : milestoneUp ? milestoneLine(milestone.n, stack.dateIso) : t(doneTitleKey(streakDay) || 'tonight.doneTitle')}
           </Text>
+          {milestoneUp && milestone.gems ? (
+            <Text style={[faceCardStyles.meta, { color: colors.on }]}>{milestoneGemLine(milestone.gems)}</Text>
+          ) : null}
           {nightOne ? (
             <>
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t(gentle ? 'nightOne.bodyGentle' : 'nightOne.body')}</Text>
