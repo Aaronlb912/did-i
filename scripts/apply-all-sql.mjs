@@ -114,6 +114,7 @@ const files = [
   'supabase/streak-bonus.sql',
   'supabase/we-left-push.sql',
   'supabase/we-month-open.sql',
+  'supabase/we-link-blocked.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

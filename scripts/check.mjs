@@ -8375,7 +8375,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-6), ['did-we-safety.sql', 'we-monthly.sql', 'we-buddy.sql', 'streak-bonus.sql', 'we-left-push.sql', 'we-month-open.sql'])
+  assert.deepEqual(files.slice(-6), ['we-monthly.sql', 'we-buddy.sql', 'streak-bonus.sql', 'we-left-push.sql', 'we-month-open.sql', 'we-link-blocked.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -11289,6 +11289,15 @@ test('Did we calm: person rows carry nudge and cheer, invites collapse, When use
   assert.ok(/styles.personRow/.test(we) && /canNudge/.test(we), 'nudge belongs on the person row')
   assert.ok(we.split("t('we.nudge'").length === 2, 'nudge is built once, on the person row')
   assert.ok(tonight.includes("asks.slice(0, 1)") && tonight.includes("we.asksMore"), "one invite, then a +n more row")
+})
+
+test('Did we link: blocked lookup is in the apply order and the app shows it', () => {
+  const order = readFileSync('scripts/apply-all-sql.mjs', 'utf8')
+  assert.ok(order.indexOf("'supabase/we-link-blocked.sql'") > order.indexOf("'supabase/share-links.sql'"))
+  assert.ok(order.indexOf("'supabase/we-link-blocked.sql'") > order.lastIndexOf("'supabase/we-month-open.sql'"))
+  const sql = readFileSync('supabase/we-link-blocked.sql', 'utf8')
+  assert.ok(sql.includes('drop function if exists public.look_up_we_link(text)') && sql.includes('blocked boolean'))
+  assert.ok(readFileSync('native/components/DidYouLinkHost.jsx', 'utf8').includes('found?.blocked'))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

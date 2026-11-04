@@ -856,6 +856,7 @@ function WeCardPage({ book, cardId, onChange }) {
   const [card, setCard] = useState(() => weCardKept(cardId))
   const [edit, setEdit] = useState(null)
   const [asking, setAsking] = useState([])
+  const [pickOpen, setPickOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [menu, setMenu] = useState(false)
   // Your link for this card while it works, so you can turn it off.
@@ -1275,18 +1276,27 @@ function WeCardPage({ book, cardId, onChange }) {
   const shareCard = (
     <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
       <Cap colors={colors}>{t('we.askMore')}</Cap>
-      <PeoplePick people={people} picked={asking} onPick={setAsking} colors={colors} skip={onCard} />
+      {link ? (
+        <>
+          <Meta colors={colors}>{t('weLink.on')}</Meta>
+          <KeyButton colors={colors} label={t('weLink.off')} disabled={busy} onPress={endLink} />
+        </>
+      ) : null}
+      {pickOpen || asking.length ? (
+        <PeoplePick people={people} picked={asking} onPick={setAsking} colors={colors} skip={onCard} />
+      ) : null}
       <View style={styles.grid}>
         {asking.length ? (
           <View style={styles.gridCell}>
             <DidButton colors={colors} small label={t('we.sendAsk')} disabled={busy} onPress={ask} />
           </View>
-        ) : null}
-        <View style={styles.gridCell}>
-          <KeyButton colors={colors} label={t('weLink.share')} disabled={busy} onPress={shareLink} />
-        </View>
+        ) : (
+          <View style={styles.gridCell}>
+            <KeyButton colors={colors} label={t('weLink.share7')} disabled={busy} onPress={shareLink} />
+          </View>
+        )}
       </View>
-      <Meta colors={colors}>{t('weLink.hint')}</Meta>
+      {!pickOpen && !asking.length ? <KeyButton colors={colors} label={t('weLink.askFriend')} onPress={() => setPickOpen(true)} /> : null}
       {linkSaid ? <Meta colors={colors}>{linkSaid}</Meta> : null}
       {linkMiss ? (
         <>
@@ -1328,6 +1338,7 @@ function WeCardPage({ book, cardId, onChange }) {
             <Text style={[styles.moreText, { color: colors.inkSoft }]}>⋯</Text>
           </Pressable>
         </View>
+        {card.mine && !edit ? <KeyButton colors={colors} label={t('we.edit')} onPress={startEdit} /> : null}
         <Text style={[styles.weStatus, { color: card.done && card.due ? colors.we : colors.ink }]}>
           {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
         </Text>
@@ -1353,7 +1364,6 @@ function WeCardPage({ book, cardId, onChange }) {
           </View>
         ) : (
           <>
-          <Meta colors={colors}>{t('we.earlyOk')}</Meta>
           <SwipeFlyHost style={styles.earlySlot}>
             <SwipeCardHost
               key={`we-early:${card.id}`}
