@@ -145,6 +145,30 @@ export function lastBrokenNight(boards, now = new Date()) {
   return was > 0 ? { night, was } : null
 }
 
+// Two or more days in a row with questions due and none finished, ending
+// yesterday: { night, days }. A freeze covers a day, so it is not away.
+// lastBrokenNight is null in this case (nothing before it was clear), so the
+// two cards never overlap.
+export function daysAway(boards, now = new Date()) {
+  const books = scopedBooks(boards, '')
+  if (!books.length || graceNightIso(now)) return null
+  const floor = firstNight(books)
+  const frozen = freezeState(boards, now).frozen
+  const last = addDaysIso(boardDate(now, books[0].dayFoldHour), -1)
+  let night = last
+  let days = 0
+  for (let step = 0; step < 40; step += 1) {
+    if (floor && night < floor) break
+    const at = noonOn(night)
+    if (!at) break
+    const { due, clear } = nightTally(books, night, at, '')
+    if (due && (clear || frozen.has(night))) break
+    if (due) days += 1
+    night = addDaysIso(night, -1)
+  }
+  return days >= 2 ? { night: last, days } : null
+}
+
 // How many questions were due on a night (checked at noon) and whether they
 // were all done. dueTonight is the costly part of a streak walk, and the
 // answer only changes when the book does: every edit makes a new book object,

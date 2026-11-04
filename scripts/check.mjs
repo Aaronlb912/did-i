@@ -5477,6 +5477,24 @@ await testAsync('"Streak broke" shows only for a missed past night, never for to
   localStorage.removeItem('did-i-streak-seen')
 })
 
+await testAsync('two or more days away gets a Welcome back card, one missed day keeps the calm Streak card', async () => {
+  const { markStreakSeen, maybeStreakMiss } = await import('../src/lib/streak-moments.js')
+  localStorage.removeItem('did-i-streak-seen')
+  const lamp = (id) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-09-20' })
+  const yes = (id, night) => ({ lampId: id, periodKey: night, status: 'yes', answeredAt: `${night}T15:00:00` })
+  const done = ['2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27'].map((n) => yes('a', n))
+  const book = { id: 'b1', dayFoldHour: 0, lamps: [lamp('a')], answers: done }
+  const oneDay = maybeStreakMiss([{ ...book, answers: [...done, yes('a', '2026-09-28')] }], new Date(2026, 8, 30, 16, 0))
+  assert.equal(oneDay.kind, 'miss', 'one missed day is still the calm streak card')
+  const away = maybeStreakMiss([book], new Date(2026, 8, 30, 16, 0))
+  assert.deepEqual(away, { kind: 'back', days: 2, dateIso: '2026-09-29' }, 'two days away is a welcome back')
+  const longer = maybeStreakMiss([book], new Date(2026, 9, 3, 16, 0))
+  assert.equal(longer.kind, 'back')
+  assert.equal(longer.days, 5)
+  markStreakSeen('back', away.dateIso)
+  assert.equal(maybeStreakMiss([book], new Date(2026, 8, 30, 16, 0)), null, 'told once')
+  localStorage.removeItem('did-i-streak-seen')
+})
 await testAsync('the 9 PM warning fires while tonight is open on a live streak, and friends see the real streak', async () => {
   const { streakRiskFire } = await import('../src/lib/streak-risk.js')
   const clock = new Date(2026, 8, 30, 16, 0)
