@@ -11160,6 +11160,14 @@ test('day-one reminders, grace cards on a new shelf, and a failed Sync now', asy
   assert.ok(more.includes("const merged = await pullAndMerge()") && more.includes("if (!merged) throw"), "Sync now treats null as a miss")
 })
 
+test('add and edit: paused twin resumes, check-on miss shows, weekly asks for days, pause button', () => {
+  const q = readFileSync('native/screens/questions.jsx', 'utf8')
+  assert.ok(q.includes("confirm.checkOnMiss"), 'check-on failure is shown')
+  assert.ok(q.includes("hang.dupPaused") && q.includes("hang.pickDays"), 'paused twin and pick days')
+  assert.ok(!q.includes("followCheckOn(existing, next).catch(() => {})"), 'no silent check-on catch')
+  assert.ok(readFileSync('native/components/LampManage.jsx', 'utf8').includes("lamp.pauseBtn"), 'sheet says Pause')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

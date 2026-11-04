@@ -122,7 +122,7 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
     publishSheet({
       title: t('lamp.deleteTitle'),
       body: stoppable ? `${deleteNote(book, lamp)} ${t('lamp.deleteKeep')}` : deleteNote(book, lamp),
-      moreLabel: stoppable ? t('lamp.stop') : undefined,
+      moreLabel: stoppable ? t('lamp.pauseBtn') : undefined,
       onMore: stoppable
         ? () => {
             publishSheet(null)
