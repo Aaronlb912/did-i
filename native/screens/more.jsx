@@ -80,6 +80,7 @@ import { weCardState, weCardsOn } from '../../src/lib/we-nights.js'
 import { weCardShort } from '../../src/lib/did-we.js'
 import { bestQuestionStreak, isDayCadence, shelfRate30 } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
+import { pinWidget } from '../lib/widget-pin.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
@@ -375,8 +376,8 @@ export function HelpScreen() {
         <HelpTopic
           colors={colors}
           title={t('help.widget')}
-          short={t('help.widgetP')}
-          go={<KeyButton colors={colors} label={t('help.widgetGo')} onPress={() => goHash('/pings')} />}
+          short={t(Platform.OS === 'ios' ? 'help.widgetPIos' : 'help.widgetPAndroid')}
+          go={<KeyButton colors={colors} label={t('help.widgetGo')} onPress={() => pinWidget(colors)} />}
         />
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupSocial')}>

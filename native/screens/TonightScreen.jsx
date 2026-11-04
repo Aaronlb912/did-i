@@ -539,8 +539,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [stack.shelf, stack.dateIso, tagId, stack.nightDone],
   )
-  // New people see Did and Nope buttons and a swipe hint until they have
-  // answered on 3 different nights. Read from the shelf, nothing stored.
+  // New people see the swipe hint until they have answered on 3 different
+  // nights. Did and Not yet buttons show only with a screen reader or Switch
+  // Control. Read from the shelf, nothing stored.
   const isNew = useMemo(() => isNewShelf(stack.shelf), [stack.shelf])
   // Night one: the first cleared night gets a bigger moment, once ever.
   const [nightOne, setNightOne] = useState(false)
@@ -1233,6 +1234,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             {t('tonight.nopedChange', { time: untilWords(top) })}
           </Text>
         </SwipeCardHost>
+        <View style={styles.actions}>
+          <DidButton small label={t('tonight.lookDone')} colors={colors} onPress={() => { setLookAgain(false); stack.restStack(true) }} />
+        </View>
       </View>,
       onDid,
       onNope,

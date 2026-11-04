@@ -907,6 +907,9 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             ) : null}
           </>
         )}
+        {hung.length && onChange && !ordering && !picking ? (
+          <Row colors={colors} label={t('dump.title')} note={t('dump.hint')} onPress={() => openBrainDump({ book: (readShelf().boards || []).find((item) => item.id === book.id) || book, colors, onChange })} />
+        ) : null}
 
         {ordering ? null : <LampBlock
           label={t('questions.down')}
