@@ -2105,6 +2105,8 @@ export const de = {
   'watch.count': "{a} von {b}",
   'watch.openPhone': "Öffne Did I auf deinem iPhone",
   'watch.openPhoneAndroid': "Öffne Did I auf deinem Handy",
+  'watch.waiting': "{n} warten auf deinem Handy",
+  'watch.lookAgain': "Nochmal ansehen",
   'widget.settings.cap': 'Widget',
   'widget.settings.tagSub': 'Welchem Ordner das Widget auf dem Homescreen folgt.',
   "widget.settings.look": "Aussehen",

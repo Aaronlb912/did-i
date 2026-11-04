@@ -126,6 +126,12 @@ struct WatchCards: Codable, Equatable {
   var notYetLabel: String?
   var countLabel: String?
   var openPhoneLabel: String?
+  // Open Did we cards (they answer on the phone) and the line that says so.
+  var phoneWaiting: Int?
+  var phoneWaitingLabel: String?
+  var lookAgainLabel: String?
+  // Hour (0-23) when yesterday's cards stop taking answers. Optional.
+  var graceEndHour: Int?
   // Look, buddy, streak and cheer. Optional for the same reason.
   var colors: WatchColors?
   var buddy: WatchBuddy?
@@ -149,12 +155,16 @@ extension WatchCards {
     guard let newest = items.map({ $0.dateIso }).max(), newest.count == 10 else { return false }
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = .current
-    guard let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) else { return false }
     let f = DateFormatter()
     f.calendar = calendar
     f.locale = Locale(identifier: "en_US_POSIX")
     f.timeZone = .current
     f.dateFormat = "yyyy-MM-dd"
+    // Before today once the phone's grace hour has passed (the day turns at midnight).
+    if let grace = graceEndHour, calendar.component(.hour, from: Date()) >= grace, newest < f.string(from: Date()) {
+      return true
+    }
+    guard let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) else { return false }
     return newest < f.string(from: yesterday)
   }
 }
@@ -408,9 +418,13 @@ struct ContentView: View {
         // Said Not yet to some: they are not done, so do not say all clear.
         let notYet = cards.items.filter { $0.status == "nope" }.count
         let streak = cards.streak ?? 0
-        if notYet > 0 {
+        let phoneWaiting = cards.phoneWaiting ?? 0
+        if notYet == 0, phoneWaiting > 0, let line = fill(cards.phoneWaitingLabel, ["n": phoneWaiting]) {
+          MessageView(title: "Did I", text: line)
+        } else if notYet > 0 {
           NotYetStack(
-            notYetTitle: fill(cards.notYetLabel, ["n": notYet]) ?? String(localized: "\(notYet) not yet")
+            notYetTitle: fill(cards.notYetLabel, ["n": notYet]) ?? String(localized: "\(notYet) not yet"),
+            lookAgainLabel: nonEmpty(cards.lookAgainLabel) ?? String(localized: "Look again")
           )
         } else if streak > 0 {
           DoneView(
@@ -485,6 +499,7 @@ struct ProgressRing: View {
 struct NotYetStack: View {
   @EnvironmentObject var store: CardStore
   var notYetTitle: String
+  var lookAgainLabel: String
   @State private var kept: Set<String> = []
 
   var body: some View {
@@ -492,7 +507,10 @@ struct NotYetStack: View {
     if let card = waiting.first {
       CardView(card: card, onNope: { kept.insert(card.id + "|" + card.night) })
     } else {
-      DoneView(title: notYetTitle, text: "", accentText: false)
+      VStack(spacing: 8) {
+        DoneView(title: notYetTitle, text: "", accentText: false)
+        Button(lookAgainLabel) { kept.removeAll() }
+      }
     }
   }
 }
@@ -546,6 +564,7 @@ struct CardView: View {
             RoundAnswer(
               symbol: "clock",
               label: nonEmpty(store.cards?.nopeLabel) ?? String(localized: "Not yet"),
+              question: card.question,
               size: nopeSize,
               fill: palette.card2,
               stroke: palette.line,
@@ -557,6 +576,7 @@ struct CardView: View {
             RoundAnswer(
               symbol: "checkmark",
               label: nonEmpty(store.cards?.didLabel) ?? String(localized: "Did"),
+              question: card.question,
               size: didSize,
               fill: palette.accent,
               stroke: nil,
@@ -580,6 +600,7 @@ struct CardView: View {
 struct RoundAnswer: View {
   var symbol: String
   var label: String
+  var question: String
   var size: CGFloat
   var fill: Color
   var stroke: Color?
@@ -599,7 +620,7 @@ struct RoundAnswer: View {
           .contentShape(Circle())
       }
       .buttonStyle(.plain)
-      .accessibilityLabel(label)
+      .accessibilityLabel("\(label): \(question)")
       Text(label)
         .font(.system(size: 11, weight: .medium))
         .foregroundStyle(labelColor)

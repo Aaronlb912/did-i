@@ -2098,6 +2098,8 @@ export const es = {
   'watch.count': "{a} de {b}",
   'watch.openPhone': "Abre Did I en tu iPhone",
   'watch.openPhoneAndroid': "Abre Did I en tu teléfono",
+  'watch.waiting': "{n} esperando en tu teléfono",
+  'watch.lookAgain': "Mirar otra vez",
   'widget.settings.cap': 'Widget de inicio',
   'widget.settings.tagSub': 'Qué carpeta usa el widget en la pantalla de inicio.',
   "widget.settings.look": "Apariencia",

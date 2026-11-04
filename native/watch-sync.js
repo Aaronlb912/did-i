@@ -3,6 +3,7 @@ import { requireOptionalNativeModule } from 'expo'
 import { t } from '../src/lib/i18n.js'
 import { hallColors } from './palette.js'
 import { BUDDY_PARTS } from '../src/lib/buddy-parts.js'
+import { GRACE_END } from '../src/lib/zone.js'
 import { shelfStreak } from '../src/lib/hall-feel.js'
 import { watchCount } from '../src/lib/watch-count.js'
 
@@ -61,6 +62,13 @@ export function watchCardsFromProps(props, shelf = null) {
     notYetLabel: t('watch.notYet', { n: '{n}' }),
     countLabel: t('watch.count', { a: '{a}', b: '{b}' }),
     ...(shelf ? { done: count.done, later: count.later } : {}),
+    // Did we cards open the app, so the watch only says how many wait there.
+    ...(Number(props?.weLeft) > 0
+      ? { phoneWaiting: Number(props.weLeft), phoneWaitingLabel: t('watch.waiting', { n: '{n}' }) }
+      : {}),
+    lookAgainLabel: t('watch.lookAgain'),
+    // Cards from before today go stale on the watch once this hour has passed.
+    graceEndHour: GRACE_END,
     openPhoneLabel: t(Platform.OS === 'android' ? 'watch.openPhoneAndroid' : 'watch.openPhone'),
     colors,
     // Base shapes plus worn accessories, in the widget's part format.

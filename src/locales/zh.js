@@ -2067,6 +2067,8 @@ export const zh = {
   'watch.count': "{b} 个中的 {a} 个",
   'watch.openPhone': "在 iPhone 上打开 Did I",
   'watch.openPhoneAndroid': "在手机上打开 Did I",
+  'watch.waiting': "手机上有 {n} 个在等你",
+  'watch.lookAgain': "再看一次",
   'widget.settings.cap': '小组件',
   'widget.settings.tagSub': '主屏幕小组件跟随哪个文件夹。',
   "widget.settings.look": "外观",

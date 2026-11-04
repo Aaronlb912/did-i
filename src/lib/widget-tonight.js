@@ -301,6 +301,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     leadNight: String(lead?.periodKey || weItem?.periodKey || ''),
     items,
     left,
+    weLeft,
     footer,
     didLabel: t('widget.tonight.did'),
     nopeLabel: t('widget.tonight.nope'),

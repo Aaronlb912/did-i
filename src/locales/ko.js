@@ -2074,6 +2074,8 @@ export const ko = {
   'watch.count': "{b}개 중 {a}개",
   'watch.openPhone': "iPhone에서 Did I를 열어 주세요",
   'watch.openPhoneAndroid': "휴대폰에서 Did I를 열어 주세요",
+  'watch.waiting': "휴대폰에서 {n}개 기다리는 중",
+  'watch.lookAgain': "다시 보기",
   'widget.settings.cap': '위젯',
   'widget.settings.tagSub': '홈 화면 위젯이 따라가는 폴더.',
   "widget.settings.look": "모양",

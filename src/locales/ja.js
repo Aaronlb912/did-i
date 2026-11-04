@@ -2072,6 +2072,8 @@ export const ja = {
   'watch.count': "{b} 個中 {a} 個",
   'watch.openPhone': "iPhone で Did I を開いてね",
   'watch.openPhoneAndroid': "スマホで Did I を開いてね",
+  'watch.waiting': "スマホで{n}件待ってるよ",
+  'watch.lookAgain': "もう一度見る",
   'widget.settings.cap': 'ウィジェット',
   'widget.settings.tagSub': 'ホーム画面のウィジェットが表示するフォルダ。',
   "widget.settings.look": "見た目",
