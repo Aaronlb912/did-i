@@ -2,7 +2,7 @@ import { lampBuzzes, lampNudgesLate } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
 import { boardDate, dueTonight, pingWaitingTonight } from './recurrence.js'
-import { checkNativePings, isNativeHall, requestNativePings, scheduleNativePings } from './native.js'
+import { checkNativePings, isNativeHall, pingsCanAskAgain, requestNativePings, scheduleNativePings } from './native.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from './prefs.js'
 import { savePrefsForSw } from './board-store.js'
 import { streakRiskFire } from './streak-risk.js'
@@ -132,9 +132,14 @@ export async function armLampPings(book, now = new Date()) {
   }
 }
 
+// Denied, but the phone would still show its prompt (Android, never asked).
+export function canAskPingsAgain() {
+  return pingsCanAskAgain()
+}
+
 export function pingButtonLabel(state) {
   if (state === 'missing' || state === 'checking') return ''
   if (state === 'granted') return 'pings.state.on'
-  if (state === 'denied') return 'pings.state.blocked'
+  if (state === 'denied') return pingsCanAskAgain() ? 'pings.state.ask' : 'pings.state.blocked'
   return 'pings.state.ask'
 }

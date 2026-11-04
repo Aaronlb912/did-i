@@ -17,6 +17,10 @@ function reduceMotion() {
 
 export async function bootNative() {}
 
+export function pingsCanAskAgain() {
+  return false
+}
+
 export async function checkNativePings() {
   return null
 }

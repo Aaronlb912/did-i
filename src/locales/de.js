@@ -1377,6 +1377,8 @@ export const de = {
   'pings.kicker': 'Erinnerungen',
   'pings.title': 'Mitteilungen',
   'pings.kindsCap': 'Was gesendet wird',
+  'pings.fromFriends': 'Von Freunden',
+  'hang.remindsOffRow': 'Erinnerungen sind aus',
   'pings.kindsNote':
     'Um eine Frage stumm zu schalten, öffne sie und schalte ihre Erinnerung aus.',
   'pings.kindsMiss':
@@ -1424,7 +1426,7 @@ export const de = {
   'why.todayDid': "Heute, Did: {list}",
   'why.todayNotYet': "Heute, noch nicht: {list}",
   'pings.day.2': 'Schon etwas zum Abhaken heute?',
-  'pings.day.3': 'Deine Fragen warten auf Start.',
+  'pings.day.3': 'Deine Fragen warten unter Heute.',
   'pings.day.4': 'Hast du kurz Zeit? Tippe Did bei dem, was erledigt ist.',
   'pings.kind.sends': "Fragen von Freunden",
   'pings.kind.sendsSub': 'Wenn dir ein Freund eine Frage schickt.',

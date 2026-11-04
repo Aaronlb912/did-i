@@ -2010,6 +2010,9 @@ export function FirstNightScreen({ book, onChange, now }) {
 }
 
 // Pushes come from the server, which reads these switches from the synced prefs.
+// Shown under one "From friends" row that opens; each keeps its own switch.
+const FRIEND_KINDS = ['sends', 'we', 'cheers', 'friends', 'family']
+const FRIENDS_ROW = 'fromFriends'
 const PUSH_KINDS = new Set(['sends', 'we', 'cheers', 'friends', 'family', 'didi'])
 // Morning ask times outside quiet hours: a nudge inside them never rings.
 // The picked one stays listed so the choice never looks empty.
@@ -2029,6 +2032,7 @@ function PingKinds({ colors, on }) {
   const prefs = usePrefs()
   const account = useAccount()
   const [miss, setMiss] = useState('')
+  const [friendsOpen, setFriendsOpen] = useState(false)
 
   async function flip(kind) {
     const was = readPrefs().pingsOff
@@ -2132,7 +2136,17 @@ function PingKinds({ colors, on }) {
       <SetCap colors={colors}>{t('pings.kindsCap')}</SetCap>
       {on ? null : <SetNote colors={colors}>{t('pings.offNote')}</SetNote>}
       <SetCard colors={colors}>
-        {PING_KINDS.map((kind, i) => (
+        {PING_KINDS.flatMap((kind) => (FRIEND_KINDS.includes(kind) ? (kind === FRIEND_KINDS[0] ? [FRIENDS_ROW] : []).concat(friendsOpen ? [kind] : []) : [kind])).map((kind) =>
+          kind === FRIENDS_ROW ? (
+            <SetRow
+              key={kind}
+              colors={colors}
+              icon="bell"
+              label={t('pings.fromFriends')}
+              value={friendsOpen ? '▴' : '▾'}
+              onPress={() => setFriendsOpen(!friendsOpen)}
+            />
+          ) : (
           <View key={kind}>
             <SetSwitch
               colors={colors}
@@ -2197,7 +2211,8 @@ function PingKinds({ colors, on }) {
               />
             ) : null}
           </View>
-        ))}
+          )
+        )}
         <SetSwitch
           colors={colors}
           label={t('shop.dropPing')}
