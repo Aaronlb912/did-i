@@ -1749,9 +1749,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     // A blank folder name on an edit keeps the question where it is.
     const target = bookForTag(boards, existing && sourceBook ? sourceBook : book, hang.tagTitle)
     const words = String(next.question || '').trim().toLowerCase()
-    const twin = (target.lamps || []).find(
-      (item) => item.id !== existing?.id && String(item.question || '').trim().toLowerCase() === words,
-    )
+    const sameWords = (item) => item.id !== existing?.id && String(item.question || '').trim().toLowerCase() === words
+    const twin = (target.lamps || []).find((item) => !item.archived && sameWords(item)) || (target.lamps || []).find(sameWords)
     if (twin?.archived && !confirmed) {
       publishSheet({
         title: t('hang.dupPaused'),

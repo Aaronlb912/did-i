@@ -8,6 +8,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -2636,8 +2637,10 @@ function AccountSignedIn({ book, email, onChange }) {
     setBusy('export')
     try {
       const all = await exportAll()
-      await shareShelf(all)
-      try { localStorage.setItem('did-i-last-copy', new Date().toISOString()) } catch {}
+      const res = await shareShelf(all)
+      if (res?.action !== Share.dismissedAction) {
+        try { localStorage.setItem('did-i-last-copy', new Date().toISOString()) } catch {}
+      }
       setCopied(Date.now())
     } catch (error) {
       // Closing the share sheet is not a failure.

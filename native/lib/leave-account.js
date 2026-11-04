@@ -33,6 +33,17 @@ async function clearAndroidWidget() {
   }
 }
 
+// iOS keeps taps for questions not on the shelf yet inside the widget timeline.
+async function clearIosWidget() {
+  if (Platform.OS !== 'ios') return
+  try {
+    const { clearWidgetTimelineTaps } = await import('../widget-sync.js')
+    await clearWidgetTimelineTaps()
+  } catch {
+    // The next redraw reads the shelf.
+  }
+}
+
 // Leaving the account: say it worked, or say what went wrong.
 // Account and the first Settings page both sign out through this.
 // Returns 'unsaved' when answers did not reach the account; the caller asks
@@ -49,6 +60,7 @@ export async function leaveAccount(kind, run, force = false) {
     signedOutSync()
     clearTray()
     await clearAndroidWidget()
+    await clearIosWidget()
     return true
   } catch {
     confirmMiss(t('confirm.miss'))
