@@ -207,6 +207,18 @@ function HallScreen() {
 // The tabs carry their own bars.
 const HALL_OPTIONS = { headerShown: false }
 
+// App opens on this phone, counted once per run. A person who never answers still gets the reminder ask on open two.
+const OPENS_KEY = 'did-i-opens'
+const OPENS_SEEN = (() => {
+  try {
+    const n = (Number(localStorage.getItem(OPENS_KEY)) || 0) + 1
+    localStorage.setItem(OPENS_KEY, String(n))
+    return n
+  } catch {
+    return 0
+  }
+})()
+
 export function AppShell() {
   const prefs = usePrefs()
   const route = useNativeRoute()
@@ -305,6 +317,8 @@ export function AppShell() {
   const hasQuestion = (app.shelf?.boards || []).some((one) => (one.lamps || []).some((lamp) => !lamp.archived))
   useEffect(() => {
     if (gated || settingUp || !shelfReady || !hasQuestion || Platform.OS === 'web') return undefined
+    // The ask comes after the first answer. Anyone who never answers gets it on the second app open.
+    if (OPENS_SEEN < 2) return undefined
     const timer = setTimeout(() => offerFirstPingPrimer(colors).catch(() => {}), 3000)
     return () => clearTimeout(timer)
     // colors only styles the sheet; a theme change should not re-arm the ask.
@@ -312,12 +326,24 @@ export function AppShell() {
 
   // A Did made in this run is the one later ask for a Not now.
   const didCount = useRef(null)
+  const anyCount = useRef(null)
   useEffect(() => {
     if (gated || Platform.OS === 'web' || !app.shelf?.boards) return undefined
     let n = 0
-    for (const board of app.shelf.boards) for (const row of board.answers || []) if (row.status === 'yes' || row.status === 'late') n += 1
+    let any = 0
+    for (const board of app.shelf.boards) {
+      for (const row of board.answers || []) {
+        const did = row.status === 'yes' || row.status === 'late'
+        if (did) n += 1
+        if (did || row.status === 'skip') any += 1
+      }
+    }
     const was = didCount.current
     didCount.current = n
+    const wasAny = anyCount.current
+    anyCount.current = any
+    // The very first answer, Did or Not yet: ask for reminders now, not on top of the first swipe.
+    if (wasAny === 0 && any === 1) setTimeout(() => offerFirstPingPrimer(colors).catch(() => {}), 1200)
     // Not cleared on the next shelf write (sync lands right after a tap); the ask runs once anyway.
     // Exactly one more: a cloud pull brings several at once, not a tap here.
     if (was != null && n === was + 1) setTimeout(() => offerPingPrimerAgain(colors).catch(() => {}), 2500)

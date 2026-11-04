@@ -1087,6 +1087,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [returning, graceShowing, Boolean(stack.cheer), stack.dateIso])
+  // Earliest reminder time on any open question, for the day-one line.
+  const firstAsk = (stack.shelf || []).flatMap((item) => (item.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => String(lamp.askAfter || ''))).filter((v) => /^\d{2}:\d{2}$/.test(v)).sort()[0] || ''
   const reminderRowUp = !stack.empty && Platform.OS !== 'web' && Boolean(onAskPings) && (pingLabel === 'pings.state.ask' || pingLabel === 'pings.state.blocked')
   const extraRow = stack.cheer && !pickKey ? '' : reminderRowUp ? 'reminders' : stack.nightDone ? (dropLineUp(book) ? 'drop' : 'rate') : ''
   // First open of a new week: last week's recap, once. Sunday's done card counts as seen.
@@ -1306,7 +1308,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           ) : null}
           {nightOne ? (
             <>
-              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t(gentle ? 'nightOne.bodyGentle' : 'nightOne.body')}</Text>
+              <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
+                {pingLabel === 'pings.state.on' && firstAsk ? t('nightOne.bodyTime', { time: clockWords(firstAsk) }) : t(gentle ? 'nightOne.bodyGentle' : 'nightOne.body')}
+              </Text>
               <View style={styles.actions}>
                 <DidButton small label={t('nightOne.widget')} colors={colors} onPress={() => pinWidget(colors)} />
               </View>

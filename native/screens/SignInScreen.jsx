@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Platform, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { cloudSetUp } from '../../src/lib/cloud.js'
@@ -29,6 +30,9 @@ export function SignInScreen({ onDone }) {
   const colors = useHallColors()
   const insets = useSafeAreaInsets()
   const auth = useAuthSignIn({ onSignedIn: onDone })
+  // First look is Get started and one full row for people with an account.
+  const [signInOpen, setSignInOpen] = useState(false)
+  const showSignIn = auth.step !== 'start' || signInOpen
 
   const useLocalOnly = () => {
     skipAuth()
@@ -53,11 +57,18 @@ export function SignInScreen({ onDone }) {
           <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('auth.tagline')}</Text>
           {/* One way in leads: start on this phone. Signing in sits under it. */}
           <DidButton colors={colors} label={t('auth.getStarted')} onPress={useLocalOnly} />
-          <Text style={[styles.or, { color: colors.inkSoft }]}>{t('auth.haveAccount')}</Text>
-          <AuthSignInActions colors={colors} auth={auth} />
+          {signInOpen ? (
+            <>
+              <Text style={[styles.or, { color: colors.inkSoft }]}>{t('auth.haveAccount')}</Text>
+              <AuthSignInActions colors={colors} auth={auth} />
+            </>
+          ) : (
+            <KeyButton colors={colors} label={t('first.haveAccount')} onPress={() => setSignInOpen(true)} />
+          )}
         </>
       ) : null}
 
+      {showSignIn ? (
       <View style={[styles.emailBlock, auth.step === 'start' && styles.emailOption]}>
         {auth.step === 'start' ? (
           <Text style={[styles.note, { color: colors.inkSoft }]}>{t('auth.newEmail')}</Text>
@@ -118,6 +129,7 @@ export function SignInScreen({ onDone }) {
           <AuthSignInActions colors={colors} auth={auth} />
         )}
       </View>
+      ) : null}
 
       {auth.step !== 'start' ? <LocalButton colors={colors} onPress={useLocalOnly} /> : null}
       <AuthLegalNote colors={colors} />

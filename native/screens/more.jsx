@@ -1930,9 +1930,18 @@ export function FirstNightScreen({ book, onChange, now }) {
           <Text style={[styles.firstWhy, { color: colors.inkSoft }]}>{t(hint ? 'first.addHint' : 'first.pickFirst')}</Text>
         ) : null}
       </View>
-      {step === 0 ? <KeyButton colors={colors} label={t('first.startEmpty')} onPress={startEmpty} /> : null}
+      {/* Continue stays the main button; these two sit under it as quiet full-width rows. */}
+      {step === 0 ? (
+        <View style={styles.quietRow}>
+          <KeyButton colors={colors} label={t('first.startEmpty')} onPress={startEmpty} />
+        </View>
+      ) : null}
       {/* Back to the welcome screen to sign in instead. */}
-      {step === 0 && canLeave ? <KeyButton colors={colors} label={t('first.haveAccount')} onPress={toWelcome} /> : null}
+      {step === 0 && canLeave ? (
+        <View style={styles.quietRow}>
+          <KeyButton colors={colors} label={t('first.haveAccount')} onPress={toWelcome} />
+        </View>
+      ) : null}
     </>
   )
 
@@ -3239,6 +3248,7 @@ const styles = StyleSheet.create({
   stepCap: { ...sectionLabel, marginBottom: 6 },
   firstOr: { marginTop: 16, marginBottom: 0 },
   stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  quietRow: { alignSelf: 'stretch', marginTop: 8 },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },
   ideaQ: { fontFamily: fonts.display, fontSize: 18, fontWeight: '700' },
   recentText: { fontFamily: fonts.ui, fontSize: 15, lineHeight: 21 },
