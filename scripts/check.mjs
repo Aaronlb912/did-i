@@ -10941,6 +10941,16 @@ test('streak bonus retry sends the streak it was claimed with; the 100+ sheet sh
   assert.ok(shell.includes('colorsRef'), 'colors are read from a ref, not a dependency')
 })
 
+test('a waiting streak bonus is dropped on sign-out and a retry never lowers the profile streak', async () => {
+  const m = await import('../src/lib/streak-milestones.js')
+  m.addBonusPending(30, 30)
+  m.clearBonusPending()
+  assert.deepEqual(m.readBonusPending(), [])
+  assert.equal(m.readBonusStreak(30), null)
+  assert.ok(readFileSync(new URL('../src/lib/cloud-sync.js', import.meta.url), 'utf8').includes('  clearBonusPending()'), 'sign-out clears it')
+  assert.ok(readFileSync(new URL('../src/lib/wallet.js', import.meta.url), 'utf8').includes('streak.is.null,streak.lt.'), 'only raises the saved streak')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
