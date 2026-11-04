@@ -137,6 +137,16 @@ import { missDot } from '../palette.js'
 const IDEA_IDS = ['pills', 'water', 'text', 'skin', 'bill', 'charge']
 
 // Signing every phone out and deleting an account do not come back.
+export function lastCopyLine() {
+  try {
+    const at = localStorage.getItem('did-i-last-copy')
+    const d = at ? new Date(at) : null
+    return d && !Number.isNaN(d.getTime()) ? t('account.lastCopy', { date: d.toLocaleDateString() }) : ''
+  } catch {
+    return ''
+  }
+}
+
 export function SureModal({ sure, colors, onClose, onGo }) {
   if (!sure) return null
   return (
@@ -2615,6 +2625,7 @@ function AccountSignedIn({ book, email, onChange }) {
   const others = phones.filter((row) => row.device_key !== here)
 
   const [busy, setBusy] = useState('')
+  const [copied, setCopied] = useState(0)
   const [dataOpen, setDataOpen] = useState(false)
   const [allPhones, setAllPhones] = useState(false)
   const shownPhones = allPhones ? phones : phones.slice(0, 3)
@@ -2626,6 +2637,8 @@ function AccountSignedIn({ book, email, onChange }) {
     try {
       const all = await exportAll()
       await shareShelf(all)
+      try { localStorage.setItem('did-i-last-copy', new Date().toISOString()) } catch {}
+      setCopied(Date.now())
     } catch (error) {
       // Closing the share sheet is not a failure.
       if (error?.name !== 'AbortError') confirmMiss(t('confirm.exportMiss'))
@@ -2972,7 +2985,8 @@ function AccountSignedIn({ book, email, onChange }) {
       ) : null}
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="note" label={t('account.export')} sub={t('account.exportSub')} value={busy === 'export' ? t('app.loading') : undefined} chevron last onPress={busy ? undefined : download} />
+        <SetRow colors={colors} icon="note" label={t('account.export')} sub={lastCopyLine(copied) ? `${t('account.exportSub')}
+${lastCopyLine(copied)}` : t('account.exportSub')} value={busy === 'export' ? t('app.loading') : undefined} chevron last onPress={busy ? undefined : download} />
       </SetCard>
 
       <SetCap colors={colors}>{t('account.leaveCap')}</SetCap>

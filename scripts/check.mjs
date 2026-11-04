@@ -11198,6 +11198,14 @@ test('Later waits the picked minutes, never into quiet hours; a failed reminder 
   assert.ok(!/date: new Date(snooze.at)/.test(nat), 'snoozes go through the quiet hours shift')
 })
 
+test('leftovers: pause labels, no dollar line, last copy line', () => {
+  const en = readFileSync(new URL('../src/locales/en.js', import.meta.url), 'utf8')
+  assert.ok(!/'shop.gemsDoor': "[^"]*dollar/.test(en), 'store prices are local')
+  assert.ok(/'lamp.stop': 'Pause'/.test(en) && /'lamp.askAgain': 'Resume'/.test(en))
+  const more = readFileSync(new URL('../native/screens/more.jsx', import.meta.url), 'utf8')
+  assert.ok(more.indexOf("setItem('did-i-last-copy'") > more.indexOf('await shareShelf(all)'), 'date saved only after the share finishes')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
