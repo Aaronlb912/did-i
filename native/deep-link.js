@@ -40,8 +40,8 @@ export function routeFromDeepLink(url) {
     // didi://open/friends and the rest from an app icon shortcut.
     if (host === 'open' || path.startsWith('open/')) {
       const where = path.replace(/^open\/?/, '')
-      const to = { tonight: '/tonight', add: '/add', friends: '/people', scan: '/scan', calendar: '/calendar' }[where]
-      if (to) return { path: to }
+      const to = { tonight: '/tonight', add: '/add', friends: '/people', scan: '/scan', calendar: '/calendar', remind: '/remind' }[where]
+      if (to) return where === 'remind' ? { path: to, listen: '1' } : { path: to }
     }
     // didi://add?q=lock+the+back+door from Google Assistant, a Siri Shortcut or the app shortcut.
     if (path === 'add') {
@@ -99,6 +99,7 @@ export function goFromDeepLink(url) {
   if (route.face) extra.face = route.face
   if (route.tag) extra.tag = route.tag
   if (route.id) extra.id = route.id
+  if (route.listen) extra.listen = route.listen
   goHash(route.path, extra)
   return true
 }

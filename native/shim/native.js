@@ -6,7 +6,8 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { ASK_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, sendActions } from '../../src/lib/notify-answer.js'
+import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions } from '../../src/lib/notify-answer.js'
+import { readReminds } from '../../src/lib/remind-me.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { capSpare, earlyCallAt, lastCallAt, leftNote } from '../../src/lib/quiet.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
@@ -259,8 +260,70 @@ export function clearNativePings() {
   const job = pingNext
   pingNext = null
   job?.waiters.forEach((w) => w.resolve())
-  pingChain = pingChain.then(() => notifications().then((n) => n.cancelAllScheduledNotificationsAsync())).catch(() => {})
+  pingChain = pingChain.then(() => notifications().then((n) => n.cancelAllScheduledNotificationsAsync().then(() => scheduleReminds(n)))).catch(() => {})
   return pingChain
+}
+
+// Remind me notes: local to the phone, so a cancel-all (sign-out, re-arm)
+// puts the waiting ones back. The id carries the tries so a re-ask is its own note.
+const remindNoteId = (item) => `remind:${item.id}:${item.tries || 0}`
+
+async function scheduleOneRemind(Notifications, item) {
+  await Notifications.setNotificationCategoryAsync(REMIND_CATEGORY, remindActions(t)).catch(() => {})
+  await Notifications.scheduleNotificationAsync({
+    identifier: remindNoteId(item),
+    content: {
+      title: 'Did I',
+      body: t('remind.ask', { text: item.text }),
+      data: { go: '/remind', remindId: item.id, remindText: item.text },
+      categoryIdentifier: REMIND_CATEGORY,
+    },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(Math.max(item.at, Date.now() + 2000)), channelId: CHANNEL_ID },
+  })
+}
+
+async function scheduleReminds(Notifications) {
+  for (const item of readReminds()) {
+    // Already fired: a re-arm must not ring it again.
+    if (item.at <= Date.now()) continue
+    try {
+      await scheduleOneRemind(Notifications, item)
+    } catch {
+      // ok
+    }
+  }
+}
+
+export async function scheduleRemind(item) {
+  let allowed = await checkNativePings()
+  if (allowed !== 'granted') allowed = await requestNativePings()
+  if (allowed !== 'granted') return { miss: 'remind.notifOff' }
+  try {
+    const Notifications = await notifications()
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+        name: t('push.channelName'),
+        description: t('push.channelDesc'),
+        importance: Notifications.AndroidImportance.HIGH,
+      }).catch(() => {})
+    }
+    await scheduleOneRemind(Notifications, item)
+    return { ok: true }
+  } catch {
+    return { miss: 'remind.notifOff' }
+  }
+}
+
+export async function cancelRemind(item) {
+  try {
+    const Notifications = await notifications()
+    for (let tries = 0; tries <= 3; tries += 1) {
+      await Notifications.cancelScheduledNotificationAsync(remindNoteId({ ...item, tries })).catch(() => {})
+    }
+    await Notifications.dismissNotificationAsync?.(remindNoteId(item))?.catch?.(() => {})
+  } catch {
+    // ok
+  }
 }
 
 // Takes one board or every board on the shelf; each tag's questions ping.
@@ -442,6 +505,8 @@ async function schedulePingsNow(books, now = new Date()) {
     // (cap or end of the week), one last note asks to open the app.
     const over = notes.length > PING_CAP - 1
     notes.length = Math.min(notes.length, PING_CAP - 1)
+    // Waiting Remind me notes count toward the same 64.
+    notes.length = Math.min(notes.length, PING_CAP - 1 - readReminds().filter((item) => item.at > Date.now()).length)
     const regularCount = notes.length
     // A week away: the last question reminder in the window becomes one gentle
     // push. It is never repeated, and the next open sets reminders fresh.
@@ -514,6 +579,7 @@ async function schedulePingsNow(books, now = new Date()) {
     } catch {
       // ok
     }
+    await scheduleReminds(Notifications)
     // A snoozed question answered since then stays quiet.
     const openNow = new Set(list.flatMap((book) => dueTonight(book, now).filter((row) => !row.answer || row.answer.status === 'skip').map((row) => row.lamp.id)))
     for (const snooze of snoozedNotes()) {

@@ -17,6 +17,15 @@ export function askActions(t) {
   ]
 }
 
+// Did and Not yet on a Remind me note. No shelf row: the answer clears or re-asks it.
+export const REMIND_CATEGORY = 'did-i-remind'
+export function remindActions(t) {
+  return [
+    { identifier: 'did', buttonTitle: t('tonight.answerDid'), options: { opensAppToForeground: true } },
+    { identifier: 'nope', buttonTitle: t('tonight.answerNope'), options: { opensAppToForeground: true } },
+  ]
+}
+
 // Keep and Pass on a friend's did you (supabase/functions/push sets the category).
 export const SEND_CATEGORY = 'did-i-send'
 export function sendActions(t) {
@@ -52,6 +61,7 @@ export function notificationAnswer(response, now = Date.now()) {
   if (action !== 'did' && action !== 'nope') return null
   const request = response?.notification?.request || {}
   const data = request.content?.data || {}
+  if (data.remindId) return { kind: 'remind', id: String(data.remindId), action }
   const night = data.night ? String(data.night) : ''
   const noteId = request.identifier ? String(request.identifier) : ''
   if (data.weId) return { kind: 'we', id: String(data.weId), action, night, at: now, noteId }

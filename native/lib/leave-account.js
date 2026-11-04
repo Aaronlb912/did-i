@@ -1,5 +1,6 @@
 import { saveBeforeSignOut, signedOutSync } from '../../src/lib/cloud-sync.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
+import { clearReminds } from '../../src/lib/remind-me.js'
 import { clearNativePings } from '../shim/native.js'
 import { confirmDone, confirmMiss } from './confirm.js'
 
@@ -10,6 +11,8 @@ function clearTray() {
     .then((Notifications) => Notifications.dismissAllNotificationsAsync?.())
     .catch(() => {})
   // Through the reminder queue, so a re-arm already going cannot land after it.
+  // Before the re-arm, which would put waiting ones back.
+  clearReminds()
   clearNativePings()
 }
 

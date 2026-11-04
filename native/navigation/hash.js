@@ -32,6 +32,7 @@ const ROUTES = new Set([
   '/settings/help',
   '/settings/seen',
   '/add',
+  '/remind',
   '/hang',
   '/lamp',
   '/welcome',
@@ -81,7 +82,7 @@ export const navigationRef = createNavigationContainerRef()
 
 // The tag filter follows you from screen to screen, like the web's ?tag=.
 let tag = ''
-let current = { path: '/tonight', face: '', id: '', start: '', tag: '', copy: '' }
+let current = { path: '/tonight', face: '', id: '', start: '', tag: '', copy: '', listen: '' }
 let pending = null
 const listeners = new Set()
 
@@ -90,6 +91,7 @@ function routeKey(route = current) {
   if (route.face) params.set('face', route.face)
   if (route.id) params.set('id', route.id)
   if (route.start) params.set('start', route.start)
+  if (route.listen) params.set('listen', route.listen)
   if (route.tag) params.set('tag', route.tag)
   const qs = params.toString()
   return qs ? `${route.path}?${qs}` : route.path
@@ -105,6 +107,7 @@ export function routeFromScreen(screen) {
     face: params.face || '',
     id: params.id || '',
     start: params.start || '',
+    listen: params.listen || '',
     tag,
     copy: params.copy || '',
     // When the question in face was asked for, so asking again for the same
@@ -114,7 +117,7 @@ export function routeFromScreen(screen) {
 }
 
 function paramsOf(route) {
-  return { face: route.face, id: route.id, start: route.start, copy: route.copy, focusAt: route.focusAt }
+  return { face: route.face, id: route.id, start: route.start, listen: route.listen, copy: route.copy, focusAt: route.focusAt }
 }
 
 function ready() {
@@ -330,6 +333,7 @@ export function goFromPush(where) {
   if (params.get('id')) extras.id = params.get('id')
   if (params.get('face')) extras.face = params.get('face')
   if (params.get('start')) extras.start = params.get('start')
+  if (params.get('listen')) extras.listen = params.get('listen')
   goHash(pathPart, extras)
 }
 
@@ -342,11 +346,12 @@ export function goHash(path, extras = '') {
     face: extra.face || '',
     id: extra.id || '',
     start: extra.start || '',
+    listen: extra.listen ? String(extra.listen) : '',
     tag,
     copy: extra.copy || '',
     // A new ask for a question (a notification, a link) refocuses it; carrying
     // the same face along, as a tag change does, does not.
-    focusAt: extra.face ? (extra.face === current.face && extra.keepFocus ? current.focusAt : Date.now()) : 0,
+    focusAt: extra.face ? (extra.face === current.face && extra.keepFocus ? current.focusAt : Date.now()) : extra.listen ? Date.now() : 0,
   }
   const hash = nextPath === '/' ? '#/' : `#${nextPath}`
   if (global.window?.location) global.window.location.hash = hash

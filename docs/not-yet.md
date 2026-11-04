@@ -5,6 +5,14 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Remind me in (branch `ux/remind-me`)
+
+- **iPhone widget has no mic.** The widget file uses `widgetURL` for the whole card; iPhone gets the long-press icon shortcut only. A `Link` from `@expo/ui/swift-ui` exists but is untried inside the widget and cannot be checked without a Mac.
+- **No background voice capture.** Speech starts only after the app opens; the OS does not allow listening from a widget or shortcut alone.
+- **Sign-out clears reminders.** Waiting Remind me notes and their text are dropped on sign-out, so one account's words never reach another account's Today.
+- **Reminders live on one phone.** They are not synced to the account or a second phone.
+- **Android widget label.** The mic reads `p.remindLabel` and falls back to English; the widget props builder should pass `t('remind.mic')`.
+
 ## 1.4.0 native release (branch `native/road-to-ten`, needs a store build)
 
 - **Built:** Share my year sends a picture of the year (react-native-view-shot, expo-sharing; the text share is the fallback). A Calendar grid widget on iOS and Android. A store rating sheet after the Did that takes the streak to 7 (or the first one past it), once ever; it shares the `asked` flag with the Home rate card, so the card then stays away.

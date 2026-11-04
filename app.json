@@ -3,7 +3,7 @@
     "name": "Did I",
     "slug": "did-i",
     "scheme": "didi",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -35,6 +35,7 @@
     },
     "plugins": [
       "expo-status-bar",
+      ["expo-speech-recognition", {"microphonePermission": "Did I listens when you tap the mic to hear your reminder.", "speechRecognitionPermission": "Did I turns your words into a reminder on your phone.", "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]}],
       [
         "expo-splash-screen",
         {

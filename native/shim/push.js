@@ -2,7 +2,7 @@ import { AppState, Platform } from 'react-native'
 import { cloud } from '../../src/lib/cloud.js'
 import { deviceKey } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
-import { SEND_CATEGORY, firstResponse, notificationAnswer, sendActions, snoozeFrom } from '../../src/lib/notify-answer.js'
+import { REMIND_CATEGORY, SEND_CATEGORY, firstResponse, notificationAnswer, remindActions, sendActions, snoozeFrom } from '../../src/lib/notify-answer.js'
 import {
   askNotificationPermission,
   notificationPermissionGranted,
@@ -136,6 +136,7 @@ async function bindResponseListener(handlers = {}) {
     // Keep and Pass on a friend's did you (supabase/functions/push sets the
     // category). Both open the app; the inbox answers it.
     try {
+      Notifications.setNotificationCategoryAsync(REMIND_CATEGORY, remindActions(t))?.catch?.(() => {})
       // Not awaited, so a slow call never holds up the listener below.
       Notifications.setNotificationCategoryAsync(SEND_CATEGORY, sendActions(t))?.catch?.(() => {})
     } catch {
@@ -151,6 +152,11 @@ async function bindResponseListener(handlers = {}) {
       const sendId = data.sendId ? String(data.sendId) : ''
       const action = String(response?.actionIdentifier || '')
       const answer = notificationAnswer(response)
+      if (answer?.kind === 'remind') {
+        Notifications.dismissNotificationAsync?.(String(response?.notification?.request?.identifier || ''))?.catch?.(() => {})
+        if (typeof handlers.onRemind === 'function') handlers.onRemind(answer.id, answer.action, data.remindText)
+        return
+      }
       const snooze = snoozeFrom(response)
       // The buttons answer without leaving the reminder in the tray.
       if (snooze) {
