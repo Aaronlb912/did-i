@@ -406,7 +406,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             person={row.you ? { display_name: personName(row.person) || name, avatar_url: myAvatar } : row.person}
             done={done}
             name={name}
-            line={row.role === 'parent' ? t('people.parent') : t('people.kid')}
+            line={fam.parent && !row.you ? undefined : row.role === 'parent' ? t('people.parent') : t('people.kid')}
             pill={done ? t('people.doneTonightShort') : ''}
             pillOn={done}
             noted={!row.you && noted.has(row.user_id)}
@@ -426,6 +426,14 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
             actions={
               row.you ? null : (
                 <>
+                  {fam.parent ? (
+                    <KeyButton
+                      colors={colors}
+                      label={row.role === 'parent' ? t('people.parent') : t('people.kid')}
+                      accessibilityLabel={row.role === 'parent' ? t('family.makeKid') : t('family.makeParent')}
+                      onPress={() => memberItems(row, name).find((item) => item.key === 'role')?.onPress()}
+                    />
+                  ) : null}
                   <DidButton
                     colors={colors}
                     small
@@ -492,7 +500,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   <DidButton
                     small
                     colors={colors}
-                    label={mine?.status === 'yes' ? t('family.did') : t('tonight.answerDid')}
+                    label={t('tonight.answerDid')}
                     disabled={mine?.status === 'yes'}
                     onPress={() => tap(lamp, 'yes')}
                   />
@@ -533,6 +541,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         <Meta colors={colors}>{t('family.noLamps')}</Meta>
       )}
 
+      {fam.members.length < 2 ? null : (
+        <>
       <Cap colors={colors}>{fam.parent ? t('family.assign') : t('family.addYours')}</Cap>
       <HangCard
         tag={fam.name}
@@ -587,6 +597,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
       </PickSheet>
       <DidButton colors={colors} label={t('family.put')} onPress={add} />
       <Meta colors={colors}>{fam.parent ? t('family.assignHint') : t('family.kidHint')}</Meta>
+        </>
+      )}
 
       <Cap colors={colors}>{t('friends.cheerStock', { n: cheersLeft })}</Cap>
       <Meta colors={colors}>{t('friends.cheerNote')}</Meta>

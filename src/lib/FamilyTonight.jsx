@@ -72,7 +72,7 @@ export function FamilyTonight({ family }) {
                 aria-pressed={done}
                 onClick={() => tap(row, 'yes')}
               >
-                {done ? t('famNight.did') : t('famNight.do')}
+                {t('famNight.did')}
               </button>
               <button
                 className={noped ? 'di-key is-pick' : 'di-key'}

@@ -399,15 +399,17 @@ function shopOrder(purse, ctx) {
   const forSale = shownFrames(ctx.today)
     .filter((f) => !owned.has(f.id) && (f.kind === 'coin' || f.kind === 'gem' || (f.kind === 'season' && seasonOpen(f, ctx.today))))
     .sort((a, b) => SALE_RANK[a.kind] - SALE_RANK[b.kind] || byPrice(a, b))
-  return { forSale }
+  // Earned frames you do not have yet go last; their tile status shows the progress.
+  const locked = shownFrames(ctx.today).filter((f) => f.kind === 'earned' && !owned.has(f.id))
+  return { forSale, locked }
 }
 
 // The Frames row in the Shop hub, like Looks or Cheers.
 export function FramesShopRow({ book, colors, onChange }) {
   const ctx = useFrameCtx(book)
   const purse = normalizePurse(book)
-  const { forSale } = shopOrder(purse, ctx)
-  const list = forSale
+  const { forSale, locked } = shopOrder(purse, ctx)
+  const list = [...forSale, ...locked]
   const open = (id) => openFrameSheet({ id, book, colors, ctx, onChange })
   return (
     <View style={styles.promoShelf}>
