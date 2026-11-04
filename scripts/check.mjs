@@ -11086,6 +11086,19 @@ test('one question year grid: lampId filter, calendar route, menu row', () => {
   assert.ok(readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8').includes('lampId={lampId}'), 'the calendar screen passes the question')
 })
 
+test('shop copy: no per-gem price line in gem hints, off-sale accessory tile shows its date', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  for (const l of ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
+    const src = readFileSync(path.join(root, `src/locales/${l}.js`), 'utf8')
+    for (const k of ['gems.hint', 'gems.hintNative', 'gems.hintIn', 'gems.hintNativeIn', 'gems.hintApp', 'gems.hintAppIn']) {
+      const line = src.split(/\r?\n/).find((x) => x.includes(`'${k}':`))
+      assert.ok(line && !/dollar|dólar|dollaro|ドル|달러|美元/.test(line), `${l} ${k} has no per-gem price`)
+    }
+  }
+  const shop = readFileSync(path.join(root, 'native/screens/shop.jsx'), 'utf8')
+  assert.ok(shop.includes('coming={coming}'), 'the price tag shows the coming date when off sale')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

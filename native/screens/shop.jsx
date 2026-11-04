@@ -325,7 +325,8 @@ function tileName(type, id) {
   return t(buddyText(id, 'name'))
 }
 
-function PriceTag({ tag, colors }) {
+function PriceTag({ tag, colors, coming }) {
+  if (coming) return <Text style={[styles.tagText, { color: colors.inkDim }]}>{coming}</Text>
   if (tag.owned) {
     return <Text style={[styles.tagText, { color: colors.inkDim }]}>{t('shop.owned')}</Text>
   }
@@ -346,7 +347,9 @@ function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) 
   const name = tileName(type, item.id)
   const tag = shopTag(purse, type, item)
   const worn = (type === 'look' && purse.lookOn === item.id) || (type === 'buddy' && purse.buddyOn === item.id) || (type === 'cheer' && purse.cheerOn === item.id)
-  const price = tag.owned ? t(worn ? 'shop.on' : 'shop.owned') : tag.gems ? gemLine(tag.gems) : tag.coins ? coinLine(tag.coins) : tag.free ? t('shop.free') : ''
+  const coming = type === 'accessory' && !tag.owned && !accessoryOnSale(item, boardDate(new Date())) ? t('shop.coming', { date: formatBoardDate(seasonNext(item)) }) : ''
+  if (note === coming) note = ''
+  const price = coming || tag.owned ? coming || t(worn ? 'shop.on' : 'shop.owned') : tag.gems ? gemLine(tag.gems) : tag.coins ? coinLine(tag.coins) : tag.free ? t('shop.free') : ''
   return (
     <Pressable
       onPress={() => onTile(type, item)}
@@ -362,7 +365,7 @@ function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) 
         <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={1}>
           {name}
         </Text>
-        <PriceTag tag={tag} colors={colors} />
+        <PriceTag tag={tag} colors={colors} coming={coming} />
         {note ? (
           <Text style={[styles.tileNote, { color: colors.inkDim }]} numberOfLines={1}>
             {note}
