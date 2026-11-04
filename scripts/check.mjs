@@ -10847,6 +10847,17 @@ test('big streak achievements open a sheet, frames can be shared, frost shows th
   assert.ok(frames.includes('frames.earnFreezeUse') && frames.includes('frames.earnFreezeAt') && frames.includes('freezesHeld'), 'frost progress reads the freeze count')
 })
 
+test('buddy push names the card and skips anyone who answered or was nudged', () => {
+  const sql = readFileSync(new URL('../supabase/we-buddy.sql', import.meta.url), 'utf8')
+  assert.equal((sql.match(/"we_buddy": "[^"]*{q}[^"]*"/g) || []).length, 9, 'every language puts the question in the buddy push')
+  assert.ok(!sql.includes("a.status = 'did')"), 'any answer that day skips the buddy push')
+  assert.ok(sql.includes('public.we_nudges n') && sql.includes('n.from_id = new.user_id'), 'a nudge from the same sender skips the buddy push')
+  for (const k of ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
+    const loc = readFileSync(new URL(`../src/locales/${k}.js`, import.meta.url), 'utf8')
+    assert.ok(/'we.earlyDid': "[^"]*Did[^"]*"/.test(loc) && /'we.pDid': "[^"]*Did[^"]*"/.test(loc), k + ' keeps Did in English')
+  }
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
