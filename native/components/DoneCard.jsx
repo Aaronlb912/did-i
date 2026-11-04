@@ -202,7 +202,7 @@ export function tomorrowLine({ count, from, next }, streak = 0) {
   const line = count === 1
     ? time ? t('tonight.tomorrowOne', { time }) : t('tonight.tomorrowOneAny')
     : time ? t('tonight.tomorrowMany', { n: count, time }) : t('tonight.tomorrowManyAny', { n: count })
-  return streak > 0 && streak < 7 ? `${line} ${t('tonight.tomorrowStake', { n: streak + 1 })}` : line
+  return line
 }
 
 const styles = StyleSheet.create({
