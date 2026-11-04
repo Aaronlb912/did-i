@@ -1,5 +1,6 @@
 -- Leaving a Did we tells the people who stay: "{name} left: {q}". One push
--- each, not to a blocked pair, not when the we pings are off. A trigger on
+-- each, not to a blocked pair, not to someone who is no longer a friend or
+-- family of the leaver (unfriend and block drop the link first), not when the we pings are off. A trigger on
 -- we_members, so every way out (we_leave, block, unfriend) is covered and
 -- we_leave itself is not redefined. Run last in db:apply:all (after
 -- streak-bonus.sql). Safe to run again.
@@ -125,6 +126,11 @@ begin
     and not exists (select 1 from public.blocks b
                     where (b.blocker = new.user_id and b.blocked = m.user_id)
                        or (b.blocker = m.user_id and b.blocked = new.user_id))
+    and (exists (select 1 from public.friend_links f
+                 where f.state = 'ok'
+                   and ((f.from_id = new.user_id and f.to_id = m.user_id)
+                     or (f.from_id = m.user_id and f.to_id = new.user_id)))
+         or public.shares_family_of(new.user_id, m.user_id))
     and public.push_wanted(m.user_id, 'we');
   return new;
 end;
