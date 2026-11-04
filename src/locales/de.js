@@ -948,6 +948,8 @@ export const de = {
   'friends.seeSub': 'Wer heute fertig ist',
   'friends.waiting': 'Warten auf Antwort',
   'friends.notYet': 'hat noch nicht geantwortet',
+  'friends.unsendNote': 'Du kannst zurückziehen und neu senden.',
+  'cheersGot.back': 'Zurückjubeln',
   'friends.unsend': 'Zurückziehen',
   'friends.unsendTitle': 'Anfrage an {name} zurückziehen?',
   'friends.unsendBody': 'Sie verschwindet aus den Anfragen. Du kannst später eine neue senden.',

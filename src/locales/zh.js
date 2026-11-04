@@ -931,6 +931,8 @@ export const zh = {
   'friends.seeSub': "今天谁已完成",
   'friends.waiting': '等待回复',
   'friends.notYet': '尚未回复',
+  'friends.unsendNote': '可以撤回后重新发送。',
+  'cheersGot.back': '回赠加油',
   'friends.unsend': '撤回',
   'friends.unsendTitle': '撤回发给 {name} 的请求？',
   'friends.unsendBody': '它会从对方的请求里消失。以后还可以再发。',

@@ -678,30 +678,37 @@ function useFriendAsk(onAsked) {
   async function look(code) {
     setMiss('')
     setBusy(true)
-    const mine = await myFriendId().catch(() => ({ id: '' }))
-    if (mine.id && cleanFriendId(code) === cleanFriendId(mine.id)) {
+    try {
+      const mine = await myFriendId().catch(() => ({ id: '' }))
+      if (mine.id && cleanFriendId(code) === cleanFriendId(mine.id)) return setMiss(t('friendId.own'))
+      const [result, nameless] = await Promise.all([lookUpFriendId(code), needsName().catch(() => false)])
+      if (result.miss) return setMiss(friendIdMiss(result.miss))
+      setNeedName(nameless)
+      return setFound({ ...result, code })
+    } catch {
+      return setMiss(t('people.reach'))
+    } finally {
       setBusy(false)
-      return setMiss(t('friendId.own'))
     }
-    const [result, nameless] = await Promise.all([lookUpFriendId(code), needsName().catch(() => false)])
-    setBusy(false)
-    if (result.miss) return setMiss(friendIdMiss(result.miss))
-    setNeedName(nameless)
-    return setFound({ ...result, code })
   }
   async function send() {
     if (!found) return
     setMiss('')
     setBusy(true)
-    const { miss: why, person, friends } = await askByFriendId(found.code, needName ? name : '')
-    setBusy(false)
-    if (why === 'needName') setNeedName(true)
-    if (why) return setMiss(friendIdMiss(why))
-    setFound(null)
-    setNeedName(false)
-    const who = personName(person || found.person) || t('people.someone')
-    // They had asked you too: that is a yes, so you are friends now.
-    onAsked(friends ? t('confirm.nowFriends', { name: who }) : t('people.asked', { name: who }))
+    try {
+      const { miss: why, person, friends } = await askByFriendId(found.code, needName ? name : '')
+      if (why === 'needName') setNeedName(true)
+      if (why) return setMiss(friendIdMiss(why))
+      setFound(null)
+      setNeedName(false)
+      const who = personName(person || found.person) || t('people.someone')
+      // They had asked you too: that is a yes, so you are friends now.
+      onAsked(friends ? t('confirm.nowFriends', { name: who }) : t('people.asked', { name: who }))
+    } catch {
+      setMiss(t('people.reach'))
+    } finally {
+      setBusy(false)
+    }
   }
   return { found, busy, miss, needName, name, setName, look, send, cancel: () => { setFound(null); setMiss('') } }
 }
@@ -1050,7 +1057,7 @@ export function PeopleScreen({ book, onChange }) {
                     {personName(row.person) || t('people.noName')}
                   </Text>
                   <Text style={[styles.stripLine, { color: done ? colors.on : colors.inkDim }]} numberOfLines={1}>
-                    {done ? t('people.doneTonightShort') : t('people.notYet')}
+                    {done ? t('people.doneTonightShort') : ''}
                   </Text>
                 </Pressable>
               )
@@ -1645,11 +1652,16 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
     }))
   }
 
+  function startCheer(person) {
+    if (cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return confirmMiss(t('friends.cheerCap', { n: FRIEND_CHEER_CAP }))
+    return pickCheer(colors, { name: personName(person) || t('people.someone'), purse, onGo: (id) => cheerWith(person, id) })
+  }
+
   async function cheer(person, cheerId) {
     const sent = await cheerFriend(book, person.user_id, cheerId)
     const known = friendCheerMissKey(sent.miss)
-    if (known) return setMiss(t(known.key, known.vars))
-    if (sent.miss) return setMiss(tMiss(sent.miss))
+    if (known) return confirmMiss(t(known.key, known.vars))
+    if (sent.miss) return confirmMiss(tMiss(sent.miss))
     setStock(normalizePurse(sent.book).friendCheers)
     if (onChange) onChange(sent.book)
     fireCheer(cheerId, 1)
@@ -1681,8 +1693,8 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
       return false
     }
     const known = friendCheerMissKey(bought.miss)
-    if (known) { setMiss(t(known.key, known.vars)); return false }
-    if (bought.miss) { setMiss(tMiss(bought.miss)); return false }
+    if (known) { confirmMiss(t(known.key, known.vars)); return false }
+    if (bought.miss) { confirmMiss(tMiss(bought.miss)); return false }
     setStock(normalizePurse(bought.book).friendCheers)
     if (onChange) onChange(bought.book)
     return true
@@ -1766,7 +1778,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
               colors={colors}
               person={row.person}
               name={personName(row.person) || t('people.noName')}
-              line={t('friends.notYet')}
+              line={[t('friends.notYet'), gotDay(row.madeAt), t('friends.unsendNote')].filter(Boolean).join(' · ')}
               actions={<KeyButton colors={colors} label={t('friends.unsend')} onPress={() => unsend(row)} />}
             />
           ))}
@@ -1820,10 +1832,7 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
                   <KeyButton
                     colors={colors}
                     label={t('friends.cheerUse')}
-                    onPress={() => {
-                      if (cheersLeft < 1 && cheersLeft + FRIEND_CHEERS_PER_GEM > FRIEND_CHEER_CAP) return confirmMiss(t('friends.cheerCap', { n: FRIEND_CHEER_CAP }))
-                      return pickCheer(colors, { name: personName(row.person) || t('people.someone'), purse, onGo: (id) => cheerWith(row.person, id) })
-                    }}
+                    onPress={() => startCheer(row.person)}
                   />
                 </>
               }
@@ -1911,19 +1920,24 @@ export function FriendsScreen({ book, onChange, highlightAsk = '' }) {
           <SectionHead colors={colors} label={t('cheersGot.title')} />
           {got.miss ? <Miss colors={colors} onRetry={load}>{got.miss}</Miss> : null}
           {!got.miss && !got.rows.length ? <Meta colors={colors}>{t('cheersGot.empty')}</Meta> : null}
-          {got.rows.map((row) => (
-            <Pressable
-              key={row.id}
-              accessibilityRole="button"
-              onPress={() => (row.cheer_id ? fireCheer(row.cheer_id, 1) : undefined)}
-            >
-              <PersonRow
-                colors={colors}
-                title={t('cheersGot.from', { name: row.display_name || t('people.someone') })}
-                note={[t(cheerText(row.cheer_id, 'name')), row.note, gotDay(row.made_at)].filter(Boolean).join(' · ')}
-              />
-            </Pressable>
-          ))}
+          {got.rows.map((row) => {
+            const sender = links.friends.find((f) => f.person.user_id === row.from_id)
+            return (
+              <View key={row.id}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => (row.cheer_id ? fireCheer(row.cheer_id, 1) : undefined)}
+                >
+                  <PersonRow
+                    colors={colors}
+                    title={t('cheersGot.from', { name: row.display_name || t('people.someone') })}
+                    note={[t(cheerText(row.cheer_id, 'name')), row.note, gotDay(row.made_at)].filter(Boolean).join(' · ')}
+                  />
+                </Pressable>
+                {sender ? <KeyButton colors={colors} label={t('cheersGot.back')} onPress={() => startCheer(sender.person)} /> : null}
+              </View>
+            )
+          })}
         </>
       ) : null}
 
@@ -2099,8 +2113,10 @@ function CheckOnsFrom({ ownerId, name, face, colors, onAsk }) {
   const [rows, setRows] = useState([])
   const [miss, setMiss] = useState('')
   const opened = useRef(false)
+  const [tries, setTries] = useState(0)
   useEffect(() => {
     let live = true
+    setMiss('')
     checkOnsFrom(ownerId)
       .then((list) => {
         if (!live) return
@@ -2115,7 +2131,7 @@ function CheckOnsFrom({ ownerId, name, face, colors, onAsk }) {
       live = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownerId, face])
+  }, [ownerId, face, tries])
   async function stop(row) {
     const res = await stopCheckOn(row.id)
     if (res.miss) return setMiss(tMiss(res.miss))
@@ -2136,7 +2152,7 @@ function CheckOnsFrom({ ownerId, name, face, colors, onAsk }) {
           </View>
         </View>
       ))}
-      {miss ? <Meta colors={colors}>{miss}</Meta> : null}
+      <Miss colors={colors} onRetry={() => setTries((n) => n + 1)}>{miss}</Miss>
     </View>
   )
 }

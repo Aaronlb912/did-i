@@ -11110,6 +11110,21 @@ test('account settings: data and sign-out cards sit outside the fold, sync shows
   assert.ok(!src.includes('openSettings().catch(() => {})'), 'openSettings failures are not silent')
 })
 
+test('friends screen: cheer errors show at the tap, sent requests show the day, received cheers can be cheered back', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const src = readFileSync(path.join(root, 'native/screens/social.jsx'), 'utf8')
+  assert.ok(src.includes('confirmMiss(tMiss(sent.miss))'), 'a failed cheer shows a toast')
+  assert.ok(src.includes('gotDay(row.madeAt)') && src.includes("t('friends.unsendNote')"), 'sent requests show the day and the unsend line')
+  assert.ok(src.includes('finally {'), 'look and send always clear busy')
+  assert.ok(src.includes('onRetry={() => setTries'), 'check on me list retries')
+  assert.ok(src.includes("t('cheersGot.back')") && src.includes('startCheer(sender.person)'), 'received cheers have Cheer back')
+  assert.ok(!src.includes("t('people.notYet')"), 'the family list pill is blank when not done')
+  for (const l of ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
+    const loc = readFileSync(path.join(root, `src/locales/${l}.js`), 'utf8')
+    assert.ok(loc.includes("'cheersGot.back'") && loc.includes("'friends.unsendNote'"), `${l} has the new keys`)
+  }
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
