@@ -1362,18 +1362,37 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
                   icon="folder"
                   label={item.title}
                   sub={on ? `${t('boards.addsHere')} · ${countNote} · ${leftNote}` : `${countNote} · ${leftNote}`}
-                  last={at === live.length - 1 && !on}
+                  last={at === live.length - 1 && !on && n > 0}
                   onPress={() => onSelect?.(item.id)}
                 />
+                {n === 0 ? (
+                  <SetRow
+                    colors={colors}
+                    icon="add"
+                    tint={colors.on}
+                    label={t('boards.addQuestionHere')}
+                    chevron
+                    last={at === live.length - 1 && !on}
+                    onPress={() => {
+                      onSelect?.(item.id)
+                      goHash('/add', { tag: item.id })
+                    }}
+                  />
+                ) : null}
               </View>
               {live.length > 1 ? (
                 <View style={styles.folderMoves}>
-                  {[-1, 1].map((step) => {
+                  {[
+                    ['⤒', -live.length, 'boards.moveTop'],
+                    ['▲', -1, 'boards.moveUp'],
+                    ['▼', 1, 'boards.moveDown'],
+                    ['⤓', live.length, 'boards.moveBottom'],
+                  ].map(([glyph, step, key]) => {
                     const off = step < 0 ? at === 0 : at === live.length - 1
-                    const label = t(step < 0 ? 'boards.moveUp' : 'boards.moveDown', { title: item.title })
+                    const label = t(key, { title: item.title })
                     return (
                       <Pressable
-                        key={step}
+                        key={key}
                         disabled={off}
                         onPress={() => shift(item, step)}
                         accessibilityRole="button"
@@ -1382,7 +1401,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
                         android_ripple={ripple(colors.panel3)}
                         style={[styles.moveBtn, { opacity: off ? 0.3 : 1 }]}
                       >
-                        <Text style={{ color: colors.ink, fontSize: 16 }}>{step < 0 ? '▲' : '▼'}</Text>
+                        <Text style={{ color: colors.ink, fontSize: 16 }}>{glyph}</Text>
                       </Pressable>
                     )
                   })}
@@ -1409,6 +1428,11 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
                 autoCapitalize="words"
               />
               <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={saveName} />
+              {live.length > 1 ? (
+                <KeyButton colors={colors} label={t('boards.removeNamed', { title: item.title })} onPress={askRemove} />
+              ) : (
+                <Text style={[styles.lastFolder, { color: colors.inkSoft }]}>{t('boards.lastFolder')}</Text>
+              )}
               </View>
             ) : null}
           </View>
@@ -1441,6 +1465,13 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
                 {/* A parked folder picked here can be renamed too. */}
                 {item.id === book?.id ? (
                   <View style={styles.tagName}>
+                  <DidButton
+                    colors={colors}
+                    label={t('boards.openNamed', { title: item.title })}
+                    accessibilityLabel={t('boards.openNamed', { title: item.title })}
+                    onPress={() => goHash('/tonight', { tag: item.id })}
+                  />
+                  <View style={styles.openGap} />
                   <Field
                     colors={colors}
                     label={t('boards.name')}
@@ -1452,6 +1483,9 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
                     autoCapitalize="words"
                   />
                   <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={saveName} />
+                  {live.length > 0 ? (
+                    <KeyButton colors={colors} label={t('boards.removeNamed', { title: item.title })} onPress={askRemove} />
+                  ) : null}
                   </View>
                 ) : null}
                 </View>
@@ -1514,15 +1548,9 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
         <SetRow colors={colors} icon="note" label={t('feed.title')} sub={t('settings.feedSub')} chevron onPress={() => goHash('/feed')} />
         <SetRow colors={colors} icon="chart" label={t('boards.stats')} sub={t('settings.statsSub')} chevron last onPress={() => goHash('/stats')} />
       </SetCard>
-      {live.length > 1 && book ? (
-        <KeyButton
-          colors={colors}
-          label={t('boards.removeNamed', { title: book.title })}
-          onPress={askRemove}
-        />
-      ) : null}
       {onStartEmpty && book ? (
         <>
+          <View style={styles.dataGap} />
           <SetCap colors={colors}>{t('settings.danger')}</SetCap>
           <SetCard colors={colors}>
             <SetRow
@@ -3087,6 +3115,7 @@ const styles = StyleSheet.create({
   foldHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   tagName: { paddingHorizontal: 14, paddingBottom: 10 },
   openGap: { height: 10 },
+  lastFolder: { fontSize: 13, lineHeight: 18, marginTop: 10 },
   folderLine: { flexDirection: 'row', alignItems: 'center' },
   folderMain: { flex: 1 },
   folderMoves: { flexDirection: 'row' },
