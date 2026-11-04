@@ -10851,7 +10851,7 @@ test('hours left note: 1 hour is singular, under an hour says soon', async () =>
 test('ping cap counts renew, streak and snooze notes; hide waits for the answer; brain dump skips blank lines', async () => {
   const { readFileSync } = await import('node:fs')
   const nat = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
-  assert.match(nat, /const spill = notes\.length - PING_CAP/, 'extras trim the regular notes so the total stays under the cap')
+  assert.match(nat, /const spill = notes\.length - \(PING_CAP - waitingReminds\)/, 'extras trim the regular notes so the total stays under the cap')
   assert.ok(nat.indexOf('const spill') > nat.indexOf('const snooze of snoozedNotes()'), 'the trim runs after the snoozes are added')
   const we = readFileSync(new URL('../native/components/WeTonight.jsx', import.meta.url), 'utf8')
   assert.ok(we.indexOf('hideWeFor(card.id, boardDate())') > we.indexOf('weAnswer(card.id, next'), 'a Not yet hides the card only after it saved')
