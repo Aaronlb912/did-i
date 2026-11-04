@@ -6,7 +6,6 @@ import { usePrefs } from '../../src/lib/prefs.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
-import { missDot } from '../palette.js'
 import { dayLabel } from './CalendarGrid.jsx'
 
 export function WeekStrip({ boards = [], tagId = '', now, colors }) {
@@ -55,8 +54,7 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
                 style={[
                   styles.dot,
                   {
-                    backgroundColor: night.on ? colors.on : night.freeze ? 'transparent' : night.miss && !gentle ? colors.miss : colors.open,
-                    ...(!night.on && !night.freeze && night.miss && !gentle ? missDot(colors) : null),
+                    backgroundColor: night.on ? colors.on : night.freeze ? 'transparent' : colors.open,
                     // A freeze is a ring, the same as the history legend.
                     ...(night.freeze && !night.on ? { borderWidth: 1.5, borderColor: colors.freeze } : null),
                     opacity: night.empty ? 0.35 : 1,
