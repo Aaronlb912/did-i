@@ -3083,6 +3083,8 @@ export const fr = {
   'shop.cheerStill': "Moins de mouvement est activé, voici une image fixe. Après un Did, cette ovation éclate autour de ta carte.",
   'cal.viewMonth': "Mois",
   'cal.viewYear': "Année",
+  'lamp.yearGrid': "Année en jours",
+  'lamp.yearGridSub': "Chaque jour de cette question",
   'cal.prevYear': "Année précédente",
   'cal.nextYear': "Année suivante",
   'cal.yearTotals': "{did} jours Did · {rate}%",

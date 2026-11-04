@@ -782,7 +782,7 @@ export function NotesScreen({ book, boards }) {
   )
 }
 
-export function CalendarScreen({ book, boards, tagId, now, onChangeBooks }) {
+export function CalendarScreen({ book, boards, tagId, now, route, onChangeBooks }) {
   const colors = useHallColors()
   const today = useDayNow()
   const clock = now || today
@@ -791,6 +791,23 @@ export function CalendarScreen({ book, boards, tagId, now, onChangeBooks }) {
   const gentle = usePrefs().gentle === true
   const newShelf = useMemo(() => isNewShelf(boards), [boards])
   const noAnswers = useMemo(() => answeredNights(scopedBooks(inView(book, boards), tagId), 1) === 0, [book, boards, tagId])
+  const lampId = route?.id || ''
+  const oneLamp = useMemo(() => {
+    if (!lampId) return null
+    for (const b of boards?.length ? boards : [book]) {
+      const found = (b.lamps || []).find((l) => l.id === lampId)
+      if (found) return found
+    }
+    return null
+  }, [lampId, boards, book])
+
+  if (lampId) {
+    return (
+      <ScreenShell title={oneLamp ? shortLabel(oneLamp) : t('settings.history')} colors={colors}>
+        <YearGrid book={book} boards={boards} lampId={lampId} now={clock} colors={colors} />
+      </ScreenShell>
+    )
+  }
 
   return (
     <ScreenShell title={t('settings.history')} colors={colors}>

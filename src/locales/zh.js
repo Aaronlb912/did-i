@@ -3032,6 +3032,8 @@ export const zh = {
   'shop.cheerStill': "已开启减少动态效果，这里显示静态画面。完成 Did 后，这个欢呼会在你的卡片周围绽放。",
   'cal.viewMonth': "月",
   'cal.viewYear': "年",
+  'lamp.yearGrid': "全年每一天",
+  'lamp.yearGridSub': "这个问题的每一天",
   'cal.prevYear': "上一年",
   'cal.nextYear': "下一年",
   'cal.yearTotals': "Did 的天数 {did} · {rate}%",

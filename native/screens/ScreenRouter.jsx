@@ -206,7 +206,7 @@ export function ScreenRouter({
   }
   if (path === '/search') return <SearchScreen book={book} />
   if (path === '/week') return <WeekGridScreen book={book} boards={boards} tagId={tagId} />
-  if (path === '/calendar') return <CalendarScreen book={book} boards={boards} tagId={tagId} onChangeBooks={changeBooks} />
+  if (path === '/calendar') return <CalendarScreen key={route.id || ''} book={book} boards={boards} tagId={tagId} route={route} onChangeBooks={changeBooks} />
   if (path === '/streaks') return <StreaksScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/stats') return <StatsScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/feed') return <FeedScreen book={book} boards={boards} tagId={tagId} />

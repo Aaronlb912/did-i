@@ -3070,6 +3070,8 @@ export const en = {
   'shop.cheerStill': "Less motion is on, so this is a still. After a Did, this cheer bursts around your card.",
   'cal.viewMonth': "Month",
   'cal.viewYear': "Year",
+  'lamp.yearGrid': "Year of days",
+  'lamp.yearGridSub': "Every day for this question",
   'cal.prevYear': "Earlier year",
   'cal.nextYear': "Later year",
   'cal.yearTotals': "{did} Did days · {rate}%",

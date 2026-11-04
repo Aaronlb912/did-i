@@ -2462,6 +2462,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         <SetCard colors={colors}>
           <SetRow colors={colors} icon="pen" label={t('hang.edit')} chevron onPress={() => menuGo(() => goHash('/hang', { id: lamp.id }))} />
           <SetRow colors={colors} icon="copy" label={t('lamp.copy')} sub={t('lamp.copySub')} plain onPress={() => menuGo(() => goHash('/hang', { copy: lamp.id }))} />
+          <SetRow colors={colors} icon="chart" label={t('lamp.yearGrid')} sub={t('lamp.yearGridSub')} chevron onPress={() => menuGo(() => goHash('/calendar', { id: lamp.id }))} />
           {canNote ? (
           <SetRow
             colors={colors}

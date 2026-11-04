@@ -3039,6 +3039,8 @@ export const ja = {
   'shop.cheerStill': "動きを減らす設定がオンなので静止画です。Didのあと、この応援がカードのまわりではじけます。",
   'cal.viewMonth': "月",
   'cal.viewYear': "年",
+  'lamp.yearGrid': "1年の日々",
+  'lamp.yearGridSub': "この質問の毎日",
   'cal.prevYear': "前の年",
   'cal.nextYear': "次の年",
   'cal.yearTotals': "Did の日 {did}日 · {rate}%",

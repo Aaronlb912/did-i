@@ -3080,6 +3080,8 @@ export const es = {
   'shop.cheerStill': "Menos movimiento está activado, así que es una imagen fija. Tras un Did, esta ovación estalla alrededor de tu tarjeta.",
   'cal.viewMonth': "Mes",
   'cal.viewYear': "Año",
+  'lamp.yearGrid': "Año en días",
+  'lamp.yearGridSub': "Cada día de esta pregunta",
   'cal.prevYear': "Año anterior",
   'cal.nextYear': "Año siguiente",
   'cal.yearTotals': "{did} días con Did · {rate}%",
