@@ -962,6 +962,20 @@ export function PeopleScreen({ book, onChange }) {
     <ScreenShell title={t('people.title')} colors={colors}>
       <OfflineLine colors={colors} />
 
+      {links.asked.length || weWaiting || waiting ? (
+        <SetCard colors={colors}>
+          {[
+            links.asked.length ? { key: 'friends', label: t('people.waitFriends'), n: links.asked.length, go: () => setTab('friends') } : null,
+            weWaiting ? { key: 'we', label: t('people.waitWe'), n: weWaiting, go: () => goHash('/inbox') } : null,
+            waiting ? { key: 'inbox', label: t('people.waitInbox'), n: waiting, go: () => goHash('/inbox') } : null,
+          ]
+            .filter(Boolean)
+            .map((row, i, all) => (
+              <SetRow key={row.key} colors={colors} label={row.label} value={String(row.n)} chevron last={i === all.length - 1} onPress={row.go} />
+            ))}
+        </SetCard>
+      ) : null}
+
       <View style={styles.tiles}>
         <Tile
           colors={colors}

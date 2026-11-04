@@ -311,6 +311,26 @@ function HelpFold({ colors, title, children }) {
   )
 }
 
+// One help topic: title, one short line, its Go buttons. Any longer text folds
+// behind a full-width More row.
+function HelpTopic({ colors, title, short, go, children }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Text style={[styles.blockTitle, { color: colors.ink }]}>{title}</Text>
+      <Meta colors={colors} style={go || children ? styles.beforeBtn : undefined}>{short}</Meta>
+      {go}
+      {children ? (
+        open ? (
+          <Reveal>{children}</Reveal>
+        ) : (
+          <KeyButton colors={colors} label={t('help.more')} onPress={() => setOpen(true)} />
+        )
+      ) : null}
+    </>
+  )
+}
+
 export function HelpScreen() {
   const colors = useHallColors()
   return (
@@ -322,58 +342,100 @@ export function HelpScreen() {
       </View>
       <KeyButton colors={colors} label={t('tour.help')} onPress={() => startTour('basics', { replay: true })} />
       <HelpFold colors={colors} title={t('help.groupDaily')}>
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.tonight')}</Text>
-        <Meta colors={colors}>{t('help.tonightP1')}</Meta>
-        <Meta colors={colors}>{t('help.tonightP2', { time: clockWords('09:00') })}</Meta>
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.streak')}</Text>
-        <Meta colors={colors}>{t('help.streakP', { time: clockWords('09:00') })}</Meta>
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('freeze.howTitle')}</Text>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('freeze.helpP')}</Meta>
-        <KeyButton colors={colors} label={t('freeze.helpGo')} onPress={() => openFreezeHow(colors, readShelf()?.boards)} />
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.grace')}</Text>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.graceP', { time: clockWords('09:00') })}</Meta>
-        <KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.questions')}</Text>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.questionsP')}</Meta>
-        <KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.pings')}</Text>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.pingsP')}</Meta>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.pingsZone')}</Meta>
-        <KeyButton colors={colors} label={t('help.pingsGo')} onPress={() => goHash('/pings')} />
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.widget')}</Text>
-        <Meta colors={colors}>{t('help.widgetP')}</Meta>
+        <HelpTopic colors={colors} title={t('help.tonight')} short={t('help.tonightP1')}>
+          <Meta colors={colors}>{t('help.tonightP2', { time: clockWords('09:00') })}</Meta>
+        </HelpTopic>
+        <HelpTopic colors={colors} title={t('help.streak')} short={t('help.streakP', { time: clockWords('09:00') })} />
+        <HelpTopic
+          colors={colors}
+          title={t('freeze.howTitle')}
+          short={t('freeze.helpP')}
+          go={<KeyButton colors={colors} label={t('freeze.helpGo')} onPress={() => openFreezeHow(colors, readShelf()?.boards)} />}
+        />
+        <HelpTopic
+          colors={colors}
+          title={t('help.grace')}
+          short={t('help.graceP', { time: clockWords('09:00') })}
+          go={<KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />}
+        />
+        <HelpTopic
+          colors={colors}
+          title={t('help.questions')}
+          short={t('help.questionsP')}
+          go={<KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />}
+        />
+        <HelpTopic
+          colors={colors}
+          title={t('help.pings')}
+          short={t('help.pingsP')}
+          go={<KeyButton colors={colors} label={t('help.pingsGo')} onPress={() => goHash('/pings')} />}
+        >
+          <Meta colors={colors}>{t('help.pingsZone')}</Meta>
+        </HelpTopic>
+        <HelpTopic
+          colors={colors}
+          title={t('help.widget')}
+          short={t('help.widgetP')}
+          go={<KeyButton colors={colors} label={t('help.widgetGo')} onPress={() => goHash('/pings')} />}
+        />
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupSocial')}>
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.people')}</Text>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.peopleP')}</Meta>
-        <KeyButton colors={colors} label={t('help.peopleGo')} onPress={() => goHash('/people')} />
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.we')}</Text>
-        <Meta colors={colors}>{t('help.weP1')}</Meta>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.weP2')}</Meta>
-        <KeyButton colors={colors} label={t('help.weGo')} onPress={() => goHash('/we/new')} />
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.cheers')}</Text>
-        <Meta colors={colors}>{t('help.cheersP')}</Meta>
+        <HelpTopic
+          colors={colors}
+          title={t('help.people')}
+          short={t('help.peopleP')}
+          go={<KeyButton colors={colors} label={t('help.peopleGo')} onPress={() => goHash('/people')} />}
+        />
+        <HelpTopic
+          colors={colors}
+          title={t('help.we')}
+          short={t('help.weP1')}
+          go={<KeyButton colors={colors} label={t('help.weGo')} onPress={() => goHash('/we/new')} />}
+        >
+          <Meta colors={colors}>{t('help.weP2')}</Meta>
+        </HelpTopic>
+        <HelpTopic colors={colors} title={t('help.cheers')} short={t('help.cheersP')} />
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupShop')}>
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.coins')}</Text>
-        <Meta colors={colors}>{t('help.coinsP')}</Meta>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.wishP')}</Meta>
-        <KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('frames.what')}</Text>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('frames.howBody')}</Meta>
-        <KeyButton colors={colors} label={t('frames.all')} onPress={() => goHash('/shop/frames')} />
+        <HelpTopic
+          colors={colors}
+          title={t('help.coins')}
+          short={t('help.coinsP')}
+          go={<KeyButton colors={colors} label={t('help.shopGo')} onPress={() => goHash('/shop')} />}
+        >
+          <Meta colors={colors}>{t('help.wishP')}</Meta>
+        </HelpTopic>
+        <HelpTopic
+          colors={colors}
+          title={t('frames.what')}
+          short={t('frames.howBody')}
+          go={<KeyButton colors={colors} label={t('frames.all')} onPress={() => goHash('/kit')} />}
+        />
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupApp')}>
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.phone')}</Text>
-        <Meta colors={colors}>{t('help.phonePApp')}</Meta>
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.safety')}</Text>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.safetyP')}</Meta>
-        <KeyButton colors={colors} label={t('help.peopleGo')} onPress={() => goHash('/people')} />
-        <KeyButton colors={colors} label={t('settings.account')} onPress={() => goHash('/account')} />
-        <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.legal')}</Text>
-        <Meta colors={colors} style={styles.beforeBtn}>{t('help.legalP')}</Meta>
-        <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
-        <KeyButton colors={colors} label={t('settings.terms')} onPress={() => goHash('/terms')} />
+        <HelpTopic colors={colors} title={t('help.phone')} short={t('help.phonePApp')} />
+        <HelpTopic
+          colors={colors}
+          title={t('help.safety')}
+          short={t('help.safetyP')}
+          go={
+            <>
+              <KeyButton colors={colors} label={t('help.peopleGo')} onPress={() => goHash('/people')} />
+              <KeyButton colors={colors} label={t('settings.account')} onPress={() => goHash('/account')} />
+            </>
+          }
+        />
+        <HelpTopic
+          colors={colors}
+          title={t('help.legal')}
+          short={t('help.legalP')}
+          go={
+            <>
+              <KeyButton colors={colors} label={t('settings.privacy')} onPress={() => goHash('/privacy')} />
+              <KeyButton colors={colors} label={t('settings.terms')} onPress={() => goHash('/terms')} />
+            </>
+          }
+        />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.feedback')}</Text>
         <Meta colors={colors} style={styles.beforeBtn}>{t('help.feedbackP')}</Meta>
         <DidButton
@@ -2517,7 +2579,6 @@ function AccountSignedOut({ on }) {
       <ScreenShell title={t('account.offTitle')} colors={colors}>
         <Meta colors={colors}>{t('account.offBody')}</Meta>
         <Meta colors={colors}>{t('account.offTester')}</Meta>
-        <AccountLinks colors={colors} />
       </ScreenShell>
     )
   }
@@ -2536,7 +2597,6 @@ function AccountSignedOut({ on }) {
       <View style={[styles.lockPanel, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
         <PhoneLockSection colors={colors} />
       </View>
-      <AccountLinks colors={colors} />
     </ScreenShell>
   )
 }
