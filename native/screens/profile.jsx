@@ -111,17 +111,23 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const [outBusy, setOutBusy] = useState(false)
   const [sure, setSure] = useState(null)
   const [restoring, setRestoring] = useState(false)
+  const [sharing, setSharing] = useState(false)
 
   // Signed in, the copy is the whole account, like Account > Download my data.
   async function sendCopy() {
-    if (!account.user) {
-      if (onSendCopy) return onSendCopy()
-      return shareShelf(readShelf()).catch(() => confirmMiss(t('confirm.shareMiss')))
-    }
+    if (sharing) return
+    if (!account.user && onSendCopy) return onSendCopy()
+    setSharing(true)
     try {
-      await shareShelf(await exportAll())
+      const res = await shareShelf(account.user ? await exportAll() : readShelf())
+      // Same line Account > Download my data keeps, so "last copy" stays true.
+      if (res?.action !== 'dismissedAction') {
+        try { localStorage.setItem('did-i-last-copy', new Date().toISOString()) } catch {}
+      }
     } catch (error) {
-      if (error?.name !== 'AbortError') confirmMiss(t('confirm.exportMiss'))
+      if (error?.name !== 'AbortError') confirmMiss(t(account.user ? 'confirm.exportMiss' : 'confirm.shareMiss'))
+    } finally {
+      setSharing(false)
     }
   }
 
@@ -209,6 +215,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             tint={colors.inkSoft}
             label={t('settings.sendCopy')}
             sub={t('settings.sendCopySub')}
+            value={sharing ? t('app.loading') : undefined}
             chevron
             onPress={sendCopy}
           />
