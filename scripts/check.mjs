@@ -10960,6 +10960,12 @@ test('the Android Remind me shortcut is static and a reminder is restored when t
   assert.ok(app.includes("added.error === 'full' || !book"), 'no shelf yet restores the reminder')
 })
 
+test('android widget: the Remind me mic never covers the Did button', () => {
+  const w = readFileSync(new URL('../widgets/android/DidITonightAndroidWidget.jsx', import.meta.url), 'utf8')
+  const at = w.indexOf("didi://open/remind")
+  assert.ok(w.lastIndexOf('{!lead ? (', at) > w.lastIndexOf(') : null}', at - 600), 'mic only shows on all clear')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
