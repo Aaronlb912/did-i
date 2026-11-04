@@ -6,6 +6,7 @@ import { t } from '../../src/lib/i18n.js'
 import { ripple } from '../lib/ripple.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts } from '../theme.js'
+import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 
 // One filter popup for folders and, where the screen passes them, topics.
 // It floats over the page, so nothing below moves, and scrolls when the list
@@ -16,6 +17,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
   const [at, setAt] = useState(null)
   const button = useRef(null)
   const { height } = useWindowDimensions()
+  const reduce = useReduceMotion()
   const ids = tagIdsOf(tagId)
   // Parked folders (empty, once the list is crowded) step aside here too,
   // unless one is picked right now. Your folders still lists them.
@@ -99,6 +101,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
         hitSlop={{ top: inline ? 2 : 6, bottom: inline ? 2 : 6 }}
         android_ripple={ripple(colors.panel3)}
         accessibilityRole="button"
+        accessibilityLabel={t('tags.filterA11y', { name: label })}
         accessibilityState={{ expanded: open }}
         style={[
           styles.pick,
@@ -131,7 +134,7 @@ export function TagFilter({ boards, tagId, onTag, now, colors, topics = [], topi
         </Pressable>
       ) : null}
       </View>
-      <Modal visible={open && Boolean(at)} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <Modal visible={open && Boolean(at)} transparent animationType={reduce ? 'none' : 'fade'} onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessible={false}>
           <Pressable
             accessible={false}
@@ -255,7 +258,7 @@ const styles = StyleSheet.create({
   list: { gap: 2 },
   cap: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', paddingHorizontal: 10, paddingTop: 6 },
   capGap: { marginTop: 8 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 10, gap: 12 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 10, gap: 12, minHeight: 44 },
   rowName: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
   box: { width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   tick: { fontSize: 12, fontWeight: '800', lineHeight: 14 },
