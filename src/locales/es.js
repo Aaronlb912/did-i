@@ -2989,6 +2989,7 @@ export const es = {
   'shop.wishTab': "Lista de deseos",
   'shop.buying': "Comprando…",
   'shop.stillBuying': "Aún comprando",
+  'shop.offline': "Sin señal. Compra cuando vuelvas a tener conexión.",
   'shop.canBuy': "Ya puedes comprarlo",
   'shop.moreCoins': "Faltan {n} monedas",
   'shop.moreGems': "Faltan {n} gemas",

@@ -2985,6 +2985,7 @@ export const it = {
   'shop.wishTab': "Desideri",
   'shop.buying': "Acquisto in corso…",
   'shop.stillBuying': "Acquisto ancora in corso",
+  'shop.offline': "Nessun segnale. Acquista quando torni online.",
   'shop.canBuy': "Puoi comprarlo ora",
   'shop.moreCoins': "Mancano {n} monete",
   'shop.moreGems': "Mancano {n} gemme",

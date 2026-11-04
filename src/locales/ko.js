@@ -2952,6 +2952,7 @@ export const ko = {
   'shop.wishTab': "위시리스트",
   'shop.buying': "구매 중…",
   'shop.stillBuying': "아직 구매 중",
+  'shop.offline': "신호가 없어요. 다시 연결되면 구매하세요.",
   'shop.canBuy': "지금 살 수 있어요",
   'shop.moreCoins': "코인 {n}개 더",
   'shop.moreGems': "보석 {n}개 더",
