@@ -1150,7 +1150,7 @@ function autoShort(question) {
 function whenLine(draft) {
   if (draft.cadence === 'every_n' && !Number(draft.everyN)) return t('hang.everyN')
   if (draft.cadence === 'every' && !Number(draft.everyDays)) return t('hang.every')
-  if (draft.cadence === 'weekly' && !(draft.weekdays || []).length) return t('hang.weekly')
+  if (draft.cadence === 'weekly' && !(draft.weekdays || []).length) return t('hang.pickDays')
   return cadenceLine(draft)
 }
 
@@ -1749,10 +1749,31 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     // A blank folder name on an edit keeps the question where it is.
     const target = bookForTag(boards, existing && sourceBook ? sourceBook : book, hang.tagTitle)
     const words = String(next.question || '').trim().toLowerCase()
-    const twin = (target.lamps || []).some(
-      (item) => !item.archived && !item.paused && item.id !== existing?.id && String(item.question || '').trim().toLowerCase() === words,
+    const twin = (target.lamps || []).find(
+      (item) => item.id !== existing?.id && String(item.question || '').trim().toLowerCase() === words,
     )
-    if (twin && !confirmed) {
+    if (twin?.archived && !confirmed) {
+      publishSheet({
+        title: t('hang.dupPaused'),
+        goLabel: t('hang.dupResume'),
+        moreLabel: t('hang.dupAdd'),
+        closeLabel: t('hang.cancel'),
+        colors,
+        onClose: () => publishSheet(null),
+        onMore: () => {
+          publishSheet(null)
+          save(another, true)
+        },
+        onGo: () => {
+          publishSheet(null)
+          onChange(commitBook(toggleArchive(target, twin), clock))
+          confirmDone(t('confirm.questionResumed'))
+          goHash('/lamps')
+        },
+      })
+      return
+    }
+    if (twin && !twin.archived && !confirmed) {
       publishSheet({
         title: t('hang.dupTitle'),
         goLabel: t('hang.dupAdd'),
@@ -1771,7 +1792,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     if (onSaveTo) onSaveTo(target, next, existing ? sourceBook : null)
     else onChange(commitBook(hangInto(target, next, hang.editing), clock))
     // A check-on follows the question's new words and schedule.
-    if (existing) followCheckOn(existing, next).catch(() => {})
+    if (existing) followCheckOn(existing, next).catch(() => confirmMiss(t('confirm.checkOnMiss')))
     const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
     if (another === true && onAnother && !hang.editing) {
       playClick()
