@@ -828,7 +828,7 @@ function previewBody(type, item, purse) {
   const base = tag.gems ? gemLine(tag.gems) : coinLine(tag.coins)
   if (tag.coins && purse.coins < tag.coins) {
     const short = tag.coins - purse.coins
-    return `${base}\n${t('shop.needMoreCoins', { n: short })} ${t('shop.earnCoins', { cap: NIGHT_COIN_CAP })}`
+    return `${base}\n${t('shop.needMoreCoins', { n: short })} ${t('shop.howEarn', { cap: NIGHT_COIN_CAP })}`
   }
   if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })}`
   return base
@@ -911,7 +911,7 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
     title: name,
     body,
     ...(wish && !tag.owned ? { moreLabel: wish.on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`, moreSizeLabels: [`♥ ${t('shop.wishOn')}`, `♡ ${t('shop.wishAdd')}`], onMore: wish.toggle } : {}),
-    ...(action ? { goLabel: action.label, onGo: action.go } : {}),
+    ...(action ? { goLabel: action.label, onGo: action.go } : short ? { goLabel: t('tonight.backToStack'), onGo: () => { publishSheet(null); goHash('/tonight') } } : {}),
     closeLabel: t('settings.close'),
     colors,
     onClose: () => publishSheet(null),
@@ -1015,7 +1015,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
     // Cheers bought with coins come in stages, which only the cheers page shows.
     if (tag.owned || !(item.gems > 0)) {
       return {
-        label: t('shop.allCheers'),
+        label: t('shop.buyOnCheers'),
         go: () => {
           publishSheet(null)
           goHash('/shop/cheers')
@@ -1090,11 +1090,6 @@ export function ShopScreen({ book, onChange }) {
 
   return (
     <BoardShell book={book} title={t('shop.title')} date={shellDate(book)} colors={colors} showPurse>
-      <Meta colors={colors}>{t('shop.hubHint')}</Meta>
-      {purse.coins < 15 && purse.gems < 2 ? (
-        <Meta colors={colors}>{t('shop.howEarn', { cap: NIGHT_COIN_CAP })}</Meta>
-      ) : null}
-
       <DropCarousel
         slides={slides}
         purse={purse}
@@ -1120,10 +1115,10 @@ export function ShopScreen({ book, onChange }) {
       <SavedRow purse={purse} colors={colors} onTile={onTile} />
 
       {ownAll ? <Meta colors={colors}>{t('shop.ownAll')}</Meta> : null}
+      <FramesShopRow book={book} colors={colors} onChange={onChange} />
       {rows.map((row) => (
         <KindRow key={row.type} type={row.type} list={row.list} cap={row.cap} allLabel={row.allLabel} onAll={() => goHash(row.path)} purse={purse} colors={colors} onTile={onTile} />
       ))}
-      <FramesShopRow book={book} colors={colors} onChange={onChange} />
 
       <View style={[styles.doorCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <ShopDoor
