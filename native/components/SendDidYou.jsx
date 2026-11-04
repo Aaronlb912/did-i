@@ -156,6 +156,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                 <Text accessibilityRole="header" style={[styles.popKicker, { color: colors.on }]}>{t("people.sendTitle")}</Text>
                 <Meta colors={colors}>{t("didYouLink.pickWho")}</Meta>
                 {friends === null ? <Meta colors={colors}>{t("family.loading")}</Meta> : null}
+                {friends?.length === 0 && !loadMiss ? <Meta colors={colors}>{t("people.noFriendsTitle")}</Meta> : null}
                 {friends?.map((row) => (
                   <Pressable
                     key={row.person.user_id}

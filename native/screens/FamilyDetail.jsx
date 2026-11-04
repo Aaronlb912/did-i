@@ -262,7 +262,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
     return (
       <>
         <Text style={{ color: colors.miss }}>{tMiss(miss)}</Text>
-        <DidButton colors={colors} label={t('gift.retry')} onPress={() => { setMiss(''); load() }} />
+        <DidButton colors={colors} label={t('gift.retry')} onPress={() => { setReady(false); setMiss(''); load() }} />
       </>
     )
   }

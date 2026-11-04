@@ -44,12 +44,13 @@ export function FriendsRow({ colors, cheer = null }) {
 
   return (
     <Animated.View style={{ opacity: fade }}>
+    <View style={[styles.wrap, { borderColor: colors.line, backgroundColor: colors.panel }]}>
     <Pressable
       onPress={() => goHash('/people')}
       accessibilityRole="button"
       accessibilityLabel={`${props.title}: ${props.countLine}`}
       hitSlop={6}
-      style={({ pressed }) => [styles.wrap, { borderColor: colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
+      style={({ pressed }) => [styles.open, pressFx(pressed)]}
     >
       <View style={styles.faces}>
         {shown.map((p) => (
@@ -77,6 +78,7 @@ export function FriendsRow({ colors, cheer = null }) {
       <Text style={[styles.count, { color: colors.inkSoft }]} numberOfLines={1}>
         {props.countLine}
       </Text>
+    </Pressable>
       {cheer ? (
         <Animated.View style={{ opacity: cheerFade }}>
         <Pressable
@@ -90,12 +92,13 @@ export function FriendsRow({ colors, cheer = null }) {
         </Pressable>
         </Animated.View>
       ) : null}
-    </Pressable>
+    </View>
     </Animated.View>
   )
 }
 
 const styles = StyleSheet.create({
+  open: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
