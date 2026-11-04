@@ -184,10 +184,18 @@ export function weReminders(cards, night = tonightIso()) {
       cadence: card.cadence,
       weekdays: card.weekdays || [],
       startsOn: card.startsOn,
+      // For the start line: one other person by first name, or how many others.
+      ...weOthers(card),
       // Not yet keeps the day's reminder, as solo questions do. In turns,
       // today's reminder goes only to whoever's turn it is.
       skipNight: card.done || weMine(card)?.status === 'did' || notMyTurn(card) ? night : '',
     }))
+}
+
+function weOthers(card) {
+  const others = (card.people || []).filter((p) => p.state === 'in' && !p.me)
+  const first = String(others[0]?.name || '').trim().split(/s+/)[0]
+  return { buddy: others.length === 1 ? first : '', others: others.length }
 }
 
 export function notMyTurn(card) {

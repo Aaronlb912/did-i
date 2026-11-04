@@ -8,7 +8,7 @@ import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, sendActions } from '../../src/lib/notify-answer.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
-import { lastCallAt } from '../../src/lib/quiet.js'
+import { capSpare, earlyCallAt, lastCallAt, leftNote } from '../../src/lib/quiet.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, nightOpen, waitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
@@ -139,6 +139,11 @@ export async function requestNativePings() {
 const PING_DAYS = 7
 // iOS keeps at most 64 pending; leave room for the streak and cheer pings.
 const PING_CAP = 60
+
+function leftBody(n, at) {
+  const { key, vars } = leftNote(n, at)
+  return t(key, vars)
+}
 const CHANNEL_ID = 'did-i'
 // Set when the whole scheduling run threw; the reminders screen shows a row.
 const PING_FAILED_KEY = 'did-i-ping-failed'
@@ -333,6 +338,9 @@ async function schedulePingsNow(books, now = new Date()) {
             trigger: when(late),
             lateCall: true,
           })
+          // Same reminders switch as the last call. Grouped below.
+          const early = earlyCallAt(year, month, date, readPrefs(), now)
+          if (early) notes.push({ identifier: '', content: { title: 'Did I', data: { go: '/tonight' } }, trigger: when(early), earlyCall: true, day: night })
         }
       }
     }
@@ -348,9 +356,26 @@ async function schedulePingsNow(books, now = new Date()) {
       for (const note of group) notes.splice(notes.indexOf(note), 1)
       notes.push({
         identifier: String(notifyId('late', String(key))),
-        content: { title: 'Did I', body: t('notif.stillOpenMany', { n: group.length }), data: { go: '/tonight' } },
+        content: { title: 'Did I', body: leftBody(group.length, group[0].trigger.date), data: { go: '/tonight' } },
         trigger: group[0].trigger,
         lateCall: true,
+      })
+    }
+    // Earlier note: 2 or more open on one day make one, unless a last call
+    // folded at the same minute already says the count and the hours.
+    const earlyDay = new Map()
+    for (const note of notes.filter((n) => n.earlyCall)) {
+      notes.splice(notes.indexOf(note), 1)
+      earlyDay.set(note.day, [...(earlyDay.get(note.day) || []), note])
+    }
+    for (const group of earlyDay.values()) {
+      const at = group[0].trigger.date
+      if (group.length < 2 || notes.some((n) => n.lateCall && n.trigger.date.getTime() === at.getTime())) continue
+      notes.push({
+        identifier: String(notifyId('early', String(at.getTime()))),
+        content: { title: 'Did I', body: leftBody(group.length, at), data: { go: '/tonight' } },
+        trigger: group[0].trigger,
+        earlyCall: true,
       })
     }
     // Did we questions with a time and the reminder on, from the last list
@@ -371,11 +396,13 @@ async function schedulePingsNow(books, now = new Date()) {
           if (at.getTime() <= now.getTime()) continue
           // Quiet hours can push it into the next day, when this one is closed.
           if (!nightOpen(night, afterQuiet(at))) continue
+          // Entries saved before buddy and others existed keep the question as the body.
+          const together = we.others >= 2 ? t('we.startTogetherMany', { n: we.others }) : we.others === 1 && we.buddy ? t('we.startTogether', { name: we.buddy }) : ''
           notes.push({
             identifier: String(notifyId(`we:${we.id}`, night)),
             content: {
               title: 'Did we',
-              body: readPrefs().pingsPrivate ? t('pings.privateBody') : we.question,
+              body: readPrefs().pingsPrivate ? t('pings.privateBody') : together || we.question,
               data: { go: '/tonight', weId: we.id, night },
               categoryIdentifier: ASK_CATEGORY,
             },
@@ -410,8 +437,7 @@ async function schedulePingsNow(books, now = new Date()) {
     // Over the cap, a later day's question beats a 21:00 last call after
     // tomorrow, so many high questions do not use up the week in three days.
     const soon = now.getTime() + 48 * 60 * 60 * 1000
-    const spare = (note) => (note.lateCall && note.trigger.date.getTime() > soon ? 1 : 0)
-    notes.sort((a, b) => spare(a) - spare(b) || a.trigger.date - b.trigger.date)
+    notes.sort((a, b) => capSpare(a, soon) - capSpare(b, soon) || a.trigger.date - b.trigger.date)
     // Nothing sets reminders while the app stays closed. When they run out
     // (cap or end of the week), one last note asks to open the app.
     const over = notes.length > PING_CAP - 1

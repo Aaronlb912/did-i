@@ -8846,7 +8846,7 @@ await testAsync('readthrough 8: the 9 PM warning fires when last night was froze
   const nextDay = streakRiskFire(book, new Date(2026, 9, 1, 12), heat)
   assert.equal(new Date(nextDay.at).getDate(), 1, 'the 9 PM warning can be built for a later day')
   const nativeShim = readFileSync(path.join(checkRoot, 'native/shim/native.js'), 'utf8')
-  assert.ok(nativeShim.includes('notif.stillOpenMany') && nativeShim.includes('notif.stillOpen\''), 'last calls are merged and prefixed')
+  assert.ok(nativeShim.includes('leftBody(group.length') && nativeShim.includes('notif.stillOpen\''), 'last calls are merged and prefixed')
   const notify = readFileSync(path.join(checkRoot, 'src/lib/notify.js'), 'utf8')
   assert.ok(notify.includes('shelfStreak([book], now)'), 'web pings pass the real streak')
 })
