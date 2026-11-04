@@ -2494,6 +2494,7 @@ export const zh = {
   'remind.hour1': '1 小时',
   'remind.custom': '自定义',
   'remind.minutes': '分钟',
+  'remind.minutesRange': "请选择 5 到 720 分钟。",
   'remind.save': '提醒我',
   'remind.saved': '我会在 {time} 问你',
   'remind.ask': 'Did I {text}？',

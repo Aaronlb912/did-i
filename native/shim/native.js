@@ -7,7 +7,7 @@ import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions } from '../../src/lib/notify-answer.js'
-import { readReminds } from '../../src/lib/remind-me.js'
+import { REMIND_TRIES, readReminds, remindNext } from '../../src/lib/remind-me.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { capNotes, earlyCallAt, lastCallAt, leftNote } from '../../src/lib/quiet.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
@@ -301,9 +301,15 @@ async function scheduleOneRemind(Notifications, item) {
 }
 
 async function scheduleReminds(Notifications) {
-  for (const item of readReminds()) {
-    // Already fired: a re-arm must not ring it again.
-    if (item.at <= Date.now()) continue
+  for (let item of readReminds()) {
+    // Fired over 5 minutes ago with no answer (swiped away, ignored): that counts
+    // as a Not yet, so it asks again. The last try stays on Remind me to answer.
+    if (item.at <= Date.now()) {
+      if (item.at > Date.now() - 5 * 60 * 1000 || item.tries + 1 >= REMIND_TRIES) continue
+      const out = remindNext(item, 'nope')
+      if (!out.item) continue
+      item = out.item
+    }
     try {
       await scheduleOneRemind(Notifications, item)
     } catch {

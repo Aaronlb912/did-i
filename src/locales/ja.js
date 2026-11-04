@@ -2501,6 +2501,7 @@ export const ja = {
   'remind.hour1': '1時間',
   'remind.custom': '自分で決める',
   'remind.minutes': '分',
+  'remind.minutesRange': "5〜720分で選んでください。",
   'remind.save': 'リマインド',
   'remind.saved': '{time} に聞きます',
   'remind.ask': 'Did I {text}？',

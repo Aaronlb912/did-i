@@ -10985,7 +10985,7 @@ test('the Android Remind me shortcut is static and a reminder is restored when t
   assert.ok(xml.includes('android:data="didi://open/remind"'), 'static shortcut opens Remind')
   const qa = readFileSync(new URL('../native/quick-actions.js', import.meta.url), 'utf8')
   assert.ok(qa.includes("ios ? [{ id: 'remind'"), 'Android dynamic list leaves remind out')
-  const app = readFileSync(new URL('../native/NativeApp.jsx', import.meta.url), 'utf8')
+  const app = readFileSync(new URL('../native/lib/remind-answer.js', import.meta.url), 'utf8')
   assert.ok(app.includes("added.error === 'full' || !book"), 'no shelf yet restores the reminder')
 })
 
