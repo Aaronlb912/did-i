@@ -230,22 +230,21 @@ export const HangCard = forwardRef(function HangCard(
       </View>
       </View>
       {meta && metaAction ? (
-        <View style={styles.metaRow}>
+        <Pressable
+          onPress={metaAction.onPress}
+          accessibilityRole="button"
+          accessibilityLabel={metaAction.a11y || metaAction.label}
+          {...metaTour}
+          style={({ pressed }) => [styles.metaRow, pressed && { opacity: 0.6 }]}
+        >
           {/* A new schedule crossfades in, so the line never just snaps. */}
           <Reanimated.Text key={meta} entering={reduce ? undefined : FadeIn.duration(150)} style={[styles.meta, styles.metaGrow, { color: colors.inkSoft }]} numberOfLines={2}>
             {meta}
           </Reanimated.Text>
-          <Pressable
-            onPress={metaAction.onPress}
-            accessibilityRole="button"
-            accessibilityLabel={metaAction.a11y || metaAction.label}
-            hitSlop={8}
-            {...metaTour}
-            style={({ pressed }) => [styles.metaGo, pressed && { opacity: 0.6 }]}
-          >
+          <View style={styles.metaGo}>
             <Text style={[styles.metaGoText, { color: leadColor || colors.on }]}>{metaAction.label}</Text>
-          </Pressable>
-        </View>
+          </View>
+        </Pressable>
       ) : meta ? (
         <Text style={[styles.meta, { color: colors.inkSoft }]} numberOfLines={2}>
           {meta}

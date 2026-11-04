@@ -1504,7 +1504,6 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const [everyOwn, setEveryOwn] = useState(() => draft.cadence === 'every' && ![7, 14, 30].includes(Number(draft.everyDays)))
   const tagName = String(hang.tagTitle || '').trim() || book.title
   const ready = Boolean(draft.question.trim())
-  const detailCount = [draft.notes].filter((v) => String(v || '').trim()).length + (draft.trackAmount ? 1 : 0)
   const topicCount = topicsOf({ kind: draft.kind }).length
   const phone = usePhoneQuiet()
   // The short name shows in full, filled with the one made from the question
@@ -2317,11 +2316,12 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 
           <HangFold
             label={t('hang.details')}
-            value={
-              detailCount
-                ? t(detailCount === 1 ? 'hang.detailsOne' : 'hang.detailsSome', { n: detailCount })
-                : t('hang.detailsNone')
-            }
+            value={[
+              String(draft.notes || '').trim() ? t('hang.notes') : '',
+              draft.trackAmount ? t('hang.detailAmount') : '',
+            ]
+              .filter(Boolean)
+              .join(', ') || t('hang.detailsNone')}
             icon="note"
             open={open === 'details'}
             onToggle={() => fold('details')}

@@ -236,11 +236,11 @@ function ruleParts({ draft, setDraft, open, fold, colors }) {
             onToggle={() => fold('when')}
             colors={colors}
           >
-            <View style={styles.pillRow}>
-              <Pill label={t('we.daily')} on={draft.cadence === 'daily'} onPress={() => set('cadence')('daily')} colors={colors} radio />
-              <Pill label={t('we.someDays')} on={draft.cadence === 'weekly'} onPress={() => set('cadence')('weekly')} colors={colors} radio />
-              <Pill label={t('we.monthly')} on={draft.cadence === 'monthly'} onPress={() => set('cadence')('monthly')} colors={colors} radio />
-            </View>
+            <ScheduleTiles label={t('we.when')}>
+              <ScheduleTile label={t('we.daily')} sub={t('hang.tileSub.daily')} accent={colors.we} on={draft.cadence === 'daily'} onPress={() => set('cadence')('daily')} colors={colors} />
+              <ScheduleTile label={t('we.someDays')} sub={t('hang.tileSub.weekly')} accent={colors.we} on={draft.cadence === 'weekly'} onPress={() => set('cadence')('weekly')} colors={colors} />
+              <ScheduleTile label={t('we.monthly')} sub={t('we.monthlySub')} accent={colors.we} on={draft.cadence === 'monthly'} onPress={() => set('cadence')('monthly')} colors={colors} />
+            </ScheduleTiles>
             {draft.cadence === 'weekly' ? (
               <View style={styles.pillRow}>
                 {DAYS.map((day) => {
@@ -1167,13 +1167,45 @@ function WeCardPage({ book, cardId, onChange }) {
           {card.shows === 'count' ? <Meta colors={colors}>{t('we.countOnly', { total: card.total })}</Meta> : null}
           <View style={[styles.factLine, { borderColor: colors.lineSoft }]}>
             <Cap colors={colors}>{t('we.people')}</Cap>
-            {(card.people || []).map((p) => (
-              <Meta key={p.id} colors={colors}>
-                {p.me ? t('we.you') : p.name}
-                {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
-                {card.mode === 'turns' && card.turn === p.id ? ` · ${t(weWeekKey(card, 'we.tonightsTurn'), { day: weSlotDay(card, readPrefs().locale) })}` : ''}
-              </Meta>
-            ))}
+            {(card.people || []).map((p) => {
+              const open = card.due && !weSlotLocked(card)
+              const canNudge = open && !card.done && weWaiting(card).some((w) => w.id === p.id && !w.nudged)
+              const canCheer = open && cheer.can && !p.me && p.state === 'in' && p.status === 'did'
+              return (
+                <View key={p.id} style={styles.personRow}>
+                  <View style={styles.personCopy}>
+                    <Meta colors={colors}>
+                      {p.me ? t('we.you') : p.name}
+                      {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
+                      {card.mode === 'turns' && card.turn === p.id ? ` · ${t(weWeekKey(card, 'we.tonightsTurn'), { day: weSlotDay(card, readPrefs().locale) })}` : ''}
+                    </Meta>
+                  </View>
+                  {canNudge ? (
+                    <KeyButton
+                      colors={colors}
+                      label={t('we.nudge', { name: p.name })}
+                      disabled={ans.busy === card.id}
+                      onPress={async () => {
+                        publishSheet(null)
+                        const out = await ans.run(card.id, () => weNudge(card.id, p.id))
+                        if (!out?.miss) confirmDone(t('confirm.nudged', { name: p.name }))
+                      }}
+                    />
+                  ) : null}
+                  {canCheer ? (
+                    <KeyButton
+                      colors={colors}
+                      label={t('we.cheerName', { name: p.name })}
+                      disabled={Boolean(cheer.busy)}
+                      onPress={() => {
+                        publishSheet(null)
+                        cheer.cheer(p)
+                      }}
+                    />
+                  ) : null}
+                </View>
+              )
+            })}
           </View>
         </View>
       ),
@@ -1370,36 +1402,6 @@ function WeCardPage({ book, cardId, onChange }) {
             disabled={ans.busy === card.id}
             onPress={() => ans.answer(card, 'nope')}
           />
-          {!card.done
-            ? weWaiting(card)
-                .filter((p) => !p.nudged)
-                .map((p) => (
-                  <KeyButton
-                    key={p.id}
-                    colors={colors}
-                    label={t('we.nudge', { name: p.name })}
-                    disabled={ans.busy === card.id}
-                    onPress={async () => {
-                      const out = await ans.run(card.id, () => weNudge(card.id, p.id))
-                      if (!out?.miss) confirmDone(t('confirm.nudged', { name: p.name }))
-                    }}
-                  />
-                ))
-            : null}
-          {/* Someone already said did: no nudge, a cheer instead. */}
-          {cheer.can
-            ? (card.people || [])
-                .filter((p) => !p.me && p.state === 'in' && p.status === 'did')
-                .map((p) => (
-                  <KeyButton
-                    key={`cheer-${p.id}`}
-                    colors={colors}
-                    label={t('we.cheerName', { name: p.name })}
-                    disabled={Boolean(cheer.busy)}
-                    onPress={() => cheer.cheer(p)}
-                  />
-                ))
-            : null}
         </View>
       ) : null}
       {ans.note ? <Meta colors={colors}>{ans.note}</Meta> : null}
@@ -1646,6 +1648,8 @@ const styles = StyleSheet.create({
   headNames: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 19 },
   moreBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.uiSemi, fontSize: 20, lineHeight: 22 },
+  personRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  personCopy: { flex: 1, minWidth: 100 },
   factLine: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 6, gap: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   gridCell: { flexGrow: 1, flexBasis: '45%' },

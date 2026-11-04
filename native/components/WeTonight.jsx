@@ -277,7 +277,7 @@ export function WeAsks({ colors }) {
       <View style={styles.head}>
         <Text style={[styles.label, { color: colors.ink }]}>{t('we.asksTitle')}</Text>
       </View>
-      {asks.map((card) => (
+      {asks.slice(0, 1).map((card) => (
         <View key={card.id} style={[styles.row, { borderTopColor: colors.line }]}>
           <View style={styles.copy}>
             <Text style={[styles.meta, { color: colors.inkDim }]}>
@@ -292,6 +292,15 @@ export function WeAsks({ colors }) {
           <KeyButton colors={colors} label={t('we.noThanks')} disabled={busy === card.id} onPress={() => reply(card, false)} />
         </View>
       ))}
+      {asks.length > 1 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => goHash('/we')}
+          style={[styles.row, { borderTopColor: colors.line }]}
+        >
+          <Text style={[styles.question, { color: colors.ink }]}>{t('we.asksMore', { n: asks.length - 1 })}</Text>
+        </Pressable>
+      ) : null}
     </View>
   )
 }
@@ -512,9 +521,9 @@ export function WeList({ colors }) {
               <Text style={[styles.status, { color: card.done && card.due ? colors.we || colors.on : colors.ink }]} numberOfLines={1}>
                 {card.paused ? t(weWeekKey(card, 'we.paused')) : card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
               </Text>
-              {card.folder || streak > 0 || goal ? (
+              {streak > 0 || goal ? (
                 <Text style={[styles.meta, { color: colors.inkDim }]} numberOfLines={1}>
-                  {[card.folder, streak > 0 ? t('we.streak', { n: streak }) : '', goal ? t(weWeekKey(card, 'we.goalLine'), { n: goal.done, goal: goal.goal }) : '']
+                  {[streak > 0 ? t('we.streak', { n: streak }) : '', goal ? t(weWeekKey(card, 'we.goalLine'), { n: goal.done, goal: goal.goal }) : '']
                     .filter(Boolean)
                     .join(' · ')}
                 </Text>
