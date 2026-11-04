@@ -57,3 +57,44 @@ export function lastCallAt(year, month, date, at, prefs, now) {
   if (at && when.getTime() <= at.getTime() + 30 * MIN) return null
   return clear(when) ? when : null
 }
+
+const HOUR = 60 * MIN
+const FOLD = 0
+const EARLY_HOURS = 3
+
+// The end of the app day a time belongs to: the next fold hour after it.
+function dayEnd(at, fold = FOLD) {
+  const end = new Date(at.getFullYear(), at.getMonth(), at.getDate(), fold, 0, 0, 0)
+  if (end.getTime() <= at.getTime()) end.setDate(end.getDate() + 1)
+  return end
+}
+
+// Whole hours from `at` to the end of its day, rounded down.
+export function hoursLeft(at, fold = FOLD) {
+  return Math.floor((dayEnd(at, fold).getTime() - at.getTime()) / HOUR)
+}
+
+// The note text key and values for "{n} left" at that moment.
+export function leftNote(n, at, fold = FOLD) {
+  const h = hoursLeft(at, fold)
+  return h < 1 ? { key: 'notif.leftSoon', vars: { n } } : { key: 'notif.leftHours', vars: { n, h } }
+}
+
+// The earlier grouped note, 3 hours before the day folds. Quiet hours that
+// cover it pull it to 30 minutes before they start, or drop it.
+export function earlyCallAt(year, month, date, prefs, now, fold = FOLD) {
+  const clear = (when) => when.getTime() > now.getTime() && quietEnd(when, prefs).getTime() === when.getTime()
+  const end = new Date(year, month - 1, date + 1, fold, 0, 0, 0)
+  const want = new Date(end.getTime() - EARLY_HOURS * HOUR)
+  if (quietEnd(want, prefs).getTime() === want.getTime()) return clear(want) ? want : null
+  const when = new Date(year, month - 1, date, 0, minutesOf(prefs.quietFrom) - 30, 0, 0)
+  if (when.getTime() >= want.getTime()) return null
+  return clear(when) ? when : null
+}
+
+// Cap order, lowest kept first: the earlier note goes before a last call
+// past the next two days, which goes before anything else.
+export function capSpare(note, soon) {
+  if (note.earlyCall) return 2
+  return note.lateCall && note.trigger.date.getTime() > soon ? 1 : 0
+}
