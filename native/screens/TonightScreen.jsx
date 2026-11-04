@@ -716,9 +716,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     nightDone: stack.nightDone,
     dismissed: nudgeGone,
   })
-  // Day N of the first week is the streak the done card already shows.
-  const firstWeek = useMemo(() => daysSinceFirstAnswer(stack.shelf, stack.dateIso) < 7, [stack.shelf, stack.dateIso])
-  const day = gentle || !firstWeek ? 0 : stack.streak
+  // Day N of the first week counts from the first answer, not the streak, so a
+  // missed day or gentle mode does not hold back the first-week rows.
+  const sinceFirst = useMemo(() => daysSinceFirstAnswer(stack.shelf, stack.dateIso), [stack.shelf, stack.dateIso])
+  const firstWeek = sinceFirst < 7
+  const day = firstWeek ? sinceFirst + 1 : 0
   const streakDay = gentle ? 0 : stack.streak
   // 7, 30, 100 and 365 days: a milestone line on the done card, once each,
   // with the biggest cheer (CheerBurst skips it under reduced motion).
@@ -1092,7 +1094,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // Earliest reminder time on any open question, for the day-one line.
   const firstAsk = (stack.shelf || []).flatMap((item) => (item.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => String(lamp.askAfter || ''))).filter((v) => /^\d{2}:\d{2}$/.test(v)).sort()[0] || ''
   const reminderRowUp = !stack.empty && Platform.OS !== 'web' && Boolean(onAskPings) && (pingLabel === 'pings.state.ask' || pingLabel === 'pings.state.blocked')
-  const ctaRow = nightOne ? '' : day === 2 && reminderRowUp ? 'remind' : widgetBtn ? 'widget' : signInNudge && (!firstWeek || day >= 3) ? 'signin' : day === 5 ? 'invite' : ''
+  const ctaRow = nightOne ? '' : widgetBtn ? 'widget' : signInNudge && (!firstWeek || day >= 3) ? 'signin' : day === 5 ? 'invite' : ''
   const extraRow = stack.cheer && !pickKey ? '' : reminderRowUp ? 'reminders' : stack.nightDone ? (dropLineUp(book) ? 'drop' : 'rate') : ''
   // First open of a new week: last week's recap, once. Sunday's done card counts as seen.
   useEffect(() => {
@@ -1323,7 +1325,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               {reminderRowUp ? <WideRow label={t('firstWeek.remind')} colors={colors} onPress={onAskPings} /> : null}
             </>
           ) : null}
-          {ctaRow === 'remind' ? <WideRow label={t('firstWeek.remind')} colors={colors} onPress={onAskPings} /> : null}
           {ctaRow === 'widget' ? <WideRow label={t('nightOne.widget')} colors={colors} onPress={() => pinWidget(colors)} /> : null}
           {ctaRow === 'invite' ? <WideRow label={t('firstWeek.invite')} colors={colors} onPress={() => goHash('/people/refer')} /> : null}
           {stack.streak > 0 && !gentle ? (
