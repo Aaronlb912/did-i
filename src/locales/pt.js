@@ -175,6 +175,8 @@ export const pt = {
   'account.sent': 'Seis dígitos a caminho de {email}. O código vale uma hora.',
   'account.code': 'Código',
   'account.signIn': 'Entrar',
+  'account.working': "Um momento...",
+  'first.pickHint': "{name}. Adiciona esta pergunta a Hoje",
   'account.again': 'Enviar outra vez',
   'account.other': 'Outro email',
   'account.stay': 'Agora não',

@@ -6816,7 +6816,7 @@ test('sync: the shelf is not sent for an account until a pull landed for it on t
 })
 test('sign in: a pull that throws still leaves the sign-in screen', () => {
   const src = readFileSync(path.join(checkRoot, 'src/lib/useAuthSignIn.js'), 'utf8')
-  assert.match(src, /try \{\s*await pullAndMerge\(\)\s*\} catch \{\s*setMiss\(t\('tonight\.syncMiss'\)\)\s*\}\s*signedIn\.current\?\.\(\)/)
+  assert.match(src, /try \{\s*await pullAndMerge\(\)\s*\} catch \{\s*pullMiss = t\('tonight\.syncMiss'\)\s*setMiss\(pullMiss\)\s*\}\s*signedIn\.current\?\.\(pullMiss\)/)
   // Apple, Google, email and reviewer all end in the same finish().
   assert.equal((src.match(/await finish\(\)/g) || []).length, 4)
 })

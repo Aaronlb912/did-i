@@ -171,6 +171,8 @@ export const ko = {
   'account.sent': '6자리 코드를 {email}로 보냈어요. 코드는 1시간 동안 유효해요.',
   'account.code': '코드',
   'account.signIn': '로그인',
+  'account.working': "잠시만요...",
+  'first.pickHint': "{name}. 이 질문을 오늘에 추가해요",
   'account.again': '다시 보내기',
   'account.other': '다른 이메일',
   'account.stay': '나중에',

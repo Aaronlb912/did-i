@@ -174,6 +174,8 @@ export const fr = {
   'account.sent': 'Six chiffres arrivent sur {email}. Le code est bon une heure.',
   'account.code': 'Code',
   'account.signIn': 'Se connecter',
+  'account.working': "Un instant...",
+  'first.pickHint': "{name}. Ajoute cette question à Aujourd’hui",
   'account.again': 'Renvoyer',
   'account.other': 'Autre email',
   'account.stay': 'Pas maintenant',
