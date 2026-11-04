@@ -2147,7 +2147,7 @@ export const ko = {
   'notify.exactBody': 'Did I가 알람을 설정할 수 없으면 Android가 알림과 위젯을 몇 분 늦춰요. Did I의 알람 및 리마인더를 켜 주세요.',
   'notify.exactGo': '설정 열기',
   'notify.firstTitle': "매일 알림을 받을까요?",
-  'notify.firstBody': '질문할 시간이 되면 알려 드리고, 친구나 가족이 Did you나 응원을 보내면 알려 드려요. 설정에서 언제든 바꿀 수 있어요.',
+  'notify.firstBody': '답할 시간이 되면 알려 드려요.',
   'pings.offNote': '이 휴대폰에서 알림이 꺼져 있어요. 알림을 켜면 이 스위치가 적용돼요.',
   'pings.openSettings': '휴대폰 설정 열기',
   'we.title': 'Did we',

@@ -3,6 +3,7 @@
 import { blankLamp } from './board-json.js'
 import { hangInto } from './board-ops.js'
 import { hangStarter } from './starters.js'
+import { addDaysIso, boardDate } from './recurrence.js'
 import { accountSessionOn, readAccountUserId } from './session-id.js'
 
 // Every pack question fits, so taking all packs never silently drops one.
@@ -60,11 +61,17 @@ export function togglePack(picks, pack, max = FIRST_PICKS_MAX) {
 export function firstRunBook(book, picks, own, askAfter, now = new Date()) {
   let next = book
   const ids = []
+  // A pack item keeps its own time for the reminder. Typed questions and
+  // items with none take the picked time.
+  const times = new Map()
   for (const pick of picks || []) {
     const before = new Set((next.lamps || []).map((lamp) => lamp.id))
     next = hangStarter(next, pick, now, true)
     const added = (next.lamps || []).find((lamp) => !before.has(lamp.id))
-    if (added) ids.push(added.id)
+    if (added) {
+      ids.push(added.id)
+      times.set(added.id, String(pick.askAfter || '').trim() || askAfter || '')
+    }
   }
   if (own?.question) {
     const lamp = {
@@ -76,10 +83,13 @@ export function firstRunBook(book, picks, own, askAfter, now = new Date()) {
     }
     next = hangInto(next, lamp)
     ids.push(lamp.id)
+    times.set(lamp.id, askAfter || '')
   }
-  if (askAfter) {
-    const set = new Set(ids)
-    next = { ...next, lamps: (next.lamps || []).map((lamp) => (set.has(lamp.id) ? { ...lamp, askAfter } : lamp)) }
+  // Open now on the setup day; the time gate starts tomorrow (askFrom).
+  const askFrom = addDaysIso(boardDate(now), 1)
+  next = {
+    ...next,
+    lamps: (next.lamps || []).map((lamp) => (times.get(lamp.id) ? { ...lamp, askAfter: times.get(lamp.id), askFrom } : lamp)),
   }
   return { book: next, faceId: ids[0] || '' }
 }

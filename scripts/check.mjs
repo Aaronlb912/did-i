@@ -4567,7 +4567,7 @@ test('first run picks questions and packs, adds them with one time, face is the 
   const made = firstRunBook(book, picks, { question: 'Did I water the fern?', short: 'Fern' }, '21:00', new Date(2026, 9, 5, 15))
   const live = made.book.lamps.filter((lamp) => !lamp.archived)
   assert.equal(live.length, picks.length + 1)
-  assert.ok(live.every((lamp) => lamp.askAfter === '21:00'), 'every question gets the reminder time')
+  assert.ok(live.every((lamp) => lamp.askAfter), 'every question gets a reminder time')
   assert.equal(made.faceId, live.find((lamp) => lamp.question === picks[0].question).id)
   assert.equal(firstRunBook(book, [], null, '21:00').faceId, '')
 })
@@ -11045,6 +11045,37 @@ test('widget fixes: foreign carried taps, leave-account card, kept taps noted', 
   assert.ok(read('native/widget-sync.js').includes('foreign ? [] : unmatched.filter'))
   assert.ok(read('native/lib/leave-account.js').includes('await clearAndroidWidget()'))
   assert.ok(read('native/widget-tap.android.js').includes('if (!failed.includes(tap)) noteTaken'))
+})
+
+test('first day: new questions are open now, the picked time starts tomorrow, a pack keeps its own time', async () => {
+  const { askAfterPassed } = await import('../src/lib/recurrence.js')
+  const now = new Date(2026, 9, 5, 14)
+  const book = { ...emptyBoard('first-day'), lamps: [], answers: [] }
+  const pack = PACKS.find((one) => one.id === 'bedtime').items[0]
+  const plain = starterList().find((one) => !one.askAfter) || { ...starterList()[0], askAfter: '' }
+  const made = firstRunBook(book, [pack, plain], { question: 'Did I water the fern?', short: 'Fern' }, '21:00', now)
+  const lamps = made.book.lamps.filter((lamp) => !lamp.archived)
+  assert.equal(lamps.length, 3)
+  for (const lamp of lamps) assert.equal(askAfterPassed(lamp, now), true, 'open at 2 PM on the setup day')
+  const tomorrow = new Date(2026, 9, 6, 14)
+  const byQuestion = (q) => lamps.find((lamp) => lamp.question === q)
+  const typed = byQuestion('Did I water the fern?')
+  assert.equal(typed.askAfter, '21:00', 'typed question takes the picked time for the reminder')
+  assert.equal(askAfterPassed(typed, tomorrow), false, 'the picked time holds from tomorrow')
+  assert.equal(askAfterPassed(typed, new Date(2026, 9, 6, 21, 5)), true)
+  const packed = lamps.find((lamp) => lamp.idea === pack.idea)
+  assert.equal(packed.askAfter, pack.askAfter, 'a pack item keeps its own time')
+  const bare = lamps.find((lamp) => lamp.idea === plain.idea)
+  assert.equal(bare.askAfter, '21:00', 'an item with no time takes the picked one')
+})
+
+test('first day copy and fixes: reminder-only ask line, folder fallback, early come-back for new shelves', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
+  assert.ok(more.includes("book?.title || t('enter.boardHint')"), 'the folder name falls back to Home, not Did I')
+  assert.ok(readFileSync(path.join(root, 'src/locales/en.js'), 'utf8').includes("Get a nudge when it"), 'the first ask is a reminder-only line')
+  const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.ok(tonight.includes('isNewShelf(stack.shelf) ? 2 : COME_BACK_DAYS'), 'a new shelf gets the come-back card after one missed day')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

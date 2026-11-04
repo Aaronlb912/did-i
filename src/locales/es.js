@@ -2176,7 +2176,7 @@ export const es = {
   'notify.exactGo': 'Abrir ajustes',
   'notify.firstTitle': "¿Un aviso diario?",
   'notify.firstBody':
-    'Did I puede recordarte cuando toca una pregunta y avisarte cuando un amigo o familiar te manda un Did you o un ánimo. Puedes cambiarlo cuando quieras en Ajustes.',
+    'Recibe un aviso cuando sea hora de responder.',
   'pings.offNote':
     'Los avisos están apagados en este teléfono, así que estos interruptores esperan a que los enciendas.',
   'pings.openSettings': 'Abrir ajustes del teléfono',

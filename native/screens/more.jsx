@@ -1609,7 +1609,7 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
       return
     }
     const keeperName = person.trim()
-    const boardTitle = title.trim() || book?.title || 'Did I'
+    const boardTitle = title.trim() || book?.title || t('enter.boardHint')
     setMiss('')
     onSaveKeeper?.({ keeperName, title: boardTitle })
     finish()

@@ -2170,7 +2170,7 @@ export const en = {
   'notify.exactGo': 'Open settings',
   'notify.firstTitle': "Get a daily nudge?",
   'notify.firstBody':
-    'Did I can remind you when a question is due, and tell you when a friend or family member sends a Did you or a cheer. You can change this any time in Settings.',
+    'Get a nudge when it\'s time to answer.',
   'pings.offNote':
     'Notifications are off on this phone, so these switches wait until you turn them on.',
   'pings.openSettings': 'Open phone settings',

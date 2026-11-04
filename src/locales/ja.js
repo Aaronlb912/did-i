@@ -2145,7 +2145,7 @@ export const ja = {
   'notify.exactBody': 'Did I にアラームの設定を許可しないと、Android はリマインダーとウィジェットを数分遅らせます。Did I の「アラームとリマインダー」をオンにしてください。',
   'notify.exactGo': '設定を開く',
   'notify.firstTitle': "日にお知らせしますか？",
-  'notify.firstBody': '質問の時間になったらお知らせし、友だちや家族から Did you や応援が届いたときにも知らせます。設定からいつでも変えられます。',
+  'notify.firstBody': '答える時間になったらお知らせします。',
   'pings.offNote': 'この端末では通知がオフです。通知をオンにすると、これらのスイッチが有効になります。',
   'pings.openSettings': '端末の設定を開く',
   'we.title': 'Did we',

@@ -2175,7 +2175,7 @@ export const it = {
   'notify.exactGo': 'Apri impostazioni',
   'notify.firstTitle': "Un promemoria ogni giorno?",
   'notify.firstBody':
-    'Did I può ricordarti quando arriva una domanda e avvisarti quando un amico o un familiare ti manda un Did you o un incoraggiamento. Puoi cambiarlo quando vuoi in Impostazioni.',
+    'Ricevi un promemoria quando è ora di rispondere.',
   'pings.offNote':
     'Le notifiche sono spente su questo telefono, quindi questi interruttori aspettano che tu le accenda.',
   'pings.openSettings': 'Apri le impostazioni del telefono',

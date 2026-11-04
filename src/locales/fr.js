@@ -2178,7 +2178,7 @@ export const fr = {
   'notify.exactGo': 'Ouvrir les réglages',
   'notify.firstTitle': "Un petit rappel chaque jour ?",
   'notify.firstBody':
-    'Did I peut te rappeler quand une question arrive et te prévenir quand un ami ou un proche t’envoie un Did you ou un encouragement. Tu peux changer ça à tout moment dans Réglages.',
+    'Reçois un rappel quand il est temps de répondre.',
   'pings.offNote':
     'Les notifications sont coupées sur ce téléphone, donc ces interrupteurs attendent que tu les actives.',
   'pings.openSettings': 'Ouvrir les réglages du téléphone',

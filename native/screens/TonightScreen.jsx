@@ -40,7 +40,7 @@ import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
 import { CHEER_STAGE_MAX, LOOKS, NIGHT_COIN_CAP, coinsToday, fireCheer, isGemLook, mergePurses, shopRow, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { ACCESSORIES } from '../../src/lib/accessories.js'
 import { awayKey, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
-import { cameBack, daysSinceFirstAnswer } from '../../src/lib/come-back.js'
+import { COME_BACK_DAYS, cameBack, daysSinceFirstAnswer } from '../../src/lib/come-back.js'
 import { answerFor, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
 import { lastTimeLine, perWeekLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
@@ -1003,7 +1003,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }
   const graceWeOpen = graceNight ? weOpenOn(graceNight) : new Set()
   // Back after 3+ missed days: no grace card. Its words promise a streak that is gone.
-  const returning = useMemo(() => cameBack(stack.shelf, stack.dateIso), [stack.shelf, stack.dateIso])
+  const returning = useMemo(() => cameBack(stack.shelf, stack.dateIso, isNewShelf(stack.shelf) ? 2 : COME_BACK_DAYS), [stack.shelf, stack.dateIso])
   const graceItems = returning ? [] : [
     ...stack.graceOpen.map((row) => ({
       key: `grace:${stack.rowKey(row)}:${row.periodKey}`,

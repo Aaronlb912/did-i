@@ -263,6 +263,8 @@ export function normalizeLamp(raw) {
     dueBy:
       cadence === 'once' && lamp.onceWhen === 'by' ? asString(lamp.dueBy).trim() : '',
     askAfter,
+    // First day askAfter holds; before it the question is open all day.
+    ...(askAfter && /^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.askFrom).trim()) ? { askFrom: asString(lamp.askFrom).trim() } : {}),
     slot,
     notes: asString(lamp.notes),
     priority: lampPriority(lamp),
