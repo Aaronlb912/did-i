@@ -2,7 +2,7 @@ import { Linking } from 'react-native'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
-import { armLampPings, checkPings, requestPings } from '../../src/lib/notify.js'
+import { armLampPings, canAskPingsAgain, checkPings, requestPings } from '../../src/lib/notify.js'
 import { publishSheet, whenNoSheet } from '../components/SheetHost.jsx'
 import { offerExactAlarms } from './exact-alarms.js'
 
@@ -41,7 +41,8 @@ function markPrimerShown(key = KEY) {
 // firing it cold. At most once per phone, and only while it has not been asked.
 async function showPrimer({ title, body, colors, key = KEY }) {
   if (primerShown(key)) return
-  if ((await checkPings().catch(() => 'missing')) !== 'default') return
+  const now = await checkPings().catch(() => 'missing')
+  if (now !== 'default' && !(now === 'denied' && canAskPingsAgain())) return
   shownThisRun = true
   await whenNoSheet()
   // Marked once it is about to show: an app closed while waiting keeps the ask.
@@ -96,7 +97,7 @@ export function offerPingPrimerAgain(colors) {
 // once the phone has said no, only its settings can undo that.
 export async function askPingsNow(colors) {
   const state = await checkPings().catch(() => 'missing')
-  if (state === 'denied') {
+  if (state === 'denied' && !canAskPingsAgain()) {
     Linking.openSettings().catch(() => {})
     return state
   }

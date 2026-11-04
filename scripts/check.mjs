@@ -9955,9 +9955,9 @@ await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an ho
   // A week of nudges plus question reminders still fits the 60 the phone keeps (iOS holds 64).
   const native = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
   assert.match(native, /const PING_CAP = 60/)
-  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: [^,]+, reminders, shift: afterQuiet, times \}\)[\s\S]*notes\.length = Math\.min\(notes\.length, PING_CAP - 1\)/)
+  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: [^,]+, reminders, shift: afterQuiet, times \}\)[\s\S]*capNotes\(notes, PING_CAP - 1 - waitingReminds\)/)
   // Nothing re-arms while the app is closed: the last slot asks to open it.
-  assert.match(native, /notes\.length = Math\.min\(notes\.length, PING_CAP - 1\)[\s\S]*notifyId\('renew', 'pings'\)[\s\S]*t\('pings\.renew'\)/)
+  assert.match(native, /capNotes\(notes, PING_CAP - 1 - waitingReminds\)[\s\S]*notifyId\('renew', 'pings'\)[\s\S]*t\('pings\.renew'\)/)
   assert.ok(all.length <= 60)
 })
 
@@ -11298,6 +11298,28 @@ test('Did we link: blocked lookup is in the apply order and the app shows it', (
   const sql = readFileSync('supabase/we-link-blocked.sql', 'utf8')
   assert.ok(sql.includes('drop function if exists public.look_up_we_link(text)') && sql.includes('blocked boolean'))
   assert.ok(readFileSync('native/components/DidYouLinkHost.jsx', 'utf8').includes('found?.blocked'))
+})
+
+test('reminder cap: question reminders win slots over last calls and nudges', async () => {
+  const { capNotes } = await import('../src/lib/quiet.js')
+  const at = (day, hour) => ({ trigger: { date: new Date(2026, 10, 5 + day, hour) } })
+  const notes = []
+  for (let day = 0; day < 7; day += 1) {
+    for (let q = 0; q < 9; q += 1) notes.push({ ...at(day, 8 + q), id: `q${day}-${q}` })
+    for (let q = 0; q < 9; q += 1) notes.push({ ...at(day, 21), lateCall: true })
+    notes.push({ ...at(day, 9), nudge: true })
+  }
+  const { kept, over } = capNotes(notes, 50)
+  assert.equal(over, true)
+  assert.equal(kept.length, 50)
+  const questions = notes.filter((n) => n.id)
+  assert.ok(questions.length > 50)
+  assert.ok(kept.every((n) => n.id), 'only questions fill the cap')
+  assert.deepEqual(kept.map((n) => n.id), questions.slice(0, 50).map((n) => n.id), 'soonest questions first')
+  const few = capNotes(notes.filter((n) => n.id).slice(0, 10).concat(notes.filter((n) => n.lateCall || n.nudge)), 30)
+  assert.equal(few.kept.filter((n) => n.id).length, 10, 'every question kept')
+  assert.ok(few.kept.some((n) => n.nudge), 'nudges take the next slots')
+  assert.equal(capNotes([], 5).over, false)
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

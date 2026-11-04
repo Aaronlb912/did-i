@@ -1506,6 +1506,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const ready = Boolean(draft.question.trim())
   const topicCount = topicsOf({ kind: draft.kind }).length
   const phone = usePhoneQuiet()
+  const remindersOff = usePrefs().pingsOff.includes('reminders')
   // The short name shows in full, filled with the one made from the question
   // until they type their own, so it never changes behind their back.
   const [shortTyped, setShortTyped] = useState(false)
@@ -1856,6 +1857,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       <SetRow colors={colors} icon="bell" label={t('hang.reminder')} sub={t('hang.priority.hint.low')} value={t('hang.remindOff')} last={last} />
     ) : phone.quiet ? (
       <QuietReminderRow colors={colors} onTurnOn={() => phone.turnOn(colors)} last={last} />
+    ) : remindersOff && draft.askAfter ? (
+      <SetRow colors={colors} icon="bell" label={t('hang.remindsOffRow')} chevron last={last} onPress={() => goHash('/pings')} />
     ) : (
       <SetSwitch
         label={t('hang.reminder')}

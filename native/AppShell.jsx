@@ -9,7 +9,7 @@ import { readShelf } from '../src/lib/board-shelf.js'
 import { readTour } from '../src/lib/first-run.js'
 import { firstPullWaiting, useSync } from '../src/lib/cloud-sync.js'
 import { authGated } from '../src/lib/auth-gate.js'
-import { armLampPings, checkPings, pingButtonLabel, pingSupport, requestPings } from '../src/lib/notify.js'
+import { armLampPings, canAskPingsAgain, checkPings, pingButtonLabel, pingSupport, requestPings } from '../src/lib/notify.js'
 import { useAutoAdd } from '../src/lib/people.js'
 import { t } from '../src/lib/i18n.js'
 import { markInfo, markLabel } from '../src/lib/achievements.js'
@@ -262,7 +262,7 @@ export function AppShell() {
   const leaveLegal = useCallback(() => goHash('/enter'), [])
   const askPings = useCallback(async () => {
     // Once the phone has said no it will not ask again; only its settings can undo that.
-    if (pingState === 'denied') {
+    if (pingState === 'denied' && !canAskPingsAgain()) {
       Linking.openSettings().catch(() => {})
       return
     }

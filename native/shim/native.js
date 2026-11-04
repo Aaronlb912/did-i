@@ -9,7 +9,7 @@ import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions } from '../../src/lib/notify-answer.js'
 import { readReminds } from '../../src/lib/remind-me.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
-import { capSpare, earlyCallAt, lastCallAt, leftNote } from '../../src/lib/quiet.js'
+import { capNotes, earlyCallAt, lastCallAt, leftNote } from '../../src/lib/quiet.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
@@ -104,6 +104,12 @@ function notifyId(lampId, periodKey) {
   return (hash % 2147483646) + 1
 }
 
+// Android says denied before it has ever asked; this tells that from a block.
+let canAsk = true
+export function pingsCanAskAgain() {
+  return canAsk
+}
+
 export async function checkNativePings() {
   try {
     const { verifyNotificationPermission } = await import('../lib/notification-perms.js')
@@ -113,9 +119,8 @@ export async function checkNativePings() {
       return 'missing'
     }
     if (check.status === 'granted') return 'granted'
-    // Android reports denied before it has ever asked; canAskAgain tells the two apart.
-    if (check.status === 'denied' && !check.canAskAgain) return 'denied'
-    if (check.status === 'denied') return 'default'
+    canAsk = check.canAskAgain !== false
+    if (check.status === 'denied') return 'denied'
     return 'default'
   } catch {
     return 'missing'
@@ -491,13 +496,11 @@ async function schedulePingsNow(books, now = new Date()) {
     // hour clear of any question's own reminder. Re-armed on every answer.
     if (pingOn('day')) {
       const reminders = notes.map((note) => note.trigger.date)
-      // Only the room the cap leaves, so a nudge never crowds out a question.
-      const room = PING_CAP - notes.length
       // With the morning ask on, the first one comes at its picked time,
       // asks for today's questions and opens the morning sheet.
       const { morningAsk: morning, morningAt, afternoonAt } = readPrefs()
       const times = [morning ? morningAt || MORNING_AT_DEFAULT : DAY_NUDGE_TIMES[0], afternoonAt || AFTERNOON_AT_DEFAULT]
-      for (const nudge of dayNudges(list, now, { days: (aheads[aheads.length - 1] ?? 0) + 1, reminders, shift: afterQuiet, times }).slice(0, Math.max(0, room))) {
+      for (const nudge of dayNudges(list, now, { days: (aheads[aheads.length - 1] ?? 0) + 1, reminders, shift: afterQuiet, times })) {
         const ask = morning && nudge.slot === 0
         notes.push({
           identifier: String(notifyId('day', nudge.at.toISOString())),
@@ -507,20 +510,17 @@ async function schedulePingsNow(books, now = new Date()) {
             data: ask ? { go: '/tonight', morning: true } : { go: '/tonight' },
           },
           trigger: when(nudge.at),
+          nudge: true,
         })
       }
     }
-    // Over the cap, a later day's question beats a 21:00 last call after
-    // tomorrow, so many high questions do not use up the week in three days.
-    const soon = now.getTime() + 48 * 60 * 60 * 1000
-    notes.sort((a, b) => capSpare(a, soon) - capSpare(b, soon) || a.trigger.date - b.trigger.date)
-    // Nothing sets reminders while the app stays closed. When they run out
-    // (cap or end of the week), one last note asks to open the app.
-    const over = notes.length > PING_CAP - 1
-    notes.length = Math.min(notes.length, PING_CAP - 1)
+    // Over the cap, question reminders keep their slots soonest first; day
+    // nudges and last calls only take what is left (capNotes).
     // Waiting Remind me notes count toward the same 64.
     const waitingReminds = readReminds().filter((item) => item.at > Date.now()).length
-    notes.length = Math.min(notes.length, PING_CAP - 1 - waitingReminds)
+    const capped = capNotes(notes, PING_CAP - 1 - waitingReminds)
+    notes.splice(0, notes.length, ...capped.kept)
+    const over = capped.over
     const regularCount = notes.length
     // A week away: the last question reminder in the window becomes one gentle
     // push. It is never repeated, and the next open sets reminders fresh.
@@ -537,7 +537,7 @@ async function schedulePingsNow(books, now = new Date()) {
     }
     if (reminders && notes.length) {
       const last = Math.max(...notes.map((note) => note.trigger.date.getTime()))
-      const renewAt = new Date(over ? last + 60 * 1000 : last + 24 * 60 * 60 * 1000)
+      const renewAt = new Date(last + 60 * 1000)
       // when() moves it past quiet hours.
       notes.push({
         identifier: String(notifyId('renew', 'pings')),
