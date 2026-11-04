@@ -45,6 +45,9 @@ import {
   FireworksOver,
   SunnyOver,
   RoyalOver,
+  VineOver,
+  EmberOver,
+  GemsOver,
   WrappedOver,
   GalaxyOver,
   NeonHeartOver,
@@ -1062,143 +1065,11 @@ function RingOver({ f }) {
 
 /* ---------- Earned frames ---------- */
 
-function VineOver({ f }) {
-  const S = svgAll()
-  const streak = Number(f.p.streak) || 0
-  const v = useMemo(() => vineLayout(streak, f.w, f.h, f.R), [streak, f.w, f.h, f.R])
-  return (
-    <Layer f={f}>
-      <S.Defs>
-        <S.LinearGradient id="lf" x1="0" y1="0" x2="1" y2="1">
-          <S.Stop offset="0" stopColor="#a6e889" />
-          <S.Stop offset="1" stopColor="#3c8636" />
-        </S.LinearGradient>
-        <S.RadialGradient id="pt">
-          <S.Stop offset="0" stopColor="#fff2f7" />
-          <S.Stop offset="0.6" stopColor="#f7b3cc" />
-          <S.Stop offset="1" stopColor="#e57aa3" />
-        </S.RadialGradient>
-      </S.Defs>
-      <S.Path d={rrPath(0, 0, f.w, f.h, f.R)} fill="none" stroke="#3f7a35" strokeWidth={3.2} strokeLinecap="round" strokeDasharray={`${v.usable} ${v.length}`} />
-      {v.leaves.map((l, i) => (
-        <S.Ellipse key={`l${i}`} cx={l.x} cy={l.y} rx={8} ry={3.8} fill="url(#lf)" transform={`rotate(${l.rot} ${l.x} ${l.y})`} />
-      ))}
-      {v.flowers.map((fl, i) => (
-        <S.G key={`f${i}`} transform={`translate(${fl.x} ${fl.y}) rotate(${fl.rot})`}>
-          {[0, 72, 144, 216, 288].map((r) => (
-            <S.Ellipse key={r} rx={fl.sz} ry={fl.sz * 0.62} cx={fl.sz * 0.82} fill="url(#pt)" transform={`rotate(${r})`} />
-          ))}
-          <S.Circle r={fl.sz * 0.42} fill="#ffd86b" />
-        </S.G>
-      ))}
-      <S.Circle cx={v.tip.x} cy={v.tip.y} r={3.4} fill="#a6e889" />
-    </Layer>
-  )
-}
-
-function emberAt(time, it, w, h) {
-  'worklet'
-  const p = (((time + it.off) / it.life) % 1 + 1) % 1
-  const age = p * it.life
-  const y = h - it.vy * age
-  return { x: it.x * w + it.vx * age + Math.sin(time * 3 + y * 0.05) * 6, y, o: 1 - p }
-}
-
 function EmberUnder({ f }) {
   return (
     <Layer f={f}>
       <Halo f={f} from={0} spread={26} color="#ff5a1e" opacity={0.22} />
     </Layer>
-  )
-}
-
-function EmberOver({ f }) {
-  const S = svgAll()
-  const items = useItems(() => {
-    const rnd = seeded(30)
-    return Array.from({ length: 26 }, (_, i) => ({
-      x: rnd(),
-      vx: (rnd() - 0.5) * 36,
-      vy: 36 + rnd() * 84,
-      life: 1.7 + rnd() * 1.1,
-      off: rnd() * 3,
-      r: 1 + rnd() * 2.2,
-      warm: i % 2 === 0,
-    }))
-  }, [])
-  const flicker = (time) => {
-    'worklet'
-    return { opacity: 0.78 + 0.22 * Math.sin(time * 6) }
-  }
-  return (
-    <>
-      <Mover f={f} fn={flicker}>
-        <Layer f={f}>
-          <S.Defs>
-            <S.LinearGradient id="eg" x1="0" y1="0" x2="0" y2="1">
-              <S.Stop offset="0" stopColor="#ff7828" stopOpacity="0" />
-              <S.Stop offset="1" stopColor="#ff6e28" stopOpacity="0.45" />
-            </S.LinearGradient>
-          </S.Defs>
-          {/* Trimmed to the card's round corners, so the glow never pokes past them. */}
-          <RoundClip f={f} o={0} id="ebc">
-            <S.Rect x={0} y={f.h - 70} width={f.w} height={70} fill="url(#eg)" />
-          </RoundClip>
-        </Layer>
-      </Mover>
-      <Layer f={f}>
-        <Ring f={f} k={0.5} color="rgba(255,140,60,0.55)" width={1} />
-      </Layer>
-      {items.map((it, i) => (
-        <Particle key={i} clock={f.clock} item={it} fn={emberAt} w={f.w} h={f.h} size={it.r * 2}>
-          <View style={{ width: it.r * 2, height: it.r * 2, borderRadius: it.r, backgroundColor: it.warm ? '#ffd27a' : '#ff7a2a' }} />
-        </Particle>
-      ))}
-    </>
-  )
-}
-
-function sparkleAt(time, it) {
-  'worklet'
-  const a = Math.max(0, Math.sin(time * 1.6 + it.ph))
-  return { x: it.x, y: it.y, o: a < 0.6 ? 0 : a, s: a }
-}
-
-function GemsOver({ f }) {
-  const S = svgAll()
-  const lit = Array.isArray(f.p.weekLit) ? f.p.weekLit : []
-  const xs = Array.from({ length: 7 }, (_, i) => f.w * (0.12 + i * 0.127))
-  const sparks = useMemo(() => xs.map((x, i) => ({ x, y: f.h + 2 - 8, ph: i * 1.7 })), [f.w, f.h])
-  return (
-    <>
-      <Layer f={f}>
-        <S.Defs>
-          <S.LinearGradient id="gm" x1="0" y1="0" x2="1" y2="1">
-            <S.Stop offset="0" stopColor="#fff6d6" />
-            <S.Stop offset="0.55" stopColor="#ffd25e" />
-            <S.Stop offset="1" stopColor="#d99a1e" />
-          </S.LinearGradient>
-        </S.Defs>
-        <Ring f={f} k={0.75} color="#ffd25e" width={1.5} opacity={0.45} />
-        {xs.map((x, i) => {
-          const on = Boolean(lit[i])
-          return (
-            <S.G key={i} transform={`translate(${x} ${f.h + 2})`}>
-              {on ? <S.Circle r={14} fill="#ffd25e" opacity={0.18} /> : null}
-              <S.Path d="M0.00 -11.00 L2.70 -3.72 L10.46 -3.40 L4.37 1.42 L6.47 8.90 L0.00 4.60 L-6.47 8.90 L-4.37 1.42 L-10.46 -3.40 L-2.70 -3.72 Z" fill={on ? 'url(#gm)' : f.c.line} stroke={on ? '#fff6d6' : 'none'} strokeWidth={0.8} strokeLinejoin="round" />
-            </S.G>
-          )
-        })}
-      </Layer>
-      {sparks.map((it, i) =>
-        lit[i] ? (
-          <Particle key={i} clock={f.clock} item={it} fn={sparkleAt} w={f.w} h={f.h} size={16}>
-            <View style={[styles.sparkH, { backgroundColor: '#fff3c4' }]} />
-            <View style={[styles.sparkV, { backgroundColor: '#fff3c4' }]} />
-          </Particle>
-        ) : null,
-      )}
-    </>
   )
 }
 
@@ -1631,7 +1502,7 @@ export const FRAME_ART = {
   const: { over: ConstOver, animated: true },
   ring: { over: RingOver, animated: true },
   aurora: { under: AuroraUnder, animated: true },
-  vine: { over: VineOver },
+  vine: { over: VineOver, animated: true },
   ember: { under: EmberUnder, over: EmberOver, animated: true },
   gems: { over: GemsOver, animated: true },
   frost: { over: FrostOver, animated: true },
@@ -1663,8 +1534,8 @@ export const FRAME_ART = {
   clover: { over: CloverOver },
   fireworks: { over: FireworksOver, animated: true },
   sunny: { over: SunnyOver, animated: true },
-  royal: { over: RoyalOver },
-  wrapped: { over: WrappedOver },
+  royal: { over: RoyalOver, animated: true },
+  wrapped: { over: WrappedOver, animated: true },
   linked: { over: LinkedOver },
   bedtime: { over: BedtimeOver, animated: true },
   countdown: { over: CountdownOver, animated: true },

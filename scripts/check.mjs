@@ -6866,6 +6866,11 @@ await testAsync('frames: still frames cost coins, animated cost gems, and the se
     if (['free', 'earned', 'season'].includes(frame.kind)) assert.ok(!F.frameForSale(frame.id), `${frame.id} is never sold`)
     for (const field of ['name', 'desc', 'f1', 'f2', 'f3']) assert.ok(F.frameText(frame.id, field) in en, `${frame.id} ${field} string`)
   }
+  // These animated earned frames have to say so in the art map too, or its clock never starts.
+  const artMap = readFileSync('native/components/frames/art.jsx', 'utf8')
+  for (const frame of F.FRAMES) {
+    if (frame.animated && ['vine', 'ember', 'gems', 'royal', 'wrapped'].includes(frame.id)) assert.ok(new RegExp(`\\n  ${frame.id}: \\{[^}\\n]*animated: true`).test(artMap), `${frame.id} is animated in the art map`)
+  }
   assert.equal(F.frameRarity(F.frameById('thin')), 'common')
   assert.equal(F.frameRarity(F.frameById('wood')), 'rare')
   assert.equal(F.frameRarity(F.frameById('glow')), 'epic')

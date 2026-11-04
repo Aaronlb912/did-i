@@ -4,7 +4,7 @@
 // may reach PAD past the card; f.p carries the night, f.pull the swipe.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
-import { rrLength, rrPath, rrPointAt } from './geometry.js'
+import { rrLength, rrPath, rrPointAt, vineLayout } from './geometry.js'
 import { Moving, Particle, SvgLayer, svgAll } from './runtime.jsx'
 import { BuddyArt } from '../BuddyArt.jsx'
 
@@ -821,10 +821,22 @@ export function SunnyOver({ f }) {
 
 // Royal (100-day streak): a velvet band in a bevelled gold rim, a jeweled
 // crown, gems at the corners, full laurels and a slow glint round the gold.
+function gemTwinkle(time, it) {
+  'worklet'
+  const q = (((time - it.i) / 7) % 1 + 1) % 1
+  if (q > 0.16) return { x: it.x, y: it.y, o: 0, s: 0 }
+  const k = Math.sin((q / 0.16) * Math.PI)
+  return { x: it.x, y: it.y, o: k, s: 0.5 + 1.1 * k, r: q * 3 }
+}
+function crownPulse(time, it) {
+  'worklet'
+  const k = 0.5 + 0.5 * Math.sin(time * 2.6)
+  return { x: it.x, y: it.y, o: 0.25 + 0.5 * k, s: 0.9 + 0.7 * k }
+}
 function glintAt(time, it, w, h) {
   'worklet'
   const p = edgeAt(time * it.speed + it.start, -it.o, -it.o, w + 2 * it.o, h + 2 * it.o, it.R + it.o)
-  return { x: p.x, y: p.y, o: 0.55 + 0.45 * Math.sin(time * 3), s: 1 }
+  return { x: p.x, y: p.y, o: 0.85 + 0.15 * Math.sin(time * 3), s: 1 }
 }
 export function RoyalOver({ f }) {
   const S = svgAll()
@@ -833,10 +845,10 @@ export function RoyalOver({ f }) {
   const y = -11
   const o = 10
   const loop = rrLength(f.w + 2 * o, f.h + 2 * o, f.R + o)
-  const glint = { o, R: f.R, speed: loop / 11, start: 0 }
+  const glint = { o, R: f.R, speed: loop / 6, start: 0 }
   const sparks = useMemo(() => {
     const r = seeded(33)
-    return spots(f, o, 5, 0.1).map((p) => ({ x: p.x, y: p.y, r: 1.3, sp: 0.8 + r() * 1.4, ph: r() * 6, col: '#fff3c4' }))
+    return spots(f, o, 5, 0.1).map((p) => ({ x: p.x, y: p.y, r: 1.3, sp: 1.6 + r() * 1.6, ph: r() * 6, col: '#fff3c4' }))
   }, [f.w, f.h, f.R])
   const corners = [
     [f.R, f.R, -1, -1],
@@ -844,6 +856,12 @@ export function RoyalOver({ f }) {
     [f.w - f.R, f.h - f.R, 1, 1],
     [f.R, f.h - f.R, -1, 1],
   ].map(([x, yy, sx, sy], i) => ({ x: x + sx * (f.R + o) * 0.7071, y: yy + sy * (f.R + o) * 0.7071, col: i % 2 ? '#4aa3ff' : '#ff5a6e' }))
+  const slots = [
+    ...corners.map((c, i) => ({ x: c.x, y: c.y, i })),
+    { x: cx - k * 0.6, y: y + k * 0.35, i: 4 },
+    { x: cx, y: y + k * 0.3, i: 5 },
+    { x: cx + k * 0.6, y: y + k * 0.35, i: 6 },
+  ]
   const laurel = (x0, y0, dir) => {
     const R0 = 28
     const leaves = Array.from({ length: 8 }, (_, i) => {
@@ -912,9 +930,21 @@ export function RoyalOver({ f }) {
         {jewel(cx + k * 0.6, y + k * 0.35, 2.4, '#4ade9a')}
       </Layer>
       <Star f={f} items={sparks} />
-      <Particle clock={f.clock} item={glint} fn={glintAt} w={f.w} h={f.h} size={22}>
-        <View style={{ position: 'absolute', left: 3, top: 3, width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff3c4', opacity: 0.35 }} />
-        <View style={{ position: 'absolute', left: 8, top: 8, width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffffff' }} />
+      <Particle clock={f.clock} item={{ x: cx, y: y + k * 0.3 }} fn={crownPulse} w={f.w} h={f.h} size={24}>
+        <View style={{ position: 'absolute', left: 2, top: 2, width: 20, height: 20, borderRadius: 10, backgroundColor: '#ff5a6e' }} />
+      </Particle>
+      {slots.map((p, i) => (
+        <Particle key={i} clock={f.clock} item={p} fn={gemTwinkle} w={f.w} h={f.h} size={22}>
+          <S.Svg width={22} height={22} viewBox="-11 -11 22 22">
+            <S.Path d={starD(0, 0, 10)} fill="#ffffff" />
+          </S.Svg>
+        </Particle>
+      ))}
+      <Particle clock={f.clock} item={glint} fn={glintAt} w={f.w} h={f.h} size={40}>
+        <View style={{ position: 'absolute', left: 4, top: 4, width: 32, height: 32, borderRadius: 16, backgroundColor: '#fff3c4', opacity: 0.4 }} />
+        <View style={{ position: 'absolute', left: 0, top: 19, width: 40, height: 2, borderRadius: 1, backgroundColor: '#ffffff', opacity: 0.8 }} />
+        <View style={{ position: 'absolute', left: 19, top: 0, width: 2, height: 40, borderRadius: 1, backgroundColor: '#ffffff', opacity: 0.8 }} />
+        <View style={{ position: 'absolute', left: 14, top: 14, width: 12, height: 12, borderRadius: 6, backgroundColor: '#ffffff' }} />
       </Particle>
     </>
   )
@@ -924,29 +954,38 @@ export function RoyalOver({ f }) {
 // a full bow that sways, a gift tag, and a small sparkle puff now and then.
 function bowSway(time, it) {
   'worklet'
-  return { x: it.x, y: it.y, o: 1, r: Math.sin(time * 1.6) * 0.06 }
+  return { x: it.x, y: it.y, o: 1, r: Math.sin(time * 2.2) * 0.16, s: 1 + 0.05 * Math.sin(time * 4.4) }
+}
+function tailSwing(time, it) {
+  'worklet'
+  return { x: it.x, y: it.y, o: 1, r: -it.dir * 0.22 * Math.sin(time * 2.8 + it.ph) }
 }
 function puffAt(time, it) {
   'worklet'
-  const q = (((time + it.off) / 6) % 1 + 1) % 1
-  if (q > 0.25) return { x: it.x, y: it.y, o: 0, r: 0 }
-  const k = q / 0.25
-  return { x: it.x + it.dx * k, y: it.y + it.dy * k + 10 * k * k, o: 1 - k, r: k * 3 }
+  const q = (((time + it.off) / 4) % 1 + 1) % 1
+  if (q > 0.45) return { x: it.x, y: it.y, o: 0, r: 0, s: 0 }
+  const k = q / 0.45
+  return { x: it.x + it.dx * k, y: it.y + it.dy * k + 26 * k * k, o: 1 - k * k, r: k * 5, s: 0.6 + 0.6 * k }
 }
-function BowArt({ S, col, dark, gold }) {
+function BowArt({ S, col, dark, gold, part = 'all' }) {
   const k = 15
   return (
     <>
-      <S.Path d={`M-2 2 L${-k * 0.9} ${k * 1.25} L${-k * 0.45} ${k * 1.1} L-1 ${k * 0.5}Z`} fill={gold} stroke={dark} strokeWidth={0.8} />
-      <S.Path d={`M2 2 L${k * 0.9} ${k * 1.25} L${k * 0.45} ${k * 1.1} L1 ${k * 0.5}Z`} fill={gold} stroke={dark} strokeWidth={0.8} />
-      <S.Path d={`M0 0 C${-k * 1.9} ${-k * 1.5} ${-k * 2.4} ${k * 0.9} 0 0Z`} fill={col} stroke={dark} strokeWidth={1} />
-      <S.Path d={`M0 0 C${k * 1.9} ${-k * 1.5} ${k * 2.4} ${k * 0.9} 0 0Z`} fill={col} stroke={dark} strokeWidth={1} />
-      <S.Path d={`M${-k * 0.4} ${-k * 0.2} C${-k * 1.1} ${-k * 0.7} ${-k * 1.3} ${-k * 0.1} ${-k * 0.5} ${-k * 0.05}`} fill="none" stroke="#ffd6cf" strokeWidth={1.2} strokeLinecap="round" />
-      <S.Path d={`M${k * 0.4} ${-k * 0.2} C${k * 1.1} ${-k * 0.7} ${k * 1.3} ${-k * 0.1} ${k * 0.5} ${-k * 0.05}`} fill="none" stroke="#ffd6cf" strokeWidth={1.2} strokeLinecap="round" />
-      <S.Circle r={k * 0.4} fill={gold} stroke={dark} strokeWidth={1} />
+      {part === 'all' || part === 'left' ? <S.Path d={`M-2 2 L${-k * 0.9} ${k * 1.25} L${-k * 0.45} ${k * 1.1} L-1 ${k * 0.5}Z`} fill={gold} stroke={dark} strokeWidth={0.8} /> : null}
+      {part === 'all' || part === 'right' ? <S.Path d={`M2 2 L${k * 0.9} ${k * 1.25} L${k * 0.45} ${k * 1.1} L1 ${k * 0.5}Z`} fill={gold} stroke={dark} strokeWidth={0.8} /> : null}
+      {part === 'all' || part === 'loops' ? (
+        <>
+          <S.Path d={`M0 0 C${-k * 1.9} ${-k * 1.5} ${-k * 2.4} ${k * 0.9} 0 0Z`} fill={col} stroke={dark} strokeWidth={1} />
+          <S.Path d={`M0 0 C${k * 1.9} ${-k * 1.5} ${k * 2.4} ${k * 0.9} 0 0Z`} fill={col} stroke={dark} strokeWidth={1} />
+          <S.Path d={`M${-k * 0.4} ${-k * 0.2} C${-k * 1.1} ${-k * 0.7} ${-k * 1.3} ${-k * 0.1} ${-k * 0.5} ${-k * 0.05}`} fill="none" stroke="#ffd6cf" strokeWidth={1.2} strokeLinecap="round" />
+          <S.Path d={`M${k * 0.4} ${-k * 0.2} C${k * 1.1} ${-k * 0.7} ${k * 1.3} ${-k * 0.1} ${k * 0.5} ${-k * 0.05}`} fill="none" stroke="#ffd6cf" strokeWidth={1.2} strokeLinecap="round" />
+          <S.Circle r={k * 0.4} fill={gold} stroke={dark} strokeWidth={1} />
+        </>
+      ) : null}
     </>
   )
 }
+const CONFETTI = ['#f2c35c', '#fff3d6', '#ff9ab8', '#7bd3ff']
 export function WrappedOver({ f }) {
   const S = svgAll()
   const cx = f.w / 2
@@ -962,12 +1001,12 @@ export function WrappedOver({ f }) {
   }, [f.w, f.h])
   const puffs = useMemo(() => {
     const r = seeded(5)
-    return [0, 1.7, 3.4].map((off, i) => ({
-      off,
-      x: f.w * (0.2 + 0.3 * i) + r() * 10,
-      y: -14,
-      dx: (r() - 0.5) * 30,
-      dy: -14 - r() * 8,
+    return [0, 1, 2, 3, 4, 5].map((i) => ({
+      off: i * 0.67,
+      x: f.w * (0.1 + 0.16 * i) + r() * 8,
+      y: -16,
+      dx: (r() - 0.5) * 44,
+      dy: -18 - r() * 10,
     }))
   }, [f.w])
   return (
@@ -1002,15 +1041,29 @@ export function WrappedOver({ f }) {
           </S.G>
         ) : null}
       </Layer>
+      {[
+        ['left', 1, 0],
+        ['right', -1, 1.3],
+      ].map(([part, dir, ph]) => (
+        <Particle key={part} clock={f.clock} item={{ x: cx, y, dir, ph }} fn={tailSwing} w={f.w} h={f.h} size={90}>
+          <S.Svg width={90} height={90} viewBox="-45 -45 90 90">
+            <BowArt S={S} col={col} dark={dark} gold={gold} part={part} />
+          </S.Svg>
+        </Particle>
+      ))}
       <Particle clock={f.clock} item={{ x: cx, y }} fn={bowSway} w={f.w} h={f.h} size={90}>
         <S.Svg width={90} height={90} viewBox="-45 -45 90 90">
-          <BowArt S={S} col={col} dark={dark} gold={gold} />
+          <BowArt S={S} col={col} dark={dark} gold={gold} part="loops" />
         </S.Svg>
       </Particle>
       {puffs.map((p, i) => (
-        <Particle key={i} clock={f.clock} item={p} fn={puffAt} w={f.w} h={f.h} size={14}>
-          <S.Svg width={14} height={14} viewBox="-7 -7 14 14">
-            <S.Path d={starD(0, 0, 5)} fill={i % 2 ? gold : cream} />
+        <Particle key={i} clock={f.clock} item={p} fn={puffAt} w={f.w} h={f.h} size={16}>
+          <S.Svg width={16} height={16} viewBox="-8 -8 16 16">
+            {i % 2 ? (
+              <S.Path d={starD(0, 0, 6)} fill={CONFETTI[i % 4]} stroke={dark} strokeWidth={0.5} />
+            ) : (
+              <S.Rect x={-3} y={-1.8} width={6} height={3.6} fill={CONFETTI[(i + 1) % 4]} stroke={dark} strokeWidth={0.5} />
+            )}
           </S.Svg>
         </Particle>
       ))}
@@ -1268,6 +1321,318 @@ export function StormOver({ f }) {
           <S.Path d={bolt} fill="none" stroke="#fff6a8" strokeWidth={2.4} strokeLinejoin="round" />
         </Layer>
       </Moving>
+    </>
+  )
+}
+
+/* ---------- Earned frames, trophy pass (2026-11-03): Vine, Ember, Week stars ---------- */
+
+// Vine (3-day streak): the first reward, so it stays simple. Stem and flowers
+// hold still, the leaves sway in two groups that swing against each other, and
+// one or two buds slowly swell.
+function swayA(time) {
+  'worklet'
+  return { transform: [{ rotate: `${Math.sin(time * 1.1) * 0.014}rad` }] }
+}
+function swayB(time) {
+  'worklet'
+  return { transform: [{ rotate: `${Math.sin(time * 1.1 + 2.4) * 0.014}rad` }] }
+}
+function budAt(time, it) {
+  'worklet'
+  return { x: it.x, y: it.y, o: 1, s: 1 + 0.16 * Math.sin(time * 1.5 + it.ph), r: it.deg * 0.01745 }
+}
+function BudArt({ S }) {
+  return (
+    <>
+      <S.Ellipse cx={0} cy={-2.2} rx={2.3} ry={3.6} fill="#f7b3cc" stroke="#e57aa3" strokeWidth={0.6} />
+      <S.Path d="M-3 0.6 Q0 -1.4 3 0.6 Q0 3 -3 0.6Z" fill="#4f9a45" />
+    </>
+  )
+}
+function VineLeaves({ S, id, leaves }) {
+  return (
+    <>
+      <S.Defs>
+        <S.LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <S.Stop offset="0" stopColor="#a6e889" />
+          <S.Stop offset="1" stopColor="#3c8636" />
+        </S.LinearGradient>
+      </S.Defs>
+      {leaves.map((l, i) => (
+        <S.Ellipse key={i} cx={l.x} cy={l.y} rx={8} ry={3.8} fill={`url(#${id})`} transform={`rotate(${l.rot} ${l.x} ${l.y})`} />
+      ))}
+    </>
+  )
+}
+export function VineOver({ f }) {
+  const S = svgAll()
+  const streak = Number(f.p.streak) || 0
+  const v = useMemo(() => vineLayout(streak, f.w, f.h, f.R), [streak, f.w, f.h, f.R])
+  const evens = v.leaves.filter((_, i) => i % 2 === 0)
+  const odds = v.leaves.filter((_, i) => i % 2 === 1)
+  const n = v.leaves.length
+  const buds = useMemo(() => {
+    if (n < 3) return []
+    const at = n < 6 ? [Math.floor(n / 2)] : [Math.floor(n * 0.3), Math.floor(n * 0.72)]
+    return at.map((i, j) => ({ x: v.leaves[i].x, y: v.leaves[i].y, ph: j * 2.1, deg: v.leaves[i].rot }))
+  }, [v, n])
+  return (
+    <>
+      <Layer f={f}>
+        <S.Defs>
+          <S.RadialGradient id="vnPt">
+            <S.Stop offset="0" stopColor="#fff2f7" />
+            <S.Stop offset="0.6" stopColor="#f7b3cc" />
+            <S.Stop offset="1" stopColor="#e57aa3" />
+          </S.RadialGradient>
+        </S.Defs>
+        <S.Path d={rrPath(0, 0, f.w, f.h, f.R)} fill="none" stroke="#3f7a35" strokeWidth={3.2} strokeLinecap="round" strokeDasharray={`${v.usable} ${v.length}`} />
+        {v.flowers.map((fl, i) => (
+          <S.G key={`f${i}`} transform={`translate(${fl.x} ${fl.y}) rotate(${fl.rot})`}>
+            {[0, 72, 144, 216, 288].map((r) => (
+              <S.Ellipse key={r} rx={fl.sz} ry={fl.sz * 0.62} cx={fl.sz * 0.82} fill="url(#vnPt)" transform={`rotate(${r})`} />
+            ))}
+            <S.Circle r={fl.sz * 0.42} fill="#ffd86b" />
+          </S.G>
+        ))}
+        <S.Circle cx={v.tip.x} cy={v.tip.y} r={3.4} fill="#a6e889" />
+      </Layer>
+      <Moving clock={f.clock} fn={swayA} style={FILL}>
+        <Layer f={f}>
+          <VineLeaves S={S} id="vnLfA" leaves={evens} />
+        </Layer>
+      </Moving>
+      <Moving clock={f.clock} fn={swayB} style={FILL}>
+        <Layer f={f}>
+          <VineLeaves S={S} id="vnLfB" leaves={odds} />
+        </Layer>
+      </Moving>
+      {f.still ? (
+        <Layer f={f}>
+          {buds.map((b, i) => (
+            <S.G key={i} transform={`translate(${b.x} ${b.y}) rotate(${b.deg})`}>
+              <BudArt S={S} />
+            </S.G>
+          ))}
+        </Layer>
+      ) : null}
+      {buds.map((b, i) => (
+        <Particle key={i} clock={f.clock} item={b} fn={budAt} w={f.w} h={f.h} size={14}>
+          <S.Svg width={14} height={14} viewBox="-7 -7 14 14">
+            <BudArt S={S} />
+          </S.Svg>
+        </Particle>
+      ))}
+    </>
+  )
+}
+
+// Ember (30-day streak): a charcoal band with glowing coals, two coal groups
+// that flicker out of step, a warm glow along the bottom and a few sparks that
+// drift up the sides, clear of the card's text.
+function coalA(time) {
+  'worklet'
+  return { opacity: 0.6 + 0.4 * Math.sin(time * 4.6) * Math.sin(time * 1.3 + 0.5) }
+}
+function coalB(time) {
+  'worklet'
+  return { opacity: 0.6 + 0.4 * Math.sin(time * 5.4 + 2) * Math.sin(time * 1.7) }
+}
+function glowFlicker(time) {
+  'worklet'
+  return { opacity: 0.72 + 0.28 * Math.sin(time * 6) * Math.sin(time * 2.3 + 1) }
+}
+function sparkUp(time, it, w, h) {
+  'worklet'
+  const p = (((time + it.off) / it.life) % 1 + 1) % 1
+  const age = p * it.life
+  return { x: it.x + Math.sin(time * 2 + it.off * 5) * 4 + it.vx * age, y: h + 4 - it.vy * age, o: Math.sin(Math.min(1, p * 5) * Math.PI * 0.5) * (1 - p) }
+}
+export function EmberOver({ f }) {
+  const S = svgAll()
+  const o = 9
+  const coals = useMemo(() => {
+    const r = seeded(30)
+    return spots(f, o / 2, 26, 0.02).map((p, i) => ({ x: p.x, y: p.y, r: 2.1 + r() * 1.1, grp: i % 2, hot: p.y > f.h * 0.5 }))
+  }, [f.w, f.h, f.R])
+  const sparks = useMemo(() => {
+    const r = seeded(31)
+    return Array.from({ length: 8 }, (_, i) => ({
+      x: i % 2 ? f.w + 2 + r() * 6 : -2 - r() * 6,
+      vx: (i % 2 ? 1 : -1) * (2 + r() * 4),
+      vy: 20 + r() * 22,
+      life: 2.6 + r() * 1.6,
+      off: i * 0.55 + r(),
+      r: 1 + r() * 1.3,
+      warm: i % 3 !== 0,
+    }))
+  }, [f.w, f.h])
+  const cores = (grp) =>
+    coals
+      .filter((c) => c.grp === grp)
+      .map((c, i) => (
+        <S.G key={i}>
+          <S.Circle cx={c.x} cy={c.y} r={c.r + 1.4} fill="#ff5a1e" opacity={0.3} />
+          <S.Circle cx={c.x} cy={c.y} r={c.r} fill={c.hot ? '#ff8a2a' : '#e8561c'} />
+          <S.Circle cx={c.x} cy={c.y} r={c.r * 0.45} fill="#ffe08a" />
+        </S.G>
+      ))
+  return (
+    <>
+      <Layer f={f}>
+        <S.Defs>
+          <S.LinearGradient id="emvB" x1="0" y1="0" x2="0" y2="1">
+            <S.Stop offset="0" stopColor="#2a1512" />
+            <S.Stop offset="1" stopColor="#4a1c0a" />
+          </S.LinearGradient>
+          <S.LinearGradient id="emvR" x1="0" y1="0" x2="0" y2="1">
+            <S.Stop offset="0" stopColor="#8a3a1a" />
+            <S.Stop offset="1" stopColor="#ff8a2a" />
+          </S.LinearGradient>
+        </S.Defs>
+        <S.Path d={band(f, o)} fillRule="evenodd" fill="url(#emvB)" />
+        <S.Path d={ring(f, o)} fill="none" stroke="url(#emvR)" strokeWidth={2.4} />
+        <S.Path d={ring(f, 0.8)} fill="none" stroke="#ff9a4a" strokeOpacity={0.55} strokeWidth={1} />
+        {coals.map((c, i) => (
+          <S.Circle key={i} cx={c.x} cy={c.y} r={c.r} fill="#6a2a10" />
+        ))}
+      </Layer>
+      <Moving clock={f.clock} fn={coalA} style={FILL}>
+        <Layer f={f}>{cores(0)}</Layer>
+      </Moving>
+      <Moving clock={f.clock} fn={coalB} style={FILL}>
+        <Layer f={f}>{cores(1)}</Layer>
+      </Moving>
+      <Moving clock={f.clock} fn={glowFlicker} style={FILL}>
+        <Layer f={f}>
+          <S.Defs>
+            <S.LinearGradient id="emvG" x1="0" y1="0" x2="0" y2="1">
+              <S.Stop offset="0" stopColor="#ff7828" stopOpacity="0" />
+              <S.Stop offset="1" stopColor="#ff6e28" stopOpacity="0.35" />
+            </S.LinearGradient>
+            <S.ClipPath id="emvC">
+              <S.Path d={rrPath(0, 0, f.w, f.h, f.R)} />
+            </S.ClipPath>
+          </S.Defs>
+          <S.G clipPath="url(#emvC)">
+            <S.Rect x={0} y={f.h - 44} width={f.w} height={44} fill="url(#emvG)" />
+          </S.G>
+          <S.Path d={ring(f, o + 3)} fill="none" stroke="#ff6a1e" strokeOpacity={0.22} strokeWidth={5} />
+        </Layer>
+      </Moving>
+      {sparks.map((it, i) => (
+        <Particle key={i} clock={f.clock} item={it} fn={sparkUp} w={f.w} h={f.h} size={it.r * 2}>
+          <View style={{ width: it.r * 2, height: it.r * 2, borderRadius: it.r, backgroundColor: it.warm ? '#ffd27a' : '#ff7a2a' }} />
+        </Particle>
+      ))}
+    </>
+  )
+}
+
+// Week stars: a deep midnight band set with faceted gems and seven faceted
+// gold stars along the bottom (a finished day lights one). A slow shimmer
+// travels the rim and the lit stars flash now and then.
+function starFacets(cx, cy, R, r, light, dark) {
+  const pts = Array.from({ length: 10 }, (_, i) => {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5
+    const q = i % 2 ? r : R
+    return [(cx + q * Math.cos(a)).toFixed(2), (cy + q * Math.sin(a)).toFixed(2)]
+  })
+  return {
+    facets: pts.map((p, i) => {
+      const n = pts[(i + 1) % 10]
+      return { d: `M${cx} ${cy}L${p[0]} ${p[1]}L${n[0]} ${n[1]}Z`, fill: i % 2 ? dark : light }
+    }),
+    outline: `M${pts.map((p) => p.join(' ')).join('L')}Z`,
+  }
+}
+function gemShimmer(time, it, w, h) {
+  'worklet'
+  const p = edgeAt(time * it.speed + it.start, -it.o, -it.o, w + 2 * it.o, h + 2 * it.o, it.R + it.o)
+  return { x: p.x, y: p.y, o: 0.5 + 0.4 * Math.sin(time * 1.6), s: 1 }
+}
+function starFlash(time, it) {
+  'worklet'
+  const q = (((time + it.ph) / 3.4) % 1 + 1) % 1
+  if (q > 0.25) return { x: it.x, y: it.y, o: 0, s: 0 }
+  const k = Math.sin((q / 0.25) * Math.PI)
+  return { x: it.x, y: it.y, o: k, s: 0.4 + k, r: q * 2 }
+}
+const GEM_TONES = [
+  ['#7cc4ff', '#2f6fd0'],
+  ['#d9a8ff', '#7b3fc4'],
+  ['#7cf0c8', '#1f9a78'],
+  ['#ff9ab8', '#c43f6a'],
+]
+export function GemsOver({ f }) {
+  const S = svgAll()
+  const lit = Array.isArray(f.p.weekLit) ? f.p.weekLit : []
+  const o = 16
+  const sy = f.h + o / 2
+  const xs = Array.from({ length: 7 }, (_, i) => f.w * (0.12 + i * 0.127))
+  const gems = useMemo(
+    () => spots(f, o / 2, 18, 0.01).filter((p) => !(p.y > f.h - 2 && p.x > f.w * 0.04 && p.x < f.w * 0.96)).map((p, i) => ({ ...p, tone: GEM_TONES[i % 4] })),
+    [f.w, f.h, f.R],
+  )
+  const twinkle = useMemo(() => {
+    const r = seeded(14)
+    return gems.slice(0, 6).map((g) => ({ x: g.x, y: g.y, r: 1, sp: 0.6 + r() * 0.8, ph: r() * 6, col: '#e8f4ff' }))
+  }, [gems])
+  const loop = rrLength(f.w + 2 * o, f.h + 2 * o, f.R + o)
+  const shimmer = { o, R: f.R, speed: loop / 14, start: 0 }
+  const flashes = xs.map((x, i) => ({ x, y: sy, ph: i * 0.9 })).filter((_, i) => lit[i])
+  return (
+    <>
+      <Layer f={f}>
+        <S.Defs>
+          <S.LinearGradient id="gmsB" x1="0" y1="0" x2="1" y2="1">
+            <S.Stop offset="0" stopColor="#10243f" />
+            <S.Stop offset="0.5" stopColor="#1a1450" />
+            <S.Stop offset="1" stopColor="#0c2f3a" />
+          </S.LinearGradient>
+          <S.LinearGradient id="gmsR" x1="0" y1="0" x2="1" y2="1">
+            <S.Stop offset="0" stopColor="#fff1c2" />
+            <S.Stop offset="0.5" stopColor="#e2b75a" />
+            <S.Stop offset="1" stopColor="#8a6420" />
+          </S.LinearGradient>
+        </S.Defs>
+        <S.Path d={band(f, o)} fillRule="evenodd" fill="url(#gmsB)" />
+        <S.Path d={ring(f, o)} fill="none" stroke="url(#gmsR)" strokeWidth={2.6} />
+        <S.Path d={ring(f, 1)} fill="none" stroke="#e2b75a" strokeOpacity={0.6} strokeWidth={1} />
+        {gems.map((g, i) => (
+          <S.G key={i}>
+            <S.Path d={`M${g.x} ${g.y - 4.2}L${g.x + 3.4} ${g.y}L${g.x} ${g.y + 4.2}L${g.x - 3.4} ${g.y}Z`} fill={g.tone[1]} stroke="#0a1220" strokeWidth={0.6} />
+            <S.Path d={`M${g.x} ${g.y - 4.2}L${g.x + 3.4} ${g.y}L${g.x} ${g.y}L${g.x - 3.4} ${g.y}Z`} fill={g.tone[0]} />
+            <S.Path d={`M${g.x} ${g.y - 4.2}L${g.x - 3.4} ${g.y}L${g.x} ${g.y}Z`} fill="#ffffff" opacity={0.45} />
+          </S.G>
+        ))}
+        {xs.map((x, i) => {
+          const on = Boolean(lit[i])
+          const st = starFacets(x, sy, 9.4, 4, on ? '#fff3c0' : '#3a4a68', on ? '#e8a91e' : '#27334c')
+          return (
+            <S.G key={i}>
+              {on ? <S.Circle cx={x} cy={sy} r={12} fill="#ffd25e" opacity={0.2} /> : null}
+              {st.facets.map((s, j) => (
+                <S.Path key={j} d={s.d} fill={s.fill} />
+              ))}
+              <S.Path d={st.outline} fill="none" stroke={on ? '#8a6420' : '#16203a'} strokeWidth={0.7} strokeLinejoin="round" />
+            </S.G>
+          )
+        })}
+      </Layer>
+      <Star f={f} items={twinkle} />
+      <Particle clock={f.clock} item={shimmer} fn={gemShimmer} w={f.w} h={f.h} size={30}>
+        <View style={{ position: 'absolute', left: 5, top: 5, width: 20, height: 20, borderRadius: 10, backgroundColor: '#bfe3ff', opacity: 0.3 }} />
+        <View style={{ position: 'absolute', left: 11, top: 11, width: 8, height: 8, borderRadius: 4, backgroundColor: '#ffffff' }} />
+      </Particle>
+      {flashes.map((it, i) => (
+        <Particle key={i} clock={f.clock} item={it} fn={starFlash} w={f.w} h={f.h} size={18}>
+          <S.Svg width={18} height={18} viewBox="-9 -9 18 18">
+            <S.Path d={starD(0, 0, 8)} fill="#fff8d8" />
+          </S.Svg>
+        </Particle>
+      ))}
     </>
   )
 }
