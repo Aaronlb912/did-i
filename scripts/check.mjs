@@ -11256,6 +11256,22 @@ test('monthly Did we: slot day is paused until the month ends, and the widget an
   assert.match(readFileSync('src/lib/widget-tonight.js', 'utf8'), /weOpenPastList/)
 })
 
+test('findable: Other settings, Frames and buddies, topic folds, People waiting rows, signed-out account has no duplicate links', async () => {
+  const { readFileSync } = await import('node:fs')
+  const en = readFileSync('src/locales/en.js', 'utf8')
+  assert.ok(en.includes("'settings.more': \"Other settings\"") && en.includes("'mast.menu': 'More'"), 'Settings subpage is Other settings; menu header stays More')
+  assert.ok(en.includes("'kit.cog': \"Frames and buddies\""), 'menu row reads Frames and buddies')
+  const more = readFileSync('native/screens/more.jsx', 'utf8')
+  assert.ok(more.includes('function HelpTopic') && more.includes("t('help.more')"), 'help topics fold longer text behind a More row')
+  assert.ok(!more.includes("goHash('/shop/frames')") && more.includes("t('frames.all')} onPress={() => goHash('/kit')"), 'help frames link opens /kit')
+  assert.ok(more.includes("t('help.widgetGo')"), 'widget help has a Go button')
+  const signedOut = more.slice(more.indexOf('function AccountSignedOut'), more.indexOf('function deviceSeen'))
+  assert.ok(!signedOut.includes('<AccountLinks'), 'signed-out account drops the duplicate Settings and People rows')
+  const social = readFileSync('native/screens/social.jsx', 'utf8')
+  assert.ok(['people.waitFriends', 'people.waitWe', 'people.waitInbox'].every((k) => social.includes(k)), 'People lists waiting items at the top')
+  assert.ok(readFileSync('native/screens/profile.jsx', 'utf8').includes("goHash('/pings')"), 'Settings top card has a Reminders row')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
