@@ -391,8 +391,11 @@ export async function pullWidgetTimelineIntoShelf(shelf) {
     // Only Did: a carried Not yet would be the widget's lead when nothing else is open.
     const oldest = addDaysIso(boardDate(new Date()), -1)
     const seen = new Set()
-    pendingFor = readAccountUserId()
-    pendingTaps = unmatched.filter((item) => {
+    // Taps read after the account changed belong to the old one: drop them.
+    const me = readAccountUserId()
+    const foreign = Boolean(pendingFor) && pendingFor !== me
+    pendingFor = me
+    pendingTaps = foreign ? [] : unmatched.filter((item) => {
       const key = `${item.lampId}|${item.periodKey}`
       if (item.status !== 'yes' || seen.has(key) || String(item.periodKey || '') < oldest) return false
       seen.add(key)
