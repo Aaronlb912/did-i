@@ -867,10 +867,11 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   // system disc and a centered number. The old top-left frame put the number
   // in the corner the circle clips away, which left it blank.
   if (family === 'accessoryCircular') {
-    // No snapshot yet (the widget gallery): the app's question marks, not a check.
-    const glyph = left > 0 ? (gentle ? '…' : String(left)) : items.length ? '✓' : '???'
+    // No snapshot yet or no questions: a plus, and VoiceOver says to add one.
+    const glyph = left > 0 ? (gentle ? '…' : String(left)) : items.length ? '✓' : '+'
+    const circleLabel = items.length ? String(props?.footer || '') : String(props?.emptyLabel || 'Add a question in Did I')
     return (
-      <ZStack modifiers={[containerBackground(c.panel, 'widget'), widgetURL(openUri), grow]}>
+      <ZStack modifiers={[containerBackground(c.panel, 'widget'), widgetURL(openUri), grow, accessibilityLabel(circleLabel)]}>
         <AccessoryWidgetBackground />
         <Text
           modifiers={[
