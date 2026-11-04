@@ -50,7 +50,7 @@ import { SwipeCardHost } from '../components/SwipeCardHost.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine } from '../components/WeTonight.jsx'
+import { WeAsks, WeFaces, useWeAnswer, weDoneStyle, weStatusLine, whenValue, weWhenWords } from '../components/WeTonight.jsx'
 import { weDot, weNextCoinsKey, weRuleKey, weModeKey, weSlotDay, weWeekDots, weWeekKey } from '../../src/lib/we-look.js'
 import { boardDate, formatBoardDate, graceNightIso } from '../../src/lib/recurrence.js'
 import { AppTextInput, DidButton, Field, KeyButton, LateMeta, Meta, OfflineLine } from '../components/ui.jsx'
@@ -121,13 +121,6 @@ function PeoplePick({ people, picked, onPick, colors, skip = [] }) {
 }
 
 // The rules of a card. Shared by making one and the owner editing one.
-function whenValue(draft) {
-  if (draft.cadence === 'monthly') return t('we.monthly')
-  if (draft.cadence !== 'weekly') return t('we.daily')
-  if (!draft.weekdays.length) return t('we.someDays')
-  return draft.weekdays.map((day) => t(`we.day.${day}`)).join(' ')
-}
-
 // The rules of a card as the same folding rows the Add screen uses. Shared
 // by making one and the owner changing one.
 // Your own folder and topics for a card, the same rows as the Add screen.
@@ -340,11 +333,6 @@ function ruleParts({ draft, setDraft, open, fold, colors }) {
           </HangFold>
     ),
   }
-}
-
-// The card's schedule line: how often, then the time.
-function weWhenWords(draft) {
-  return [whenValue(draft), draft.askAfter ? clockWords(draft.askAfter) : t('hang.askAny')].join(' · ')
 }
 
 // The two bottom sheets every Did we form shares: When, and How it counts.
@@ -1015,7 +1003,10 @@ function WeCardPage({ book, cardId, onChange }) {
         total: 8000,
         onPress: async () => {
           const back = await weEdit(card.id, before).catch(() => ({ miss: 'people.reach' }))
-          if (back.miss) return confirmMiss(tMiss(back.miss))
+          if (back.miss) {
+            confirmMiss(tMiss(back.miss))
+            return load()
+          }
           confirmDone(t('confirm.saved'))
           load()
         },
@@ -1040,7 +1031,7 @@ function WeCardPage({ book, cardId, onChange }) {
       confirmDone(said.length === 1 ? t('confirm.askedOne', { name: said[0] }) : t('confirm.askedMany', { n: sent.length }))
     }
     setBusy(false)
-    setAsking([])
+    setAsking(asking.filter((id) => !sent.includes(id)))
     load()
   }
 

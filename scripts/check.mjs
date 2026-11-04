@@ -11168,6 +11168,16 @@ test('add and edit: paused twin resumes, check-on miss shows, weekly asks for da
   assert.ok(readFileSync('native/components/LampManage.jsx', 'utf8').includes("lamp.pauseBtn"), 'sheet says Pause')
 })
 
+test('did we: ask reply miss is toasted, ask row shows when, partial send keeps the rest', () => {
+  const w = readFileSync('native/components/WeTonight.jsx', 'utf8')
+  const s = readFileSync('native/screens/we.jsx', 'utf8')
+  assert.ok(w.includes('if (out.miss) confirmMiss(tMiss(out.miss))'), 'reply miss is shown by a toast')
+  assert.ok(w.includes('{weWhenWords(card)}') && w.includes('export function weWhenWords'), 'ask row shows when')
+  assert.ok(!s.includes('function weWhenWords'), 'one copy of weWhenWords')
+  assert.ok(s.includes('setAsking(asking.filter((id) => !sent.includes(id)))'), 'unsent people stay picked')
+  assert.ok(s.replace(/\s+/g, ' ').includes('confirmMiss(tMiss(back.miss)) return load()'), 'change back miss reloads')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
