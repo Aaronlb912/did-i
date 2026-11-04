@@ -8332,7 +8332,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-4), ['drop-tonight.sql', 'did-we-safety.sql', 'we-monthly.sql', 'we-buddy.sql'])
+  assert.deepEqual(files.slice(-5), ['drop-tonight.sql', 'did-we-safety.sql', 'we-monthly.sql', 'we-buddy.sql', 'streak-bonus.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -10290,7 +10290,7 @@ test('every table says how people hear about it: a push, or why not', () => {
     report_actions: 'queue_report_removed_push',
   }
   const quiet = {
-    'own data, no one else': 'admins answer_keys answer_log answer_undos app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims signin_carries',
+    'own data, no one else': 'admins answer_keys answer_log answer_undos app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims signin_carries streak_bonus_claims',
     'counters, caps and logs': 'check_on_pushed family_code_misses family_miss_days family_summary_sent friend_ask_log friend_declines friend_id_misses push_queue push_to_counts send_counts we_done_pushed we_buddy_pings we_schedule_log we_slot_repair_ran report_mail_queue shop_drop_sent',
     'catalogs': 'gift_catalog shop_catalog event_catalog',
     'quiet on purpose: a block, a pass or a leave would tell someone they were dropped': 'blocks send_answers app_send_answers we_turns',
@@ -10797,6 +10797,40 @@ test('ping cap counts renew, streak and snooze notes; hide waits for the answer;
   assert.ok(we.indexOf('hideWeFor(card.id, boardDate())') > we.indexOf('weAnswer(card.id, next'), 'a Not yet hides the card only after it saved')
   const dump = readFileSync(new URL('../native/components/BrainDumpSheet.jsx', import.meta.url), 'utf8')
   assert.match(dump, /const fits = kept\.slice\(0, room\)/, 'blank lines do not use up room')
+})
+
+test('streak milestones: line names the frame, shows once, gems paid by the server once', async () => {
+  const { readFileSync } = await import('node:fs')
+  const m = await import('../src/lib/streak-milestones.js')
+  assert.deepEqual(m.STREAK_MILESTONES, [7, 30, 100, 365])
+  assert.deepEqual(m.STREAK_BONUS, { 30: 1, 100: 2 })
+  assert.equal(m.milestoneLine(30, '2026-11-03'), '30 days in a row. Ember is yours.')
+  assert.equal(m.milestoneLine(100, '2026-11-03'), '100 days in a row. Royal is yours.')
+  assert.equal(m.milestoneLine(365, '2026-11-03'), '365 days in a row')
+  assert.equal(m.milestoneGemLine(1), '+1 gem')
+  assert.equal(m.milestoneGemLine(2), '+2 gems')
+  assert.equal(m.milestoneGemLine(0), '')
+  localStorage.removeItem('did-i-streak-seen')
+  assert.equal(m.takeStreakMilestone(12), false, 'not a milestone')
+  assert.equal(m.takeStreakMilestone(30), true)
+  assert.equal(m.takeStreakMilestone(30), false, 'once per milestone')
+  localStorage.removeItem('did-i-streak-seen')
+  m.addBonusPending(30)
+  m.addBonusPending(30)
+  m.addBonusPending(7)
+  assert.deepEqual(m.readBonusPending(), [30], 'only paid milestones wait, once')
+  m.dropBonusPending(30)
+  assert.deepEqual(m.readBonusPending(), [])
+  const sql = readFileSync(new URL('../supabase/streak-bonus.sql', import.meta.url), 'utf8')
+  for (const bit of ['primary key (user_id, days)', 'enable row level security', 'security definer', 'set search_path = public, auth', 'p.streak', 'revoke all on function public.claim_streak_bonus(integer) from public, anon;']) {
+    assert.ok(sql.includes(bit), bit)
+  }
+  const screen = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(screen.includes('fireCheer(purse.cheerOn, CHEER_STAGE_MAX)'), 'the biggest cheer')
+  assert.ok(screen.includes('retryStreakBonus()'), 'a failed claim is tried on the next open')
+  assert.ok(!/to the next reward|days to go/i.test(screen))
+  const freeze = readFileSync(new URL('../native/components/FreezeBits.jsx', import.meta.url), 'utf8')
+  assert.ok(freeze.includes("body: t('freeze.earnedBody')"), 'a freeze earned gets the pop-up')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

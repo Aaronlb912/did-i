@@ -429,3 +429,24 @@ export async function claimTourCoins(part) {
     balance: Math.max(0, Math.floor(Number(data?.balance) || 0)),
   }
 }
+
+// One-time gems for a 30 or 100 day streak. The streak is saved first so the
+// server checks today's, not the last sync's; null streak keeps the saved one.
+// Returns { paid, balance }, or null when it did not go through.
+export async function claimStreakBonus(days, streak = null) {
+  if (!accountSessionOn()) return null
+  const db = cloud()
+  if (!db) return null
+  if (streak != null) {
+    const user = await readUser()
+    if (!user) return null
+    const { error: saveError } = await db.from('profiles').update({ streak: Math.max(0, Math.floor(Number(streak) || 0)) }).eq('user_id', user.id)
+    if (saveError) return null
+  }
+  const { data, error } = await db.rpc('claim_streak_bonus', { days })
+  if (error) return null
+  return {
+    paid: Math.max(0, Math.floor(Number(data?.paid) || 0)),
+    balance: Math.max(0, Math.floor(Number(data?.balance) || 0)),
+  }
+}
