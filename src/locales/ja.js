@@ -2053,7 +2053,7 @@ export const ja = {
   'widget.tonight.lastNight': "昨日",
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "まだ",
-  'widget.tonight.openApp': '開く',
+  'widget.tonight.waiting': '今日の質問が待っています',
   'widget.tonight.next': '次へ',
   'watch.allDone': "すべて完了",
   'watch.notYet': "まだ {n} 個",

@@ -2086,7 +2086,7 @@ export const de = {
   'widget.tonight.lastNight': "Gestern",
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "Noch nicht",
-  'widget.tonight.openApp': 'Öffnen',
+  'widget.tonight.waiting': 'Fragen warten heute',
   'widget.tonight.next': 'Weiter',
   'watch.allDone': "Alles erledigt",
   'watch.notYet': "{n} noch nicht",

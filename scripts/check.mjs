@@ -11206,6 +11206,19 @@ test('leftovers: pause labels, no dollar line, last copy line', () => {
   assert.ok(more.indexOf("setItem('did-i-last-copy'") > more.indexOf('await shareShelf(all)'), 'date saved only after the share finishes')
 })
 
+test('widget: footer says questions waiting, empty list opens add, Not yet card hides Not yet, Did we taps are never kept', async () => {
+  const { readFileSync } = await import('node:fs')
+  const w = readFileSync('src/lib/widget-tonight.js', 'utf8')
+  const ios = readFileSync('widgets/DidITonightWidget.tsx', 'utf8')
+  const and = readFileSync('widgets/android/DidITonightAndroidWidget.jsx', 'utf8')
+  assert.ok(!w.includes('widget.tonight.openApp') && w.includes("t('widget.tonight.waiting')"), 'footer uses the waiting key')
+  assert.ok(w.includes("emptyList ? 'didi://open/add'"), 'empty list taps open add')
+  assert.ok(ios.includes('minimumScaleFactor(0.6)') && !ios.includes('minimumScaleFactor(0.35)'), 'question scales to 0.6')
+  assert.ok(ios.includes("lead.status === 'skip' ? null"), 'iOS hides Not yet on a Not yet card')
+  assert.ok(and.includes("lead.status === 'skip' ? null"), 'Android hides Not yet on a Not yet card')
+  assert.ok(w.includes("!lamp.startsWith(WE_ITEM) && clock.getTime()"), 'a refused Did we tap is not kept: it has no account signal')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

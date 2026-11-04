@@ -2048,7 +2048,7 @@ export const zh = {
   'widget.tonight.lastNight': "昨天",
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "还没",
-  'widget.tonight.openApp': '打开',
+  'widget.tonight.waiting': '今天有问题等你',
   'widget.tonight.next': '下一个',
   'watch.allDone': "全部完成",
   'watch.notYet': "还有 {n} 个待做",

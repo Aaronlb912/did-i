@@ -2055,7 +2055,7 @@ export const ko = {
   'widget.tonight.lastNight': "어제",
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "아직",
-  'widget.tonight.openApp': '열기',
+  'widget.tonight.waiting': '오늘 기다리는 질문',
   'widget.tonight.next': '다음',
   'watch.allDone': "다 끝났어요",
   'watch.notYet': "아직 {n}개",

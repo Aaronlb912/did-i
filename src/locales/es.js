@@ -2079,7 +2079,7 @@ export const es = {
   'widget.tonight.lastNight': "Ayer",
   'widget.tonight.did': 'Did',
   'widget.tonight.nope': "Aún no",
-  'widget.tonight.openApp': 'Abrir',
+  'widget.tonight.waiting': 'Preguntas esperando hoy',
   'widget.tonight.next': 'Otra',
   'watch.allDone': "Todo listo",
   'watch.notYet': "{n} aún no",

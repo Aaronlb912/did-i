@@ -287,7 +287,9 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   if (away) footer = t('widget.tonight.away')
   // Gentle mode: the widgets show no count of what is left.
   const gentle = gentleOn()
-  if (gentle && left > 0 && !away && !nextLine) footer = t('widget.tonight.openApp')
+  if (gentle && left > 0 && !away && !nextLine) footer = t('widget.tonight.waiting')
+  // Nothing on the list at all: a tap goes to add a question, not to Today.
+  const emptyList = !items.length && !nextLine && !away
   const colorBook = widgetColorBook(shelf)
   return {
     tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.tagFallback'),
@@ -301,11 +303,11 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     didLabel: t('widget.tonight.did'),
     nopeLabel: t('widget.tonight.nope'),
     nextLabel: t('widget.tonight.next'),
-    openLabel: t('widget.tonight.openApp'),
+    openLabel: t('widget.tonight.waiting'),
     remindLabel: t('remind.mic'),
     emptyLabel: away ? footer : nextLine || t('widget.tonight.empty'),
     clearLabel: away ? footer : nextLine || t('widget.tonight.clear'),
-    openUri: widgetTonightUri(null, lead?.lamp.id || ''),
+    openUri: emptyList ? 'didi://open/add' : widgetTonightUri(null, lead?.lamp.id || ''),
     buddyId: colorBook ? normalizePurse(colorBook).buddyOn || '' : '',
     buddyWorn: colorBook ? normalizePurse(colorBook).worn : {},
     weLine: readWeLine(boardDate(now)),
