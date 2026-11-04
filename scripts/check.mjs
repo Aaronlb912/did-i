@@ -4124,7 +4124,7 @@ test('the last cloud save reads as a local time, not a raw timestamp', () => {
   assert.ok(!/\d{4}-\d{2}-\d{2}T/.test(words), words)
   assert.equal(stampWhen('not a date'), '')
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-  const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
+  const more = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/screens/more.jsx'), 'utf8')
   assert.ok(more.includes('t(line.key, { time: stampWhen(line.at) })'))
 })
 
@@ -4532,7 +4532,7 @@ test('a fresh phone opens on welcome, a phone already in use does not, a lost se
 
 test('first five minutes: first run can go back to Welcome, the swipe hint is one line cleared by the first answer', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
+  const more = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/screens/more.jsx'), 'utf8')
   const intro = readFileSync(path.join(root, 'native/components/SwipeIntro.jsx'), 'utf8')
   const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
   assert.ok(more.includes('{step > 0 ? <KeyButton') && more.includes("t('first.back')"), 'Back shows after step one, not on it')
@@ -11071,7 +11071,7 @@ test('first day: new questions are open now, the picked time starts tomorrow, a 
 
 test('first day copy and fixes: reminder-only ask line, folder fallback, early come-back for new shelves', () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const more = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
+  const more = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/screens/more.jsx'), 'utf8')
   assert.ok(more.includes("book?.title || t('enter.boardHint')"), 'the folder name falls back to Home, not Did I')
   assert.ok(readFileSync(path.join(root, 'src/locales/en.js'), 'utf8').includes("Get a nudge when it"), 'the first ask is a reminder-only line')
   const tonight = readFileSync(path.join(root, 'native/screens/TonightScreen.jsx'), 'utf8')
@@ -11083,7 +11083,7 @@ test('one question year grid: lampId filter, calendar route, menu row', () => {
   const grid = readFileSync(path.join(root, 'native/components/CalendarGrid.jsx'), 'utf8')
   assert.ok(grid.includes('l.id === lampId'), 'YearGrid keeps only the picked question')
   assert.ok(readFileSync(path.join(root, 'native/screens/questions.jsx'), 'utf8').includes("goHash('/calendar', { id: lamp.id })"), 'the question menu opens its year')
-  assert.ok(readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8').includes('lampId={lampId}'), 'the calendar screen passes the question')
+  assert.ok(readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/screens/more.jsx'), 'utf8').includes('lampId={lampId}'), 'the calendar screen passes the question')
 })
 
 test('shop copy: no per-gem price line in gem hints, off-sale accessory tile shows its date', () => {
@@ -11101,7 +11101,7 @@ test('shop copy: no per-gem price line in gem hints, off-sale accessory tile sho
 
 test('account settings: data and sign-out cards sit outside the fold, sync shows busy', () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const src = readFileSync(path.join(root, 'native/screens/more.jsx'), 'utf8')
+  const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/screens/more.jsx'), 'utf8')
   const fold = src.indexOf('{dataOpen ? (')
   const foldEnd = src.indexOf('</Reveal>', fold)
   assert.ok(src.indexOf("t('account.data')") > foldEnd, 'Your data card is below the fold')
@@ -11134,6 +11134,30 @@ test('watch: a Not yet question reaches the watch and can still be answered Did'
   assert.ok(sync.includes("item.status === 'skip' ? 'nope'"), 'the phone sends Not yet cards')
   const tonight = readFileSync(path.join(root, 'src/lib/widget-tonight.js'), 'utf8')
   assert.ok(tonight.includes("row.answer.status === 'skip' && status === 'yes'"), 'the phone turns a Not yet into Did')
+})
+
+test('day-one reminders, grace cards on a new shelf, and a failed Sync now', async () => {
+  const { pingWaitingTonight, waitingTonight, faceReadyTonight } = await import('../src/lib/recurrence.js')
+  const { upcomingPings } = await import('../src/lib/notify.js')
+  const { graceLost } = await import('../src/lib/come-back.js')
+  const { pullAndMerge } = await import('../src/lib/cloud-sync.js')
+  const now = new Date(2026, 9, 18, 10, 0)
+  const meds = { id: 'm', question: 'Meds?', cadence: 'daily', createdOn: '2026-10-18', archived: false, askAfter: '20:00', askFrom: '2026-10-19' }
+  const book = { id: 'b', dayFoldHour: 0, lamps: [meds], answers: [] }
+  assert.ok(faceReadyTonight(book, now).some((row) => row.lamp.id === 'm'), 'card is open all day')
+  assert.equal(waitingTonight(book, now).length, 0)
+  assert.ok(pingWaitingTonight(book, now).some((row) => row.lamp.id === 'm'))
+  const fires = upcomingPings(book, now).filter((fire) => fire.id === 'm')
+  assert.equal(fires.length, 1, 'the 20:00 ask fires on day one')
+  assert.equal(new Date(fires[0].at).getHours(), 20)
+  // Two missed days on a new shelf keep the late-Did card; three drop it.
+  const shelf = [{ id: 'b', answers: [{ periodKey: '2026-10-16', status: 'yes' }] }]
+  assert.equal(graceLost(shelf, '2026-10-18'), false)
+  assert.equal(graceLost(shelf, '2026-10-19'), true)
+  // Sync now: null from pullAndMerge is a miss.
+  assert.equal(await pullAndMerge(), null)
+  const more = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/screens/more.jsx'), 'utf8')
+  assert.ok(more.includes("const merged = await pullAndMerge()") && more.includes("if (!merged) throw"), "Sync now treats null as a miss")
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

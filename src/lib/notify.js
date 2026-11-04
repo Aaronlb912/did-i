@@ -1,7 +1,7 @@
 import { lampBuzzes, lampNudgesLate } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
-import { boardDate, dueTonight, waitingTonight } from './recurrence.js'
+import { boardDate, dueTonight, pingWaitingTonight } from './recurrence.js'
 import { checkNativePings, isNativeHall, requestNativePings, scheduleNativePings } from './native.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from './prefs.js'
 import { savePrefsForSw } from './board-store.js'
@@ -50,7 +50,7 @@ export function upcomingPings(book, now = new Date()) {
   // late note. The ask note itself only goes to rows still waiting. Not yet
   // (status skip) is not done, so it keeps the late note too.
   const rows = books.flatMap((one) => dueTonight(one, now)).filter((row) => !row.answer || row.answer.status === 'skip')
-  const waiting = new Set(books.flatMap((one) => waitingTonight(one, now)).map((row) => `${row.lamp.id}:${row.periodKey}`))
+  const waiting = new Set(books.flatMap((one) => pingWaitingTonight(one, now)).map((row) => `${row.lamp.id}:${row.periodKey}`))
   for (const row of rows) {
     if (!lampBuzzes(row.lamp)) continue
     // No time set: no ask note, but a high one still gets the late note.

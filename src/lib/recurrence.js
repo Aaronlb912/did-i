@@ -637,6 +637,13 @@ export function waitingTonight(book, now = new Date()) {
   return unansweredTonight(book, now).filter((row) => standingBy(row, now))
 }
 
+// For reminder scheduling. On the setup day the card is open all day (askFrom
+// is tomorrow), but its ask time is still ahead, so the ask note still goes.
+export function pingWaitingTonight(book, now = new Date()) {
+  const today = boardDate(now, book.dayFoldHour)
+  return unansweredTonight(book, now).filter((row) => standingBy(row, now) || (row.lamp?.askFrom && today < row.lamp.askFrom))
+}
+
 export function rowDoneTonight(row) {
   const status = row?.answer?.status
   return status === 'yes' || status === 'late'
