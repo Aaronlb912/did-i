@@ -294,7 +294,7 @@ export function isDayCadence(lamp) {
 }
 
 // Did rate over the last 30 days across live questions, same window as the
-// question page. Null under 3 due days.
+// question page. Null under 3 due days. asked is the due days counted.
 export function shelfRate30(books, dateIso) {
   let did = 0
   let asked = 0
@@ -306,5 +306,6 @@ export function shelfRate30(books, dateIso) {
       asked += rec.asked
     }
   }
-  return lampRate({ did, asked })
+  const rate = lampRate({ did, asked })
+  return rate == null ? null : { rate, did, asked }
 }

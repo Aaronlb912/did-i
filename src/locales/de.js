@@ -2914,7 +2914,7 @@ export const de = {
   // round4-fix/stats-agree
   'streaks.nextGoal': 'Nächstes Ziel: {goal}',
   'week.tapHint': "Tippe auf einen Tag, um zu sehen, warum er geschafft ist oder nicht.",
-  'stats.bestRun': 'Beste Fragen-Serie',
+  'stats.bestRun': 'Beste Serie, eine Frage',
   'stats.marksSub': "Was du verdient hast und wie du den Rest bekommst",
   'stats.sevenSub': "Jede Frage, Tag für Tag",
   'stats.streaksSub': "Deine Serie und die Serie jeder Frage",
@@ -2925,6 +2925,7 @@ export const de = {
   'streaks.unitOnTime': "pünktlich in Folge",
   'streaks.unitOnTimeOne': "pünktlich",
   'stats.last30': "Letzte 30 Tage",
+  'stats.last30Of': '{did} von {n} Tagen',
   'lamp.shareBtn': "Diese Serie teilen",
   'lamp.shareDays': "{n} Tage in Folge bei „{what}“ mit Did I",
   'lamp.shareDay': "1 Tag in Folge bei „{what}“ mit Did I",
