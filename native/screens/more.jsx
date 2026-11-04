@@ -1052,6 +1052,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   const clock = now || today
   // Multi-night walks: once per shelf, folder and minute, not every render.
   const minute = Math.floor(clock.getTime() / 60000)
+  const freeMiss = usePrefs().freeMiss === true
   const { books, heat, freezes, rows } = useMemo(() => {
     const at = new Date(minute * 60000)
     const books = scopedBooks(inView(book, boards), tagId)
@@ -1067,14 +1068,14 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         // Days first, so weeks or on-time counts never outrank a day count.
         .sort((a, b) => Number(isDayCadence(b.lamp)) - Number(isDayCadence(a.lamp)) || b.n - a.n),
     }
-  }, [book, boards, tagId, minute])
+  }, [book, boards, tagId, minute, freeMiss])
   const goal = nextStreakGoal(heat)
-  const bestEver = useMemo(() => bestShelfStreak(inView(book, boards), clock), [book, boards, boardDate(clock), awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
+  const bestEver = useMemo(() => bestShelfStreak(inView(book, boards), clock), [book, boards, boardDate(clock), awayKey(), freeMiss]) // eslint-disable-line react-hooks/exhaustive-deps
   // A question's run can be longer than the overall one: say which night broke it.
   const longest = rows.length && isDayCadence(rows[0].lamp) ? rows[0].n : 0
   const breakNight = useMemo(
     () => (longest > heat ? streakBreak(inView(book, boards), clock, tagId, longest + 1) : null),
-    [book, boards, tagId, longest, heat, awayKey(), boardDate(clock)], // eslint-disable-line react-hooks/exhaustive-deps
+    [book, boards, tagId, longest, heat, awayKey(), boardDate(clock), freeMiss], // eslint-disable-line react-hooks/exhaustive-deps
   )
   const breakLine = breakNight
     ? breakNight.question
@@ -1116,7 +1117,8 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         </SetCard>
       ) : null}
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="snow" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron last onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
+        <SetRow colors={colors} icon="snow" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
+        <SetSwitch colors={colors} icon="snow" tint={colors.freeze} label={t('saves.toggle')} sub={t('saves.how')} on={freeMiss} last onPress={() => writePrefs({ freeMiss: !freeMiss })} />
       </SetCard>
       {!rows.length ? (
         <>

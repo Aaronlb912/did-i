@@ -28,6 +28,8 @@ function blankPrefs() {
     // Gentle mode: streak numbers hidden from the person themself. Streaks are
     // still counted and stored, and friends and family see the same as before.
     gentle: false,
+    // One free miss a week: the first missed day each week is kept like a freeze.
+    freeMiss: false,
     diagnosticsAsked: false,
     shareDiagnostics: false,
     widgetLookMode: 'tag',
@@ -176,6 +178,7 @@ function cleanPrefs(raw) {
   if (CLOCKS.has(raw?.clock)) next.clock = raw.clock
   if (raw?.lessMotion === true) next.lessMotion = true
   if (raw?.gentle === true) next.gentle = true
+  if (raw?.freeMiss === true) next.freeMiss = true
   if (raw?.diagnosticsAsked === true) next.diagnosticsAsked = true
   if (raw?.shareDiagnostics === true) next.shareDiagnostics = true
   if (raw?.widgetLookMode === 'pick') next.widgetLookMode = 'pick'
