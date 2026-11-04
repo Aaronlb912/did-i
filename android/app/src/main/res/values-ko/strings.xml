@@ -4,4 +4,6 @@
   <string name="widget_didigrid_description">최근 12주 동안 Did 한 날을 한눈에.</string>
   <string name="shortcut_add_short">질문 추가</string>
   <string name="shortcut_add_long">Did I 질문 추가</string>
+  <string name="shortcut_remind_short">알려 줘</string>
+  <string name="shortcut_remind_long">Did I에서 알려 줘</string>
 </resources>

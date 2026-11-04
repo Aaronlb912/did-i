@@ -86,6 +86,11 @@ export function RemindScreen({ book, route }) {
   const heard = useRef('')
   const waitPerm = useRef(false)
   const input = useRef(null)
+  const stopTimer = useRef(null)
+  const clearStop = () => {
+    if (stopTimer.current) clearTimeout(stopTimer.current)
+    stopTimer.current = null
+  }
   const refresh = useCallback(() => setPending(readReminds()), [])
 
   const listen = useCallback(async () => {
@@ -102,8 +107,19 @@ export function RemindScreen({ book, route }) {
       heard.current = ''
       setText('')
       setListening(true)
+      // If the recognizer never sends end or error, stop waiting.
+      clearStop()
+      stopTimer.current = setTimeout(() => {
+        try {
+          ExpoSpeechRecognitionModule.abort()
+        } catch {
+          // Nothing was listening.
+        }
+        setListening(false)
+      }, 30000)
       ExpoSpeechRecognitionModule.start({ lang: SPEECH_LANG[prefs.locale] || 'en-US', interimResults: true })
     } catch {
+      clearStop()
       setListening(false)
       setNotHeard(true)
     }
@@ -117,10 +133,12 @@ export function RemindScreen({ book, route }) {
     }
   })
   useSpeechRecognitionEvent('end', () => {
+  clearStop()
     setListening(false)
     if (!heard.current) setNotHeard(true)
   })
   useSpeechRecognitionEvent('error', (event) => {
+  clearStop()
     setListening(false)
     if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
       setDenied(true)
@@ -135,6 +153,7 @@ export function RemindScreen({ book, route }) {
   useEffect(() => {
     if (listenOnOpen) listen()
     return () => {
+      clearStop()
       try {
         ExpoSpeechRecognitionModule.abort()
       } catch {

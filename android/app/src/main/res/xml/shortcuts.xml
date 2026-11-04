@@ -57,4 +57,16 @@
       android:targetPackage="com.aaronbryant.didi"
       android:targetClass="com.aaronbryant.didi.MainActivity" />
   </shortcut>
+  <shortcut
+    android:shortcutId="remind_me"
+    android:enabled="true"
+    android:icon="@mipmap/ic_launcher"
+    android:shortcutShortLabel="@string/shortcut_remind_short"
+    android:shortcutLongLabel="@string/shortcut_remind_long">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:data="didi://open/remind"
+      android:targetPackage="com.aaronbryant.didi"
+      android:targetClass="com.aaronbryant.didi.MainActivity" />
+  </shortcut>
 </shortcuts>
