@@ -402,6 +402,7 @@ export const es = {
   'tonight.lastNight': "Ayer",
   'tonight.undo': 'Deshacer',
   'tonight.undoTap': 'Toca para deshacer',
+  'tonight.undoMore': 'Toca para deshacer ({n} más)',
   'tonight.boardName': 'Nombre de la carpeta',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'Did',

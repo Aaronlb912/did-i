@@ -756,9 +756,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // Undo sends the card back the way it left.
   const applyUndo = stack.applyUndo
   const undoAnswer = useCallback(() => {
-    flyBackNext()
+    if (!stack.undo?.periodKey || stack.undo.periodKey === stack.dateIso) flyBackNext()
     applyUndo()
-  }, [applyUndo])
+  }, [applyUndo, stack.undo, stack.dateIso])
   // The toast's label says what was saved (Marked Did, nope or late).
   // After a Did on your own question, the toast also offers a note for it.
   // The sheet reads colors and onChange when tapped, so a new render never re-arms the toast.
@@ -770,7 +770,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     const target = { boardId: undoNow.book?.id, lampId: undoNow.lampId, periodKey: undoNow.periodKey }
     return { ...undoNow, extra: { label: t('note.addShort'), onPress: () => openAnswerNote({ ...target, ...noteDeps.current }) } }
   }, [undoNow])
-  useUndoToast('tonight', undoToast, undoAnswer, UNDO_MS, t('tonight.undoTap'), stack.holdUndo)
+  useUndoToast('tonight', undoToast, undoAnswer, UNDO_MS, stack.undoCount > 1 ? t('tonight.undoMore', { n: stack.undoCount - 1 }) : t('tonight.undoTap'), stack.holdUndo)
   // An answer saved with no signal says where it is, once per offline stretch.
   const online = useOnline()
   // It waits for the undo toast to clear so undo stays on screen, and only says so when signed in.

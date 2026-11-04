@@ -401,6 +401,7 @@ export const pt = {
   'tonight.lastNight': "Ontem",
   'tonight.undo': 'Desfazer',
   'tonight.undoTap': 'Toque para desfazer',
+  'tonight.undoMore': 'Toque para desfazer (mais {n})',
   'tonight.boardName': 'Nome da pasta',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'Did',

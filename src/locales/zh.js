@@ -395,6 +395,7 @@ export const zh = {
   'tonight.lastNight': "昨天",
   'tonight.undo': '撤销',
   'tonight.undoTap': '点按以撤销',
+  'tonight.undoMore': '点按以撤销（还有{n}个）',
   'tonight.boardName': '文件夹名称',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'Did',

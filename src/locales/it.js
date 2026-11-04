@@ -400,6 +400,7 @@ export const it = {
   'tonight.lastNight': "Ieri",
   'tonight.undo': 'Annulla',
   'tonight.undoTap': 'Tocca per annullare',
+  'tonight.undoMore': 'Tocca per annullare (altri {n})',
   'tonight.boardName': 'Nome della cartella',
   'tonight.didI': 'Did I',
   'tonight.swipeDid': 'Did',
