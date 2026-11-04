@@ -1081,6 +1081,7 @@ const SCHEDULES = [
   { id: 'once_on', labelKey: 'hang.once' },
   { id: 'deadline', labelKey: 'hang.dueByPick' },
 ]
+const FIRST_WAYS = new Set(['daily', 'weekly', 'once_on', 'deadline'])
 const SCHEDULE_MISSES = new Set([
   'hang.miss.weekday',
   'hang.miss.monthDay',
@@ -1442,7 +1443,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     foldNext = ''
     return first
   })
-  const [timeOpen, setTimeOpen] = useState(false)
+  const [timeOpen, setTimeOpen] = useState(true)
+  const timeTapped = useRef(false)
+  const [moreWays, setMoreWays] = useState(false)
   // The one-time ask can be skipped; a timed question says it again.
   const [exactOff, setExactOff] = useState(false)
   useEffect(() => {
@@ -1636,6 +1639,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   // so the first tap meant for them never lands on Done.
   function showTimeDetail() {
     // Also when At a time adds the hour and minute pickers below.
+    // It starts open, so only scroll once someone has tapped the Time row.
+    if (!timeTapped.current) return
     setTimeout(() => showFold(timeDetail.current, whenScroll.current), reduce ? 0 : 260)
   }
 
@@ -1931,7 +1936,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           <SetCard colors={colors}>
             <View style={styles.whenBody}>
               <ScheduleTiles label={t('hang.when')}>
-                {SCHEDULES.map((item) => (
+                {SCHEDULES.filter((item) => moreWays || FIRST_WAYS.has(item.id) || schedule === item.id).map((item) => (
                   <ScheduleTile
                     key={item.id}
                     label={t(item.labelKey)}
@@ -1945,6 +1950,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                     colors={colors}
                   />
                 ))}
+                {moreWays ? null : (
+                  <ScheduleTile label={t('hang.more')} sub="" on={false} onPress={() => setMoreWays(true)} colors={colors} />
+                )}
               </ScheduleTiles>
             <Reveal key={schedule}>
             {/* A picked schedule's options open below the tiles; the sheet scrolls them into view. */}
@@ -1957,7 +1965,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             ) : null}
 
             {schedule === 'weekly' ? (
-              <View style={styles.pillRow}>
+              <View style={styles.pillRow} accessibilityLabel={t('hang.weekly')}>
                 {weekdaysFor(readPrefs().locale).map((day) => (
                   <Pill
                     key={day}
@@ -2068,6 +2076,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               icon="clock"
               open={timeOpen}
               onToggle={() => {
+                timeTapped.current = true
                 if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
                 setTimeOpen((was) => !was)
               }}
@@ -2084,7 +2093,6 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               ) : null}
               </View>
             </HangFold>
-          {!draft.askAfter ? <Text style={[styles.fieldHint, { color: colors.inkDim, paddingHorizontal: 16, paddingBottom: 8 }]}>{t('pings.noTimeSet')}</Text> : null}
           {reminderRow(true, true)}
             </Glide>
           </SetCard>
