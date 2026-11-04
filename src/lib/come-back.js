@@ -29,6 +29,12 @@ export function cameBack(shelf, dateIso, minDays = COME_BACK_DAYS) {
   return days >= minDays && days !== Infinity
 }
 
+// The late-Did card that saves a streak stays until a real gap of COME_BACK_DAYS,
+// even on a new shelf where the come-back card shows after 2.
+export function graceLost(shelf, dateIso) {
+  return cameBack(shelf, dateIso, COME_BACK_DAYS)
+}
+
 // Days since the oldest dated answer, 0 for a shelf with none yet. Gates first-week rows.
 export function daysSinceFirstAnswer(shelf, dateIso) {
   if (!DATE_KEY.test(String(dateIso || ''))) return 0

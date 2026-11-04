@@ -2620,7 +2620,9 @@ function AccountSignedIn({ book, email, onChange }) {
     if (busy) return
     setBusy('sync')
     try {
-      await pullAndMerge()
+      // pullAndMerge never throws: null means no client, no session, or an error.
+      const merged = await pullAndMerge()
+      if (!merged) throw new Error('sync')
       confirmDone(t('account.syncJust'))
     } catch {
       confirmMiss(t('tonight.syncMiss'))

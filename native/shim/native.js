@@ -11,7 +11,7 @@ import { readReminds } from '../../src/lib/remind-me.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { capSpare, earlyCallAt, lastCallAt, leftNote } from '../../src/lib/quiet.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
-import { boardDate, dueTonight, nightOpen, waitingTonight } from '../../src/lib/recurrence.js'
+import { boardDate, dueTonight, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
@@ -377,7 +377,7 @@ async function schedulePingsNow(books, now = new Date()) {
         // late note. The ask note itself only goes to rows still waiting.
         // Not yet (status skip) is not done, so it keeps the late note too.
         const rows = dueTonight(book, day).filter((row) => !row.answer || row.answer.status === 'skip')
-        const waiting = ahead === 0 ? new Set(waitingTonight(book, now).map((row) => `${row.lamp.id}:${row.periodKey}`)) : null
+        const waiting = ahead === 0 ? new Set(pingWaitingTonight(book, now).map((row) => `${row.lamp.id}:${row.periodKey}`)) : null
         const night = boardDate(day)
         const [year, month, date] = night.split('-').map(Number)
         for (const row of rows) {
