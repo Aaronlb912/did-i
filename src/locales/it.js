@@ -518,7 +518,7 @@ export const it = {
   'boards.marks': 'Traguardi',
   'help.kicker': 'Aiuto',
   'help.title': 'Come funziona',
-  'help.lead': "Home mostra le domande di oggi: rispondi a ognuna con Did o Non ancora. Domande è la tua lista. Il menu ha il negozio, gli amici e le impostazioni.",
+  'help.lead': "Rispondi a ogni domanda con Did o Non ancora.",
   'help.tonight': "Oggi",
   'help.tonightP1': 'Scorri a destra se l’hai fatto. Scorri a sinistra per Non ancora se no.',
   'help.tonightP2': "Una domanda può aspettare un orario. Un non ancora cambiato in Did appare come Fatto in ritardo e conta lo stesso.",

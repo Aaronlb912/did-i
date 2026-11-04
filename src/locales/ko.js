@@ -512,7 +512,7 @@ export const ko = {
   'boards.marks': '업적',
   'help.kicker': '도움말',
   'help.title': '사용법',
-  'help.lead': "홈에는 오늘 질문이 나와요. 각각 Did 또는 아직으로 답하세요. 질문 탭은 내 목록이에요. 메뉴에 상점, 친구, 설정이 있어요.",
+  'help.lead': "각 질문에 Did 또는 아직으로 답하세요.",
   'help.tonight': "오늘",
   'help.tonightP1': '했다면 오른쪽으로 밀어요. 아직 안 했다면 왼쪽으로 밀어 아직.',
   'help.tonightP2': "질문은 정한 시각까지 기다릴 수 있어요. 아직을 Did로 바꾸면 늦게 했음으로 보이고, 이것도 기록돼요.",

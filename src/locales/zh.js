@@ -512,7 +512,7 @@ export const zh = {
   'boards.marks': '成就',
   'help.kicker': '帮助',
   'help.title': '怎么用',
-  'help.lead': "首页显示今天的问题：每个都用 Did 或“还没”回答。问题页是你的列表。菜单里有商店、朋友和设置。",
+  'help.lead': "每个问题都用 Did 或“还没”回答。",
   'help.tonight': "今天",
   'help.tonightP1': '做了就右滑。还没做就左滑选“还没”。',
   'help.tonightP2': "问题可以等到某个时间再出现。把“还没”改成“做了”会显示为晚了完成，同样计入。",

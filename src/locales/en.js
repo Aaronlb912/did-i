@@ -519,7 +519,7 @@ export const en = {
   'boards.marks': 'Achievements',
   'help.kicker': 'Help',
   'help.title': 'How this works',
-  'help.lead': "Home shows today’s questions: answer each with Did or Not yet. Questions is your list. The menu has the shop, friends, and settings.",
+  'help.lead': "Answer each question with Did or Not yet.",
   'help.tonight': "Today",
   'help.tonightP1': 'Swipe right when you did it. Swipe left for Not yet when you haven’t.',
   'help.tonightP2': "A question can wait until a clock time. A Not yet you change to Did shows as Did late and still counts.",

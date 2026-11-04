@@ -555,17 +555,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           tint={colors.on}
           label={t('settings.replayIntro')}
           chevron
-          onPress={() => startTour('basics', { replay: true })}
-        />
-        <SetRow
-          colors={colors}
-          icon="settings"
-          tint={colors.inkSoft}
-          label={t('settings.more')}
-          sub={t('settings.moreSub')}
-          chevron
           last
-          onPress={() => goHash('/settings/more')}
+          onPress={() => startTour('basics', { replay: true })}
         />
       </SetCard>
       </>,
@@ -576,12 +567,13 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   return (
     <BoardShell book={book} title={t('settings.kicker')} date={date} colors={colors}>
       {account.email && syncFailed(sync) ? (
-        <Pressable accessibilityRole="button" onPress={() => pullAndMerge()} hitSlop={8}>
-          <Text style={[styles.syncMiss, { color: colors.miss }]}>{t('settings.syncMiss')}</Text>
-        </Pressable>
+        <SetCard colors={colors}>
+          <SetRow colors={colors} icon="settings" tint={colors.miss} label={t('settings.syncMiss')} last onPress={() => pullAndMerge()} />
+        </SetCard>
       ) : null}
       <View style={styles.gap} />
       <SetCard colors={colors}>
+        <SetRow colors={colors} icon="bell" tint={colors.late} label={t('settings.reminders')} sub={t('settings.remindersRowSub')} chevron onPress={() => goHash('/pings')} />
         <SetRow
           colors={colors}
           icon="person"
@@ -593,8 +585,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           onPress={() => goHash('/account')}
         />
         <SetRow colors={colors} icon="palette" tint={colors.late} label={t('settings.look')} sub={t('settings.lookRowSub')} value={lookWords} chevron onPress={() => goHash('/settings/look')} />
-        <SetRow colors={colors} icon="bell" tint={colors.late} label={t('settings.reminders')} sub={t('settings.remindersRowSub')} chevron onPress={() => goHash('/pings')} />
         <SetRow colors={colors} icon="moon" tint={colors.on} label={t('marks.section.nights')} sub={t('settings.nightsRowSub')} chevron onPress={() => goHash('/settings/nights')} />
+        <SetRow colors={colors} icon="settings" tint={colors.inkSoft} label={t('settings.yourData')} sub={t('settings.moreSub')} chevron onPress={() => goHash('/settings/more')} />
         <SetRow colors={colors} icon="shield" tint={colors.inkSoft} label={t('settings.privacyChoices')} sub={t('settings.privacyRowSub')} chevron onPress={() => goHash('/settings/privacy')} />
         <SetRow colors={colors} icon="help" tint={colors.on} label={t('settings.help')} sub={t('settings.helpRowSub')} chevron last onPress={() => goHash('/settings/help')} />
       </SetCard>
@@ -628,7 +620,6 @@ const styles = StyleSheet.create({
   version: { fontFamily: fonts.ui, fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 16, marginBottom: 8 },
   copyright: { fontFamily: fonts.ui, fontSize: 11, lineHeight: 16, textAlign: 'center', marginBottom: 8 },
   miss: { fontFamily: fonts.ui, fontSize: 14, marginHorizontal: 3, marginTop: 4 },
-  syncMiss: { fontFamily: fonts.ui, fontSize: 12, marginHorizontal: 3, marginTop: 4 },
   popKicker: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
   popTitle: { fontFamily: fonts.display, fontSize: 22, fontWeight: '700', marginBottom: 4 },
   popRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },

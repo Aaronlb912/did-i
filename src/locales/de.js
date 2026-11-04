@@ -519,7 +519,7 @@ export const de = {
   'boards.marks': 'Erfolge',
   'help.kicker': 'Hilfe',
   'help.title': 'So funktioniert das',
-  'help.lead': "Home zeigt die Fragen für heute: beantworte jede mit Did oder Noch nicht. Unter Fragen steht deine Liste. Im Menü findest du Shop, Freunde und Einstellungen.",
+  'help.lead': "Beantworte jede Frage mit Did oder Noch nicht.",
   'help.tonight': "Heute",
   'help.tonightP1': 'Wische nach rechts, wenn du es getan hast. Wische nach links für Noch nicht, wenn nicht.',
   'help.tonightP2': "Eine Frage kann bis zu einer Uhrzeit warten. Ein Noch nicht, das du in Did änderst, heißt Spät erledigt und zählt trotzdem.",
