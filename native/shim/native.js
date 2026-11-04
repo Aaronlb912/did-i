@@ -438,6 +438,12 @@ async function schedulePingsNow(books, now = new Date()) {
         content: { title: 'Did I', body: t('pings.renew'), data: { go: '/tonight' } },
         trigger: when(renewAt),
       })
+      // One soft nudge 3 days after that, then nothing (Aaron, 2026-11-03).
+      notes.push({
+        identifier: String(notifyId('renew', 'norush')),
+        content: { title: 'Did I', body: t('pings.noRush'), data: { go: '/tonight' } },
+        trigger: when(new Date(renewAt.getTime() + 3 * 24 * 60 * 60 * 1000)),
+      })
     }
     // Any folder's streak can be at risk, not only the first one's.
     const streakPings = pingOn('streakRisk') && !gentleOn()

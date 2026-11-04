@@ -1348,6 +1348,7 @@ export const zh = {
   'pings.day.1': '用 Did I 开始新的一天。',
   'pings.day.morning': "今天想记住什么？",
   'pings.renew': "打开 Did I，提醒才会继续。",
+  'pings.noRush': "不着急。今天随时为你开着。",
   'comeBack.title': "欢迎回来",
   'comeBack.body': "错过的日子不会妨碍今天。先从一个问题开始。",
   'comeBack.start': "开始",

@@ -1372,6 +1372,7 @@ export const de = {
   'pings.day.1': 'Starte den Tag mit Did I.',
   'pings.day.morning': "Woran willst du heute denken?",
   'pings.renew': "Öffne Did I, damit deine Erinnerungen weiter kommen.",
+  'pings.noRush': "Keine Eile. Heute ist offen, wann immer du so weit bist.",
   'comeBack.title': "Willkommen zurück",
   'comeBack.body': "Verpasste Tage halten dich heute nicht auf. Fang mit einer Frage an.",
   'comeBack.start': "Los",
