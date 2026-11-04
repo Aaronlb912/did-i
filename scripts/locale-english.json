@@ -50,7 +50,8 @@
     "we.question",
     "frame.solstice.name",
     "frame.origami.name",
-    "frame.aquarium.name"
+    "frame.aquarium.name",
+    "mast.button"
   ],
   "de": [
     "shop.cog",
@@ -141,7 +142,8 @@
     "web.nav.menu",
     "widget.tonight.did",
     "widget.settings.cap",
-    "frame.origami.name"
+    "frame.origami.name",
+    "mast.button"
   ],
   "it": [
     "nav.home",
@@ -197,7 +199,8 @@
     "web.press.color.lime",
     "widget.tonight.did",
     "widget.settings.cap",
-    "frame.origami.name"
+    "frame.origami.name",
+    "mast.button"
   ],
   "zh": [
     "title.shopBuddies",

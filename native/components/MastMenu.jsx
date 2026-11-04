@@ -385,7 +385,7 @@ export function MastMenuCog() {
         }
         node.measureInWindow((x, y, w, h) => toggle(w > 0 && h > 0 ? { x, y, w, h } : null))
       }}
-      label={people.inbox ? t('didyou.menuButton', { n: people.inbox }) : t('mast.menu')}
+      label={people.inbox ? t('didyou.menuButton', { n: people.inbox }) : t('mast.button')}
       expanded={open}
     >
       <MenuIcon name="grid" color={colors.on} size={16} />

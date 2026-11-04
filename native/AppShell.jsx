@@ -153,7 +153,7 @@ function TabRouteScreen({ route }) {
 // filled when the tab is on.
 const TONIGHT_ICON =
   Platform.OS === 'ios'
-    ? ({ focused }) => ({ type: 'sfSymbol', name: focused ? 'moon.stars.fill' : 'moon.stars' })
+    ? ({ focused }) => ({ type: 'sfSymbol', name: focused ? 'sun.max.fill' : 'sun.max' })
     : ({ focused }) => ({
         type: 'image',
         source: focused ? require('./assets/tabs/tonight-on.png') : require('./assets/tabs/tonight.png'),
