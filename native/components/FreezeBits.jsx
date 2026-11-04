@@ -19,6 +19,7 @@ export const FREEZE_RULES = [
   'freeze.rule6',
   'freeze.rule7',
   'freeze.rule8',
+  'freeze.rule9',
 ]
 
 // "1 of 2 · next in 9 nights", or "2 of 2" when full.

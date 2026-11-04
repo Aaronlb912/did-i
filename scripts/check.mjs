@@ -129,7 +129,7 @@ import { ja } from '../src/locales/ja.js'
 import { ko } from '../src/locales/ko.js'
 import { englishLeft, isLegalKey, mayMatchEnglish, wrongScript } from './locale-shared.mjs'
 import englishOk from './locale-english.json' with { type: 'json' }
-import { writePrefs } from '../src/lib/prefs.js'
+import { readPrefs, writePrefs } from '../src/lib/prefs.js'
 import { pickSocialLine } from '../src/lib/social-line.js'
 import { nightProgress } from '../src/lib/night-progress.js'
 import { RISE_SPRING, cardTilt, depthLook, flyPath, grabSide, releaseWay } from '../native/lib/swipe-motion.js'
@@ -10656,6 +10656,51 @@ test('brain dump: the morning cap holds when adding a list', async () => {
     made += 1
   }
   assert.equal(made, MORNING_CAP)
+
+test('one free miss a week keeps the first missed day of each week', () => {
+  const wk = (...keys) => keys
+  const nights = ['clear', 'miss', 'clear', 'miss', 'clear']
+  const weeks = wk('a', 'a', 'a', 'b', 'b')
+  const off = walkFreezes(nights, 14, 2, null, null)
+  assert.deepEqual(off, { run: 1, held: 0, frozen: [] }, 'weekly off: a miss with no freeze breaks the run')
+  const on = walkFreezes(nights, 14, 2, null, weeks)
+  assert.deepEqual(on.frozen, [1, 3], 'first miss in each week is kept')
+  assert.equal(on.run, 3, 'kept days do not grow the run or break it')
+  const two = walkFreezes(['clear', 'miss', 'miss', 'clear'], 14, 2, null, wk('a', 'a', 'a', 'a'))
+  assert.deepEqual(two.frozen, [1], 'a second miss in one week is not kept')
+  assert.equal(two.run, 1)
+  const held = walkFreezes([...Array(14).fill('clear'), 'miss'], 14, 2, null, Array(15).fill('a'))
+  assert.equal(held.held, 1, 'the weekly miss is used before a held freeze')
+  assert.equal(walkFreezes(['miss'], 14, 2, { run: 3, held: 0, weekUsed: 'a' }, ['a']).run, 0, 'a carried walk remembers the week')
+
+  const days = []
+  for (let i = 0; i < 15; i += 1) days.push(addDaysIso('2026-07-20', i))
+  const missed = new Set(['2026-07-30', '2026-08-01', '2026-08-03'])
+  const book = {
+    id: 'fm',
+    dayFoldHour: 0,
+    lamps: [{ id: 'q', question: 'Did I stretch?', cadence: 'daily', archived: false, createdOn: '2026-07-20' }],
+    answers: days.filter((d) => !missed.has(d)).map((d) => ({ lampId: 'q', periodKey: d, status: 'yes', answeredAt: `${d}T20:00:00` })),
+  }
+  const boards = [book]
+  const now = new Date(2026, 7, 4, 21, 0)
+  const was = readPrefs().freeMiss
+  try {
+    writePrefs({ freeMiss: false })
+    const plain = freezeState(boards, now)
+    assert.equal(plain.frozen.size, 0, 'off by default: no miss is kept')
+    writePrefs({ freeMiss: true })
+    const saved = freezeState(boards, now)
+    assert.notEqual(saved, plain, 'flipping the pref does not reuse the cached walk')
+    assert.ok(saved.frozen.has('2026-07-30'), 'first miss of the week is kept')
+    assert.ok(!saved.frozen.has('2026-08-01'), 'second miss in that week (crossing into August) is not')
+    assert.ok(saved.frozen.has('2026-08-03'), 'the next week keeps its own first miss')
+    writePrefs({ freeMiss: false })
+    assert.equal(freezeState(boards, now), plain, 'flipping back returns the cached off walk')
+  } finally {
+    writePrefs({ freeMiss: was })
+  }
+  assert.equal(readPrefs().freeMiss, was, 'the pref cleans to a boolean and defaults off')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

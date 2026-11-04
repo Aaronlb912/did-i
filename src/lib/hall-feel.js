@@ -1,7 +1,8 @@
 import { weFirstNight, weNight, weNightsStamp } from './we-nights.js'
-import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor } from './recurrence.js'
+import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor, weekStartOf } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { travelNightState, travelSkipped, travelWe } from './travel.js'
+import { readPrefs } from './prefs.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
 
 // A question only counts on nights it existed: one added today must not make
@@ -249,11 +250,14 @@ function nightTally(books, iso, at, tagId = '') {
 // Earned streak freezes. Every 14 cleared nights in a row earns one, up to
 // two held. A held freeze covers the next missed night: the streak goes on
 // but does not grow. nights is 'clear' | 'miss' | 'none' in date order.
+// weekly (One free miss a week): an array of week keys, one per night. The
+// first miss in each week is kept without spending a held freeze.
 export const FREEZE_EVERY = 14
 export const FREEZE_MAX = 2
-export function walkFreezes(nights, every = FREEZE_EVERY, max = FREEZE_MAX, start = null) {
+export function walkFreezes(nights, every = FREEZE_EVERY, max = FREEZE_MAX, start = null, weekly = null) {
   let run = start?.run || 0
   let held = start?.held || 0
+  let weekUsed = start?.weekUsed || ''
   const frozen = []
   for (let i = 0; i < nights.length; i += 1) {
     const state = nights[i]
@@ -261,13 +265,16 @@ export function walkFreezes(nights, every = FREEZE_EVERY, max = FREEZE_MAX, star
       run += 1
       if (run % every === 0 && held < max) held += 1
     } else if (state === 'miss') {
-      if (held > 0) {
+      if (weekly && weekly[i] && weekly[i] !== weekUsed) {
+        weekUsed = weekly[i]
+        frozen.push(i)
+      } else if (held > 0) {
         held -= 1
         frozen.push(i)
       } else run = 0
     }
   }
-  return { run, held, frozen }
+  return weekly ? { run, held, frozen, weekUsed } : { run, held, frozen }
 }
 
 // Nights left until the next freeze, from the run walkFreezes counts.
@@ -302,7 +309,8 @@ export function freezeState(boards, now = new Date()) {
   if (!books.length) return NO_FREEZE
   const today = boardDate(now, books[0].dayFoldHour)
   const grace = graceNightIso(now)
-  const key = `${today}|${grace}|${weNightsStamp()}`
+  const weekly = readPrefs().freeMiss === true
+  const key = `${today}|${grace}|${weNightsStamp()}|${weekly ? 'w' : ''}`
   let byKey = freezeMemo.get(boards)
   if (!byKey) {
     byKey = new Map()
@@ -322,13 +330,13 @@ export function freezeState(boards, now = new Date()) {
       states.push(!due ? 'none' : clear ? 'clear' : cursor === today || cursor === grace ? 'none' : 'miss')
       cursor = addDaysIso(cursor, 1)
     }
-    const walk = walkFreezes(states, FREEZE_EVERY, FREEZE_MAX, start)
-    return { run: walk.run, held: walk.held, frozen: [...(start?.frozen || []), ...walk.frozen.map((i) => isos[i])] }
+    const walk = walkFreezes(states, FREEZE_EVERY, FREEZE_MAX, start, weekly ? isos.map(weekStartOf) : null)
+    return { run: walk.run, held: walk.held, weekUsed: walk.weekUsed, frozen: [...(start?.frozen || []), ...walk.frozen.map((i) => isos[i])] }
   }
   // Nights before last night are settled. Their walk is kept by what they
   // hold, so a tap tonight (a new shelf object) walks only the last nights.
   const settledTo = addDaysIso(today, -1)
-  const sign = `${settledTo}|${weNightsStamp()}|${pastSign(books, settledTo)}`
+  const sign = `${weekly ? 'w' : ''}|${settledTo}|${weNightsStamp()}|${pastSign(books, settledTo)}`
   let past = settledMemo.get(sign)
   if (!past) {
     let first = startOf(books, today)
