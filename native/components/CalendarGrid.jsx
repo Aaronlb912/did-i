@@ -300,7 +300,7 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
   }, [shelf, year, tagId, dateIso, firstMonth, firstYear, prefs.locale, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const totals = useMemo(() => yearTotals(months), [months])
   // Best streak is shelf-wide, so it is left out while a folder is picked.
-  const best = useMemo(() => (tagId || lampId ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, lampId, dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
+  const best = useMemo(() => (tagId || lampId || prefs.gentle === true ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, lampId, dateIso, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const cardRef = useRef(null)
   // A picture of the year to share. Falls back to the text when the phone
   // cannot capture or share an image.
