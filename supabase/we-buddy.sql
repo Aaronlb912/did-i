@@ -2,9 +2,9 @@
 -- Safe to run again.
 --
 -- When someone says Did on a Did we card, each other member still open that
--- night gets one push: "{name} did it. Your turn?". One per card, person
+-- night gets one push: "{name} did it: {q}". One per card, person
 -- and night (we_buddy_pings). Nothing goes out for a card that is done, to
--- someone who has said Did, to a blocked pair, or when the we pings are off.
+-- someone who has answered that day, someone this sender already nudged for the card, to a blocked pair, or when the we pings are off.
 -- A monthly card's night is its slot, which is what we_answers already holds.
 --
 -- push_text is copied from push-words-cheer.sql (latest) with one new key,
@@ -25,7 +25,7 @@ declare
            "yes_named": "{name} said yes. You are friends now.", "yes": "Your friend request was accepted.",
            "family": "Your family", "family_all": "Everyone is done today. {total} of {total}.", "family_some": "{n} of {total} done today.",
            "cheered": "cheered you on today.", "gift": "{name} sent you a gift", "open": "Open Did I to see it.",
-           "we_done": "Done together: {q}", "we_did": "{name} did it", "we_turn": "Your turn: {q}", "we_asked": "{name} asked you", "we_ask": "Did we: {q}", "we_buddy": "{name} did it. Your turn?",
+           "we_done": "Done together: {q}", "we_did": "{name} did it", "we_turn": "Your turn: {q}", "we_asked": "{name} asked you", "we_ask": "Did we: {q}", "we_buddy": "{name} did it: {q}",
            "didi_send": "Sent you a Did you: {q}",
            "link_kept": "{name} kept your Did you: {q}", "link_joined": "{name} joined your Did we: {q}", "drop_live": "New in the shop today. Open Did I to see it."},
     "de": {"a_friend": "Ein Freund", "someone": "Jemand", "send_cheer": "hat dich angefeuert.", "send_cheer_note": "hat deine Notiz zu \"{q}\" angefeuert.", "send_did": "hat dir ein Did you geschickt: {q}", "send_edit": "hat sein Did I geändert: {q}",
@@ -33,7 +33,7 @@ declare
            "yes_named": "{name} hat Ja gesagt. Ihr seid jetzt befreundet.", "yes": "Deine Freundschaftsanfrage wurde angenommen.",
            "family": "Deine Familie", "family_all": "Heute sind alle fertig. {total} von {total}.", "family_some": "{n} von {total} heute fertig.",
            "cheered": "hat dich heute angefeuert.", "gift": "{name} hat dir ein Geschenk geschickt", "open": "Öffne Did I, um es zu sehen.",
-           "we_done": "Gemeinsam erledigt: {q}", "we_did": "{name} hat es geschafft", "we_turn": "Du bist dran: {q}", "we_asked": "{name} hat dich gefragt", "we_ask": "Did we: {q}", "we_buddy": "{name} hat es geschafft. Du bist dran?",
+           "we_done": "Gemeinsam erledigt: {q}", "we_did": "{name} hat es geschafft", "we_turn": "Du bist dran: {q}", "we_asked": "{name} hat dich gefragt", "we_ask": "Did we: {q}", "we_buddy": "{name} hat es geschafft: {q}",
            "didi_send": "Hat dir ein Did you geschickt: {q}",
            "link_kept": "{name} hat dein Did you behalten: {q}", "link_joined": "{name} ist deinem Did we beigetreten: {q}", "drop_live": "Heute neu im Shop. Öffne Did I, um es zu sehen."},
     "es": {"a_friend": "Un amigo", "someone": "Alguien", "send_cheer": "te mandó ánimos.", "send_cheer_note": "animó tu nota sobre \"{q}\".", "send_did": "te envió un Did you: {q}", "send_edit": "cambió su Did I: {q}",
@@ -41,7 +41,7 @@ declare
            "yes_named": "{name} dijo que sí. Ya son amigos.", "yes": "Aceptaron tu solicitud de amistad.",
            "family": "Tu familia", "family_all": "Todos terminaron hoy. {total} de {total}.", "family_some": "{n} de {total} terminaron hoy.",
            "cheered": "te animó hoy.", "gift": "{name} te envió un regalo", "open": "Abre Did I para verlo.",
-           "we_done": "Hecho juntos: {q}", "we_did": "{name} lo hizo", "we_turn": "Tu turno: {q}", "we_asked": "{name} te preguntó", "we_ask": "Did we: {q}", "we_buddy": "{name} lo hizo. ¿Tu turno?",
+           "we_done": "Hecho juntos: {q}", "we_did": "{name} lo hizo", "we_turn": "Tu turno: {q}", "we_asked": "{name} te preguntó", "we_ask": "Did we: {q}", "we_buddy": "{name} lo hizo: {q}",
            "didi_send": "Te envió un Did you: {q}",
            "link_kept": "{name} guardó tu Did you: {q}", "link_joined": "{name} se unió a tu Did we: {q}", "drop_live": "Hoy hay novedades en la tienda. Abre Did I para verlas."},
     "fr": {"a_friend": "Un ami", "someone": "Quelqu''un", "send_cheer": "t''a encouragé.", "send_cheer_note": "a encouragé ta note sur « {q} ».", "send_did": "t''a envoyé un Did you : {q}", "send_edit": "a modifié son Did I : {q}",
@@ -49,7 +49,7 @@ declare
            "yes_named": "{name} a dit oui. Vous êtes amis.", "yes": "Ta demande d''ami a été acceptée.",
            "family": "Ta famille", "family_all": "Tout le monde a fini aujourd''hui. {total} sur {total}.", "family_some": "{n} sur {total} ont fini aujourd''hui.",
            "cheered": "t''a encouragé aujourd''hui.", "gift": "{name} t''a envoyé un cadeau", "open": "Ouvre Did I pour le voir.",
-           "we_done": "Fait ensemble : {q}", "we_did": "{name} l''a fait", "we_turn": "À toi : {q}", "we_asked": "{name} te l''a demandé", "we_ask": "Did we : {q}", "we_buddy": "{name} l''a fait. À ton tour ?",
+           "we_done": "Fait ensemble : {q}", "we_did": "{name} l''a fait", "we_turn": "À toi : {q}", "we_asked": "{name} te l''a demandé", "we_ask": "Did we : {q}", "we_buddy": "{name} l''a fait : {q}",
            "didi_send": "T''a envoyé un Did you : {q}",
            "link_kept": "{name} a gardé ton Did you : {q}", "link_joined": "{name} a rejoint ton Did we : {q}", "drop_live": "Nouveau dans la boutique aujourd''hui. Ouvre Did I pour voir."},
     "it": {"a_friend": "Un amico", "someone": "Qualcuno", "send_cheer": "ti ha fatto il tifo.", "send_cheer_note": "ha fatto il tifo per la tua nota su \"{q}\".", "send_did": "ti ha inviato un Did you: {q}", "send_edit": "ha cambiato il suo Did I: {q}",
@@ -57,7 +57,7 @@ declare
            "yes_named": "{name} ha detto sì. Ora siete amici.", "yes": "La tua richiesta di amicizia è stata accettata.",
            "family": "La tua famiglia", "family_all": "Oggi hanno finito tutti. {total} su {total}.", "family_some": "{n} su {total} hanno finito oggi.",
            "cheered": "ti ha fatto il tifo oggi.", "gift": "{name} ti ha inviato un regalo", "open": "Apri Did I per vederlo.",
-           "we_done": "Fatto insieme: {q}", "we_did": "{name} l''ha fatto", "we_turn": "Tocca a te: {q}", "we_asked": "{name} te l''ha chiesto", "we_ask": "Did we: {q}", "we_buddy": "{name} l''ha fatto. Tocca a te?",
+           "we_done": "Fatto insieme: {q}", "we_did": "{name} l''ha fatto", "we_turn": "Tocca a te: {q}", "we_asked": "{name} te l''ha chiesto", "we_ask": "Did we: {q}", "we_buddy": "{name} l''ha fatto: {q}",
            "didi_send": "Ti ha inviato un Did you: {q}",
            "link_kept": "{name} ha tenuto il tuo Did you: {q}", "link_joined": "{name} si è unito al tuo Did we: {q}", "drop_live": "Oggi ci sono novità nello shop. Apri Did I per vederle."},
     "ja": {"a_friend": "友だち", "someone": "だれか", "send_cheer": "応援が届きました。", "send_cheer_note": "「{q}」のメモを応援しました。", "send_did": "Did you が届きました：{q}", "send_edit": "Did I が変更されました：{q}",
@@ -65,7 +65,7 @@ declare
            "yes_named": "{name}さんが承認しました。友だちになりました。", "yes": "友だちリクエストが承認されました。",
            "family": "あなたの家族", "family_all": "今日は全員完了。{total}人中{total}人。", "family_some": "今日は{total}人中{n}人が完了。",
            "cheered": "今日あなたを応援しました。", "gift": "{name}さんからギフトが届きました", "open": "Did I を開いて確認してください。",
-           "we_done": "一緒に達成：{q}", "we_did": "{name}さんが達成しました", "we_turn": "あなたの番：{q}", "we_asked": "{name}さんから誘いが届きました", "we_ask": "Did we：{q}", "we_buddy": "{name}さんが達成しました。あなたの番ですか？",
+           "we_done": "一緒に達成：{q}", "we_did": "{name}さんが達成しました", "we_turn": "あなたの番：{q}", "we_asked": "{name}さんから誘いが届きました", "we_ask": "Did we：{q}", "we_buddy": "{name}さんが達成しました：{q}",
            "didi_send": "Did you が届きました：{q}",
            "link_kept": "{name}さんがあなたの Did you を受け取りました：{q}", "link_joined": "{name}さんがあなたの Did we に参加しました：{q}", "drop_live": "今日ショップに新作が出ました。Did I を開いて見てみましょう。"},
     "ko": {"a_friend": "친구", "someone": "누군가", "send_cheer": "응원을 보냈어요.", "send_cheer_note": "\"{q}\" 메모를 응원했어요.", "send_did": "Did you를 보냈어요: {q}", "send_edit": "Did I를 바꿨어요: {q}",
@@ -73,7 +73,7 @@ declare
            "yes_named": "{name}님이 수락했어요. 이제 친구예요.", "yes": "친구 요청이 수락되었어요.",
            "family": "우리 가족", "family_all": "오늘 모두 끝냈어요. {total}명 중 {total}명.", "family_some": "오늘 {total}명 중 {n}명이 끝냈어요.",
            "cheered": "오늘 응원했어요.", "gift": "{name}님이 선물을 보냈어요", "open": "Did I를 열어 확인하세요.",
-           "we_done": "함께 해냄: {q}", "we_did": "{name}님이 해냈어요", "we_turn": "내 차례: {q}", "we_asked": "{name}님이 물어봤어요", "we_ask": "Did we: {q}", "we_buddy": "{name}님이 해냈어요. 내 차례일까요?",
+           "we_done": "함께 해냄: {q}", "we_did": "{name}님이 해냈어요", "we_turn": "내 차례: {q}", "we_asked": "{name}님이 물어봤어요", "we_ask": "Did we: {q}", "we_buddy": "{name}님이 해냈어요: {q}",
            "didi_send": "Did you를 보냈어요: {q}",
            "link_kept": "{name}님이 내 Did you를 받았어요: {q}", "link_joined": "{name}님이 내 Did we에 참여했어요: {q}", "drop_live": "오늘 상점에 새 상품이 나왔어요. Did I를 열어 확인하세요."},
     "pt": {"a_friend": "Um amigo", "someone": "Alguém", "send_cheer": "te mandou uma torcida.", "send_cheer_note": "torceu pela sua nota em \"{q}\".", "send_did": "te enviou um Did you: {q}", "send_edit": "mudou o Did I: {q}",
@@ -81,7 +81,7 @@ declare
            "yes_named": "{name} disse sim. Agora vocês são amigos.", "yes": "Seu pedido de amizade foi aceito.",
            "family": "Sua família", "family_all": "Todos terminaram hoje. {total} de {total}.", "family_some": "{n} de {total} terminaram hoje.",
            "cheered": "torceu por você hoje.", "gift": "{name} te enviou um presente", "open": "Abra o Did I para ver.",
-           "we_done": "Feito juntos: {q}", "we_did": "{name} fez", "we_turn": "Sua vez: {q}", "we_asked": "{name} te convidou", "we_ask": "Did we: {q}", "we_buddy": "{name} fez. Sua vez?",
+           "we_done": "Feito juntos: {q}", "we_did": "{name} fez", "we_turn": "Sua vez: {q}", "we_asked": "{name} te convidou", "we_ask": "Did we: {q}", "we_buddy": "{name} fez: {q}",
            "didi_send": "Te enviou um Did you: {q}",
            "link_kept": "{name} guardou seu Did you: {q}", "link_joined": "{name} entrou no seu Did we: {q}", "drop_live": "Novidades na loja hoje. Abra o Did I para ver."},
     "zh": {"a_friend": "一位朋友", "someone": "有人", "send_cheer": "为你加油了。", "send_cheer_note": "为你在“{q}”上的笔记加油了。", "send_did": "给你发了一个 Did you：{q}", "send_edit": "修改了 Did I：{q}",
@@ -89,7 +89,7 @@ declare
            "yes_named": "{name} 同意了。你们现在是好友了。", "yes": "你的好友请求已通过。",
            "family": "你的家人", "family_all": "今天大家都完成了。{total}/{total}。", "family_some": "今天 {total} 人中有 {n} 人完成。",
            "cheered": "今天为你加油了。", "gift": "{name} 给你送了礼物", "open": "打开 Did I 查看。",
-           "we_done": "一起完成：{q}", "we_did": "{name} 完成了", "we_turn": "轮到你了：{q}", "we_asked": "{name} 邀请了你", "we_ask": "Did we：{q}", "we_buddy": "{name} 完成了。轮到你了吗？",
+           "we_done": "一起完成：{q}", "we_did": "{name} 完成了", "we_turn": "轮到你了：{q}", "we_asked": "{name} 邀请了你", "we_ask": "Did we：{q}", "we_buddy": "{name} 完成了：{q}",
            "didi_send": "给你发了一个 Did you：{q}",
            "link_kept": "{name} 收下了你的 Did you：{q}", "link_joined": "{name} 加入了你的 Did we：{q}", "drop_live": "今天商店上新了。打开 Did I 看看。"}
   }'::jsonb;
@@ -126,6 +126,7 @@ set search_path = public
 as $$
 declare
   who text;
+  qtext text;
 begin
   if new.status <> 'did' then
     return new;
@@ -139,6 +140,7 @@ begin
   end if;
   select coalesce(nullif(btrim(p.display_name), ''), '') into who
   from public.profiles p where p.user_id = new.user_id;
+  select c.question into qtext from public.we_cards c where c.id = new.card_id;
   with ins as (
     insert into public.we_buddy_pings (card_id, to_id, night)
     select new.card_id, m.user_id, new.night
@@ -146,7 +148,10 @@ begin
     where m.card_id = new.card_id and m.state = 'in' and m.user_id <> new.user_id
       and not exists (select 1 from public.we_answers a
                       where a.card_id = new.card_id and a.user_id = m.user_id
-                        and a.night = new.night and a.status = 'did')
+                        and a.night = new.night)
+      and not exists (select 1 from public.we_nudges n
+                      where n.card_id = new.card_id and n.from_id = new.user_id
+                        and n.to_id = m.user_id and n.night = new.night)
       and not exists (select 1 from public.blocks b
                       where (b.blocker = new.user_id and b.blocked = m.user_id)
                          or (b.blocker = m.user_id and b.blocked = new.user_id))
@@ -157,7 +162,8 @@ begin
   insert into public.push_queue (to_id, title, body, go)
   select i.to_id, 'Did we',
     left(public.push_text(i.to_id, 'we_buddy',
-      jsonb_build_object('name', coalesce(nullif(who, ''), public.push_text(i.to_id, 'someone')))), 200),
+      jsonb_build_object('name', coalesce(nullif(who, ''), public.push_text(i.to_id, 'someone')),
+                         'q', left(coalesce(qtext, ''), 120))), 200),
     '/tonight'
   from ins i;
   return new;
