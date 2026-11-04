@@ -2950,6 +2950,7 @@ export const ja = {
   'shop.wishTab': "ほしいもの",
   'shop.buying': "購入中…",
   'shop.stillBuying': "購入中です",
+  'shop.offline': "電波がありません。オンラインに戻ってから購入してください。",
   'shop.canBuy': "今すぐ買えます",
   'shop.moreCoins': "あと{n}コイン",
   'shop.moreGems': "あと{n}ジェム",

@@ -93,6 +93,7 @@ import { accountSessionOn } from '../../src/lib/session-id.js'
 import { CoinIcon, GemFaceMark, GemIcon } from '../components/PurseIcons.jsx'
 import { gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
 import { dropToast, showToast } from '../lib/toast-queue.js'
+import NetInfo from '@react-native-community/netinfo'
 import { KitSegment } from '../components/KitSegment.jsx'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { CardFrame, useFrameActive } from '../components/frames/index.js'
@@ -984,7 +985,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
         confirmBuy(colors, {
           title: tileName(type, item.id),
           body: `${t(BUY_BODY[type], { cost: tag.gems ? gemLine(tag.gems) : coinLine(tag.coins) })} ${leftAfter(purse, tag)}`,
-          onGo: async () => done(type, item, await spend(), true),
+          onGo: () => goOnce(async () => done(type, item, await spend(), true)),
         })
       },
     })
@@ -1152,12 +1153,17 @@ async function goOnce(go) {
     return
   }
   shopBuying = true
-  showToast({ id: 'shop-buying', kind: 'done', text: t('shop.buying'), ms: 60000 })
+  let offline = false
   try {
+    const net = await NetInfo.fetch().catch(() => null)
+    offline = Boolean(net && (!net.isConnected || net.isInternetReachable === false))
+    if (offline) return
+    showToast({ id: 'shop-buying', kind: 'done', text: t('shop.buying'), ms: 60000 })
     await go()
   } finally {
     shopBuying = false
-    dropToast('shop-buying')
+    if (offline) showToast({ id: 'shop-buying', kind: 'error', text: t('shop.offline'), ms: 3000 })
+    else dropToast('shop-buying')
   }
 }
 

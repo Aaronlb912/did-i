@@ -2943,6 +2943,7 @@ export const zh = {
   'shop.wishTab': "心愿单",
   'shop.buying': "正在购买…",
   'shop.stillBuying': "仍在购买",
+  'shop.offline': "没有信号。恢复联网后再购买。",
   'shop.canBuy': "现在就能买",
   'shop.moreCoins': "还差 {n} 金币",
   'shop.moreGems': "还差 {n} 宝石",

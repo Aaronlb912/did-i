@@ -2980,6 +2980,7 @@ export const en = {
   'shop.wishTab': "Wishlist",
   'shop.buying': "Buying…",
   'shop.stillBuying': "Still buying",
+  'shop.offline': "No signal. Buy when you are back online.",
   'shop.canBuy': "Can buy now",
   'shop.moreCoins': "{n} more coins",
   'shop.moreGems': "{n} more gems",

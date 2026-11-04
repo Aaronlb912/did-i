@@ -2992,6 +2992,7 @@ export const fr = {
   'shop.wishTab': "Envies",
   'shop.buying': "Achat en cours…",
   'shop.stillBuying': "Achat en cours",
+  'shop.offline': "Pas de réseau. Achetez quand vous serez de nouveau en ligne.",
   'shop.canBuy': "Tu peux l’acheter",
   'shop.moreCoins': "Encore {n} pièces",
   'shop.moreGems': "Encore {n} gemmes",
