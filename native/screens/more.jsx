@@ -792,7 +792,7 @@ export function CalendarScreen({ book, boards, tagId, now, onChangeBooks }) {
   return (
     <ScreenShell title={t('settings.history')} colors={colors}>
       <FolderScope colors={colors} boards={boards} tagId={tagId} path="/calendar" />
-      {isNewShelf(boards) ? <Meta colors={colors}>{t(gentle ? 'cal.hintGentle' : 'cal.hint')}</Meta> : null}
+      {isNewShelf(boards) ? <Meta colors={colors}>{t('cal.hintGentle')}</Meta> : null}
       {answeredNights(scopedBooks(inView(book, boards), tagId), 1) === 0 ? (
         <EmptyCard title={t('recent.emptyTitle')} body={t('cal.emptyBody')} colors={colors}>
           <DidButton small label={t('about.home')} onPress={() => goHash('/tonight')} colors={colors} />
@@ -893,8 +893,8 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     if (state === 'yes') return colors.on
     if (state === 'late') return colors.late
     if (state === 'skip') return colors.skip
-    // Gentle mode: a missed night is plain, not a warning.
-    if (state === 'hole') return gentle ? colors.open : colors.miss
+    // A missed day is plain, not a warning, gentle or not.
+    if (state === 'hole') return colors.open
     return colors.open
   }
 

@@ -68,8 +68,8 @@ function markOf(answer, when = 0, open = when === 0) {
 
 export function CalendarGrid({ book, boards = [], tagId = '', now, colors, startShift = 0, onAnswer }) {
   const prefs = usePrefs()
-  // Gentle mode: a missed night reads like any other unlit night, never a warning.
-  const missTone = prefs.gentle === true ? colors.open : colors.miss
+  // A missed day reads like any other unlit day, never a warning (gentle or not).
+  const missTone = colors.open
   const clock = now || new Date()
   const [monthShift, setMonthShift] = useLayoutState(startShift)
   const [picked, setPicked] = useState('')
@@ -261,7 +261,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
 // Arrows go back to the year of the first answer. A day opens its sheet.
 export function YearGrid({ book, boards, tagId = '', now, colors, onMonth }) {
   const prefs = usePrefs()
-  const missTone = prefs.gentle === true ? colors.open : colors.miss
+  const missTone = colors.open
   const clock = now || new Date()
   const shelf = useMemo(() => (boards?.length ? boards : [book]), [boards, book])
   // The year and month of the day on screen, not the wall clock: just after
