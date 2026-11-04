@@ -895,7 +895,7 @@ export const it = {
   'lamp.keepMany': 'Tienile',
   'lamp.paused': 'non chiede più',
   'lamp.secManage': 'Gestisci',
-  'lamp.stopSub': 'Resta nella tua lista. Non compare più nella Home.',
+  'lamp.stopSub': 'Resta nella tua lista. Non compare più in Oggi.',
   'lamp.askAgainSub': 'Torna nella Home.',
   'lamp.deleteSub': 'La elimina con le sue risposte.',
   'lamp.pausedLine': 'Ora non viene chiesta.',
@@ -2174,7 +2174,7 @@ export const it = {
     '{n} scelte. Anche le risposte se ne vanno. Puoi annullare per qualche secondo.',
   'questions.bulkDeleted': "{n} domande eliminate",
   'questions.bulkDeletedOne': "1 domanda eliminata",
-  'questions.bulkStopped': 'Non più chieste: {n}.',
+  'questions.bulkStopped': 'In pausa: {n}.',
   'questions.bulkAsked': 'Chieste di nuovo: {n}.',
   'notify.primerKicker': 'Promemoria',
   'notify.primerTitle': 'Un avviso alle {time}?',
@@ -3088,7 +3088,7 @@ export const it = {
   // round7
   'questions.editMenu': "Modifica",
   'questions.editTitle': "Modifica le tue domande",
-  'questions.pickSub': "Scegline più di una da spostare, fermare o eliminare.",
+  'questions.pickSub': "Scegline più di una da spostare, mettere in pausa o eliminare.",
 
   // r10-friends
   'friend.cheersLeft': 'Ti restano {n} incitamenti',
@@ -3495,7 +3495,7 @@ export const it = {
   'frames.seasonFree': "Gratis durante la sua stagione. Prendilo e tienilo anche dopo.",
   'friend.cardLook': "Stile {look}, cornice {frame}",
   'friend.cardLookNone': "Stile {look}, nessuna cornice",
-  'questions.pickSubNoMove': "Scegline più di una da fermare o eliminare.",
+  'questions.pickSubNoMove': "Scegline più di una da mettere in pausa o eliminare.",
   'ach.deadline.nameOne': "1 scadenza rispettata",
   'ach.deadline.lineOne': "Hai finito una domanda entro la scadenza.",
   'ach.deadline.howOne': "Finisci una domanda entro la scadenza.",

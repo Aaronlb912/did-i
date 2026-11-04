@@ -305,7 +305,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
               disabled={Boolean(onMove)}
               accessibilityRole={picking ? 'checkbox' : 'button'}
               accessibilityState={picking ? { checked: on } : undefined}
-              accessibilityLabel={row.lamp.question}
+              accessibilityLabel={[row.lamp.question, ...(meta ? [meta.split(' · ').join('. ')] : [])].join('. ')}
               onPress={() => {
                 if (picking) {
                   onPick(row)
@@ -1006,6 +1006,8 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                 ) : null}
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={t('lamp.delete')}
+                  accessibilityState={{ disabled: !chosen.length }}
                   disabled={!chosen.length}
                   onPress={askDelete}
                   style={({ pressed }) => [

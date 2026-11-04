@@ -886,7 +886,7 @@ export const ja = {
   'lamp.keepMany': '残す',
   'lamp.paused': 'もう聞かない',
   'lamp.secManage': '管理',
-  'lamp.stopSub': 'リストには残ります。ホームには出なくなります。',
+  'lamp.stopSub': 'リストには残ります。今日には出なくなります。',
   'lamp.askAgainSub': 'ホームにまた出ます。',
   'lamp.deleteSub': '質問と回答を削除します。',
   'lamp.pausedLine': '今は聞いていません。',
@@ -2147,7 +2147,7 @@ export const ja = {
   'questions.bulkDeleteBody': '{n} 件選択中。回答も消える。数秒なら元に戻せる。',
   'questions.bulkDeleted': "{n}件の質問を削除しました",
   'questions.bulkDeletedOne': "1件の質問を削除しました",
-  'questions.bulkStopped': '{n} 件を聞かないようにした。',
+  'questions.bulkStopped': '{n} 件を一時停止した。',
   'questions.bulkAsked': '{n} 件をまた聞く。',
   'notify.primerKicker': 'リマインダー',
   'notify.primerTitle': '{time}にお知らせしますか？',
@@ -3053,7 +3053,7 @@ export const ja = {
   // round7
   'questions.editMenu': "編集",
   'questions.editTitle': "質問を編集",
-  'questions.pickSub': "まとめて選んで、移動・停止・削除できます。",
+  'questions.pickSub': "まとめて選んで、移動・一時停止・削除できます。",
 
   // r10-friends
   'friend.cheersLeft': '応援 残り {n}',
@@ -3460,7 +3460,7 @@ export const ja = {
   'frames.seasonFree': "シーズン中は無料。受け取れば、そのあともずっと使えます。",
   'friend.cardLook': "ルック: {look}、フレーム: {frame}",
   'friend.cardLookNone': "ルック: {look}、フレームなし",
-  'questions.pickSubNoMove': "まとめて選んで、停止・削除できます。",
+  'questions.pickSubNoMove': "まとめて選んで、一時停止・削除できます。",
   'ach.deadline.nameOne': "期限を 1 回守った",
   'ach.deadline.lineOne': "質問を 1 つ期限までに終えました。",
   'ach.deadline.howOne': "質問を 1 つ期限までに終える。",

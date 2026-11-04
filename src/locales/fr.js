@@ -898,7 +898,7 @@ export const fr = {
   'lamp.keepMany': 'Garder',
   'lamp.paused': 'plus demandée',
   'lamp.secManage': 'Gérer',
-  'lamp.stopSub': 'Reste dans ta liste. Ne s’affiche plus sur l’Accueil.',
+  'lamp.stopSub': 'Reste dans ta liste. Ne s’affiche plus sur Aujourd’hui.',
   'lamp.askAgainSub': 'Revient sur l’Accueil.',
   'lamp.deleteSub': 'La supprime avec ses réponses.',
   'lamp.pausedLine': 'N’est pas demandée en ce moment.',
@@ -2177,7 +2177,7 @@ export const fr = {
     '{n} choisies. Leurs réponses partent aussi. Tu peux annuler quelques secondes.',
   'questions.bulkDeleted': "{n} questions supprimées",
   'questions.bulkDeletedOne': "1 question supprimée",
-  'questions.bulkStopped': 'Plus demandées : {n}.',
+  'questions.bulkStopped': 'En pause : {n}.',
   'questions.bulkAsked': 'Demandées de nouveau : {n}.',
   'notify.primerKicker': 'Rappels',
   'notify.primerTitle': 'Un rappel à {time} ?',
@@ -3095,7 +3095,7 @@ export const fr = {
   // round7
   'questions.editMenu': "Modifier",
   'questions.editTitle': "Modifier tes questions",
-  'questions.pickSub': "Choisis-en plusieurs pour les déplacer, les arrêter ou les supprimer.",
+  'questions.pickSub': "Choisis-en plusieurs pour les déplacer, les mettre en pause ou les supprimer.",
 
   // r10-friends
   'friend.cheersLeft': 'Encore {n} encouragements',
@@ -3502,7 +3502,7 @@ export const fr = {
   'frames.seasonFree': "Gratuit pendant sa saison. Récupère-le et garde-le ensuite.",
   'friend.cardLook': "Style {look}, cadre {frame}",
   'friend.cardLookNone': "Style {look}, sans cadre",
-  'questions.pickSubNoMove': "Choisis-en plusieurs pour les arrêter ou les supprimer.",
+  'questions.pickSubNoMove': "Choisis-en plusieurs pour les mettre en pause ou les supprimer.",
   'ach.deadline.nameOne': "1 échéance tenue",
   'ach.deadline.lineOne': "Tu as fini une question avant son échéance.",
   'ach.deadline.howOne': "Finis une question avant son échéance.",

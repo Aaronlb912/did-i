@@ -884,7 +884,7 @@ export const zh = {
   'lamp.keepMany': '保留',
   'lamp.paused': '不再询问',
   'lamp.secManage': '管理',
-  'lamp.stopSub': '仍留在列表里，不再出现在首页。',
+  'lamp.stopSub': '仍留在列表里，不再出现在今天。',
   'lamp.askAgainSub': '会重新出现在首页。',
   'lamp.deleteSub': '删除它和它的回答。',
   'lamp.pausedLine': '现在不问。',
@@ -2142,7 +2142,7 @@ export const zh = {
   'questions.bulkDeleteBody': '已选 {n} 个。回答也会一起删除。几秒内可以撤销。',
   'questions.bulkDeleted': "已删除 {n} 个问题",
   'questions.bulkDeletedOne': "已删除 1 个问题",
-  'questions.bulkStopped': '已停止询问 {n} 个。',
+  'questions.bulkStopped': '已暂停 {n} 个。',
   'questions.bulkAsked': '重新询问 {n} 个。',
   'notify.primerKicker': '提醒',
   'notify.primerTitle': '{time}提醒你吗？',
@@ -3046,7 +3046,7 @@ export const zh = {
   // round7
   'questions.editMenu': "编辑",
   'questions.editTitle': "编辑你的问题",
-  'questions.pickSub': "选择多个来移动、停止或删除。",
+  'questions.pickSub': "选择多个来移动、暂停或删除。",
 
   // r10-friends
   'friend.cheersLeft': '还剩 {n} 个加油',
@@ -3453,7 +3453,7 @@ export const zh = {
   'frames.seasonFree': "当季免费。领取后可以一直保留。",
   'friend.cardLook': "外观：{look}，边框：{frame}",
   'friend.cardLookNone': "外观：{look}，无边框",
-  'questions.pickSubNoMove': "选择多个来停止或删除。",
+  'questions.pickSubNoMove': "选择多个来暂停或删除。",
   'ach.deadline.nameOne': "按时完成 1 次",
   'ach.deadline.lineOne': "你在截止日期前完成了 1 个问题。",
   'ach.deadline.howOne': "在截止日期前完成 1 个问题。",
