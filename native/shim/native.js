@@ -442,6 +442,7 @@ async function schedulePingsNow(books, now = new Date()) {
     // (cap or end of the week), one last note asks to open the app.
     const over = notes.length > PING_CAP - 1
     notes.length = Math.min(notes.length, PING_CAP - 1)
+    const regularCount = notes.length
     // A week away: the last question reminder in the window becomes one gentle
     // push. It is never repeated, and the next open sets reminders fresh.
     const lastAhead = aheads[aheads.length - 1] ?? 0
@@ -524,6 +525,9 @@ async function schedulePingsNow(books, now = new Date()) {
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(snooze.at), channelId: CHANNEL_ID },
       })
     }
+    // iOS keeps 64 and drops the last to fire (renew, no rush), so extras push out the latest regular notes.
+    const spill = notes.length - PING_CAP
+    if (spill > 0) notes.splice(Math.max(0, regularCount - spill), spill)
     for (const note of notes) {
       try {
         await Notifications.scheduleNotificationAsync({ identifier: note.identifier, content: note.content, trigger: note.trigger })

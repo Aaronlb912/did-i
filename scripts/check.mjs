@@ -10788,6 +10788,17 @@ test('hours left note: 1 hour is singular, under an hour says soon', async () =>
   assert.deepEqual(leftNote(3, new Date(2026, 10, 3, 20, 30), 0), { key: 'notif.leftHours', vars: { n: 3, h: 3 } })
 })
 
+test('ping cap counts renew, streak and snooze notes; hide waits for the answer; brain dump skips blank lines', async () => {
+  const { readFileSync } = await import('node:fs')
+  const nat = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
+  assert.match(nat, /const spill = notes\.length - PING_CAP/, 'extras trim the regular notes so the total stays under the cap')
+  assert.ok(nat.indexOf('const spill') > nat.indexOf('const snooze of snoozedNotes()'), 'the trim runs after the snoozes are added')
+  const we = readFileSync(new URL('../native/components/WeTonight.jsx', import.meta.url), 'utf8')
+  assert.ok(we.indexOf('hideWeFor(card.id, boardDate())') > we.indexOf('weAnswer(card.id, next'), 'a Not yet hides the card only after it saved')
+  const dump = readFileSync(new URL('../native/components/BrainDumpSheet.jsx', import.meta.url), 'utf8')
+  assert.match(dump, /const fits = kept\.slice\(0, room\)/, 'blank lines do not use up room')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

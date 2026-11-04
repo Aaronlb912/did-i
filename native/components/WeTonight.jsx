@@ -317,7 +317,6 @@ export function useWeAnswer(reload, book) {
   async function answer(card, status, night) {
     const mine = weMine(card)
     // Not yet on a card open past today hides it until tomorrow.
-    if (!night && status === 'nope' && weOpenPastToday(card, boardDate())) hideWeFor(card.id, boardDate())
     // A repeat tap on tonight's lit answer does nothing: a Did we answer has
     // no undo, so it must not clear by accident. Taking back is explicit.
     if (!night && status && mine?.status === status) return
@@ -343,6 +342,7 @@ export function useWeAnswer(reload, book) {
       confirmMiss(tMiss(weMissKey(card, out.miss)))
       return
     }
+    if (!night && status === 'nope' && weOpenPastToday(card, boardDate())) hideWeFor(card.id, boardDate())
     if (next) {
       feelTap(next === 'nope' ? 'skip' : 'did')
       confirmDone(t('tonight.weSaved'))
