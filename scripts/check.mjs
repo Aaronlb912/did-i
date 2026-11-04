@@ -11283,6 +11283,14 @@ test('findable 2: look again Done, widget help and settings row, brain dump belo
   assert.ok(questions.split("t('dump.title')").length === 3, 'Brain dump row shows with and without questions')
 })
 
+test('Did we calm: person rows carry nudge and cheer, invites collapse, When uses tiles', () => {
+  const we = readFileSync('native/screens/we.jsx', 'utf8')
+  const tonight = readFileSync('native/components/WeTonight.jsx', 'utf8')
+  assert.ok(/styles.personRow/.test(we) && /canNudge/.test(we), 'nudge belongs on the person row')
+  assert.ok(we.split("t('we.nudge'").length === 2, 'nudge is built once, on the person row')
+  assert.ok(tonight.includes("asks.slice(0, 1)") && tonight.includes("we.asksMore"), "one invite, then a +n more row")
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
