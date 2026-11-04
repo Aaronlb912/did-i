@@ -2276,6 +2276,7 @@ export const es = {
   'we.tonightsTurn': "le toca hoy",
   'we.countOnly': '{total} personas en esto. Las respuestas son privadas.',
   'we.askMore': 'Invitar a alguien más',
+  'we.pickName': "Invitar a {name}",
   'we.sendAsk': 'Enviar',
   'we.edit': 'Cambiar las reglas',
   'we.save': 'Guardar',

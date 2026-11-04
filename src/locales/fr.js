@@ -2278,6 +2278,7 @@ export const fr = {
   'we.tonightsTurn': "son tour aujourd’hui",
   'we.countOnly': '{total} personnes dessus. Les réponses restent privées.',
   'we.askMore': 'Inviter quelqu’un d’autre',
+  'we.pickName': "Inviter {name}",
   'we.sendAsk': 'Envoyer',
   'we.edit': 'Changer les règles',
   'we.save': 'Enregistrer',

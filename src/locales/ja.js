@@ -2242,6 +2242,7 @@ export const ja = {
   'we.tonightsTurn': "今日の担当",
   'we.countOnly': '{total}人が参加。答えは非公開です。',
   'we.askMore': 'ほかの人を招待',
+  'we.pickName': "{name}さんを誘う",
   'we.sendAsk': '招待を送る',
   'we.edit': 'ルールを変える',
   'we.save': '保存',
