@@ -938,10 +938,10 @@ export function CalendarScreen({ book, boards, tagId, now, route, onChangeBooks 
       )}
       <View style={styles.calKey}>
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.on }]} />
-        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyCleared')}</Text>
+        <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('stats.did')}</Text>
         {gentle ? null : (
           <>
-            <View style={[styles.calDot, view === 'year' && styles.calSquare, missDot(colors)]} />
+            <View style={[styles.calDot, view === 'year' && styles.calSquare, missDot(colors, colors.open)]} />
             <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('cal.keyMissed')}</Text>
           </>
         )}
