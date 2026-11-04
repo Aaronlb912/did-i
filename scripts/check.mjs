@@ -11178,6 +11178,26 @@ test('did we: ask reply miss is toasted, ask row shows when, partial send keeps 
   assert.ok(s.replace(/\s+/g, ' ').includes('confirmMiss(tMiss(back.miss)) return load()'), 'change back miss reloads')
 })
 
+test('Later waits the picked minutes, never into quiet hours; a failed reminder is not marked as set', async () => {
+  const { snoozeFrom } = await import('../src/lib/notify-answer.js')
+  const { readPrefs, writePrefs } = await import('../src/lib/prefs.js')
+  const { readFileSync } = await import('node:fs')
+  const response = (id) => ({ actionIdentifier: 'later', notification: { request: { identifier: 'n1', content: { title: 'T', body: 'B', data: { lampId: 'a' } } } } })
+  const now = new Date(2026, 10, 4, 12, 0).getTime()
+  assert.equal(snoozeFrom(response(), now).at - now, 60 * 60 * 1000, 'default is an hour')
+  for (const min of [15, 30, 60]) assert.equal(snoozeFrom(response(), now, { laterMin: min }).at - now, min * 60 * 1000)
+  assert.equal(snoozeFrom(response(), now, { laterMin: 7 }).at - now, 60 * 60 * 1000, 'an unknown length falls back to an hour')
+  const quiet = { quietOn: true, quietFrom: '12:00', quietTo: '14:00', laterMin: 30 }
+  assert.equal(snoozeFrom(response(), now, quiet).at, new Date(2026, 10, 4, 14, 0).getTime(), 'Later inside quiet hours waits until they end')
+  writePrefs({ laterMin: 30 })
+  assert.equal(readPrefs().laterMin, 30)
+  writePrefs({ laterMin: 5 })
+  assert.equal(readPrefs().laterMin, 60, 'an unknown length is dropped')
+  const nat = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
+  assert.ok(nat.indexOf('if (failed)') > 0 && nat.indexOf("setItem(PING_FAILED_KEY, '1')", nat.indexOf('if (failed)')) < nat.indexOf('setItem(PING_ZONE_KEY, pingZone())', nat.indexOf('let failed = 0')), 'a failed note sets the flag and skips the saved time')
+  assert.ok(!/date: new Date(snooze.at)/.test(nat), 'snoozes go through the quiet hours shift')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

@@ -46,6 +46,8 @@ function blankPrefs() {
     quietOn: false,
     quietFrom: '22:00',
     quietTo: '07:00',
+    // How long Later on a reminder waits, in minutes (notify-answer.js LATER_MINUTES).
+    laterMin: 60,
     // One push the morning a shop drop goes live. Off until asked for in the
     // shop; the server reads it (queue_drop_pushes in supabase/shop-drops.sql).
     dropPings: false,
@@ -256,6 +258,7 @@ function cleanPrefs(raw) {
   if (QUIET_TIME.test(raw?.quietFrom || '')) next.quietFrom = raw.quietFrom
   if (QUIET_TIME.test(raw?.quietTo || '')) next.quietTo = raw.quietTo
   next.quietTo = quietToFor(next.quietFrom, next.quietTo)
+  if ([15, 30, 60].includes(raw?.laterMin)) next.laterMin = raw.laterMin
   if (raw?.dropPings === true) next.dropPings = true
   if (raw?.morningAsk === false) next.morningAsk = false
   if (/^(0[5-9]|1[01]):(00|30)$/.test(raw?.morningAt || '')) next.morningAt = raw.morningAt

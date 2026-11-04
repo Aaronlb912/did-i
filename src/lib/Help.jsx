@@ -9,7 +9,7 @@ import { boardDate, formatBoardDate } from './recurrence.js'
 // One section per feature, each with a way to it.
 const HELP_MORE = [
   { id: 'questions', title: 'help.questions', body: ['help.questionsP'], go: '/lamps', goLabel: 'help.questionsGo' },
-  { id: 'pings', title: 'help.pings', body: ['help.pingsP'], go: '/pings', goLabel: 'help.pingsGo' },
+  { id: 'pings', title: 'help.pings', body: ['help.pingsP', 'help.pingsZone'], go: '/pings', goLabel: 'help.pingsGo' },
   { id: 'widget', title: 'help.widget', body: ['help.widgetP'] },
   { id: 'people', title: 'help.people', body: ['help.peopleP'], go: '/people', goLabel: 'help.peopleGo' },
   { id: 'we', title: 'help.we', body: ['help.weP1', 'help.weP2'], go: '/we/new', goLabel: 'help.weGo' },

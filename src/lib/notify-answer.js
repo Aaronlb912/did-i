@@ -1,3 +1,5 @@
+import { quietEnd } from './quiet.js'
+
 // Did, Not yet and Later buttons on a reminder. They open the app for a moment (a fully
 // closed app drops background taps without a native task); the answer goes
 // through the same path as a widget tap.
@@ -38,13 +40,16 @@ export function sendActions(t) {
 // Later on a reminder: no answer, the same note again in an hour. Same
 // title, body, data and category, so it has the same buttons.
 export const SNOOZE_MS = 60 * 60 * 1000
+export const LATER_MINUTES = [15, 30, 60]
 export const SNOOZE_KEY = 'did-i-snoozed'
-export function snoozeFrom(response, now = Date.now()) {
+export function snoozeFrom(response, now = Date.now(), prefs = null) {
   if (String(response?.actionIdentifier || '') !== 'later') return null
   const request = response?.notification?.request || {}
   const c = request.content || {}
   if (!c.data?.lampId && !c.data?.weId) return null
-  const at = now + SNOOZE_MS
+  const wait = LATER_MINUTES.includes(prefs?.laterMin) ? prefs.laterMin * 60 * 1000 : SNOOZE_MS
+  // Quiet hours hold it until they end, like the asks.
+  const at = quietEnd(new Date(now + wait), prefs).getTime()
   return {
     identifier: 'snooze:' + String(request.identifier || c.data.lampId || c.data.weId),
     content: { title: c.title, body: c.body, data: c.data, categoryIdentifier: c.categoryIdentifier || ASK_CATEGORY },
