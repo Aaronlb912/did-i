@@ -266,6 +266,7 @@ export async function lookUpWeLink(code) {
     avatarUrl: row.avatar_url || '',
     people: Number(row.people) || 0,
     full: Boolean(row.full_up),
+    blocked: Boolean(row.blocked),
   }
 }
 
@@ -278,7 +279,7 @@ export async function joinWeLink(code, addFriend = false) {
   const { data, error } = await db.rpc('we_join_link', { code: clean, add_friend: Boolean(addFriend) })
   if (error) return { miss: error.message || 'people.reach' }
   if (data?.miss) return { miss: data.miss }
-  return { card: data?.card || '' }
+  return { card: data?.card || '', already: Boolean(data?.already) }
 }
 
 // A Did we link opened on the website while signed out. Kept until sign-in,

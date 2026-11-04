@@ -7,7 +7,7 @@ import { goHash } from './navigation/hash.js'
 import { holdSpoken } from '../src/lib/voice-add.js'
 import { freshInstall } from '../src/lib/auth-gate.js'
 import { readQrLink } from '../src/lib/qr-links.js'
-import { readDidYouLink, savePendingDidYou } from '../src/lib/did-you-links.js'
+import { isWeLinkCode, readDidYouLink, savePendingDidYou } from '../src/lib/did-you-links.js'
 import { matchSpoken, openTonight, spokenAnswer } from '../src/lib/voice-answer.js'
 import { t } from '../src/lib/i18n.js'
 import { showToast } from './lib/toast-queue.js'
@@ -85,7 +85,7 @@ export function goFromDeepLink(url) {
     return true
   }
   if (route.didYou) {
-    if (savePendingDidYou(route.didYou)) saidSaved()
+    if (savePendingDidYou(route.didYou) && !isWeLinkCode(route.didYou)) saidSaved()
     return true
   }
   // Signed out, Connect is behind sign-in: keep the code and open it after.

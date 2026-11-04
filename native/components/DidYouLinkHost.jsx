@@ -94,19 +94,29 @@ export function DidYouLinkHost({ colors, onKeep }) {
       // Kept until they sign in. Asked once; Not now only closes the sheet, the link still runs after sign-in.
       if (askedSignIn.current === code) return undefined
       askedSignIn.current = code
-      publishSheet({
-        title: t('people.outTitle'),
-        body: t('weLink.signIn'),
-        goLabel: t('we.signIn'),
-        closeLabel: t('account.stay'),
-        colors,
-        onClose: () => publishSheet(null),
-        onGo: () => {
-          publishSheet(null)
-          goHash('/account')
-        },
-      })
-      return undefined
+      let live = true
+      lookUpWeLink(code)
+        .catch(() => null)
+        .then((seen) => {
+          if (!live) return
+          const known = seen && !seen.miss && seen.question ? seen : null
+          publishSheet({
+            ...(known ? { quote: didYouAsk(known.question, t('people.sendWhat')) } : {}),
+            title: known ? t('weLink.asked', { name: known.name || t('weLink.someone') }) : t('people.outTitle'),
+            body: t('weLink.signIn'),
+            goLabel: t('we.signIn'),
+            closeLabel: t('account.stay'),
+            colors,
+            onClose: () => publishSheet(null),
+            onGo: () => {
+              publishSheet(null)
+              goHash('/account')
+            },
+          })
+        })
+      return () => {
+        live = false
+      }
     }
     let alive = true
     Promise.all([we ? lookUpWeLink(code) : lookUpDidYouLink(code), linkMakerIsFriend(code).catch(() => false)]).then(([raw, friends]) => {
@@ -131,6 +141,11 @@ export function DidYouLinkHost({ colors, onKeep }) {
       if (!found && !we) {
         // Stopped by whoever made it, or never right.
         deadDidYouLinkKey(code).then((key) => showToast({ id: 'did-you-link', kind: 'error', text: t(key), ms: 5200 }))
+        setTick((n) => n + 1)
+        return
+      }
+      if (found?.blocked) {
+        showToast({ id: 'did-you-link', kind: 'error', text: t('weLink.blocked'), ms: 5200 })
         setTick((n) => n + 1)
         return
       }
@@ -177,6 +192,10 @@ export function DidYouLinkHost({ colors, onKeep }) {
           const out = await joinWeLink(code, addFriend)
           if (out.miss) {
             showToast({ id: 'did-you-link', kind: 'error', text: t(WE_MISS[out.miss] || 'didYouLink.reach'), ms: 5200 })
+          } else if (out.already) {
+            refreshWeNights()
+            goHash('/tonight', { tag: 'all' })
+            showToast({ id: 'did-you-link', text: t('weLink.already'), ms: 3200 })
           } else {
             refreshWeNights()
             // Straight to tonight, where the Did we now waits, every tag showing.
