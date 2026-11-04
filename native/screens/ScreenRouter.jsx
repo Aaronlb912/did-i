@@ -37,6 +37,7 @@ const we = () => require('./we.jsx')
 const WeCardScreen = lazyScreen(we, 'WeCardScreen')
 const WeHomeScreen = lazyScreen(we, 'WeHomeScreen')
 const AddScreen = lazyScreen(() => require('./AddScreen.jsx'), 'AddScreen')
+const RemindScreen = lazyScreen(() => require('./RemindScreen.jsx'), 'RemindScreen')
 const shop = () => require('./shop.jsx')
 const CollectionScreen = lazyScreen(shop, 'CollectionScreen')
 const GemShopScreen = lazyScreen(shop, 'GemShopScreen')
@@ -183,6 +184,7 @@ export function ScreenRouter({
   if (path === '/add' || path === '/hang') {
     return <AddScreen book={book} boards={boards} onChange={change} onSaveTo={saveLamp} route={route} />
   }
+  if (path === '/remind') return <RemindScreen book={book} route={route} />
   if (path === '/lamp') {
     return <LampScreen book={book} boards={boards} onChange={change} route={route} />
   }

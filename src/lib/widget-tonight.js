@@ -302,6 +302,7 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     nopeLabel: t('widget.tonight.nope'),
     nextLabel: t('widget.tonight.next'),
     openLabel: t('widget.tonight.openApp'),
+    remindLabel: t('remind.mic'),
     emptyLabel: away ? footer : nextLine || t('widget.tonight.empty'),
     clearLabel: away ? footer : nextLine || t('widget.tonight.clear'),
     openUri: widgetTonightUri(null, lead?.lamp.id || ''),

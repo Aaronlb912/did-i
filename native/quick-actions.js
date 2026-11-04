@@ -7,13 +7,14 @@ import { goFromDeepLink } from './deep-link.js'
 let bound = false
 let labelLocale = ''
 
-// Long-press the app icon: Tonight, Add a question, Friends and family, Scan a
+// Long-press the app icon: Remind me, Tonight, Add a question, Friends and family, Scan a
 // code. Android already has a fixed Add shortcut (res/xml/shortcuts.xml), so
 // it is left out of this list there. Each one opens a didi:// link.
 function setLabels() {
   labelLocale = readPrefs().locale
   const ios = Platform.OS === 'ios'
   const items = [
+    { id: 'remind', title: t('quick.remind'), icon: ios ? 'symbol:mic' : undefined, params: { href: 'didi://open/remind' } },
     { id: 'tonight', title: t('quick.tonight'), icon: ios ? 'symbol:moon.stars' : undefined, params: { href: 'didi://open/tonight' } },
     ...(ios ? [{ id: 'add', title: t('quick.add'), icon: 'add', params: { href: 'didi://open/add' } }] : []),
     { id: 'friends', title: t('quick.friends'), icon: ios ? 'contact' : undefined, params: { href: 'didi://open/friends' } },
@@ -33,6 +34,7 @@ export function installQuickActions() {
   const go = (action) => {
     const href = action?.params?.href
     if (typeof href === 'string') goFromDeepLink(href)
+    else if (typeof action?.id === 'string') goFromDeepLink(`didi://open/${action.id}`)
   }
   try {
     QuickActions.addListener(go)

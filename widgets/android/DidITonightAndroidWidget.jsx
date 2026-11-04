@@ -507,6 +507,10 @@ const FALLBACK = {
   gem: false,
 }
 
+function micSvg(color) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`
+}
+
 function palette(props) {
   return props?.colors ? { ...FALLBACK, ...props.colors } : FALLBACK
 }
@@ -891,6 +895,26 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
               </FlexWidget>
             </FlexWidget>
           ) : null}
+          <FlexWidget
+            style={{
+              width: 'match_parent',
+              height: '100%',
+              flexDirection: 'column',
+              justifyContent: 'flex-end',
+              alignItems: 'flex-end',
+              paddingBottom: 2,
+              paddingRight: 2,
+            }}
+          >
+            <FlexWidget
+              style={{ width: 40, height: 40, justifyContent: 'center', alignItems: 'center' }}
+              clickAction="OPEN_URI"
+              clickActionData={{ uri: 'didi://open/remind' }}
+              accessibilityLabel={p.remindLabel || 'Remind me'}
+            >
+              <SvgWidget svg={micSvg(C.on)} style={{ width: 20, height: 20 }} />
+            </FlexWidget>
+          </FlexWidget>
         </OverlapWidget>
       </FlexWidget>
     </FlexWidget>

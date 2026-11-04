@@ -31,6 +31,7 @@ const NATIVE_SHIMS = [
   ['expo-image-manipulator', 'image-manipulator-safe.cjs'],
   ['expo-camera', 'camera-safe.cjs'],
   ['expo-quick-actions', 'quick-actions-safe.cjs'],
+  ['expo-speech-recognition', 'speech-recognition-safe.cjs'],
   ['expo-apple-authentication', 'apple-auth-safe.cjs'],
   ['@react-native-google-signin/google-signin', 'google-signin-safe.cjs'],
   ['expo-application', 'application-safe.cjs'],

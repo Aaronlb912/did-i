@@ -1200,6 +1200,15 @@ test('year totals count Did and Not yet days, empty year is 0', async () => {
   assert.deepEqual(yearTotals([{ nights: [{ miss: true }] }]), { did: 0, miss: 1, rate: 0 })
 })
 
+test('Remind me can use the mic: RECORD_AUDIO is not removed from the manifest', () => {
+  const here = fileURLToPath(new URL('..', import.meta.url))
+  const manifest = readFileSync(path.join(here, 'android/app/src/main/AndroidManifest.xml'), 'utf8')
+  assert.ok(!/RECORD_AUDIO[^>]*tools:node="remove"/.test(manifest), 'RECORD_AUDIO must not be removed')
+  assert.ok(manifest.includes('android.permission.RECORD_AUDIO'))
+  const plugin = JSON.parse(readFileSync(path.join(here, 'app.json'), 'utf8')).expo.plugins.find((one) => one[0] === 'expo-speech-recognition')
+  assert.ok(plugin[1].microphonePermission && plugin[1].speechRecognitionPermission, 'iOS mic and speech strings')
+})
+
 test('reminders are cleared only after the new list is built', () => {
   const src = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
   const body = src.slice(src.indexOf('async function schedulePingsNow'))
@@ -10680,6 +10689,52 @@ test('monthly Did we reminders: a card scheduled from Nov 20 pings only Nov 28, 
   assert.ok(src.includes("we.cadence === 'monthly' && !weMonthlyPingDay("), 'native.js schedules monthly cards by that rule')
 })
 
+test('remind me: cap, blank, tries walk to Today, and sort', async () => {
+  const { addRemind, readReminds, remindNext, removeRemind, restoreRemind, REMIND_MAX, REMIND_TRIES, REMIND_AGAIN_MIN } = await import('../src/lib/remind-me.js')
+  const base = Date.now()
+  localStorage.removeItem('did-i-remind')
+  assert.equal(addRemind('   ', 20).miss, 'remind.blank')
+  const long = addRemind('x'.repeat(300), 40, base).item
+  assert.equal(long.text.length, 120)
+  assert.equal(long.at, base + 40 * 60000)
+  const soon = addRemind(' take the laundry out ', 20, base).item
+  assert.equal(soon.text, 'take the laundry out')
+  assert.deepEqual(readReminds().map((r) => r.id), [soon.id, long.id], 'soonest first')
+  assert.equal(addRemind('a', 1, base).item.at, base + 5 * 60000, 'minimum is 5 minutes')
+  for (let i = readReminds().length; i < REMIND_MAX; i += 1) assert.ok(addRemind('n' + i, 20).item)
+  assert.equal(addRemind('one more', 20).miss, 'remind.full')
+  const gone = removeRemind(soon.id)
+  assert.equal(readReminds().length, REMIND_MAX - 1)
+  restoreRemind(gone)
+  assert.equal(readReminds().length, REMIND_MAX)
+  assert.equal(remindNext(soon, 'did').done, true)
+  assert.ok(!readReminds().some((r) => r.id === soon.id), 'Did clears it')
+  let item = long
+  const now = base
+  for (let n = 1; n < REMIND_TRIES; n += 1) {
+    const out = remindNext(item, 'nope', now)
+    assert.equal(out.item.tries, n)
+    assert.equal(out.item.at, now + REMIND_AGAIN_MIN * 60000)
+    assert.equal(readReminds().find((r) => r.id === long.id).tries, n, 'stored before it is scheduled')
+    item = out.item
+  }
+  assert.equal(remindNext(item, 'nope', now).toToday, true)
+  assert.ok(!readReminds().some((r) => r.id === long.id), 'the last Not yet leaves the list')
+  const { notificationAnswer } = await import('../src/lib/notify-answer.js')
+  const tap = (actionIdentifier) => ({ actionIdentifier, notification: { request: { identifier: 'remind:a:0', content: { data: { remindId: 'a', go: '/remind' } } } } })
+  assert.deepEqual(notificationAnswer(tap('nope')), { kind: 'remind', id: 'a', action: 'nope' })
+  assert.equal(notificationAnswer(tap('expo.modules.notifications.actions.DEFAULT')), null, 'a plain tap opens /remind')
+  assert.equal(addRemind('Did I take the pills?', 20).item.text, 'take the pills')
+  assert.equal(addRemind('did i, lock up??', 20).item.text, 'lock up')
+  assert.equal(addRemind('Did I?', 20).miss, 'remind.blank')
+  localStorage.setItem('did-i-remind', JSON.stringify([{ id: 'old', text: 'old one', at: base - 13 * 3600000, tries: 0 }, { id: 'fired', text: 'fired', at: base - 3600000, tries: 0 }]))
+  assert.deepEqual(readReminds().map((r) => r.id), ['fired'], 'over 12 hours overdue is dropped')
+  const { clearReminds } = await import('../src/lib/remind-me.js')
+  clearReminds()
+  assert.equal(readReminds().length, 0, 'sign-out clears them')
+  localStorage.removeItem('did-i-remind')
+})
+
 test('check script: no test is added after the pass count', () => {
   const self = readFileSync(new URL(import.meta.url), 'utf8')
   const after = self.slice(self.lastIndexOf('// Keep this ' + 'last: every test'))
@@ -10796,7 +10851,7 @@ test('hours left note: 1 hour is singular, under an hour says soon', async () =>
 test('ping cap counts renew, streak and snooze notes; hide waits for the answer; brain dump skips blank lines', async () => {
   const { readFileSync } = await import('node:fs')
   const nat = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
-  assert.match(nat, /const spill = notes\.length - PING_CAP/, 'extras trim the regular notes so the total stays under the cap')
+  assert.match(nat, /const spill = notes\.length - \(PING_CAP - waitingReminds\)/, 'extras trim the regular notes so the total stays under the cap')
   assert.ok(nat.indexOf('const spill') > nat.indexOf('const snooze of snoozedNotes()'), 'the trim runs after the snoozes are added')
   const we = readFileSync(new URL('../native/components/WeTonight.jsx', import.meta.url), 'utf8')
   assert.ok(we.indexOf('hideWeFor(card.id, boardDate())') > we.indexOf('weAnswer(card.id, next'), 'a Not yet hides the card only after it saved')
