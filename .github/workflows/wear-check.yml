@@ -5,13 +5,8 @@ name: Wear OS check
 # android-apk.yml.
 
 on:
+  # Manual only: PRs are gated locally (npm test, N of N passed) so they spend no Actions minutes.
   workflow_dispatch:
-  pull_request:
-    paths:
-      - 'android/wear/**'
-      - 'android/gradle/**'
-      - 'android/gradlew'
-      - '.github/workflows/wear-check.yml'
 
 concurrency:
   group: wear-check-${{ github.ref }}

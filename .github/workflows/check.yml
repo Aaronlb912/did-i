@@ -2,7 +2,7 @@ name: check
 
 # PRs only: the merge to master is the same code the PR run checked.
 on:
-  pull_request:
+  # Manual only: PRs are gated locally (npm test, N of N passed) so they spend no Actions minutes.
   workflow_dispatch:
 
 concurrency:
