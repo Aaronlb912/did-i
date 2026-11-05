@@ -25,7 +25,7 @@ export function SetCard({ children, colors }) {
   )
 }
 
-export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, danger, colors, on, plain }) {
+export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, danger, colors, on, plain, dim }) {
   const flat = !onPress
   // A row that does something right away (no ›) reads as a button: its words
   // take the accent, or its trailing word ("Remove") when it has one.
@@ -58,7 +58,7 @@ export function SetRow({ label, sub, value, icon, tint, last, onPress, chevron, 
   )
   if (flat) {
     return (
-      <View style={[styles.row, styles.rowFlat, { borderBottomColor: colors.lineSoft }, last && { borderBottomWidth: 0 }]}>
+      <View accessibilityState={dim ? { disabled: true } : undefined} style={[styles.row, styles.rowFlat, { borderBottomColor: colors.lineSoft }, last && { borderBottomWidth: 0 }, dim && { opacity: 0.5 }]}>
         {body}
       </View>
     )

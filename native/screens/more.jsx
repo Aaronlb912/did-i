@@ -2759,7 +2759,18 @@ function AccountSignedIn({ book, email, onChange }) {
   const shownPhones = allPhones ? phones : phones.slice(0, 3)
   const phonesHidden = !allPhones && phones.length > 3
 
-  async function download() {
+  function askDelete() {
+    setSure({
+      title: t('account.deleteTitle'),
+      body: `${t('account.deleteBody')}\n\n${t('account.deleteGone')}`,
+      // After the copy is saved, the delete question comes back.
+      extra: { label: t('account.deleteCopy'), go: () => { setSure(null); download(askDelete) } },
+      yes: t('account.deleteYes'),
+      go: () => leave('delete', deleteAccount),
+    })
+  }
+
+  async function download(after) {
     if (busy) return
     setBusy('export')
     try {
@@ -3005,7 +3016,7 @@ function AccountSignedIn({ book, email, onChange }) {
           icon="logout"
           label={t('account.out')}
           last
-          onPress={busy ? undefined : () => setSure({ title: t('account.outSureTitle'), body: t('account.outSureBody'), yes: t('account.out'), go: () => leave('out', signOutHere) })}
+          dim={Boolean(busy)} onPress={busy ? undefined : () => setSure({ title: t('account.outSureTitle'), body: t('account.outSureBody'), yes: t('account.out'), go: () => leave('out', signOutHere) })}
         />
       </SetCard>
       <View style={styles.dataGap} />
@@ -3038,7 +3049,7 @@ function AccountSignedIn({ book, email, onChange }) {
           label={t('account.syncNow')}
           sub={syncNote}
           value={busy === 'sync' ? t('app.loading') : undefined}
-          onPress={busy ? undefined : syncNow}
+          dim={Boolean(busy)} onPress={busy ? undefined : syncNow}
         />
         {phones.length ? (
           shownPhones.map((row, at) => (
@@ -3116,7 +3127,7 @@ function AccountSignedIn({ book, email, onChange }) {
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="note" label={t('account.export')} sub={lastCopyLine(copied) ? `${t('account.exportSub')}
-${lastCopyLine(copied)}` : t('account.exportSub')} value={busy === 'export' ? t('app.loading') : undefined} chevron last onPress={busy ? undefined : download} />
+${lastCopyLine(copied)}` : t('account.exportSub')} value={busy === 'export' ? t('app.loading') : undefined} chevron last dim={Boolean(busy)} onPress={busy ? undefined : download} />
       </SetCard>
 
       <SetCap colors={colors}>{t('account.leaveCap')}</SetCap>
@@ -3140,15 +3151,7 @@ ${lastCopyLine(copied)}` : t('account.exportSub')} value={busy === 'export' ? t(
           danger
           last
           label={t('account.delete')}
-          onPress={() =>
-            setSure({
-              title: t('account.deleteTitle'),
-              body: `${t('account.deleteBody')}\n\n${t('account.deleteGone')}`,
-              extra: { label: t('account.deleteCopy'), go: () => { setSure(null); download() } },
-              yes: t('account.deleteYes'),
-              go: () => leave('delete', deleteAccount),
-            })
-          }
+          onPress={askDelete}
         />
       </SetCard>
       <SureModal
