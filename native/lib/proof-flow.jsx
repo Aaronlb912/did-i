@@ -2,6 +2,7 @@ import NetInfo from '@react-native-community/netinfo'
 import { useState } from 'react'
 import { Dimensions, Image, Linking, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { addProof, freshProofUrl, removeProof, reportProof } from '../../src/lib/proofs.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { DidButton } from '../components/ui.jsx'
@@ -193,7 +194,9 @@ function ProofImage({ row, name, size, colors }) {
     <Image
       source={{ uri }}
       resizeMode="contain"
-      accessibilityLabel={t('proof.viewA11y', { name })}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={t('photos.thumbA11y', { name, day: formatBoardDate(row.night) })}
       style={size}
       onError={async () => {
         if (tried) return setGone(true)

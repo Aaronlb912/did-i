@@ -231,7 +231,7 @@ export function SwipeCard({
     <View style={[styles.host, alignTop ? styles.hostTop : null]} pointerEvents="box-none">
       {/* The rails span the whole screen, so a demo card would draw them over the page it sits in. */}
       {demo ? null : (
-        <View style={styles.railsHost} pointerEvents="none">
+        <View style={styles.railsHost} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <SwipeEdgeRails pull={pull} colors={colors} winH={winH} didLabel={stampDid} nopeLabel={stampNope} reduce={reduce} />
         </View>
       )}

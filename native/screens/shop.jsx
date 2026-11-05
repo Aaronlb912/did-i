@@ -914,7 +914,7 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
     title: name,
     body,
     ...(short ? { content: <EarnCoinsRow colors={colors} onPress={() => openEarnCoins(colors, () => openTilePreview(type, item, purse, colors, coat, action, miss, wish))} /> } : {}),
-    ...(wish && !tag.owned ? { moreLabel: wish.on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`, moreSizeLabels: [`♥ ${t('shop.wishOn')}`, `♡ ${t('shop.wishAdd')}`], onMore: wish.toggle } : {}),
+    ...(wish && !tag.owned ? { moreLabel: wish.on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`, moreSizeLabels: [`♥ ${t('shop.wishOn')}`, `♡ ${t('shop.wishAdd')}`], moreA11y: wish.on ? t('shop.wishOn') : t('shop.wishAdd'), onMore: wish.toggle } : {}),
     ...(action ? { goLabel: action.label, onGo: action.go } : short ? { goLabel: t('tonight.backToStack'), onGo: () => { publishSheet(null); goHash('/tonight') } } : {}),
     closeLabel: t('settings.close'),
     colors,
@@ -1237,7 +1237,7 @@ export function ShopLooksScreen({ book, onChange }) {
         miss={miss.id === item.id ? miss.text : ''}
         extra={
           miss.id === item.id && !have && !item.gems && !isWished(purse, 'look', item.id) ? (
-            <Pressable accessibilityRole="button" onPress={() => onChange(onLiveBook(toggleWish(liveBook(book), 'look', item.id)).book)} style={[styles.wishBtn, { borderColor: colors.line }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('shop.wishAdd')} onPress={() => onChange(onLiveBook(toggleWish(liveBook(book), 'look', item.id)).book)} style={[styles.wishBtn, { borderColor: colors.line }]}>
               <Text style={[styles.wishText, { color: colors.on }]}>{`♡ ${t('shop.wishAdd')}`}</Text>
             </Pressable>
           ) : null
@@ -1709,7 +1709,7 @@ export function ShopAccessoriesScreen({ book, onChange }) {
                 miss={miss.id === item.id ? miss.text : ''}
                 extra={
                   miss.id === item.id && !have && !isWished(purse, 'accessory', item.id) ? (
-                    <Pressable accessibilityRole="button" onPress={() => onChange(onLiveBook(toggleWish(liveBook(book), 'accessory', item.id)).book)} style={[styles.wishBtn, { borderColor: colors.line }]}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('shop.wishAdd')} onPress={() => onChange(onLiveBook(toggleWish(liveBook(book), 'accessory', item.id)).book)} style={[styles.wishBtn, { borderColor: colors.line }]}>
                       <Text style={[styles.wishText, { color: colors.on }]}>{`♡ ${t('shop.wishAdd')}`}</Text>
                     </Pressable>
                   ) : null
@@ -2071,8 +2071,8 @@ const KIT_TABS = [
 
 function WornBadge({ colors }) {
   return (
-    <View style={[styles.wornBadge, { backgroundColor: colors.on, borderColor: colors.panel }]}>
-      <Text style={[styles.wornBadgeText, { color: colors.bg }]}>✓</Text>
+    <View style={[styles.wornBadge, { backgroundColor: colors.on, borderColor: colors.panel }]} accessibilityElementsHidden importantForAccessibility="no">
+      <Text style={[styles.wornBadgeText, { color: colors.bg }]} maxFontSizeMultiplier={1}>✓</Text>
     </View>
   )
 }
@@ -2091,7 +2091,7 @@ function KitTile({ label, worn, onPress, colors, children, big = false, caption 
         {children}
         {worn ? <WornBadge colors={colors} /> : null}
       </View>
-      <Text style={[styles.kitTileName, { color: worn ? colors.on : colors.ink }]} numberOfLines={1}>
+      <Text style={[styles.kitTileName, { color: worn ? colors.on : colors.ink }]} numberOfLines={2}>
         {label}
       </Text>
       {caption ? (
@@ -2172,7 +2172,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
     <BoardShell book={book} title={t('kit.title')} date={shellDate(book)} colors={colors} showPurse>
       <Meta colors={colors}>{t('kit.hint')}</Meta>
 
-      <View style={styles.kindGrid}>
+      <View style={styles.kindGrid} accessibilityRole="tablist">
         {KIT_TABS.map((item) => {
           const kind = kinds[item.id]
           const on = tab === item.id
@@ -2331,7 +2331,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
                   colors={colors}
                   onPress={() => {
                     wearCheerId(item.id)
-                    fireCheer(item.id, play, coat, undefined, true)
+                    if (!motionOff()) fireCheer(item.id, play, coat, undefined, true)
                   }}
                 >
                   <CheerChip id={item.id} stage={play} colors={colors} />
@@ -2398,7 +2398,7 @@ const styles = StyleSheet.create({
   kitWearing: { fontFamily: fonts.uiSemi, fontSize: 14 },
   earnRow: { minHeight: 44, width: '100%', borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   earnRowText: { fontFamily: fonts.uiSemi, fontSize: 15 },
-  wishBtn: { alignSelf: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 8 },
+  wishBtn: { alignSelf: 'center', justifyContent: 'center', minHeight: 44, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 8 },
   wishText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   cap: {
     fontFamily: fonts.mono,

@@ -1405,10 +1405,10 @@ function WeCardPage({ book, cardId, onChange }) {
       <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }, weDoneStyle(card, colors)]}>
         <View style={styles.headTop}>
           <View style={styles.headFaces}>
-            {bigCard ? null : <Text style={[styles.headQ, { color: colors.ink }]}>{card.question}</Text>}
+            {bigCard ? null : <Text accessibilityRole="header" style={[styles.headQ, { color: colors.ink }]}>{card.question}</Text>}
             <WeFaces card={card} colors={colors} cheer={cheer} />
             {names ? (
-              <Text style={[styles.headNames, { color: colors.inkSoft }]} numberOfLines={1}>
+              <Text style={[styles.headNames, { color: colors.inkSoft }]} numberOfLines={2}>
                 {names}
               </Text>
             ) : null}

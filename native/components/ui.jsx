@@ -80,8 +80,12 @@ export function OfflineLine({ colors }) {
   return <Meta colors={colors}>{t('people.offline')}</Meta>
 }
 
-export function Meta({ children, colors, style }) {
-  return <Text style={[styles.meta, { color: colors.inkSoft }, style]}>{children}</Text>
+export function Meta({ children, colors, style, ...rest }) {
+  return (
+    <Text style={[styles.meta, { color: colors.inkSoft }, style]} {...rest}>
+      {children}
+    </Text>
+  )
 }
 
 const SKEL_ROWS = ['92%', '74%', '84%']

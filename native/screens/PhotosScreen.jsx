@@ -265,6 +265,7 @@ export function PhotosScreen({ openId = '' }) {
                 {group.rows.map((row) => (
                   <Pressable
                     key={row.id}
+                    style={{ width: size }}
                     onPress={() => open(row)}
                     accessibilityRole="button"
                     accessibilityLabel={t('photos.thumbA11y', { name: nameOf(row), day: formatBoardDate(row.night) })}
@@ -275,7 +276,7 @@ export function PhotosScreen({ openId = '' }) {
                       accessibilityIgnoresInvertColors
                       style={{ width: size, height: size, borderRadius: 8, backgroundColor: colors.panel2 }}
                     />
-                    <Meta colors={colors}>{by === 'person' ? formatBoardDate(row.night) : nameOf(row)}</Meta>
+                    <Meta colors={colors} numberOfLines={1}>{by === 'person' ? formatBoardDate(row.night) : nameOf(row)}</Meta>
                   </Pressable>
                 ))}
               </View>
@@ -371,7 +372,9 @@ export function PhotoViewScreen({ id, book, onChange }) {
               <Image
                 source={{ uri: item.url }}
                 resizeMode="contain"
-                accessibilityLabel={t('proof.viewA11y', { name: nameOf(item) })}
+                accessible
+                accessibilityRole="image"
+                accessibilityLabel={t('photos.thumbA11y', { name: nameOf(item), day: formatBoardDate(item.night) })}
                 accessibilityIgnoresInvertColors
                 style={{ width, height: Math.round(width * 1.25), backgroundColor: colors.panel2, borderRadius: 12 }}
               />
@@ -380,7 +383,7 @@ export function PhotoViewScreen({ id, book, onChange }) {
         ) : null}
         <Text style={[styles.who, { color: colors.ink }]}>{name}</Text>
         {row.question ? <Text style={[styles.what, { color: colors.inkSoft }]}>{row.question}</Text> : null}
-        <Meta colors={colors}>{`${formatBoardDate(row.night)}  ·  ${t('photos.of', { n: Math.min(at, rows.length - 1) + 1, total: rows.length })}`}</Meta>
+        <Meta colors={colors} accessibilityLiveRegion="polite">{`${formatBoardDate(row.night)}  ·  ${t('photos.of', { n: Math.min(at, rows.length - 1) + 1, total: rows.length })}`}</Meta>
         {!mine && cheer.can ? (
           <KeyButton
             colors={colors}

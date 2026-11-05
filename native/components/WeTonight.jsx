@@ -156,6 +156,7 @@ export function WeFaces({ card, colors, cheer, dots = true }) {
                       <KeyButton
                         colors={colors}
                         label={t('we.cheer')}
+                        accessibilityLabel={t('we.cheerName', { name: person.name })}
                         disabled={Boolean(cheer.busy)}
                         onPress={() => cheer.cheer(person)}
                       />
