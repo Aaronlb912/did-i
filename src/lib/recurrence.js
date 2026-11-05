@@ -354,6 +354,7 @@ export function perWeekDone(book, lampId, dateIso, upTo = true) {
 }
 
 export function perWeekDueOn(book, lamp, dateIso) {
+  if (lamp?.was) lamp = scheduleAt(lamp, dateIso)
   if (!isPerWeek(lamp) || lamp.archived || awayOn(dateIso)) return false
   const created = String(lamp.createdOn || '').slice(0, 10)
   if (created && dateIso < created) return false
@@ -374,22 +375,40 @@ function weekNeed(book, lamp, start) {
   return Math.max(1, Math.ceil((Number(lamp.perWeek) * open) / 7))
 }
 
+// One past week judged by the schedule it ran under (the newer one when a
+// change split it). A times-a-week schedule needs its count; any other needs a
+// Did on every day it asked. need 0 means the week does not count either way.
+function weekScore(book, lamp, start, list) {
+  const sched = lamp.was ? scheduleAt(lamp, addDaysIso(start, 6)) : lamp
+  if (isPerWeek(sched)) {
+    return { need: weekNeed(book, sched, start), done: didCountBefore(list, addDaysIso(start, 6), true) - didCountBefore(list, start) }
+  }
+  let need = 0
+  let done = 0
+  for (let i = 0; i < 7; i += 1) {
+    const iso = addDaysIso(start, i)
+    if (!isDueOn(sched, iso) || closedDay(book, sched, iso)) continue
+    need += 1
+    if (didCountBefore(list, iso, true) > didCountBefore(list, iso)) done += 1
+  }
+  return { need, done }
+}
+
 // Weeks in a row with all their Dids. A finished current week counts; an
 // unfinished one does not break the run yet. Weeks fully paused or away are
 // stepped past; a part-paused week needs fewer Dids.
 export function perWeekStreak(book, lamp, dateIso, cap = 400) {
   if (!isPerWeek(lamp)) return 0
   const list = didNightsOf(book, lamp.id)
-  const done = (from) => didCountBefore(list, addDaysIso(from, 6), true) - didCountBefore(list, from)
   let start = weekStartOf(dateIso)
   let count = 0
-  let need = weekNeed(book, lamp, start)
-  if (need && done(start) >= need) count = 1
+  let week = weekScore(book, lamp, start, list)
+  if (week.need && week.done >= week.need) count = 1
   start = addDaysIso(start, -7)
   for (let steps = 0; count < cap && steps < cap * 2; steps += 1) {
-    need = weekNeed(book, lamp, start)
-    if (need) {
-      if (done(start) < need) break
+    week = weekScore(book, lamp, start, list)
+    if (week.need) {
+      if (week.done < week.need) break
       count += 1
     }
     start = addDaysIso(start, -7)
@@ -402,15 +421,14 @@ export function perWeekBest(book, lamp, dateIso, cap = 1000) {
   if (!isPerWeek(lamp)) return 0
   const list = didNightsOf(book, lamp.id)
   if (!list.length) return 0
-  const done = (from) => didCountBefore(list, addDaysIso(from, 6), true) - didCountBefore(list, from)
   const current = weekStartOf(dateIso)
   let start = weekStartOf(list[0])
   let best = 0
   let run = 0
   for (let steps = 0; start <= current && steps < cap; steps += 1) {
-    const need = weekNeed(book, lamp, start)
-    if (need) {
-      if (done(start) >= need) {
+    const week = weekScore(book, lamp, start, list)
+    if (week.need) {
+      if (week.done >= week.need) {
         run += 1
         if (run > best) best = run
       } else if (start !== current) run = 0
