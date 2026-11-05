@@ -97,7 +97,12 @@ export function useHangDraft({
   }
 
   function changeAskAfter(value) {
-    setDraft((prev) => ({ ...prev, askAfter: value, slot: slotFromAskAfter(value) }))
+    setDraft((prev) => {
+      const next = { ...prev, askAfter: value, slot: slotFromAskAfter(value) }
+      // The second reminder needs a first one, and a different time.
+      if (!value || prev.askAfter2 === value) delete next.askAfter2
+      return next
+    })
     if (miss) setMiss('')
   }
 
@@ -138,6 +143,8 @@ export function useHangDraft({
       const unit = amountUnitOf(draft)
       if (unit) next.amountUnit = unit
     }
+    if (!next.askAfter || !next.askAfter2 || next.askAfter2 === next.askAfter) delete next.askAfter2
+    if (!next.endsOn) delete next.endsOn
     // Stopped or asked again elsewhere while the form was open: that stays.
     // So do the pause records, or the paused days come back as misses.
     if (editing) {
@@ -151,7 +158,7 @@ export function useHangDraft({
     const was = editing ? keepPastSchedule(lamp, next, today, !!answerFor(book, lamp.id, periodKeyFor(lamp, today))) : []
     if (was.length) next.was = was
     else delete next.was
-    return { lamp: next, problem: missLamp(next) || passedDay(next) }
+    return { lamp: next, problem: missLamp(next) || passedDay(next) || endPassed(next) }
   }
 
   // A once-only day moved into the past would close as Not yet on save.
@@ -160,6 +167,11 @@ export function useHangDraft({
     const day = next.onceWhen === 'by' ? next.dueBy : next.onceOn
     const was = lamp?.cadence === 'once' ? (lamp.onceWhen === 'by' ? lamp.dueBy : lamp.onceOn) : ''
     return day !== was && day < boardDate(clock, book.dayFoldHour) ? 'hang.miss.dayPassed' : ''
+  }
+
+  // An end date already behind us would end the question on save.
+  function endPassed(next) {
+    return next.endsOn && next.endsOn !== lamp?.endsOn && next.endsOn < boardDate(clock, book.dayFoldHour) ? 'hang.miss.endPassed' : ''
   }
 
   function validate() {

@@ -182,6 +182,7 @@ export function isDueOn(lamp, dateIso) {
   const date = parseIsoDate(dateIso)
   if (!date) return false
   if (awayOn(dateIso)) return false
+  if (lamp.endsOn && dateIso > lamp.endsOn) return false
   if (lamp.was) lamp = scheduleAt(lamp, dateIso)
   // Times a week: isDueOn stays false, like every so often. dueTonight asks
   // perWeekDueOn, which needs the book.
@@ -500,6 +501,8 @@ export function dueTonight(book, now = new Date()) {
   const lamps = []
   for (const lamp of book.lamps || []) {
     if (lamp.archived) continue
+    // Past its end date it is no longer asked, like a finished one-time question.
+    if (lamp.endsOn && dateIso > lamp.endsOn) continue
     if (isEvery(lamp)) {
       // Answered tonight stays on tonight (Did shows done, Not yet asks again).
       const answer = answerFor(book, lamp.id, dateIso) || null

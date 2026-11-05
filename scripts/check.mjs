@@ -16,6 +16,7 @@ import {
   addDaysIso,
   answerFor,
   boardDate,
+  dueTonight,
   faceReadyTonight,
   faceSwipeTonight,
   isDueOn,
@@ -24,7 +25,7 @@ import {
   periodNight,
   periodPassed,
 } from '../src/lib/recurrence.js'
-import { bestQuestionStreak, lampNights, lampRecord, lampWeeks, questionStreak } from '../src/lib/lamp-record.js'
+import { bestQuestionStreak, lampAmountTotals, lampNights, lampRecord, lampWeeks, questionStreak, topQuestionStreaks } from '../src/lib/lamp-record.js'
 import { closePastNights } from '../src/lib/daily.js'
 import { peopleTonightItems, peopleWaitingLine, readPeopleHidden, skippedFamilyRows, writePeopleHidden } from '../src/lib/people-tonight.js'
 import { nightWhyLines } from '../src/lib/night-why.js'
@@ -741,6 +742,10 @@ test('question search matches every word, and tonight states come from one pass 
   assert.deepEqual(searchRows(rows, 'GARAGE').map((row) => row.lamp.id), ['door'], 'notes count, any case')
   assert.deepEqual(searchRows(rows, 'home pills').map((row) => row.lamp.id), ['pills'], 'tag counts')
   assert.equal(searchRows(rows, 'door pills').length, 0, 'every word has to match')
+  const noted = { ...book, answers: [{ lampId: 'pills', periodKey: '2026-10-01', status: 'yes', note: 'Switched to the Morning dose' }] }
+  const notedRows = noted.lamps.map((item) => ({ boardId: 'b1', book: noted, tag: 'Home', lamp: item }))
+  assert.deepEqual(searchRows(notedRows, 'morning dose').map((row) => row.lamp.id), ['pills'], 'a note written on a day is searchable')
+  assert.equal(searchRows(notedRows, 'morning').filter((row) => row.lamp.id === 'door').length, 0, 'and only on its own question')
   assert.equal(searchRows([{ ...rows[0], lamp: lamp('c', 'Did I order a café table?') }], 'cafe').length, 1, 'accents fold')
   assert.equal(matchLamps({ lamps: [lamp('h', 'Did I hem the pants?')] }, 'dishes').length, 0, 'search words are not split on the letter s')
   const clock = new Date(2026, 8, 21, 20, 0)
@@ -2106,6 +2111,20 @@ test('one streak rule per question: a nope breaks it, late keeps it, every scree
   const gap = { ...shelfBook, answers: answers.filter((answer) => answer.periodKey !== '2026-10-02' && answer.periodKey !== '2026-09-30') }
   assert.equal(questionStreak(gap, q, '2026-10-05'), 2)
   assert.equal(bestQuestionStreak(gap, q, '2026-10-05'), 4)
+  // Amount totals: week from the chosen first day, month from the 1st, Did days only.
+  const water = { id: 'w', cadence: 'daily', trackAmount: true, createdOn: '2026-09-01' }
+  const amt = (night, status, amount) => ({ lampId: 'w', periodKey: night, status, amount, answeredAt: `${night}T20:00:00` })
+  const wbook = { id: 'b', dayFoldHour: 0, lamps: [water], answers: [amt('2026-09-30', 'yes', 9), amt('2026-10-01', 'yes', 2), amt('2026-10-04', 'yes', 1.5), amt('2026-10-05', 'late', 3), amt('2026-10-06', 'skip', 5), amt('2026-10-07', 'yes', 4)] }
+  assert.deepEqual(lampAmountTotals(wbook, water, '2026-10-06', 1), { week: 3, month: 6.5, weekDays: 1, monthDays: 3 }, 'Monday week starts 10/05; no future, no Not yet, no last month')
+  assert.deepEqual(lampAmountTotals(wbook, water, '2026-10-06', 0), { week: 4.5, month: 6.5, weekDays: 2, monthDays: 3 }, 'Sunday week starts 10/04')
+  assert.equal(lampAmountTotals(wbook, { ...water, trackAmount: false }, '2026-10-06').month, 0)
+  // Top streaks: each run once, longest first, the live one marked.
+  const top = topQuestionStreaks(shelfBook, q, '2026-10-05')
+  assert.deepEqual(top.map((run) => [run.n, run.from, run.to, run.current]), [[4, '2026-10-01', '2026-10-04', true], [4, '2026-09-26', '2026-09-29', false]])
+  const topGap = topQuestionStreaks(gap, q, '2026-10-05')
+  assert.deepEqual(topGap.map((run) => run.n), [4, 2, 1], 'gap splits the live run; 10/01 alone, 10/03-04, 9/26-29')
+  assert.equal(topGap.length, 3)
+  assert.equal(topQuestionStreaks(shelfBook, q, '2026-10-05', 1).length, 1)
 })
 
 test('Seven nights counts a night like Home: a missed Did we leaves it red', () => {
@@ -5639,6 +5658,42 @@ await testAsync('"Streak broke" shows only for a missed past night, never for to
   markStreakSeen('miss', miss.dateIso)
   assert.equal(maybeStreakMiss([missed], clock), null, 'told once per missed night')
   localStorage.removeItem('did-i-streak-seen')
+})
+
+await testAsync('the freeze card shows the day after a streak ended, once per night, never for tonight or a freeze-kept day', async () => {
+  const { freezeCardNight, markFreezeCardSeen } = await import('../src/lib/freeze-card.js')
+  localStorage.removeItem('did-i-freeze-card-seen')
+  const clock = new Date(2026, 8, 30, 16, 0)
+  const lamp = { id: 'a', question: 'Did I a?', cadence: 'daily', archived: false, createdOn: '2026-09-27' }
+  const yes = (night) => ({ lampId: 'a', periodKey: night, status: 'yes', answeredAt: `${night}T15:00:00` })
+  const book = { id: 'b1', dayFoldHour: 0, lamps: [lamp], answers: ['2026-09-28', '2026-09-30'].map(yes) }
+  assert.equal(freezeCardNight([book], clock), '2026-09-29', 'a missed night after a run')
+  assert.equal(freezeCardNight([{ ...book, answers: ['2026-09-28', '2026-09-29', '2026-09-30'].map(yes) }], clock), '', 'nothing missed')
+  markFreezeCardSeen('2026-09-29')
+  assert.equal(freezeCardNight([book], clock), '', 'dismissed for that night')
+  localStorage.removeItem('did-i-freeze-card-seen')
+})
+
+await testAsync('a second reminder time needs a first and a different one; an end date stops the asking but keeps history', async () => {
+  const { normalizeLamp, missLamp } = await import('../src/lib/board-json.js')
+  const base = { id: 'q', question: 'Did I stretch?', cadence: 'daily', createdOn: '2026-09-01' }
+  assert.equal(normalizeLamp({ ...base, askAfter: '08:00', askAfter2: '20:30' }).askAfter2, '20:30')
+  assert.equal('askAfter2' in normalizeLamp({ ...base, askAfter2: '20:30' }), false, 'no first time, no second')
+  assert.equal('askAfter2' in normalizeLamp({ ...base, askAfter: '08:00', askAfter2: '08:00' }), false, 'same as the first')
+  assert.equal('askAfter2' in normalizeLamp({ ...base, askAfter: '08:00', askAfter2: '25:00' }), false, 'not a time')
+  assert.equal(missLamp({ ...base, askAfter: '08:00', askAfter2: '9pm' }), 'hang.miss.askAfter')
+  assert.equal(normalizeLamp({ ...base, endsOn: '2026-10-10' }).endsOn, '2026-10-10')
+  assert.equal('endsOn' in normalizeLamp({ ...base, endsOn: 'soon' }), false)
+  const yes = (night) => ({ lampId: 'q', periodKey: night, status: 'yes', answeredAt: `${night}T20:00:00` })
+  const ends = { ...base, endsOn: '2026-10-03' }
+  const book = { id: 'b', dayFoldHour: 0, lamps: [ends], answers: ['2026-10-01', '2026-10-02', '2026-10-03'].map(yes) }
+  assert.equal(isDueOn(ends, '2026-10-03'), true, 'asked on its last day')
+  assert.equal(isDueOn(ends, '2026-10-04'), false, 'not after it')
+  assert.equal(dueTonight(book, new Date(2026, 9, 3, 12)).length, 1)
+  assert.equal(dueTonight(book, new Date(2026, 9, 4, 12)).length, 0, 'no longer asked tonight')
+  assert.equal(dueTonight({ ...book, lamps: [{ ...ends, cadence: 'every', everyDays: 1 }] }, new Date(2026, 9, 6, 12)).length, 0, 'every so often too')
+  assert.equal(bestQuestionStreak(book, ends, '2026-10-06'), 3, 'history and best streak stay')
+  assert.equal(lampRecord(book, ends, '2026-10-06').did, 3)
 })
 
 await testAsync('two or more days away gets a Welcome back card, one missed day keeps the calm Streak card', async () => {
@@ -9343,7 +9398,8 @@ await testAsync('readthrough 9: re-armed after the ask time, a high one keeps it
   assert.deepEqual(upcomingPings(book, new Date(2026, 9, 14, 21, 30)), [])
   const pings = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
   assert.ok(pings.includes("const rows = dueTonight(book, day).filter((row) => !row.answer || row.answer.status === 'skip')"), 'native keeps the late note after the ask time')
-  assert.ok(pings.includes('lastCallAt(year, month, date, at, readPrefs(), now)'), 'the last call never lands in quiet hours (lastCallAt)')
+  assert.ok(pings.includes('lastCallAt(year, month, date, at2 && at2 > at ? at2 : at, readPrefs(), now)'), 'the last call never lands in quiet hours (lastCallAt), and waits for a second reminder time')
+  assert.ok(pings.includes(':2`)') && pings.includes('row.lamp.askAfter2'), 'a second reminder time gets its own note, rebuilt with the rest')
   assert.ok(pings.includes('nightOpen(night, afterQuiet(at))'), 'an ask note quiet hours push past the grace period is dropped, so its Did never lands on a closed day')
   assert.ok(pings.includes('afterQuiet(at).getTime() > now.getTime()') && pings.includes('|| moved ||'), 'an ask note quiet hours moved to morning survives a rebuild after its ask time')
 })

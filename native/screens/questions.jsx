@@ -73,7 +73,7 @@ import { LampManage, flushCheckOnStops, lampActions, stopCheckOns } from '../com
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { amountAverageLine, amountWords, bestQuestionStreak, lampAmounts, lampDays, lampRecord, lampNights, lampRate, lampWeeks, lastDidTimes } from '../../src/lib/lamp-record.js'
+import { amountAverageLine, amountWords, bestQuestionStreak, lampAmountTotals, lampAmounts, lampDays, lampRecord, lampNights, lampRate, lampWeeks, lastDidTimes, topQuestionStreaks } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -1121,6 +1121,7 @@ const SCHEDULE_MISSES = new Set([
   'hang.miss.everyNStart',
   'hang.miss.everyDays',
   'hang.miss.dayPassed',
+  'hang.miss.endPassed',
 ])
 // Every so often: about a week, two weeks, a month, or any number of days.
 const EVERY_PILLS = [
@@ -1480,6 +1481,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     return first
   })
   const [timeOpen, setTimeOpen] = useState(true)
+  const [endOpen, setEndOpen] = useState(false)
   const timeTapped = useRef(false)
   const [moreWays, setMoreWays] = useState(false)
   // The one-time ask can be skipped; a timed question says it again.
@@ -2163,6 +2165,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               <View ref={timeDetail} onLayout={showTimeDetail}>
               <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
               <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
+              {draft.askAfter ? (
+                <>
+                  <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.second')}</Text>
+                  <HangTimePick value={draft.askAfter2 || ''} onChange={(value) => hang.change('askAfter2', value === draft.askAfter ? '' : value)} colors={colors} noneLabel={t('hang.second.none')} />
+                  <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.secondHint')}</Text>
+                </>
+              ) : null}
               {draft.askAfter && exactOff ? (
                 <>
                   <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('notify.exactBody')}</Text>
@@ -2172,6 +2181,31 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               </View>
             </HangFold>
           {reminderRow(true, true)}
+            {draft.cadence === 'once' ? null : (
+              <HangFold
+                label={t('hang.end')}
+                value={draft.endsOn ? formatBoardDate(draft.endsOn) : t('hang.endNone')}
+                icon="calendar"
+                open={endOpen}
+                onToggle={() => {
+                  if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
+                  setEndOpen((was) => !was)
+                }}
+                last
+                colors={colors}
+              >
+                <KeyButton label={t('hang.endNone')} colors={colors} picked={!draft.endsOn} onPress={() => hang.change('endsOn', '')} />
+                <HangMonthCal
+                  mode="date"
+                  value={draft.endsOn || ''}
+                  onChange={(iso) => hang.change('endsOn', iso)}
+                  now={clock}
+                  dayFoldHour={book.dayFoldHour}
+                  colors={colors}
+                />
+                <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.endHint')}</Text>
+              </HangFold>
+            )}
             </Glide>
           </SetCard>
       </PickSheet>
@@ -2518,9 +2552,11 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const lamp = (lampBook.lamps || []).find((item) => item.id === lampId) || null
   const record = useMemo(() => lampRecord(lampBook, lamp, dateIso, 30), [lampBook, lamp, dateIso, awayKey()])
   const best = useMemo(() => bestQuestionStreak(lampBook, lamp, dateIso), [lampBook, lamp, dateIso, awayKey()])
+  const topRuns = useMemo(() => topQuestionStreaks(lampBook, lamp, dateIso), [lampBook, lamp, dateIso, awayKey()])
   const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso, awayKey()])
   const lastFive = useMemo(() => lastDidTimes(lampBook, lamp, 5), [lampBook, lamp])
   const amounts = useMemo(() => lampAmounts(lampBook, lamp, dateIso, 14, 30), [lampBook, lamp, dateIso, awayKey()])
+  const totals = useMemo(() => lampAmountTotals(lampBook, lamp, dateIso, firstWeekday(readPrefs().locale)), [lampBook, lamp, dateIso, awayKey()])
   // Every so often: no streak, so the tiles say when it was last done and the usual gap.
   const every = useMemo(() => {
     if (!isEvery(lamp)) return null
@@ -2647,10 +2683,11 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   // One look at the settings; changing them happens on Edit question.
   const summary = [
     cadenceLine(lamp),
-    lamp.askAfter ? timeLabel(lamp.askAfter) : t('hang.askAny'),
+    lamp.askAfter ? [timeLabel(lamp.askAfter), lamp.askAfter2 ? timeLabel(lamp.askAfter2) : ''].filter(Boolean).join(', ') : t('hang.askAny'),
     priority !== 'low' && phone.quiet ? t('lamp.sumPhoneOff') : reminderLine(lamp, true),
     t(`hang.priority.${priority}`),
-  ].join(' · ')
+    lamp.endsOn ? t('hang.endsOn', { date: formatBoardDate(lamp.endsOn) }) : '',
+  ].filter(Boolean).join(' · ')
 
   return (
     <BoardShell
@@ -2797,6 +2834,18 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 
       {historyOpen ? (
       <Reveal>
+      {!gentle && topRuns.length > 1 ? (
+        <View style={styles.trend}>
+          <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.topTitle')}</Text>
+          {topRuns.map((run) => (
+            <Text key={run.to} style={[styles.lampStatus, { color: colors.ink, marginTop: 4 }]}>
+              {run.current
+                ? t('lamp.topRowNow', { n: run.n, from: formatBoardDate(run.from) })
+                : t('lamp.topRow', { n: run.n, from: formatBoardDate(run.from), to: formatBoardDate(run.to) })}
+            </Text>
+          ))}
+        </View>
+      ) : null}
       {grid?.days.length ? (
         <View style={styles.trend}>
           <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.grid')}</Text>
@@ -2856,6 +2905,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           {amounts.count ? (
             <>
               <Text style={[styles.amountAvg, { color: colors.ink }]}>{amountAverageLine(amounts.average, lamp.amountUnit)}</Text>
+              <Text style={[styles.tileCap, { color: colors.inkSoft }]}>{t('amounts.week', { amount: amountWords(totals.week, lamp.amountUnit) })}</Text>
+              <Text style={[styles.tileCap, { color: colors.inkSoft }]}>{t('amounts.month', { amount: amountWords(totals.month, lamp.amountUnit) })}</Text>
               <View style={styles.amountBars}>
                 {amounts.bars.map((bar) => (
                   <View

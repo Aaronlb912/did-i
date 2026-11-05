@@ -17,7 +17,7 @@ import { KeyButton } from './ui.jsx'
 
 const QUICK_TIMES = ['08:00', '12:00', '18:00', '20:00', '21:00']
 
-export function HangTimePick({ value, onChange, colors }) {
+export function HangTimePick({ value, onChange, colors, noneLabel = '' }) {
   const [openMenu, setOpenMenu] = useState(null)
   usePrefs()
   const h24 = uses24h()
@@ -41,7 +41,7 @@ export function HangTimePick({ value, onChange, colors }) {
   return (
     <View style={styles.wrap}>
       <View style={styles.chips}>
-        <KeyButton label={t('hang.askAny')} colors={colors} picked={!timed} onPress={() => onChange('')} />
+        <KeyButton label={noneLabel || t('hang.askAny')} colors={colors} picked={!timed} onPress={() => onChange('')} />
         <KeyButton
           label={t('hang.askAt')}
           colors={colors}
