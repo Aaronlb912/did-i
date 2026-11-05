@@ -2146,6 +2146,9 @@ function PingKinds({ colors, on }) {
 
   const familyId = QUIET_HOURS[prefs.familyHour] || '21:00'
   const familyTime = clockWords(familyId)
+  const familyAt = new Date(2000, 0, 1, Number(familyId.slice(0, 2)), 0)
+  // The server drops the family summary inside quiet hours.
+  const familyQuiet = afterQuiet(familyAt, prefs).getTime() !== familyAt.getTime()
 
   return (
     <>
@@ -2225,6 +2228,9 @@ function PingKinds({ colors, on }) {
                 selected={familyId}
                 onSelect={saveFamilyHour}
               />
+            ) : null}
+            {kind === 'family' && !prefs.pingsOff.includes('family') && familyQuiet ? (
+              <SetNote colors={colors}>{t('pings.familyQuiet')}</SetNote>
             ) : null}
           </View>
           )

@@ -2835,6 +2835,7 @@ export const zh = {
   'pings.quietTo': '结束',
   'pings.quietNoLastCall': "最后的提醒会在安静时段开始前 30 分钟发出，即 {time}。",
   'pings.quietNoLast': '这个安静时段内没有最后的提醒',
+  'pings.familyQuiet': "这个时间在你的免打扰时段内，所以不会收到家人汇总。",
   'pings.laterCap': '稍后',
   'pings.laterSub': '点“稍后”后，提醒等待多久。',
   'pings.laterOpt': '{n} 分钟',

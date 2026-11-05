@@ -72,7 +72,7 @@ begin
            else public.push_text(user_id, 'family_some', jsonb_build_object('n', done, 'total', total)) end,
       '/people'
     from lines
-    where total >= 2
+    where total >= 2 and done > 0
     returning 1
   )
   select count(*) into made from queued;

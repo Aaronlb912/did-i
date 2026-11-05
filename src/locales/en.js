@@ -2872,6 +2872,7 @@ export const en = {
   'pings.quietTo': 'Ends',
   'pings.quietNoLastCall': "The last call comes 30 minutes before quiet hours start, at {time}.",
   'pings.quietNoLast': 'No last call with these quiet hours',
+  'pings.familyQuiet': "This time is in your quiet hours, so the family summary won't come.",
   'pings.laterCap': 'Later',
   'pings.laterSub': 'How long a reminder waits after you tap Later.',
   'pings.laterOpt': '{n} minutes',
