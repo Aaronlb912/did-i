@@ -547,6 +547,7 @@ export const de = {
   'hang.tagNew': 'Neuer Ordner',
   'hang.tagWillMake': 'Neuer Ordner: {name}',
   'hang.dupTitle': "Du hast diese Frage schon",
+  'hang.dupIn': "Du hast diese Frage in {name}",
   'hang.dupAdd': "Trotzdem hinzufügen",
   'hang.dupPaused': "Du hast diese Frage pausiert",
   'hang.dupResume': "Fortsetzen",

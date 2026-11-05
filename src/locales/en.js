@@ -547,6 +547,7 @@ export const en = {
   'hang.tagNew': 'New folder',
   'hang.tagWillMake': 'New folder: {name}',
   'hang.dupTitle': "You already have this question",
+  'hang.dupIn': "You have this in {name}",
   'hang.dupAdd': "Add anyway",
   'hang.dupPaused': "You have this paused",
   'hang.dupResume': "Resume",

@@ -539,6 +539,7 @@ export const ja = {
   'hang.tagNew': '新しいフォルダ',
   'hang.tagWillMake': '新しいフォルダ: {name}',
   'hang.dupTitle': "この質問はすでにあります",
+  'hang.dupIn': "この質問は{name}にあります",
   'hang.dupAdd': "それでも追加",
   'hang.dupPaused': "この質問は一時停止中です",
   'hang.dupResume': "再開",
