@@ -29,7 +29,7 @@ function alreadySaid(lampId, kind, night) {
     (book.answers || []).some((answer) => answer.lampId === lampId && (!night || answer.periodKey === night) && want.includes(answer.status)),
   )
 }
-import { armNativePingsNow } from './shim/native.js'
+import { armNativePingsNow, dropSnoozed } from './shim/native.js'
 import { onSocialLive } from '../src/lib/social-live.js'
 import { hallColors } from './palette.js'
 import { BootView } from './components/BootView.jsx'
@@ -123,6 +123,7 @@ export function NativeApp() {
         // is already set (the undo and lock rules) is not changed.
         onAnswer: (lampId, kind, night, at) => {
           const shelf = applyWidgetTapOnce(lampId, kind, night, new Date(), at || Date.now())
+          if (shelf) dropSnoozed({ lampId }).catch(() => {})
           if (shelf && nativeWidgetsEnabled()) syncTonightWidget(shelf).catch(() => {})
           // Now, not after the debounce: iOS may suspend a background wake first,
           // and that question's later reminders would still go off.
@@ -138,6 +139,7 @@ export function NativeApp() {
             const out = await weAnswer(cardId, kind, night || undefined)
             // A weekly card's closed slot says week; unknown cards keep the day line.
             const miss = knownWeCard(cardId) ? weMissKey(knownWeCard(cardId), out.miss) : out.miss
+            if (!out.miss) dropSnoozed({ weId: cardId }).catch(() => {})
             if (out.miss) showToast({ id: 'we-answer', kind: 'error', text: tMiss(miss), ms: 5200 })
             else if (kind === 'did') {
               const { skipWePing } = await import('../src/lib/we-widget.js')

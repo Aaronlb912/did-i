@@ -11258,6 +11258,21 @@ test('Later waits the picked minutes, never into quiet hours; a failed reminder 
   assert.ok(!/date: new Date(snooze.at)/.test(nat), 'snoozes go through the quiet hours shift')
 })
 
+test('snoozes: answered ones are dropped at re-arm and on answer; sign out clears them', async () => {
+  const { ACCOUNT_CACHE_PREFIXES } = await import('../src/lib/account-cache.js')
+  const { SNOOZE_KEY } = await import('../src/lib/notify-answer.js')
+  assert.ok(ACCOUNT_CACHE_PREFIXES.includes(SNOOZE_KEY), 'sign out clears waiting snoozes')
+  const nat = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
+  const rearm = nat.slice(nat.indexOf('const keepSnoozes'), nat.indexOf('// iOS keeps 64'))
+  assert.ok(rearm.includes('data.weId') && rearm.includes('weNightStatus') && rearm.includes('skipNight'), 'a Did we snoozed note is skipped once that night has a Did')
+  assert.ok(rearm.includes('openNow.has(data.lampId)') && rearm.includes('setItem(SNOOZE_KEY'), 'answered lamp snoozes are dropped and the list saved')
+  assert.ok(nat.includes('export async function dropSnoozed'))
+  const app = readFileSync(new URL('../native/NativeApp.jsx', import.meta.url), 'utf8')
+  assert.ok(app.includes('dropSnoozed({ lampId })') && app.includes('dropSnoozed({ weId: cardId })'), 'in-app reminder answers drop the snooze')
+  const tap = readFileSync(new URL('../native/widget-tap.android.js', import.meta.url), 'utf8')
+  assert.ok(tap.includes('dropSnoozed('), 'Android widget answers drop the snooze from the headless task')
+})
+
 test('leftovers: pause labels, no dollar line, last copy line', () => {
   const en = readFileSync(new URL('../src/locales/en.js', import.meta.url), 'utf8')
   assert.ok(!/'shop.gemsDoor': "[^"]*dollar/.test(en), 'store prices are local')

@@ -2,6 +2,7 @@ import { NativeModules } from 'react-native'
 import { applyWidgetTapsOnce, buildTonightWidgetProps, parseWidgetTapQueue } from '../src/lib/widget-tonight.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { buddySvgFor } from '../widgets/android/DidITonightAndroidWidget.jsx'
+import { dropSnoozed } from './shim/native.js'
 import { noteTaken } from './watch-sync.js'
 import { enrichTonightWidgetProps } from './widget-sync.js'
 
@@ -57,6 +58,11 @@ export async function applyPendingAndroidWidgetTap() {
   // Wear OS taps are in this queue: tell the watch which ones the phone has.
   const back = [...failed, ...kept]
   for (const tap of taps) if (!failed.includes(tap)) noteTaken(tap.sent || tap.at)
+  for (const tap of taps) {
+    if (failed.includes(tap)) continue
+    const id = String(tap.id || '')
+    dropSnoozed(id.startsWith('we:') ? { weId: id.slice(3) } : { lampId: id }).catch(() => {})
+  }
   if (back.length) {
     try {
       await mod.restorePending?.(JSON.stringify(back))
