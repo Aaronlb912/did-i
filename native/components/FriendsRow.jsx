@@ -56,7 +56,7 @@ export function FriendsRow({ colors, cheer = null }) {
         {shown.map((p) => (
           <View
             key={p.id}
-            accessibilityLabel={t(p.done ? 'friendsRow.done' : 'friendsRow.waiting', { name: p.name || '?' })}
+            accessible={false}
             style={styles.faceSlot}
           >
             <PersonAvatar
@@ -124,6 +124,6 @@ const styles = StyleSheet.create({
   faceText: { fontFamily: fonts.uiSemi, fontSize: 11 },
   faceSlot: { marginRight: 2 },
   count: { fontFamily: fonts.ui, fontSize: 13, marginLeft: 4, flexShrink: 1 },
-  cheer: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  cheer: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, minHeight: 44, justifyContent: 'center' },
   cheerText: { fontFamily: fonts.uiSemi, fontSize: 13 },
 })
