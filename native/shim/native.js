@@ -454,12 +454,17 @@ async function schedulePingsNow(books, now = new Date()) {
           // Not tied to the first time having passed or not.
           const second = String(row.lamp.askAfter2 || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
           const at2 = at && second ? new Date(year, month - 1, date, Number(second[1]), Number(second[2]), 0, 0) : null
-          if (at2 && !row.answer && afterQuiet(at2).getTime() > now.getTime() && nightOpen(night, afterQuiet(at2))) {
+          // It waits like the first one, and quiet hours that land both on the
+          // same minute send one note.
+          const moved2 = at2 && afterQuiet(at2).getTime() !== at2.getTime()
+          const sameMinute = at && at2 && afterQuiet(at).getTime() === afterQuiet(at2).getTime()
+          if (at2 && !sameMinute && !row.answer && afterQuiet(at2).getTime() > now.getTime() && nightOpen(night, afterQuiet(at2)) && (!waiting || row.lamp.morning || moved2 || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
             notes.push({
               identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}:2`)),
               content,
               trigger: when(at2),
               wall: true,
+              second: true,
             })
           }
           // A high one still open gets a last call.

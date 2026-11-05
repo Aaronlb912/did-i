@@ -708,7 +708,9 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                         const { miss: why } = (await once('fam-newcode', () => rotateFamilyCode(fam.id))) || {}
                         if (why) confirmMiss(tMiss(why))
                         else confirmDone(t('family.newCodeDone'))
-                        load()
+                        await load()
+                        // The new code shows with Send and Copy, ready to hand out.
+                        if (!why) setCodeOpen(true)
                       },
                     })
                   }}

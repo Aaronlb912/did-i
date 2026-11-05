@@ -40,6 +40,7 @@ import {
   UNIT_MAX,
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
+import { QUESTION_CAP, questionCount } from '../../src/lib/question-cap.js'
 import { bulkLamps, hangInto, moveLamps, putAnswer, putPastAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
@@ -71,7 +72,7 @@ import { TOUR_PARTS } from '../../src/lib/tour-steps.js'
 import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { LampManage, flushCheckOnStops, lampActions, stopCheckOns } from '../components/LampManage.jsx'
 import { takeSpoken } from '../../src/lib/voice-add.js'
-import { rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
+import { noteHitDay, rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
 import { amountAverageLine, amountWords, bestQuestionStreak, lampAmountTotals, lampAmounts, lampDays, lampRecord, lampNights, lampRate, lampWeeks, lastDidTimes, topQuestionStreaks } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
@@ -230,7 +231,14 @@ function MoveKey({ glyph, label, on, onPress, colors }) {
 // One question per row: its short name, the question on one line, then
 // tag, schedule and time. Every line clips, so long words never crowd the list.
 // A one-time question whose night has passed: it is done, not paused.
+// A repeating question whose end date has passed: it keeps its history and
+// sits with the finished ones.
+export function lampEnded(lamp, dateIso) {
+  return Boolean(lamp?.cadence !== 'once' && lamp?.endsOn && lamp.endsOn < dateIso)
+}
+
 export function onceIsPast(lamp, dateIso) {
+  if (lampEnded(lamp, dateIso)) return true
   if (lamp?.cadence !== 'once') return false
   const target = String((lamp.onceWhen === 'by' ? lamp.dueBy : lamp.onceOn) || '').trim()
   return /^\d{4}-\d{2}-\d{2}$/.test(target) && target < dateIso
@@ -249,11 +257,12 @@ function earlierStates(rows, gentle = false) {
   const ids = new Set(rows.map(rowId))
   const books = new Map(rows.map((row) => [row.boardId, row.book]))
   const states = new Map()
-  for (const row of rows) states.set(rowId(row), missed)
+  for (const row of rows) states.set(rowId(row), row.lamp.cadence === 'once' ? missed : '')
+  const ended = new Set(rows.filter((row) => row.lamp.cadence !== 'once').map(rowId))
   for (const [boardId, book] of books) {
     for (const answer of book?.answers || []) {
       const id = `${boardId}:${answer.lampId}`
-      if (!ids.has(id)) continue
+      if (!ids.has(id) || ended.has(id)) continue
       const status = answer.status
       states.set(id, status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? (gentle ? 'pastNope' : 'missed') : missed)
     }
@@ -261,7 +270,7 @@ function earlierStates(rows, gentle = false) {
   return states
 }
 
-function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick, onMove, open = true, onToggle, headText }) {
+function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick, onMove, open = true, onToggle, headText, query = '' }) {
   if (!items.length) return null
   const head = (
     <Text style={[styles.blockLabel, { color: colors.inkDim }]}>
@@ -291,12 +300,14 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
         {items.map((row, index) => {
           const urgency = dueByUrgency(row.lamp, dateIso)
           const on = Boolean(picking && picked?.has(rowKey(row)))
+          const noteDay = query.trim() ? noteHitDay(row, query) : ''
           const meta = [
             isTodayOnce(row.lamp, dateIso) ? t('morning.label') : '',
             row.lamp.fromName ? t('inbox.from', { name: row.lamp.fromName }) : '',
             shelf.length > 1 ? row.tag : '',
             cadenceLine(row.lamp),
-            row.lamp.askAfter ? timeLabel(row.lamp.askAfter) : '',
+            row.lamp.askAfter ? [timeLabel(row.lamp.askAfter), row.lamp.askAfter2 ? timeLabel(row.lamp.askAfter2) : ''].filter(Boolean).join(', ') : '',
+            row.lamp.endsOn && row.lamp.cadence !== 'once' ? t(lampEnded(row.lamp, dateIso) ? 'lamp.endedOn' : 'hang.endsOn', { date: formatBoardDate(row.lamp.endsOn) }) : '',
           ]
             .filter(Boolean)
             .join(' · ')
@@ -339,6 +350,11 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                 <Text style={[styles.lampMeta, { color: colors.inkDim }]} numberOfLines={1}>
                   {meta}
                 </Text>
+                {noteDay ? (
+                  <Text style={[styles.lampMeta, { color: colors.inkDim }]} numberOfLines={1}>
+                    {t('questions.noteOn', { date: formatBoardDate(noteDay) })}
+                  </Text>
+                ) : null}
               </View>
               {onMove ? (
                 <View style={styles.moveKeys}>
@@ -873,6 +889,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         {hung.length && !ordering && !picking ? <DotKey kinds={dotKinds} colors={colors} /> : null}
         {hung.length ? (
           <LampBlock
+            query={query}
             onMove={ordering ? move : undefined}
             label={didYouOnly ? t('questions.didYouKeptList') : t('questions.list')}
             items={hung}
@@ -943,6 +960,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         ) : null}
 
         {ordering ? null : <LampBlock
+          query={query}
           label={t('questions.down')}
           headText={t('questions.paused', { n: down.length })}
           items={down}
@@ -959,6 +977,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
         />}
         {ordering ? null : (
           <LampBlock
+            query={query}
             label={t('questions.earlier')}
             items={earlier}
             shelf={shelf}
@@ -1195,7 +1214,7 @@ function whenLine(draft) {
 function reminderLine(draft, summary = false) {
   if (!lampNotifyOn(draft)) return t('hang.remindOff')
   if (!lampBuzzes(draft)) return t('hang.remindQuiet')
-  if (draft.askAfter) return t('hang.remindAt', { time: timeLabel(draft.askAfter) })
+  if (draft.askAfter) return t('hang.remindAt', { time: [timeLabel(draft.askAfter), draft.askAfter2 ? timeLabel(draft.askAfter2) : ''].filter(Boolean).join(', ') })
   return summary ? t('hang.remindNone') : t('hang.remindAny')
 }
 
@@ -1841,8 +1860,22 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       })
       return
     }
-    if (!existing && !hang.editing && boards.reduce((sum, item) => sum + (item.lamps || []).length, 0) >= 300) {
-      confirmMiss(t('hang.cap'))
+    if (!existing && !hang.editing && questionCount(boards) >= QUESTION_CAP) {
+      const paused = boards.reduce((sum, item) => sum + (item.lamps || []).filter((lamp) => lamp.archived).length, 0)
+      if (paused) {
+        publishSheet({
+          title: t('hang.capTitle'),
+          body: t('hang.capStopped', { n: paused }),
+          goLabel: t('hang.capSee'),
+          closeLabel: t('hang.cancel'),
+          colors,
+          onClose: () => publishSheet(null),
+          onGo: () => {
+            publishSheet(null)
+            goHash('/lamps')
+          },
+        })
+      } else confirmMiss(t('hang.cap'))
       return
     }
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
@@ -2167,8 +2200,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
               {draft.askAfter ? (
                 <>
-                  <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.second')}</Text>
-                  <HangTimePick value={draft.askAfter2 || ''} onChange={(value) => hang.change('askAfter2', value === draft.askAfter ? '' : value)} colors={colors} noneLabel={t('hang.second.none')} />
+                  <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.another')}</Text>
+                  <HangTimePick value={draft.askAfter2 || ''} onChange={(value) => hang.change('askAfter2', value === draft.askAfter ? '' : value)} colors={colors} noneLabel={t('hang.anotherNone')} />
                   <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.secondHint')}</Text>
                 </>
               ) : null}
@@ -2576,18 +2609,50 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const firstDay = firstWeekday(readPrefs().locale)
   const streakCard = useRef(null)
+  // The card is shown in a sheet first, on screen, so the capture is never blank.
+  function previewStreak() {
+    publishSheet({
+      title: t('lamp.shareBtn'),
+      content: (
+        <View ref={streakCard} collapsable={false} pointerEvents="none" style={[styles.shareCard, { backgroundColor: colors.bg, borderColor: colors.on }]}>
+          <Text style={[styles.shareWhat, { color: colors.ink }]}>{shortLabel(lamp)}</Text>
+          <Text style={[styles.shareNum, { color: colors.on }]}>{record.streak}</Text>
+          <Text style={[styles.shareCap, { color: colors.inkDim }]}>{t(isPerWeek(lamp) ? 'lamp.streakCapWeeks' : 'lamp.streakCap')}</Text>
+          <Text style={[styles.shareCap, { color: colors.inkDim }]}>{formatBoardDate(dateIso)}</Text>
+          <Text style={[styles.shareMark, { color: colors.inkDim }]}>Did I</Text>
+        </View>
+      ),
+      goLabel: t('lamp.shareGo'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: shareStreak,
+    })
+  }
   async function shareStreak() {
     const n = record.streak
     const what = shortLabel(lamp)
     const key = isEvery(lamp) ? 'lamp.shareOnTime' : isPerWeek(lamp) ? (n === 1 ? 'lamp.shareWeek' : 'lamp.shareWeeks') : n === 1 ? 'lamp.shareDay' : 'lamp.shareDays'
-    // A picture first. Text when this phone cannot capture or share an image.
+    // A picture first. Text only when the picture could not be made or this
+    // phone cannot share one; backing out of the share sheet is not a failure.
+    let uri = ''
+    let Sharing = null
     try {
-      const [{ captureRef }, Sharing] = await Promise.all([import('react-native-view-shot'), import('expo-sharing')])
+      const [{ captureRef }, sharing] = await Promise.all([import('react-native-view-shot'), import('expo-sharing')])
+      Sharing = sharing
       if (!streakCard.current || !(await Sharing.isAvailableAsync())) throw new Error('no image share')
-      const uri = await captureRef(streakCard, { format: 'png', quality: 1, result: 'tmpfile' })
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: t('lamp.shareBtn'), UTI: 'public.png' })
-      return
+      uri = await captureRef(streakCard, { format: 'png', quality: 1, result: 'tmpfile' })
     } catch {}
+    publishSheet(null)
+    if (uri) {
+      try {
+        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: t('lamp.shareBtn'), UTI: 'public.png' })
+        return
+      } catch {
+        confirmMiss(t('confirm.shareMiss'))
+        return
+      }
+    }
     const how = await passAlong(t(key, { n, what }), t('recap.kicker'))
     if (how === 'copied') confirmDone(t('recap.copied'))
     else if (!how) confirmMiss(t('confirm.shareMiss'))
@@ -2757,6 +2822,9 @@ export function LampScreen({ book, boards = [], onChange, route }) {
             <Text style={[styles.tileNum, { color: colors.on }]}>{record.streak}</Text>
             <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t(isPerWeek(lamp) ? 'lamp.streakCapWeeks' : 'lamp.streakCap')}</Text>
             {best ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t(isPerWeek(lamp) ? 'lamp.bestWeeks' : 'lamp.best', { n: best })}</Text> : null}
+            {best && topRuns[0] && topRuns[0].n === best && !topRuns[0].current ? (
+              <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.bestRange', { from: formatBoardDate(topRuns[0].from), to: formatBoardDate(topRuns[0].to) })}</Text>
+            ) : null}
           </View>
         )}
         <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
@@ -2793,16 +2861,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         ) : null}
       </SetCard>
 
-      {gentle || !record.streak ? null : <KeyButton colors={colors} label={t('lamp.shareBtn')} onPress={shareStreak} />}
-      {/* Drawn off screen, only to be captured as the picture to share. */}
-      {gentle || !record.streak ? null : (
-        <View ref={streakCard} collapsable={false} pointerEvents="none" style={[styles.shareCard, { backgroundColor: colors.bg }]}>
-          <Text style={[styles.shareWhat, { color: colors.ink }]}>{shortLabel(lamp)}</Text>
-          <Text style={[styles.shareNum, { color: colors.on }]}>{record.streak}</Text>
-          <Text style={[styles.shareCap, { color: colors.inkDim }]}>{t(isPerWeek(lamp) ? 'lamp.streakCapWeeks' : 'lamp.streakCap')}</Text>
-          <Text style={[styles.shareMark, { color: colors.inkDim }]}>Did I</Text>
-        </View>
-      )}
+      {gentle || !record.streak ? null : <KeyButton colors={colors} label={t('lamp.shareBtn')} onPress={previewStreak} />}
 
       {weeks.length > 1 ? (
         <View style={styles.trend}>
@@ -2905,7 +2964,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           {amounts.count ? (
             <>
               <Text style={[styles.amountAvg, { color: colors.ink }]}>{amountAverageLine(amounts.average, lamp.amountUnit)}</Text>
-              <Text style={[styles.tileCap, { color: colors.inkSoft }]}>{t('amounts.week', { amount: amountWords(totals.week, lamp.amountUnit) })}</Text>
+              {totals.weekDays || totals.weekDuePassed ? <Text style={[styles.tileCap, { color: colors.inkSoft }]}>{t('amounts.week', { amount: amountWords(totals.week, lamp.amountUnit) })}</Text> : null}
               <Text style={[styles.tileCap, { color: colors.inkSoft }]}>{t('amounts.month', { amount: amountWords(totals.month, lamp.amountUnit) })}</Text>
               <View style={styles.amountBars}>
                 {amounts.bars.map((bar) => (
@@ -3011,7 +3070,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 }
 
 const styles = StyleSheet.create({
-  shareCard: { position: 'absolute', left: -2000, top: 0, width: 360, padding: 24, gap: 8 },
+  shareCard: { width: '100%', maxWidth: 360, alignSelf: 'center', padding: 24, gap: 8, borderWidth: 2, borderRadius: 20 },
   shareWhat: { fontFamily: fonts.uiBold, fontSize: 22 },
   shareNum: { fontFamily: fonts.uiBold, fontSize: 72 },
   shareCap: { fontFamily: fonts.uiSemi, fontSize: 16 },

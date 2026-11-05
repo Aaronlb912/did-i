@@ -92,11 +92,13 @@ export function earlyCallAt(year, month, date, prefs, now, fold = FOLD) {
   return clear(when) ? when : null
 }
 
-// Cap order, first kept first: question reminders, then day nudges, then
+// Cap order, first kept first: question reminders (second times after the
+// first ones), then day nudges, then
 // last calls, then the earlier note. Each group goes soonest first.
 export function capSpare(note) {
   if (note.earlyCall) return 3
   if (note.lateCall) return 2
+  if (note.second) return 0.5
   return note.nudge ? 1 : 0
 }
 

@@ -93,3 +93,16 @@ export function coinNightLine(row, date) {
 export function gemThisWeek(gemWeek, now = new Date(), fold = 0) {
   return Boolean(gemWeek) && gemWeek === gemWeekKey(now, fold)
 }
+
+// True when no answer before today could have paid a coin: today's Did is the
+// first. The purse balance cannot say this (spending lowers it).
+export function firstCoinDay(shelf, today) {
+  for (const book of shelf?.boards || []) {
+    for (const answer of book.answers || []) {
+      if (answer.status === 'skip') continue
+      const night = String(answer.periodKey || '').slice(0, 10)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(night) && night < today) return false
+    }
+  }
+  return true
+}
