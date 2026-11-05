@@ -31,7 +31,7 @@ export function PurseLine({ purse, colors, gemsLink = false, mast = false }) {
   const gemBody = (
     <>
       <GemIcon size={iconSize} />
-      <Text style={[styles.n, mast && styles.nMast, { color: numColor }]}>{shortCount(gems)}</Text>
+      <Text maxFontSizeMultiplier={1.2} style={[styles.n, mast && styles.nMast, { color: numColor }]}>{shortCount(gems)}</Text>
     </>
   )
 
@@ -40,26 +40,26 @@ export function PurseLine({ purse, colors, gemsLink = false, mast = false }) {
       <Pressable
         onPress={() => openCoinsHow(colors)}
         style={styles.bit}
-        hitSlop={6}
+        hitSlop={{ left: 6, right: 6 }}
         accessibilityRole="button"
-        accessibilityLabel={t('coins.tapAria')}
+        accessibilityLabel={t('purse.coinsAria', { n: coins })}
       >
         <CoinIcon size={iconSize} />
-        <Text style={[styles.n, mast && styles.nMast, { color: numColor }]}>{shortCount(coins)}</Text>
+        <Text maxFontSizeMultiplier={1.2} style={[styles.n, mast && styles.nMast, { color: numColor }]}>{shortCount(coins)}</Text>
       </Pressable>
       {mast ? null : <Text style={[styles.sep, { color: colors.line }]}>·</Text>}
       {gemsLink ? (
         <Pressable
           onPress={() => goHash('/gems')}
           style={styles.bit}
-          hitSlop={6}
+          hitSlop={{ left: 6, right: 6 }}
           accessibilityRole="button"
-          accessibilityLabel={t('gems.title')}
+          accessibilityLabel={t('purse.gemsAria', { n: gems })}
         >
           {gemBody}
         </Pressable>
       ) : (
-        <View style={styles.bit}>{gemBody}</View>
+        <View style={styles.bit} accessible accessibilityLabel={t('purse.gemsCount', { n: gems })}>{gemBody}</View>
       )}
     </Animated.View>
   )
@@ -68,7 +68,7 @@ export function PurseLine({ purse, colors, gemsLink = false, mast = false }) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rowMast: { gap: 4 },
-  bit: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  bit: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44 },
   sep: { fontFamily: fonts.mono, fontSize: 11 },
   n: { fontFamily: fonts.mono, fontSize: 11 },
   nMast: { fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: '600' },
