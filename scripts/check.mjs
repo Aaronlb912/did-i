@@ -8194,6 +8194,21 @@ await testAsync('web social: shared notes and check-ons grouped per friend, web 
   assert.match(read('src/lib/Friends.jsx'), /sharedNotesOf\(ids\)/)
 })
 
+test('did we replay: refused answers are collected and named in one toast', async () => {
+  const { weRefusedText } = await import('../src/lib/did-we.js')
+  const text = weRefusedText([{ card: 'c', night: '2026-11-02' }, { card: 'd', night: '2026-11-03' }], 'en')
+  assert.match(text, /^A Did we answer from Monday could not be saved/)
+  assert.equal(weRefusedText([], 'en'), '')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (f) => readFileSync(path.join(root, f), 'utf8')
+  const src = read('src/lib/did-we.js')
+  assert.match(src, /else refused[.]push[(]item[)]/)
+  assert.match(src, /refusedWatchers[.]forEach/)
+  assert.match(read('native/AppShell.jsx'), /onWeRefused[(]/)
+  assert.match(read('src/lib/proofs.js'), /proof[.]offline/)
+  assert.match(read('native/lib/proof-flow.jsx'), /NetInfo[.]fetch[^]*proof[.]offline/)
+})
+
 test('did we amounts: private question amounts never in the query', () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const sql = readFileSync(path.join(root, 'supabase/social-amounts.sql'), 'utf8')
@@ -8638,7 +8653,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-10), ['did-you-when.sql', 'we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql'])
+  assert.deepEqual(files.slice(-10), ['we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)

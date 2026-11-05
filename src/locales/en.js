@@ -2287,6 +2287,7 @@ export const en = {
   'we.nights': "{n} days",
   'we.make': 'Send the ask',
   'we.missDays': "Pick at least one day.",
+  'we.refused': "A Did we answer from {day} could not be saved.",
   'we.loadingPeople': 'Loading your people...',
   'we.noPeople':
     'Add a friend or join a family first. Did we only works with people you know.',
@@ -4082,6 +4083,7 @@ export const en = {
   'proof.fail': "The photo could not be saved. Your Did is still saved.",
   'proof.tooBig': "That photo is too big. Try another.",
   'proof.limit': "You can add 5 photos a day. Try again tomorrow.",
+  'proof.offline': "No signal. Add the photo when you are back online.",
   'proof.family': "Photos here stay in the family.",
   'proof.noDid': "Say Did first, then add the photo.",
   'proof.please': "Photo please",

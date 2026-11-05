@@ -126,6 +126,7 @@ const files = [
   'supabase/family-code-prune.sql',
   'supabase/proof-view-kid.sql',
   'supabase/proof-push-after-upload.sql',
+  'supabase/auto-sends-photo.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

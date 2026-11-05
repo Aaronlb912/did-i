@@ -20,6 +20,7 @@ export function proofNight(lamp, periodKey) {
 
 function missFor(error) {
   const text = String(error?.message || '')
+  if (/network request failed|failed to fetch|load failed|networkerror/i.test(text)) return 'proof.offline'
   if (/too many photos/i.test(text)) return 'proof.limit'
   if (/family only/i.test(text)) return 'proof.family'
   if (/no Did|not your|not on this card/i.test(text)) return 'proof.noDid'

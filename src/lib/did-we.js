@@ -416,6 +416,21 @@ export async function weAnswer(card, status, night = tonightIso()) {
 // on the next good load. A server refusal is not offline: it is dropped.
 const PENDING_KEY = 'did-i-we-pending:'
 
+// Told when a saved answer is refused on replay, so the phone can say so.
+const refusedWatchers = new Set()
+export function onWeRefused(fn) {
+  refusedWatchers.add(fn)
+  return () => refusedWatchers.delete(fn)
+}
+
+// One line for the answers the server refused, naming the day of the first.
+export function weRefusedText(items, locale) {
+  const first = (items || []).find((item) => /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(item?.night || ''))
+  if (!first) return ''
+  const day = new Date(`${first.night}T12:00:00`).toLocaleDateString(locale || undefined, { weekday: 'long' })
+  return t('we.refused', { day })
+}
+
 function offline(error) {
   return !error?.code && /network request failed|failed to fetch|load failed|networkerror/i.test(error?.message || '')
 }
@@ -452,6 +467,7 @@ async function sendWePending(userId, cards) {
   const ids = new Set((cards || []).map((card) => card.id))
   const oldest = addDays(tonightIso(), -2)
   const keep = []
+  const refused = []
   let sent = false
   for (const item of list) {
     // The server takes nothing older than two days back, or for a card that is gone.
@@ -459,8 +475,10 @@ async function sendWePending(userId, cards) {
     const { error } = await db.rpc('we_answer', { card: item.card, on_night: item.night, want_status: item.status ?? null })
     if (error && offline(error)) keep.push(item)
     else if (!error) sent = true
+    else refused.push(item)
   }
   writeWePending(userId, keep)
+  if (refused.length) refusedWatchers.forEach((fn) => fn(refused))
   return sent
 }
 
