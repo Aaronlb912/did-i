@@ -19,6 +19,7 @@ import { clockWords } from '../../src/lib/hall-pages.js'
 import { AFTERNOON_AT_DEFAULT, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges, pingAheads } from '../../src/lib/day-nudges.js'
 import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { readWePings, weMonthlyPingDay } from '../../src/lib/we-widget.js'
+import { weNightStatus } from '../../src/lib/we-nights.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
 import { makeFeelTap } from '../lib/feel-tap.js'
@@ -182,6 +183,25 @@ function snoozedNotes(now = Date.now()) {
     return Array.isArray(list) ? list.filter((item) => item && item.identifier && item.at > now) : []
   } catch {
     return []
+  }
+}
+// A question answered somewhere else (widget, reminder button, the app): its
+// waiting Later notes go, in storage and on the phone.
+export async function dropSnoozed({ lampId = '', weId = '' }) {
+  if (!lampId && !weId) return
+  try {
+    const all = JSON.parse(localStorage.getItem(SNOOZE_KEY) || '[]')
+    if (!Array.isArray(all)) return
+    const gone = all.filter((item) => item?.content?.data && (lampId ? item.content.data.lampId === lampId : item.content.data.weId === weId))
+    if (!gone.length) return
+    localStorage.setItem(SNOOZE_KEY, JSON.stringify(all.filter((item) => !gone.includes(item))))
+    const Notifications = await notifications()
+    for (const item of gone) {
+      await Notifications.cancelScheduledNotificationAsync(item.identifier).catch(() => {})
+      await Notifications.dismissNotificationAsync?.(item.identifier)?.catch?.(() => {})
+    }
+  } catch {
+    // ok
   }
 }
 export async function snoozeNative(snooze) {
@@ -607,14 +627,23 @@ async function schedulePingsNow(books, now = new Date()) {
     await scheduleReminds(Notifications)
     // A snoozed question answered since then stays quiet.
     const openNow = new Set(list.flatMap((book) => dueTonight(book, now).filter((row) => !row.answer || row.answer.status === 'skip').map((row) => row.lamp.id)))
+    const pings = readWePings()
+    const keepSnoozes = []
     for (const snooze of snoozedNotes()) {
-      const snoozedLamp = snooze.content?.data?.lampId
-      if (snoozedLamp && !openNow.has(snoozedLamp)) continue
+      const data = snooze.content?.data || {}
+      if (data.lampId && !openNow.has(data.lampId)) continue
+      if (data.weId && data.night && (weNightStatus(data.night, data.weId) === 'did' || pings.some((ping) => ping.id === data.weId && ping.skipNight === data.night))) continue
+      keepSnoozes.push(snooze)
       notes.push({
         identifier: snooze.identifier,
         content: snooze.content,
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: afterQuiet(new Date(snooze.at)), channelId: CHANNEL_ID },
       })
+    }
+    try {
+      localStorage.setItem(SNOOZE_KEY, JSON.stringify(keepSnoozes))
+    } catch {
+      // ok
     }
     // iOS keeps 64 and drops the last to fire (renew, no rush), so extras push out the latest regular notes.
     const spill = notes.length - (PING_CAP - waitingReminds)
