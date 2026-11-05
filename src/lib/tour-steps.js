@@ -24,6 +24,7 @@ export const TOUR_PARTS = {
       { key: 'we', path: '/add', target: 'lead', scope: 'add', titleKey: 'tour.weTitle', lineKey: 'tour.weLine' },
       { key: 'cheer', path: '/people', target: 'people', scope: 'main', scroll: true, titleKey: 'tour.cheerTitle', lineKey: 'tour.cheerLine' },
       { key: 'shop', path: '/tonight', target: 'menu', scope: 'main', titleKey: 'tour.shopTitle', lineKey: 'tour.shopLine' },
+      { key: 'questions', path: '/lamps', target: 'questions', scope: 'main', titleKey: 'tour.questionsTitle', lineKey: 'tour.questionsLine' },
       { key: 'recent', path: '/recent', target: 'recent', scope: 'main', scroll: true, titleKey: 'tour.recentTitle', lineKey: 'tour.recentLine' },
     ],
   },

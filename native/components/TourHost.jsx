@@ -59,6 +59,8 @@ function Hand({ rect, colors }) {
   return (
     <Animated.View
       pointerEvents="none"
+      accessible={false}
+      importantForAccessibility="no-hide-descendants"
       style={[
         styles.hand,
         { left: rect.x + rect.w / 2 - 17, top: rect.y + rect.h / 2 - 17, backgroundColor: colors.on, borderColor: colors.bg },
