@@ -122,6 +122,8 @@ export const es = {
   'settings.sendCsvSub': 'Cada respuesta por fecha, en CSV. Se abre en Sheets o Excel.',
   'settings.loadCopy': 'Cargar una copia',
   'settings.loadCopySub': 'Una copia que guardaste antes, como archivo. Se suma a lo que hay aquí.',
+  'settings.sendFile': 'Guardar un archivo de copia',
+  'settings.sendFileSub': 'Un archivo .json para guardar. Cargar una copia lo trae de vuelta.',
   'settings.loadOk': 'Cargado. Preguntas añadidas: {n}.',
   'settings.loadOkBoth': 'Cargado. Preguntas añadidas: {q}. Respuestas añadidas: {a}.',
   'settings.loadSame': 'Ya estaba todo. No hay nada nuevo.',

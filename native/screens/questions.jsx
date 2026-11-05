@@ -2509,10 +2509,19 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const reduce = useReduceMotion()
   const [historyOpen, setHistoryOpen] = useState(false)
   const firstDay = firstWeekday(readPrefs().locale)
+  const streakCard = useRef(null)
   async function shareStreak() {
     const n = record.streak
     const what = shortLabel(lamp)
     const key = isEvery(lamp) ? 'lamp.shareOnTime' : isPerWeek(lamp) ? (n === 1 ? 'lamp.shareWeek' : 'lamp.shareWeeks') : n === 1 ? 'lamp.shareDay' : 'lamp.shareDays'
+    // A picture first. Text when this phone cannot capture or share an image.
+    try {
+      const [{ captureRef }, Sharing] = await Promise.all([import('react-native-view-shot'), import('expo-sharing')])
+      if (!streakCard.current || !(await Sharing.isAvailableAsync())) throw new Error('no image share')
+      const uri = await captureRef(streakCard, { format: 'png', quality: 1, result: 'tmpfile' })
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: t('lamp.shareBtn'), UTI: 'public.png' })
+      return
+    } catch {}
     const how = await passAlong(t(key, { n, what }), t('recap.kicker'))
     if (how === 'copied') confirmDone(t('recap.copied'))
     else if (!how) confirmMiss(t('confirm.shareMiss'))
@@ -2718,6 +2727,15 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       </SetCard>
 
       {gentle || !record.streak ? null : <KeyButton colors={colors} label={t('lamp.shareBtn')} onPress={shareStreak} />}
+      {/* Drawn off screen, only to be captured as the picture to share. */}
+      {gentle || !record.streak ? null : (
+        <View ref={streakCard} collapsable={false} pointerEvents="none" style={[styles.shareCard, { backgroundColor: colors.bg }]}>
+          <Text style={[styles.shareWhat, { color: colors.ink }]}>{shortLabel(lamp)}</Text>
+          <Text style={[styles.shareNum, { color: colors.on }]}>{record.streak}</Text>
+          <Text style={[styles.shareCap, { color: colors.inkDim }]}>{t(isPerWeek(lamp) ? 'lamp.streakCapWeeks' : 'lamp.streakCap')}</Text>
+          <Text style={[styles.shareMark, { color: colors.inkDim }]}>Did I</Text>
+        </View>
+      )}
 
       {weeks.length > 1 ? (
         <View style={styles.trend}>
@@ -2912,6 +2930,11 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 }
 
 const styles = StyleSheet.create({
+  shareCard: { position: 'absolute', left: -2000, top: 0, width: 360, padding: 24, gap: 8 },
+  shareWhat: { fontFamily: fonts.uiBold, fontSize: 22 },
+  shareNum: { fontFamily: fonts.uiBold, fontSize: 72 },
+  shareCap: { fontFamily: fonts.uiSemi, fontSize: 16 },
+  shareMark: { fontFamily: fonts.uiBold, fontSize: 14, textAlign: 'right', marginTop: 8 },
   mastDate: {
     fontFamily: fonts.mono,
     fontSize: 11,

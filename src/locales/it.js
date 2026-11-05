@@ -122,6 +122,8 @@ export const it = {
   'settings.sendCsvSub': 'Ogni risposta per data, in CSV. Si apre in Sheets o Excel.',
   'settings.loadCopy': 'Carica una copia',
   'settings.loadCopySub': 'Una copia salvata prima, come file. Si aggiunge a quello che c’è qui.',
+  'settings.sendFile': 'Salva un file di backup',
+  'settings.sendFileSub': 'Un file .json da conservare. Carica una copia lo riporta qui.',
   'settings.loadOk': 'Caricato. Domande aggiunte: {n}.',
   'settings.loadOkBoth': 'Caricato. Domande aggiunte: {q}. Risposte aggiunte: {a}.',
   'settings.loadSame': 'Già presente. Niente di nuovo da aggiungere.',

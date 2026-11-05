@@ -122,6 +122,8 @@ export const en = {
   'settings.sendCsvSub': 'Every answer by date, as CSV. Opens in Sheets or Excel.',
   'settings.loadCopy': 'Load a copy',
   'settings.loadCopySub': 'A copy you saved before, as a file. It adds to what is here.',
+  'settings.sendFile': 'Save a backup file',
+  'settings.sendFileSub': 'A .json file you can keep. Load a copy brings it back.',
   'settings.loadOk': 'Loaded. Questions added: {n}.',
   'settings.loadOkBoth': 'Loaded. Questions added: {q}. Answers added: {a}.',
   'settings.loadSame': 'Already here. Nothing new to add.',

@@ -4263,6 +4263,9 @@ test('native metro shims are wired and pin default exports', () => {
     'expo-linking',
     'expo-splash-screen',
     'expo-document-picker',
+    'expo-file-system',
+    'expo-sharing',
+    'react-native-view-shot',
     'expo-apple-authentication',
     '@react-native-google-signin/google-signin',
     'expo-application',
@@ -4322,6 +4325,14 @@ test('native metro shims are wired and pin default exports', () => {
   assert.notEqual(missing, undefined)
   assert.notEqual(missing.default, undefined)
   assert.doesNotThrow(() => missing.default)
+
+  const fileSys = require(path.join(root, 'native/shim/file-system-safe.cjs'))
+  assert.ok(fileSys.default !== undefined || fileSys.File === undefined || typeof fileSys.File === 'function', 'file system shim loads without the module')
+  const nativeShim = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
+  assert.ok(nativeShim.includes('export function backupFileReady()'), 'backup file row can ask whether the module exists')
+  const profileScreen = readFileSync(path.join(root, 'native/screens/profile.jsx'), 'utf8')
+  assert.ok(profileScreen.includes('{backupFileReady() ? ('), 'backup file row hides when the file module is missing')
+  assert.ok(profileScreen.includes('disabled={outBusy}'), 'sign out dims while signing out')
 
   const nativeMod = {}
   Object.defineProperty(nativeMod, 'createWidget', {
@@ -5179,6 +5190,8 @@ const phoneStubs = {
   'expo-clipboard': { setStringAsync: async () => {} },
   'expo-linking': { addEventListener: () => ({ remove() {} }), getInitialURL: async () => null, parse: () => ({}) },
   'expo-splash-screen': {},
+  'expo-file-system': {},
+  'expo-sharing': {},
   'expo-haptics': {},
   'expo-notifications': {},
   expo: { requireOptionalNativeModule: () => null },
