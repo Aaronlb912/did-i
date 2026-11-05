@@ -3096,6 +3096,8 @@ export const ko = {
   'lamp.yearGrid': "1년의 하루하루",
   'lamp.yearGridSub': "이 질문의 모든 날",
   'cal.prevYear': "이전 연도",
+  'cal.monthDid': "{month}: {n}일 Did",
+  'cal.monthDidOne': "{month}: 1일 Did",
   'cal.nextYear': "다음 연도",
   'cal.yearTotals': "Did 한 날 {did}일 · {rate}%",
   'cal.yearBest': "최장 연속 {n}일",

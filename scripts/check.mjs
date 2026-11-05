@@ -152,7 +152,7 @@ import { mergeBooks } from '../src/lib/shelf-merge.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
 import { writeAccountUserId } from '../src/lib/session-id.js'
 import { coinNightLine, coinNights, gemThisWeek, mergeCoinNights } from '../src/lib/coin-history.js'
-import { clockWords, isRecapNight, monthStripNights, weekStripNights, nightWhy, nextStreakGoal, recapLine, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, weekdayName, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
+import { clockWords, isRecapNight, monthStripNights, shelfWeekNights, weekStripNights, nightWhy, nextStreakGoal, recapLine, recapShareText, shelfFeedRows, shelfNoteRows, shelfStatsCounts, stampWhen, tomorrowPreview, weekRecap, weekdayName, firstAnswerYear, firstAnswerMonth, yearMonths } from '../src/lib/hall-pages.js'
 import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { marksToToast, streakLength } from '../src/lib/achievements.js'
 import { addNotice, markNoticesSeen, NOTICE_CAP, readNotices, unseenNotices } from '../src/lib/notices.js'
@@ -257,6 +257,17 @@ test('a new cheer starts at stage 1, even after another cheer reached stage 5', 
   book = noteCheer(book)
   assert.equal(cheerStageOf(book, 'tape'), 1, 'tape stays at 1 until bought')
   assert.equal(cheerStageOf({ cheers: ['lime', 'tape'], cheerStage: 5, cheerStages: { lime: 5 } }, 'tape'), 1, 'old single stage does not leak to another cheer')
+})
+
+test('the week grid shares one today across books with different day-fold hours', () => {
+  const at = new Date(2026, 9, 16, 1, 30)
+  const a = { id: 'a', dayFoldHour: 0, lamps: [lamp('x', { createdOn: '2026-10-01' })], answers: [] }
+  const b = { id: 'b', dayFoldHour: 4, lamps: [lamp('y', { createdOn: '2026-10-01' })], answers: [] }
+  const nights = shelfWeekNights([a, b], at, '', 7)
+  assert.equal(nights.length, 7)
+  assert.equal(nights[6].iso, '2026-10-16')
+  assert.equal(nights[6].due.length, 2)
+  assert.equal(shelfWeekNights([a, b], at, '', 7, -1)[6].iso, '2026-10-09')
 })
 
 test('a night pays 2 a did, 1 late, new questions too, nothing past 3 taps', () => {

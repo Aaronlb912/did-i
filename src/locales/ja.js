@@ -3094,6 +3094,8 @@ export const ja = {
   'lamp.yearGrid': "1年の日々",
   'lamp.yearGridSub': "この質問の毎日",
   'cal.prevYear': "前の年",
+  'cal.monthDid': "{month}:{n}日 Did",
+  'cal.monthDidOne': "{month}:1日 Did",
   'cal.nextYear': "次の年",
   'cal.yearTotals': "Did の日 {did}日 · {rate}%",
   'cal.yearBest': "最長の連続 {n}日",
