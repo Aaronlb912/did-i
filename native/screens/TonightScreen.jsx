@@ -106,13 +106,17 @@ import {
   countWidgetTipDay,
   isNewShelf,
   isNightOne,
+  firstMissDay,
+  markFirstMissSeen,
   markNightOneSeen,
   markSignInNudgeSeen,
+  nightOneDay,
   nightOneSeen,
   readMorningAsk,
   readTour,
   readWidgetTip,
   shouldShowMorningAsk,
+  showFirstMiss,
   shouldShowWidgetTip,
   showSignInNudge,
   signInNudgeSeen,
@@ -546,11 +550,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // Control. Read from the shelf, nothing stored.
   const isNew = useMemo(() => isNewShelf(stack.shelf), [stack.shelf])
   // Night one: the first cleared night gets a bigger moment, once ever.
-  const [nightOne, setNightOne] = useState(false)
+  // The day it showed is stored, so it holds all that day, survives a remount,
+  // and an undo hides it until the day is cleared again.
+  const [nightOneOn, setNightOneOn] = useState(nightOneDay)
+  const nightOne = stack.nightDone && Boolean(stack.dateIso) && nightOneOn === stack.dateIso
   useEffect(() => {
     if (!stack.nightDone || nightOneSeen() || !isNightOne(stack.shelf, stack.dateIso)) return
-    markNightOneSeen()
-    setNightOne(true)
+    markNightOneSeen(stack.dateIso)
+    setNightOneOn(stack.dateIso)
     // A bigger cheer on top of the usual one. CheerBurst skips it under reduced motion.
     if (purse.cheerOn) fireCheer(purse.cheerOn, 3)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1028,6 +1035,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const graceWeOpen = graceNight ? weOpenOn(graceNight) : new Set()
   // Back after 3+ missed days: no grace card. Its words promise a streak that is gone.
   const returning = useMemo(() => cameBack(stack.shelf, stack.dateIso, isNewShelf(stack.shelf) ? 2 : COME_BACK_DAYS), [stack.shelf, stack.dateIso])
+  // Week one, one missed day: one calm line that day (the welcome-back sheet covers longer gaps).
+  const [missSeen, setMissSeen] = useState(firstMissDay)
+  const missUp = !returning && showFirstMiss(stack.shelf, stack.dateIso, missSeen)
+  useEffect(() => {
+    if (!missUp || missSeen === stack.dateIso) return
+    markFirstMissSeen(stack.dateIso)
+    setMissSeen(stack.dateIso)
+  }, [missUp, missSeen, stack.dateIso])
   const graceItems = graceLost(stack.shelf, stack.dateIso) ? [] : [
     ...stack.graceOpen.map((row) => ({
       key: `grace:${stack.rowKey(row)}:${row.periodKey}`,
@@ -1117,7 +1132,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const firstAsk = (stack.shelf || []).flatMap((item) => (item.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => String(lamp.askAfter || ''))).filter((v) => /^\d{2}:\d{2}$/.test(v)).sort()[0] || ''
   const reminderRowUp = !stack.empty && Platform.OS !== 'web' && Boolean(onAskPings) && (pingLabel === 'pings.state.ask' || pingLabel === 'pings.state.blocked')
   const ctaRow = nightOne ? '' : widgetBtn ? 'widget' : signInNudge && (!firstWeek || day >= 3) ? 'signin' : day === 5 ? 'invite' : ''
-  const extraRow = stack.cheer && !pickKey ? '' : reminderRowUp ? 'reminders' : stack.nightDone ? (dropLineUp(book) ? 'drop' : 'rate') : ''
+  const extraRow = nightOne || (stack.cheer && !pickKey) ? '' : reminderRowUp ? 'reminders' : stack.nightDone ? (dropLineUp(book) ? 'drop' : 'rate') : ''
   // First open of a new week: last week's recap, once. Sunday's done card counts as seen.
   useEffect(() => {
     if (summary?.recap && isRecapNight(stack.dateIso)) {
@@ -1341,9 +1356,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>
                 {pingLabel === 'pings.state.on' && firstAsk ? t('nightOne.bodyTime', { time: clockWords(firstAsk) }) : t(gentle ? 'nightOne.bodyGentle' : 'nightOne.body')}
               </Text>
-              <View style={styles.actions}>
-                <DidButton small label={t('nightOne.widget')} colors={colors} onPress={() => pinWidget(colors)} />
-              </View>
+              {widgetOn ? null : (
+                <View style={styles.actions}>
+                  <DidButton small label={t('nightOne.widget')} colors={colors} onPress={() => pinWidget(colors)} />
+                </View>
+              )}
               {reminderRowUp ? <WideRow label={t('firstWeek.remind')} colors={colors} onPress={onAskPings} /> : null}
             </>
           ) : null}
@@ -1648,6 +1665,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       <Slot>
         <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.nightDone} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} waiting={peopleWaitingLine(peopleItems)} />
       </Slot>
+      {missUp ? <Text style={[styles.missLine, { color: colors.inkSoft }]}>{t('firstWeek.missed')}</Text> : null}
 
       {showChips ? (
         <FadeScroll scrollRef={pillScroll} fade={colors.bg} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
@@ -1869,6 +1887,7 @@ const styles = StyleSheet.create({
   toastRoom: { height: TOAST_ROOM, flexShrink: 0 },
   answerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   answerCell: { flex: 1 },
+  missLine: { fontFamily: fonts.ui, fontSize: 14, textAlign: 'center', marginBottom: 12 },
   jewels: { flexGrow: 0, marginBottom: 12 },
   jewelsRule: { width: StyleSheet.hairlineWidth * 2, height: 24, marginHorizontal: 2 },
   jewelsIn: { gap: 8, paddingRight: 8, alignItems: 'center' },

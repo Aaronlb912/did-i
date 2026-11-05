@@ -5,6 +5,7 @@ import { hangInto } from './board-ops.js'
 import { hangStarter } from './starters.js'
 import { addDaysIso, boardDate } from './recurrence.js'
 import { accountSessionOn, readAccountUserId } from './session-id.js'
+import { daysSinceFirstAnswer, daysSinceLastAnswer } from './come-back.js'
 
 // Every pack question fits, so taking all packs never silently drops one.
 export const FIRST_PICKS_MAX = 12
@@ -13,6 +14,7 @@ export const FIRST_TIME = '21:00'
 export const NEW_NIGHTS = 3
 
 const NIGHT_ONE_KEY = 'did-i-night-one'
+const FIRST_MISS_KEY = 'did-i-first-miss'
 const SIGN_IN_NUDGE_KEY = 'did-i-sign-in-nudge'
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
 
@@ -128,25 +130,47 @@ export function isNightOne(shelf, dateIso) {
   return tonight
 }
 
-function readFlag(key) {
+// The day-one moment is stored with the day it showed, so it stays all that
+// day (a remount keeps it) and never comes back on another. An old '1' means
+// it showed on some earlier day.
+export function nightOneDay() {
   try {
-    return localStorage.getItem(key) === '1'
+    return localStorage.getItem(NIGHT_ONE_KEY) || ''
   } catch {
     // No storage: treat as seen so nothing nags.
-    return true
+    return '1'
   }
 }
-
-function writeFlag(key) {
+export const nightOneSeen = () => nightOneDay() !== ''
+export function markNightOneSeen(dateIso = '1') {
   try {
-    localStorage.setItem(key, '1')
+    localStorage.setItem(NIGHT_ONE_KEY, dateIso)
   } catch {
     // Shows again next time; harmless.
   }
 }
 
-export const nightOneSeen = () => readFlag(NIGHT_ONE_KEY)
-export const markNightOneSeen = () => writeFlag(NIGHT_ONE_KEY)
+// Week one, one missed day: a calm line on Today, that one day only, once ever.
+// seenDay is the day it was first shown ('' for never).
+export function showFirstMiss(shelf, dateIso, seenDay = '') {
+  if (seenDay && seenDay !== dateIso) return false
+  const since = daysSinceFirstAnswer(shelf, dateIso)
+  return since >= 2 && since < 7 && daysSinceLastAnswer(shelf, dateIso) === 2
+}
+export function firstMissDay() {
+  try {
+    return localStorage.getItem(FIRST_MISS_KEY) || ''
+  } catch {
+    return '1'
+  }
+}
+export function markFirstMissSeen(dateIso) {
+  try {
+    localStorage.setItem(FIRST_MISS_KEY, dateIso)
+  } catch {
+    // Shows again next time; harmless.
+  }
+}
 // Later snoozes the sign-in card for a week, not for good: an account is what
 // keeps the questions if the phone is lost. (An old '1' counts as long ago.)
 const SIGN_IN_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000
@@ -172,7 +196,7 @@ export function showSignInNudge({ signedIn, cloud, nightDone, dismissed }) {
 }
 
 // The widget tip: one sheet, once ever, after the first day every question is
-// Did (all clear). Any show, or a widget already on the home screen, ends it.
+// Did (all clear), or from day 2 on. Any show, or a widget already on the home screen, ends it.
 const WIDGET_TIP_KEY = 'did-i-widget-tip'
 export const WIDGET_TIP_MAX = 1
 export const WIDGET_TIP_GAP_DAYS = 3
@@ -190,7 +214,8 @@ export function countWidgetTipDay(state, today) {
 
 export function shouldShowWidgetTip({ state, today, hasQuestion, widgetPlaced, busy, allClear }) {
   const tip = state || {}
-  if (tip.done || widgetPlaced || !hasQuestion || busy || !allClear) return false
+  // All clear, or from the second day opened: not every question has to be Did.
+  if (tip.done || widgetPlaced || !hasQuestion || busy || (!allClear && (tip.days || 0) < 2)) return false
   return (tip.shown || 0) < WIDGET_TIP_MAX
 }
 

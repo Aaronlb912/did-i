@@ -345,7 +345,7 @@ export const de = {
   'tags.putAwayHint':
     'Keine Fragen drauf, also bleiben sie heute aus. Wähle einen beim Hinzufügen oder entferne ihn hier.',
   'tonight.add': 'Hinzufügen',
-  'tonight.emptyKicker': 'Noch nichts',
+  'tonight.emptyKicker': 'Füge deine erste Frage hinzu',
   'tonight.emptyTitle': 'Noch keine Fragen',
   'tonight.write': 'Schreib deine eigene',
   'tonight.haveAccount': "Ich habe schon ein Konto",
@@ -2936,6 +2936,7 @@ export const de = {
   'tonight.doneDay3': "Drei Tage. Es setzt sich fest.",
   'tonight.doneDay7': "Eine ganze Woche",
   'firstWeek.remind': "Erinnere mich morgen",
+  'firstWeek.missed': "Gestern ist entwischt. Heute ist ein neuer Tag.",
   'firstWeek.coinsFor': "Mit Münzen kaufst du im Shop Begleiter und Looks.",
   'firstWeek.invite': "Lade eine Freundin oder einen Freund zum Anfeuern ein",
   'widgetTip.title': "Deine Fragen auf dem Home-Bildschirm?",
