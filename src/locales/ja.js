@@ -1183,6 +1183,7 @@ export const ja = {
   "sent.waitingName": "{name}さんはまだ回答していません",
   "sent.waitingNone": "まだ回答がありません",
   'sent.takeBack': '取り消す',
+  'sent.takeBackBody': "相手のリストから消えます。元に戻せません。",
   'sent.emptyTitle': 'まだ送ってない',
   'sent.emptyBody': '友達に did you を送るとここに出る。',
   'sent.goFriends': '友達へ',

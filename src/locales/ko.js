@@ -1182,6 +1182,7 @@ export const ko = {
   "sent.waitingName": "{name}님이 아직 답하지 않았어요",
   "sent.waitingNone": "아직 답이 없어요",
   'sent.takeBack': '취소',
+  'sent.takeBackBody': "상대 목록에서 사라져요. 되돌릴 수 없어요.",
   'sent.emptyTitle': '아직 안 보냄',
   'sent.emptyBody': '친구에게 Did I를 보내면 여기 나와요.',
   'sent.goFriends': '친구로',

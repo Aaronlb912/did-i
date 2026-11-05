@@ -3048,19 +3048,22 @@ export function SentScreen({ book, onChange }) {
           {canEditSent(row) || row.state === 'sent' ? (
           <View style={styles.personActions}>
           {canEditSent(row) ? (
-            <KeyButton colors={colors} label={t('sent.edit')} onPress={() => setEditing({ id: row.id, text: row.question })} />
+            <KeyButton colors={colors} label={t('sent.edit')} onPress={() => {
+              setMiss('')
+              setEditing({ id: row.id, text: row.question })
+            }} />
           ) : null}
           {row.state === 'sent' ? (
             <KeyButton
               colors={colors}
               label={t('sent.takeBack')}
-              onPress={() => once(`take-back:${row.id}`, async () => {
+              onPress={() => askFirst(colors, t('sent.takeBack'), t('sent.takeBackBody'), t('sent.takeBack'), () => once(`take-back:${row.id}`, async () => {
                 setMiss('')
                 const { miss: why } = await takeBack(row.id)
                 if (why) setMiss(tMiss(why))
                 else confirmDone(t('confirm.takenBack'))
                 load()
-              })}
+              }))}
             />
           ) : null}
           </View>
@@ -3091,7 +3094,7 @@ export function SentScreen({ book, onChange }) {
           </View>
         </>
       ) : null}
-      <Miss colors={colors}>{miss}</Miss>
+      {editing ? null : <Miss colors={colors} onRetry={load}>{miss}</Miss>}
       {editing ? (
         <Modal visible transparent animationType="fade" onRequestClose={() => setEditing(null)}>
           <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setEditing(null)}>
@@ -3112,6 +3115,7 @@ export function SentScreen({ book, onChange }) {
                   returnKeyType="done"
                   onSubmitEditing={busy ? undefined : saveEdit}
                 />
+                <Miss colors={colors}>{miss}</Miss>
                 <View style={styles.personActions}>
                   <DidButton colors={colors} small label={t('sent.editSave')} disabled={busy} onPress={saveEdit} />
                   <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEditing(null)} />

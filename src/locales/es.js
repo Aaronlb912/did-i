@@ -1197,6 +1197,7 @@ export const es = {
   "sent.waitingName": "{name} no ha respondido",
   "sent.waitingNone": "Sin respuesta todavía",
   'sent.takeBack': 'Retirarlo',
+  'sent.takeBackBody': "Desaparece de su lista. No se puede deshacer.",
   'sent.emptyTitle': 'Todavía no mandaste nada',
   'sent.emptyBody': 'Mándale un did you a un amigo y aparece aquí.',
   'sent.goFriends': 'Ir a amigos',

@@ -1181,6 +1181,7 @@ export const zh = {
   "sent.waitingName": "{name} 还没有回答",
   "sent.waitingNone": "还没有回答",
   'sent.takeBack': '撤回',
+  'sent.takeBackBody': "会从对方的列表中移除，无法撤销。",
   'sent.emptyTitle': '尚未发送',
   'sent.emptyBody': '给好友发 did you 后会出现在这里。',
   'sent.goFriends': '前往好友',

@@ -179,7 +179,7 @@ export async function endDidYouLink(code) {
   const clean = cleanCode(code)
   if (!db || !clean) return { miss: 'off' }
   const { data, error } = await db.rpc('end_did_you_link', { code: clean })
-  if (error) return { miss: error.message || 'people.reach' }
+  if (error) return { miss: 'people.reach' }
   return data ? { miss: '' } : { miss: 'people.reach' }
 }
 
