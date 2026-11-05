@@ -13,7 +13,8 @@ import {
   sharedDidYouLine,
 } from "../../src/lib/did-you-links.js";
 import { passAlong } from "../../src/lib/native.js";
-import { Pill } from "../screens/questions.jsx";
+import { EveryNStep, Pill } from "../screens/questions.jsx";
+import { HangMonthCal } from "./HangMonthCal.jsx";
 import { fonts } from "../theme.js";
 import { DidButton, Field, KeyButton, Meta } from "./ui.jsx";
 import { KeyboardLift } from "./KeyboardLift.jsx";
@@ -68,9 +69,19 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
   const [cadence, setCadence] = useState("once");
   const [days, setDays] = useState([]);
   const [everyDays, setEveryDays] = useState(7);
+  const today = boardDate(new Date(), book?.dayFoldHour || 0);
+  const [pickDate, setPickDate] = useState("");
+  const [everyN, setEveryN] = useState("3");
+  const [perWeek, setPerWeek] = useState(3);
+  const [monthDay, setMonthDay] = useState("");
   const [whenOpen, setWhenOpen] = useState(false);
   const [focused, setFocused] = useState(false);
-  const whenWords = repeatLabel(repeatFrom(cadence, days, everyDays)) || t("hang.once");
+  // Just once on a later date is 'on'; today (or no pick) is a plain once.
+  const repeat =
+    cadence === "once"
+      ? pickDate > today ? repeatFrom("on", [], 0, { date: pickDate }) : ""
+      : repeatFrom(cadence, days, everyDays, { date: pickDate, n: cadence === "per_week" ? perWeek : everyN, monthDay });
+  const whenWords = repeatLabel(repeat) || t("hang.once");
   const name = personName(person) || t("people.someone");
   // No person: only a link, to text anyone, friend or not.
   const linkOnly = !person;
@@ -84,6 +95,16 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
       setMiss(t("we.missDays"));
       return;
     }
+    const wrong = {
+      by: !/^\d{4}-\d{2}-\d{2}$/.test(pickDate) ? "hang.miss.dueBy" : pickDate < today ? "hang.miss.dueByBefore" : "",
+      every_n: !(Number(everyN) >= 2) ? "hang.miss.everyN" : "",
+      every: !(Number(everyDays) >= 1) ? "hang.miss.everyDays" : "",
+      monthly: monthDay === "" ? "hang.miss.monthDay" : "",
+    }[cadence];
+    if (wrong) {
+      setMiss(t(wrong));
+      return;
+    }
     if (inFlight.current) return;
     inFlight.current = true;
     setBusy(true);
@@ -93,7 +114,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
       question,
       note,
       undefined,
-      repeatFrom(cadence, days, everyDays),
+      repeat,
       cadence === "every" ? senderLastDid(book, question, boardDate(new Date())) : "",
     ).catch(() => ({ miss: "people.reach" }));
     inFlight.current = false;
@@ -225,6 +246,10 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                         ["daily", t("we.daily"), "daily"],
                         ["weekly", t("we.someDays"), "weekly"],
                         ["every", t("hang.every"), "every"],
+                        ["every_n", t("hang.everyN"), "every_n"],
+                        ["per_week", t("hang.perWeek"), "per_week"],
+                        ["monthly", t("hang.monthly"), "monthly"],
+                        ["by", t("hang.dueByPick"), "deadline"],
                       ].map(([id, label, sub]) => (
                         <ScheduleTile key={id} label={label} sub={t(`hang.tileSub.${sub}`)} on={cadence === id} onPress={() => setCadence(id)} colors={colors} />
                       ))}
@@ -271,6 +296,25 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                   </View>
                 ) : null}
                 {cadence === "every" ? <Meta colors={colors}>{t("people.sendEveryHint")}</Meta> : null}
+                {cadence === "once" || cadence === "by" ? (
+                  <HangMonthCal mode="date" value={pickDate || (cadence === "once" ? today : "")} onChange={setPickDate} now={new Date()} dayFoldHour={book?.dayFoldHour || 0} colors={colors} />
+                ) : null}
+                {cadence === "every_n" ? (
+                  <EveryNStep draft={{ everyN, everyNAnchor: today }} dateIso={today} onChange={setEveryN} colors={colors} />
+                ) : null}
+                {cadence === "per_week" ? (
+                  <>
+                    <View style={styles.actions}>
+                      {[1, 2, 3, 4, 5, 6].map((n) => (
+                        <Pill key={n} label={String(n)} on={perWeek === n} onPress={() => setPerWeek(n)} colors={colors} radio />
+                      ))}
+                    </View>
+                    <Meta colors={colors}>{t("hang.perWeekHint")}</Meta>
+                  </>
+                ) : null}
+                {cadence === "monthly" ? (
+                  <HangMonthCal mode="monthly" value={monthDay} onChange={setMonthDay} now={new Date()} dayFoldHour={book?.dayFoldHour || 0} colors={colors} />
+                ) : null}
                     </Reveal>
                   </View>
                 </PickSheet>

@@ -1306,7 +1306,7 @@ const EVERY_N_MAX = 999
 const STEP_NIGHTS = 7
 
 // Every few days: − n + and the next week with the nights it asks lit.
-function EveryNStep({ draft, dateIso, onChange, colors }) {
+export function EveryNStep({ draft, dateIso, onChange, colors }) {
   const reduce = useReduceMotion()
   const n = Number(draft.everyN) || 0
   const step = (by) => onChange(String(Math.min(EVERY_N_MAX, Math.max(2, (n || 2) + by))))

@@ -4,10 +4,26 @@
 // schedule, and it is theirs to change from then on.
 import { blankLamp } from './board-json.js'
 import { t } from './i18n.js'
-import { boardDate, isEvery, lastDidNight } from './recurrence.js'
+import { boardDate, formatBoardDate, isEvery, lastDidNight } from './recurrence.js'
 
-export function repeatFrom(cadence, weekdays = [], everyDays = 0) {
+const ISO = /^\d{4}-\d{2}-\d{2}$/
+
+// extra: { date, n, monthDay } for on, by, every_n, per_week and monthly.
+export function repeatFrom(cadence, weekdays = [], everyDays = 0, extra = {}) {
   if (cadence === 'daily') return 'daily'
+  if (cadence === 'on' || cadence === 'by') return ISO.test(String(extra.date || '')) ? `${cadence}:${extra.date}` : ''
+  if (cadence === 'every_n') {
+    const n = Number(extra.n)
+    return Number.isInteger(n) && n >= 2 && n <= 365 ? `every_n:${n}` : ''
+  }
+  if (cadence === 'per_week') {
+    const n = Number(extra.n)
+    return Number.isInteger(n) && n >= 1 && n <= 6 ? `per_week:${n}` : ''
+  }
+  if (cadence === 'monthly') {
+    const d = extra.monthDay === 'last' ? 0 : Number(extra.monthDay)
+    return Number.isInteger(d) && d >= 0 && d <= 31 ? `monthly:${d}` : ''
+  }
   if (cadence === 'every') {
     const n = Number(everyDays)
     return Number.isInteger(n) && n >= 1 && n <= 365 ? `every:${n}` : ''
@@ -28,12 +44,25 @@ export function readRepeat(repeat) {
   if (every && Number(every[1]) >= 1 && Number(every[1]) <= 365) {
     return { cadence: 'every', weekdays: [], everyDays: Number(every[1]) }
   }
+  const dated = /^(on|by):(\d{4}-\d{2}-\d{2})$/.exec(text)
+  if (dated) return { cadence: dated[1], weekdays: [], date: dated[2] }
+  const everyN = /^every_n:(\d{1,3})$/.exec(text)
+  if (everyN && Number(everyN[1]) >= 2 && Number(everyN[1]) <= 365) return { cadence: 'every_n', weekdays: [], n: Number(everyN[1]) }
+  const perWeek = /^per_week:([1-6])$/.exec(text)
+  if (perWeek) return { cadence: 'per_week', weekdays: [], n: Number(perWeek[1]) }
+  const monthly = /^monthly:(\d{1,2})$/.exec(text)
+  if (monthly && Number(monthly[1]) <= 31) return { cadence: 'monthly', weekdays: [], monthDay: Number(monthly[1]) || 'last' }
   return { cadence: 'once', weekdays: [] }
 }
 
 export function repeatLabel(repeat) {
-  const { cadence, weekdays, everyDays } = readRepeat(repeat)
+  const { cadence, weekdays, everyDays, date, n, monthDay } = readRepeat(repeat)
   if (cadence === 'daily') return t('we.daily')
+  if (cadence === 'on') return formatBoardDate(date)
+  if (cadence === 'by') return `${t('hang.dueByPick')} ${formatBoardDate(date)}`
+  if (cadence === 'every_n') return t('cadence.everyN', { n })
+  if (cadence === 'per_week') return `${n} ${t('hang.perWeek')}`
+  if (cadence === 'monthly') return monthDay === 'last' ? t('cadence.monthlyLast') : t('cadence.monthlyOn', { day: monthDay })
   if (cadence === 'every') return t('cadence.every', { n: everyDays })
   if (cadence === 'weekly') return weekdays.map((day) => t(`we.day.${day}`)).join(' ')
   return ''
@@ -73,7 +102,12 @@ export function keptLamp(item, clock = new Date(), dayFoldHour = 0) {
     const sendId = String(item?.sendId || item?.id || '').toLowerCase()
     if (!item?.fromDidI && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(sendId)) base.sendId = sendId
   }
-  const { cadence, weekdays, everyDays } = readRepeat(typeof item === 'string' ? '' : item.repeat)
+  const { cadence, weekdays, everyDays, date, n, monthDay } = readRepeat(typeof item === 'string' ? '' : item.repeat)
+  if (cadence === 'on') return { ...base, cadence: 'once', onceWhen: 'on', onceOn: date >= night ? date : night }
+  if (cadence === 'by') return date >= night ? { ...base, cadence: 'once', onceWhen: 'by', dueBy: date } : { ...base, cadence: 'once', onceWhen: 'on', onceOn: night }
+  if (cadence === 'every_n') return { ...base, cadence, everyN: n, everyNAnchor: night }
+  if (cadence === 'per_week') return { ...base, cadence: 'daily', perWeek: n }
+  if (cadence === 'monthly') return { ...base, cadence, monthDay }
   if (cadence === 'once') return { ...base, cadence: 'once', onceOn: night }
   if (cadence === 'every') return { ...base, cadence, everyDays }
   return { ...base, cadence, weekdays }
