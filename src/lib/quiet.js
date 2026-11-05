@@ -74,11 +74,9 @@ export function hoursLeft(at, fold = FOLD) {
   return Math.floor((dayEnd(at, fold).getTime() - at.getTime()) / HOUR)
 }
 
-// The note text key and values for "{n} left" at that moment.
-export function leftNote(n, at, fold = FOLD) {
-  const h = hoursLeft(at, fold)
-  if (h < 1) return { key: 'notif.leftSoon', vars: { n } }
-  return h === 1 ? { key: 'notif.leftHour', vars: { n } } : { key: 'notif.leftHours', vars: { n, h } }
+// The note text key and values for "{n} left". No hours count: the day stays open past midnight.
+export function leftNote(n) {
+  return { key: 'notif.stillOpenMany', vars: { n } }
 }
 
 // The earlier grouped note, 3 hours before the day folds. Quiet hours that
