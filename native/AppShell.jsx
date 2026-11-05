@@ -3,6 +3,7 @@ import { AppState, Linking, Platform, StyleSheet, View } from 'react-native'
 import { LayoutAnimationConfig } from 'react-native-reanimated'
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable'
 import { needsEnter } from '../src/lib/session.js'
+import { onWeRefused, weRefusedText } from '../src/lib/did-we.js'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAccount } from '../src/lib/account.js'
 import { readShelf } from '../src/lib/board-shelf.js'
@@ -294,6 +295,11 @@ export function AppShell() {
   }, [app.book, app.shelf, pingState, colors])
 
   useEffect(() => onPingState(setPingState), [])
+
+  useEffect(
+    () => onWeRefused((items) => showToast({ id: 'we-refused', kind: 'error', text: weRefusedText(items), ms: 6000 })),
+    [],
+  )
 
   // A new over-the-air update loads on the next return to the app, not two cold starts later.
   useEffect(() => startOtaRefresh(), [])

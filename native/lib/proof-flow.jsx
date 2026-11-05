@@ -1,3 +1,4 @@
+import NetInfo from '@react-native-community/netinfo'
 import { useState } from 'react'
 import { Dimensions, Image, Linking, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
@@ -33,6 +34,11 @@ export function addProofFlow({ target, night, colors, ready, onDone }) {
     return once('proof-add', async () => {
       showToast({ id: 'proof-sending', kind: 'done', text: t('proof.sending'), ms: 60000 })
       try {
+        const net = await NetInfo.fetch().catch(() => null)
+        if (net && (!net.isConnected || net.isInternetReachable === false)) {
+          dropToast('proof-sending')
+          return confirmMiss(t('proof.offline'))
+        }
         const bytes = await pickProofBytes(from)
         if (!bytes) return
         const out = await addProof(target, night, bytes, ready)

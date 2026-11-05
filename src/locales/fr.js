@@ -2296,6 +2296,7 @@ export const fr = {
   'we.nights': "{n} jours",
   'we.make': 'Envoyer l’invitation',
   'we.missDays': "Choisis au moins un jour.",
+  'we.refused': "Une réponse Did we de {day} n’a pas pu être enregistrée.",
   'we.loadingPeople': 'Chargement de tes proches...',
   'we.noPeople':
     'Ajoute d’abord un ami ou rejoins une famille. Did we marche seulement avec des gens que tu connais.',
@@ -4094,6 +4095,7 @@ export const fr = {
   'proof.fail': "La photo n’a pas été enregistrée. Ton Did est bien enregistré.",
   'proof.tooBig': "Cette photo est trop grande. Essaie-en une autre.",
   'proof.limit': "Tu peux ajouter 5 photos par jour. Réessaie demain.",
+  'proof.offline': "Pas de réseau. Ajoute la photo quand tu seras de nouveau en ligne.",
   'proof.family': "Ici, les photos restent dans la famille.",
   'proof.noDid': "Dis Did d’abord, puis ajoute la photo.",
   'proof.please': "Une photo, s’il te plaît",
