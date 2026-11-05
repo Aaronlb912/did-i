@@ -54,6 +54,7 @@ import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
 import { currentBook, enterLand, folderNameKey, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
+import { legalEmail } from '../../src/lib/legal.js'
 import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
 import {
   clockWords,
@@ -90,7 +91,7 @@ import { LATER_MINUTES } from '../../src/lib/notify-answer.js'
 import { lastCallAt as sharedLastCallAt, quietToFor } from '../../src/lib/quiet.js'
 import { PING_KINDS, afterQuiet, awayEnd, awayKey, awayLeft, awayNow, awayStart, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
-import { pingTest, playClick, shareShelf } from '../../src/lib/native.js'
+import { copyText, pingTest, playClick, shareShelf } from '../../src/lib/native.js'
 import { syncLine } from '../../src/lib/sync-line.js'
 import {
   checkPin,
@@ -117,6 +118,7 @@ import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
 import { startTour, useTourTarget } from '../lib/tour.js'
+import { GRACE_END } from '../../src/lib/zone.js'
 import { goHash } from '../navigation/hash.js'
 import { fonts, radius, sectionLabel, withAlpha } from '../theme.js'
 import { CalendarGrid, YearGrid } from '../components/CalendarGrid.jsx'
@@ -229,6 +231,7 @@ function answerLabel(row, nightIso) {
 
 export function AboutScreen({ book }) {
   const colors = useHallColors()
+  const closeAt = clockWords(`${String(GRACE_END).padStart(2, '0')}:00`)
   return (
     <ScreenShell book={book} title={t('about.title')} colors={colors}>
       <View style={[styles.hero, { backgroundColor: withAlpha(colors.on, 0.12), borderColor: colors.on }]}>
@@ -237,11 +240,10 @@ export function AboutScreen({ book }) {
       {['p2', 'p3', 'p4', 'p5'].map((id) => (
         <View key={id} style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
           <Text style={[styles.cardTitle, { color: colors.ink }]}>{t(`about.${id}Title`)}</Text>
-          <Text style={[styles.cardBody, { color: colors.inkSoft }]}>{t(`about.${id}`)}</Text>
+          <Text style={[styles.cardBody, { color: colors.inkSoft }]}>{t(`about.${id}`, { time: closeAt })}</Text>
         </View>
       ))}
       <View style={[styles.card, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
-        <DidButton colors={colors} label={t('about.home')} onPress={() => goHash('/tonight')} />
         <KeyButton colors={colors} label={t('about.how')} onPress={() => goHash('/help')} />
         <AppVersion colors={colors} />
       </View>
@@ -333,6 +335,7 @@ function HelpTopic({ colors, title, short, go, children }) {
 
 export function HelpScreen() {
   const colors = useHallColors()
+  const closeAt = clockWords(`${String(GRACE_END).padStart(2, '0')}:00`)
   return (
     <ScreenShell title={t('settings.howDidIWorks')} colors={colors}>
       <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
@@ -341,11 +344,12 @@ export function HelpScreen() {
         <KeyButton colors={colors} label={t('settings.what')} onPress={() => goHash('/about')} />
       </View>
       <KeyButton colors={colors} label={t('tour.help')} onPress={() => startTour('basics', { replay: true })} />
+      <KeyButton colors={colors} label={t('tour.showFriends')} onPress={() => startTour('more', { replay: true })} />
       <HelpFold colors={colors} title={t('help.groupDaily')}>
         <HelpTopic colors={colors} title={t('help.tonight')} short={t('help.tonightP1')}>
-          <Meta colors={colors}>{t('help.tonightP2', { time: clockWords('09:00') })}</Meta>
+          <Meta colors={colors}>{t('help.tonightP2', { time: closeAt })}</Meta>
         </HelpTopic>
-        <HelpTopic colors={colors} title={t('help.streak')} short={t('help.streakP', { time: clockWords('09:00') })} />
+        <HelpTopic colors={colors} title={t('help.streak')} short={t('help.streakP', { time: closeAt })} />
         <HelpTopic
           colors={colors}
           title={t('freeze.howTitle')}
@@ -355,7 +359,7 @@ export function HelpScreen() {
         <HelpTopic
           colors={colors}
           title={t('help.grace')}
-          short={t('help.graceP', { time: clockWords('09:00') })}
+          short={t('help.graceP', { time: closeAt })}
           go={<KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />}
         />
         <HelpTopic
@@ -438,6 +442,12 @@ export function HelpScreen() {
         />
         <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.feedback')}</Text>
         <Meta colors={colors} style={styles.beforeBtn}>{t('help.feedbackP')}</Meta>
+        <Meta colors={colors} style={styles.beforeBtn}>{legalEmail()}</Meta>
+        <KeyButton
+          colors={colors}
+          label={t('friendId.copy')}
+          onPress={async () => ((await copyText(legalEmail())) ? confirmDone(t('people.copied')) : confirmMiss(t('confirm.miss')))}
+        />
         <DidButton
           colors={colors}
           label={t('feedback.send')}
