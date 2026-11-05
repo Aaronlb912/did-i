@@ -1002,7 +1002,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // The grace period for the previous night: first until 5am, then after
   // tonight's own cards until 9am.
   // Your own open questions from last night, then last night's open Did wes.
-  const graceNight = graceNightIso()
+  const graceNight = graceNightIso(stack.clock)
   // The 9am cutoff is tomorrow for today's rows, and this morning for yesterday's.
   const untilWords = (row) => {
     const words = clockWords(GRACE_TIME)
