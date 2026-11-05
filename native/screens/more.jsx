@@ -93,7 +93,7 @@ import { LATER_MINUTES } from '../../src/lib/notify-answer.js'
 import { lastCallAt as sharedLastCallAt, quietToFor } from '../../src/lib/quiet.js'
 import { PING_KINDS, afterQuiet, awayEnd, awayKey, awayLeft, awayNow, awayStart, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
-import { copyText, pingTest, playClick, shareShelf } from '../../src/lib/native.js'
+import { backupFileReady, copyText, pingTest, playClick, shareShelf } from '../../src/lib/native.js'
 import { syncLine } from '../../src/lib/sync-line.js'
 import {
   checkPin,
@@ -367,7 +367,7 @@ export function HelpScreen() {
             <View style={styles.moveRows}>
               <KeyButton colors={colors} label={t('away.cap')} onPress={() => goHash('/pings')} />
               <KeyButton colors={colors} label={t('help.breakPause')} onPress={() => goHash('/lamps')} />
-              <KeyButton colors={colors} label={t('freeze.goStreaks')} onPress={() => goHash('/streaks')} />
+              <KeyButton colors={colors} label={t('streaks.title')} onPress={() => goHash('/streaks')} />
             </View>
           }
         />
@@ -375,7 +375,7 @@ export function HelpScreen() {
           colors={colors}
           title={t('help.grace')}
           short={t('help.graceP', { time: closeAt })}
-          go={<KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />}
+          go={<KeyButton colors={colors} label={t('home.calendar')} onPress={() => goHash('/calendar')} />}
         />
         <HelpTopic
           colors={colors}
@@ -396,7 +396,9 @@ export function HelpScreen() {
           title={t('help.widget')}
           short={t(Platform.OS === 'ios' ? 'help.widgetPIos' : 'help.widgetPAndroid')}
           go={<KeyButton colors={colors} label={t('help.widgetGo')} onPress={() => pinWidget(colors)} />}
-        />
+        >
+          <Meta colors={colors}>{t('help.widgetWatch')}</Meta>
+        </HelpTopic>
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupSocial')}>
         <HelpTopic
@@ -414,6 +416,12 @@ export function HelpScreen() {
           <Meta colors={colors}>{t('help.weP2')}</Meta>
         </HelpTopic>
         <HelpTopic colors={colors} title={t('help.cheers')} short={t('help.cheersP')} />
+        <HelpTopic
+          colors={colors}
+          title={t('photos.title')}
+          short={t('photos.emptyBody')}
+          go={<KeyButton colors={colors} label={t('photos.title')} onPress={() => goHash('/photos')} />}
+        />
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupShop')}>
         <HelpTopic
@@ -428,11 +436,13 @@ export function HelpScreen() {
           colors={colors}
           title={t('frames.what')}
           short={t('frames.howBody')}
-          go={<KeyButton colors={colors} label={t('frames.all')} onPress={() => goHash('/kit')} />}
+          go={<KeyButton colors={colors} label={t('frames.all')} onPress={() => goHash('/kit', { id: 'frames' })} />}
         />
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupApp')}>
-        <HelpTopic colors={colors} title={t('help.phone')} short={t('help.phonePApp')} />
+        <HelpTopic colors={colors} title={t('help.phone')} short={t('help.phonePApp')}>
+          {backupFileReady() ? <Meta colors={colors}>{t('help.phoneBackup', { save: t('settings.sendFile'), load: t('account.loadFile') })}</Meta> : null}
+        </HelpTopic>
         <HelpTopic
           colors={colors}
           title={t('help.safety')}
@@ -474,7 +484,7 @@ export function HelpScreen() {
           }}
         />
       </HelpFold>
-      <DidButton colors={colors} label={t('help.home')} onPress={() => goHash('/tonight')} />
+      <DidButton colors={colors} label={t('nav.home')} onPress={() => goHash('/tonight')} />
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.versionTitle')}</Text>
       <AppVersion colors={colors} />
     </ScreenShell>
@@ -639,7 +649,7 @@ export function RecentScreen() {
         ))
       ) : account.user && inbox > 0 ? null : (
         <EmptyCard title={t('recent.emptyTitle')} body={t('recent.emptyBody')} colors={colors}>
-          <DidButton small label={t('about.home')} onPress={() => goHash('/tonight')} colors={colors} />
+          <DidButton small label={t('nav.home')} onPress={() => goHash('/tonight')} colors={colors} />
         </EmptyCard>
       )}
       </View>
@@ -926,7 +936,7 @@ export function CalendarScreen({ book, boards, tagId, now, route, onChangeBooks 
       {newShelf ? <Meta colors={colors}>{t('cal.hintGentle')}</Meta> : null}
       {noAnswers ? (
         <EmptyCard title={t('recent.emptyTitle')} body={t('cal.emptyBody')} colors={colors}>
-          <DidButton small label={t('about.home')} onPress={() => goHash('/tonight')} colors={colors} />
+          <DidButton small label={t('nav.home')} onPress={() => goHash('/tonight')} colors={colors} />
         </EmptyCard>
       ) : null}
       <ChipRow
@@ -1289,7 +1299,7 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         </SetCard>
       ) : null}
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="snow" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron onPress={() => openFreezeHow(colors, inView(book, boards), clock)} />
+        <SetRow colors={colors} icon="snow" tint={colors.freeze} label={t('freeze.rowTitle')} sub={freezeLine(freezes)} chevron onPress={() => openFreezeHow(colors, inView(book, boards), clock, { fromStreaks: true })} />
         <SetSwitch colors={colors} icon="snow" tint={colors.freeze} label={t('saves.toggle')} sub={t('saves.how')} on={freeMiss} last onPress={() => writePrefs({ freeMiss: !freeMiss })} />
       </SetCard>
       {!rows.length ? (
@@ -3168,7 +3178,7 @@ function AccountSignedIn({ book, email, onChange, onImport }) {
           }}
         />
         <SetRow colors={colors} icon="wallpaper" label={t('account.look')} value={lookName} chevron onPress={() => goHash('/kit')} />
-        <SetRow colors={colors} icon="collection" label={t('account.cheer')} value={cheerName} chevron last onPress={() => goHash('/kit')} />
+        <SetRow colors={colors} icon="collection" label={t('account.cheer')} value={cheerName} chevron last onPress={() => goHash('/kit', { id: 'cheers' })} />
       </SetCard>
       {photoMiss ? <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">{photoMiss}</Text> : null}
 

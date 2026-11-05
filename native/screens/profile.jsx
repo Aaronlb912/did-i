@@ -219,8 +219,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   // privacy, legal, version. One row on Settings opens them.
   if (page === 'more') {
     return (
-      <BoardShell book={book} title={t('settings.more')} date={date} colors={colors}>
-        <SetCap colors={colors}>{t('settings.yourData')}</SetCap>
+      <BoardShell book={book} title={t('settings.yourData')} date={date} colors={colors}>
         <SetCard colors={colors}>
           <SetRow
             colors={colors}

@@ -29,7 +29,7 @@ export function freezeLine(state) {
   return t('freeze.ofMax', { n: state.held, max: FREEZE_MAX })
 }
 
-function FreezeHow({ colors, state }) {
+function FreezeHow({ colors, state, fromStreaks }) {
   const ink = { color: colors.inkSoft }
   const go = (path) => {
     publishSheet(null)
@@ -50,18 +50,18 @@ function FreezeHow({ colors, state }) {
       {state ? (
           <Text style={[styles.head, { color: colors.ink }]}>{t('freeze.youHave', { n: state.held, max: FREEZE_MAX })}</Text>
       ) : null}
-      <KeyButton colors={colors} label={t('freeze.goStreaks')} onPress={() => go('/streaks')} />
+      {fromStreaks ? null : <KeyButton colors={colors} label={t('streaks.title')} onPress={() => go('/streaks')} />}
       <KeyButton colors={colors} label={t('away.cap')} onPress={() => go('/pings')} />
     </View>
   )
 }
 
-export function openFreezeHow(colors, boards, now = new Date()) {
+export function openFreezeHow(colors, boards, now = new Date(), { fromStreaks = false } = {}) {
   const close = () => publishSheet(null)
   const state = boards ? freezeState(boards, now) : null
   publishSheet({
     title: t('freeze.howTitle'),
-    content: <FreezeHow colors={colors} state={state} />,
+    content: <FreezeHow colors={colors} state={state} fromStreaks={fromStreaks} />,
     closeLabel: t('cal.close'),
     colors,
     onClose: close,
