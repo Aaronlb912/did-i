@@ -6422,6 +6422,21 @@ test('best run counts day questions only; shelf rate is a 30 day figure', () => 
   assert.equal(shelfRate30([{ lamps: [] }], '2026-11-02'), null)
 })
 
+test('yesterday in grace with no answer is not a missed day in the 30 day rate', () => {
+  const q = lamp('q', { createdOn: '2026-09-25' })
+  const answers = ['26', '27', '28', '29', '30'].map((d) => ({ lampId: 'q', periodKey: `2026-09-${d}`, status: 'yes', answeredAt: `2026-09-${d}T20:00:00` }))
+    .concat(['01', '02', '03'].map((d) => ({ lampId: 'q', periodKey: `2026-10-${d}`, status: 'yes', answeredAt: `2026-10-${d}T20:00:00` })))
+  const book = { id: 'b', dayFoldHour: 0, lamps: [q], answers }
+  const morning = new Date('2026-10-05T08:00:00')
+  const evening = new Date('2026-10-05T21:00:00')
+  const am = lampRecord(book, q, '2026-10-05', 30, morning)
+  const pm = lampRecord(book, q, '2026-10-05', 30, evening)
+  assert.equal(am.asked, 9, 'yesterday still open is not counted')
+  assert.equal(pm.asked, 10, 'after the grace hour it is a missed day')
+  assert.equal(shelfRate30([book], '2026-10-05', morning).asked, am.asked)
+  assert.equal(shelfRate30([book], '2026-10-05', evening).asked, pm.asked)
+})
+
 test('shelf rate 30 returns the Did count and the days it counted', () => {
   const lamp = { id: 'q1', question: 'Q', cadence: 'daily', createdOn: '2026-09-01' }
   const answers = []

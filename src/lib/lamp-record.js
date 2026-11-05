@@ -114,12 +114,22 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000, now = new Da
 
 // One question's record for its page: the DID streak, and how many of its
 // recent due nights were DID. Tonight only counts once it is answered.
-export function lampRecord(book, lamp, dateIso, days = 30) {
+export function lampRecord(book, lamp, dateIso, days = 30, now = new Date()) {
   if (!lamp) return { streak: 0, did: 0, asked: 0, tonight: '', due: false }
+  const tonight = answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))?.status || ''
+  const { did, asked } = recordCounts(book, lamp, dateIso, days, now)
+  const streak = questionStreak(book, lamp, dateIso, 400, now)
+  return { streak, did, asked, tonight, due: !lamp.archived && isDueOn(lamp, dateIso) }
+}
+
+// Did and asked counts alone, without the streak walk.
+function recordCounts(book, lamp, dateIso, days, now) {
   const tonightKey = periodKeyFor(lamp, dateIso)
-  const tonight = answerFor(book, lamp.id, tonightKey)?.status || ''
+  const grace = openGrace(dateIso, now)
   // A paused question keeps its history on show, so count its nights as if live.
-  const keys = recentPeriodKeys({ ...lamp, archived: false }, dateIso, days).filter((key) => key !== tonightKey || tonight)
+  // Tonight, and last night while its grace runs, count only once answered.
+  const keys = recentPeriodKeys({ ...lamp, archived: false }, dateIso, days)
+    .filter((key) => (key !== tonightKey && !(grace && periodNight(lamp, key) === grace)) || answerFor(book, lamp.id, key))
     // Nights after it was paused were never asked.
     .filter((key) => !pausedOpen(lamp, key, answerFor(book, lamp.id, key)))
     // Travel days left open count neither way, same as the streak.
@@ -131,8 +141,7 @@ export function lampRecord(book, lamp, dateIso, days = 30) {
   for (const key of keys) {
     if (didStatus(answerFor(book, lamp.id, key)?.status)) did += 1
   }
-  const streak = questionStreak(book, lamp, dateIso)
-  return { streak, did, asked: keys.length, tonight, due: !lamp.archived && isDueOn(lamp, dateIso) }
+  return { did, asked: keys.length }
 }
 
 // Percent of due days Did in a lampRecord, or null under 3 due days.
@@ -300,13 +309,13 @@ export function isDayCadence(lamp) {
 
 // Did rate over the last 30 days across live questions, same window as the
 // question page. Null under 3 due days. asked is the due days counted.
-export function shelfRate30(books, dateIso) {
+export function shelfRate30(books, dateIso, now = new Date()) {
   let did = 0
   let asked = 0
   for (const one of books || []) {
     for (const lamp of one.lamps || []) {
       if (lamp.archived) continue
-      const rec = lampRecord(one, lamp, dateIso, 30)
+      const rec = recordCounts(one, lamp, dateIso, 30, now)
       did += rec.did
       asked += rec.asked
     }
