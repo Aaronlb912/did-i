@@ -124,6 +124,7 @@ export const pt = {
   'settings.loadCopySub': 'Uma cópia que você salvou antes, como arquivo. Soma ao que está aqui.',
   'settings.loadOk': 'Carregado. Perguntas adicionadas: {n}.',
   'settings.loadOkBoth': 'Carregado. Perguntas adicionadas: {q}. Respostas adicionadas: {a}.',
+  'settings.loadSame': 'Já estava aqui. Nada novo para adicionar.',
   'settings.sendCopyAcct': 'Itens da loja, moedas e gemas ficam com a sua conta. Entre para mantê-los.',
   'settings.loadMiss': 'Esse ficheiro não é uma cópia Did I.',
   'settings.how': 'Como funciona',

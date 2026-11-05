@@ -112,6 +112,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const [sure, setSure] = useState(null)
   const [restoring, setRestoring] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [csvBusy, setCsvBusy] = useState(false)
+  const [syncing, setSyncing] = useState(false)
 
   // Signed in, the copy is the whole account, like Account > Download my data.
   async function sendCopy() {
@@ -189,12 +191,9 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       const merged = mergeBackup(before, coming)
       if (onImport) onImport(merged)
       const count = (shelf, key) => shelf.boards.reduce((n, b) => n + (b[key] || []).length, 0)
-      setLoadNote(
-        t('settings.loadOkBoth', {
-          q: Math.max(0, count(merged, 'lamps') - count(before, 'lamps')),
-          a: Math.max(0, count(merged, 'answers') - count(before, 'answers')),
-        }),
-      )
+      const q = Math.max(0, count(merged, 'lamps') - count(before, 'lamps'))
+      const a = Math.max(0, count(merged, 'answers') - count(before, 'answers'))
+      setLoadNote(q || a ? t('settings.loadOkBoth', { q, a }) : t('settings.loadSame'))
     } catch {
       setLoadNote(t('settings.loadMiss'))
     }
@@ -225,6 +224,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             tint={colors.late}
             label={t('settings.loadCopy')}
             sub={t('settings.loadCopySub')}
+            value={loading ? t('app.loading') : undefined}
             chevron
             onPress={loading ? undefined : pickFile}
           />
@@ -235,7 +235,13 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             label={t('settings.sendCsv')}
             sub={t('settings.sendCsvSub')}
             chevron
-            onPress={() => shareCsv(answersCsv(readShelf())).catch(() => confirmMiss(t('confirm.shareMiss')))}
+            value={csvBusy ? t('app.loading') : undefined}
+            onPress={csvBusy ? undefined : () => {
+              setCsvBusy(true)
+              shareCsv(answersCsv(readShelf()))
+                .catch(() => confirmMiss(t('confirm.shareMiss')))
+                .finally(() => setCsvBusy(false))
+            }}
           />
           <SetRow
             colors={colors}
@@ -575,7 +581,12 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
     <BoardShell book={book} title={t('settings.kicker')} date={date} colors={colors}>
       {account.email && syncFailed(sync) ? (
         <SetCard colors={colors}>
-          <SetRow colors={colors} icon="settings" tint={colors.miss} label={t('settings.syncMiss')} last onPress={() => pullAndMerge()} />
+          <SetRow colors={colors} icon="settings" tint={colors.late} label={t('settings.syncMiss')} value={syncing ? t('app.loading') : undefined} last onPress={syncing ? undefined : () => {
+            setSyncing(true)
+            Promise.resolve(pullAndMerge())
+              .catch(() => confirmMiss(t('tonight.syncMiss')))
+              .finally(() => setSyncing(false))
+          }} />
         </SetCard>
       ) : null}
       <View style={styles.gap} />

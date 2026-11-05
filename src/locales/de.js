@@ -124,6 +124,7 @@ export const de = {
   'settings.loadCopySub': 'Eine früher gespeicherte Kopie als Datei. Sie kommt zu dem dazu, was hier ist.',
   'settings.loadOk': 'Geladen. Fragen hinzugefügt: {n}.',
   'settings.loadOkBoth': 'Geladen. Fragen hinzugefügt: {q}. Antworten hinzugefügt: {a}.',
+  'settings.loadSame': 'Schon da. Nichts Neues hinzugefügt.',
   'settings.sendCopyAcct': 'Shop-Artikel, Münzen und Gems bleiben bei deinem Konto. Melde dich an, um sie zu behalten.',
   'settings.loadMiss': 'Diese Datei ist keine Did I-Kopie.',
   'settings.how': 'So funktioniert das',

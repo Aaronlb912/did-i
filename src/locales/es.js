@@ -124,6 +124,7 @@ export const es = {
   'settings.loadCopySub': 'Una copia que guardaste antes, como archivo. Se suma a lo que hay aquí.',
   'settings.loadOk': 'Cargado. Preguntas añadidas: {n}.',
   'settings.loadOkBoth': 'Cargado. Preguntas añadidas: {q}. Respuestas añadidas: {a}.',
+  'settings.loadSame': 'Ya estaba todo. No hay nada nuevo.',
   'settings.sendCopyAcct': 'Los artículos de la tienda, las monedas y las gemas se quedan en tu cuenta. Inicia sesión para conservarlos.',
   'settings.loadMiss': 'Ese archivo no es una copia de Did I.',
   'settings.how': 'Cómo funciona',
