@@ -104,7 +104,7 @@ import {
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import { useDayNow } from '../hooks/useDayNow.js'
-import { addDaysIso, boardDate, dueTonight, formatBoardDate, isEvery, isPerWeek, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { addDaysIso, boardDate, dateTag, dueTonight, formatBoardDate, isEvery, isPerWeek, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
 import { packList } from '../../src/lib/starters.js'
 import { FIRST_TIME, answeredNights, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
 import { FirstPacks } from '../components/FirstPacks.jsx'
@@ -617,7 +617,7 @@ export function RecentScreen() {
             <Kicker colors={colors}>{item.title}</Kicker>
             {item.text ? <Text style={[styles.recentText, { color: colors.ink }]}>{item.text}</Text> : null}
             <Meta colors={colors}>
-              {new Date(item.at).toLocaleString(locale, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
+              {new Date(item.at).toLocaleString(dateTag(), Date.now() - item.at > 6 * 86400000 ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' } : { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
             </Meta>
           </Pressable>
         ))
