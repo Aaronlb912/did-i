@@ -51,6 +51,8 @@ import {
   shortLabel,
 } from '../../src/lib/board-json.js'
 import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
+import * as DocumentPicker from 'expo-document-picker'
+import { planBackupLoad } from '../../src/lib/shelf-merge.js'
 import { currentBook, enterLand, folderNameKey, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
@@ -167,7 +169,7 @@ export function SureModal({ sure, colors, onClose, onGo }) {
           <Text style={[styles.popBody, { color: colors.inkSoft }]}>{sure?.body}</Text>
           {sure?.extra ? <KeyButton label={sure.extra.label} onPress={sure.extra.go} colors={colors} accessibilityLabel={sure.extra.label} /> : null}
           <View style={styles.popRow}>
-            <DidButton small label={sure?.yes} onPress={onGo} colors={colors} />
+            <DidButton small danger={Boolean(sure?.danger)} label={sure?.yes} onPress={onGo} colors={colors} />
             <KeyButton label={t('settings.neverMind')} onPress={onClose} colors={colors} />
           </View>
         </Pressable>
@@ -2789,7 +2791,7 @@ function RenamePhone({ row, colors, onClose, onSaved }) {
   )
 }
 
-function AccountSignedIn({ book, email, onChange }) {
+function AccountSignedIn({ book, email, onChange, onImport }) {
   const colors = useHallColors()
   const sync = useSync()
   const purse = normalizePurse(book)
@@ -2852,6 +2854,7 @@ function AccountSignedIn({ book, email, onChange }) {
       // After the copy is saved, the delete question comes back.
       extra: { label: t('account.deleteCopy'), go: () => { setSure(null); download(askDelete) } },
       yes: t('account.deleteYes'),
+      danger: true,
       go: () => leave('delete', deleteAccount),
     })
   }
@@ -2859,18 +2862,69 @@ function AccountSignedIn({ book, email, onChange }) {
   async function download(after) {
     if (busy) return
     setBusy('export')
+    let shared = false
     try {
       const all = await exportAll()
       const res = await shareShelf(all)
       if (res?.action !== Share.dismissedAction) {
         try { localStorage.setItem('did-i-last-copy', new Date().toISOString()) } catch {}
+        setCopied(Date.now())
+        shared = true
       }
-      setCopied(Date.now())
     } catch (error) {
       // Closing the share sheet is not a failure.
       if (error?.name !== 'AbortError') confirmMiss(t('confirm.exportMiss'))
     }
     setBusy('')
+    if (shared) after?.()
+  }
+
+  async function loadBackup() {
+    if (busy) return
+    setBusy('load')
+    try {
+      const picked = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain'] })
+      if (picked.canceled || !picked.assets?.[0]?.uri) return
+      const response = await fetch(picked.assets[0].uri)
+      const parsed = JSON.parse(await response.text())
+      const plan = planBackupLoad(readShelf(), parsed)
+      if (plan.miss === 'cap') return confirmMiss(t('hang.cap'))
+      if (plan.miss) return confirmMiss(t('settings.loadMiss'))
+      if (!plan.q && !plan.a) return confirmDone(t('settings.loadSame'))
+      setSure({
+        title: t('account.loadSureTitle'),
+        body: t('account.loadSureBody', { q: plan.q, a: plan.a }),
+        yes: t('account.loadSureYes'),
+        go: () => {
+          const now = planBackupLoad(readShelf(), parsed)
+          if (now.miss === 'cap') return confirmMiss(t('hang.cap'))
+          if (now.miss) return confirmMiss(t('settings.loadMiss'))
+          onImport?.(now.merged)
+          confirmDone(t('settings.loadOkBoth', { q: now.q, a: now.a }))
+        },
+      })
+    } catch {
+      confirmMiss(t('settings.loadMiss'))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  // Forgetting a phone: one at a time, and a failure says so.
+  async function forgetRun(run, doneKey) {
+    if (busy) return
+    setBusy('forget')
+    try {
+      const out = await run()
+      if (out?.miss) return confirmMiss(t('confirm.miss'))
+      const rows = await listDevices()
+      if (rows) setDevices(rows)
+      confirmDone(t(doneKey))
+    } catch {
+      confirmMiss(t('confirm.miss'))
+    } finally {
+      setBusy('')
+    }
   }
 
   async function syncNow() {
@@ -2952,6 +3006,7 @@ function AccountSignedIn({ book, email, onChange }) {
       setRenaming(row)
       return
     }
+    if (busy) return
     publishSheet({
       title: phoneName(row, here),
       body: row.model || undefined,
@@ -2976,17 +3031,8 @@ function AccountSignedIn({ book, email, onChange }) {
       title: t('account.forgetTitle'),
       body: t('account.forgetBody', { phone: phoneName(row, here) }),
       yes: t('account.forgetYes'),
-      go: async () => {
-        try {
-          const out = await forgetDevice(row.device_key)
-          if (out?.miss) return confirmMiss(t('confirm.miss'))
-          const rows = await listDevices()
-          if (rows) setDevices(rows)
-          confirmDone(t('confirm.phoneForgot'))
-        } catch {
-          confirmMiss(t('confirm.miss'))
-        }
-      },
+      danger: true,
+      go: () => forgetRun(() => forgetDevice(row.device_key), 'confirm.phoneForgot'),
     })
   }
 
@@ -3125,6 +3171,9 @@ function AccountSignedIn({ book, email, onChange }) {
           onPress={() => setDataOpen((open) => !open)}
         />
       </SetCard>
+      {sync.how === 'miss' && sync.miss ? (
+        <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">{tMiss(sync.miss)}</Text>
+      ) : null}
       {dataOpen ? (
         <Reveal>
       <SetCap colors={colors}>{t('account.syncPhonesCap')}</SetCap>
@@ -3176,9 +3225,6 @@ function AccountSignedIn({ book, email, onChange }) {
           }}
         />
       ) : null}
-      {sync.how === 'miss' && sync.miss ? (
-        <Text style={[styles.miss, { color: colors.miss }]}>{tMiss(sync.miss)}</Text>
-      ) : null}
       {others.length > 1 ? (
         <SetCard colors={colors}>
         <SetRow
@@ -3187,22 +3233,15 @@ function AccountSignedIn({ book, email, onChange }) {
           danger
           last
           label={t('account.forgetOthers', { n: others.length })}
-          onPress={() =>
+          dim={Boolean(busy)}
+          value={busy === 'forget' ? t('app.loading') : undefined}
+          onPress={busy ? undefined : () =>
             setSure({
               title: t('account.forgetOthersTitle'),
               body: t('account.forgetOthersBody'),
               yes: t('account.forgetYes'),
-              go: async () => {
-                try {
-                  const out = await forgetOtherDevices()
-                  if (out?.miss) return confirmMiss(t('confirm.miss'))
-                  const rows = await listDevices()
-                  if (rows) setDevices(rows)
-                  confirmDone(t('confirm.phonesForgot'))
-                } catch {
-                  confirmMiss(t('confirm.miss'))
-                }
-              },
+              danger: true,
+              go: () => forgetRun(forgetOtherDevices, 'confirm.phonesForgot'),
             })
           }
         />
@@ -3213,7 +3252,8 @@ function AccountSignedIn({ book, email, onChange }) {
       <SetCap colors={colors}>{t('account.data')}</SetCap>
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="note" label={t('account.export')} sub={lastCopyLine(copied) ? `${t('account.exportSub')}
-${lastCopyLine(copied)}` : t('account.exportSub')} value={busy === 'export' ? t('app.loading') : undefined} chevron last dim={Boolean(busy)} onPress={busy ? undefined : download} />
+${lastCopyLine(copied)}` : t('account.exportSub')} value={busy === 'export' ? t('app.loading') : undefined} chevron dim={Boolean(busy)} onPress={busy ? undefined : () => download()} />
+        <SetRow colors={colors} icon="inbox" label={t('account.loadFile')} sub={t('account.loadFileSub')} value={busy === 'load' ? t('app.loading') : undefined} chevron last dim={Boolean(busy)} onPress={busy ? undefined : loadBackup} />
       </SetCard>
 
       <SetCap colors={colors}>{t('account.leaveCap')}</SetCap>
@@ -3222,11 +3262,13 @@ ${lastCopyLine(copied)}` : t('account.exportSub')} value={busy === 'export' ? t(
           colors={colors}
           icon="logout"
           label={t('account.outAll')}
-          onPress={() =>
+          dim={Boolean(busy)}
+          onPress={busy ? undefined : () =>
             setSure({
               title: t('account.outAllTitle'),
               body: t('account.outAllBody'),
               yes: t('account.outAllYes'),
+              danger: true,
               go: () => leave('outAll', signOutEverywhere),
             })
           }
@@ -3237,7 +3279,8 @@ ${lastCopyLine(copied)}` : t('account.exportSub')} value={busy === 'export' ? t(
           danger
           last
           label={t('account.delete')}
-          onPress={askDelete}
+          dim={Boolean(busy)}
+          onPress={busy ? undefined : askDelete}
         />
       </SetCard>
       <SureModal
@@ -3254,10 +3297,10 @@ ${lastCopyLine(copied)}` : t('account.exportSub')} value={busy === 'export' ? t(
   )
 }
 
-export function AccountScreen({ book, onChange }) {
+export function AccountScreen({ book, onChange, onImport }) {
   const account = useAccount()
   if (account.user) {
-    return <AccountSignedIn book={book} email={account.email} onChange={onChange} />
+    return <AccountSignedIn book={book} email={account.email} onChange={onChange} onImport={onImport} />
   }
   return <AccountSignedOut on={account.on} />
 }
