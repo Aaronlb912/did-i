@@ -396,6 +396,19 @@ async function schedulePingsNow(books, now = new Date()) {
       date: afterQuiet(at),
       channelId: CHANNEL_ID,
     })
+    // iOS ask and late notes follow the wall clock (DST, travel). Built at schedule time so notes keep trigger.date.
+    const wallTrigger = (trigger) => {
+      const d = trigger.date
+      return {
+        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+        year: d.getFullYear(),
+        month: d.getMonth() + 1,
+        day: d.getDate(),
+        hour: d.getHours(),
+        minute: d.getMinutes(),
+        repeats: false,
+      }
+    }
     const notes = []
     const reminders = pingOn('reminders')
     // Away days do not use up the week, so reminders come back after they end.
@@ -432,6 +445,7 @@ async function schedulePingsNow(books, now = new Date()) {
               identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}`)),
               content,
               trigger: when(at),
+              wall: true,
             })
           }
           // A high one still open gets a last call.
@@ -443,6 +457,7 @@ async function schedulePingsNow(books, now = new Date()) {
             identifier: String(notifyId(row.lamp.id, `${row.periodKey}:late:${row.dateIso}`)),
             content: readPrefs().pingsPrivate ? content : { ...content, body: t('notif.stillOpen', { question: row.lamp.question }) },
             trigger: when(late),
+            wall: true,
             lateCall: true,
           })
           // Same reminders switch as the last call. Grouped below.
@@ -626,12 +641,15 @@ async function schedulePingsNow(books, now = new Date()) {
     }
     await scheduleReminds(Notifications)
     // A snoozed question answered since then stays quiet.
-    const openNow = new Set(list.flatMap((book) => dueTonight(book, now).filter((row) => !row.answer || row.answer.status === 'skip').map((row) => row.lamp.id)))
+    const openRows = list.flatMap((book) => dueTonight(book, now).filter((row) => !row.answer || row.answer.status === 'skip'))
+    const openNow = new Set(openRows.map((row) => row.lamp.id))
     const pings = readWePings()
     const keepSnoozes = []
     for (const snooze of snoozedNotes()) {
       const data = snooze.content?.data || {}
       if (data.lampId && !openNow.has(data.lampId)) continue
+      // Matched on the period too: a Later from yesterday stays quiet once yesterday has a Did.
+      if (data.lampId && data.night && !data.weId && list.some((book) => (book.answers || []).some((a) => a.lampId === data.lampId && a.periodKey === data.night && (a.status === 'yes' || a.status === 'late')))) continue
       if (data.weId && data.night && (weNightStatus(data.night, data.weId) === 'did' || pings.some((ping) => ping.id === data.weId && ping.skipNight === data.night))) continue
       keepSnoozes.push(snooze)
       notes.push({
@@ -654,7 +672,7 @@ async function schedulePingsNow(books, now = new Date()) {
       const at = note.trigger?.date
       if (at instanceof Date && at.getTime() <= Date.now()) continue
       try {
-        await Notifications.scheduleNotificationAsync({ identifier: note.identifier, content: note.content, trigger: note.trigger })
+        await Notifications.scheduleNotificationAsync({ identifier: note.identifier, content: note.content, trigger: note.wall && Platform.OS === 'ios' ? wallTrigger(note.trigger) : note.trigger })
       } catch {
         // Some ROMs block exact alarms.
         failed += 1

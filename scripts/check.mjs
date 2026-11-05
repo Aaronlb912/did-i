@@ -10930,11 +10930,13 @@ test('one free miss a week keeps the first missed day of each week', () => {
   assert.equal(readPrefs().freeMiss, was, 'the pref cleans to a boolean and defaults off')
 })
 
-test('hours left note: 1 hour is singular, under an hour says soon', async () => {
+test('grouped note has no hours count; iOS ask notes use calendar triggers; snooze checks its period', async () => {
+  const { readFileSync } = await import('node:fs')
   const { leftNote } = await import('../src/lib/quiet.js')
-  assert.equal(leftNote(3, new Date(2026, 10, 3, 22, 30), 0).key, 'notif.leftHour')
-  assert.equal(leftNote(3, new Date(2026, 10, 3, 23, 30), 0).key, 'notif.leftSoon')
-  assert.deepEqual(leftNote(3, new Date(2026, 10, 3, 20, 30), 0), { key: 'notif.leftHours', vars: { n: 3, h: 3 } })
+  assert.deepEqual(leftNote(3), { key: 'notif.stillOpenMany', vars: { n: 3 } })
+  const nat = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
+  assert.match(nat, /SchedulableTriggerInputTypes.CALENDAR/, 'iOS ask and late notes use a calendar trigger')
+  assert.match(nat, /a[.]periodKey === data[.]night/, 'a snooze for an answered period is dropped')
 })
 
 test('ping cap counts renew, streak and snooze notes; hide waits for the answer; brain dump skips blank lines', async () => {
