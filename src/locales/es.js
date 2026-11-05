@@ -679,6 +679,8 @@ export const es = {
   'questions.list': 'En curso',
   'questions.searchPh': 'Busca en tus preguntas',
   'questions.searchClear': 'Borrar búsqueda',
+  'questions.noMatchFolder': 'Ninguna pregunta de esta carpeta coincide.',
+  'questions.clearFilters': 'Borrar búsqueda y carpeta',
   'questions.noMatch': 'Ninguna pregunta coincide.',
   'questions.filter': 'Mostrar',
   'questions.filterAll': 'Todas',

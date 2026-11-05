@@ -670,6 +670,8 @@ export const ko = {
   'questions.list': '묻는 중',
   'questions.searchPh': '질문 검색',
   'questions.searchClear': '검색 지우기',
+  'questions.noMatchFolder': '이 폴더에 일치하는 질문이 없어요.',
+  'questions.clearFilters': '검색과 폴더 지우기',
   'questions.noMatch': '맞는 질문이 없어요.',
   'questions.filter': '보기',
   'questions.filterAll': '전체',

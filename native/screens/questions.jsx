@@ -1,7 +1,8 @@
 import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import {
+  AccessibilityInfo,
   Animated,
   AppState,
   BackHandler,
@@ -518,6 +519,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const fromOk = (row) => !didYouOnly || row.lamp.fromDidYou
   const [earlierOpen, setEarlierOpen] = useLayoutState(false)
   const [pausedOpen, setPausedOpen] = useLayoutState(false)
+  const focused = useIsFocused()
   const liveRows = rows.filter(
     (row) => !row.lamp.archived && !onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row),
   )
@@ -529,19 +531,24 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   )
   // Finished one-time questions: their own folded list, so they stop crowding the paused ones.
   const earlier = rows.filter((row) => onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row))
-  const pastStates = earlierOpen ? earlierStates(earlier, gentle) : states
+  const pastStates = earlierShown ? earlierStates(earlier, gentle) : states
   const starters = openStarters(book)
-  const shown = [...hung, ...(pausedOpen ? down : []), ...(earlierOpen ? earlier : [])]
+  // A search with no live match opens the Paused or Earlier group that holds one.
+  const searchFound = Boolean(query.trim()) && !hung.length
+  const pausedShown = pausedOpen || (searchFound && down.length > 0)
+  const earlierShown = earlierOpen || (searchFound && earlier.length > 0)
+  const shown = [...hung, ...(pausedShown ? down : []), ...(earlierShown ? earlier : [])]
   // Only what is on screen counts, so a filter change never acts on hidden rows.
   const chosen = shown.filter((row) => picked.has(rowKey(row)))
   const allOn = shown.length > 0 && chosen.length === shown.length
-  const allDown = chosen.length > 0 && chosen.every((row) => row.lamp.archived)
+  const anyDown = chosen.some((row) => row.lamp.archived)
+  const anyLive = chosen.some((row) => !row.lamp.archived)
 
   const dotKinds = (() => {
     const kinds = new Set()
     for (const row of hung) kinds.add(dotKind(states.get(rowId(row)) || '', dueByUrgency(row.lamp, dateIso)))
     // Open Earlier rows have dots too, so the key names theirs.
-    if (earlierOpen) for (const row of earlier) kinds.add(pastStates.get(rowId(row)) || (gentle ? 'off' : 'missed'))
+    if (earlierShown) for (const row of earlier) kinds.add(pastStates.get(rowId(row)) || (gentle ? 'off' : 'missed'))
     return kinds
   })()
 
@@ -566,6 +573,13 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     setPicking(false)
     setPicked(new Set())
   }
+  // Leaving the tab or route ends Select, so it is not still on when you come back.
+  useEffect(() => {
+    if (!focused) stopPicking()
+  }, [focused])
+  useEffect(() => {
+    if (picking) AccessibilityInfo.announceForAccessibility?.(t('questions.pickedN', { n: chosen.length }))
+  }, [chosen.length])
 
   // Reorder saves as you go; Never mind puts the order back the way it was.
   const orderBefore = useRef(null)
@@ -633,8 +647,10 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   }
 
   function apply(kind) {
-    if (!chosen.length || !onChangeBooks) return
-    const lampPicks = chosen.map((row) => ({ boardId: row.boardId || row.book?.id, lampId: row.lamp.id }))
+    // Mixed picks: Pause acts on the live ones, Ask again on the paused ones.
+    const acting = kind === 'stop' ? chosen.filter((row) => !row.lamp.archived) : kind === 'ask' ? chosen.filter((row) => row.lamp.archived) : chosen
+    if (!acting.length || !onChangeBooks) return
+    const lampPicks = acting.map((row) => ({ boardId: row.boardId || row.book?.id, lampId: row.lamp.id }))
     // The shelf as saved now: the sheet may have sat open while other edits landed.
     const books = readShelf().boards || shelf
     const before = books.filter((item) => lampPicks.some((one) => one.boardId === item.id))
@@ -870,9 +886,23 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             onPick={pick}
           />
         ) : query.trim() && allRows.length ? (
-          <Reveal key="noMatch">
-            <Meta colors={colors}>{t('questions.noMatch')}</Meta>
-          </Reveal>
+          down.length || earlier.length ? null : (
+            <Reveal key="noMatch">
+              <Meta colors={colors}>{tagId ? t('questions.noMatchFolder') : t('questions.noMatch')}</Meta>
+              {tagId ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setQuery('')
+                    onTag?.('')
+                  }}
+                  style={({ pressed }) => [styles.goRow, styles.clearRow, pressed && { backgroundColor: colors.panel2 }]}
+                >
+                  <Text style={[styles.goLabel, { color: colors.ink }]}>{t('questions.clearFilters')}</Text>
+                </Pressable>
+              ) : null}
+            </Reveal>
+          )
         ) : picks.length ? (
           <Reveal key="emptyTopic">
             <Meta colors={colors}>{t('questions.emptyTopic')}</Meta>
@@ -924,7 +954,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
           picking={picking}
           picked={picked}
           onPick={pick}
-          open={pausedOpen}
+          open={pausedShown}
           onToggle={() => setPausedOpen((on) => !on)}
         />}
         {ordering ? null : (
@@ -939,7 +969,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             picking={picking}
             picked={picked}
             onPick={pick}
-            open={earlierOpen}
+            open={earlierShown}
             onToggle={() => setEarlierOpen((on) => !on)}
           />
         )}
@@ -978,7 +1008,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
               </Pressable>
               <View style={styles.modeMid}>
                 <Text style={[styles.modeTitle, { color: colors.ink }]} numberOfLines={1}>{t('questions.pick')}</Text>
-                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={1}>{t('questions.pickedN', { n: chosen.length })}</Text>
+                <Text style={[styles.modeSub, { color: colors.inkSoft }]} numberOfLines={2}>{t('questions.pickedN', { n: chosen.length })}</Text>
               </View>
               <View style={[styles.modeSide, styles.modeEnd]}>
                 <KeyButton
@@ -996,12 +1026,10 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
               style={[styles.pickBar, styles.pickFloat, { bottom: overlayBottom, borderColor: colors.on, backgroundColor: colors.panel }]}
             >
               <View style={styles.pickActions}>
-                <KeyButton
-                  colors={colors}
-                  disabled={!chosen.length}
-                  label={allDown ? t('lamp.askAgain') : t('lamp.stop')}
-                  onPress={() => apply(allDown ? 'ask' : 'stop')}
-                />
+                {!chosen.length || anyLive ? (
+                  <KeyButton colors={colors} disabled={!chosen.length} label={t('lamp.stop')} onPress={() => apply('stop')} />
+                ) : null}
+                {anyDown ? <KeyButton colors={colors} label={t('lamp.askAgain')} onPress={() => apply('ask')} /> : null}
                 {folders.length > 1 ? (
                   <KeyButton colors={colors} disabled={!chosen.length} label={t('questions.move')} onPress={askMove} />
                 ) : null}
@@ -2918,7 +2946,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  modeSide: { flexBasis: 96, flexShrink: 1, justifyContent: 'center' },
+  modeSide: { flexBasis: 96, flexShrink: 1, justifyContent: 'center', minHeight: 44 },
+  clearRow: { minHeight: 44 },
   modeEnd: { alignItems: 'flex-end' },
   modeMid: { flex: 1, alignItems: 'center' },
   modeTitle: { fontFamily: fonts.uiBold, fontSize: 16 },

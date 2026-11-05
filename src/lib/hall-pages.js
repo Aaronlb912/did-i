@@ -710,10 +710,11 @@ export function feedRows(book) {
 
 // Every answer search: question text, short name, or note, any case.
 export function feedSearch(rows, query) {
-  const want = String(query || '').trim().toLowerCase()
+  const fold = (text) => String(text || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
+  const want = fold(query).trim()
   if (!want) return rows
   return rows.filter((row) =>
-    [row.lamp?.question, row.lamp?.short, row.answer?.note].some((text) => String(text || '').toLowerCase().includes(want)),
+    [row.lamp?.question, row.lamp?.short, row.answer?.note].some((text) => fold(text).includes(want)),
   )
 }
 
@@ -881,14 +882,16 @@ export function matchLamps(book, query) {
   const q = String(query || '')
     .trim()
     .toLowerCase()
+    .normalize('NFD').replace(/\p{M}/gu, '')
   const lamps = book.lamps || []
   if (!q) return lamps
   return lamps.filter((lamp) => {
     const blob = [lamp.question, lamp.short, lamp.kind, lamp.notes, shortLabel(lamp)]
       .join(' ')
       .toLowerCase()
+      .normalize('NFD').replace(/\p{M}/gu, '')
     // Every word, in any order, like the questions list search.
-    return q.split(/s+/).every((word) => blob.includes(word))
+    return q.split(/\s+/).filter(Boolean).every((word) => blob.includes(word))
   })
 }
 

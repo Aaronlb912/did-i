@@ -678,6 +678,8 @@ export const en = {
   'questions.list': 'Asking',
   'questions.searchPh': 'Search your questions',
   'questions.searchClear': 'Clear search',
+  'questions.noMatchFolder': 'No questions match that in this folder.',
+  'questions.clearFilters': 'Clear search and folder',
   'questions.noMatch': 'No questions match that.',
   'questions.filter': 'Show',
   'questions.filterAll': 'All',

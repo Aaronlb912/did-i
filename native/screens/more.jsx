@@ -986,6 +986,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const clock = now || today
   const gentle = usePrefs().gentle === true
   const [weekShift, setWeekShift] = useState(0)
+  useEffect(() => setWeekShift(0), [tagId])
   // The week's walks once per shelf, folder and minute, not every render.
   const minute = Math.floor(clock.getTime() / 60000)
   const { nights, lamps, strip } = useMemo(() => {
