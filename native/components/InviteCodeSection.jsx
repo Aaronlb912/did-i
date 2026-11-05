@@ -6,7 +6,6 @@ import { inviteFromPaste } from '../../src/lib/invite-link.js'
 import { INVITE_CODE_LEN, formatInvite } from '../../src/lib/people.js'
 import { useReferralCode } from '../../src/lib/useReferralCode.js'
 import { fonts } from '../theme.js'
-import { InviteRewardBar } from './InviteRewardBar.jsx'
 import { DidButton, Field, KeyButton } from './ui.jsx'
 
 // start: a code to fill in (a scanned invite). hideDone: say nothing once a
@@ -45,7 +44,6 @@ export function InviteCodeSection({ colors, book, onChange, gemsPaid, joined, hi
 
   return (
     <>
-      {hideBar ? null : <InviteRewardBar colors={colors} gemsPaid={paid} joined={friends} />}
       {ref.locked && !hideDone ? <Text style={[styles.meta, { color: colors.inkSoft }]}>{t('people.inviteDone')}</Text> : null}
       {!ref.locked ? (
         <>
