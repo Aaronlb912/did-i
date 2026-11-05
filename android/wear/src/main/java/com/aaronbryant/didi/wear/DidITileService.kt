@@ -30,9 +30,13 @@ class DidITileService : TileService() {
     val done = cards?.countDone ?: 0
     val left = cards?.openCards?.size ?: 0
     val notYet = cards?.items?.count { it.status == "nope" } ?: 0
+    val waiting = cards?.phoneWaiting ?: 0
     val line = when {
-      cards == null || cards.items.isEmpty() || cards.stale -> cards?.openPhoneLabel?.orNull() ?: getString(R.string.open_phone)
+      cards == null || cards.stale -> cards?.openPhoneLabel?.orNull() ?: getString(R.string.open_phone)
       left > 0 -> fill(cards.leftLabel, "n" to left) ?: getString(R.string.left_n, left)
+      // Did we cards wait on the phone: not "No questions yet", not "All done".
+      notYet == 0 && waiting > 0 -> fill(cards.phoneWaitingLabel, "n" to waiting) ?: getString(R.string.waiting_n, waiting)
+      cards.items.isEmpty() -> cards.openPhoneLabel.orNull() ?: getString(R.string.open_phone)
       notYet > 0 -> fill(cards.notYetLabel, "n" to notYet) ?: getString(R.string.not_yet_n, notYet)
       else -> cards.allDoneLabel.orNull() ?: getString(R.string.all_done)
     }

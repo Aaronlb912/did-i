@@ -8974,6 +8974,7 @@ test('the watch app target exists and CI builds it without signing', () => {
   const wearTap = read('android/app/src/main/java/com/aaronbryant/didi/watch/WatchTapService.java')
   assert.ok(wearTap.indexOf('WidgetTapStore.commit') < wearTap.indexOf('tellJs(context)'), 'watch tap is on disk before JS hears of it')
   assert.ok(read('.github/workflows/wear-check.yml').includes('-p wear'))
+  assert.ok(read('android/wear/src/main/java/com/aaronbryant/didi/wear/Cards.kt').includes('phoneWaiting'), 'Wear reads the Did we waiting count')
   // Watch words come from the phone in its language; the watch fills the numbers.
   for (const key of ['watch.allDone', 'watch.notYet', 'watch.count', 'watch.openPhone']) {
     assert.ok(read('native/watch-sync.js').includes(`'${key}'`), `${key} is sent to the watch`)
