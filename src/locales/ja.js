@@ -4087,5 +4087,9 @@ export const ja = {
   'photos.options': "写真のオプション",
   'photos.share': "写真を共有",
   'photos.shareFail': "写真を共有できませんでした。",
+  'photos.save': "写真に保存",
+  'photos.saved': "写真に保存しました",
+  'photos.saveFail': "写真を保存できませんでした。",
+  'photos.saveOff': "Did I の写真へのアクセスがオフです。写真を保存するには、スマートフォンの設定でオンにしてください。",
   'photos.of': "{n} / {total}",
 }

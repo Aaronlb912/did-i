@@ -4089,5 +4089,9 @@ export const ko = {
   'photos.options': "사진 옵션",
   'photos.share': "사진 공유",
   'photos.shareFail': "사진을 공유하지 못했어요.",
+  'photos.save': "사진에 저장",
+  'photos.saved': "사진에 저장했어요",
+  'photos.saveFail': "사진을 저장하지 못했어요.",
+  'photos.saveOff': "Did I의 사진 접근이 꺼져 있어요. 사진을 저장하려면 휴대폰 설정에서 켜 주세요.",
   'photos.of': "{n} / {total}",
 }

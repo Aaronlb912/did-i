@@ -11,7 +11,7 @@ import { publishSheet } from '../components/SheetHost.jsx'
 import { DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
-import { askRemoveProof, askReportProof, shareProof } from '../lib/proof-flow.jsx'
+import { askRemoveProof, askReportProof, canSaveProof, saveProof, shareProof } from '../lib/proof-flow.jsx'
 import { goBack, goHash, onRoute } from '../navigation/hash.js'
 import { fonts, sectionLabel } from '../theme.js'
 
@@ -238,6 +238,7 @@ export function PhotoViewScreen({ id }) {
       content: (
         <View style={styles.actions}>
           <KeyButton colors={colors} label={t('photos.share')} onPress={act(() => shareProof(row))} />
+          {canSaveProof() ? <KeyButton colors={colors} label={t('photos.save')} onPress={act(() => saveProof(row, colors))} /> : null}
           {mine ? (
             <KeyButton danger colors={colors} label={t('proof.remove')} onPress={act(() => askRemoveProof({ row, colors, back: reopen, onGone: done }))} />
           ) : (
