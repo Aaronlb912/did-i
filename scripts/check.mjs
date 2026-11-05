@@ -11753,6 +11753,50 @@ test('photo library: resets per account, reloads when links age, share refreshes
   assert.ok(flow.includes('finally {') && flow.includes('target.delete()'), 'share deletes the cached file when it settles')
 })
 
+await testAsync('photo library: reads in pages, keeps the last read per account, clears it on remove', async () => {
+  const proofs = readFileSync(new URL('../src/lib/proofs.js', import.meta.url), 'utf8')
+  const fn = proofs.slice(proofs.indexOf('export async function loadLibrary('), proofs.indexOf('export async function loadLibraryRow'))
+  assert.ok(fn.includes('.range(from, from + LIBRARY_PAGE - 1)') && !fn.includes('.limit('), 'loadLibrary pages with range, no bare limit')
+  const screen = readFileSync(new URL('../native/screens/PhotosScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(screen.includes('resizeMethod="resize"') && screen.includes('loadLibraryRow(openId)') && screen.includes("t('list.more'"), 'grid decodes small, an old id opens, Show more is there')
+  const out = inFakeCloud(`
+    const proofs = await import(url('proofs.js'))
+    const mk = (from, n) => Array.from({ length: n }, (_, i) => ({ id: 'p' + (from + i), owner_id: 'user-a', send_id: null, card_id: null, night: '2026-10-01', made_at: '2026-10-01T00:00:00Z' }))
+    answer = (table, ops) => {
+      if (table !== 'proofs') return { data: [], error: null }
+      const range = ops.find(([k]) => k === 'range')
+      if (!range) return { data: null, error: null }
+      return { data: mk(range[1], Math.max(0, Math.min(range[2] + 1, 120) - range[1])), error: null }
+    }
+    let signedCalls = 0
+    db.storage = { from: () => ({
+      createSignedUrls: async (paths) => { signedCalls += 1; return { data: paths.map((path) => ({ path, signedUrl: 'https://x/' + path })) } },
+      remove: async (paths) => ({ error: null, data: paths }),
+      list: async () => ({ error: null, data: [] }),
+    }) }
+    const first = await proofs.loadLibrary()
+    const second = await proofs.loadLibrary({ from: first.next })
+    const ranges = calls.filter((c) => c.table === 'proofs').map((c) => c.ops.find(([k]) => k === 'range').slice(1))
+    proofs.keepLibrary('user-a', { at: Date.now(), rows: first.rows, next: first.next, more: first.more })
+    const kept = Boolean(proofs.cachedLibrary('user-a'))
+    const otherAccount = Boolean(proofs.cachedLibrary('user-b'))
+    proofs.keepLibrary('user-a', { at: Date.now() - proofs.PROOF_STALE_MS - 1, rows: [], next: 0, more: false })
+    const old = Boolean(proofs.cachedLibrary('user-a'))
+    proofs.keepLibrary('user-a', { at: Date.now(), rows: first.rows, next: first.next, more: first.more })
+    await proofs.removeProof({ id: 'p1', owner_id: 'user-a' })
+    const afterRemove = Boolean(proofs.cachedLibrary('user-a'))
+    proofs.keepLibrary('user-a', { at: Date.now(), rows: first.rows, next: first.next, more: first.more })
+    await proofs.removeAllProofs()
+    const afterAll = Boolean(proofs.cachedLibrary('user-a'))
+    return { a: [first.rows.length, first.more, first.next], b: [second.rows.length, second.more, second.next], ranges, signedCalls, kept, otherAccount, old, afterRemove, afterAll }
+  `)
+  assert.deepEqual(out.a, [100, true, 100], 'first page is 100 and says there is more')
+  assert.deepEqual(out.b, [20, false, 120], 'the next page continues and ends')
+  assert.deepEqual(out.ranges, [[0, 99], [100, 199]])
+  assert.equal(out.signedCalls, 2, 'one batch of links per page')
+  assert.deepEqual([out.kept, out.otherAccount, out.old, out.afterRemove, out.afterAll], [true, false, false, false, false], 'kept for the account while fresh; gone for another account, when old, and after remove or delete all')
+})
+
 await testAsync('proof photos: a half-done upload is cleared before a retry, and a failed cleanup is checked', async () => {
   const out = inFakeCloud(`
     const A = '11111111-2222-3333-4444-555555555555'

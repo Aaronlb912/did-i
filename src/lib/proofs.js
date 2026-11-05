@@ -73,6 +73,7 @@ export async function addProof(target, night, bytes, ready) {
   })
   if (made.error || !UUID.test(String(made.data || ''))) return { miss: missFor(made.error) }
   const id = made.data
+  clearLibrary()
   const up = await db.storage.from('proofs').upload(proofPath(uid, id), bytes, { contentType: 'image/jpeg' })
   if (up.error) {
     // If the row stays, the next try clears it (no push yet), so one more go is enough.
@@ -115,22 +116,15 @@ export async function loadProofs({ sendIds = [], cardIds = [] }) {
   }
 }
 
-// The whole library: every photo you may see, newest day first, each with
-// its question and a signed link. The photo rows, then the sends, cards and
-// people at once, with one batch of links. The server hides blocked and
-// reported photos.
-export async function loadLibrary() {
-  const db = cloud()
-  if (!db) return { rows: [], miss: '' }
-  const { data, error } = await db
-    .from('proofs')
-    .select('id, owner_id, send_id, card_id, night, made_at')
-    .order('night', { ascending: false })
-    .order('made_at', { ascending: false })
-    .limit(200)
-  if (error) return { rows: [], miss: /relation|does not exist|schema cache/i.test(error.message || '') ? '' : 'people.reach' }
-  const found = data || []
-  if (!found.length) return { rows: [], miss: '' }
+// The whole library, a page at a time: every photo you may see, newest day
+// first, each with its question and a signed link. Each page is the photo
+// rows, then the sends, cards and people at once, with one batch of links. The
+// server hides blocked and reported photos. `next` is where the next page
+// starts; `more` says there may be one.
+const LIBRARY_PAGE = 100
+const LIBRARY_COLUMNS = 'id, owner_id, send_id, card_id, night, made_at'
+
+async function libraryRows(db, found) {
   const sendIds = [...new Set(found.map((row) => row.send_id).filter(Boolean))]
   const cardIds = [...new Set(found.map((row) => row.card_id).filter(Boolean))]
   const [sends, cards, people, signed] = await Promise.all([
@@ -143,18 +137,62 @@ export async function loadLibrary() {
   const nameOf = new Map(people.map((person) => [person.user_id, personName(person)]))
   const urls = new Map()
   for (const item of signed.data || []) if (item.signedUrl && !item.error) urls.set(item.path, item.signedUrl)
-  return {
-    rows: found
-      .map((row) => ({
-        ...row,
-        kind: row.card_id ? 'we' : 'you',
-        question: questionOf.get(row.send_id || row.card_id) || '',
-        name: nameOf.get(row.owner_id) || '',
-        url: urls.get(proofPath(row.owner_id, row.id)) || '',
-      }))
-      .filter((row) => row.url),
-    miss: '',
-  }
+  return found
+    .map((row) => ({
+      ...row,
+      kind: row.card_id ? 'we' : 'you',
+      question: questionOf.get(row.send_id || row.card_id) || '',
+      name: nameOf.get(row.owner_id) || '',
+      url: urls.get(proofPath(row.owner_id, row.id)) || '',
+    }))
+    .filter((row) => row.url)
+}
+
+export async function loadLibrary({ from = 0 } = {}) {
+  const db = cloud()
+  if (!db) return { rows: [], miss: '', next: from, more: false }
+  const { data, error } = await db
+    .from('proofs')
+    .select(LIBRARY_COLUMNS)
+    .order('night', { ascending: false })
+    .order('made_at', { ascending: false })
+    .order('id', { ascending: false })
+    .range(from, from + LIBRARY_PAGE - 1)
+  if (error) return { rows: [], miss: /relation|does not exist|schema cache/i.test(error.message || '') ? '' : 'people.reach', next: from, more: false }
+  const found = data || []
+  if (!found.length) return { rows: [], miss: '', next: from, more: false }
+  return { rows: await libraryRows(db, found), miss: '', next: from + found.length, more: found.length === LIBRARY_PAGE }
+}
+
+// One photo by id, for a push that points past the pages read so far. null
+// when it is gone, hidden from you, or cannot be read.
+export async function loadLibraryRow(id) {
+  const db = cloud()
+  if (!db || !UUID.test(String(id))) return null
+  const { data, error } = await db.from('proofs').select(LIBRARY_COLUMNS).eq('id', id).maybeSingle()
+  if (error || !data) return null
+  return (await libraryRows(db, [data]))[0] || null
+}
+
+// The last library read, kept so leaving the screen and coming back does not
+// download every image again (new signed links miss the image cache). Keyed by
+// account, reused for 5 minutes so a photo someone just added still shows
+// soon, cleared when a photo is removed or reported. Links last an hour.
+export const PROOF_STALE_MS = 50 * 60 * 1000
+const LIBRARY_REUSE_MS = 5 * 60 * 1000
+let library = null
+
+export function clearLibrary() {
+  library = null
+}
+
+export function cachedLibrary(uid) {
+  if (library && (library.uid !== uid || Date.now() - library.at >= LIBRARY_REUSE_MS)) library = null
+  return library
+}
+
+export function keepLibrary(uid, state) {
+  library = uid ? { uid, ...state } : null
 }
 
 // A fresh signed link for one photo, or '' when it cannot be made.
@@ -174,6 +212,7 @@ export async function removeProof(row) {
   if (!db) return { miss: 'proof.fail' }
   const { error } = await db.from('proofs').delete().eq('id', row.id)
   if (error) return { miss: 'proof.fail' }
+  clearLibrary()
   await db.storage.from('proofs').remove([proofPath(row.owner_id, row.id)]).catch(() => {})
   return { miss: '' }
 }
@@ -213,6 +252,7 @@ export async function removeAllProofs() {
   if (!uid) return { miss: 'proof.fail' }
   const { error } = await db.from('proofs').delete().eq('owner_id', uid)
   if (error) return { miss: 'proof.fail' }
+  clearLibrary()
   return removeAllProofFiles(uid)
 }
 
@@ -221,5 +261,6 @@ export async function reportProof(id, why = '') {
   if (!db) return { miss: 'proof.fail' }
   const { error } = await db.rpc('report_proof', { p_proof: id, why })
   if (error) return { miss: /too many reports/i.test(error.message || '') ? 'we.missReports' : 'proof.fail' }
+  clearLibrary()
   return { miss: '' }
 }
