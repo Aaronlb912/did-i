@@ -33,12 +33,12 @@ import { Slot } from './components/Slot.jsx'
 import { CheerBurstHost } from './components/CheerBurstHost.jsx'
 import { DidYouBanner } from './components/DidYouBanner.jsx'
 import { UpdatePrompt } from './components/UpdatePrompt.jsx'
-import { SheetHost, onSheetUp, publishSheet, sheetIsUp } from './components/SheetHost.jsx'
+import { SheetHost, onSheetUp, publishSheet, sheetIsUp, whenNoSheet } from './components/SheetHost.jsx'
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
 import { HuntHost } from './components/HuntHost.jsx'
 import { InviteAskHost } from './components/InviteAskHost.jsx'
 import { TourHost } from './components/TourHost.jsx'
-import { setTourBalanceHandler } from './lib/tour.js'
+import { setTourBalanceHandler, tourActive } from './lib/tour.js'
 import { lazyScreen } from './lib/lazy-screen.jsx'
 import { ToastHost } from './components/ToastHost.jsx'
 import { resumeCheckOnStops } from './components/LampManage.jsx'
@@ -76,6 +76,15 @@ const Stack = createNativeStackNavigator()
 const NO_TITLE = new Set(['/hang', '/we/new'])
 
 const GLASS_BAR = Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) >= 26
+
+// The first reminder ask waits for the tour, a playing cheer and any open sheet.
+async function whenQuiet() {
+  for (let i = 0; i < 60; i += 1) {
+    if (!tourActive() && Date.now() >= (window.__didICheerUntil || 0)) break
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+  await whenNoSheet()
+}
 
 function barOptions(colors) {
   if (Platform.OS !== 'ios') return { headerShown: false }
@@ -343,7 +352,7 @@ export function AppShell() {
     const wasAny = anyCount.current
     anyCount.current = any
     // The very first answer, Did or Not yet: ask for reminders now, not on top of the first swipe.
-    if (wasAny === 0 && any === 1) setTimeout(() => offerFirstPingPrimer(colors).catch(() => {}), 1200)
+    if (wasAny === 0 && any === 1) setTimeout(() => whenQuiet().then(() => offerFirstPingPrimer(colors)).catch(() => {}), 1200)
     // Not cleared on the next shelf write (sync lands right after a tap); the ask runs once anyway.
     // Exactly one more: a cloud pull brings several at once, not a tap here.
     if (was != null && n === was + 1) setTimeout(() => offerPingPrimerAgain(colors).catch(() => {}), 2500)

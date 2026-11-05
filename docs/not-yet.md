@@ -5,6 +5,14 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## First week (UX loop 2026-11-04)
+
+- /first is three screens and a card before the first question.
+- Nothing brings back someone with reminders off on days 2-7.
+- No first-week recap.
+- Nothing points to per-question reminder times.
+- A fresh-install pass is still owed.
+
 ## Stats and progress (UX loop 2026-11-04)
 
 - No habit score like Loop.

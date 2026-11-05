@@ -11422,7 +11422,14 @@ test('did we: every Did I timing maps to we_make2 and we_edit3 arguments', async
   assert.ok(src.includes("rpc('we_make2'") && src.includes("rpc('we_edit3'"))
 })
 
+test('first reminder ask waits for the tour, cheer and sheets', () => {
+  const shell = readFileSync(new URL('../native/AppShell.jsx', import.meta.url), 'utf8')
+  assert.match(shell, /whenQuiet\(\)\.then\(\(\) => offerFirstPingPrimer/)
+  assert.match(shell, /!tourActive\(\)[\s\S]{0,160}await whenNoSheet\(\)/)
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
+
