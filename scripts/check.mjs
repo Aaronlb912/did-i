@@ -48,12 +48,16 @@ import {
   firstRunBook,
   isNewShelf,
   isNightOne,
+  firstMissDay,
+  markFirstMissSeen,
   markNightOneSeen,
+  nightOneDay,
   markSignInNudgeSeen,
   nightOneSeen,
   packState,
   showSignInNudge,
   shouldShowWidgetTip,
+  showFirstMiss,
   countWidgetTipDay,
   signInNudgeSeen,
   togglePack,
@@ -4621,8 +4625,9 @@ test('night one and the sign-in card show once', () => {
   localStorage.removeItem('did-i-night-one')
   localStorage.removeItem('did-i-sign-in-nudge')
   assert.equal(nightOneSeen(), false)
-  markNightOneSeen()
+  markNightOneSeen('2026-10-05')
   assert.equal(nightOneSeen(), true)
+  assert.equal(nightOneDay(), '2026-10-05', 'the day it showed is kept')
   const base = { signedIn: false, cloud: true, nightDone: true, dismissed: signInNudgeSeen() }
   assert.equal(showSignInNudge(base), true)
   assert.equal(showSignInNudge({ ...base, signedIn: true }), false)
@@ -4636,6 +4641,23 @@ test('night one and the sign-in card show once', () => {
   localStorage.removeItem('did-i-sign-in-nudge')
 })
 
+test('week one shows one calm line after one missed day, once', () => {
+  localStorage.removeItem('did-i-first-miss')
+  const ans = (periodKey) => ({ periodKey, status: 'yes' })
+  const shelf = [{ answers: [ans('2026-10-01'), ans('2026-10-02')] }]
+  assert.equal(showFirstMiss(shelf, '2026-10-03'), false, 'yesterday was answered')
+  assert.equal(showFirstMiss(shelf, '2026-10-04'), true)
+  assert.equal(showFirstMiss(shelf, '2026-10-05'), false, 'two days missed is the welcome back card')
+  assert.equal(showFirstMiss([{ answers: [ans('2026-10-01')] }], '2026-10-02'), false)
+  assert.equal(showFirstMiss([{ answers: [ans('2026-10-01'), ans('2026-10-07')] }], '2026-10-09'), false, 'week one is over')
+  assert.equal(firstMissDay(), '')
+  markFirstMissSeen('2026-10-04')
+  assert.equal(showFirstMiss(shelf, '2026-10-04', firstMissDay()), true, 'stays all that day')
+  const later = [{ answers: [ans('2026-10-01'), ans('2026-10-02'), ans('2026-10-05')] }]
+  assert.equal(showFirstMiss(later, '2026-10-07', firstMissDay()), false, 'once ever')
+  localStorage.removeItem('did-i-first-miss')
+})
+
 test('widget tip shows once, after the first all-clear day, never with a widget', () => {
   const ask = (state, today, more = {}) =>
     shouldShowWidgetTip({ state, today, hasQuestion: true, widgetPlaced: false, busy: false, allClear: true, ...more })
@@ -4644,6 +4666,7 @@ test('widget tip shows once, after the first all-clear day, never with a widget'
   assert.equal(ask(tip, '2026-10-01', { allClear: false }), false)
   tip = countWidgetTipDay(tip, '2026-10-02')
   assert.equal(tip.days, 2)
+  assert.equal(ask(tip, '2026-10-02', { allClear: false }), true, 'from day 2 it shows without all clear')
   assert.equal(ask(tip, '2026-10-02'), true)
   assert.equal(ask(tip, '2026-10-02', { widgetPlaced: true }), false)
   assert.equal(ask(tip, '2026-10-02', { hasQuestion: false }), false)
