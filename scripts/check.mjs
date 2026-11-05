@@ -11717,6 +11717,20 @@ await testAsync('freeze card is for yesterday only, a first coin is the first da
   assert.ok(q.includes('export function lampEnded') && q.includes("lamp.endedOn"), 'an ended question joins the finished group')
 })
 
+test('photo library: resets per account, reloads when links age, share refreshes and cleans up', () => {
+  const photos = readFileSync(new URL('../native/screens/PhotosScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(photos.includes('setRows(null)') && photos.includes('showing = []') && photos.includes('[uid, load]'), 'rows and the swipe list reset when the account changes')
+  assert.ok(photos.includes('STALE_MS') && photos.includes('useIsFocused'), 'the library reloads on focus when links are old')
+  const flow = readFileSync(new URL('../native/lib/proof-flow.jsx', import.meta.url), 'utf8')
+  assert.ok(flow.includes('freshProofUrl(row)'), 'share makes a fresh link')
+  assert.ok(flow.includes('finally {') && flow.includes('target.delete()'), 'share deletes the cached file when it settles')
+})
+
+test('a one-time question saved to JSON has no end date', () => {
+  const src = readFileSync(new URL('../src/lib/board-json.js', import.meta.url), 'utf8')
+  assert.ok(src.includes("cadence !== 'once' && /"), 'endsOn only for repeating questions')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)

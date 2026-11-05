@@ -1,3 +1,4 @@
+import { useIsFocused } from '@react-navigation/native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FlatList, Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
@@ -25,6 +26,8 @@ const FILTERS = [
 // What the viewer swipes through (the grid as it was drawn), and the photos
 // removed or reported since the last read, so the grid is right on return.
 let showing = []
+let showingFor = null
+const STALE_MS = 50 * 60 * 1000
 const gone = new Set()
 const goneWatchers = new Set()
 function forget(id) {
@@ -61,6 +64,9 @@ export function PhotosScreen() {
   const [by, setBy] = useState('question')
   const [tick, bump] = useState(0)
   const signedIn = Boolean(account.user)
+  const uid = account.user?.id || null
+  const focused = useIsFocused()
+  const loadedAt = useRef(0)
 
   const load = useCallback(() => {
     let live = true
@@ -68,6 +74,7 @@ export function PhotosScreen() {
     loadLibrary()
       .then((out) => {
         if (!live) return
+        loadedAt.current = Date.now()
         gone.clear()
         setRows(out.rows)
         setMiss(out.miss)
@@ -77,7 +84,21 @@ export function PhotosScreen() {
       live = false
     }
   }, [])
-  useEffect(() => (signedIn ? load() : undefined), [signedIn, load])
+  useEffect(() => {
+    // Another account's photos never show under this one, even if this load fails.
+    setRows(null)
+    setMiss('')
+    loadedAt.current = 0
+    gone.clear()
+    showing = []
+    showingFor = uid
+    return uid ? load() : undefined
+  }, [uid, load])
+  useEffect(() => {
+    // Signed links last an hour; reload on return when they are getting old.
+    if (focused && uid && loadedAt.current && Date.now() - loadedAt.current > STALE_MS) return load()
+    return undefined
+  }, [focused, uid, load])
   useEffect(() => {
     const redraw = () => bump((n) => n + 1)
     goneWatchers.add(redraw)
@@ -93,6 +114,7 @@ export function PhotosScreen() {
 
   function open(row) {
     showing = groups.flatMap((group) => group.rows)
+    showingFor = uid
     goHash('/photo', { id: row.id })
   }
 
@@ -184,7 +206,7 @@ export function PhotoViewScreen({ id }) {
   const list = useRef(null)
   const [, bump] = useState(0)
   const [width, setWidth] = useState(0)
-  const rows = showing.filter((row) => !gone.has(row.id))
+  const rows = showingFor === uid ? showing.filter((row) => !gone.has(row.id)) : []
   const start = Math.max(0, rows.findIndex((row) => row.id === id))
   const [at, setAt] = useState(start)
   const row = rows[Math.min(at, rows.length - 1)]

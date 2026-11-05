@@ -129,6 +129,14 @@ export async function loadLibrary() {
   }
 }
 
+// A fresh signed link for one photo, or '' when it cannot be made.
+export async function freshProofUrl(row) {
+  const db = cloud()
+  if (!db) return ''
+  const { data, error } = await db.storage.from('proofs').createSignedUrl(proofPath(row.owner_id, row.id), SIGNED_SECONDS)
+  return error ? '' : data?.signedUrl || ''
+}
+
 // Owner removes their photo: the file, then the row.
 export async function removeProof(row) {
   const db = cloud()
