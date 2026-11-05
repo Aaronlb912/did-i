@@ -87,7 +87,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
     [boards, book, dayIso, tagId, monthShift, awayKey(), prefs.locale],
   )
   // History starts at the first month with an answer; the back arrow stops there.
-  const firstMonth = useMemo(() => firstAnswerMonth(shelf, clock, tagId), [boards, book, dayIso, tagId])
+  const firstMonth = useMemo(() => firstAnswerMonth(shelf, clock, tagId), [boards, book, dayIso, tagId, awayKey()])
   const minShift = (Number(firstMonth.slice(0, 4)) - pack.start.getFullYear()) * 12 + Number(firstMonth.slice(5, 7)) - 1 - pack.start.getMonth() + monthShift
   const canBack = monthShift > Math.min(0, minShift)
   const locale = dateLocale(prefs.locale)

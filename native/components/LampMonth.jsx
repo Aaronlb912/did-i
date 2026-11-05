@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { t } from '../../src/lib/i18n.js'
-import { readPrefs, usePrefs } from '../../src/lib/prefs.js'
+import { firstWeekday, t } from '../../src/lib/i18n.js'
+import { usePrefs } from '../../src/lib/prefs.js'
 import { answerFor, formatBoardDate, isDueOn, isEvery, isPerWeek, nightOpen, periodKeyFor, periodPassed } from '../../src/lib/recurrence.js'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { amountWords, pausedOpen } from '../../src/lib/lamp-record.js'
@@ -21,14 +21,14 @@ function monthOf(iso, back) {
   return { y: at.getFullYear(), m: at.getMonth() }
 }
 
-// One month of nights for this question, laid out Sunday first. Each cell is
+// One month of nights for this question, laid out from the locale's first weekday. Each cell is
 // 'did', 'late', 'nope', 'missed', 'open' (tonight, not answered) or '' (not asked).
 // gentle: a missed night is blank, the same as a night it was not asked.
-export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false) {
+export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false, weekStart = 0) {
   const shown = { ...lamp, archived: false }
   const made = /^\d{4}-\d{2}-\d{2}$/.test(String(lamp.createdOn || '')) ? lamp.createdOn : ''
   const days = new Date(y, m + 1, 0, 12).getDate()
-  const lead = new Date(y, m, 1, 12).getDay()
+  const lead = (new Date(y, m, 1, 12).getDay() - weekStart + 7) % 7
   const cells = Array.from({ length: lead }, () => null)
   for (let d = 1; d <= days; d += 1) {
     const iso = `${y}-${pad(m + 1)}-${pad(d)}`
@@ -67,21 +67,23 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
   const first = monthOf(made, 0)
   const canBack = y > first.y || (y === first.y && m > first.m)
   const monthKey = `${y}-${m}`
-  const gentle = usePrefs().gentle === true
+  const prefs = usePrefs()
+  const gentle = prefs.gentle === true
+  const locale = prefs.locale || undefined
+  const weekStart = firstWeekday(prefs.locale)
   const cells = useMemo(
-    () => (lamp && dateIso ? lampMonthCells(book, lamp, dateIso, y, m, gentle) : []),
+    () => (lamp && dateIso ? lampMonthCells(book, lamp, dateIso, y, m, gentle, weekStart) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [book, lamp, dateIso, monthKey, gentle],
+    [book, lamp, dateIso, monthKey, gentle, weekStart],
   )
   if (!lamp || !dateIso || lamp.cadence === 'once') return null
-  const locale = readPrefs().locale || undefined
   let title = ''
   try {
     title = new Date(y, m, 1, 12).toLocaleDateString(locale, { month: 'long', year: 'numeric' })
   } catch {
     title = `${y}-${pad(m + 1)}`
   }
-  const letters = [0, 1, 2, 3, 4, 5, 6].map((d) => Array.from(t(`hang.day.${d}`))[0] || '')
+  const letters = [0, 1, 2, 3, 4, 5, 6].map((d) => Array.from(t(`hang.day.${(d + weekStart) % 7}`))[0] || '')
   const rows = []
   for (let at = 0; at < cells.length; at += 7) rows.push(cells.slice(at, at + 7))
   const last = rows[rows.length - 1]

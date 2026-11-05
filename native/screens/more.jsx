@@ -763,6 +763,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
         <SetRow colors={colors} icon="flag" label={t('stats.marks')} sub={t('stats.marksSub')} chevron onPress={() => goHash('/marks')} />
         <SetRow colors={colors} icon="week" label={t('streaks.seven')} sub={t('stats.sevenSub')} chevron onPress={() => goHash('/week')} />
         <SetRow colors={colors} icon="chart" label={t('settings.history')} chevron onPress={() => goHash('/calendar')} />
+        <SetRow colors={colors} icon="calendar" label={t('cal.viewYear')} chevron onPress={() => goHash('/calendar', 'year')} />
         <SetRow colors={colors} icon="priority" label={t('streaks.title')} sub={t('stats.streaksSub')} chevron last onPress={() => goHash('/streaks')} />
       </SetCard>
     </ScreenShell>
@@ -869,7 +870,7 @@ export function CalendarScreen({ book, boards, tagId, now, route, onChangeBooks 
   const colors = useHallColors()
   const today = useDayNow()
   const clock = now || today
-  const [view, setView] = useState('month')
+  const [view, setView] = useState(route?.face === 'year' ? 'year' : 'month')
   const [startShift, setStartShift] = useState(0)
   const gentle = usePrefs().gentle === true
   const newShelf = useMemo(() => isNewShelf(boards), [boards])

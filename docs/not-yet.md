@@ -5,6 +5,12 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Stats and progress (UX loop 2026-11-04)
+
+- No habit score like Loop.
+- No weekly frequency bars for every question.
+- No monthly summary card.
+
 ## Breaks and rest days (UX loop 2026-11-04)
 
 - Pausing a folder pauses each question one by one; no folder pause yet.

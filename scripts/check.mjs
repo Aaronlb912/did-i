@@ -8299,6 +8299,7 @@ test('gentle mode: a missed night is blank on Home, week, month, list and why sh
   const month = readSrc('native/components/LampMonth.jsx')
   assert.match(month, /nightOpen\(iso\) \? 'open' : gentle \? '' : 'missed'/)
   assert.match(month, /\.\.\.\(gentle \? \[\] : \[\{ id: 'missed'/)
+  assert.ok(month.includes('getDay() - weekStart + 7) % 7'), 'lamp month starts on the locale first weekday')
   const list = readSrc('native/screens/questions.jsx')
   assert.match(list, /earlierStates\(earlier, gentle\)/)
   assert.match(list, /const missed = gentle \? '' : 'missed'/)
