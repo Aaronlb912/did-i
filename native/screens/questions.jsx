@@ -43,7 +43,7 @@ import { bulkLamps, hangInto, moveLamps, putAnswer, putPastAnswer, takeDown, tog
 import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
-import { clockWords, matchLamps } from '../../src/lib/hall-pages.js'
+import { clockWords, matchLamps, weekdayName } from '../../src/lib/hall-pages.js'
 import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
 import { gapLine, lastTimeLine, sinceBadge } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
@@ -1226,10 +1226,11 @@ function QuietReminderRow({ colors, onTurnOn, last }) {
   )
 }
 
-export function Pill({ label, on, onPress, colors, dim, radio }) {
+export function Pill({ label, on, onPress, colors, dim, radio, accessibilityLabel }) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole={radio ? 'radio' : 'button'}
       accessibilityState={radio ? { checked: Boolean(on) } : { selected: on }}
       style={[
@@ -1973,17 +1974,18 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             <View ref={whenDetail} style={styles.whenDetail} onLayout={showWhenDetail}>
             {/* A schedule problem shows here, where it gets fixed, not below the fold. */}
             {SCHEDULE_MISSES.has(hang.miss) ? (
-              <Text style={[styles.miss, { color: colors.miss }]} accessibilityRole="alert">
+              <Text style={[styles.miss, { color: colors.late }]} accessibilityRole="alert">
                 {t(hang.miss)}
               </Text>
             ) : null}
 
             {schedule === 'weekly' ? (
-              <View style={styles.pillRow} accessibilityLabel={t('hang.weekly')}>
+              <View style={styles.pillRow} accessible={false}>
                 {weekdaysFor(readPrefs().locale).map((day) => (
                   <Pill
                     key={day}
                     label={t(`hang.day.${day}`)}
+                    accessibilityLabel={weekdayName(`2026-10-${String(4 + day).padStart(2, '0')}`, 'long')}
                     on={(draft.weekdays || []).includes(day)}
                     onPress={() => hang.toggleDay(day)}
                     colors={colors}
@@ -1996,7 +1998,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               <>
                 <View style={styles.pillRow}>
                   {[1, 2, 3, 4, 5, 6].map((n) => (
-                    <Pill key={n} label={String(n)} on={Number(draft.perWeek) === n} onPress={() => hang.change('perWeek', n)} colors={colors} />
+                    <Pill key={n} label={String(n)} accessibilityLabel={t(n === 1 ? 'cadence.perWeekOne' : 'cadence.perWeek', { n })} radio on={Number(draft.perWeek) === n} onPress={() => hang.change('perWeek', n)} colors={colors} />
                   ))}
                 </View>
                 <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.perWeekHint')}</Text>
