@@ -881,7 +881,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     // No snapshot yet or no questions: a plus, and VoiceOver says to add one.
     const notYetCount = items.filter((item) => item.status === 'skip').length
     const glyph = left > 0 ? (gentle ? '…' : String(left)) : notYetCount > 0 ? (gentle ? '…' : String(notYetCount)) : items.length ? '✓' : '+'
-    const circleLabel = items.length ? String(props?.footer || '') : String(props?.emptyLabel || 'Add a question in Did I')
+    const circleLabel = items.length ? 'Did I. ' + String(props?.footer || '') : String(props?.emptyLabel || 'Add a question in Did I')
     return (
       <ZStack modifiers={[containerBackground(c.panel, 'widget'), widgetURL(openUri), grow, accessibilityLabel(circleLabel)]}>
         <AccessoryWidgetBackground />

@@ -53,7 +53,7 @@ function snapshotColors(colors, look) {
     inkSoft: colors.inkSoft,
     on: colors.on,
     skip: colors.skip,
-    miss: colors.miss,
+    miss: colors.line,
     line: colors.line,
     look: look || 'lime',
     gem: Boolean(colors.gemLook),

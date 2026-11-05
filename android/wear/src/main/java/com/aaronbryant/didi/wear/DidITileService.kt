@@ -18,7 +18,7 @@ import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 
-// "2 left tonight" or "All done" with the ring, like targets/watch-widget.
+// "2 left today" or "All done" with the ring, like targets/watch-widget.
 // Tapping it opens the app.
 class DidITileService : TileService() {
   override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> {
