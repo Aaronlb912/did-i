@@ -2908,7 +2908,6 @@ export const zh = {
   'weLink.webLead': "没有应用？在这里加入，今天在浏览器里回答。",
   'weLink.webSignIn': "在网页上登录即可加入。今天在这里回答。",
   // round4-fix/stats-agree
-  'streaks.nextGoal': '下一个目标：{goal}',
   'week.tapHint': "点一天，看看为什么完成了或没完成。",
   'stats.bestRun': '单个问题最长连续',
   'stats.marksSub': "你已获得的，以及怎样拿到其余的",

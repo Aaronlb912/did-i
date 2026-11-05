@@ -2963,7 +2963,6 @@ export const de = {
   'weLink.webLead': "Keine App? Tritt hier bei und antworte heute im Browser.",
   'weLink.webSignIn': "Melde dich im Web an, um beizutreten. Dann antworte heute hier.",
   // round4-fix/stats-agree
-  'streaks.nextGoal': 'Nächstes Ziel: {goal}',
   'week.tapHint': "Tippe auf einen Tag, um zu sehen, warum er geschafft ist oder nicht.",
   'stats.bestRun': 'Beste Serie, eine Frage',
   'stats.marksSub': "Was du verdient hast und wie du den Rest bekommst",

@@ -2945,7 +2945,6 @@ export const en = {
   'weLink.webLead': "No app? Join here and answer today in your browser.",
   'weLink.webSignIn': "Sign in on the web to join. Then answer it here today.",
   // round4-fix/stats-agree
-  'streaks.nextGoal': 'Next goal: {goal}',
   'week.tapHint': "Tap a day to see why it cleared or not.",
   'stats.bestRun': 'Best streak, one question',
   'stats.marksSub': "What you earned and how to get the rest",

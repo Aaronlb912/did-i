@@ -2950,7 +2950,6 @@ export const pt = {
   'weLink.webLead': 'Sem app? Entre aqui e responda hoje no navegador.',
   'weLink.webSignIn': "Entre na web para participar. Depois responda aqui hoje.",
   // round4-fix/stats-agree
-  'streaks.nextGoal': 'Próxima meta: {goal}',
   'week.tapHint': "Toque num dia para ver por que fechou ou não.",
   'stats.bestRun': 'Melhor sequência, uma pergunta',
   'stats.marksSub': "O que você ganhou e como pegar o resto",
