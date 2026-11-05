@@ -302,6 +302,8 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
   // Best streak is shelf-wide, so it is left out while a folder is picked.
   const best = useMemo(() => (tagId || lampId || prefs.gentle === true ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, lampId, dateIso, prefs.gentle, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const cardRef = useRef(null)
+  // The share card is about 900 views, so it is only drawn while sharing.
+  const [carding, setCarding] = useState(false)
   // A picture of the year to share. Falls back to the text when the phone
   // cannot capture or share an image.
   const shareYear = async () => {
@@ -310,12 +312,16 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
       ? t('cal.yearShareFolder', { year, folder, did: totals.did, rate: totals.rate })
       : t(best ? 'cal.yearShareText' : 'cal.yearShareNoBest', { year, did: totals.did, rate: totals.rate, best })
     try {
+      setCarding(true)
       const [{ captureRef }, Sharing] = await Promise.all([import('react-native-view-shot'), import('expo-sharing')])
+      await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))
       if (!cardRef.current || !(await Sharing.isAvailableAsync())) throw new Error('no image share')
       const uri = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile' })
       await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: t('cal.yearShare'), UTI: 'public.png' })
     } catch {
       passAlong(text)
+    } finally {
+      setCarding(false)
     }
   }
   const locale = dateLocale(prefs.locale)
@@ -409,7 +415,7 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
         ))}
       </Reveal>
       {/* Drawn off screen, only to be captured as the picture to share. */}
-      {totals.did ? (
+      {carding && totals.did ? (
       <View ref={cardRef} collapsable={false} pointerEvents="none" style={[styles.card, { backgroundColor: colors.bg }]}>
         <Text style={[styles.cardYear, { color: colors.ink }]}>{String(year)}</Text>
         <Text style={[styles.cardLine, { color: colors.on }]}>{t('cal.yearTotals', { did: totals.did, rate: totals.rate })}</Text>

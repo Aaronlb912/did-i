@@ -547,12 +547,12 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   )
   // Finished one-time questions: their own folded list, so they stop crowding the paused ones.
   const earlier = rows.filter((row) => onceIsPast(row.lamp, dateIso) && hasAnyTopic(row.lamp, picks) && fromOk(row))
-  const pastStates = earlierShown ? earlierStates(earlier, gentle) : states
   const starters = openStarters(book)
   // A search with no live match opens the Paused or Earlier group that holds one.
   const searchFound = Boolean(query.trim()) && !hung.length
   const pausedShown = pausedOpen || (searchFound && down.length > 0)
   const earlierShown = earlierOpen || (searchFound && earlier.length > 0)
+  const pastStates = earlierShown ? earlierStates(earlier, gentle) : states
   const shown = [...hung, ...(pausedShown ? down : []), ...(earlierShown ? earlier : [])]
   // Only what is on screen counts, so a filter change never acts on hidden rows.
   const chosen = shown.filter((row) => picked.has(rowKey(row)))

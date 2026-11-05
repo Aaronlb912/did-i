@@ -4290,6 +4290,14 @@ test('a Did on a day that closed saves nothing and arms no undo', () => {
   assert.ok(mark.indexOf('if (next === book) return') > 0 && mark.indexOf('if (next === book) return') < mark.indexOf('setFaceId('), 'mark stops before moving cards when nothing saved')
 })
 
+test('Questions: Earlier dots read earlierShown after it is set; year share card drawn only while sharing', () => {
+  const q = readFileSync('native/screens/questions.jsx', 'utf8')
+  assert.ok(q.indexOf('const earlierShown =') > 0 && q.indexOf('const earlierShown =') < q.indexOf('const pastStates = earlierShown'), 'pastStates after earlierShown')
+  const cal = readFileSync('native/components/CalendarGrid.jsx', 'utf8')
+  assert.ok(cal.includes('{carding && totals.did ? ('), 'share card mounts only while sharing')
+  assert.ok(cal.includes('setCarding(false)'), 'share card goes after sharing')
+})
+
 test('native metro shims are wired and pin default exports', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const lint = spawnSync(process.execPath, [path.join(root, 'scripts/lint-store.mjs')], {
