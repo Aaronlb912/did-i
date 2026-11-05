@@ -362,10 +362,11 @@ export function useWeAnswer(reload, book) {
     queued.current.add(key)
     const turn = queue.current
       .then(() => answerNow(card, status, night))
-      .catch(() => {})
+      .catch(() => false)
       .finally(() => queued.current.delete(key))
     queue.current = turn
-    await turn
+    // false when it was not saved, so a caller that hid the card can show it again.
+    return turn
   }
 
   async function answerNow(card, status, night) {
@@ -374,7 +375,7 @@ export function useWeAnswer(reload, book) {
     // A Did we answer has no undo: it says it was saved, or that it was not.
     if (out?.miss) {
       confirmMiss(tMiss(weMissKey(card, out.miss)))
-      return
+      return false
     }
     if (!night && status === 'nope' && weOpenPastToday(card, boardDate())) hideWeFor(card.id, boardDate())
     if (next) {
