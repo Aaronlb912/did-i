@@ -940,6 +940,7 @@ export const zh = {
   'people.friends': '好友',
   'people.cog': '好友与家人',
   'people.cogWaiting': '好友与家人，{n} 人等待',
+  'recent.cogNew': "最近，{n} 条新内容",
   'people.inboxQuiet': '无待处理',
   'people.addOne': '添加好友',
   'people.startFamily': '创建或加入家庭',

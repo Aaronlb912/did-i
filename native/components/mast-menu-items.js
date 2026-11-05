@@ -6,15 +6,17 @@ export const PEOPLE_ON = new Set([
   '/people/connect',
   '/people/refer',
   '/friends',
+  '/friend',
   '/family',
   '/inbox',
   '/sent',
   '/we',
   '/we/new',
 ])
+export const SHOP_ON = new Set(['/shop', '/shop/looks', '/shop/cheers', '/shop/buddies', '/shop/accessories', '/shop/frames', '/gems', '/gift', '/gifts'])
 export const ADD_ON = new Set(['/add', '/hang'])
 export const HISTORY_ON = new Set(['/calendar', '/notes', '/feed', '/marks', '/stats', '/streaks', '/week'])
-export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/more', '/settings/look', '/settings/nights', '/settings/privacy', '/settings/help', '/settings/seen', '/pings', '/about', '/help', '/privacy', '/terms'])
+export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/more', '/settings/look', '/settings/nights', '/settings/privacy', '/settings/help', '/settings/seen', '/pings', '/about', '/help', '/privacy', '/terms', '/me', '/account'])
 
 // Home leads the menu on every screen. Questions is in the system tab bar and here too; the menu holds
 // the rest: Add, Friends and family, Shop, Recent, Collection, Settings.
@@ -36,7 +38,7 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
     // Quick "remind me in 20 minutes", off Today so the stack stays quiet.
     { key: 'remind', path: '/remind', label: t('remind.mic'), on: path === '/remind', icon: 'clock', stroke: true },
     { key: 'questions', path: '/lamps', label: t('nav.questions'), on: path === '/lamps', icon: 'note', stroke: true },
-    { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
+    { key: 'shop', path: '/shop', label: t('shop.cog'), on: SHOP_ON.has(path), icon: 'shop' },
     {
       key: 'people',
       path: '/people',
@@ -50,7 +52,7 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
     { key: 'more', section: true, label: t('mast.menu') },
     // Recent: achievements and Did we moments, in full. Its count is the unseen ones,
     // Did you asks count on Friends and family only.
-    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent, icon: 'bell' },
+    { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', a11y: recent ? t('recent.cogNew', { n: recent }) : '', count: recent, icon: 'bell' },
     { key: 'kit', path: '/kit', label: t('kit.title'), on: path === '/kit', icon: 'collection' },
     {
       key: 'settings',

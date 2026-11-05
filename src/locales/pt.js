@@ -952,6 +952,7 @@ export const pt = {
   'people.friends': 'Amigos',
   'people.cog': 'Amigos e família',
   'people.cogWaiting': 'Amigos e família, {n} à espera',
+  'recent.cogNew': "Recentes, {n} novos",
   'people.inboxQuiet': 'Nada pendente',
   'people.addOne': 'Adicionar amigo',
   'people.startFamily': 'Começar ou entrar numa família',

@@ -942,6 +942,7 @@ export const ja = {
   'people.friends': '友達',
   'people.cog': '友達と家族',
   'people.cogWaiting': '友達と家族、{n} 件待ち',
+  'recent.cogNew': "最近、新着{n}件",
   'people.inboxQuiet': '待ちなし',
   'people.addOne': '友達を追加',
   'people.startFamily': '家族を作るか参加',
