@@ -12,6 +12,21 @@ export function lastTimeLine(book, lamp, dateIso, upTo = false) {
   return t('every.lastMany', { n: days })
 }
 
+// "No Did in 34 days" on the Questions list: a live question with no Did for
+// STALE_DAYS or more that was also made that long ago. Not for every so often
+// questions (their pill says it), one-time or monthly ones. '' otherwise.
+export const STALE_DAYS = 21
+export function staleDidLine(book, lamp, dateIso) {
+  if (!lamp || lamp.archived || lamp.cadence === 'once' || lamp.cadence === 'monthly' || isEvery(lamp)) return ''
+  if (lamp.endsOn && lamp.endsOn < dateIso) return ''
+  const made = String(lamp.createdOn || '').slice(0, 10)
+  const age = made ? daysBetween(made, dateIso) : null
+  if (age == null || age < STALE_DAYS) return ''
+  const days = daysSinceDid(book, lamp.id, dateIso, true)
+  const since = days == null ? age : days
+  return since >= STALE_DAYS ? t('questions.noDid', { n: since }) : ''
+}
+
 // "2 of 3 this week" under a times-a-week question. The card leaves out a Did
 // tonight unless upTo.
 export function perWeekLine(book, lamp, dateIso, upTo = true) {

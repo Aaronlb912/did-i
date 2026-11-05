@@ -1,4 +1,5 @@
-import { takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { endQuestion, endQuestionDate, questionEnded, reopenQuestion, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { boardDate } from '../../src/lib/recurrence.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { dropCheckOn } from '../../src/lib/check-on.js'
@@ -41,10 +42,14 @@ function writeStops(ids) {
 function runStops(ids) {
   const live = new Map()
   for (const book of readShelf().boards || []) {
-    for (const lamp of book.lamps || []) live.set(String(lamp.id), lamp)
+    for (const lamp of book.lamps || []) live.set(String(lamp.id), { lamp, fold: book.dayFoldHour })
   }
   writeStops(readStops().filter((id) => !ids.includes(id)))
-  const drop = ids.filter((id) => !live.has(id) || live.get(id).archived)
+  const now = new Date()
+  const drop = ids.filter((id) => {
+    const one = live.get(id)
+    return !one || one.lamp.archived || questionEnded(one.lamp, boardDate(now, one.fold))
+  })
   // Offline: keep it pending so the next start tries again.
   const retry = (id) => writeStops([...new Set([...readStops(), id])])
   for (const id of drop) {
@@ -88,6 +93,53 @@ function deleteNote(book, lamp) {
 // `onPaused` lets the edit page keep its unsaved draft in step with the pause.
 // The question page's ⋯ menu uses the same two actions.
 export function lampActions({ book, lamp, colors, onChange, onPaused }) {
+  // Done with this one: asks first, then ends it (moves to Earlier). It can be taken back for a few seconds.
+  function askDone() {
+    const from = liveBook(book) || book
+    const here = (from.lamps || []).find((item) => item.id === lamp.id) || lamp
+    const lastToday = endQuestionDate(from, here) === boardDate(new Date(), from.dayFoldHour)
+    publishSheet({
+      title: t('lamp.doneTitle'),
+      body: t(lastToday ? 'lamp.doneBodyToday' : 'lamp.doneBody'),
+      goLabel: t('lamp.doneRow'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: () => {
+        publishSheet(null)
+        const live = liveBook(book) || book
+        const was = (live.lamps || []).find((item) => item.id === lamp.id) || lamp
+        const next = endQuestion(live, was)
+        const planned = was.endsOn || ''
+        const endsToday = (next.lamps || []).find((item) => item.id === lamp.id)?.endsOn === boardDate(new Date(), live.dayFoldHour)
+        onChange(next)
+        stopCheckOns(lamp.id)
+        const now = Date.now()
+        showToast({
+          id: 'undo:done',
+          kind: 'undo',
+          rev: now,
+          label: t(endsToday ? 'confirm.questionDoneToday' : 'confirm.questionDone'),
+          hint: t('tonight.undoTap'),
+          until: now + DELETE_UNDO_MS,
+          total: DELETE_UNDO_MS,
+          onPress: () => {
+            const current = liveBook(book) || next
+            const ended = (current.lamps || []).find((item) => item.id === lamp.id)
+            if (ended) onChange(reopenQuestion(current, ended, planned))
+          },
+        })
+      },
+    })
+  }
+
+  // Ask a finished question again: the end date goes.
+  function askAgain() {
+    const live = liveBook(book) || book
+    onChange(reopenQuestion(live, (live.lamps || []).find((item) => item.id === lamp.id) || lamp))
+    confirmDone(t('confirm.questionResumed'))
+  }
+
   function togglePause() {
     const next = toggleArchive(book, lamp)
     onChange(next)
@@ -121,7 +173,7 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
     const stoppable = hasAnswers && !lamp.archived
     publishSheet({
       title: t('lamp.deleteTitle'),
-      body: stoppable ? `${deleteNote(book, lamp)} ${t('lamp.deleteKeep')}` : deleteNote(book, lamp),
+      body: stoppable ? `${deleteNote(book, lamp)} ${t('lamp.deleteDays')} ${t('lamp.deleteKeep')}` : hasAnswers ? `${deleteNote(book, lamp)} ${t('lamp.deleteDays')}` : deleteNote(book, lamp),
       moreLabel: stoppable ? t('lamp.pauseBtn') : undefined,
       onMore: stoppable
         ? () => {
@@ -158,12 +210,14 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
     })
   }
 
-  return { togglePause, askDelete }
+  return { togglePause, askDelete, askDone, askAgain }
 }
 
 export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate }) {
   if (!lamp) return null
-  const { togglePause, askDelete } = lampActions({ book, lamp, colors, onChange, onPaused })
+  const { togglePause, askDelete, askDone, askAgain } = lampActions({ book, lamp, colors, onChange, onPaused })
+  const ended = questionEnded(lamp, boardDate(new Date(), book.dayFoldHour))
+  const canFinish = !lamp.archived && !ended && lamp.cadence !== 'once'
   return (
     <>
       <SetCap colors={colors}>{t('lamp.secManage')}</SetCap>
@@ -179,6 +233,8 @@ export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate
           onPress={togglePause}
           plain
         />
+        {canFinish ? <SetRow colors={colors} icon="folder" label={t('lamp.doneRow')} sub={t('lamp.doneSub')} plain onPress={askDone} /> : null}
+        {ended ? <SetRow colors={colors} icon="play" label={t('lamp.askAgain')} sub={t('lamp.askAgainSub')} plain onPress={askAgain} /> : null}
         <SetRow
           colors={colors}
           icon="trash"

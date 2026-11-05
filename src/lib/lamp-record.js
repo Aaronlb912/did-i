@@ -36,7 +36,7 @@ function monthDueDay(lamp, key) {
 // The one streak rule for a question: Did and late Did keep it going; a nope
 // or a missed night ends it. Tonight counts once answered, and an unanswered
 // tonight does not break it yet. Every per-question streak uses this.
-export function questionStreak(book, lamp, dateIso, cap = 400, now = new Date()) {
+export function questionStreak(book, lamp, dateIso, cap = 1100, now = new Date()) {
   if (!lamp || !dateIso) return 0
   if (isEvery(lamp)) return everyStreak(book, lamp, dateIso, cap)
   if (isPerWeek(lamp)) return perWeekStreak(book, lamp, dateIso, cap)
@@ -144,7 +144,7 @@ export function lampRecord(book, lamp, dateIso, days = 30, now = new Date()) {
   if (!lamp) return { streak: 0, did: 0, asked: 0, tonight: '', due: false }
   const tonight = answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))?.status || ''
   const { did, asked } = recordCounts(book, lamp, dateIso, days, now)
-  const streak = questionStreak(book, lamp, dateIso, 400, now)
+  const streak = questionStreak(book, lamp, dateIso, 1100, now)
   return { streak, did, asked, tonight, due: !lamp.archived && isDueOn(lamp, dateIso) }
 }
 

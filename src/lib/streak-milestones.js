@@ -5,7 +5,10 @@ import { markStreakSeen, streakSeen } from './streak-moments.js'
 // The streaks the done card makes a moment of, once each.
 export const STREAK_MILESTONES = [7, 30, 100, 365]
 // Gems the server pays once per account (supabase/streak-bonus.sql).
-export const STREAK_BONUS = { 30: 1, 100: 2 }
+export const STREAK_BONUS = { 30: 1, 100: 2, 365: 3 }
+// A milestone finished in the grace hours or by fixing a past day shows up to
+// this many days late. An old milestone far below the streak never plays.
+export const MILESTONE_LATE_DAYS = 2
 const PENDING = 'did-i-streak-bonus-pending'
 const PENDING_STREAK = 'did-i-streak-bonus-streak'
 
@@ -31,11 +34,25 @@ export function milestoneGemLine(paid) {
   return n === 1 ? t('milestone.gemOne') : t('milestone.gemMany', { n })
 }
 
-// True once per milestone on this phone; the second call is false.
+// The milestone a streak of n is at or just past (m through m + 2 days), or 0.
+export function milestoneReached(n) {
+  const run = Math.floor(Number(n)) || 0
+  return [...STREAK_MILESTONES].reverse().find((m) => run >= m && run <= m + MILESTONE_LATE_DAYS) || 0
+}
+
+// The milestone not yet played on this phone that a streak of n has just
+// reached (m through m + 2 days), or 0.
+export function pendingStreakMilestone(n) {
+  const run = Math.floor(Number(n)) || 0
+  const hit = [...STREAK_MILESTONES].reverse().find((m) => run >= m && run <= m + MILESTONE_LATE_DAYS && !streakSeen('milestone', String(m)))
+  return hit || 0
+}
+
+// The milestone to play now, once per milestone on this phone, or 0.
 export function takeStreakMilestone(n) {
-  if (!isStreakMilestone(n) || streakSeen('milestone', String(n))) return false
-  markStreakSeen('milestone', String(n))
-  return true
+  const m = pendingStreakMilestone(n)
+  if (m) markStreakSeen('milestone', String(m))
+  return m
 }
 
 // Bonus claims that did not reach the server, tried again on the next open.

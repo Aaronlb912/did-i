@@ -1,5 +1,5 @@
--- A small gem bonus for a long streak: 1 gem at 30 days, 2 at 100, once per
--- account per milestone, ever. The row in streak_bonus_claims is the lock: a
+-- A small gem bonus for a long streak: 1 gem at 30 days, 2 at 100, 3 at 365,
+-- once per account per milestone, ever. The row in streak_bonus_claims is the lock: a
 -- second call inserts nothing and pays 0.
 --
 -- There is no server-side streak walk for one person (freezes and every
@@ -7,14 +7,18 @@
 -- profiles.streak, which streak-guard.sql clips to the account's age, and
 -- the account's age itself. A made-up streak cannot claim 100 days on an
 -- account younger than 99 days, and the most any account can ever get here
--- is 3 gems. Runs as the owner, like claim_tour_coins, so
+-- is 6 gems. Runs as the owner, like claim_tour_coins, so
 -- guard_profile_wallet lets the balance change. Run after we-buddy.sql.
 create table if not exists public.streak_bonus_claims (
   user_id uuid not null references auth.users on delete cascade,
-  days integer not null check (days in (30, 100)),
+  days integer not null check (days in (30, 100, 365)),
   made_at timestamptz not null default now(),
   primary key (user_id, days)
 );
+
+-- A table made before 365 existed keeps the old check until this runs.
+alter table public.streak_bonus_claims drop constraint if exists streak_bonus_claims_days_check;
+alter table public.streak_bonus_claims add constraint streak_bonus_claims_days_check check (days in (30, 100, 365));
 
 alter table public.streak_bonus_claims enable row level security;
 
@@ -44,7 +48,7 @@ begin
   if who is null then
     return jsonb_build_object('paid', 0, 'balance', 0);
   end if;
-  pay := case claim_streak_bonus.days when 30 then 1 when 100 then 2 else 0 end;
+  pay := case claim_streak_bonus.days when 30 then 1 when 100 then 2 when 365 then 3 else 0 end;
   select coalesce(p.streak, 0), p.gem_balance into run, bal from public.profiles p where p.user_id = who;
   select (u.created_at at time zone 'utc')::date into joined from auth.users u where u.id = who;
   if pay < 1

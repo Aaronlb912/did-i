@@ -398,7 +398,7 @@ function weekScore(book, lamp, start, list) {
 // Weeks in a row with all their Dids. A finished current week counts; an
 // unfinished one does not break the run yet. Weeks fully paused or away are
 // stepped past; a part-paused week needs fewer Dids.
-export function perWeekStreak(book, lamp, dateIso, cap = 400) {
+export function perWeekStreak(book, lamp, dateIso, cap = 1100) {
   if (!isPerWeek(lamp)) return 0
   const list = didNightsOf(book, lamp.id)
   let start = weekStartOf(dateIso)
@@ -449,7 +449,7 @@ function openGapDays(book, lamp, from, to) {
 // Every so often: Dids in a row, each within the gap of the one before, and
 // the newest within the gap of today. Paused, away and travel days in between
 // do not count toward a gap.
-export function everyStreak(book, lamp, dateIso, cap = 400) {
+export function everyStreak(book, lamp, dateIso, cap = 1100) {
   if (!isEvery(lamp)) return 0
   const list = didNightsOf(book, lamp.id)
   let at = didCountBefore(list, dateIso, true) - 1

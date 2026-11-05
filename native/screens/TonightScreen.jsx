@@ -55,7 +55,7 @@ import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, doneTitleKey, tomorro
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
 import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
-import { STREAK_BONUS, milestoneGemLine, milestoneLine, takeStreakMilestone } from '../../src/lib/streak-milestones.js'
+import { MILESTONE_LATE_DAYS, STREAK_BONUS, milestoneGemLine, milestoneLine, takeStreakMilestone } from '../../src/lib/streak-milestones.js'
 import { payStreakBonus, retryStreakBonus } from '../lib/streak-bonus.js'
 import { TonightNote, openAnswerNote } from '../components/NightNotes.jsx'
 import { addProofFlow, canAddProof } from '../lib/proof-flow.jsx'
@@ -124,7 +124,10 @@ import {
   showFirstMiss,
   shouldShowWidgetTip,
   showSignInNudge,
+  showYearCard,
   signInNudgeSeen,
+  markYearCardSeen,
+  yearCardSeen,
   takeMorningFocus,
   writeMorningAsk,
   writeWidgetTip,
@@ -756,6 +759,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // missed day or gentle mode does not hold back the first-week rows.
   const sinceFirst = useMemo(() => daysSinceFirstAnswer(stack.shelf, stack.dateIso), [stack.shelf, stack.dateIso])
   const firstWeek = sinceFirst < 7
+  // A year since the first answer: one line on the done card, once per phone.
+  const [yearGone] = useState(yearCardSeen)
+  const yearUp = showYearCard({ sinceFirst, nightDone: stack.nightDone, seen: yearGone })
+  useEffect(() => {
+    if (yearUp) markYearCardSeen()
+  }, [yearUp])
   const day = firstWeek ? sinceFirst + 1 : 0
   const streakDay = gentle ? 0 : stack.streak
   // 7, 30, 100 and 365 days: a milestone line on the done card, once each,
@@ -769,17 +778,18 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }, [])
   useEffect(() => {
     if (!stack.nightDone || gentle) return
-    const n = stack.streak
-    if (!takeStreakMilestone(n)) return
-    setMilestone({ n, gems: 0 })
+    const n = stack.overallStreak
+    const m = takeStreakMilestone(n)
+    if (!m) return
+    setMilestone({ n: m, gems: 0 })
     feelTap('did')
     if (purse.cheerOn) fireCheer(purse.cheerOn, CHEER_STAGE_MAX)
-    if (!STREAK_BONUS[n]) return
-    payStreakBonus(n, n).then((paid) => {
-      if (paid > 0) setMilestone((prev) => (prev && prev.n === n ? { ...prev, gems: paid } : prev))
+    if (!STREAK_BONUS[m]) return
+    payStreakBonus(m, n).then((paid) => {
+      if (paid > 0) setMilestone((prev) => (prev && prev.n === m ? { ...prev, gems: paid } : prev))
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stack.nightDone, stack.streak, gentle])
+  }, [stack.nightDone, stack.overallStreak, gentle])
   // A bonus day that passed without opening Today still pays: ask once per day
   // number per account for every bonus the streak has reached. The server pays
   // each once and ignores repeats. Gentle mode pays too, with no moment.
@@ -788,14 +798,14 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       bonusUser.current = account.user?.id
       bonusAsked.current = new Set()
     }
-    if (!account.user || !(stack.streak > 0)) return
+    if (!account.user || !(stack.overallStreak > 0)) return
     for (const d of Object.keys(STREAK_BONUS).map(Number)) {
-      if (d > stack.streak || bonusAsked.current.has(d)) continue
+      if (d > stack.overallStreak || bonusAsked.current.has(d)) continue
       bonusAsked.current.add(d)
-      payStreakBonus(d, stack.streak)
+      payStreakBonus(d, stack.overallStreak)
     }
-  }, [account.user?.id, stack.streak])
-  const milestoneUp = Boolean(milestone && stack.nightDone && !gentle && milestone.n === stack.streak)
+  }, [account.user?.id, stack.overallStreak])
+  const milestoneUp = Boolean(milestone && stack.nightDone && !gentle && stack.overallStreak >= milestone.n && stack.overallStreak <= milestone.n + MILESTONE_LATE_DAYS)
   const [widgetOn, setWidgetOn] = useState(false)
   useEffect(() => {
     if (Platform.OS === 'android') widgetPlaced().then(setWidgetOn).catch(() => {})
@@ -1413,6 +1423,12 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
                 <FreezeChip colors={colors} held={freezesHeld} onPress={() => openFreezeHow(colors, stack.shelf, stack.clock)} />
               </View>
             )}
+            </View>
+          ) : null}
+          {yearUp ? (
+            <View style={[styles.nudge, { borderTopColor: colors.lineSoft }]}>
+              <Text style={[faceCardStyles.meta, { color: colors.ink }]}>{t('year.line')}</Text>
+              <KeyButton label={t('year.see')} colors={colors} onPress={() => goHash('/calendar', 'year')} />
             </View>
           ) : null}
           {summary ? (

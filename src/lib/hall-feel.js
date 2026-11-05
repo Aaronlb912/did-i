@@ -1,5 +1,5 @@
 import { weFirstNight, weNight, weNightsStamp } from './we-nights.js'
-import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor, periodPassed, weekStartOf } from './recurrence.js'
+import { addDaysIso, answerFor, boardDate, daysBetween, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor, periodPassed, weekStartOf } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { travelNightState, travelSkipped, travelWe } from './travel.js'
 import { awayOn, readPrefs } from './prefs.js'
@@ -259,6 +259,19 @@ export function bestShelfStreak(boards, now = new Date(), lookBack = 1100) {
     cursor = addDaysIso(cursor, -1)
   }
   return best
+}
+
+// The longest streak inside one calendar year: a past year ends on Dec 31,
+// this year on today, and nothing before Jan 1 counts. 0 for a future year.
+export function bestShelfStreakIn(boards, year, now = new Date()) {
+  const books = scopedBooks(boards, '')
+  if (!books.length) return 0
+  const today = boardDate(now, books[0].dayFoldHour)
+  const jan = `${year}-01-01`
+  const dec = `${year}-12-31`
+  const last = today < dec ? today : dec
+  if (last < jan) return 0
+  return bestShelfStreak(boards, last === today ? now : noonOn(last), daysBetween(jan, last) + 1)
 }
 
 // How many things were due on a night across books, and whether all were did.

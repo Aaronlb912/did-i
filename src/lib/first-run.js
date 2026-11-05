@@ -16,6 +16,7 @@ export const NEW_NIGHTS = 3
 const NIGHT_ONE_KEY = 'did-i-night-one'
 const FIRST_MISS_KEY = 'did-i-first-miss'
 const SIGN_IN_NUDGE_KEY = 'did-i-sign-in-nudge'
+const YEAR_CARD_KEY = 'did-i-year-card'
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
 
 function nightOf(answer) {
@@ -193,6 +194,27 @@ export function markSignInNudgeSeen(now = Date.now()) {
 // The sign-in card: after a cleared night, not signed in, not dismissed.
 export function showSignInNudge({ signedIn, cloud, nightDone, dismissed }) {
   return Boolean(cloud && nightDone && !signedIn && !dismissed)
+}
+
+// A year of use: once per phone, on the done card, 365 days after the first
+// answer. No reward and no streak in it, so gentle mode sees it too.
+export const YEAR_CARD_DAYS = 365
+export function yearCardSeen() {
+  try {
+    return localStorage.getItem(YEAR_CARD_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+export function markYearCardSeen() {
+  try {
+    localStorage.setItem(YEAR_CARD_KEY, '1')
+  } catch {
+    // Shows again next time; harmless.
+  }
+}
+export function showYearCard({ sinceFirst, nightDone, seen }) {
+  return Boolean(nightDone && !seen && sinceFirst >= YEAR_CARD_DAYS)
 }
 
 // The widget tip: one sheet, once ever, after the first day every question is
