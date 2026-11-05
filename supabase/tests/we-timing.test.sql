@@ -236,6 +236,67 @@ begin
     raise exception 'FAIL old anchor: question-only edit gave %, %', k.question, k.every_anchor;
   end if;
 
+  -- 10. per_week after an edit keeps the starts_on weekday ------------------
+  update public.we_cards set starts_on = t - 20, schedule_from = t - 3 where id = c3;
+  select * into k from public.we_cards where id = c3;
+  select s.starts into st from public.we_sched(k, t) s;
+  if st <> t - 6 then raise exception 'FAIL per_week edit: week should start on t-6, got % (t is %)', st, t; end if;
+  if public.we_period_end(st, 'per_week:3', '{}', t) <> t then
+    raise exception 'FAIL per_week edit: week should end today';
+  end if;
+
+  -- 11. every window: an answer on a non-slot day lands on the window start -
+  update public.we_cards set starts_on = t - 30, every_anchor = t - 2, schedule_from = null, schedule_was = '[]'::jsonb where id = c2;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.we_answer(c2, t - 1, 'did');
+  execute 'reset role';
+  if not exists (select 1 from public.we_done where card_id = c2 and night = t - 2) then
+    raise exception 'FAIL every: Did on a non-slot day should land on the window start';
+  end if;
+
+  -- 12. deadline: due each day through due_by ------------------------------
+  delete from public.we_done where card_id = c6;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select x into j from jsonb_array_elements(public.we_tonight(t + 10)) x where x ->> 'id' = c6::text;
+  execute 'reset role';
+  if (j ->> 'due')::boolean is not true or (j ->> 'periodEnd')::date <> t + 10 then
+    raise exception 'FAIL deadline: due on the last day, got %', j;
+  end if;
+
+  -- 13. monthly:0 (last day) and day 31 in a short month -------------------
+  if public.we_mday(date '2027-02-01', 0) <> date '2027-02-28' then
+    raise exception 'FAIL monthly: last day of February is 28, got %', public.we_mday(date '2027-02-01', 0);
+  end if;
+  if public.we_mday(date '2027-02-01', 31) <> date '2027-02-28' then
+    raise exception 'FAIL monthly: day 31 in February is the 28th, got %', public.we_mday(date '2027-02-01', 31);
+  end if;
+  if public.we_mday(date '2027-04-01', 31) <> date '2027-04-30' then
+    raise exception 'FAIL monthly: day 31 in April is the 30th';
+  end if;
+
+  -- 14. sends_repeat_ok accepts good repeats and refuses bad ones ----------
+  declare
+    b uuid := gen_random_uuid();
+  begin
+    insert into auth.users (id, email, aud, role) values (b, b || '@test.invalid', 'authenticated', 'authenticated');
+    insert into public.profiles (user_id, display_name) values (b, 'Bo')
+    on conflict (user_id) do update set display_name = excluded.display_name;
+    insert into public.sends (from_id, to_id, question, repeat) values (a, b, 'Did you walk?', 'per_week:3');
+    insert into public.sends (from_id, to_id, question, repeat) values (a, b, 'Did you pay?', 'monthly:0');
+    begin
+      insert into public.sends (from_id, to_id, question, repeat) values (a, b, 'Did you run?', 'per_week:7');
+      raise exception 'FAIL sends_repeat_ok: per_week:7 should be refused';
+    exception when check_violation then null;
+    end;
+    begin
+      insert into public.sends (from_id, to_id, question, repeat) values (a, b, 'Did you stretch?', 'every_n:1');
+      raise exception 'FAIL sends_repeat_ok: every_n:1 should be refused';
+    exception when check_violation then null;
+    end;
+  end;
+
   raise exception 'SQL TESTS PASSED';
 end;
 $$;

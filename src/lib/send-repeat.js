@@ -62,7 +62,7 @@ export function repeatLabel(repeat) {
   if (cadence === 'on') return formatBoardDate(date)
   if (cadence === 'by') return `${t('hang.dueByPick')} ${formatBoardDate(date)}`
   if (cadence === 'every_n') return t('cadence.everyN', { n })
-  if (cadence === 'per_week') return `${n} ${t('hang.perWeek')}`
+  if (cadence === 'per_week') return n === 1 ? t('cadence.perWeekOne') : t('cadence.perWeek', { n })
   if (cadence === 'monthly') return monthDay === 'last' ? t('cadence.monthlyLast') : t('cadence.monthlyOn', { day: monthDay })
   if (cadence === 'every') return t('cadence.every', { n: everyDays })
   if (cadence === 'weekly') return weekdays.map((day) => t(`we.day.${day}`)).join(' ')
