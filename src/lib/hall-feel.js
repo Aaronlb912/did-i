@@ -143,7 +143,7 @@ export function lastBrokenNight(boards, now = new Date()) {
   }
   if (!found) return null
   // A freeze covered it: the streak went on.
-  if (freezeState(boards, now).frozen.has(night)) return null
+  if (freezeState(boards, now).kept.has(night)) return null
   if (clearNightsInARow(boards, noonOn(night), '', 1, 1, false) > 0) return null
   const was = clearNightsInARow(boards, noonOn(addDaysIso(night, -1)), '', 1100, 1100, false)
   return was > 0 ? { night, was } : null
@@ -157,7 +157,7 @@ export function daysAway(boards, now = new Date()) {
   const books = scopedBooks(boards, '')
   if (!books.length || graceNightIso(now)) return null
   const floor = firstNight(books)
-  const frozen = freezeState(boards, now).frozen
+  const frozen = freezeState(boards, now).kept
   const last = addDaysIso(boardDate(now, books[0].dayFoldHour), -1)
   let night = last
   let days = 0
@@ -205,7 +205,7 @@ function clearNightsInARow(boards, now, tagId, cap, lookBack, waitTonight = true
   let cursor = boardDate(now, books[0].dayFoldHour)
   const grace = waitTonight ? graceNightIso(now) : ''
   // Freezes keep the overall streak only, never a tag's.
-  const frozen = tagId ? null : freezeState(boards, now).frozen
+  const frozen = tagId ? null : freezeState(boards, now).kept
   let heat = 0
   for (let step = 0; step < lookBack && heat < cap; step += 1) {
     if (floor && cursor < floor) break
@@ -241,7 +241,7 @@ export function bestShelfStreak(boards, now = new Date(), lookBack = 1100) {
   const floor = firstNight(books)
   const tonight = boardDate(now, books[0].dayFoldHour)
   const grace = graceNightIso(now)
-  const frozen = freezeState(boards, now).frozen
+  const frozen = freezeState(boards, now).kept
   let cursor = tonight
   let run = 0
   let best = 0
@@ -281,7 +281,8 @@ function nightTally(books, iso, at, tagId = '', now = new Date()) {
 // two held. A held freeze covers the next missed night: the streak goes on
 // but does not grow. nights is 'clear' | 'miss' | 'none' in date order.
 // weekly (One free miss a week): an array of week keys, one per night. The
-// first miss in each week is kept without spending a held freeze.
+// first miss in each week is kept without spending a held freeze. Those days
+// come back in `free`, apart from `frozen` (days a held freeze covered).
 export const FREEZE_EVERY = 14
 export const FREEZE_MAX = 2
 export function walkFreezes(nights, every = FREEZE_EVERY, max = FREEZE_MAX, start = null, weekly = null) {
@@ -289,6 +290,7 @@ export function walkFreezes(nights, every = FREEZE_EVERY, max = FREEZE_MAX, star
   let held = start?.held || 0
   let weekUsed = start?.weekUsed || ''
   const frozen = []
+  const free = []
   for (let i = 0; i < nights.length; i += 1) {
     const state = nights[i]
     if (state === 'clear') {
@@ -297,14 +299,24 @@ export function walkFreezes(nights, every = FREEZE_EVERY, max = FREEZE_MAX, star
     } else if (state === 'miss') {
       if (weekly && weekly[i] && weekly[i] !== weekUsed) {
         weekUsed = weekly[i]
-        frozen.push(i)
+        free.push(i)
       } else if (held > 0) {
         held -= 1
         frozen.push(i)
       } else run = 0
     }
   }
-  return weekly ? { run, held, frozen, weekUsed } : { run, held, frozen }
+  return weekly ? { run, held, frozen, free, weekUsed } : { run, held, frozen }
+}
+
+// A freeze was really earned when more are held and the run crossed a new
+// multiple of 14. A used freeze coming back after a late Did raises what is
+// held without that, and earns nothing. seen* are the stored values or null.
+export function freezeEarnedNow(seenHeld, held, seenRun, run, every = FREEZE_EVERY) {
+  if (seenHeld == null || seenRun == null) return false
+  // A run lower than the seen one broke while the app was closed and started again.
+  const before = run < Number(seenRun) ? 0 : Number(seenRun)
+  return held > Number(seenHeld) && Math.floor(run / every) > Math.floor(before / every)
 }
 
 // Nights left until the next freeze, from the run walkFreezes counts.
@@ -332,7 +344,7 @@ function startOf(books, today) {
 // land on the same freezes. Tonight and a night still in its grace period
 // are not judged yet. Memoized on the shelf, the night and Did we nights.
 const freezeMemo = new WeakMap()
-const NO_FREEZE = { held: 0, run: 0, frozen: new Set() }
+const NO_FREEZE = { held: 0, run: 0, frozen: new Set(), free: new Set(), kept: new Set() }
 export function freezeState(boards, now = new Date()) {
   if (!boards || typeof boards !== 'object') return NO_FREEZE
   const books = scopedBooks(boards, '')
@@ -366,7 +378,13 @@ export function freezeState(boards, now = new Date()) {
       cursor = addDaysIso(cursor, 1)
     }
     const walk = walkFreezes(states, FREEZE_EVERY, FREEZE_MAX, start, weekly ? isos.map((iso) => (inSpan(iso) ? weekStartOf(iso) : '')) : null)
-    return { run: walk.run, held: walk.held, weekUsed: walk.weekUsed, frozen: [...(start?.frozen || []), ...walk.frozen.map((i) => isos[i])] }
+    return {
+      run: walk.run,
+      held: walk.held,
+      weekUsed: walk.weekUsed,
+      frozen: [...(start?.frozen || []), ...walk.frozen.map((i) => isos[i])],
+      free: [...(start?.free || []), ...(walk.free || []).map((i) => isos[i])],
+    }
   }
   // Nights before last night are settled. Their walk is kept by what they
   // hold, so a tap tonight (a new shelf object) walks only the last nights.
@@ -382,7 +400,8 @@ export function freezeState(boards, now = new Date()) {
     settledMemo.set(sign, past)
   }
   const walk = walkNights(settledTo, addDaysIso(today, 1), past)
-  const out = { held: walk.held, run: walk.run, frozen: new Set(walk.frozen) }
+  // kept: every day that did not break the streak, freeze or free miss.
+  const out = { held: walk.held, run: walk.run, frozen: new Set(walk.frozen), free: new Set(walk.free), kept: new Set([...walk.frozen, ...walk.free]) }
   if (byKey.size > 8) byKey.clear()
   byKey.set(key, out)
   return out

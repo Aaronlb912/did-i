@@ -36,7 +36,9 @@ export function dayLabel(night, locale, gentle = false) {
       ? t('cal.keyCleared')
       : night.freeze
         ? t('freeze.dot')
-        : night.miss
+        : night.free
+          ? t('saves.dot')
+          : night.miss
           ? gentle ? '' : t('cal.notAnswered')
           : t('later.tonight')
   return t('cal.day', { date: state ? `${date}, ${state}` : date })
@@ -270,9 +272,11 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                       ? { backgroundColor: colors.on }
                       : night.freeze
                         ? { borderWidth: 1.5, borderColor: colors.freeze }
-                        : night.miss
-                          ? missDot(colors, missTone)
-                          : { backgroundColor: colors.open },
+                        : night.free
+                          ? { borderWidth: 1.5, borderColor: colors.on }
+                          : night.miss
+                            ? missDot(colors, missTone)
+                            : { backgroundColor: colors.open },
                   ]}
                 />
               )}

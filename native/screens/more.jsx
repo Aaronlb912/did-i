@@ -361,6 +361,18 @@ export function HelpScreen() {
         />
         <HelpTopic
           colors={colors}
+          title={t('help.break')}
+          short={t('help.breakP')}
+          go={
+            <View style={styles.moveRows}>
+              <KeyButton colors={colors} label={t('away.cap')} onPress={() => goHash('/pings')} />
+              <KeyButton colors={colors} label={t('help.breakPause')} onPress={() => goHash('/lamps')} />
+              <KeyButton colors={colors} label={t('freeze.goStreaks')} onPress={() => goHash('/streaks')} />
+            </View>
+          }
+        />
+        <HelpTopic
+          colors={colors}
           title={t('help.grace')}
           short={t('help.graceP', { time: closeAt })}
           go={<KeyButton colors={colors} label={t('help.marks')} onPress={() => goHash('/marks')} />}
@@ -885,7 +897,9 @@ export function CalendarScreen({ book, boards, tagId, now, route, onChangeBooks 
   const clock = now || today
   const [view, setView] = useState(route?.face === 'year' ? 'year' : 'month')
   const [startShift, setStartShift] = useState(0)
-  const gentle = usePrefs().gentle === true
+  const calPrefs = usePrefs()
+  const gentle = calPrefs.gentle === true
+  const showFreeKey = calPrefs.freeMiss === true || (calPrefs.freeMissSpans || []).length > 0
   const newShelf = useMemo(() => isNewShelf(boards), [boards])
   const noAnswers = useMemo(() => answeredNights(scopedBooks(inView(book, boards), tagId), 1) === 0, [book, boards, tagId])
   const lampId = route?.id || ''
@@ -965,6 +979,12 @@ export function CalendarScreen({ book, boards, tagId, now, route, onChangeBooks 
         )}
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { borderWidth: 1.5, borderColor: colors.freeze }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('freeze.dot')}</Text>
+        {showFreeKey ? (
+          <>
+            <View style={[styles.calDot, view === 'year' && styles.calSquare, { borderWidth: 1.5, borderColor: colors.on }]} />
+            <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('saves.dot')}</Text>
+          </>
+        ) : null}
         <View style={[styles.calDot, view === 'year' && styles.calSquare, { backgroundColor: colors.open }]} />
         <Text style={[styles.calKeyText, { color: colors.inkDim }]}>{t('later.tonight')}</Text>
       </View>
@@ -1004,6 +1024,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const cleared = new Set(strip.filter((night) => night.on).map((night) => night.iso))
   const doneNights = cleared.size
   const frozen = new Set(strip.filter((night) => night.freeze).map((night) => night.iso))
+  const freeDays = new Set(strip.filter((night) => night.free).map((night) => night.iso))
   const weCards = weCardsOn(nights.map((night) => night.iso), tagId)
   const anyOff =
     lamps.some((lamp) => nights.some((night) => weekCell(night, lamp).state === 'off')) ||
@@ -1027,6 +1048,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     if (state === 'open') return { borderWidth: 1.5, borderColor: colors.openRing || colors.inkDim }
     // A night a freeze kept: a ring, as in the history legend.
     if (state === 'freeze') return { borderWidth: 1.5, borderColor: colors.freeze }
+    if (state === 'free') return { borderWidth: 1.5, borderColor: colors.on }
     if (state === 'hole') return missDot(colors, cellColor(state))
     return { backgroundColor: cellColor(state) }
   }
@@ -1076,6 +1098,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     ['skip', t(gentle ? 'later.nope' : 'jewelKey.notYet')],
     ...(gentle ? [] : [['hole', t('later.missed')]]),
     ...(frozen.size ? [['freeze', t('freeze.dot')]] : []),
+    ...(freeDays.size ? [['free', t('saves.dot')]] : []),
     ['open', t('jewelKey.open')],
     ...(anyOff ? [['off', t('week.notAsked')]] : []),
     ...(cleared.size ? [['cleared', t('week.clearedDot')]] : []),
@@ -1134,7 +1157,9 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
                       ? { backgroundColor: colors.on }
                       : frozen.has(night.iso)
                         ? { borderWidth: 1, borderColor: colors.freeze }
-                        : null,
+                        : freeDays.has(night.iso)
+                          ? { borderWidth: 1, borderColor: colors.on }
+                          : null,
                   ]}
                 />
               </Pressable>

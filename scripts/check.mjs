@@ -7788,7 +7788,7 @@ test('shop rows hide owned items and drops before their day', () => {
 })
 
 // r10-answer: earned streak freezes and Did / Nope from a reminder.
-const { FREEZE_MAX, freezeState, nightsToNextFreeze, walkFreezes } = await import('../src/lib/hall-feel.js')
+const { FREEZE_MAX, freezeEarnedNow, freezeState, nightsToNextFreeze, walkFreezes } = await import('../src/lib/hall-feel.js')
 const { askActions, askNoteData, firstResponse, notificationAnswer } = await import('../src/lib/notify-answer.js')
 
 test('a freeze is earned every 14 nights in a row, capped at two, and spent on the next miss', () => {
@@ -8763,7 +8763,7 @@ test('gaps-2: Did we links can be reported, the same as Did you links', () => {
 test('gaps-2: web calendar and week strip show a freeze ring', () => {
   const read = (rel) => readFileSync(path.join(checkRoot, rel), 'utf8')
   for (const file of ['src/lib/Calendar.jsx', 'src/lib/WeekStrip.jsx']) {
-    assert.match(read(file), /night\.freeze \? 'is-freeze' : ''/, file)
+    assert.match(read(file), /night\.freeze \|\| night\.free \? 'is-freeze' : ''/, file)
   }
   const css = read('src/lib/did-i.css')
   assert.match(css, /\.di-cal-day\.is-freeze \.di-cal-pip,\s*\.di-weekbar-days li\.is-freeze \.di-weekbar-pip \{[^}]*var\(--di-freeze\)/)
@@ -11232,13 +11232,15 @@ test('one free miss a week keeps the first missed day of each week', () => {
   const off = walkFreezes(nights, 14, 2, null, null)
   assert.deepEqual(off, { run: 1, held: 0, frozen: [] }, 'weekly off: a miss with no freeze breaks the run')
   const on = walkFreezes(nights, 14, 2, null, weeks)
-  assert.deepEqual(on.frozen, [1, 3], 'first miss in each week is kept')
+  assert.deepEqual(on.free, [1, 3], 'first miss in each week is kept')
+  assert.deepEqual(on.frozen, [], 'free misses are not freezes')
   assert.equal(on.run, 3, 'kept days do not grow the run or break it')
   const two = walkFreezes(['clear', 'miss', 'miss', 'clear'], 14, 2, null, wk('a', 'a', 'a', 'a'))
-  assert.deepEqual(two.frozen, [1], 'a second miss in one week is not kept')
+  assert.deepEqual(two.free, [1], 'a second miss in one week is not kept')
   assert.equal(two.run, 1)
   const held = walkFreezes([...Array(14).fill('clear'), 'miss'], 14, 2, null, Array(15).fill('a'))
   assert.equal(held.held, 1, 'the weekly miss is used before a held freeze')
+  assert.deepEqual(held.frozen, [], 'a free miss does not read as a freeze')
   assert.equal(walkFreezes(['miss'], 14, 2, { run: 3, held: 0, weekUsed: 'a' }, ['a']).run, 0, 'a carried walk remembers the week')
 
   const days = []
@@ -11261,18 +11263,25 @@ test('one free miss a week keeps the first missed day of each week', () => {
     writePrefs({ freeMiss: true, freeMissSpans: [['2026-07-01', null]] })
     const saved = freezeState(boards, now)
     assert.notEqual(saved, plain, 'flipping the pref does not reuse the cached walk')
-    assert.ok(saved.frozen.has('2026-07-30'), 'first miss of the week is kept')
-    assert.ok(!saved.frozen.has('2026-08-01'), 'second miss in that week (crossing into August) is not')
-    assert.ok(saved.frozen.has('2026-08-03'), 'the next week keeps its own first miss')
+    assert.ok(saved.free.has('2026-07-30'), 'first miss of the week is kept')
+    assert.ok(!saved.free.has('2026-08-01'), 'second miss in that week (crossing into August) is not')
+    assert.ok(saved.free.has('2026-08-03'), 'the next week keeps its own first miss')
+    assert.equal(saved.frozen.size, 0, 'a free miss is not a freeze: no freeze pop-up, no freeze ring')
+    assert.ok(saved.kept.has('2026-07-30') && saved.kept.has('2026-08-03'), 'the streak walk still counts them as kept')
+    const freeDot = weekStripNights(boards, now).find((night) => night.iso === '2026-08-03')
+    assert.equal(freeDot.free, true, 'the calendar marks a free-miss day as its own state')
+    assert.ok(!freeDot.freeze && !freeDot.miss, 'not a freeze, not a miss')
+    assert.equal(nightWhy(boards, '2026-08-03', now).state, 'free')
+    assert.ok(en['why.free'] && en['saves.usedToast'], 'free-miss copy exists')
     writePrefs({ freeMiss: false, freeMissSpans: [] })
     assert.equal(freezeState(boards, now), plain, 'flipping back returns the cached off walk')
     writePrefs({ freeMiss: true, freeMissSpans: [['2026-08-02', null]] })
     const late = freezeState(boards, now)
-    assert.ok(!late.frozen.has('2026-07-30'), 'an old miss before turning it on still breaks')
-    assert.ok(late.frozen.has('2026-08-03'), 'a miss after turning it on is kept')
+    assert.ok(!late.free.has('2026-07-30'), 'an old miss before turning it on still breaks')
+    assert.ok(late.free.has('2026-08-03'), 'a miss after turning it on is kept')
     writePrefs({ freeMiss: false, freeMissSpans: [['2026-07-01', '2026-08-02']] })
-    assert.ok(freezeState(boards, now).frozen.has('2026-07-30'), 'turning it off keeps a streak an earlier free miss saved')
-    assert.ok(!freezeState(boards, now).frozen.has('2026-08-03'), 'days after it was turned off get none')
+    assert.ok(freezeState(boards, now).free.has('2026-07-30'), 'turning it off keeps a streak an earlier free miss saved')
+    assert.ok(!freezeState(boards, now).free.has('2026-08-03'), 'days after it was turned off get none')
     writePrefs({ freeMiss: false, freeMissSpans: [] })
     writePrefs({ freeMiss: true })
     const spans = readPrefs().freeMissSpans
@@ -11284,12 +11293,67 @@ test('one free miss a week keeps the first missed day of each week', () => {
     for (let i = 0; i < 25; i += 1) junk.push(['2025-01-' + String(i + 1).padStart(2, '0'), null])
     writePrefs({ freeMissSpans: junk })
     const clean = readPrefs().freeMissSpans
-    assert.equal(clean.length, 20, 'spans are capped at 20')
+    assert.equal(clean.length, 26, 'more than 20 spans are kept: old free misses do not turn into misses by count')
     assert.ok(clean.every(([a, b]) => /^\d{4}-\d{2}-\d{2}$/.test(a) && (b === null || /^\d{4}-\d{2}-\d{2}$/.test(b))), 'junk spans are dropped')
   } finally {
     writePrefs({ freeMiss: was, freeMissSpans: prev.freeMissSpans })
   }
   assert.equal(readPrefs().freeMiss, was, 'the pref cleans to a boolean and defaults off')
+})
+
+test('Away ranges and free-miss spans are kept as far back as streak walks look, then capped for the 8 KB prefs limit', () => {
+  const ago = (days) => new Date(Date.now() - days * 86400000).toISOString().slice(0, 10)
+  const prev = readPrefs()
+  try {
+    writePrefs({ away: [[ago(1200), ago(1198)], [ago(1000), ago(999)], [ago(900), ago(899)]] })
+    assert.deepEqual(readPrefs().away, [[ago(1000), ago(999)], [ago(900), ago(899)]], 'a range 1000 days old stays (it was 400); 1200 days old goes')
+    writePrefs({ away: Array.from({ length: 130 }, (_, i) => [ago(1000 - i * 5), ago(999 - i * 5)]) })
+    const away = readPrefs().away
+    assert.equal(away.length, 120, 'newest 120 ranges kept')
+    assert.equal(away[0][0], ago(1000 - 10 * 5), 'the oldest ten are the ones dropped')
+    writePrefs({ away: [], freeMiss: false, freeMissSpans: [[ago(1300), ago(1250)], [ago(1000), ago(900)], [ago(500), null]] })
+    assert.deepEqual(readPrefs().freeMissSpans, [[ago(1000), ago(900)], [ago(500), null]], 'a span that ended over 1100 days ago goes; an open one stays')
+    writePrefs({ freeMissSpans: Array.from({ length: 70 }, (_, i) => [ago(1000 - i * 10), ago(995 - i * 10)]) })
+    assert.equal(readPrefs().freeMissSpans.length, 60, 'the safety cap is 60')
+    assert.ok(JSON.stringify(readPrefs()).length < 8192, 'prefs stay under the 8 KB server check')
+  } finally {
+    writePrefs({ away: prev.away, freeMiss: prev.freeMiss, freeMissSpans: prev.freeMissSpans })
+  }
+})
+
+test('the earned-freeze pop-up needs a new multiple of 14; gentle mode marks pop-ups seen and shows none', () => {
+  assert.equal(freezeEarnedNow(0, 1, 13, 14), true, 'the 14th day earns one')
+  assert.equal(freezeEarnedNow(1, 2, 27, 28), true)
+  assert.equal(freezeEarnedNow(0, 1, 30, 16), true, 'a streak that broke and re-earned while the app was closed still shows')
+  assert.equal(freezeEarnedNow(0, 1, 20, 21), false, 'a used freeze coming back after a late Did earns nothing')
+  assert.equal(freezeEarnedNow(2, 2, 27, 28), false, 'already at the most: nothing new')
+  assert.equal(freezeEarnedNow(null, 1, null, 14), false, 'a first look shows no pop-up')
+  const freeze = readFileSync(new URL('../native/components/FreezeBits.jsx', import.meta.url), 'utf8')
+  assert.ok(freeze.includes('!gentle && freezeEarnedNow(') && freeze.includes('!gentle && lastFrozen') && freeze.includes('!gentle && lastFree'), 'gentle shows no freeze pop-ups')
+  assert.ok(freeze.indexOf('writeKey(SEEN_USED, lastFrozen)') > freeze.indexOf('!gentle && lastFrozen'), 'the seen key is still written in gentle mode')
+  const tonight = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(tonight.includes('useFreezeToasts(colors, stack.shelf, stack.clock, gentle)'), 'Today passes gentle mode')
+  assert.ok(/\{tagId \? null : \(\s+<View style=\{styles.streakChip\}>/.test(tonight), 'the freeze chip hides when a folder is picked')
+})
+
+test('an Away day on the calendar says you were away', () => {
+  const prev = readPrefs()
+  try {
+    const book = {
+      id: 'aw2',
+      dayFoldHour: 0,
+      lamps: [{ id: 'q', question: 'Did I stretch?', cadence: 'daily', archived: false, createdOn: '2026-07-20' }],
+      answers: ['2026-07-20', '2026-07-21', '2026-07-23'].map((d) => ({ lampId: 'q', periodKey: d, status: 'yes', answeredAt: d + 'T20:00:00' })),
+    }
+    const now = new Date(2026, 6, 25, 21, 0)
+    writePrefs({ away: [] })
+    assert.equal(nightWhy([book], '2026-07-22', now).state, 'missed', 'without Away that day is missed')
+    writePrefs({ away: [['2026-07-22', '2026-07-23']] })
+    assert.equal(nightWhy([book], '2026-07-22', now).state, 'away')
+    assert.ok(en['why.away'] && en['why.away'] !== en['why.none'])
+  } finally {
+    writePrefs({ away: prev.away })
+  }
 })
 
 test('grouped note has no hours count; iOS ask notes use calendar triggers; snooze checks its period', async () => {

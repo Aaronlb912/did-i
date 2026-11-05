@@ -274,7 +274,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const topics = useMemo(() => shelfTopics(boards && boards.length ? boards : [book]), [boards, book])
   const picks = topicPicks.filter((pick) => topics.includes(pick))
   const stack = useTonightStack({ value: book, boards, tagId, topics: picks, onTag, onChange, focusLampId, focusKey, now, onFocusNote: sayFocusNote })
-  useFreezeToasts(colors, stack.shelf, stack.clock)
+  useFreezeToasts(colors, stack.shelf, stack.clock, gentle)
   const freezesHeld = stack.shelf ? freezeState(stack.shelf, stack.clock).held : 0
   const we = useWeTonight(account.user)
   const weAns = useWeAnswer(we.reload, book)
@@ -1408,9 +1408,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               <StreakCount n={stack.streak} from={stack.cheer ? stack.cheer.from : null} colors={colors} />
               <Text style={[styles.streakChevron, { color: colors.inkDim }]}>›</Text>
             </Pressable>
-            <View style={styles.streakChip}>
-              <FreezeChip colors={colors} held={freezesHeld} onPress={() => openFreezeHow(colors, stack.shelf, stack.clock)} />
-            </View>
+            {tagId ? null : (
+              <View style={styles.streakChip}>
+                <FreezeChip colors={colors} held={freezesHeld} onPress={() => openFreezeHow(colors, stack.shelf, stack.clock)} />
+              </View>
+            )}
             </View>
           ) : null}
           {summary ? (

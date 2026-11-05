@@ -54,9 +54,10 @@ export function WeekStrip({ boards = [], tagId = '', now, colors }) {
                 style={[
                   styles.dot,
                   {
-                    backgroundColor: night.on ? colors.on : night.freeze ? 'transparent' : colors.open,
-                    // A freeze is a ring, the same as the history legend.
+                    backgroundColor: night.on ? colors.on : night.freeze || night.free ? 'transparent' : colors.open,
+                    // A freeze is a ring, the same as the history legend. A free miss is a ring in the Did colour.
                     ...(night.freeze && !night.on ? { borderWidth: 1.5, borderColor: colors.freeze } : null),
+                    ...(night.free && !night.on ? { borderWidth: 1.5, borderColor: colors.on } : null),
                     opacity: night.empty ? 0.35 : 1,
                   },
                 ]}
