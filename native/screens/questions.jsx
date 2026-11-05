@@ -2946,7 +2946,7 @@ const styles = StyleSheet.create({
   },
   searchGlyph: { fontFamily: fonts.ui, fontSize: 18 },
   searchInput: { flex: 1, fontFamily: fonts.ui, fontSize: 15, paddingVertical: 8 },
-  searchClear: { paddingHorizontal: 4 },
+  searchClear: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   starters: { gap: 8 },
   starterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   fieldCap: {
