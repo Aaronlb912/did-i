@@ -184,6 +184,9 @@ export function useTonightStack({
 
   function markGrace(row, status) {
     if (!row) return
+    const markKey = `grace:${rowKey(row)}:${row.periodKey}:${status}`
+    if (marking.current === markKey) return
+    marking.current = markKey
     const book = bookOf(row)
     const live = answerFor(book, row.lamp.id, row.periodKey)
     const key = `${rowKey(row)}:${row.periodKey}`
@@ -197,6 +200,8 @@ export function useTonightStack({
     // A did after midnight is a did; a did after a nope is late, as always.
     const finalStatus = status === 'yes' ? didStatusForRow({ ...row, answer: live || row.answer }) : status
     const next = putAnswer(book, row, finalStatus, clock)
+    // The day closed before the tap landed: nothing saved, so no undo or buzz.
+    if (next === book) return
     setOverlay(next)
     change(next)
     armUndo({ book, after: next, graceKey: finalStatus === 'skip' ? key : undefined, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
