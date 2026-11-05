@@ -3870,6 +3870,7 @@ export const zh = {
   'weAmount.unitPh': '杯',
   'cal.hintGentle': "完成的日子有一个点。其他日子留空。",
   'cal.emptyBody': "今天回答一个问题，它就会显示在这里。",
+  'cal.answerChanged': "已更改回答",
   'calendar.tooOld': "那一天太久了，不能再改。",
   'stats.folderEmpty': "这个文件夹还没有回答。",
   'lamp.rate': "最近30天应做的日子里，{pct}%是Did",

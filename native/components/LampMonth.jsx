@@ -5,16 +5,18 @@ import { useAccount } from '../../src/lib/account.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { loadProofs } from '../../src/lib/proofs.js'
 import { usePrefs } from '../../src/lib/prefs.js'
-import { answerFor, formatBoardDate, isDueOn, isEvery, isPerWeek, nightOpen, periodKeyFor, periodPassed } from '../../src/lib/recurrence.js'
+import { answerFor, formatBoardDate, nightOpen, periodKeyFor } from '../../src/lib/recurrence.js'
+import { lampMonthCells } from '../../src/lib/lamp-month.js'
 import { pastAnswerOpen } from '../../src/lib/board-ops.js'
 import { shortLabel } from '../../src/lib/board-json.js'
-import { amountWords, pausedOpen } from '../../src/lib/lamp-record.js'
-import { travelNightState, travelSkipped } from '../../src/lib/travel.js'
+import { amountWords } from '../../src/lib/lamp-record.js'
 import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
 import { missDot } from '../palette.js'
 import { photoList } from '../lib/photo-list.js'
+import { openAnswerNote } from './NightNotes.jsx'
+import { KeyButton } from './ui.jsx'
 import { goHash } from '../navigation/hash.js'
 
 function pad(n) {
@@ -27,36 +29,6 @@ function monthOf(iso, back) {
   return { y: at.getFullYear(), m: at.getMonth() }
 }
 
-// One month of nights for this question, laid out from the locale's first weekday. Each cell is
-// 'did', 'late', 'nope', 'missed', 'open' (tonight, not answered) or '' (not asked).
-// gentle: a missed night is blank, the same as a night it was not asked.
-export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false, weekStart = 0) {
-  const shown = { ...lamp, archived: false }
-  const made = /^\d{4}-\d{2}-\d{2}$/.test(String(lamp.createdOn || '')) ? lamp.createdOn : ''
-  const days = new Date(y, m + 1, 0, 12).getDate()
-  const lead = (new Date(y, m, 1, 12).getDay() - weekStart + 7) % 7
-  const cells = Array.from({ length: lead }, () => null)
-  for (let d = 1; d <= days; d += 1) {
-    const iso = `${y}-${pad(m + 1)}-${pad(d)}`
-    let state = ''
-    // Every so often: only the nights it was done show; nothing reads missed.
-    if (isEvery(lamp) || isPerWeek(lamp)) {
-      const status = iso <= dateIso ? answerFor(book, lamp.id, iso)?.status : ''
-      state = status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : ''
-    } else if (iso <= dateIso && (!made || iso >= made) && isDueOn(shown, iso)) {
-      const answer = answerFor(book, lamp.id, periodKeyFor(lamp, iso))
-      const status = answer?.status
-      // A day skipped for travel and left open is not a miss, same as the streak.
-      const away = (travelSkipped(book, iso) && travelNightState(answer, iso) === 'none') || (lamp.cadence === 'monthly' && !answer && !periodPassed(lamp, periodKeyFor(lamp, iso), dateIso)) || pausedOpen(lamp, periodKeyFor(lamp, iso), answer)
-      state = away
-        ? ''
-        : status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'
-    }
-    cells.push({ iso, day: d, state })
-  }
-  return cells
-}
-
 function cellColor(state, colors) {
   if (state === 'did') return colors.on
   if (state === 'late') return colors.late || colors.on
@@ -66,7 +38,7 @@ function cellColor(state, colors) {
 }
 
 /** A small month calendar under the recent nights, back to the month the question was made. */
-export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
+export function LampMonth({ book, lamp, colors, dateIso, onAnswer, onNote }) {
   const [back, setBack] = useLayoutState(0)
   const made = /^\d{4}-\d{2}-\d{2}$/.test(String(lamp?.createdOn || '')) ? lamp.createdOn : dateIso
   const { y, m } = monthOf(dateIso, back)
@@ -126,18 +98,23 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
     const note = String(answer?.note || '').trim()
     const close = () => publishSheet(null)
     const row = { lamp, boardId: bookNow.id, dateIso: cell.iso, periodKey: periodKeyFor(lamp, cell.iso), answer }
-    const canAnswer = Boolean(onAnswer) && Boolean(cell.state) && pastAnswerOpen(row, new Date())
+    const canAnswer = Boolean(onAnswer) && Boolean(cell.state || cell.ask) && pastAnswerOpen(row, new Date())
     const photo = photoOn.get(cell.iso)
+    const didIt = answer?.status === 'yes' || answer?.status === 'late'
     const reply = (status) => {
       const next = onAnswer(row, status)
-      if (next) openDay(cell, next)
+      // A changed answer offers Undo in the toast, which sits under the sheet.
+      if (next && answer) close()
+      else if (next) openDay(cell, next)
       else if (!pastAnswerOpen(row, new Date())) openDay(cell, bookNow)
     }
     publishSheet({
       kicker: shortLabel(lamp),
       title: formatBoardDate(cell.iso),
-      body: [t(stateWord(cell)), amountWords(answer?.amount, lamp.amountUnit), note].filter(Boolean).join('\n'),
-      content: canAnswer ? (
+      body: [cell.state ? t(stateWord(cell)) : '', amountWords(answer?.amount, lamp.amountUnit), note].filter(Boolean).join('\n'),
+      content: canAnswer || (didIt && onNote) ? (
+        <>
+        {canAnswer ? (
         <View style={styles.sheetBtns}>
           {[['yes', t('widget.tonight.did'), 'cal.markDid'], ['skip', t('later.nope'), 'cal.markNotYet']].map(([status, label, key]) => {
             const on = status === 'yes' ? answer?.status === 'yes' || answer?.status === 'late' : answer?.status === 'skip'
@@ -155,6 +132,17 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
             )
           })}
         </View>
+        ) : null}
+        {didIt && onNote ? (
+          <View style={styles.sheetNote}>
+            <KeyButton
+              colors={colors}
+              label={note ? t('note.edit') : t('note.add')}
+              onPress={() => openAnswerNote({ boardId: bookNow.id, lampId: lamp.id, periodKey: row.periodKey, colors, onChange: onNote })}
+            />
+          </View>
+        ) : null}
+        </>
       ) : null,
       ...(photo
         ? {
@@ -220,9 +208,9 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
                 key={cell.iso}
                 style={styles.cell}
                 hitSlop={8}
-                disabled={!cell.state}
+                disabled={!cell.state && !cell.ask}
                 onPress={() => openDay(cell)}
-                accessibilityRole={cell.state ? 'button' : undefined}
+                accessibilityRole={cell.state || cell.ask ? 'button' : undefined}
                 accessibilityLabel={cell.state ? `${formatBoardDate(cell.iso)}, ${t(stateWord(cell))}${photoOn.has(cell.iso) ? `, ${t('photos.dayMark')}` : ''}` : cell.iso > dateIso ? `${formatBoardDate(cell.iso)}, ${t('cal.ahead')}` : formatBoardDate(cell.iso)}
               >
                 <View
@@ -292,6 +280,7 @@ const styles = StyleSheet.create({
   keyItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   keyDot: { width: 10, height: 10, borderRadius: 5 },
   keyText: { fontFamily: fonts.ui, fontSize: 11 },
+  sheetNote: { alignSelf: 'flex-start', marginTop: 8 },
   sheetBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
   sheetBtn: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   sheetBtnText: { fontFamily: fonts.uiSemi, fontSize: 14 },

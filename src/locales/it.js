@@ -3912,6 +3912,7 @@ export const it = {
   'weAmount.unitPh': 'bicchieri',
   'cal.hintGentle': "Un punto segna ogni giorno che hai finito. Gli altri giorni restano vuoti.",
   'cal.emptyBody': "Rispondi a una domanda oggi e apparirà qui.",
+  'cal.answerChanged': "Risposta modificata",
   'calendar.tooOld': "Quel giorno è troppo vecchio per essere modificato.",
   'stats.folderEmpty': "Questa cartella non ha ancora risposte.",
   'lamp.rate': "Did nel {pct}% dei giorni previsti degli ultimi 30",

@@ -5,7 +5,6 @@ import { cleanAmount, shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { amountWords, lampNights } from '../../src/lib/lamp-record.js'
 import { nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
-import { gentleOn } from '../../src/lib/prefs.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { noteShared, noteSharedNow, setNoteShared } from '../../src/lib/social-amounts.js'
 import { MenuIcon } from './MenuIcon.jsx'
@@ -77,12 +76,10 @@ function removeNote(book, lampId, periodKey, note, onChange) {
 const PICKS = 7
 const NOTES_SHOWN = 3
 
-// A skip reads Not yet while its day is open. Once the day is over it is
-// Missed, like a day never answered: Not yet is only for today. Gentle mode
-// never says missed, so there it stays Not yet.
+// A skip reads Not yet, open day or past, like the calendar and the month view.
 function statusWord(status, open = false) {
   if (status === 'late') return t('jewelKey.late')
-  if (status === 'skip') return t(open ? 'jewelKey.notYet' : gentleOn() ? 'jewelKey.nope' : 'later.missed')
+  if (status === 'skip') return t(open ? 'jewelKey.notYet' : 'jewelKey.nope')
   return t('jewelKey.did')
 }
 

@@ -3912,6 +3912,7 @@ export const pt = {
   'weAmount.unitPh': 'copos',
   'cal.hintGentle': "Um ponto marca cada dia que você terminou. Os outros dias ficam em branco.",
   'cal.emptyBody': "Responda uma pergunta hoje e ela aparece aqui.",
+  'cal.answerChanged': "Resposta alterada",
   'calendar.tooOld': "Esse dia é antigo demais para mudar.",
   'stats.folderEmpty': "Esta pasta ainda não tem respostas.",
   'lamp.rate': "Did em {pct}% dos dias previstos nos últimos 30",

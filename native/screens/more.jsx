@@ -14,7 +14,8 @@ import {
   View,
 } from 'react-native'
 import { commitBook, shelfMarks, streakLength } from '../../src/lib/achievements.js'
-import { moveLamps, putPastAnswer } from '../../src/lib/board-ops.js'
+import { moveLamps } from '../../src/lib/board-ops.js'
+import { savePastAnswer } from '../lib/past-answer.js'
 import { MarksGrid } from '../components/MarksGrid.jsx'
 import { EmptyCard } from '../components/PersonCard.jsx'
 import { clearNotices, markNoticesSeen, restoreNotices, useNotices } from '../../src/lib/notices.js'
@@ -948,12 +949,9 @@ export function CalendarScreen({ book, boards, tagId, now, route, onChangeBooks 
           startShift={startShift}
           onAnswer={onChangeBooks ? (row, status) => {
             const from = (boards?.length ? boards : [book]).find((item) => item.id === row.boardId) || book
-            const next = putPastAnswer(from, row, status, clock)
-            if (next === from) return null
-            const saved = commitBook(next, clock)
-            onChangeBooks([saved])
-            return saved
+            return savePastAnswer(from, row, status, (saved) => onChangeBooks([saved]))
           } : undefined}
+          onNote={onChangeBooks ? (saved) => onChangeBooks([saved]) : undefined}
         />
       )}
       <View style={styles.calKey}>

@@ -3907,6 +3907,7 @@ export const en = {
   'weAmount.unitPh': 'glasses',
   'cal.hintGentle': "A dot marks each day you finished. Every other day stays blank.",
   'cal.emptyBody': "Answer a question today and it shows here.",
+  'cal.answerChanged': "Answer changed",
   'calendar.tooOld': "That day is too old to change.",
   'stats.folderEmpty': "This folder has no answers yet.",
   'lamp.rate': "Did {pct}% of due days in the last 30",
