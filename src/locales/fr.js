@@ -2884,6 +2884,7 @@ export const fr = {
   'pings.quietTo': 'Fin',
   'pings.quietNoLastCall': "Le dernier rappel arrive 30 minutes avant le début des heures calmes, à {time}.",
   'pings.quietNoLast': 'Pas de dernier rappel avec ces heures calmes',
+  'pings.familyQuiet': "Cette heure est dans tes heures calmes, le résumé de la famille n'arrivera donc pas.",
   'pings.laterCap': 'Plus tard',
   'pings.laterSub': 'Combien de temps un rappel attend après un appui sur Plus tard.',
   'pings.laterOpt': '{n} min',

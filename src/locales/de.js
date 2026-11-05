@@ -2890,6 +2890,7 @@ export const de = {
   'pings.quietTo': 'Endet',
   'pings.quietNoLastCall': "Die letzte Erinnerung kommt 30 Minuten vor Beginn der Ruhezeit, um {time}.",
   'pings.quietNoLast': 'Keine letzte Erinnerung bei dieser Ruhezeit',
+  'pings.familyQuiet': "Diese Uhrzeit liegt in deinen Ruhezeiten, die Familienübersicht kommt dann nicht.",
   'pings.laterCap': 'Später',
   'pings.laterSub': 'Wie lange eine Erinnerung wartet, nachdem du auf Später tippst.',
   'pings.laterOpt': '{n} Minuten',

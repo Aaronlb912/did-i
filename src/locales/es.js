@@ -2881,6 +2881,7 @@ export const es = {
   'pings.quietTo': 'Termina',
   'pings.quietNoLastCall': "El último aviso llega 30 minutos antes de que empiecen las horas de silencio, a las {time}.",
   'pings.quietNoLast': 'Sin último aviso con estas horas de silencio',
+  'pings.familyQuiet': "Esta hora está en tus horas de silencio, así que el resumen de la familia no llegará.",
   'pings.laterCap': 'Más tarde',
   'pings.laterSub': 'Cuánto espera un aviso después de tocar Más tarde.',
   'pings.laterOpt': '{n} minutos',

@@ -2844,6 +2844,7 @@ export const ko = {
   'pings.quietTo': '종료',
   'pings.quietNoLastCall': "마지막 알림은 방해 금지 시간이 시작되기 30분 전인 {time}에 와요.",
   'pings.quietNoLast': '이 방해 금지 시간에는 마지막 알림이 없어요',
+  'pings.familyQuiet': "이 시간은 방해 금지 시간이라 가족 요약이 오지 않아요.",
   'pings.laterCap': '나중에',
   'pings.laterSub': '나중에를 누른 뒤 리마인더가 기다리는 시간.',
   'pings.laterOpt': '{n}분',

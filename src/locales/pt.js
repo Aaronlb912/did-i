@@ -2877,6 +2877,7 @@ export const pt = {
   'pings.quietTo': 'Termina',
   'pings.quietNoLastCall': "O último lembrete chega 30 minutos antes de o horário silencioso começar, às {time}.",
   'pings.quietNoLast': 'Sem último lembrete com este horário silencioso',
+  'pings.familyQuiet': "Este horário está nas suas horas de silêncio, então o resumo da família não vai chegar.",
   'pings.laterCap': 'Mais tarde',
   'pings.laterSub': 'Quanto tempo um lembrete espera depois de tocares em Mais tarde.',
   'pings.laterOpt': '{n} minutos',

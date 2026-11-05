@@ -2877,6 +2877,7 @@ export const it = {
   'pings.quietTo': 'Finisce',
   'pings.quietNoLastCall': "L’ultimo promemoria arriva 30 minuti prima dell’inizio delle ore di silenzio, alle {time}.",
   'pings.quietNoLast': 'Nessun ultimo promemoria con queste ore di silenzio',
+  'pings.familyQuiet': "Questo orario è nelle tue ore di silenzio, quindi il riepilogo della famiglia non arriverà.",
   'pings.laterCap': 'Più tardi',
   'pings.laterSub': 'Quanto aspetta un promemoria dopo che tocchi Più tardi.',
   'pings.laterOpt': '{n} minuti',

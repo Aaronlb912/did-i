@@ -2842,6 +2842,7 @@ export const ja = {
   'pings.quietTo': '終了',
   'pings.quietNoLastCall': "最後のお知らせは、おやすみ時間が始まる30分前の{time}に届きます。",
   'pings.quietNoLast': 'このおやすみ時間では最後のお知らせはありません',
+  'pings.familyQuiet': "この時刻はおやすみ時間中なので、家族のまとめは届きません。",
   'pings.laterCap': 'あとで',
   'pings.laterSub': '「あとで」をタップしてから、リマインダーが待つ時間。',
   'pings.laterOpt': '{n}分',
