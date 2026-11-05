@@ -1,6 +1,6 @@
 // Per-account lists kept for a fast first paint (native useKept with KEEP,
 // Did we cards). Signing out removes them so nothing stays on the device.
-export const ACCOUNT_CACHE_PREFIXES = ['did-i-kept:', 'did-i-we-cards:', 'did-i-gifts-', 'did-i-we-pings', 'did-i-we-widget', 'did-i-we-recent', 'did-i-shelf-bad', 'did-i-shelf-before', 'did-i-sent-hidden:', 'did-i-snoozed']
+export const ACCOUNT_CACHE_PREFIXES = ['did-i-kept:', 'did-i-we-cards:', 'did-i-gifts-', 'did-i-we-pings', 'did-i-we-widget', 'did-i-we-recent', 'did-i-shelf-bad', 'did-i-shelf-before', 'did-i-sent-hidden:', 'did-i-snoozed', 'did-i-freeze-held', 'did-i-freeze-used', 'did-i-freeze-free', 'did-i-freeze-run']
 
 // Pending invite and Did you links. Cleared only when the person signs out
 // or deletes the account, not on every SIGNED_OUT event: a stale session at

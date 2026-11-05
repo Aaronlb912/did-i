@@ -60,7 +60,7 @@ function blankPrefs() {
     morningAt: '08:00',
     // When the afternoon Not yet nudge comes (day-nudges.js AFTERNOON_AT_TIMES, 12:00 to 17:30).
     afternoonAt: '13:30',
-    // Away mode: [from, until) day pairs, each up to AWAY_MAX days, newest 8.
+    // Away mode: [from, until) day pairs, each up to AWAY_MAX days, newest AWAY_KEEP.
     // Every question is paused on those days (recurrence.js isDueOn, inPause).
     away: [],
   }
@@ -74,11 +74,15 @@ function isoPlus(iso, days) {
 }
 // Ranges merge when they touch. A day counts only while the 59 days before
 // it hold fewer than AWAY_MAX kept days, so one day at a time cannot hold a
-// streak forever. Ranges end more than 400 days back are forgotten.
+// streak forever. Streak walks look back 1100 days, so a range is forgotten
+// only after it ends more than 1100 days back. The newest AWAY_KEEP ranges stay,
+// which keeps prefs under the 8 KB server check (supabase/hardening.sql).
 export const AWAY_WINDOW = 60
+const AWAY_KEEP = 120
+const LOOK_BACK_DAYS = 1100
 function cleanAway(list) {
   if (!Array.isArray(list)) return []
-  const floor = isoPlus(new Date().toISOString().slice(0, 10), -400)
+  const floor = isoPlus(new Date().toISOString().slice(0, 10), -LOOK_BACK_DAYS)
   const pairs = []
   for (const pair of list) {
     const [from, until] = Array.isArray(pair) ? pair : []
@@ -101,7 +105,7 @@ function cleanAway(list) {
       else out.push([day, isoPlus(day, 1)])
     }
   }
-  return out
+  return out.slice(-AWAY_KEEP)
 }
 // Cached for the night math, which asks per day: refreshed on read and write.
 let awayCache = []
@@ -176,14 +180,17 @@ export function deviceLocale() {
   }
 }
 
-const MISS_SPANS_MAX = 20
+// Spans that ended before the 1100-day streak walk starts no longer matter.
+// The cap is only a guard for the 8 KB prefs limit (about 1.6 KB of spans).
+const MISS_SPANS_MAX = 60
 function cleanMissSpans(list) {
   if (!Array.isArray(list)) return []
+  const floor = isoPlus(new Date().toISOString().slice(0, 10), -LOOK_BACK_DAYS)
   const out = []
   for (const pair of list) {
     const [from, to] = Array.isArray(pair) ? pair : []
     if (!ISO_DAY.test(from || '')) continue
-    if (to !== null && (!ISO_DAY.test(to || '') || to <= from)) continue
+    if (to !== null && (!ISO_DAY.test(to || '') || to <= from || to < floor)) continue
     out.push([from, to])
   }
   out.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))

@@ -100,14 +100,18 @@ function startNight(book) {
   return first
 }
 
-// A missed night a freeze covered reads as freeze, not missed. Freezes keep
-// the overall streak only, so with a tag picked there are none.
-function withFreeze(marks, iso, frozen) {
-  return marks.miss && frozen?.has(iso) ? { ...marks, miss: false, freeze: true } : marks
+// A missed night a freeze covered reads as freeze, not missed; one the free
+// miss of the week covered reads as free. Both keep the overall streak only,
+// so with a tag picked there are none.
+function withFreeze(marks, iso, saved) {
+  if (!marks.miss || !saved) return marks
+  if (saved.frozen.has(iso)) return { ...marks, miss: false, freeze: true }
+  if (saved.free.has(iso)) return { ...marks, miss: false, free: true }
+  return marks
 }
 
 function frozenFor(boards, now, tagId) {
-  return tagId ? null : freezeState(boards, now).frozen
+  return tagId ? null : freezeState(boards, now)
 }
 
 function nightMarks(books, iso, today, tagId = '') {
@@ -142,7 +146,7 @@ function nightMarks(books, iso, today, tagId = '') {
 }
 
 // Why a night did or did not clear, with the same rules as nightMarks.
-// state: ahead | none | clear | open (tonight, not done yet) | missed.
+// state: ahead | none | away | clear | open (tonight, not done yet) | missed | freeze | free.
 // noped and unanswered are question rows; weOpen is Did we card ids.
 // extras: the day's one-day questions from the morning ask, with their
 // answers. They never count for the streak, but the day keeps them.
@@ -172,9 +176,13 @@ export function nightWhy(boards, iso, now = new Date(), tagId = '') {
   const we = weNight(iso, tagId)
   due += we.due
   if (we.due && !we.clear) out.weOpen = weOpenIds(iso, tagId)
-  if (!due) return out
+  if (!due) return iso < today && awayOn(iso) ? { ...out, state: 'away' } : out
   const clear = !out.noped.length && !out.unanswered.length && !out.weOpen.length
-  if (!clear && iso < today && frozenFor(boards, now, tagId)?.has(iso)) return { ...out, state: 'freeze' }
+  if (!clear && iso < today) {
+    const saved = frozenFor(boards, now, tagId)
+    if (saved?.frozen.has(iso)) return { ...out, state: 'freeze' }
+    if (saved?.free.has(iso)) return { ...out, state: 'free' }
+  }
   return { ...out, state: clear ? 'clear' : iso < today ? 'missed' : 'open' }
 }
 
