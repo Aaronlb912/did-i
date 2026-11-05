@@ -1638,7 +1638,15 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // Rename lives in Settings > Folders; the title is only a title here.
   const titleSlot = (
     <View style={styles.titleHit}>
-      <Text maxFontSizeMultiplier={1.4} style={[headerTitleStyle, { color: colors.ink }]} numberOfLines={2} accessibilityRole="header">
+      <Text
+        maxFontSizeMultiplier={1.4}
+        style={[headerTitleStyle, { color: colors.ink }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        accessibilityRole="header"
+        accessibilityLabel={`${mastTitle}, ${formatBoardDate(stack.dateIso)}`}
+      >
         {mastTitle}
       </Text>
     </View>
