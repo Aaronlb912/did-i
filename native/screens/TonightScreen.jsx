@@ -1025,14 +1025,17 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       .map((card) => ({
         key: `grace-we:${card.id}`,
         title: card.question,
-        onDid: () => weAns.answer(card, 'did', graceNight),
-        onNope: () => {
-          setGraceWeLeft((ids) => [...ids, card.id])
-          return weAns.answer(card, 'nope', graceNight)
-        },
+        onDid: () => answerGraceWe(card, 'did'),
+        onNope: () => answerGraceWe(card, 'nope'),
         buddy: activeBuddy(book),
       })),
   ]
+  // Hidden on tap so a second tap can't change it; back if the answer was not saved.
+  async function answerGraceWe(card, status) {
+    setGraceWeLeft((ids) => [...ids, card.id])
+    const ok = await weAns.answer(card, status, graceNight)
+    if (ok === false) setGraceWeLeft((ids) => ids.filter((id) => id !== card.id))
+  }
   const graceKicker = t('tonight.graceKicker', { time: clockWords(GRACE_TIME) })
   const graceTop = graceItems[0] || null
   const graceCard = graceTop ? (
