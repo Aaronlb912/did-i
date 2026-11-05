@@ -16,7 +16,7 @@ export const ADD_ON = new Set(['/add', '/hang'])
 export const HISTORY_ON = new Set(['/calendar', '/notes', '/feed', '/marks', '/stats', '/streaks', '/week'])
 export const SETTINGS_ON = new Set(['/settings', '/settings/phone', '/settings/more', '/settings/look', '/settings/nights', '/settings/privacy', '/settings/help', '/settings/seen', '/pings', '/about', '/help', '/privacy', '/terms'])
 
-// Home leads the menu on every screen. Questions lives in the system tab bar; the menu holds only
+// Home leads the menu on every screen. Questions is in the system tab bar and here too; the menu holds
 // the rest: Add, Friends and family, Shop, Recent, Collection, Settings.
 // Your history has no row; Settings and the streak sheet lead there.
 // Inbox has no row of its own, its count folds into Friends and family's
@@ -35,7 +35,7 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
     { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
     // Quick "remind me in 20 minutes", off Today so the stack stays quiet.
     { key: 'remind', path: '/remind', label: t('remind.mic'), on: path === '/remind', icon: 'clock', stroke: true },
-    { key: 'away', path: '/pings', label: t('away.cap'), on: false, icon: 'clock', stroke: true },
+    { key: 'questions', path: '/lamps', label: t('nav.questions'), on: path === '/lamps', icon: 'note', stroke: true },
     { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
     {
       key: 'people',
