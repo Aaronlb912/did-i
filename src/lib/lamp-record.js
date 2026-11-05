@@ -332,11 +332,14 @@ export function lampAmounts(book, lamp, dateIso, chartDays = 14, avgDays = 30) {
 // calendar month, over Did days with an amount, one amount per day. Days after
 // dateIso are left out. Callers memoize it on [book, lamp, dateIso, firstDay].
 export function lampAmountTotals(book, lamp, dateIso, firstDay = 0) {
-  const out = { week: 0, month: 0, weekDays: 0, monthDays: 0 }
+  const out = { week: 0, month: 0, weekDays: 0, monthDays: 0, weekDuePassed: false }
   if (!lamp || !lamp.trackAmount || !dateIso) return out
   const back = (new Date(`${dateIso}T12:00:00`).getDay() - firstDay + 7) % 7
   const weekFrom = addDaysIso(dateIso, -back)
   const monthFrom = `${dateIso.slice(0, 7)}-01`
+  // A due day already behind us this week: until then "This week: 0" says nothing.
+  const live = { ...lamp, archived: false }
+  for (let day = weekFrom; day < dateIso && !out.weekDuePassed; day = addDaysIso(day, 1)) out.weekDuePassed = isDueOn(live, day)
   const seen = new Set()
   for (const { answer, night } of lampNights(book, lamp)) {
     if (!night || night > dateIso || night < monthFrom || seen.has(night)) continue

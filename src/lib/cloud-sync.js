@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { recordAppError } from './app-errors.js'
 import { deviceKey, deviceLabel, deviceModel, devicePlatform, takeOldDeviceKey } from './account.js'
 import { noteAvatar } from './avatar.js'
+import { QUESTION_CAP, questionCount } from './question-cap.js'
 import { addNotice, clearNotices, markNoticesSeen } from './notices.js'
 import { giftThanksNotice } from './gift-history.js'
 import { clearAuthSkip } from './auth-gate.js'
@@ -831,6 +832,13 @@ export async function pushNow(shelf) {
         return answersSent
       }
     }
+    // The server refused a shelf this big. Answers already went; do not send
+    // the same refused document again until it has fewer questions.
+    if (cappedAt && questionCount(doc?.boards) >= cappedAt) {
+      setState({ how: 'miss', miss: 'sync.capMiss' })
+      return answersSent
+    }
+    cappedAt = 0
     const uploadAt = new Date().toISOString()
     stampSavedAt(uploadAt)
     const bad = (await putShelf(db, user, doc, uploadAt)) || (await putPrefs(db, user, doc))
@@ -838,6 +846,12 @@ export async function pushNow(shelf) {
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
     return true
   } catch (error) {
+    if (error?.code === '23514') {
+      cappedAt = questionCount(readShelf()?.boards)
+      addNotice({ id: 'sync:cap', kind: 'sync', title: t('sync.capTitle'), text: t('sync.capBody', { n: QUESTION_CAP }), go: { path: '/lamps' } })
+      setState({ how: 'miss', miss: 'sync.capMiss' })
+      return answersSent
+    }
     setState({ how: 'miss', miss: appMiss(error, 'account.syncMiss') })
     recordAppError('sync', error).catch(() => {})
     return answersSent
@@ -845,6 +859,7 @@ export async function pushNow(shelf) {
 }
 
 let weMark = ''
+let cappedAt = 0
 onWeNights(() => {
   const now = weNight(boardDate(new Date()))
   const mark = `${boardDate(new Date())}:${now.due}:${now.done}`

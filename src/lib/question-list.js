@@ -41,6 +41,31 @@ function dayNotes(book, lampId) {
   return byLamp.get(lampId) || ''
 }
 
+// The newest day with a note holding a word typed in search, or ''. The
+// per-question note list is built once per answers array, like dayNotes.
+const noteDays = new WeakMap()
+export function noteHitDay(row, query) {
+  const words = String(query || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').split(/\s+/).filter(Boolean)
+  const answers = row?.book?.answers
+  if (!words.length || !answers) return ''
+  let byLamp = noteDays.get(answers)
+  if (!byLamp) {
+    byLamp = new Map()
+    for (const answer of answers) {
+      if (!answer.note) continue
+      const list = byLamp.get(answer.lampId) || []
+      list.push({ night: String(answer.periodKey || '').slice(0, 10), text: String(answer.note).toLowerCase().normalize('NFD').replace(/\p{M}/gu, '') })
+      byLamp.set(answer.lampId, list)
+    }
+    noteDays.set(answers, byLamp)
+  }
+  let best = ''
+  for (const note of byLamp.get(row.lamp.id) || []) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(note.night) && note.night > best && words.some((word) => note.text.includes(word))) best = note.night
+  }
+  return best
+}
+
 function blobOf(row) {
   const lamp = row.lamp
   return [lamp.question, lamp.short, lamp.kind, lamp.notes, row.tag, shortLabel(lamp), dayNotes(row.book, lamp.id)]

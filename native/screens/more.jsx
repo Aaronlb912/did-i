@@ -2579,7 +2579,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
                 colors={colors}
                 icon="clock"
                 label={shortFromQuestion(lamp.question) || t('lamp.unnamed')}
-                sub={lamp.askAfter ? clockWords(lamp.askAfter) : t('pings.noTime')}
+                sub={lamp.askAfter ? [clockWords(lamp.askAfter), lamp.askAfter2 ? clockWords(lamp.askAfter2) : ''].filter(Boolean).join(', ') : t('pings.noTime')}
                 chevron
                 last={at === timed.length - 1}
                 onPress={() => goHash('/hang', { id: lamp.id })}

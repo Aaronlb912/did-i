@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { freezeCardNight, freezeCardSeen, markFreezeCardSeen } from '../../src/lib/freeze-card.js'
 import { t } from '../../src/lib/i18n.js'
+import { freezeState } from '../../src/lib/hall-feel.js'
 import { fonts } from '../theme.js'
 import { openFreezeHow } from './FreezeBits.jsx'
 
@@ -9,7 +10,12 @@ import { openFreezeHow } from './FreezeBits.jsx'
 // Dismissible, once per night. Not shown in gentle mode (the caller decides).
 export function FreezeCard({ colors, shelf, now, dateIso }) {
   const [seen, setSeen] = useState(freezeCardSeen)
-  const night = useMemo(() => (shelf ? freezeCardNight(shelf, now, seen) : ''), [shelf, dateIso, seen])
+  // The break is yesterday's. Today's taps cannot change it, so the walk runs
+  // once a day (and when the card is dismissed), not on every shelf write.
+  const shelfRef = useRef(shelf)
+  shelfRef.current = shelf
+  const night = useMemo(() => (shelfRef.current ? freezeCardNight(shelfRef.current, now, seen) : ''), [dateIso, seen]) // eslint-disable-line react-hooks/exhaustive-deps
+  const held = useMemo(() => (night ? freezeState(shelfRef.current, now).held : 0), [night]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!night) return null
   const hide = () => {
     markFreezeCardSeen(night)
@@ -19,7 +25,7 @@ export function FreezeCard({ colors, shelf, now, dateIso }) {
     <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel2 }]}>
       <View style={styles.copy}>
         <Text style={[styles.title, { color: colors.ink }]}>{t('freeze.cardTitle')}</Text>
-        <Text style={[styles.body, { color: colors.inkSoft }]}>{t('freeze.cardBody')}</Text>
+        <Text style={[styles.body, { color: colors.inkSoft }]}>{t(held ? 'freeze.cardBodyHeld' : 'freeze.cardBody', { n: held })}</Text>
         <Pressable accessibilityRole="button" onPress={() => openFreezeHow(colors, shelf, now)} style={styles.go}>
           <Text style={[styles.goText, { color: colors.on }]}>{t('freeze.helpGo')}</Text>
         </Pressable>

@@ -16,6 +16,7 @@ import {
 } from '../../src/lib/board-shelf.js'
 import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown } from '../../src/lib/board-ops.js'
 import { blankLamp } from '../../src/lib/board-json.js'
+import { overCap, questionRoom } from '../../src/lib/question-cap.js'
 import { keptLamp } from '../../src/lib/send-repeat.js'
 import { closePastNights, closeShelfPastNights, freshMarks, noteOpen } from '../../src/lib/daily.js'
 import { forgetAnswerMarks } from '../../src/lib/answer-log.js'
@@ -118,6 +119,11 @@ export function useAppShelf() {
 
   const persist = useCallback((nextShelf) => {
     const shelf = shelfRef.current
+    // Every add ends here: past the cap, nothing is added.
+    if (overCap(shelf.boards, nextShelf.boards)) {
+      confirmMiss(t('hang.cap'))
+      return
+    }
     const now = new Date()
     const before = currentBook(shelf)
     const bumped = weeklyGemBump(nextShelf, shelf, now, { accountSync: accountSessionOn() })
@@ -230,9 +236,12 @@ export function useAppShelf() {
   const keepSent = useCallback(
     (questions, { did = false } = {}) => {
       const clock = new Date()
-      const lamps = [].concat(questions).map((item) => keptLamp(item, clock, live.dayFoldHour)).filter(Boolean)
-      if (!lamps.length) return []
       const latest = shelfRef.current
+      const lamps = [].concat(questions).map((item) => keptLamp(item, clock, live.dayFoldHour)).filter(Boolean).slice(0, questionRoom(latest.boards))
+      if (!lamps.length) {
+        if ([].concat(questions).length) confirmMiss(t('hang.cap'))
+        return []
+      }
       let dest = currentBook(latest) || live
       for (const lamp of lamps) {
         dest = hangInto(dest, lamp, false)

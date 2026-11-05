@@ -1319,8 +1319,10 @@ export function shopRow(type, list, purse, today = boardDate(new Date())) {
 export function ownedLast(type, list, purse) {
   const rank = (item) => {
     const tag = shopTag(purse, type, item)
-    if (tag.owned) return 2
-    return (tag.gems ? tag.gems <= purse.gems : tag.coins <= purse.coins) ? 0 : 1
+    if (tag.owned) return 3
+    // Earned or event items have no price: not buyable, but not "short" either.
+    if (!tag.gems && !tag.coins) return tag.free ? 0 : 1
+    return (tag.gems ? tag.gems <= purse.gems : tag.coins <= purse.coins) ? 0 : 2
   }
   return [...list].sort((a, b) => rank(a) - rank(b))
 }

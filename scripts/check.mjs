@@ -2115,8 +2115,8 @@ test('one streak rule per question: a nope breaks it, late keeps it, every scree
   const water = { id: 'w', cadence: 'daily', trackAmount: true, createdOn: '2026-09-01' }
   const amt = (night, status, amount) => ({ lampId: 'w', periodKey: night, status, amount, answeredAt: `${night}T20:00:00` })
   const wbook = { id: 'b', dayFoldHour: 0, lamps: [water], answers: [amt('2026-09-30', 'yes', 9), amt('2026-10-01', 'yes', 2), amt('2026-10-04', 'yes', 1.5), amt('2026-10-05', 'late', 3), amt('2026-10-06', 'skip', 5), amt('2026-10-07', 'yes', 4)] }
-  assert.deepEqual(lampAmountTotals(wbook, water, '2026-10-06', 1), { week: 3, month: 6.5, weekDays: 1, monthDays: 3 }, 'Monday week starts 10/05; no future, no Not yet, no last month')
-  assert.deepEqual(lampAmountTotals(wbook, water, '2026-10-06', 0), { week: 4.5, month: 6.5, weekDays: 2, monthDays: 3 }, 'Sunday week starts 10/04')
+  assert.deepEqual(lampAmountTotals(wbook, water, '2026-10-06', 1), { week: 3, month: 6.5, weekDays: 1, monthDays: 3, weekDuePassed: true }, 'Monday week starts 10/05; no future, no Not yet, no last month')
+  assert.deepEqual(lampAmountTotals(wbook, water, '2026-10-06', 0), { week: 4.5, month: 6.5, weekDays: 2, monthDays: 3, weekDuePassed: true }, 'Sunday week starts 10/04')
   assert.equal(lampAmountTotals(wbook, { ...water, trackAmount: false }, '2026-10-06').month, 0)
   // Top streaks: each run once, longest first, the live one marked.
   const top = topQuestionStreaks(shelfBook, q, '2026-10-05')
@@ -8605,7 +8605,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-10), ['we-month-open.sql', 'we-link-blocked.sql', 'we-link-already.sql', 'did-you-when.sql', 'we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql'])
+  assert.deepEqual(files.slice(-10), ['we-link-blocked.sql', 'we-link-already.sql', 'did-you-when.sql', 'we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -11642,6 +11642,50 @@ await testAsync('monthly day 29 to 31 lands on the last day of a short month, an
   } finally {
     writePrefs({ away: [] })
   }
+})
+
+await testAsync('question cap: counts stopped ones, refuses only a write that adds, sync names the cap and stops resending', async () => {
+  const { QUESTION_CAP, questionCount, questionRoom, overCap } = await import('../src/lib/question-cap.js')
+  const book = (n, archived = 0) => ({ lamps: Array.from({ length: n }, (_, i) => ({ id: 'q' + i, archived: i < archived })) })
+  assert.equal(QUESTION_CAP, 300)
+  assert.equal(questionCount([book(200, 50), book(100)]), 300, 'stopped questions count')
+  assert.equal(questionRoom([book(299)]), 1)
+  assert.equal(overCap([book(300)], [book(301)]), true)
+  assert.equal(overCap([book(300)], [book(300)]), false, 'a full shelf still saves edits')
+  assert.equal(overCap([book(305)], [book(304)]), false, 'a shelf over the cap can shrink')
+  const sync = readFileSync(new URL('../src/lib/cloud-sync.js', import.meta.url), 'utf8')
+  assert.ok(sync.includes("error?.code === '23514'") && sync.includes("'sync:cap'") && sync.includes('cappedAt'), 'a refused shelf shows a notice and is not resent')
+  const shelf = readFileSync(new URL('../native/hooks/useAppShelf.js', import.meta.url), 'utf8')
+  assert.ok(shelf.includes('overCap(shelf.boards, nextShelf.boards)') && shelf.includes('questionRoom('), 'every add goes through the cap')
+})
+
+await testAsync('freeze card is for yesterday only, a first coin is the first day with a Did, search shows the note day, unpriced shop items are not short', async () => {
+  const { freezeCardNight } = await import('../src/lib/freeze-card.js')
+  localStorage.removeItem('did-i-freeze-card-seen')
+  const lamp = { id: 'a', question: 'Did I a?', cadence: 'daily', archived: false, createdOn: '2026-09-20' }
+  const yes = (night) => ({ lampId: 'a', periodKey: night, status: 'yes', answeredAt: night + 'T15:00:00' })
+  const book = { id: 'b1', dayFoldHour: 0, lamps: [lamp], answers: ['2026-09-27', '2026-09-28'].map(yes) }
+  assert.equal(freezeCardNight([book], new Date(2026, 8, 30, 16, 0)), '2026-09-29', 'yesterday')
+  assert.equal(freezeCardNight([book], new Date(2026, 9, 2, 16, 0)), '', 'a break from days ago is not news')
+  const { firstCoinDay } = await import('../src/lib/coin-history.js')
+  assert.equal(firstCoinDay({ boards: [{ answers: [yes('2026-10-05')] }] }, '2026-10-05'), true)
+  assert.equal(firstCoinDay({ boards: [{ answers: [yes('2026-10-04')] }] }, '2026-10-05'), false, 'spending does not make a later Did the first')
+  const { noteHitDay } = await import('../src/lib/question-list.js')
+  const noted = { ...book, answers: [{ ...yes('2026-09-27'), note: 'Felt Great' }, { ...yes('2026-09-28'), note: 'great again' }, yes('2026-09-26')] }
+  assert.equal(noteHitDay({ book: noted, lamp }, 'great'), '2026-09-28', 'newest note with the word')
+  assert.equal(noteHitDay({ book: noted, lamp }, 'zzz'), '')
+  const { ownedLast, normalizePurse } = await import('../src/lib/purse.js')
+  const purse = normalizePurse({ coins: 5 })
+  const list = [{ id: 'dear', coins: 90 }, { id: 'earned' }, { id: 'cheap', coins: 5 }]
+  assert.deepEqual(ownedLast('look', list, purse).map((item) => item.id), ['cheap', 'earned', 'dear'], 'unpriced sits above short items')
+  const { capNotes } = await import('../src/lib/quiet.js')
+  const at = (h) => ({ date: new Date(2026, 9, 5, h) })
+  const kept = capNotes([{ id: 's', second: true, trigger: at(9) }, { id: 'f', trigger: at(10) }], 1).kept
+  assert.equal(kept[0].id, 'f', 'a first reminder keeps its slot over a second one')
+  const prune = readFileSync(new URL('../supabase/family-code-prune.sql', import.meta.url), 'utf8')
+  assert.match(prune, /delete from public\.family_code_rotations/)
+  const q = readFileSync(new URL('../native/screens/questions.jsx', import.meta.url), 'utf8')
+  assert.ok(q.includes('export function lampEnded') && q.includes("lamp.endedOn"), 'an ended question joins the finished group')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

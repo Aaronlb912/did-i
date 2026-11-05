@@ -144,7 +144,8 @@ export function useHangDraft({
       if (unit) next.amountUnit = unit
     }
     if (!next.askAfter || !next.askAfter2 || next.askAfter2 === next.askAfter) delete next.askAfter2
-    if (!next.endsOn) delete next.endsOn
+    // A one-time question has its own day; an end date would only hide it.
+    if (!next.endsOn || next.cadence === 'once') delete next.endsOn
     // Stopped or asked again elsewhere while the form was open: that stays.
     // So do the pause records, or the paused days come back as misses.
     if (editing) {

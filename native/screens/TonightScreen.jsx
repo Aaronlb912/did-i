@@ -5,6 +5,7 @@ import { useFrameActive } from '../components/frames/index.js'
 import { frameText, keepEarnedFrames, takeFramesToAnnounce, wearFrame, wornFrame } from '../../src/lib/frames.js'
 import { FramePreview } from '../components/frames/FramePreview.jsx'
 import { nightProgress } from '../../src/lib/night-progress.js'
+import { firstCoinDay } from '../../src/lib/coin-history.js'
 import { addDaysIso, boardDate } from '../../src/lib/recurrence.js'
 import { GRACE_END } from '../../src/lib/zone.js'
 import { FadeScroll } from '../components/FadeScroll.jsx'
@@ -148,8 +149,9 @@ function nextCoinItem(purse) {
 function cardKicker(row, fallback) {
   const from = row.lamp?.fromName ? t('inbox.from', { name: row.lamp.fromName }) : ''
   const today = isTodayOnce(row.lamp, row.dateIso) ? todayLabel(row.lamp) : ''
-  const tag = row.tag || (from || today ? '' : fallback)
-  return [today, tag, from].filter(Boolean).join(' · ')
+  const last = row.lamp?.endsOn && row.lamp.cadence !== 'once' && row.lamp.endsOn === row.dateIso ? t('lamp.lastDay') : ''
+  const tag = row.tag || (from || today || last ? '' : fallback)
+  return [today, last, tag, from].filter(Boolean).join(' · ')
 }
 
 function useMinuteNow() {
@@ -356,7 +358,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   useEffect(() => {
     const was = lastDayCoins.current
     lastDayCoins.current = dayCoins
-    if (was === 0 && dayCoins > 0 && purse.coins <= dayCoins && takeFirstCoin()) confirmDone(t('tonight.firstCoin'))
+    if (was === 0 && dayCoins > 0 && firstCoinDay(stack.shelf, stack.dateIso) && takeFirstCoin()) confirmDone(t('tonight.firstCoin'))
   }, [dayCoins]) // eslint-disable-line react-hooks/exhaustive-deps
   const wish = wishLine(wishGoal(purse))
   const next = wish ? null : nextCoinItem(purse)
