@@ -761,7 +761,8 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                       marginTop: actionGap,
                     }}
                   >
-                    lead.status === 'skip' ? null : <FlexWidget
+                    {lead.status === 'skip' ? null : (
+                    <FlexWidget
                       style={{
                         flex: 1,
                         backgroundColor: C.skip,
@@ -782,6 +783,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                         maxLines={1}
                       />
                     </FlexWidget>
+                    )}
                     <FlexWidget
                       style={{
                         flex: 1,

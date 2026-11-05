@@ -11869,6 +11869,69 @@ test('a one-time question saved to JSON has no end date', () => {
   assert.ok(src.includes("cadence !== 'once' && /"), 'endsOn only for repeating questions')
 })
 
+// react-native-android-widget casts every child to a widget element. A bare
+// string or number inside a FlexWidget ("lead.status === 'skip' ? null : <X>"
+// typed outside braces) threw ClassCastException on every draw.
+await testAsync('the android tonight widget has no bare text or number children in any state', async () => {
+  const require = createRequire(import.meta.url)
+  const babel = require('@babel/core')
+  const file = path.join(checkRoot, 'widgets/android/DidITonightAndroidWidget.jsx')
+  const code = babel.transformFileSync(file, {
+    filename: file,
+    babelrc: false,
+    configFile: false,
+    plugins: [
+      [require.resolve('@babel/plugin-transform-react-jsx'), { runtime: 'classic', pragma: 'mkEl', pragmaFrag: 'null' }],
+      require.resolve('@babel/plugin-transform-modules-commonjs'),
+    ],
+  }).code
+  const h = (type, props, ...children) => ({ type, props: { ...props, children } })
+  const kinds = Object.fromEntries(['FlexWidget', 'OverlapWidget', 'SvgWidget', 'TextWidget'].map((k) => [k, k]))
+  const mod = { exports: {} }
+  const stubRequire = (id) =>
+    id === 'react-native-android-widget' ? kinds : id === 'react' ? { createElement: h } : require(path.resolve(path.dirname(file), id))
+  new Function('require', 'module', 'exports', 'mkEl', code)(stubRequire, mod, mod.exports, h)
+  const render = mod.exports.renderDidITonightAndroidWidget
+  const bare = []
+  const walk = (node, where) => {
+    if (node == null || typeof node === 'boolean') return
+    if (Array.isArray(node)) return node.forEach((child) => walk(child, where))
+    if (typeof node !== 'object') return bare.push(`${where}: ${JSON.stringify(node)}`)
+    if (typeof node.type === 'function') return walk(node.type(node.props), where)
+    const kids = node.props?.children
+    if (node.type === 'TextWidget' || node.type === 'SvgWidget') {
+      if (kids?.flat(Infinity).some((kid) => kid != null)) bare.push(`${where}: ${node.type} has children`)
+      return
+    }
+    walk(kids, where)
+  }
+  const lamp = (id, extra = {}) => ({ id, question: `Question ${id}?`, cadence: 'daily', archived: false, createdOn: '2020-01-01', ...extra })
+  const clock = new Date('2026-09-23T20:00:00')
+  const day = '2026-09-23'
+  const answer = (lampId, status) => ({ lampId, periodKey: day, status, answeredAt: '2026-09-23T12:00:00' })
+  const shelfOf = (lamps, answers) =>
+    writeShelf({ currentId: 't1', boards: [{ id: 't1', title: 'Home', dayFoldHour: 0, lamps, answers }] })
+  const many = Array.from({ length: 12 }, (_, i) => lamp(`m${i}`))
+  const states = {
+    waiting: buildTonightWidgetProps(shelfOf([lamp('a'), lamp('b')], []), clock),
+    one: buildTonightWidgetProps(shelfOf([lamp('a')], []), clock),
+    allDone: buildTonightWidgetProps(shelfOf([lamp('a')], [answer('a', 'did')]), clock),
+    noQuestions: buildTonightWidgetProps(shelfOf([], []), clock),
+    notYet: buildTonightWidgetProps(shelfOf([lamp('a'), lamp('b')], [answer('a', 'skip'), answer('b', 'skip')]), clock),
+    many: buildTonightWidgetProps(shelfOf(many, []), clock),
+    didWe: { ...buildTonightWidgetProps(shelfOf([lamp('a')], []), clock), weLine: 'Did we: Walk the dog' },
+    buddy: { ...buildTonightWidgetProps(shelfOf([lamp('a'), lamp('b')], []), clock), buddyId: 'cat', buddyWorn: { head: 'crown' } },
+    signedOut: undefined,
+  }
+  const sizes = [undefined, { width: 110, height: 110 }, { width: 250, height: 140 }, { width: 250, height: 180 }, { width: 340, height: 220 }]
+  for (const [name, props] of Object.entries(states)) {
+    for (const size of sizes) walk(render(props, size), `${name} ${size ? `${size.width}x${size.height}` : 'unsized'}`)
+  }
+  assert.deepEqual([...new Set(bare)], [])
+  const notYet = render(states.notYet, sizes[3])
+  assert.equal(JSON.stringify(notYet, (k, v) => (typeof v === 'function' ? undefined : v)).includes('"kind":"nope"'), false, 'no Not yet button on a Not yet card')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
