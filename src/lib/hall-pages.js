@@ -542,8 +542,9 @@ export function shelfWeekNights(boards, now = new Date(), tagId = '', days = 7) 
 
 // Every answer across the folders in view, newest first.
 export function shelfFeedRows(boards, tagId = '') {
-  return scopedBooks(boards, tagId)
-    .flatMap((book) => feedRows(book))
+  const books = scopedBooks(boards, tagId)
+  return books
+    .flatMap((book) => feedRows(book).map((row) => ({ ...row, folder: books.length > 1 ? book.title : '' })))
     .sort((a, b) => stampMs(b.answer.answeredAt) - stampMs(a.answer.answeredAt))
 }
 
@@ -567,11 +568,13 @@ export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
     const answers = book.answers || []
     sum.hung += (book.lamps || []).filter((lamp) => !lamp.archived).length
     sum.down += (book.lamps || []).filter((lamp) => lamp.archived).length
-    sum.did += answers.filter((answer) => answer.status === 'yes').length
-    sum.late += answers.filter((answer) => answer.status === 'late').length
+    // Answers on archived or deleted questions are not counted, like Questions.
+    const counted = answers.filter((answer) => lamps.get(answer.lampId) && !lamps.get(answer.lampId).archived)
+    sum.did += counted.filter((answer) => answer.status === 'yes').length
+    sum.late += counted.filter((answer) => answer.status === 'late').length
     // Missed, same as This week: a Not yet that can still turn into a Did, or
     // on a question that is never a miss (every so often, optional), is not one.
-    sum.skip += answers.filter((answer) => answer.status === 'skip' && countsAsMiss(lamps.get(answer.lampId), answer, floor)).length
+    sum.skip += counted.filter((answer) => answer.status === 'skip' && countsAsMiss(lamps.get(answer.lampId), answer, floor)).length
   }
   return { ...sum, heat: books.length ? shelfStreak(boards, now, tagId) : 0 }
 }

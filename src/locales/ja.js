@@ -2915,7 +2915,6 @@ export const ja = {
   'weLink.webLead': "アプリがない？ここで参加して、今日ブラウザで答えよう。",
   'weLink.webSignIn': "ウェブでサインインして参加。今日ここで答えよう。",
   // round4-fix/stats-agree
-  'streaks.nextGoal': '次の目標: {goal}',
   'week.tapHint': "日をタップすると、クリアできたかどうかの理由が見られます。",
   'stats.bestRun': '最高連続（1つの質問）',
   'stats.marksSub': "獲得したものと、残りの取り方",

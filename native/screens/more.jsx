@@ -60,7 +60,6 @@ import {
   clockWords,
   comingDays,
   markWelcomeSeen,
-  nextStreakGoal,
   shelfFeedRows,
   shelfNoteRows,
   shelfStatsCounts,
@@ -764,7 +763,7 @@ export function StatsScreen({ book, boards, tagId = '', now }) {
         <NumberTile third colors={colors} label={t('stats.late')} n={counts.late} />
         {gentle ? null : <NumberTile third colors={colors} label={t('stats.nope')} n={counts.skip} />}
         <NumberTile half={!gentle} colors={colors} label={t('stats.questions')} n={counts.hung} />
-        {gentle ? null : <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} />}
+        {gentle ? null : bestRun ? <NumberTile half colors={colors} label={t('stats.bestRun')} n={bestRun} /> : null}
         {gentle || rate30 == null ? null : <NumberTile half colors={colors} label={t('stats.last30')} n={`${rate30.rate}%`} sub={t('stats.last30Of', { did: rate30.did, n: rate30.asked })} />}
       </View>
 
@@ -821,7 +820,7 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
           <Row
             key={row.answer.id}
             colors={colors}
-            label={row.lamp ? shortLabel(row.lamp) : t('feed.deleted')}
+            label={row.lamp ? (row.folder ? `${shortLabel(row.lamp)} · ${row.folder}` : shortLabel(row.lamp)) : t('feed.deleted')}
             note={`${statusWord(row.answer.status, Boolean(row.lamp) && nightOpen(periodNight(row.lamp, row.answer.periodKey), clock))}${
               tapWhen(row.answer.answeredAt, clock) ? ` · ${tapWhen(row.answer.answeredAt, clock)}` : ''
             }${row.answer.note ? `\n${row.answer.note}` : ''}`}
@@ -1033,11 +1032,20 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     return night.isToday ? 'open' : 'hole'
   }
 
+  function stateWord(state) {
+    if (state === 'yes') return t('later.did')
+    if (state === 'late') return t('later.late')
+    if (state === 'skip') return t(gentle ? 'later.nope' : 'jewelKey.notYet')
+    if (state === 'hole') return t('later.missed')
+    if (state === 'off') return t('week.notAsked')
+    return t('jewelKey.open')
+  }
+
   function openNight(night) {
     openNightWhy({ colors, boards: inView(book, boards), iso: night.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })
   }
 
-  function cell(night, nightState) {
+  function cell(night, nightState, lamp) {
     // A Not yet on a day that is over is a missed day (gentle: stays Not yet).
     const state = nightState === 'skip' && !gentle && !nightOpen(night.iso, clock) ? 'hole' : nightState
     return (
@@ -1046,7 +1054,8 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
         style={styles.weekHeadCell}
         onPress={() => openNight(night)}
         accessibilityRole="button"
-        accessibilityLabel={night.label}
+        accessibilityLabel={`${shortLabel(lamp)}, ${night.label}, ${stateWord(state)}`}
+        hitSlop={14}
       >
         <View
           style={[
@@ -1120,7 +1129,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
               >
                 {shortLabel(lamp)}
               </Text>
-              {nights.map((night) => cell(night, weekCell(night, lamp).state))}
+              {nights.map((night) => cell(night, weekCell(night, lamp).state, lamp))}
             </View>
           ))}
           {weCards.map((card) => (
@@ -1164,11 +1173,12 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
   // Ticks at midnight, so a screen left open moves to the new day.
   const today = useDayNow()
   const clock = now || today
-  // Multi-night walks: once per shelf, folder and minute, not every render.
-  const minute = Math.floor(clock.getTime() / 60000)
+  // Multi-night walks: once per shelf, folder, day and Away change, not every render.
+  const dateIso = boardDate(clock, book?.dayFoldHour)
   const freeMiss = usePrefs().freeMiss === true
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const { books, heat, freezes, rows } = useMemo(() => {
-    const at = new Date(minute * 60000)
+    const at = clock
     const books = scopedBooks(inView(book, boards), tagId)
     return {
       books,
@@ -1182,14 +1192,13 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         // Days first, so weeks or on-time counts never outrank a day count.
         .sort((a, b) => Number(isDayCadence(b.lamp)) - Number(isDayCadence(a.lamp)) || b.n - a.n),
     }
-  }, [book, boards, tagId, minute, freeMiss])
-  const goal = nextStreakGoal(heat)
-  const bestEver = useMemo(() => bestShelfStreak(inView(book, boards), clock), [book, boards, boardDate(clock), awayKey(), freeMiss]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [book, boards, tagId, dateIso, awayKey(), freeMiss])
+  const bestEver = useMemo(() => bestShelfStreak(inView(book, boards), clock), [book, boards, dateIso, awayKey(), freeMiss]) // eslint-disable-line react-hooks/exhaustive-deps
   // A question's run can be longer than the overall one: say which night broke it.
   const longest = rows.length && isDayCadence(rows[0].lamp) ? rows[0].n : 0
   const breakNight = useMemo(
     () => (longest > heat ? streakBreak(inView(book, boards), clock, tagId, longest + 1) : null),
-    [book, boards, tagId, longest, heat, awayKey(), boardDate(clock), freeMiss], // eslint-disable-line react-hooks/exhaustive-deps
+    [book, boards, tagId, longest, heat, awayKey(), dateIso, freeMiss], // eslint-disable-line react-hooks/exhaustive-deps
   )
   const breakLine = breakNight
     ? breakNight.question
@@ -1215,7 +1224,6 @@ export function StreaksScreen({ book, boards, tagId = '', now }) {
         colors={colors}
         n={heat}
         label={t('streaks.aria')}
-        line={goal ? t('streaks.nextGoal', { goal }) : null}
       />
       {bestEver > heat ? <Meta colors={colors}>{t('streaks.best', { n: bestEver })}</Meta> : null}
       {breakLine ? (

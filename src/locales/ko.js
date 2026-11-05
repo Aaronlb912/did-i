@@ -2917,7 +2917,6 @@ export const ko = {
   'weLink.webLead': "앱이 없나요? 여기서 참여하고 오늘 브라우저에서 답하세요.",
   'weLink.webSignIn': "웹에서 로그인하고 참여하세요. 그다음 오늘 여기서 답하세요.",
   // round4-fix/stats-agree
-  'streaks.nextGoal': '다음 목표: {goal}',
   'week.tapHint': "날을 누르면 완료됐는지, 왜 아닌지 볼 수 있어요.",
   'stats.bestRun': '최고 연속, 질문 하나',
   'stats.marksSub': "받은 것과 나머지를 받는 방법",

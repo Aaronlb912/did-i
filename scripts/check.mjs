@@ -1159,6 +1159,21 @@ test('all time Missed leaves out today and questions that are never a miss', asy
   assert.equal(shelfStatsCounts([book], new Date(2026, 10, 1, 21)).skip, 1)
 })
 
+test('all time Did and Late count only questions that are still counted', async () => {
+  const { shelfStatsCounts } = await import('../src/lib/hall-pages.js')
+  const book = { id: 'c', lamps: [
+    { ...lamp('k'), cadence: 'daily', createdOn: '2026-10-01' },
+    { ...lamp('z'), cadence: 'daily', archived: true, createdOn: '2026-10-01' },
+  ], answers: [
+    { id: 'a', lampId: 'k', periodKey: '2026-10-30', status: 'yes' },
+    { id: 'b', lampId: 'z', periodKey: '2026-10-30', status: 'yes' },
+    { id: 'c', lampId: 'gone', periodKey: '2026-10-30', status: 'late' },
+  ] }
+  const counts = shelfStatsCounts([book], new Date(2026, 10, 1, 21))
+  assert.equal(counts.did, 1)
+  assert.equal(counts.late, 0)
+})
+
 test('a kept Did you remembers who sent it, by id', async () => {
   const { keptLamp } = await import('../src/lib/send-repeat.js')
   const { normalizeBook } = await import('../src/lib/board-json.js')
@@ -7768,7 +7783,7 @@ test('gentle mode hides own streak counts on the phone, not what others see', ()
   assert.match(read('native/screens/questions.jsx'), /gentle \? null/)
   const more = read('native/screens/more.jsx')
   assert.match(more, /if \(gentle\) \{/)
-  assert.match(more, /gentle \? null : <NumberTile half colors=\{colors\} label=\{t\('stats\.bestRun'\)\}/)
+  assert.match(more, /gentle \? null : bestRun \? <NumberTile half colors=\{colors\} label=\{t\('stats\.bestRun'\)\}/)
   assert.match(read('native/shim/native.js'), /pingOn\('streakHit'\) \|\| gentleOn\(\)/)
   assert.ok(!/gentle/.test(read('native/screens/social.jsx')), 'friends and family views stay as they are')
 })
