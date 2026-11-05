@@ -35,6 +35,9 @@ type WidgetColors = {
 // y = Did, n = Not yet, . = no mark, space = a day still ahead.
 export type DidIGridWidgetProps = {
   weeks: string[]
+  // Where today sits, so it can be marked. Optional.
+  todayWeek?: number
+  todayRow?: number
   title: string
   countLine: string
   emptyLabel: string
@@ -78,9 +81,12 @@ const DidIGridWidget = (props: DidIGridWidgetProps, environment: WidgetEnvironme
   const gap = small ? 2 : 3
   const anyDay = weeks.some((w) => /[yn]/.test(w))
 
-  function square(ch: string) {
+  const todayWeek = Number.isInteger(props?.todayWeek) ? Number(props.todayWeek) : -1
+  const todayRow = Number.isInteger(props?.todayRow) ? Number(props.todayRow) : -1
+
+  function square(ch: string, isToday: boolean) {
     // A day still ahead is left empty, so the last column ends where today does.
-    const color = ch === 'y' ? on : ch === 'n' ? missed : ch === ' ' ? c.panel : none
+    const color = ch === 'y' ? on : ch === 'n' ? missed : ch === ' ' ? c.panel : isToday ? soft : none
     return <RoundedRectangle cornerRadius={2} modifiers={[frame({ maxWidth: 10000, height: cell }), foregroundStyle(color)]} />
   }
 
@@ -98,9 +104,9 @@ const DidIGridWidget = (props: DidIGridWidgetProps, environment: WidgetEnvironme
     </Text>
   ) : (
     <HStack spacing={gap} modifiers={[frame({ maxWidth: 10000 })]}>
-      {weeks.map((week) => (
+      {weeks.map((week, w) => (
         <VStack spacing={gap} modifiers={[frame({ maxWidth: 10000 })]}>
-          {Array.from({ length: 7 }, (_, d) => square(week.charAt(d) || ' '))}
+          {Array.from({ length: 7 }, (_, d) => square(week.charAt(d) || ' ', w === todayWeek && d === todayRow))}
         </VStack>
       ))}
     </HStack>
