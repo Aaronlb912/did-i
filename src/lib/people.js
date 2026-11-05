@@ -1799,7 +1799,7 @@ async function addAutoSends(db, adder) {
       // Names are a nice to have; the questions still go on tonight.
     }
     // Nobody chose these for tonight, so they are optional (see normalizeLamp).
-    adder(fresh.map((row) => ({ question: row.question, repeat: row.repeat, optional: true, sendId: row.send_id, person: senders.get(row.sender_id) })))
+    adder(fresh.map((row) => ({ question: row.question, repeat: row.repeat, optional: true, sendId: row.send_id, wantsPhoto: row.wants_photo === true, person: senders.get(row.sender_id) })))
     for (const row of fresh) added.add(row.send_id)
     writeAutoAdded(added)
   }

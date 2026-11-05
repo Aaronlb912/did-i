@@ -1,8 +1,12 @@
-import { Dimensions, Image } from 'react-native'
+import { useState } from 'react'
+import { Dimensions, Image, Linking, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { addProof, freshProofUrl, removeProof, reportProof } from '../../src/lib/proofs.js'
 import { publishSheet } from '../components/SheetHost.jsx'
-import { confirmDone, confirmMiss } from './confirm.js'
+import { DidButton } from '../components/ui.jsx'
+import { fonts } from '../theme.js'
+import { confirmDone, confirmMiss, once } from './confirm.js'
+import { dropToast, showToast } from './toast-queue.js'
 import { canAddProof, pickProofBytes } from './proof-pick.js'
 
 const DENIED = { 'camera-denied': 'avatar.cameraOff', 'photos-denied': 'avatar.photosOff', 'too-big': 'proof.tooBig' }
@@ -14,18 +18,37 @@ export { canAddProof }
 // photo row is made (a Did you answer reaches the server first).
 export function addProofFlow({ target, night, colors, ready, onDone }) {
   if (!canAddProof()) return
-  async function go(from) {
+  const deny = (key) => {
+    publishSheet({
+      title: t('proof.deniedTitle'),
+      body: t(key),
+      content: <DidButton colors={colors} label={t('proof.openSettings')} onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))} />,
+      closeLabel: t('proof.close'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
+  }
+  function go(from) {
     publishSheet(null)
-    try {
-      const bytes = await pickProofBytes(from)
-      if (!bytes) return
-      const out = await addProof(target, night, bytes, ready)
-      if (out.miss) return confirmMiss(t(out.miss))
-      confirmDone(t('proof.saved'))
-      onDone?.()
-    } catch (error) {
-      confirmMiss(t(DENIED[error?.message] || 'proof.fail'))
-    }
+    return once('proof-add', async () => {
+      showToast({ id: 'proof-sending', kind: 'done', text: t('proof.sending'), ms: 60000 })
+      try {
+        const bytes = await pickProofBytes(from)
+        if (!bytes) return
+        const out = await addProof(target, night, bytes, ready)
+        dropToast('proof-sending')
+        if (out.miss) return confirmMiss(t(out.miss))
+        confirmDone(t('proof.saved'))
+        onDone?.()
+      } catch (error) {
+        dropToast('proof-sending')
+        const key = DENIED[error?.message]
+        if (error?.message === 'camera-denied' || error?.message === 'photos-denied') return deny(key)
+        confirmMiss(t(key || 'proof.fail'))
+      } finally {
+        dropToast('proof-sending')
+      }
+    })
   }
   publishSheet({
     title: t('proof.add'),
@@ -102,18 +125,41 @@ export async function shareProof(row) {
   }
 }
 
+// One fresh link on a load miss (the one in the list may have expired), then a plain note.
+function ProofImage({ row, name, size, colors }) {
+  const [uri, setUri] = useState(row.url)
+  const [tried, setTried] = useState(false)
+  const [gone, setGone] = useState(false)
+  if (gone) {
+    return (
+      <View style={[size, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel2, borderRadius: 12 }]}>
+        <Text style={{ color: colors.inkSoft, fontFamily: fonts.ui, fontSize: 15 }}>{t('proof.gone')}</Text>
+      </View>
+    )
+  }
+  return (
+    <Image
+      source={{ uri }}
+      resizeMode="contain"
+      accessibilityLabel={t('proof.viewA11y', { name })}
+      style={size}
+      onError={async () => {
+        if (tried) return setGone(true)
+        setTried(true)
+        const fresh = await freshProofUrl(row).catch(() => '')
+        if (fresh) setUri(fresh)
+        else setGone(true)
+      }}
+    />
+  )
+}
+
 // The full view of one photo, in the app's sheet (not a Modal). The owner
 // can remove it; anyone else can report it, which hides it for them at once.
 export function openProofView({ row, mine, name, colors, onGone }) {
   const win = Dimensions.get('window')
-  const preview = (
-    <Image
-      source={{ uri: row.url }}
-      resizeMode="contain"
-      accessibilityLabel={t('proof.viewA11y', { name })}
-      style={{ width: win.width - 76, height: Math.round(win.height * 0.55) }}
-    />
-  )
+  const size = { width: win.width - 76, height: Math.round(win.height * 0.55) }
+  const preview = <ProofImage row={row} name={name} size={size} colors={colors} />
   const back = () => openProofView({ row, mine, name, colors, onGone })
   publishSheet({
     title: mine ? t('proof.yours') : t('proof.from', { name }),

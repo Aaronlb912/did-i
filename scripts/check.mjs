@@ -8634,7 +8634,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-10), ['we-link-already.sql', 'did-you-when.sql', 'we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql'])
+  assert.deepEqual(files.slice(-10), ['did-you-when.sql', 'we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -10591,7 +10591,7 @@ test('every table says how people hear about it: a push, or why not', () => {
     family_answers: 'queue_family_summaries',
     shop_drop_days: 'queue_drop_pushes',
     report_actions: 'queue_report_removed_push',
-    proofs: 'proofs_push',
+    proofs: 'proof_uploaded',
   }
   const quiet = {
     'own data, no one else': 'admins answer_keys answer_log answer_undos app_errors app_flags app_versions cleared_nights coin_night_grants devices gem_purchases iap_tries milestones shelves wake_kick wake_queue friend_notes auto_adds check_on_adds invite_looks we_streak_grants we_done tour_claims signin_carries streak_bonus_claims',
