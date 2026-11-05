@@ -24,8 +24,18 @@ public class DidITonight extends RNWidgetProvider {
             AppWidgetManager manager = AppWidgetManager.getInstance(context);
             int[] ids = manager.getAppWidgetIds(new ComponentName(context, DidITonight.class));
             if (ids.length > 0) onUpdate(context, manager, ids);
+            else if (!WidgetAlarms.ACTION.equals(action)) rearmPings(context);
             return;
         }
         super.onReceive(context, intent);
+    }
+
+    /** No widget to start the task: run the reminder re-arm on its own. */
+    private static void rearmPings(Context context) {
+        try {
+            context.startService(new Intent(context, PingRearmService.class));
+        } catch (Exception ignored) {
+            // Background start refused. The next app open sets reminders again.
+        }
     }
 }
