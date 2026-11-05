@@ -523,6 +523,7 @@ export const fr = {
   'boards.moveDownShort': 'Descendre',
   'boards.moveBottomShort': 'Tout en bas',
   'confirm.folderMoved': '{title} déplacé.',
+  'confirm.folderRenamed': 'Renommé en {title}.',
   'boards.removeMove': 'Déplacer les questions vers {folder}',
   'boards.removeWith': 'Retirer avec les questions',
   'boards.moveUp': 'Monter {title}',

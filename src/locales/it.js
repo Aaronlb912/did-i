@@ -520,6 +520,7 @@ export const it = {
   'boards.moveDownShort': 'Giù',
   'boards.moveBottomShort': 'Sposta in fondo',
   'confirm.folderMoved': '{title} spostata.',
+  'confirm.folderRenamed': 'Rinominata in {title}.',
   'boards.removeMove': 'Sposta le domande in {folder}',
   'boards.removeWith': 'Rimuovi con le domande',
   'boards.moveUp': 'Sposta su {title}',

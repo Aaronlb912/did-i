@@ -522,6 +522,7 @@ export const es = {
   'boards.moveDownShort': 'Bajar',
   'boards.moveBottomShort': 'Mover al final',
   'confirm.folderMoved': '{title} movida.',
+  'confirm.folderRenamed': 'Renombrada a {title}.',
   'boards.removeMove': 'Mover las preguntas a {folder}',
   'boards.removeWith': 'Quitar con las preguntas',
   'boards.moveUp': 'Subir {title}',

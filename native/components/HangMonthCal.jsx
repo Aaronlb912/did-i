@@ -85,11 +85,11 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
     <View style={styles.wrap}>
       {monthly ? null : (
       <View style={styles.head}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.prev')} accessibilityState={{ disabled: monthShift <= 0 }} disabled={monthShift <= 0} onPress={() => setMonthShift((n) => Math.max(0, n - 1))} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.prev')} accessibilityState={{ disabled: monthShift <= 0 }} disabled={monthShift <= 0} onPress={() => setMonthShift((n) => Math.max(0, n - 1))} style={styles.shiftBtn}>
           <Text style={[styles.shift, { color: monthShift <= 0 ? colors.line : colors.inkDim }]}>‹</Text>
         </Pressable>
         <Text style={[styles.label, { color: colors.ink }]}>{view.label}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.next')} onPress={() => setMonthShift((n) => n + 1)} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.next')} onPress={() => setMonthShift((n) => n + 1)} style={styles.shiftBtn}>
           <Text style={[styles.shift, { color: colors.inkDim }]}>›</Text>
         </Pressable>
       </View>
@@ -147,6 +147,7 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
 const styles = StyleSheet.create({
   wrap: { gap: 8, marginVertical: 8 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  shiftBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   shift: { fontSize: 20, paddingHorizontal: 8 },
   label: { fontFamily: fonts.uiSemi, fontSize: 15 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },

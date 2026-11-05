@@ -521,6 +521,7 @@ export const en = {
   'boards.moveDownShort': 'Move down',
   'boards.moveBottomShort': 'Move to bottom',
   'confirm.folderMoved': 'Moved {title}.',
+  'confirm.folderRenamed': 'Renamed to {title}.',
   'boards.removeMove': 'Move questions to {folder}',
   'boards.removeWith': 'Remove with questions',
   'boards.moveUp': 'Move {title} up',
