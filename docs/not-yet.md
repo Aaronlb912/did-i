@@ -5,6 +5,13 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Breaks and rest days (UX loop 2026-11-04)
+
+- Pausing a folder pauses each question one by one; no folder pause yet.
+- Away always starts today or tomorrow; no planned start date.
+- No one-day rest day for everything that costs no freeze.
+- A paused question stays paused until resumed; no end date.
+
 ## Remind me in (branch `ux/remind-me`)
 
 - **iPhone widget has no mic.** The widget file uses `widgetURL` for the whole card; iPhone gets the long-press icon shortcut only. A `Link` from `@expo/ui/swift-ui` exists but is untried inside the widget and cannot be checked without a Mac.
