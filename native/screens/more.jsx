@@ -105,6 +105,7 @@ import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import { useDayNow } from '../hooks/useDayNow.js'
 import { addDaysIso, boardDate, dateTag, dueTonight, formatBoardDate, isEvery, isPerWeek, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { perWeekLine } from '../../src/lib/every-copy.js'
 import { packList } from '../../src/lib/starters.js'
 import { FIRST_TIME, answeredNights, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
 import { FirstPacks } from '../components/FirstPacks.jsx'
@@ -984,16 +985,21 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const today = useDayNow()
   const clock = now || today
   const gentle = usePrefs().gentle === true
+  const [weekShift, setWeekShift] = useState(0)
   // The week's walks once per shelf, folder and minute, not every render.
   const minute = Math.floor(clock.getTime() / 60000)
   const { nights, lamps, strip } = useMemo(() => {
     const at = new Date(minute * 60000)
     const shelf = inView(book, boards)
-    const nights = shelfWeekNights(shelf, at, tagId, 7)
+    const nights = shelfWeekNights(shelf, at, tagId, 7, weekShift)
     // Same night rule as the Home dots and So far: every question and every Did
     // we due that night answered Did (or late).
-    return { nights, lamps: weekLamps(nights), strip: weekStripNights(shelf, at, tagId) }
-  }, [book, boards, tagId, minute])
+    return { nights, lamps: weekLamps(nights), strip: weekStripNights(shelf, at, tagId, weekShift) }
+  }, [book, boards, tagId, minute, weekShift])
+  const perWeekFor = (lamp) => {
+    const owner = inView(book, boards).find((b) => (b.lamps || []).some((l) => l.id === lamp.id))
+    return owner ? perWeekLine(owner, lamp, nights[nights.length - 1].iso) : ''
+  }
   const cleared = new Set(strip.filter((night) => night.on).map((night) => night.iso))
   const doneNights = cleared.size
   const frozen = new Set(strip.filter((night) => night.freeze).map((night) => night.iso))
@@ -1045,17 +1051,14 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
     openNightWhy({ colors, boards: inView(book, boards), iso: night.iso, now: clock, tagId, onCalendar: () => goHash('/calendar') })
   }
 
-  function cell(night, nightState, lamp) {
-    // A Not yet on a day that is over is a missed day (gentle: stays Not yet).
-    const state = nightState === 'skip' && !gentle && !nightOpen(night.iso, clock) ? 'hole' : nightState
+  function cell(night, state, label) {
     return (
       <Pressable
         key={night.iso}
-        style={styles.weekHeadCell}
+        style={styles.weekCellHit}
         onPress={() => openNight(night)}
         accessibilityRole="button"
-        accessibilityLabel={`${shortLabel(lamp)}, ${night.label}, ${stateWord(state)}`}
-        hitSlop={14}
+        accessibilityLabel={`${label}, ${night.label}, ${stateWord(state)}`}
       >
         <View
           style={[
@@ -1091,6 +1094,22 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
           <NumberTile colors={colors} label={t('week.doneTile')} n={doneNights} />
         </View>
         <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
+        <View style={styles.weekPager}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('weekbar.prev')} onPress={() => setWeekShift((n) => n - 1)} style={styles.weekShiftBtn}>
+            <Text style={[styles.weekShift, { color: colors.inkSoft }]}>‹</Text>
+          </Pressable>
+          <Text style={[styles.weekRange, { color: colors.inkDim }]}>{`${nights[0].label} - ${nights[nights.length - 1].label}`}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('weekbar.next')}
+            accessibilityState={{ disabled: weekShift >= 0 }}
+            disabled={weekShift >= 0}
+            onPress={() => setWeekShift((n) => Math.min(0, n + 1))}
+            style={styles.weekShiftBtn}
+          >
+            <Text style={[styles.weekShift, { color: weekShift >= 0 ? colors.line : colors.inkSoft }]}>›</Text>
+          </Pressable>
+        </View>
         <View style={styles.week}>
           <View style={styles.weekRow}>
             <View style={styles.weekName} />
@@ -1122,14 +1141,19 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
           </View>
           {lamps.map((lamp) => (
             <View key={lamp.id} style={styles.weekRow}>
-              <Text
-                numberOfLines={1}
+              <Pressable
                 onPress={() => goHash('/lamp', { id: lamp.id })}
-                style={[styles.weekName, styles.weekNameText, { color: colors.ink }]}
+                accessibilityRole="button"
+                style={[styles.weekName, styles.weekNameHit]}
               >
-                {shortLabel(lamp)}
-              </Text>
-              {nights.map((night) => cell(night, weekCell(night, lamp).state, lamp))}
+                <Text numberOfLines={1} style={[styles.weekNameText, { color: colors.ink }]}>
+                  {shortLabel(lamp)}
+                </Text>
+                {isPerWeek(lamp) ? (
+                  <Text numberOfLines={1} style={[styles.weekPer, { color: colors.inkSoft }]}>{perWeekFor(lamp)}</Text>
+                ) : null}
+              </Pressable>
+              {nights.map((night) => cell(night, weekCell(night, lamp).state, shortLabel(lamp)))}
             </View>
           ))}
           {weCards.map((card) => (
@@ -1137,7 +1161,7 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
               <Text numberOfLines={1} style={[styles.weekName, styles.weekNameText, { color: colors.ink }]}>
                 {weCardShort(card) || t('we.title')}
               </Text>
-              {nights.map((night) => cell(night, weState(night, card)))}
+              {nights.map((night) => cell(night, weState(night, card), weCardShort(card) || t('we.title')))}
             </View>
           ))}
         </View>
@@ -3299,7 +3323,14 @@ const styles = StyleSheet.create({
   week: { gap: 6 },
   weekRow: { flexDirection: 'row', alignItems: 'center' },
   weekName: { width: 96, paddingRight: 8 },
+  weekNameHit: { minHeight: 44, justifyContent: 'center' },
   weekNameText: { fontFamily: fonts.ui, fontSize: 13 },
+  weekPer: { fontFamily: fonts.ui, fontSize: 11 },
+  weekCellHit: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  weekPager: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  weekShiftBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  weekShift: { fontSize: 20 },
+  weekRange: { fontFamily: fonts.ui, fontSize: 12.5 },
   weekHeadCell: { flex: 1, alignItems: 'center', gap: 2 },
   weekDow: { fontFamily: fonts.mono, fontSize: 11 },
   weekDay: { fontFamily: fonts.mono, fontSize: 11 },

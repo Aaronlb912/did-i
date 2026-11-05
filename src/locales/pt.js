@@ -3129,6 +3129,8 @@ export const pt = {
   'lamp.yearGrid': "Ano em dias",
   'lamp.yearGridSub': "Cada dia desta pergunta",
   'cal.prevYear': "Ano anterior",
+  'cal.monthDid': "{month}: Did em {n} dias",
+  'cal.monthDidOne': "{month}: Did em 1 dia",
   'cal.nextYear': "Ano seguinte",
   'cal.yearTotals': "{did} dias com Did · {rate}%",
   'cal.yearBest': "Melhor sequência {n} dias",

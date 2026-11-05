@@ -322,13 +322,19 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
   const canBack = year > firstYear
   const canNext = year < thisYear
 
-  const monthDots = (pack) => (
-    <View style={styles.miniGrid}>
+  // One spoken line per month instead of 30 tiny cells.
+  const monthSummary = (pack) => {
+    const n = pack.nights.filter((night) => !night.pad && night.on).length
+    return t(n === 1 ? 'cal.monthDidOne' : 'cal.monthDid', { month: pack.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' }), n })
+  }
+
+  const monthDots = (pack, summary = '') => (
+    <View style={styles.miniGrid} accessible={Boolean(summary)} accessibilityLabel={summary || undefined}>
       {pack.nights.map((night) =>
         night.pad ? (
           <View key={night.iso} style={styles.miniCell} />
         ) : (
-          <View key={night.iso} accessible accessibilityLabel={dayLabel(night, locale, prefs.gentle === true)} style={styles.miniCell}>
+          <View key={night.iso} style={styles.miniCell}>
             <View
               style={[
                 styles.miniDot,
@@ -394,7 +400,7 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
                 {`${pack.start.toLocaleDateString(locale, { month: 'short' })}${onMonth ? ' ›' : ''}`}
               </Text>
             </Pressable>
-            {monthDots(pack)}
+            {monthDots(pack, monthSummary(pack))}
           </View>
         ))}
         {/* Fill the last row of three, so a short year keeps its columns. */}
@@ -436,7 +442,7 @@ const styles = StyleSheet.create({
   miniCell: { width: '14.28%', aspectRatio: 1, padding: 1 },
   miniDot: { flex: 1, borderRadius: 2, borderWidth: 1 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  shift: { fontSize: 20, paddingHorizontal: 8, paddingVertical: 6 },
+  shift: { fontSize: 20, minWidth: 44, minHeight: 44, textAlign: 'center', textAlignVertical: 'center' },
   totals: { fontFamily: fonts.ui, fontSize: 13, textAlign: 'center' },
   month: { fontFamily: fonts.uiSemi, fontSize: 17 },
   grid: {},

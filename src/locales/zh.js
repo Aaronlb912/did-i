@@ -3087,6 +3087,8 @@ export const zh = {
   'lamp.yearGrid': "全年每一天",
   'lamp.yearGridSub': "这个问题的每一天",
   'cal.prevYear': "上一年",
+  'cal.monthDid': "{month}:{n} 天 Did",
+  'cal.monthDidOne': "{month}:1 天 Did",
   'cal.nextYear': "下一年",
   'cal.yearTotals': "Did 的天数 {did} · {rate}%",
   'cal.yearBest': "最长连续 {n} 天",

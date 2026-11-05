@@ -224,11 +224,11 @@ export function nightDueRows(boards, iso, tagId = '') {
   return books.flatMap((book) => dueOnNight(book, iso, at).map((row) => tagOnRow(book, row)))
 }
 
-export function weekNights(book, now = new Date(), days = 7) {
-  const today = boardDate(now, book.dayFoldHour)
+export function weekNights(book, now = new Date(), days = 7, today = boardDate(now, book.dayFoldHour), weekShift = 0) {
+  const end = addDaysIso(today, weekShift * 7)
   const nights = []
   for (let i = days - 1; i >= 0; i -= 1) {
-    const iso = addDaysIso(today, -i)
+    const iso = addDaysIso(end, -i)
     const at = noonOn(iso)
     nights.push({
       iso,
@@ -530,10 +530,12 @@ export function weekCell(night, lamp) {
 }
 
 // Seven nights across the folders in view ('' is every folder).
-export function shelfWeekNights(boards, now = new Date(), tagId = '', days = 7) {
+export function shelfWeekNights(boards, now = new Date(), tagId = '', days = 7, weekShift = 0) {
   const books = scopedBooks(boards, tagId)
   if (!books.length) return []
-  const per = books.map((book) => weekNights(book, now, days))
+  // One today for every book, so books with different day-fold hours line up.
+  const today = boardDate(now, books[0].dayFoldHour)
+  const per = books.map((book) => weekNights(book, now, days, today, weekShift))
   return per[0].map((night, at) => ({
     ...night,
     due: per.flatMap((nights) => nights[at]?.due || []),

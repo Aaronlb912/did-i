@@ -3136,6 +3136,8 @@ export const fr = {
   'lamp.yearGrid': "Année en jours",
   'lamp.yearGridSub': "Chaque jour de cette question",
   'cal.prevYear': "Année précédente",
+  'cal.monthDid': "{month} : Did sur {n} jours",
+  'cal.monthDidOne': "{month} : Did sur 1 jour",
   'cal.nextYear': "Année suivante",
   'cal.yearTotals': "{did} jours Did · {rate}%",
   'cal.yearBest': "Meilleure série {n} jours",
