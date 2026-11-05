@@ -17,6 +17,8 @@ export function LeadPicker({ value, onPick, onClose, colors, signedIn = true }) 
       <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
         <Pressable
           accessible={false}
+          accessibilityViewIsModal
+          onAccessibilityEscape={onClose}
           onPress={(event) => event.stopPropagation()}
           style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
         >

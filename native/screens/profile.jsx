@@ -336,6 +336,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           icon="motion"
           tint={colors.on}
           label={t('settings.lessMotion')}
+          sub={t('settings.lessMotionSub')}
           last
           on={prefs.lessMotion}
           onPress={() => writePrefs({ lessMotion: !prefs.lessMotion })}
@@ -448,7 +449,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           icon="eye"
           tint={colors.late}
           label={t('settings.hideMarks')}
-          sub={t('settings.hideMarksSub')}
+          sub={`${t('settings.hideMarksSub')} ${t('settings.hideMarksFolder')}`}
           on={Boolean(book?.quietMode)}
           onPress={() => onChange?.({ ...book, quietMode: !book.quietMode })}
         />

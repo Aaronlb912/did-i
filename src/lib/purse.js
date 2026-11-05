@@ -805,6 +805,17 @@ function noteDayCoins(earned, clock) {
     // Only the done card line misses it.
   }
 }
+// True once, the first time a Did on this phone pays a coin.
+const FIRST_COIN_KEY = 'did-i-first-coin'
+export function takeFirstCoin() {
+  try {
+    if (localStorage.getItem(FIRST_COIN_KEY)) return false
+    localStorage.setItem(FIRST_COIN_KEY, '1')
+    return true
+  } catch {
+    return false
+  }
+}
 export function coinsToday(clock = new Date()) {
   try {
     const saved = JSON.parse(localStorage.getItem(DAY_COINS_KEY) || 'null')
@@ -1304,11 +1315,14 @@ export function shopRow(type, list, purse, today = boardDate(new Date())) {
   return list.filter((item) => (type === 'accessory' ? accessoryOnSale(item, today) : isLive(item, today)) && !shopTag(purse, type, item).owned)
 }
 
-// Owned items go to the end of an All page.
+// What you can buy now comes first, then the rest; owned items go to the end of an All page.
 export function ownedLast(type, list, purse) {
-  return [...list].sort(
-    (a, b) => Number(shopTag(purse, type, a).owned) - Number(shopTag(purse, type, b).owned),
-  )
+  const rank = (item) => {
+    const tag = shopTag(purse, type, item)
+    if (tag.owned) return 2
+    return (tag.gems ? tag.gems <= purse.gems : tag.coins <= purse.coins) ? 0 : 1
+  }
+  return [...list].sort((a, b) => rank(a) - rank(b))
 }
 
 // Seasonal items (an `until` date) come back each year. The next day one

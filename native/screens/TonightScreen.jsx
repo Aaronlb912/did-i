@@ -37,7 +37,7 @@ import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
-import { CHEER_STAGE_MAX, LOOKS, NIGHT_COIN_CAP, coinsToday, fireCheer, isGemLook, mergePurses, shopRow, wishGoal, wishLine } from '../../src/lib/purse.js'
+import { CHEER_STAGE_MAX, LOOKS, NIGHT_COIN_CAP, coinsToday, fireCheer, takeFirstCoin, isGemLook, mergePurses, shopRow, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { ACCESSORIES } from '../../src/lib/accessories.js'
 import { awayKey, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
 import { COME_BACK_DAYS, cameBack, daysSinceFirstAnswer, graceLost } from '../../src/lib/come-back.js'
@@ -350,6 +350,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }, [account.user, we.cards])
   const purse = mergePurses(stack.shelf)
   const dayCoins = coinsToday(stack.clock)
+  // The first coin ever earned gets one line, in the toast row (it respects reduced motion).
+  const lastDayCoins = useRef(dayCoins)
+  useEffect(() => {
+    const was = lastDayCoins.current
+    lastDayCoins.current = dayCoins
+    if (was === 0 && dayCoins > 0 && purse.coins <= dayCoins && takeFirstCoin()) confirmDone(t('tonight.firstCoin'))
+  }, [dayCoins]) // eslint-disable-line react-hooks/exhaustive-deps
   const wish = wishLine(wishGoal(purse))
   const next = wish ? null : nextCoinItem(purse)
   // Focus comes from navigation events, not useIsFocused: that re-rendered
