@@ -1249,6 +1249,12 @@ test('Remind me can use the mic: RECORD_AUDIO is not removed from the manifest',
   assert.ok(plugin[1].microphonePermission && plugin[1].speechRecognitionPermission, 'iOS mic and speech strings')
 })
 
+test('lamp notes are cut to 500 on load and save', async () => {
+  const { normalizeLamp } = await import('../src/lib/board-json.js')
+  assert.equal(normalizeLamp({ id: 'a', question: 'Did I?', notes: 'x'.repeat(900) }).notes.length, 500)
+  assert.ok(readFileSync(new URL('../src/lib/useHangDraft.js', import.meta.url), 'utf8').includes('.trim().slice(0, 500)'))
+})
+
 test('reminders are cleared only after the new list is built', () => {
   const src = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
   const body = src.slice(src.indexOf('async function schedulePingsNow'))

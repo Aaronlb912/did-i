@@ -126,6 +126,7 @@ export function useHangDraft({
       everyDays: draft.cadence === 'every' ? Number(draft.everyDays) || draft.everyDays : '',
       perWeek: draft.cadence === 'daily' && Number(draft.perWeek) >= 1 ? Number(draft.perWeek) : '',
       weekdays: draft.cadence === 'weekly' ? draft.weekdays || [] : [],
+      notes: String(draft.notes || '').trim().slice(0, 500),
       priority,
       notify: notifyOn,
     }
