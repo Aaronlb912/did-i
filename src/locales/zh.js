@@ -124,6 +124,7 @@ export const zh = {
   'settings.loadCopySub': '之前保存的副本文件。会添加到现有内容中。',
   'settings.loadOk': '已加载。新增问题：{n} 个。',
   'settings.loadOkBoth': '已加载。新增问题：{q} 个。新增答案：{a} 个。',
+  'settings.loadSame': '已经都在了，没有新内容。',
   'settings.sendCopyAcct': '商店物品、金币和宝石留在你的账户里。登录即可保留。',
   'settings.loadMiss': '该文件不是 Did I 副本。',
   'settings.how': '怎么用',

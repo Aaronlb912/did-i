@@ -124,6 +124,7 @@ export const fr = {
   'settings.loadCopySub': 'Une copie gardée avant, en fichier. Elle s’ajoute à ce qui est ici.',
   'settings.loadOk': 'Chargé. Questions ajoutées : {n}.',
   'settings.loadOkBoth': 'Chargé. Questions ajoutées : {q}. Réponses ajoutées : {a}.',
+  'settings.loadSame': 'Déjà là. Rien de nouveau à ajouter.',
   'settings.sendCopyAcct': 'Les articles de la boutique, les pièces et les gemmes restent avec ton compte. Connecte-toi pour les garder.',
   'settings.loadMiss': 'Ce fichier n’est pas une copie Did I.',
   'settings.how': 'Comment ça marche',

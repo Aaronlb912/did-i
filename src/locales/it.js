@@ -124,6 +124,7 @@ export const it = {
   'settings.loadCopySub': 'Una copia salvata prima, come file. Si aggiunge a quello che c’è qui.',
   'settings.loadOk': 'Caricato. Domande aggiunte: {n}.',
   'settings.loadOkBoth': 'Caricato. Domande aggiunte: {q}. Risposte aggiunte: {a}.',
+  'settings.loadSame': 'Già presente. Niente di nuovo da aggiungere.',
   'settings.sendCopyAcct': 'Oggetti del negozio, monete e gemme restano con il tuo account. Accedi per tenerli.',
   'settings.loadMiss': 'Quel file non è una copia Did I.',
   'settings.how': 'Come funziona',

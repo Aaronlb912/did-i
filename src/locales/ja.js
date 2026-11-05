@@ -124,6 +124,7 @@ export const ja = {
   'settings.loadCopySub': '以前保存したコピーのファイル。今あるものに追加されます。',
   'settings.loadOk': '読み込みました。追加した質問: {n} 件。',
   'settings.loadOkBoth': '読み込みました。追加した質問: {q} 件。追加した答え: {a} 件。',
+  'settings.loadSame': 'すでに入っています。追加はありません。',
   'settings.sendCopyAcct': 'ショップのアイテム、コイン、ジェムはアカウントに残ります。サインインすると保てます。',
   'settings.loadMiss': 'Did I のコピーではない。',
   'settings.how': '使い方',

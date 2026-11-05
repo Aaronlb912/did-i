@@ -124,6 +124,7 @@ export const ko = {
   'settings.loadCopySub': '전에 저장한 사본 파일. 지금 있는 것에 더해져요.',
   'settings.loadOk': '불러왔어요. 추가한 질문: {n}개.',
   'settings.loadOkBoth': '불러왔어요. 추가한 질문: {q}개. 추가한 답: {a}개.',
+  'settings.loadSame': '이미 있어요. 새로 추가할 것이 없어요.',
   'settings.sendCopyAcct': '상점 아이템, 코인, 젬은 계정에 남아요. 로그인하면 지킬 수 있어요.',
   'settings.loadMiss': 'Did I 백업 파일이 아니에요.',
   'settings.how': '사용법',

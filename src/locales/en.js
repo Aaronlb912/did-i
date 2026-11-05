@@ -124,6 +124,7 @@ export const en = {
   'settings.loadCopySub': 'A copy you saved before, as a file. It adds to what is here.',
   'settings.loadOk': 'Loaded. Questions added: {n}.',
   'settings.loadOkBoth': 'Loaded. Questions added: {q}. Answers added: {a}.',
+  'settings.loadSame': 'Already here. Nothing new to add.',
   'settings.sendCopyAcct': 'Shop items, coins and gems stay with your account. Sign in to keep them.',
   'settings.loadMiss': 'That file is not a Did I copy.',
   'settings.how': 'How this works',
