@@ -59,6 +59,15 @@ export async function weTonight(night = tonightIso()) {
   for (const card of cards) {
     // A paused card is not asked tonight: no pill, no swipe card, no reminder.
     if (card.paused) card.due = false
+    // slot null: a once_on or deadline card that has ended. Nothing is due.
+    if (card.slot === null) card.due = false
+    card.everyDays = card.everyDays ?? card.every_days ?? null
+    card.everyAnchor = card.everyAnchor ?? card.every_anchor ?? ''
+    card.perWeek = card.perWeek ?? card.per_week ?? null
+    card.monthDay = card.monthDay ?? card.month_day ?? null
+    card.onceOn = card.onceOn ?? card.once_on ?? ''
+    card.dueBy = card.dueBy ?? card.due_by ?? ''
+    card.weekDids = card.weekDids ?? card.week_dids ?? null
     card.periodEnd = card.periodEnd ?? card.period_end ?? ''
     card.scheduleFrom = card.scheduleFrom ?? card.schedule_from ?? ''
     card.changedBy = card.changedBy ?? card.changed_by ?? ''
@@ -92,25 +101,58 @@ export function weQuestion(raw) {
   return `${text.slice(0, 199)}?`
 }
 
-function weCadence(cadence) {
-  return cadence === 'weekly' || cadence === 'monthly' ? cadence : 'daily'
+export const WE_CADENCES = ['daily', 'weekly', 'monthly', 'every_n', 'every', 'per_week', 'once_on', 'deadline']
+
+// The schedule a form draft names, as the server takes it: cadence, weekdays,
+// want_n (monthly day, 0 = last; every_n and every days; per_week count) and
+// want_on (once_on day, deadline last day, every anchor). { miss } when the
+// draft is not finished.
+export function weTiming(draft, today = tonightIso()) {
+  const cadence = WE_CADENCES.includes(draft.cadence) ? draft.cadence : 'daily'
+  const out = { cadence, weekdays: [], n: null, on: null }
+  const days = Number(draft.everyDays)
+  if (cadence === 'weekly') {
+    if (!(draft.weekdays || []).length) return { miss: 'we.missDays' }
+    out.weekdays = draft.weekdays
+  } else if (cadence === 'monthly') {
+    const day = draft.monthDay === 'last' ? 0 : draft.monthDay === '' || draft.monthDay == null ? null : Number(draft.monthDay)
+    out.n = day != null && Number.isInteger(day) && day >= 0 && day <= 31 ? day : null
+  } else if (cadence === 'every_n' || cadence === 'every') {
+    if (!Number.isInteger(days) || days < 2 || days > 365) return { miss: cadence === 'every' ? 'hang.miss.everyDays' : 'hang.miss.everyN' }
+    out.n = days
+    out.on = /^\d{4}-\d{2}-\d{2}$/.test(String(draft.everyAnchor || '')) ? draft.everyAnchor : null
+  } else if (cadence === 'per_week') {
+    const n = Number(draft.perWeek)
+    if (!Number.isInteger(n) || n < 1 || n > 6) return { miss: 'hang.miss.everyN' }
+    out.n = n
+  } else if (cadence === 'once_on' || cadence === 'deadline') {
+    const day = cadence === 'once_on' ? draft.onceOn : draft.dueBy
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(day || ''))) return { miss: cadence === 'once_on' ? 'hang.miss.onceOn' : 'hang.miss.dueBy' }
+    if (day < today && day !== draft.keepOn) return { miss: cadence === 'once_on' ? 'hang.miss.onceOn' : 'hang.miss.dueByBefore' }
+    out.on = day
+  }
+  return out
 }
 
-export async function weMake({ question, mode, shows, cadence, weekdays, goal, ask, askAfter, remind, note, folder, topics, alone = false }) {
+export async function weMake({ question, mode, shows, goal, ask, askAfter, remind, note, folder, topics, alone = false, ...when }) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const text = weQuestion(question)
   if (!text) return { miss: 'we.missBlank' }
   if (!ask?.length && !alone) return { miss: 'we.missNobody' }
-  const { data, error } = await db.rpc('we_make', {
+  const timing = weTiming(when)
+  if (timing.miss) return { miss: timing.miss }
+  const { data, error } = await db.rpc('we_make2', {
     want_question: text.slice(0, 200),
     want_mode: WE_MODES.includes(mode) ? mode : 'all',
     want_shows: WE_SHOWS.includes(shows) ? shows : 'waiting',
-    want_cadence: weCadence(cadence),
-    want_weekdays: cadence === 'weekly' ? weekdays || [] : [],
+    want_cadence: timing.cadence,
+    want_weekdays: timing.weekdays,
     want_goal: goal || null,
     ask: ask || [],
     want_starts: tonightIso(),
+    want_n: timing.n,
+    want_on: timing.on,
   })
   if (error) return bad(error)
   const extras = await saveExtras(db, data, { askAfter, remind, note })
@@ -118,20 +160,23 @@ export async function weMake({ question, mode, shows, cadence, weekdays, goal, a
   return { miss: extras.miss || filed.miss, id: data }
 }
 
-export async function weEdit(card, { question, mode, shows, cadence, weekdays, goal, askAfter, remind, note }) {
+export async function weEdit(card, { question, mode, shows, goal, askAfter, remind, note, ...when }) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const text = weQuestion(question)
   if (!text) return { miss: 'we.missBlank' }
-  if (cadence === 'weekly' && !(weekdays || []).length) return { miss: 'we.missDays' }
-  const { error } = await db.rpc('we_edit2', {
+  const timing = weTiming(when)
+  if (timing.miss) return { miss: timing.miss }
+  const { error } = await db.rpc('we_edit3', {
     card,
     want_question: text.slice(0, 200),
     want_mode: mode,
     want_shows: shows,
-    want_cadence: weCadence(cadence),
-    want_weekdays: cadence === 'weekly' ? weekdays || [] : [],
+    want_cadence: timing.cadence,
+    want_weekdays: timing.weekdays,
     want_goal: goal || null,
+    want_n: timing.n,
+    want_on: timing.on,
   })
   if (error) return bad(error)
   // The rules are saved even when the time, reminder or note miss.
