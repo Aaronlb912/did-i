@@ -52,6 +52,8 @@ const ROUTES = new Set([
   '/shop/frames',
   '/gems',
   '/kit',
+  '/photos',
+  '/photo',
   '/gift',
   '/gifts',
   '/account',

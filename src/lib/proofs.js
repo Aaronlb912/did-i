@@ -2,6 +2,7 @@
 // photo per answer, 400 KB JPEG, private bucket, seen only by the people the
 // Did was for. Phone only; the web app does not add or show them.
 import { cloud } from './cloud.js'
+import { listKnownPeople, personName } from './people.js'
 import { boardDate, periodNight } from './recurrence.js'
 
 export const PROOF_MAX_BYTES = 409600
@@ -82,6 +83,48 @@ export async function loadProofs({ sendIds = [], cardIds = [] }) {
   for (const item of signed.data || []) if (item.signedUrl && !item.error) urls.set(item.path, item.signedUrl)
   return {
     rows: found.map((row) => ({ ...row, url: urls.get(proofPath(row.owner_id, row.id)) || '' })).filter((row) => row.url),
+    miss: '',
+  }
+}
+
+// The whole library: every photo you may see, newest day first, each with
+// its question and a signed link. The photo rows, then the sends, cards and
+// people at once, with one batch of links. The server hides blocked and
+// reported photos.
+export async function loadLibrary() {
+  const db = cloud()
+  if (!db) return { rows: [], miss: '' }
+  const { data, error } = await db
+    .from('proofs')
+    .select('id, owner_id, send_id, card_id, night, made_at')
+    .order('night', { ascending: false })
+    .order('made_at', { ascending: false })
+    .limit(200)
+  if (error) return { rows: [], miss: /relation|does not exist|schema cache/i.test(error.message || '') ? '' : 'people.reach' }
+  const found = data || []
+  if (!found.length) return { rows: [], miss: '' }
+  const sendIds = [...new Set(found.map((row) => row.send_id).filter(Boolean))]
+  const cardIds = [...new Set(found.map((row) => row.card_id).filter(Boolean))]
+  const [sends, cards, people, signed] = await Promise.all([
+    sendIds.length ? db.from('sends').select('id, question').in('id', sendIds) : { data: [] },
+    cardIds.length ? db.from('we_cards').select('id, question').in('id', cardIds) : { data: [] },
+    listKnownPeople().catch(() => []),
+    db.storage.from('proofs').createSignedUrls(found.map((row) => proofPath(row.owner_id, row.id)), SIGNED_SECONDS),
+  ])
+  const questionOf = new Map([...(sends.data || []), ...(cards.data || [])].map((row) => [row.id, row.question || '']))
+  const nameOf = new Map(people.map((person) => [person.user_id, personName(person)]))
+  const urls = new Map()
+  for (const item of signed.data || []) if (item.signedUrl && !item.error) urls.set(item.path, item.signedUrl)
+  return {
+    rows: found
+      .map((row) => ({
+        ...row,
+        kind: row.card_id ? 'we' : 'you',
+        question: questionOf.get(row.send_id || row.card_id) || '',
+        name: nameOf.get(row.owner_id) || '',
+        url: urls.get(proofPath(row.owner_id, row.id)) || '',
+      }))
+      .filter((row) => row.url),
     miss: '',
   }
 }
