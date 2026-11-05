@@ -95,6 +95,7 @@
         <action android:name="com.aaronbryant.didi.WIDGET_TAP"/>
       </intent-filter>
     </receiver>
+    <service android:name=".widget.PingRearmService" android:exported="false"/>
     <!-- Did or Not yet from the Wear OS watch app (android/wear). -->
     <service android:name=".watch.WatchTapService" android:exported="true">
       <intent-filter>

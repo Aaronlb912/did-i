@@ -11,6 +11,7 @@ import { Boot } from './native/Boot.jsx'
 // Waiting for the iOS bridge delay drops Did and Did not.
 if (Platform.OS === 'android') {
   require('./native/widget-setup.android.js')
+  require('./native/ping-rearm.android.js')
 }
 if (Platform.OS === 'ios') {
   require('./native/widget-setup.ios.js').installWidgetSetup()

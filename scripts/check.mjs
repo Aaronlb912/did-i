@@ -4095,6 +4095,9 @@ test('the android tonight widget stays inside its frame', () => {
   )
   const manifest = readFileSync(path.join(root, 'android/app/src/main/AndroidManifest.xml'), 'utf8')
   assert.ok(manifest.includes('.widget.WidgetTapReceiver'), 'the tap receiver is registered')
+  assert.ok(manifest.includes('.widget.PingRearmService'), 'the reminder re-arm service is registered')
+  assert.ok(readFileSync(path.join(root, 'native/ping-rearm.android.js'), 'utf8').includes("registerHeadlessTask('DidIPingRearm'"), 'the re-arm task is registered')
+  assert.ok(readFileSync(path.join(root, 'android/app/src/main/java/com/aaronbryant/didi/widget/PingRearmService.java'), 'utf8').includes('"DidIPingRearm"'), 'the service runs the same task name')
   const provider = readFileSync(
     path.join(root, 'android/app/src/main/java/com/aaronbryant/didi/widget/DidITonight.java'),
     'utf8',
