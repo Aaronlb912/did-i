@@ -278,7 +278,7 @@ export function useAppShelf() {
       const lampIds = gone?.lamps?.map((lamp) => lamp.id) || []
       if (moveTo) {
         const picks = lampIds.map((lampId) => ({ boardId: id, lampId }))
-        base = moveLamps(base.boards, picks, moveTo).reduce((next, one) => putBook(next, commitBook(one, new Date())), base)
+        base = moveLamps(base.boards, picks, moveTo).reduce((next, one) => putBook(next, commitBook(one.id === moveTo && one.archived ? { ...one, archived: false } : one, new Date())), base)
       } else if (lampIds.length) stopCheckOns(lampIds)
       persist(dropBook(base, id))
       const now = readRoute()
