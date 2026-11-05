@@ -2,7 +2,7 @@ import { weFirstNight, weNight, weNightsStamp } from './we-nights.js'
 import { addDaysIso, answerFor, boardDate, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor, periodPassed, weekStartOf } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { travelNightState, travelSkipped, travelWe } from './travel.js'
-import { readPrefs } from './prefs.js'
+import { awayOn, readPrefs } from './prefs.js'
 import { LOOKS_LATE, wallClock } from './zone.js'
 
 // A question only counts on nights it existed: one added today must not make
@@ -271,7 +271,7 @@ function nightTally(books, iso, at, tagId = '', now = new Date()) {
     if (night.counted && !night.clear) clear = false
   }
   // Did wes due for you that night: only your own did counts.
-  const we = travelWe(books.some((book) => travelSkipped(book, iso)), weNight(iso, tagId))
+  const we = travelWe(awayOn(iso) || books.some((book) => travelSkipped(book, iso)), weNight(iso, tagId))
   due += we.due
   if (we.due && !we.clear) clear = false
   return { due, clear }

@@ -8,7 +8,7 @@ import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions } from '../../src/lib/notify-answer.js'
 import { REMIND_TRIES, readReminds, remindNext } from '../../src/lib/remind-me.js'
-import { afterQuiet, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
+import { afterQuiet, awayOn, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { capNotes, earlyCallAt, lastCallAt, leftNote } from '../../src/lib/quiet.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
@@ -474,6 +474,7 @@ async function schedulePingsNow(books, now = new Date()) {
         for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
           const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
           const night = boardDate(day)
+          if (awayOn(night)) continue
           if (night < String(we.startsOn || '') || (we.cadence !== 'monthly' && night === we.skipNight)) continue
           // The weekday of the app day, not the phone calendar.
           const [year, month, date] = night.split('-').map(Number)
