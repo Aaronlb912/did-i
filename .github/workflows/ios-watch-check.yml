@@ -5,19 +5,8 @@ name: iOS watch check
 # no build number bump.
 
 on:
+  # Manual only: PRs are gated locally (npm test, N of N passed) so they spend no Actions minutes.
   workflow_dispatch:
-  pull_request:
-    paths:
-      - 'targets/**'
-      - 'modules/didi-watch/**'
-      - 'modules/didi-wake/**'
-      - 'app.json'
-      - 'app.config.js'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'plugins/**'
-      - 'patches/**'
-      - '.github/workflows/ios-watch-check.yml'
 
 concurrency:
   group: ios-watch-check-${{ github.ref }}
