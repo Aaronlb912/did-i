@@ -1170,6 +1170,12 @@ export const fr = {
   'family.makeParent': 'Nommer parent',
   'family.makeKid': 'Nommer enfant',
   'family.lastParent': 'Une famille garde un parent.',
+  'family.newCode': 'Créer un nouveau code',
+  'family.newCodeTitle': 'Créer un nouveau code ?',
+  'family.newCodeBody': 'L’ancien code cesse de marcher tout de suite. Les membres déjà dans la famille restent. Envoie le nouveau code à ceux qui doivent encore rejoindre.',
+  'family.newCodeDone': 'Nouveau code créé. L’ancien ne marche plus.',
+  'family.newCodeLimit': 'Tu as créé cinq nouveaux codes aujourd’hui. Réessaie demain.',
+  'family.newCodeSetup': 'Les nouveaux codes ne sont pas encore activés.',
   'family.lastParentLeave': 'Nomme quelqu’un d’autre parent avant de partir.',
   'family.inviteHint':
     'Quiconque a le code {code} peut rejoindre. Les parents peuvent les retirer après. Ils rejoignent comme enfant. Nomme-les parent depuis leur menu ⋯.',

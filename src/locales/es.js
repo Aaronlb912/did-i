@@ -1168,6 +1168,12 @@ export const es = {
   'family.makeParent': 'Hacer padre',
   'family.makeKid': 'Hacer hijo',
   'family.lastParent': 'Una familia se queda con un padre.',
+  'family.newCode': 'Crear un código nuevo',
+  'family.newCodeTitle': '¿Crear un código nuevo?',
+  'family.newCodeBody': 'El código anterior deja de funcionar al instante. Quienes ya están en la familia se quedan. Envía el código nuevo a quien quieras que se una.',
+  'family.newCodeDone': 'Código nuevo creado. El anterior ya no funciona.',
+  'family.newCodeLimit': 'Hoy ya creaste cinco códigos nuevos. Prueba mañana.',
+  'family.newCodeSetup': 'Los códigos nuevos aún no están activos.',
   'family.lastParentLeave': 'Haz padre a alguien más antes de salir.',
   'family.inviteHint':
     'Cualquiera con el código {code} puede entrar. Los padres pueden quitarlo después. Entran como hijo. Hazlos padre desde su menú ⋯.',

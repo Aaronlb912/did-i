@@ -1173,6 +1173,12 @@ export const de = {
   'family.makeParent': 'Zum Elternteil machen',
   'family.makeKid': 'Zum Kind machen',
   'family.lastParent': 'Eine Familie behält einen Elternteil.',
+  'family.newCode': 'Neuen Code erstellen',
+  'family.newCodeTitle': 'Neuen Code erstellen?',
+  'family.newCodeBody': 'Der alte Code funktioniert sofort nicht mehr. Wer schon in der Familie ist, bleibt. Schick den neuen Code an alle, die noch beitreten sollen.',
+  'family.newCodeDone': 'Neuer Code erstellt. Der alte gilt nicht mehr.',
+  'family.newCodeLimit': 'Du hast heute fünf neue Codes erstellt. Versuch es morgen wieder.',
+  'family.newCodeSetup': 'Neue Codes sind noch nicht aktiv.',
   'family.lastParentLeave': 'Mach jemand anderen zum Elternteil, bevor du gehst.',
   'family.inviteHint':
     'Jeder mit Code {code} kann beitreten. Eltern können sie danach entfernen. Sie treten als Kind bei. Mach sie über ihr ⋯-Menü zum Elternteil.',

@@ -1434,6 +1434,19 @@ export async function readFamily(familyId) {
   }
 }
 
+// Parents only. The old code stops working at once; five new codes a day.
+export async function rotateFamilyCode(familyId) {
+  const db = cloud()
+  if (!db) return { miss: 'off' }
+  const { data, error } = await db.rpc('rotate_family_code', { fam: familyId })
+  if (error) {
+    if (/too many new codes/i.test(error.message)) return { miss: 'family.newCodeLimit' }
+    if (error.code === 'PGRST202') return { miss: 'family.newCodeSetup' }
+    return { miss: appMiss(error) }
+  }
+  return { miss: '', code: data }
+}
+
 export async function setRole(familyId, userId, role) {
   const db = cloud()
   if (!db) return { miss: 'off' }

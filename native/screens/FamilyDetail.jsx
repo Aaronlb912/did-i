@@ -16,6 +16,7 @@ import {
   familyLampMeta,
   leaveFamily,
   renameFamily,
+  rotateFamilyCode,
   listFamilyLamps,
   personName,
   readFamily,
@@ -689,6 +690,30 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                   else confirmMiss(t('confirm.shareMiss'))
                 }}
               />
+              {fam.parent ? (
+                <KeyButton
+                  colors={colors}
+                  label={t('family.newCode')}
+                  onPress={() => {
+                    setCodeOpen(false)
+                    publishSheet({
+                      title: t('family.newCodeTitle'),
+                      body: t('family.newCodeBody'),
+                      goLabel: t('family.newCode'),
+                      closeLabel: t('settings.neverMind'),
+                      colors,
+                      onClose: () => publishSheet(null),
+                      onGo: async () => {
+                        publishSheet(null)
+                        const { miss: why } = (await once('fam-newcode', () => rotateFamilyCode(fam.id))) || {}
+                        if (why) confirmMiss(tMiss(why))
+                        else confirmDone(t('family.newCodeDone'))
+                        load()
+                      },
+                    })
+                  }}
+                />
+              ) : null}
               {miss ? <Meta colors={colors}>{miss}</Meta> : null}
               <KeyButton colors={colors} label={t('settings.close')} onPress={() => setCodeOpen(false)} />
             </Pressable>
