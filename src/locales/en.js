@@ -2682,6 +2682,8 @@ export const en = {
   'widget.settings.howAddIos': 'Long-press an empty spot on your home screen. Tap Edit, then Add Widget (or +). Search for Did I, pick a size, and tap Add Widget. For your questions, pick Did I questions. Did I together only shows your friends.',
   'widget.settings.howAddAndroid': 'Long-press an empty spot on your home screen. Tap Widgets. Find Did I and drag it where you want. For your questions, pick Did I questions. Did I together only shows your friends.',
   'widget.settings.howAdd': 'How to add the widget',
+  'shop.earnRow': "How to earn coins",
+  'shop.earnBody': "You get coins when you answer Did. Clear today for up to {cap} coins.",
   'shop.howEarn': 'Clear today for up to {cap} coins',
   'shop.needMoreGems': 'Need {n} more gems.',
   'shop.needMoreCoins': 'Need {n} more coins.',

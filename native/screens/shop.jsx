@@ -761,12 +761,14 @@ function gemPackTitle(pack) {
 }
 
 function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors, artRef }) {
+  const loading = Boolean(onBuy) && !price
   const title = gemPackTitle(pack)
   return (
     <Pressable
       onPress={onBuy || undefined}
-      disabled={!onBuy}
+      disabled={!onBuy || loading}
       accessibilityRole={onBuy ? 'button' : 'text'}
+      accessibilityState={{ disabled: !onBuy || loading }}
       accessibilityLabel={`${title}, ${price}`}
       style={({ pressed }) => [styles.gemFeatured, { borderColor: best ? colors.onDeep : colors.line, backgroundColor: colors.panel }, pressFx(pressed)]}
     >
@@ -781,8 +783,8 @@ function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors, artRef }
       <Text style={[styles.gemFeaturedTitle, { color: colors.ink }]}>{title}</Text>
       {bonusNote ? <Text style={[styles.gemFeaturedNote, { color: colors.inkDim }]}>{bonusNote}</Text> : null}
       {onBuy ? (
-        <View style={[styles.gemFeaturedButton, { backgroundColor: colors.on }]}>
-          <Text style={[styles.gemFeaturedButtonText, { color: colors.bg }]}>{price ? t('gems.buyPrice', { price }) : t('gems.loadingStore')}</Text>
+        <View style={[styles.gemFeaturedButton, { backgroundColor: loading ? colors.panel3 : colors.on }]}>
+          <Text style={[styles.gemFeaturedButtonText, { color: loading ? colors.inkDim : colors.bg }]}>{price ? t('gems.buyPrice', { price }) : t('gems.loadingStore')}</Text>
         </View>
       ) : (
         <Text style={[styles.gemFeaturedTitle, { color: colors.inkDim }]}>{price}</Text>
@@ -803,7 +805,7 @@ function CompactGemRow({ pack, price, bonusNote, onBuy, colors, artRef }) {
         {bonusNote ? <Text style={[styles.shopNote, { color: colors.inkDim }]}>{bonusNote}</Text> : null}
         {onBuy ? null : <Text style={[styles.shopNote, { color: colors.inkDim }]}>{price}</Text>}
       </View>
-      {onBuy ? <DidButton small label={price ? t('gems.buyPrice', { price }) : t('gems.loadingStore')} onPress={onBuy} colors={colors} /> : null}
+      {onBuy ? <DidButton small disabled={!price} label={price ? t('gems.buyPrice', { price }) : t('gems.loadingStore')} onPress={onBuy} colors={colors} /> : null}
     </View>
   )
 }
@@ -911,11 +913,31 @@ function openTilePreview(type, item, purse, colors, coat, action, miss = '', wis
     preview,
     title: name,
     body,
+    ...(short ? { content: <EarnCoinsRow colors={colors} onPress={() => openEarnCoins(colors, () => openTilePreview(type, item, purse, colors, coat, action, miss, wish))} /> } : {}),
     ...(wish && !tag.owned ? { moreLabel: wish.on ? `♥ ${t('shop.wishOn')}` : `♡ ${t('shop.wishAdd')}`, moreSizeLabels: [`♥ ${t('shop.wishOn')}`, `♡ ${t('shop.wishAdd')}`], onMore: wish.toggle } : {}),
     ...(action ? { goLabel: action.label, onGo: action.go } : short ? { goLabel: t('tonight.backToStack'), onGo: () => { publishSheet(null); goHash('/tonight') } } : {}),
     closeLabel: t('settings.close'),
     colors,
     onClose: () => publishSheet(null),
+  })
+}
+
+// Short on coins: a full-width row to a short sheet on where coins come from.
+function EarnCoinsRow({ colors, onPress }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.earnRow, { borderColor: colors.line, backgroundColor: colors.panel2 }]}>
+      <Text style={[styles.earnRowText, { color: colors.on }]}>{t('shop.earnRow')}</Text>
+    </Pressable>
+  )
+}
+
+function openEarnCoins(colors, back) {
+  publishSheet({
+    title: t('shop.earnRow'),
+    body: t('shop.earnBody', { cap: NIGHT_COIN_CAP }),
+    closeLabel: t('settings.close'),
+    colors,
+    onClose: back,
   })
 }
 
@@ -992,7 +1014,7 @@ function useTileTap(book, onChange, colors, coat, purse) {
     // A free event item: no price, so no confirm step. A miss shows in the sheet.
     const claimNow = () => ({
       label: t('shop.claimFree'),
-      go: async () => done(type, item, await claimFree(liveBook(book), type, item.id), true),
+      go: () => goOnce(async () => done(type, item, await claimFree(liveBook(book), type, item.id), true)),
     })
     if (type === 'look') {
       if (purse.lookOn === item.id) return null
@@ -1859,7 +1881,7 @@ export function GemShopScreen({ book }) {
   async function restore() {
     if (restoring) return
     if (account.ready && !account.user) {
-      goHash('/account')
+      confirmMiss(t('gems.restoreSignIn'))
       return
     }
     setRestoring(true)
@@ -2374,6 +2396,8 @@ const styles = StyleSheet.create({
   kindCount: { fontFamily: fonts.ui, fontSize: 12 },
   kitTileCaption: { fontFamily: fonts.ui, fontSize: 11, maxWidth: '100%' },
   kitWearing: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  earnRow: { minHeight: 44, width: '100%', borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  earnRowText: { fontFamily: fonts.uiSemi, fontSize: 15 },
   wishBtn: { alignSelf: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 8 },
   wishText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   cap: {
@@ -2469,7 +2493,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   gemFeaturedArt: { marginTop: 6, alignItems: 'center', justifyContent: 'center' },
-  gemFeaturedTitle: { fontFamily: fonts.display, fontSize: 20, fontWeight: '800' },
+  gemFeaturedTitle: { fontFamily: fonts.display, fontSize: 20 },
   gemFeaturedNote: { fontFamily: fonts.ui, fontSize: 13 },
   gemFeaturedButton: {
     marginTop: 4,

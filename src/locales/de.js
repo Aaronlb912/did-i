@@ -2700,6 +2700,8 @@ export const de = {
   'widget.settings.howAddIos': 'Halte eine freie Stelle auf dem Home-Bildschirm gedrückt. Tippe auf Bearbeiten, dann auf Widget hinzufügen (oder +). Such nach Did I, wähle eine Größe und tippe auf Widget hinzufügen. Für deine Fragen wähle Did I questions. Did I together zeigt nur deine Freunde.',
   'widget.settings.howAddAndroid': 'Halte eine freie Stelle auf dem Startbildschirm gedrückt. Tippe auf Widgets. Such Did I und zieh es an die gewünschte Stelle. Für deine Fragen wähle Did I questions. Did I together zeigt nur deine Freunde.',
   'widget.settings.howAdd': 'So fügst du das Widget hinzu',
+  'shop.earnRow': "So verdienst du Münzen",
+  'shop.earnBody': "Du bekommst Münzen, wenn du mit Did antwortest. Erledige heute alles für bis zu {cap} Münzen.",
   'shop.howEarn': 'Erledige heute für bis zu {cap} Münzen',
   'shop.needMoreGems': 'Noch {n} Edelsteine nötig.',
   'shop.needMoreCoins': 'Noch {n} Münzen nötig.',
