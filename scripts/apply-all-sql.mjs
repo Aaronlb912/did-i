@@ -116,6 +116,7 @@ const files = [
   'supabase/we-month-open.sql',
   'supabase/we-link-blocked.sql',
   'supabase/we-link-already.sql',
+  'supabase/did-you-when.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
