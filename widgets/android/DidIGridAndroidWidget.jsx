@@ -50,6 +50,7 @@ export function renderDidIGridAndroidWidget(props, widgetInfo) {
                 height: cell,
                 borderRadius: 2,
                 backgroundColor: colorOf(week.charAt(d) || ' '),
+                ...(w === p.todayWeek && d === p.todayRow ? { borderWidth: 1, borderColor: C.on } : {}),
                 marginTop: d ? GAP : 0,
               }}
             />

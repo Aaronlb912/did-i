@@ -138,6 +138,8 @@ struct WatchCards: Codable, Equatable {
   var streak: Int?
   var streakLabel: String?
   var streakOneLabel: String?
+  // The streak once today is finished, so the done screen is right before the phone sends new cards. Optional.
+  var streakIfDone: Int?
   var cheer: [String]?
   // Today's counted questions with no card on the watch: done (Did or late)
   // and later (still to come, Did wes included). With them and each card's
@@ -321,14 +323,18 @@ final class CardStore: NSObject, ObservableObject, WCSessionDelegate {
       if item.id == card.id && item.night == card.night { item.status = answer }
       return item
     }
-    if let data = try? JSONEncoder().encode(current), let json = String(data: data, encoding: .utf8) {
-      defaults.set(json, forKey: CardStore.key)
-    }
     // The last open card, answered Did, with nothing left at Not yet.
-    let finished = did && !current.items.isEmpty && current.items.allSatisfy { $0.status == "did" }
+    // Last night's grace cards do not count here, as in Today's meter.
+    let counted = current.items.filter { $0.counted != false }
+    let finished = did && card.counted != false && !counted.isEmpty && (current.later ?? 0) == 0
+      && counted.allSatisfy { $0.status == "did" }
     if finished {
       justFinished = true
+      if let ahead = current.streakIfDone { current.streak = ahead }
       WKInterfaceDevice.current().play(.success)
+    }
+    if let data = try? JSONEncoder().encode(current), let json = String(data: data, encoding: .utf8) {
+      defaults.set(json, forKey: CardStore.key)
     }
     cards = current
     WidgetCenter.shared.reloadAllTimelines()

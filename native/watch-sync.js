@@ -77,6 +77,8 @@ export function watchCardsFromProps(props, shelf = null) {
     streak: !props?.gentle && shelf ? shelfStreak(shelf.boards || []) : 0,
     streakLabel: t('tonight.streakMany', { n: '{n}' }),
     streakOneLabel: t('tonight.streakOne'),
+    // What the streak reads once the last open question is done.
+    ...(!props?.gentle && shelf ? { streakIfDone: shelfStreak(shelf.boards || []) + (Number(props?.left) > 0 ? 1 : 0) } : {}),
     // The look tones the phone's confetti uses (CheerBurst: on, gold, blue, ink).
     cheer: [look.on, look.onDeep, look.late, look.ink].filter(Boolean),
     updatedAt: Number(props?.updatedAt) || Date.now(),

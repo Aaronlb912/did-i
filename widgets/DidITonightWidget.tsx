@@ -73,6 +73,12 @@ export type DidITonightWidgetProps = {
   openLabel: string
   clearLabel?: string
   emptyLabel?: string
+  // Count line wording, with {n} in leftLabel. countFooter is set when footer is that count, so a tap can redo it.
+  countFooter?: boolean
+  oneLeftLabel?: string
+  leftLabel?: string
+  // Set by a Did tap: the next draw shows a check on the card.
+  didMark?: boolean
   openUri?: string
   buddyId?: string
   // Did we, one line: "Did we · waiting on Sam". Medium and large only.
@@ -822,7 +828,11 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     const nextQuestion = nextLead ? String(nextLead.question || nextLead.label || '') : ''
     const clearLine = String(props?.clearLabel || props?.footer || 'All clear for today')
     const emptyLine = String(props?.emptyLabel || 'No questions yet')
-    const nextFooter = nextLead ? footer : nextLeft === 0 ? (nextItems.length ? clearLine : emptyLine) : footer
+    const countLine = nextLeft === 1
+      ? String(props?.oneLeftLabel || '')
+      : String(props?.leftLabel || '').replace('{n}', String(nextLeft))
+    const keepCount = props?.countFooter === true && nextLeft > 0 && countLine
+    const nextFooter = keepCount ? countLine : nextLead ? footer : nextLeft === 0 ? (nextItems.length ? clearLine : emptyLine) : footer
     return {
       ...props,
       items: nextItems,
@@ -833,6 +843,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       sinceLine: String(nextLead?.since || ''),
       left: nextLeft,
       footer: nextFooter,
+      didMark: kind === 'did',
       openUri: openUriForLead(nextLead ? nextLead.lampId : ''),
     }
   }
@@ -920,7 +931,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
         frame({ maxWidth: 10000 }),
       ]}
     >
-      {leadTag}
+      {props?.didMark === true ? '✓ ' + leadTag : leadTag}
     </Text>
   )
   // Shrinks to fit the card instead of cutting off mid-line (Android's fitQuestion).
@@ -1010,6 +1021,30 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
     </HStack>
   ) : null
 
+  // Large only: the next few questions under the card, so the tall size is not empty space.
+  let upNextRows = null
+  try {
+    if (family === 'systemLarge') {
+      const others = browsable.filter((item) => !(lead && item.lampId === lead.lampId && String(item.periodKey || '') === String(lead.periodKey || '')))
+      upNextRows = others.slice(0, 3).map((item) => (
+        <Text
+          modifiers={[
+            font({ size: 14, weight: 'semibold' }),
+            foregroundStyle(tinted ? ink : c.inkSoft),
+            multilineTextAlignment('center'),
+            lineLimit(1),
+            minimumScaleFactor(0.7),
+            frame({ maxWidth: 10000 }),
+          ]}
+        >
+          {String(item.question || item.label || '')}
+        </Text>
+      ))
+    }
+  } catch {
+    upNextRows = null
+  }
+
   // The Did we line is extra; if it cannot be drawn, the card goes on without it.
   let weRow = null
   try {
@@ -1091,6 +1126,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           {sinceRow}
           <Spacer />
           {buttons}
+          {upNextRows}
           {weRow}
         </VStack>
         {buddyMark(buddyId)}

@@ -31,8 +31,13 @@ public final class WidgetAlarms {
             if (at <= now || count >= CAP) continue;
             PendingIntent intent = pending(context, count);
             boolean exact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms();
-            if (exact) alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent);
-            else alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent);
+            try {
+                if (exact) alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent);
+                else alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent);
+            } catch (SecurityException denied) {
+                // Exact access was turned off between the check and the call.
+                alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent);
+            }
             count++;
         }
         prefs.edit().putInt(COUNT, count).apply();
