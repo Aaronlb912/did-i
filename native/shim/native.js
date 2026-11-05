@@ -450,10 +450,22 @@ async function schedulePingsNow(books, now = new Date()) {
               wall: true,
             })
           }
+          // Second reminder time: same rules, cleared and rebuilt with the first.
+          // Not tied to the first time having passed or not.
+          const second = String(row.lamp.askAfter2 || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
+          const at2 = at && second ? new Date(year, month - 1, date, Number(second[1]), Number(second[2]), 0, 0) : null
+          if (at2 && !row.answer && afterQuiet(at2).getTime() > now.getTime() && nightOpen(night, afterQuiet(at2))) {
+            notes.push({
+              identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}:2`)),
+              content,
+              trigger: when(at2),
+              wall: true,
+            })
+          }
           // A high one still open gets a last call.
           if (!lampNudgesLate(row.lamp)) continue
           // 21:00, or around quiet hours and the question's own time (lastCallAt).
-          const late = lastCallAt(year, month, date, at, readPrefs(), now)
+          const late = lastCallAt(year, month, date, at2 && at2 > at ? at2 : at, readPrefs(), now)
           if (!late) continue
           notes.push({
             identifier: String(notifyId(row.lamp.id, `${row.periodKey}:late:${row.dateIso}`)),

@@ -78,6 +78,22 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000, now = new Da
   if (isEvery(lamp)) return everyBest(book, lamp, dateIso)
   if (isPerWeek(lamp)) return perWeekBest(book, lamp, dateIso)
   if (lamp.cadence === 'once') return questionStreak(book, lamp, dateIso)
+  return streakRuns(book, lamp, dateIso, cap, now).reduce((best, run) => Math.max(best, run.n), 0)
+}
+
+// The longest runs this question had (top 5 by length, newest first on a tie),
+// each { n, from, to, current }. Day questions only; the others have no day
+// runs to list. Same walk and rules as bestQuestionStreak. Callers memoize it.
+export function topQuestionStreaks(book, lamp, dateIso, count = 5, now = new Date()) {
+  if (!lamp || !dateIso || lamp.cadence === 'once' || !isDayCadence(lamp)) return []
+  return streakRuns(book, lamp, dateIso, 1000, now)
+    .sort((a, b) => b.n - a.n || b.to.localeCompare(a.to))
+    .slice(0, count)
+}
+
+// Every run of Did nights, newest first. The run still going (nothing broke it
+// since) is marked current.
+function streakRuns(book, lamp, dateIso, cap, now) {
   const live = { ...lamp, archived: false }
   let first = String(lamp.createdOn || '').slice(0, 10)
   if (!first) {
@@ -90,8 +106,15 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000, now = new Da
   if (first && lamp.cadence === 'monthly') first = `${first.slice(0, 7)}-01`
   let cursor = isDueOn(live, dateIso) ? dateIso : previousDueDate(live, dateIso)
   const grace = openGrace(dateIso, now)
-  let best = 0
+  const runs = []
   let run = 0
+  let to = ''
+  let from = ''
+  let broke = false
+  const close = () => {
+    if (run) runs.push({ n: run, from, to, current: !broke && !runs.length })
+    run = 0
+  }
   let steps = 0
   while (cursor && steps < cap && (!first || cursor >= first)) {
     const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cursor))
@@ -101,15 +124,18 @@ export function bestQuestionStreak(book, lamp, dateIso, cap = 1000, now = new Da
       continue
     }
     if (didStatus(answer?.status)) {
+      if (!run) to = cursor
       run += 1
-      if (run > best) best = run
+      from = cursor
     } else if (cursor !== dateIso && !(cursor === grace && !answer)) {
-      run = 0
+      close()
+      broke = true
     }
     steps += 1
     cursor = previousDueDate(live, cursor)
   }
-  return best
+  close()
+  return runs
 }
 
 // One question's record for its page: the DID streak, and how many of its
@@ -300,6 +326,32 @@ export function lampAmounts(book, lamp, dateIso, chartDays = 14, avgDays = 30) {
     bars.push({ night, amount })
   }
   return { average: count ? roundAmount(sum / count) : null, count, bars, max }
+}
+
+// Amount totals for this week (starting on firstDay, 0 = Sunday) and this
+// calendar month, over Did days with an amount, one amount per day. Days after
+// dateIso are left out. Callers memoize it on [book, lamp, dateIso, firstDay].
+export function lampAmountTotals(book, lamp, dateIso, firstDay = 0) {
+  const out = { week: 0, month: 0, weekDays: 0, monthDays: 0 }
+  if (!lamp || !lamp.trackAmount || !dateIso) return out
+  const back = (new Date(`${dateIso}T12:00:00`).getDay() - firstDay + 7) % 7
+  const weekFrom = addDaysIso(dateIso, -back)
+  const monthFrom = `${dateIso.slice(0, 7)}-01`
+  const seen = new Set()
+  for (const { answer, night } of lampNights(book, lamp)) {
+    if (!night || night > dateIso || night < monthFrom || seen.has(night)) continue
+    if (!didStatus(answer.status) || typeof answer.amount !== 'number') continue
+    seen.add(night)
+    out.month += answer.amount
+    out.monthDays += 1
+    if (night >= weekFrom) {
+      out.week += answer.amount
+      out.weekDays += 1
+    }
+  }
+  out.week = Math.round(out.week * 100) / 100
+  out.month = Math.round(out.month * 100) / 100
+  return out
 }
 
 // Questions that run on days (not times a week, not every so often).

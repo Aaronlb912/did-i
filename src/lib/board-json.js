@@ -59,6 +59,7 @@ export function slotFromAskAfter(askAfter) {
   if (hour < 17) return 'whenever'
   return 'night'
 }
+const SECOND_TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 const STATUSES = ['yes', 'skip', 'late']
 const SEND_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const PRIORITIES = ['high', 'normal', 'low']
@@ -265,6 +266,10 @@ export function normalizeLamp(raw) {
     askAfter,
     // First day askAfter holds; before it the question is open all day.
     ...(askAfter && /^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.askFrom).trim()) ? { askFrom: asString(lamp.askFrom).trim() } : {}),
+    // A second reminder time. Only with a first one. Builds without it drop it on save.
+    ...(askAfter && SECOND_TIME.test(asString(lamp.askAfter2).trim()) && asString(lamp.askAfter2).trim() !== askAfter ? { askAfter2: asString(lamp.askAfter2).trim() } : {}),
+    // Last day it is asked. After it the question is not due; its history stays.
+    ...(/^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.endsOn).trim()) ? { endsOn: asString(lamp.endsOn).trim() } : {}),
     slot,
     notes: asString(lamp.notes).slice(0, 500),
     priority: lampPriority(lamp),
@@ -544,6 +549,8 @@ export function missLamp(lamp) {
   if (after && !/^([01]\d|2[0-3]):[0-5]\d$/.test(after)) {
     return 'hang.miss.askAfter'
   }
+  const second = asString(lamp.askAfter2).trim()
+  if (second && !SECOND_TIME.test(second)) return 'hang.miss.askAfter'
   return ''
 }
 

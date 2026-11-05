@@ -74,6 +74,7 @@ import { flyBackNext } from '../components/SwipeCard.jsx'
 import { SwipeFlyHost } from '../components/SwipeFly.jsx'
 import { DropLine, dropLineUp } from '../components/DropLine.jsx'
 import { RateCard } from '../components/RateCard.jsx'
+import { FreezeCard } from '../components/FreezeCard.jsx'
 import { askReviewAtStreak } from '../streak-review.js'
 import { RemindersRow } from '../components/RemindersRow.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
@@ -1681,6 +1682,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         <NightMeter due={stack.due} we={stack.weTonight} colors={colors} hallOn={stack.nightDone} gemLook={premium ? look : ''} celebrate={Boolean(stack.cheer)} waiting={peopleWaitingLine(peopleItems)} />
       </Slot>
       {missUp ? <Text style={[styles.missLine, { color: colors.inkSoft }]}>{t('firstWeek.missed')}</Text> : null}
+      {gentle || returning ? null : <FreezeCard colors={colors} shelf={stack.shelf} now={stack.clock} dateIso={stack.dateIso} />}
 
       {showChips ? (
         <FadeScroll scrollRef={pillScroll} fade={colors.bg} style={styles.jewels} contentContainerStyle={styles.jewelsIn}>
