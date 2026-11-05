@@ -11,7 +11,8 @@ export function useWeCheer(book, onChange) {
   const [note, setNote] = useState('')
   const [miss, setMiss] = useState('')
 
-  async function cheer(person) {
+  // about: the question the cheer is for, when it comes from a photo.
+  async function cheer(person, about = '') {
     if (!book || !onChange || busy) return
     const cheerOn = normalizePurse(book).cheerOn
     setBusy(person.id)
@@ -20,7 +21,7 @@ export function useWeCheer(book, onChange) {
     // Friends first; someone only in your family goes the family way.
     let sent
     try {
-      sent = await cheerFriend(book, person.id, cheerOn)
+      sent = await cheerFriend(book, person.id, cheerOn, about)
       if (sent.miss === 'notFriend') sent = await cheerFamily(book, person.id, '', cheerOn)
     } catch {
       return setMiss(t('people.reach'))

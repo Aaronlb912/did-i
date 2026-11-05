@@ -4129,4 +4129,11 @@ export const pt = {
   'photos.saveFail': "Não foi possível salvar a foto.",
   'photos.saveOff': "O acesso às fotos está desativado para o Did I. Ative nas Configurações do telefone para salvar fotos.",
   'photos.of': "{n} de {total}",
+  'photos.deleteAll': "Apagar todas as minhas fotos",
+  'photos.deleteAllTitle': "Apagar todas as suas fotos?",
+  'photos.deleteAllBody': "Cada foto que você adicionou some para todos e os arquivos são apagados. Seus Did ficam. Não dá para desfazer.",
+  'photos.deleteAllDone': "Todas as suas fotos foram apagadas",
+  'photos.deleteAllFail': "Algumas fotos não puderam ser apagadas. Tente de novo.",
+  'photos.viewDay': "Ver foto",
+  'photos.dayMark': "Foto",
 }

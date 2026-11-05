@@ -27,6 +27,28 @@ function missFor(error) {
   return 'proof.fail'
 }
 
+// A photo row with no push yet is one whose upload never finished. Clear it
+// (row and any file) before a new try, so a failed upload can be retried and
+// does not count against the 5 a day or the one photo per answer.
+async function clearHalfDone(db, uid, target, night) {
+  const query = db.from('proofs').select('id').eq('owner_id', uid).eq('night', night).is('pushed_at', null)
+  const { data, error } = await (target.sendId ? query.eq('send_id', target.sendId) : query.eq('card_id', target.cardId))
+  const seen = (data || []).map((row) => row.id).filter((id) => UUID.test(String(id)))
+  // A row whose file did land (the done call never got through) is a real
+  // photo: proof_uploaded marks it pushed, and only rows still unmarked go.
+  for (const id of seen) {
+    const marked = await db.rpc('proof_uploaded', { pid: id })
+    if (marked.error) return
+  }
+  const left = seen.length ? await db.from('proofs').select('id').in('id', seen).is('pushed_at', null) : { data: [] }
+  if (left.error) return
+  const ids = (left.data || []).map((row) => row.id)
+  // Before the push column is on the server the read fails: nothing to clear.
+  if (error || !ids.length) return
+  await db.storage.from('proofs').remove(ids.map((id) => proofPath(uid, id)))
+  await db.from('proofs').delete().in('id', ids)
+}
+
 // Makes the row, then the file. A failed upload takes the row back, so the
 // answer stays and no empty photo is left. `ready` runs first (the phone
 // uses it to save the Did you answer to the server).
@@ -43,6 +65,7 @@ export async function addProof(target, night, bytes, ready) {
   } catch {
     // The server says if the Did is not there.
   }
+  await clearHalfDone(db, uid, target, night).catch(() => {})
   const made = await db.rpc('add_proof', {
     p_send: target.sendId || null,
     p_card: target.cardId || null,
@@ -52,7 +75,9 @@ export async function addProof(target, night, bytes, ready) {
   const id = made.data
   const up = await db.storage.from('proofs').upload(proofPath(uid, id), bytes, { contentType: 'image/jpeg' })
   if (up.error) {
-    await db.from('proofs').delete().eq('id', id)
+    // If the row stays, the next try clears it (no push yet), so one more go is enough.
+    const undone = await db.from('proofs').delete().eq('id', id)
+    if (undone.error) await db.from('proofs').delete().eq('id', id)
     return { miss: /size|large/i.test(up.error.message || '') ? 'proof.tooBig' : 'proof.fail' }
   }
   // The push to the other person waits for the file. A miss here only loses the push.
@@ -140,13 +165,55 @@ export async function freshProofUrl(row) {
   return error ? '' : data?.signedUrl || ''
 }
 
-// Owner removes their photo: the file, then the row.
+// Owner removes their photo: the row, then the file through the Storage API
+// (SQL cannot delete storage files). Row first: a row left without its file
+// would vanish from the library yet still block a new photo on that answer.
+// A file left without its row stays private and goes with the account.
 export async function removeProof(row) {
   const db = cloud()
   if (!db) return { miss: 'proof.fail' }
-  await db.storage.from('proofs').remove([proofPath(row.owner_id, row.id)]).catch(() => {})
   const { error } = await db.from('proofs').delete().eq('id', row.id)
-  return { miss: error ? 'proof.fail' : '' }
+  if (error) return { miss: 'proof.fail' }
+  await db.storage.from('proofs').remove([proofPath(row.owner_id, row.id)]).catch(() => {})
+  return { miss: '' }
+}
+
+// Every file in your own proofs folder, a page at a time. Removing shifts the
+// list, so each round reads the first page again. Stops on an error, or when
+// a round removes nothing, so it cannot loop. Before the bucket exists there
+// is nothing to remove.
+export async function removeAllProofFiles(uid) {
+  const db = cloud()
+  if (!db) return { miss: 'proof.fail' }
+  let me = uid
+  if (!me) {
+    const { data } = await db.auth.getSession()
+    me = data?.session?.user?.id
+  }
+  if (!me) return { miss: 'proof.fail' }
+  const bucket = db.storage.from('proofs')
+  for (let round = 0; round < 50; round += 1) {
+    const listed = await bucket.list(me, { limit: 100 })
+    if (listed.error) return { miss: /not found|does not exist/i.test(listed.error.message || '') ? '' : 'proof.fail' }
+    const names = (listed.data || []).map((item) => item.name).filter(Boolean)
+    if (!names.length) return { miss: '' }
+    const gone = await bucket.remove(names.map((name) => `${me}/${name}`))
+    if (gone.error || !(gone.data || []).length) return { miss: 'proof.fail' }
+  }
+  return { miss: 'proof.fail' }
+}
+
+// Delete all my photos: the rows first (same reason as removeProof), then
+// the files. Dids stay.
+export async function removeAllProofs() {
+  const db = cloud()
+  if (!db) return { miss: 'proof.fail' }
+  const { data } = await db.auth.getSession()
+  const uid = data?.session?.user?.id
+  if (!uid) return { miss: 'proof.fail' }
+  const { error } = await db.from('proofs').delete().eq('owner_id', uid)
+  if (error) return { miss: 'proof.fail' }
+  return removeAllProofFiles(uid)
 }
 
 export async function reportProof(id, why = '') {

@@ -4133,4 +4133,11 @@ export const es = {
   'photos.saveFail': "No se pudo guardar la foto.",
   'photos.saveOff': "El acceso a fotos está desactivado para Did I. Actívalo en los Ajustes del teléfono para guardar fotos.",
   'photos.of': "{n} de {total}",
+  'photos.deleteAll': "Borrar todas mis fotos",
+  'photos.deleteAllTitle': "¿Borrar todas tus fotos?",
+  'photos.deleteAllBody': "Cada foto que añadiste desaparece para todos y los archivos se borran. Tus Did se quedan. No se puede deshacer.",
+  'photos.deleteAllDone': "Se borraron todas tus fotos",
+  'photos.deleteAllFail': "No se pudieron borrar algunas fotos. Inténtalo otra vez.",
+  'photos.viewDay': "Ver foto",
+  'photos.dayMark': "Foto",
 }

@@ -4087,4 +4087,11 @@ export const zh = {
   'photos.saveFail': "无法保存这张照片。",
   'photos.saveOff': "Did I 的照片权限已关闭。请在手机设置中开启，以便保存照片。",
   'photos.of': "{n} / {total}",
+  'photos.deleteAll': "删除我的所有照片",
+  'photos.deleteAllTitle': "删除你的所有照片？",
+  'photos.deleteAllBody': "你添加的每张照片都将对所有人消失，文件也会被删除。你的 Did 保留。此操作无法撤销。",
+  'photos.deleteAllDone': "你的所有照片已删除",
+  'photos.deleteAllFail': "有些照片无法删除。请再试一次。",
+  'photos.viewDay': "查看照片",
+  'photos.dayMark': "照片",
 }

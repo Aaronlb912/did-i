@@ -4096,4 +4096,11 @@ export const ko = {
   'photos.saveFail': "사진을 저장하지 못했어요.",
   'photos.saveOff': "Did I의 사진 접근이 꺼져 있어요. 사진을 저장하려면 휴대폰 설정에서 켜 주세요.",
   'photos.of': "{n} / {total}",
+  'photos.deleteAll': "내 사진 모두 삭제",
+  'photos.deleteAllTitle': "사진을 모두 삭제할까요?",
+  'photos.deleteAllBody': "추가한 사진이 모두에게서 사라지고 파일도 삭제돼요. Did는 그대로예요. 되돌릴 수 없어요.",
+  'photos.deleteAllDone': "사진을 모두 삭제했어요",
+  'photos.deleteAllFail': "삭제하지 못한 사진이 있어요. 다시 시도해 주세요.",
+  'photos.viewDay': "사진 보기",
+  'photos.dayMark': "사진",
 }

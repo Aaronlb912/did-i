@@ -4136,4 +4136,11 @@ export const fr = {
   'photos.saveFail': "La photo n’a pas pu être enregistrée.",
   'photos.saveOff': "L’accès aux photos est désactivé pour Did I. Active-le dans les Réglages du téléphone pour enregistrer des photos.",
   'photos.of': "{n} sur {total}",
+  'photos.deleteAll': "Supprimer toutes mes photos",
+  'photos.deleteAllTitle': "Supprimer toutes tes photos ?",
+  'photos.deleteAllBody': "Chaque photo que tu as ajoutée disparaît pour tout le monde et les fichiers sont supprimés. Tes Did restent. Impossible d’annuler.",
+  'photos.deleteAllDone': "Toutes tes photos ont été supprimées",
+  'photos.deleteAllFail': "Certaines photos n’ont pas pu être supprimées. Réessaie.",
+  'photos.viewDay': "Voir la photo",
+  'photos.dayMark': "Photo ajoutée",
 }

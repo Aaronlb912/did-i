@@ -127,6 +127,7 @@ const files = [
   'supabase/proof-view-kid.sql',
   'supabase/proof-push-after-upload.sql',
   'supabase/auto-sends-photo.sql',
+  'supabase/proof-files-api.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

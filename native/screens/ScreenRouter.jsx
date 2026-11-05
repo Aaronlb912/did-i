@@ -164,8 +164,8 @@ export function ScreenRouter({
   if (path === '/kit') return <CollectionScreen key={route.id} book={book} onChange={change} startTab={route.id} />
   if (path === '/account') return <AccountScreen book={book} onChange={change} onImport={onImport} />
   if (path === '/people') return <PeopleScreen book={book} onChange={change} />
-  if (path === '/photos') return <PhotosScreen />
-  if (path === '/photo') return <PhotoViewScreen key={route.id} id={route.id} />
+  if (path === '/photos') return <PhotosScreen key={route.id} openId={route.id} />
+  if (path === '/photo') return <PhotoViewScreen key={route.id} id={route.id} book={book} onChange={change} />
   if (path === '/scan') return <ScanScreen />
   if (path === '/people/refer') return <PeopleReferScreen key={route.id} book={book} onChange={change} route={route} />
   if (path === '/people/connect') return <PeopleConnectScreen key={route.id} book={book} onChange={change} route={route} />
