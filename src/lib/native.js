@@ -149,6 +149,9 @@ export async function shareShelf(shelf) {
   throw new Error('share-unavailable')
 }
 
+export const backupFileReady = () => false
+export const shareBackupFile = shareShelf
+
 // Answers as a spreadsheet file. Falls back to a download when the browser cannot share files.
 export async function shareCsv(text) {
   const name = `did-i-answers-${boardDate(new Date(), 4)}.csv`

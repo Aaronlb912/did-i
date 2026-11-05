@@ -1,4 +1,6 @@
 import * as Clipboard from 'expo-clipboard'
+import * as FileSystem from 'expo-file-system'
+import * as Sharing from 'expo-sharing'
 import * as Haptics from 'expo-haptics'
 import { requireOptionalNativeModule } from 'expo'
 import * as Linking from 'expo-linking'
@@ -761,6 +763,21 @@ export async function shareShelf(shelf) {
   const stamp = boardDate(new Date(), 4)
   const text = JSON.stringify(shelf, null, 2)
   return Share.share({ title: 'Did I', message: text })
+}
+
+// The backup as a real dated .json file in the share sheet. False when this
+// binary has no file module or sharing, so the caller hides the row.
+export function backupFileReady() {
+  return typeof FileSystem.File === 'function' && Boolean(FileSystem.Paths) && typeof Sharing.shareAsync === 'function'
+}
+
+export async function shareBackupFile(shelf) {
+  if (!backupFileReady() || !(await Sharing.isAvailableAsync())) throw new Error('share-unavailable')
+  const file = new FileSystem.File(FileSystem.Paths.cache, `did-i-backup-${boardDate(new Date(), 4)}.json`)
+  if (file.exists) file.delete()
+  file.create()
+  file.write(JSON.stringify(shelf, null, 2))
+  await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: 'Did I', UTI: 'public.json' })
 }
 
 // Same share path as the text copy; paste into a .csv or a sheet.

@@ -122,6 +122,8 @@ export const ja = {
   'settings.sendCsvSub': 'すべての回答を日付順にCSVで。SheetsやExcelで開けます。',
   'settings.loadCopy': 'コピーを読み込む',
   'settings.loadCopySub': '以前保存したコピーのファイル。今あるものに追加されます。',
+  'settings.sendFile': 'バックアップファイルを保存',
+  'settings.sendFileSub': '保管できる .json ファイルです。コピーを読み込むと戻せます。',
   'settings.loadOk': '読み込みました。追加した質問: {n} 件。',
   'settings.loadOkBoth': '読み込みました。追加した質問: {q} 件。追加した答え: {a} 件。',
   'settings.loadSame': 'すでに入っています。追加はありません。',

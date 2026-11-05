@@ -122,6 +122,8 @@ export const zh = {
   'settings.sendCsvSub': '按日期列出每个回答，CSV 格式。可在 Sheets 或 Excel 打开。',
   'settings.loadCopy': '载入一份',
   'settings.loadCopySub': '之前保存的副本文件。会添加到现有内容中。',
+  'settings.sendFile': '保存备份文件',
+  'settings.sendFileSub': '一个可以保存的 .json 文件。用“载入一份”即可恢复。',
   'settings.loadOk': '已加载。新增问题：{n} 个。',
   'settings.loadOkBoth': '已加载。新增问题：{q} 个。新增答案：{a} 个。',
   'settings.loadSame': '已经都在了，没有新内容。',

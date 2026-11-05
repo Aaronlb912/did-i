@@ -122,6 +122,8 @@ export const ko = {
   'settings.sendCsvSub': '모든 답변을 날짜순 CSV로. Sheets나 Excel에서 열려요.',
   'settings.loadCopy': '복사 불러오기',
   'settings.loadCopySub': '전에 저장한 사본 파일. 지금 있는 것에 더해져요.',
+  'settings.sendFile': '백업 파일 저장',
+  'settings.sendFileSub': '보관할 수 있는 .json 파일입니다. 복사 불러오기로 되돌립니다.',
   'settings.loadOk': '불러왔어요. 추가한 질문: {n}개.',
   'settings.loadOkBoth': '불러왔어요. 추가한 질문: {q}개. 추가한 답: {a}개.',
   'settings.loadSame': '이미 있어요. 새로 추가할 것이 없어요.',

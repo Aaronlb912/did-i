@@ -25,7 +25,7 @@ import { readShelf } from '../../src/lib/board-shelf.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
 import { legalEmail } from '../../src/lib/legal.js'
-import { shareCsv, shareShelf } from '../../src/lib/native.js'
+import { backupFileReady, shareBackupFile, shareCsv, shareShelf } from '../../src/lib/native.js'
 import { restoreGemPurchases } from '../../src/lib/gem-buy.js'
 import { answersCsv } from '../../src/lib/answers-csv.js'
 import { mergeBackup } from '../../src/lib/shelf-merge.js'
@@ -113,6 +113,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const [restoring, setRestoring] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [csvBusy, setCsvBusy] = useState(false)
+  const [fileBusy, setFileBusy] = useState(false)
   const [syncing, setSyncing] = useState(false)
 
   // Signed in, the copy is the whole account, like Account > Download my data.
@@ -130,6 +131,19 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       if (error?.name !== 'AbortError') confirmMiss(t(account.user ? 'confirm.exportMiss' : 'confirm.shareMiss'))
     } finally {
       setSharing(false)
+    }
+  }
+
+  async function saveFile() {
+    if (fileBusy) return
+    setFileBusy(true)
+    try {
+      await shareBackupFile(account.user ? await exportAll() : readShelf())
+      try { localStorage.setItem('did-i-last-copy', new Date().toISOString()) } catch {}
+    } catch {
+      confirmMiss(t('confirm.shareMiss'))
+    } finally {
+      setFileBusy(false)
     }
   }
 
@@ -218,6 +232,18 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             chevron
             onPress={sendCopy}
           />
+          {backupFileReady() ? (
+            <SetRow
+              colors={colors}
+              icon="note"
+              tint={colors.inkSoft}
+              label={t('settings.sendFile')}
+              sub={t('settings.sendFileSub')}
+              value={fileBusy ? t('app.loading') : undefined}
+              chevron
+              onPress={fileBusy ? undefined : saveFile}
+            />
+          ) : null}
           <SetRow
             colors={colors}
             icon="inbox"
@@ -611,8 +637,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
 
       {account.user ? (
         <View style={styles.out}>
-          <KeyButton colors={colors} label={t('account.out')} onPress={() => setSure({ title: t('account.outSureTitle'), body: t('account.outSureBody'), yes: t('account.out'), go: () => signOut() })} />
-          <Text style={[styles.who, { color: colors.inkDim }]} numberOfLines={1}>
+          <KeyButton colors={colors} label={t('account.out')} disabled={outBusy} onPress={() => setSure({ title: t('account.outSureTitle'), body: t('account.outSureBody'), yes: t('account.out'), go: () => signOut() })} />
+          <Text style={[styles.who, { color: colors.inkDim }]} accessibilityLabel={`${t('account.who')} ${account.email}`}>
             {t('account.who')} {account.email}
           </Text>
         </View>
