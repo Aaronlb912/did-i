@@ -61,6 +61,7 @@ export async function leaveAccount(kind, run, force = false) {
     clearTray()
     await clearAndroidWidget()
     await clearIosWidget()
+    try { localStorage.removeItem('did-i-watch-retry') } catch {}
     return true
   } catch {
     confirmMiss(t('confirm.miss'))

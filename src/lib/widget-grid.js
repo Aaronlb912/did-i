@@ -45,8 +45,7 @@ export function buildGridWidgetProps(shelf, now = new Date()) {
       else if (mark?.on) {
         line += 'y'
         did += 1
-      } else if (mark?.miss && !gentle) line += 'n'
-      else line += '.'
+      } else line += '.' // a miss looks like an empty day, never red
     }
     weeks.push(line)
   }
