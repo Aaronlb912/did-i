@@ -384,7 +384,7 @@ export function usePeople() {
   const [people, setPeople] = useState(null)
   useEffect(() => {
     let alive = true
-    weKnownPeople().then((rows) => alive && setPeople(rows))
+    weKnownPeople().then((rows) => alive && setPeople(rows || []))
     return () => {
       alive = false
     }

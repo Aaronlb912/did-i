@@ -22,6 +22,7 @@ import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { Pill, useAddFeel } from './questions.jsx'
 import { useLeaveAsk } from '../hooks/useLeaveAsk.js'
+import { useOnline } from '../hooks/useOnline.js'
 import { usePeople } from './we.jsx'
 
 // Did you: ask a friend or someone in your family if they did something.
@@ -58,6 +59,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
   const [busy, setBusy] = useState(false)
   // State lags a frame: a double tap would send, then buzz "already sent".
   const inFlight = useRef(false)
+  const online = useOnline()
   const [said, setSaid] = useState('')
   // Sent: the screen is on its way out, so Send stays off.
   const [done, setDone] = useState(false)
@@ -122,13 +124,16 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
       setShake((n) => n + 1)
       return
     }
+    if (inFlight.current) return
+    inFlight.current = true
     setMiss('')
     setBusy(true)
-    const { code, miss: why } = await makeDidYouLink(question)
+    const { code, miss: why } = await makeDidYouLink(question).catch(() => ({ miss: 'people.reach' }))
+    inFlight.current = false
     setBusy(false)
     if (why === 'linkCap') return setMiss(t('didYouLink.cap'))
     if (why || !code) return setMiss(tMiss(why || 'people.reach'))
-    const how = await passAlong(sharedDidYouLine(question, code, lead), t('didYouLink.share'))
+    const how = await passAlong(sharedDidYouLine(question, code, lead), t('didYouLink.share')).catch(() => '')
     if (how === 'copied') setSaid(t('didYouLink.copied'))
     else if (how === 'shared') confirmDone(t('confirm.shared'))
   }
@@ -152,6 +157,7 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
         leadText={lead}
         blank={blank}
         onBlank={(value) => {
+          setMiss('')
           setBlank(value)
           onBlankChange?.(value)
         }}
@@ -185,10 +191,15 @@ function DidYouForm({ book, start, withId, onBlankChange, onLeadPress }) {
           >
             {people === null ? (
               <Text style={[styles.hint, { color: colors.inkDim }]}>{t('we.loadingPeople')}</Text>
+            ) : !people.length && !online ? (
+              <Text style={[styles.hint, { color: colors.inkDim }]}>{t('people.offline')}</Text>
             ) : people.length ? (
               <Reveal key="people" layout={false} style={styles.pillRow} accessibilityRole="radiogroup">
                 {people.map((p) => (
-                  <Pill key={p.id} label={p.name} on={to === p.id} onPress={() => setTo(p.id)} colors={colors} radio />
+                  <Pill key={p.id} label={p.name} on={to === p.id} onPress={() => {
+                      setMiss('')
+                      setTo(p.id)
+                    }} colors={colors} radio />
                 ))}
               </Reveal>
             ) : (

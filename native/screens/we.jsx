@@ -80,9 +80,13 @@ export function usePeople() {
   const [people, setPeople] = useKept(`we.people:${account.user?.id}`, null, KEEP)
   useEffect(() => {
     let alive = true
-    weKnownPeople().then((rows) => {
-      if (alive) setPeople(rows)
-    })
+    weKnownPeople()
+      .catch(() => null)
+      .then((rows) => {
+        if (!alive) return
+        if (rows) setPeople(rows)
+        else if (people === null) setPeople([])
+      })
     return () => {
       alive = false
     }
