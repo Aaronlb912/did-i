@@ -477,8 +477,12 @@ async function schedulePingsNow(books, now = new Date()) {
           if (night < String(we.startsOn || '') || (we.cadence !== 'monthly' && night === we.skipNight)) continue
           // The weekday of the app day, not the phone calendar.
           const [year, month, date] = night.split('-').map(Number)
-          if (we.cadence === 'monthly' && !weMonthlyPingDay(night, we.skipNight)) continue
-          if (we.cadence === 'weekly' && !(we.weekdays || []).includes(new Date(year, month - 1, date).getDay())) continue
+          if (Array.isArray(we.nights)) {
+            if (!we.nights.includes(night) || night === we.skipNight) continue
+          } else {
+            if (we.cadence === 'monthly' && !weMonthlyPingDay(night, we.skipNight)) continue
+            if (we.cadence === 'weekly' && !(we.weekdays || []).includes(new Date(year, month - 1, date).getDay())) continue
+          }
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
           if (at.getTime() <= now.getTime()) continue
           // Quiet hours can push it into the next day, when this one is closed.

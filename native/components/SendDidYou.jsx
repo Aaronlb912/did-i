@@ -98,7 +98,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
     const wrong = {
       by: !/^\d{4}-\d{2}-\d{2}$/.test(pickDate) ? "hang.miss.dueBy" : pickDate < today ? "hang.miss.dueByBefore" : "",
       every_n: !(Number(everyN) >= 2) ? "hang.miss.everyN" : "",
-      every: !(Number(everyDays) >= 1) ? "hang.miss.everyDays" : "",
+      every: !(Number(everyDays) >= 2) ? "hang.miss.everyDays" : "",
       monthly: monthDay === "" ? "hang.miss.monthDay" : "",
     }[cadence];
     if (wrong) {
