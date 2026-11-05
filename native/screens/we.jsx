@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { BackHandler, Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
