@@ -104,15 +104,11 @@ fun WatchApp() {
       cards.openCards.isNotEmpty() -> CardView(cards, cards.openCards.first())
       else -> {
         // Said Not yet to some: they are not done, so do not say all clear.
-        val notYet = cards.items.count { it.status == "nope" }
+        // Show them one at a time with a Did button.
+        val waiting = cards.items.firstOrNull { it.status == "nope" }
         val allDone = cards.allDoneLabel.orNull() ?: stringResource(R.string.all_done)
         when {
-          notYet > 0 -> DoneView(
-            cards,
-            fill(cards.notYetLabel, "n" to notYet) ?: stringResource(R.string.not_yet_n, notYet),
-            openPhone,
-            accentText = false,
-          )
+          waiting != null -> CardView(cards, waiting, didOnly = true)
           cards.streak > 0 -> DoneView(
             cards,
             allDone,
@@ -176,7 +172,7 @@ fun ProgressRing(progress: Float, palette: Palette) {
 }
 
 @Composable
-fun CardView(cards: WatchCards, card: WatchCard) {
+fun CardView(cards: WatchCards, card: WatchCard, didOnly: Boolean = false) {
   val context = LocalContext.current
   val view = LocalView.current
   val palette = cards.palette
@@ -216,7 +212,7 @@ fun CardView(cards: WatchCards, card: WatchCard) {
         horizontalArrangement = Arrangement.spacedBy(18.dp),
         verticalAlignment = Alignment.Top,
       ) {
-        RoundAnswer(
+        if (!didOnly) RoundAnswer(
           check = false,
           label = cards.nopeLabel.orNull() ?: stringResource(R.string.not_yet),
           size = 46.dp,
