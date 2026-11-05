@@ -17,6 +17,10 @@ import { goHash } from '../navigation/hash.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { DELETE_UNDO_MS as UNDO_MS } from '../../src/lib/undo-times.js'
 import { showToast } from '../lib/toast-queue.js'
+import { cloud } from '../../src/lib/cloud.js'
+import { proofNight } from '../../src/lib/proofs.js'
+import { pushSendAnswers } from '../../src/lib/send-answers.js'
+import { addProofFlow, canAddProof } from '../lib/proof-flow.jsx'
 
 // Clears a note, with Undo in the toast like other removals. Undo writes the
 // note back onto the folder as it is then, so nothing done since is lost.
@@ -245,6 +249,8 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
   const [all, setAll] = useLayoutState(false)
   const shown = all ? noted : noted.slice(0, NOTES_SHOWN)
   const picks = nights.filter((row) => !kept(row.answer)).slice(0, PICKS)
+  // A question someone sent you: the newest Did can carry a photo for them.
+  const photoNight = lamp.sendId && !lamp.shareOff && nights[0] && (nights[0].answer.status === 'yes' || nights[0].answer.status === 'late') && canAddProof() ? nights[0].answer : null
 
   function edit(answer) {
     setPicking(false)
@@ -318,6 +324,26 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
         </View>
       ) : null}
       </Reveal>
+      {photoNight ? (
+        <View style={styles.keys}>
+          <KeyButton
+            colors={colors}
+            label={t('proof.add')}
+            onPress={() =>
+              addProofFlow({
+                target: { sendId: lamp.sendId },
+                night: proofNight(lamp, photoNight.periodKey),
+                colors,
+                ready: async () => {
+                  const db = cloud()
+                  const { data } = (await db?.auth.getSession()) || {}
+                  if (data?.session?.user) await pushSendAnswers(db, data.session.user, readShelf())
+                },
+              })
+            }
+          />
+        </View>
+      ) : null}
       {noted.length ? (
       <Pressable
         onPress={() => goHash('/notes')}

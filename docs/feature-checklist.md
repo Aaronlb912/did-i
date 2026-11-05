@@ -78,3 +78,23 @@ check that missed it (test, rule, or this checklist), not only the code.
 | Which push goes out, and its switch? | 9:00 day nudge asks for today (Day reminders, Morning ask). A picked time reminds like any question (Reminders). |
 | What happens to data when it ends? | Put away after its day with its answer. |
 | Messages? | Empty: nothing. Same question today: refused. Time passed: refused. Failed save: says so. |
+
+## Example: proof photo on a Did
+
+| Question | Answer |
+|---|---|
+| Already friends? | Did you: the asker sees the photo. Did we: members who are in, unless the card shows only a count. |
+| Not friends? | No photo path. The ask and the card need a friend or family link first. |
+| Blocked, either way? | Photo hidden both ways. No push. |
+| Same family? | A kid adds a photo only on sends from or to family and on cards where every member is family. The server says so. |
+| They remove you, or leave the family? | Left the card: photos hidden. Unfriended: the ask is gone, so is the photo. |
+| Signed out? | No Add photo. Nothing shows. |
+| Brand new install (link before onboarding)? | n/a, a photo needs a Did you or Did we first. |
+| Offline? | Add photo fails with a toast. The Did stays. |
+| Full or capped? | 5 photos a day, one per answer, 400 KB JPEG. A toast says so. |
+| Expired? | Kept until the owner removes it or the ask or card goes. |
+| What does the other person see? | A "Photo from {name}" row on Sent or the card. Tap for full screen, Report. |
+| What does the widget show? | Nothing new. |
+| Which push goes out, and its switch? | "{name} added a photo", on the Did you or Did we switch. |
+| What happens to data when the relationship ends? | Rows cascade with the ask or card. delete_me removes the files. |
+| Messages? | Added, removed, reported, too big, limit, family only, say Did first, failed. |

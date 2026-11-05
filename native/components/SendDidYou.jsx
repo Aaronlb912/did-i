@@ -6,6 +6,7 @@ import { repeatFrom, repeatLabel, senderLastDid } from "../../src/lib/send-repea
 import { HangCard } from "./HangCard.jsx";
 import { PickSheet } from "./PickSheet.jsx";
 import { ScheduleTile, ScheduleTiles } from "./ScheduleTile.jsx";
+import { SetCard, SetSwitch } from "./SetBits.jsx";
 import { SheetHost } from "./SheetHost.jsx";
 import { boardDate } from "../../src/lib/recurrence.js";
 import {
@@ -56,6 +57,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
   }, [picking, friends]);
   const [question, setQuestion] = useState(initialQuestion);
   const [note, setNote] = useState("");
+  const [wantsPhoto, setWantsPhoto] = useState(false);
   const [miss, setMiss] = useState("");
   useEffect(() => {
     if (miss) AccessibilityInfo.announceForAccessibility(miss);
@@ -116,6 +118,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
       undefined,
       repeat,
       cadence === "every" ? senderLastDid(book, question, boardDate(new Date())) : "",
+      wantsPhoto,
     ).catch(() => ({ miss: "people.reach" }));
     inFlight.current = false;
     setBusy(false);
@@ -350,6 +353,16 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                   // The server takes up to 280 characters (hardening.sql).
                   maxLength={280}
                 />
+                <SetCard colors={colors}>
+                  <SetSwitch
+                    label={t("proof.please")}
+                    sub={t("proof.pleaseSub", { name })}
+                    last
+                    on={wantsPhoto}
+                    colors={colors}
+                    onPress={() => setWantsPhoto((was) => !was)}
+                  />
+                </SetCard>
               </>
             )}
             {miss ? (

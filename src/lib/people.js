@@ -500,7 +500,7 @@ export async function weLeaveShared(other) {
 
 // Sending a did you to a friend ---------------------------------------
 
-export async function sendDidI(toId, question, note, dueOn, repeat = '', lastDidOn = '') {
+export async function sendDidI(toId, question, note, dueOn, repeat = '', lastDidOn = '', wantsPhoto = false) {
   const db = cloud()
   if (!db) return { miss: 'off' }
   const user = await me()
@@ -515,6 +515,8 @@ export async function sendDidI(toId, question, note, dueOn, repeat = '', lastDid
     note: String(note || '').trim(),
     due_on: dueOn || boardDate(),
     ...(repeat ? { repeat } : {}),
+    // Photo please (proof-photos.sql); left off unless asked, so it works before the column.
+    ...(wantsPhoto ? { wants_photo: true } : {}),
     // Only an every so often ask carries the sender's last Did (shared-every.sql).
     ...(repeat.startsWith('every:') && /^\d{4}-\d{2}-\d{2}$/.test(String(lastDidOn || '')) ? { last_did_on: lastDidOn } : {}),
   })
@@ -917,7 +919,8 @@ export async function listInbox() {
   const [{ data, error }, fromDidI] = await Promise.all([
     db
       .from('sends')
-      .select('id, from_id, kind, question, note, due_on, state, made_at, cheer_id, repeat, last_did_on')
+      // * so wants_photo shows once proof-photos.sql is in, and nothing breaks before.
+      .select('*')
       .eq('to_id', user.id)
       .eq('state', 'sent')
       .order('made_at', { ascending: false }),
@@ -1009,7 +1012,7 @@ export async function listSent() {
   if (!user) return []
   const { data, error } = await db
     .from('sends')
-    .select('id, to_id, kind, question, note, due_on, state, made_at, repeat, last_did_on')
+    .select('*')
     .eq('from_id', user.id)
     .order('made_at', { ascending: false })
     .limit(100)

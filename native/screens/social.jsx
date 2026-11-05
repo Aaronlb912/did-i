@@ -104,6 +104,9 @@ import { ReferLadder } from '../components/ReferLadder.jsx'
 import { activeLook } from '../../src/lib/active-look.js'
 import { Avatar, EmptyCard, PersonCard, SectionHead } from '../components/PersonCard.jsx'
 import { SendSheet } from '../components/SendDidYou.jsx'
+import { ProofRow } from '../components/ProofRow.jsx'
+import { openProofView } from '../lib/proof-flow.jsx'
+import { loadProofs } from '../../src/lib/proofs.js'
 import { checkOnsFrom, minuteClock, stopCheckOn } from '../../src/lib/check-on.js'
 import { askRemoveFriend } from '../components/removeFriend.js'
 import { KitSegment } from '../components/KitSegment.jsx'
@@ -2852,7 +2855,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
           colors={colors}
           person={row.person}
           title={row.kind === 'cheer' ? cheerTitle(row) : askShown(row.question)}
-          note={[t('inbox.from', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), row.note]
+          note={[t('inbox.from', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), row.wants_photo ? t('proof.pleaseMark') : '', row.note]
             .filter(Boolean)
             .join(' · ')}
         >
@@ -2896,6 +2899,8 @@ export function SentScreen({ book, onChange }) {
   const account = useAccount()
   const [rows, setRows] = useKept(`sent.rows:${account.user?.id}`, [], KEEP)
   const [links, setLinks] = useKept(`sent.links:${account.user?.id}`, [], KEEP)
+  // Photos the people you asked added to their Did, one read for the screen.
+  const [proofs, setProofs] = useState([])
   const [ready, setReady] = useKept(`sent.ready:${account.user?.id}`, false, KEEP)
   const [miss, setMiss] = useState('')
   const [editing, setEditing] = useState(null)
@@ -2956,7 +2961,15 @@ export function SentScreen({ book, onChange }) {
     }
     try {
       const [sent, made] = await Promise.all([listSent(), myDidYouLinks()])
-      if (!sent.miss) setRows(sent)
+      if (!sent.miss) {
+        setRows(sent)
+        const kept = sent.filter((row) => row.state === 'kept' && row.kind === 'todo').map((row) => row.id)
+        loadProofs({ sendIds: kept })
+          .then((out) => {
+            if (!out.miss) setProofs(out.rows)
+          })
+          .catch(() => {})
+      }
       setLinks(made)
       setMiss(sent.miss ? t('people.reach') : '')
     } catch {
@@ -3040,12 +3053,24 @@ export function SentScreen({ book, onChange }) {
           <View style={[styles.personCopy, styles.personCopyFlex]}>
             <Text style={[styles.personTitle, { color: colors.ink }]}>{row.kind === 'cheer' ? t('inbox.aCheer') : askShown(row.question)}</Text>
             <Text style={[styles.personNote, { color: colors.inkDim }]}>
-              {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), sentState(row.state, undefined, row.answers)]
+              {[t('sent.to', { name: personName(row.person) || t('people.someone') }), repeatLabel(row.repeat), sendLastLine(row.repeat, row.last_did_on, boardDate()), row.wants_photo ? t('proof.pleaseMark') : '', sentState(row.state, undefined, row.answers)]
                 .filter(Boolean)
                 .join(' · ')}
             </Text>
           </View>
           </View>
+          {proofs
+            .filter((proof) => proof.send_id === row.id)
+            .slice(0, 3)
+            .map((proof) => (
+              <ProofRow
+                key={proof.id}
+                row={proof}
+                name={personName(row.person) || t('people.someone')}
+                colors={colors}
+                onOpen={() => openProofView({ row: proof, mine: false, name: personName(row.person) || t('people.someone'), colors, onGone: load })}
+              />
+            ))}
           {canEditSent(row) || row.state === 'sent' ? (
           <View style={styles.personActions}>
           {canEditSent(row) ? (
