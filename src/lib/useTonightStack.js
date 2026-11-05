@@ -460,6 +460,9 @@ export function useTonightStack({
     const wasSkip = liveAnswer?.status === 'skip'
     const finalStatus =
       status === 'yes' ? didStatusForRow({ ...row, answer: liveAnswer || row.answer }) : status
+    const next = putAnswer(book, row, finalStatus, clock)
+    // The day closed before the tap landed: nothing saved, so no undo or buzz.
+    if (next === book) return
 
     if (finalStatus === 'skip' && shouldFinishAfterNope(ready, row, at)) {
       setFaceId(FINISH_FACE)
@@ -476,7 +479,6 @@ export function useTonightStack({
       setSkipReview(false)
     }
     setRestNight(false)
-    const next = putAnswer(book, row, finalStatus, clock)
     const wasClear = allClearTonight(book, clock)
     setOverlay(next)
     change(next)

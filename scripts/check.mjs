@@ -4276,6 +4276,12 @@ test('deadline questions before the due night do not count on the tonight meter'
   assert.ok(stack.includes('slotted.filter(notDueYet)'), 'deadlines not due yet sit at the end of the pills')
 })
 
+test('a Did on a day that closed saves nothing and arms no undo', () => {
+  const stack = readFileSync(path.join(path.dirname(path.dirname(fileURLToPath(import.meta.url))), 'src/lib/useTonightStack.js'), 'utf8')
+  const mark = stack.slice(stack.indexOf('function mark(row, status)'))
+  assert.ok(mark.indexOf('if (next === book) return') > 0 && mark.indexOf('if (next === book) return') < mark.indexOf('setFaceId('), 'mark stops before moving cards when nothing saved')
+})
+
 test('native metro shims are wired and pin default exports', () => {
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const lint = spawnSync(process.execPath, [path.join(root, 'scripts/lint-store.mjs')], {
