@@ -33,6 +33,8 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
   return [
     ...home,
     { key: 'add', path: '/add', label: t('tonight.add'), on: ADD_ON.has(path), icon: 'add', stroke: true },
+    // Quick "remind me in 20 minutes", off Today so the stack stays quiet.
+    { key: 'remind', path: '/remind', label: t('remind.mic'), on: path === '/remind', icon: 'clock', stroke: true },
     { key: 'shop', path: '/shop', label: t('shop.cog'), on: path === '/shop', icon: 'shop' },
     {
       key: 'people',

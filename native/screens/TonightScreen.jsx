@@ -1698,17 +1698,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
 
       {/* A picked card stays put after its answer, so these rows stay too. */}
       {/* One extra row at most: reminders, then the drop, then the rate card. Drop and rate wait for the last answer. */}
-      {firstAdd ? null : (
-        <Pressable
-          onPress={() => goHash('/remind', { listen: '1' })}
-          accessibilityRole="button"
-          accessibilityLabel={t('remind.mic')}
-          hitSlop={4}
-          style={styles.remindRow}
-        >
-          <Text style={[styles.remindText, { color: colors.inkSoft }]}>{t('remind.mic')}</Text>
-        </Pressable>
-      )}
       {extraRow === 'reminders' ? <RemindersRow colors={colors} label={pingLabel} onAsk={onAskPings} /> : null}
       {extraRow === 'drop' ? <DropLine colors={colors} book={book} /> : null}
       {extraRow === 'rate' ? <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} /> : null}
@@ -1837,8 +1826,6 @@ function DoneIn({ children, style: box }) {
 const GRACE_TIME = `${String(GRACE_END).padStart(2, '0')}:00`
 
 const styles = StyleSheet.create({
-  remindRow: { minHeight: 44, alignSelf: 'center', paddingHorizontal: 14, marginBottom: 4, justifyContent: 'center' },
-  remindText: { fontFamily: fonts.ui, fontSize: 14 },
   everyLine: { fontFamily: fonts.ui, fontSize: 14, marginTop: 6 },
   frame: { flex: 1, position: 'relative' },
   aboveHalo: { flex: 1, zIndex: 2, position: 'relative' },
