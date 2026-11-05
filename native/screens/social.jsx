@@ -449,6 +449,7 @@ function Tile({ label, value, note, lit, onPress, colors }) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={[label, value, note].filter(Boolean).join(', ')}
       onPress={onPress}
       style={({ pressed }) => [
         styles.tile,
