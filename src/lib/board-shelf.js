@@ -103,6 +103,7 @@ export function clearLocalShelf() {
     localStorage.removeItem(SHELF_KEY)
     localStorage.removeItem(OLD_KEY)
     localStorage.removeItem('did-i-saved')
+    localStorage.removeItem(BEFORE_KEY)
   } catch {
     // Board still runs if storage is blocked.
   }
@@ -157,6 +158,28 @@ export function downloadShelf(shelf) {
 let lastRaw = null
 let lastShelf = null
 
+const BEFORE_KEY = SHELF_KEY + '-before'
+
+function keepBefore(raw) {
+  try {
+    localStorage.setItem(BEFORE_KEY, raw)
+  } catch {
+    // ok
+  }
+}
+
+// The last copy kept before a shape change, read but not written back, so
+// the account copy still wins on the next pull.
+function readBefore() {
+  try {
+    const raw = localStorage.getItem(BEFORE_KEY)
+    const shelf = raw ? normalizeShelf(JSON.parse(raw)) : null
+    return shelf?.boards?.length ? shelf : null
+  } catch {
+    return null
+  }
+}
+
 export function readShelf() {
   let raw = null
   try {
@@ -164,8 +187,12 @@ export function readShelf() {
     if (raw && raw === lastRaw && lastShelf) return lastShelf
     if (raw) {
       const next = normalizeShelf(JSON.parse(raw))
-      // Already in its saved shape: nothing to write back.
-      const shelf = JSON.stringify(next) === raw ? next : writeShelf(next)
+      // Already in its saved shape: nothing to write back. A new shape (an
+      // update changed what a shelf holds) keeps the old text first, so a
+      // shelf that later fails to read has something to come back from.
+      const same = JSON.stringify(next) === raw
+      const shelf = same ? next : writeShelf(next)
+      if (!same) keepBefore(raw)
       lastRaw = localStorage.getItem(SHELF_KEY)
       lastShelf = shelf
       return shelf
@@ -178,6 +205,12 @@ export function readShelf() {
         localStorage.setItem(SHELF_KEY + '-bad', raw)
       } catch {
         // ok
+      }
+      const before = readBefore()
+      if (before) {
+        lastRaw = raw
+        lastShelf = before
+        return before
       }
       const book = emptyBoard()
       return { currentId: book.id, boards: [book] }
