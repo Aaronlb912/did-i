@@ -2790,6 +2790,8 @@ export const pt = {
   'weLink.full': "Esse Did we está cheio. Peça a quem enviou para abrir espaço.",
   'weLink.blocked': 'Você não pode entrar nesse Did we.',
   'weLink.cap': "Você já está no máximo de cartões Did we. Saia de um para entrar neste.",
+  'weLink.capTitle': "Cartões Did we demais",
+  'weLink.capGo': "Seus cartões Did we",
   'weLink.signIn': 'Entre na conta para entrar no Did we do seu link.',
   'weLink.share': "Mandar como link",
   'weLink.makeShare': "Criar e mandar como link",

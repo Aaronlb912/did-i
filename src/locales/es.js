@@ -2794,6 +2794,8 @@ export const es = {
   'weLink.full': "Ese Did we está lleno. Pide a quien lo envió que haga espacio.",
   'weLink.blocked': 'No puedes unirte a ese Did we.',
   'weLink.cap': "Ya estás en todas las tarjetas Did we que puedes. Deja una para unirte a esta.",
+  'weLink.capTitle': "Demasiadas tarjetas Did we",
+  'weLink.capGo': "Tus tarjetas Did we",
   'weLink.signIn': 'Inicia sesión para unirte al Did we de tu enlace.',
   'weLink.share': "Enviar como enlace",
   'weLink.makeShare': "Crear y enviar como enlace",

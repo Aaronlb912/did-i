@@ -2797,6 +2797,8 @@ export const fr = {
   'weLink.full': "Ce Did we est complet. Demande à la personne qui l’a envoyé de faire de la place.",
   'weLink.blocked': 'Tu ne peux pas rejoindre ce Did we.',
   'weLink.cap': "Tu es déjà dans autant de cartes Did we que possible. Quittes-en une pour rejoindre celle-ci.",
+  'weLink.capTitle': "Trop de cartes Did we",
+  'weLink.capGo': "Tes cartes Did we",
   'weLink.signIn': 'Connecte-toi pour rejoindre le Did we de ton lien.',
   'weLink.share': "Envoyer en lien",
   'weLink.makeShare': "Créer et envoyer en lien",

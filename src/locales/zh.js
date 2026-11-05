@@ -2748,6 +2748,8 @@ export const zh = {
   'weLink.full': "这个 Did we 已满。请让发链接的人腾出位置。",
   'weLink.blocked': '你无法加入这个 Did we。',
   'weLink.cap': "你加入的 Did we 卡片已到上限。退出一个才能加入。",
+  'weLink.capTitle': "Did we 卡片太多了",
+  'weLink.capGo': "你的 Did we 卡片",
   'weLink.signIn': '登录后即可加入链接里的 Did we。',
   'weLink.share': "以链接发送",
   'weLink.makeShare': "创建并以链接发送",

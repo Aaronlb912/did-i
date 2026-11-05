@@ -2803,6 +2803,8 @@ export const de = {
   'weLink.full': "Dieses Did we ist voll. Bitte die Person, die es geschickt hat, Platz zu schaffen.",
   'weLink.blocked': 'Du kannst diesem Did we nicht beitreten.',
   'weLink.cap': "Du bist bei so vielen Did we-Karten wie möglich. Verlasse eins, um hier beizutreten.",
+  'weLink.capTitle': "Zu viele Did we Karten",
+  'weLink.capGo': "Deine Did we Karten",
   'weLink.signIn': 'Melde dich an, um dem Did we aus deinem Link beizutreten.',
   'weLink.share': "Als Link schicken",
   'weLink.makeShare': "Erstellen und als Link schicken",

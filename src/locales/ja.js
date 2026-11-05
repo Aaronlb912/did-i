@@ -2755,6 +2755,8 @@ export const ja = {
   'weLink.full': "このDid weは満員です。送った人に空きを作ってもらってください。",
   'weLink.blocked': 'このDid weには参加できません。',
   'weLink.cap': "参加できるDid weカードの上限です。どれかを抜けると参加できます。",
+  'weLink.capTitle': "Did weカードがいっぱいです",
+  'weLink.capGo': "あなたのDid weカード",
   'weLink.signIn': 'リンクのDid weに参加するにはサインインしてください。',
   'weLink.share': "リンクで送る",
   'weLink.makeShare': "作ってリンクで送る",
