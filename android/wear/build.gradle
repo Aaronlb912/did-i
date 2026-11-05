@@ -24,7 +24,7 @@ android {
     // Play needs a different versionCode from the phone bundle in the same
     // release, so the watch takes 1,000,000,000 + the run number.
     versionCode 1000000000 + ((System.getenv("ANDROID_VERSION_CODE") ?: "1").toInteger())
-    versionName "1.5.0"
+    versionName "1.6.0"
   }
 
   if (hasReleaseKeystore) {

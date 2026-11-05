@@ -3,7 +3,7 @@
     "name": "Did I",
     "slug": "did-i",
     "scheme": "didi",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
