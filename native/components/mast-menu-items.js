@@ -48,7 +48,7 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
     // Recent: achievements and Did we moments, in full. Its count is the unseen ones,
     // Did you asks count on Friends and family only.
     { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', count: recent, icon: 'bell' },
-    { key: 'kit', path: '/kit', label: t('kit.cog'), on: path === '/kit', icon: 'collection' },
+    { key: 'kit', path: '/kit', label: t('kit.title'), on: path === '/kit', icon: 'collection' },
     {
       key: 'settings',
       path: '/settings',
