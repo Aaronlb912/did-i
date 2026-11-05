@@ -7,7 +7,7 @@ import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring,
 import { restoreGemPurchases, startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
 import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
-import { GEM_PACKS, packPriceLabel } from '../../src/lib/gem-packs.js'
+import { GEM_PACKS } from '../../src/lib/gem-packs.js'
 import { activeLook } from '../../src/lib/active-look.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -782,7 +782,7 @@ function FeaturedGemCard({ pack, price, bonusNote, best, onBuy, colors, artRef }
       {bonusNote ? <Text style={[styles.gemFeaturedNote, { color: colors.inkDim }]}>{bonusNote}</Text> : null}
       {onBuy ? (
         <View style={[styles.gemFeaturedButton, { backgroundColor: colors.on }]}>
-          <Text style={[styles.gemFeaturedButtonText, { color: colors.bg }]}>{t('gems.buyPrice', { price })}</Text>
+          <Text style={[styles.gemFeaturedButtonText, { color: colors.bg }]}>{price ? t('gems.buyPrice', { price }) : t('gems.loadingStore')}</Text>
         </View>
       ) : (
         <Text style={[styles.gemFeaturedTitle, { color: colors.inkDim }]}>{price}</Text>
@@ -803,7 +803,7 @@ function CompactGemRow({ pack, price, bonusNote, onBuy, colors, artRef }) {
         {bonusNote ? <Text style={[styles.shopNote, { color: colors.inkDim }]}>{bonusNote}</Text> : null}
         {onBuy ? null : <Text style={[styles.shopNote, { color: colors.inkDim }]}>{price}</Text>}
       </View>
-      {onBuy ? <DidButton small label={t('gems.buyPrice', { price })} onPress={onBuy} colors={colors} /> : null}
+      {onBuy ? <DidButton small label={price ? t('gems.buyPrice', { price }) : t('gems.loadingStore')} onPress={onBuy} colors={colors} /> : null}
     </View>
   )
 }
@@ -1908,6 +1908,13 @@ export function GemShopScreen({ book }) {
 
   const buying = useRef(false)
 
+  // Gems landed: the waiting banner is done.
+  const lastGems = useRef(purse.gems)
+  useEffect(() => {
+    if (purse.gems > lastGems.current) setBanner('')
+    lastGems.current = purse.gems
+  }, [purse.gems])
+
   // One store sheet at a time: a second tap while the first is open does nothing.
   async function buy(packId) {
     if (buying.current) return
@@ -1952,6 +1959,7 @@ export function GemShopScreen({ book }) {
 
   const signedIn = Boolean(account.email)
   const expoGo = Constants.appOwnership === 'expo'
+  const buyHandler = (id) => (!signedIn ? () => askSignIn(colors) : storeReady ? () => buy(id) : null)
   const storeNote = expoGo ? t('gems.appOnly') : storeChecked && !storeReady ? t('gems.setup') : ''
 
   return (
@@ -1981,9 +1989,9 @@ export function GemShopScreen({ book }) {
         <CompactGemRow
           key={pack.id}
           pack={pack}
-          price={packPriceLabel(pack, storePrice(pack.id))}
+          price={storePrice(pack.id) || ''}
           bonusNote={pack.bonus ? t('gems.bonus', { base: pack.base, bonus: pack.bonus }) : ''}
-          onBuy={signedIn ? () => buy(pack.id) : null}
+          onBuy={buyHandler(pack.id)}
           colors={colors}
           artRef={stream.packRef(pack.id)}
         />
@@ -1994,10 +2002,10 @@ export function GemShopScreen({ book }) {
           <FeaturedGemCard
             key={pack.id}
             pack={pack}
-            price={packPriceLabel(pack, storePrice(pack.id))}
+            price={storePrice(pack.id) || ''}
             bonusNote={pack.bonus ? t('gems.bonus', { base: pack.base, bonus: pack.bonus }) : ''}
             best={pack.id === BEST_VALUE_GEM_ID}
-            onBuy={signedIn ? () => buy(pack.id) : null}
+            onBuy={buyHandler(pack.id)}
             colors={colors}
             artRef={stream.packRef(pack.id)}
           />
