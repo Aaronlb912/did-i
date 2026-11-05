@@ -182,6 +182,7 @@ grant execute on function public.we_end_links(uuid) to authenticated;
 -- What the link page, the link preview and the app show: the question, who
 -- made the link, and how many are on it. Nothing for an unknown, ended or
 -- expired link, or a closed card.
+drop function if exists public.look_up_we_link(text);
 create or replace function public.look_up_we_link(code text)
 returns table (question text, name text, avatar_url text, people integer, full_up boolean)
 language sql
