@@ -85,6 +85,10 @@ export type DidITonightWidgetProps = {
   weLine?: string
   // Gentle mode. The widget shows no streak numbers today; keep it that way when set.
   gentle?: boolean
+  // The current streak, shown on the all-clear card only. 0 hides it. Labels carry {n}.
+  streak?: number
+  streakLabel?: string
+  streakOneLabel?: string
   // What the buddy has on, as shapes (src/lib/accessory-shapes.js).
   buddyShapes?: { behind?: (string | number)[][]; front?: (string | number)[][] } | null
   // The buddy's own shapes (src/lib/buddy-parts.js), for a buddy newer than
@@ -965,6 +969,26 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
       {sinceText}
     </Text>
   ) : null
+  // All clear: the current streak under the line. Old snapshots have none; gentle mode shows no numbers.
+  const streakN = Math.floor(Number(props?.streak)) || 0
+  const streakText =
+    home && !lead && !gentle && streakN > 0
+      ? String((streakN === 1 ? props?.streakOneLabel : props?.streakLabel) || '').replace('{n}', String(streakN))
+      : ''
+  const streakRow = streakText ? (
+    <Text
+      modifiers={[
+        font({ size: compact ? 11 : 13, weight: 'bold' }),
+        foregroundStyle(on),
+        multilineTextAlignment('center'),
+        lineLimit(1),
+        minimumScaleFactor(0.6),
+        frame({ maxWidth: 10000 }),
+      ]}
+    >
+      {streakText}
+    </Text>
+  ) : null
   const nextButton = showNext ? (
     <Button
       label={String(props?.nextLabel || 'Next') + ' ›'}
@@ -1123,6 +1147,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           </HStack>
           <Spacer />
           {question}
+          {streakRow}
           {sinceRow}
           <Spacer />
           {buttons}

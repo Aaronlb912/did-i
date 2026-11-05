@@ -77,8 +77,10 @@ const DidIGridWidget = (props: DidIGridWidgetProps, environment: WidgetEnvironme
   const grow = frame({ maxWidth: 10000, maxHeight: 10000 })
 
   const small = environment?.widgetFamily === 'systemSmall'
-  const cell = small ? 9 : 12
-  const gap = small ? 2 : 3
+  // Medium is only 158pt tall, so it takes the small squares: 7 rows of 12 plus header was ~155pt and got clipped.
+  const short = small || environment?.widgetFamily === 'systemMedium'
+  const cell = short ? 9 : 12
+  const gap = short ? 2 : 3
   const anyDay = weeks.some((w) => /[yn]/.test(w))
 
   const todayWeek = Number.isInteger(props?.todayWeek) ? Number(props.todayWeek) : -1
@@ -123,7 +125,7 @@ const DidIGridWidget = (props: DidIGridWidgetProps, environment: WidgetEnvironme
     >
       <VStack
         alignment="center"
-        spacing={small ? 4 : 6}
+        spacing={short ? 4 : 6}
         modifiers={[
           padding({ horizontal: small ? 8 : 14, vertical: small ? 8 : 12 }),
           background(c.panel),

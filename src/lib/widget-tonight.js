@@ -15,6 +15,7 @@ import {
 import { t } from './i18n.js'
 import { lastTimeLine, perWeekLine } from './every-copy.js'
 import { awayOn, gentleOn } from './prefs.js'
+import { shelfStreak } from './hall-feel.js'
 import { alignShelfPurse, normalizePurse, spreadPurseFrom } from './purse.js'
 import { weOpenPastList } from './did-we.js'
 import { readWeLine, readWeOpen, skipWePing } from './we-widget.js'
@@ -157,6 +158,7 @@ export function tonightWidgetKey(props) {
     props?.buddyId || '',
     JSON.stringify(props?.buddyWorn || {}),
     JSON.stringify(props?.colors || {}),
+    props?.streak || 0,
   ]
   return [props?.leadLampId || '', props?.leadNight || '', props?.left ?? '', props?.footer || '', ...look, ...items].join('\n')
 }
@@ -293,6 +295,8 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   // Nothing on the list at all: a tap goes to add a question, not to Today.
   const emptyList = !items.length && !nextLine && !away
   const colorBook = widgetColorBook(shelf)
+  // The all-clear card shows the streak. Only walked then, and never in gentle mode.
+  const streak = allClear && !gentle ? shelfStreak(shelf?.boards || [], now) : 0
   return {
     tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.tagFallback'),
     question,
@@ -319,6 +323,9 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     weLine: readWeLine(boardDate(now)),
     // Gentle mode: the widgets draw no streak numbers.
     gentle,
+    streak,
+    streakLabel: t('tonight.streakMany', { n: '{n}' }),
+    streakOneLabel: t('tonight.streakOne'),
     updatedAt: now.getTime(),
   }
 }
