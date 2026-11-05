@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { answerFor, formatBoardDate, isDueOn, isEvery, isPerWeek, nightOpen, periodKeyFor, periodPassed } from '../../src/lib/recurrence.js'
+import { pastAnswerOpen } from '../../src/lib/board-ops.js'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { amountWords, pausedOpen } from '../../src/lib/lamp-record.js'
 import { travelNightState, travelSkipped } from '../../src/lib/travel.js'
@@ -44,7 +45,7 @@ export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false, weekSt
       const away = (travelSkipped(book, iso) && travelNightState(answer, iso) === 'none') || (lamp.cadence === 'monthly' && !answer && !periodPassed(lamp, periodKeyFor(lamp, iso), dateIso)) || pausedOpen(lamp, periodKeyFor(lamp, iso), answer)
       state = away
         ? ''
-        : status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? (gentle || nightOpen(iso) ? 'nope' : 'missed') : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'
+        : status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'
     }
     cells.push({ iso, day: d, state })
   }
@@ -60,7 +61,7 @@ function cellColor(state, colors) {
 }
 
 /** A small month calendar under the recent nights, back to the month the question was made. */
-export function LampMonth({ book, lamp, colors, dateIso }) {
+export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
   const [back, setBack] = useLayoutState(0)
   const made = /^\d{4}-\d{2}-\d{2}$/.test(String(lamp?.createdOn || '')) ? lamp.createdOn : dateIso
   const { y, m } = monthOf(dateIso, back)
@@ -93,19 +94,51 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
   const STATE_WORD = { did: 'jewelKey.did', late: 'jewelKey.late', nope: 'jewelKey.nope', missed: 'later.missed', open: 'jewelKey.open' }
   // A skip on a night that is still open reads Not yet.
   const stateWord = (cell) => (cell.state === 'nope' && nightOpen(cell.iso) ? 'jewelKey.notYet' : STATE_WORD[cell.state])
-  function openDay(cell) {
-    const answer = answerFor(book, lamp.id, periodKeyFor(lamp, cell.iso))
+  function openDay(cell, bookNow = book) {
+    const answer = answerFor(bookNow, lamp.id, periodKeyFor(lamp, cell.iso))
     const note = String(answer?.note || '').trim()
     const close = () => publishSheet(null)
+    const row = { lamp, boardId: bookNow.id, dateIso: cell.iso, periodKey: periodKeyFor(lamp, cell.iso), answer }
+    const canAnswer = Boolean(onAnswer) && Boolean(cell.state) && pastAnswerOpen(row, new Date())
+    const reply = (status) => {
+      const next = onAnswer(row, status)
+      if (next) openDay(cell, next)
+      else if (!pastAnswerOpen(row, new Date())) openDay(cell, bookNow)
+    }
     publishSheet({
       kicker: shortLabel(lamp),
       title: formatBoardDate(cell.iso),
       body: [t(stateWord(cell)), amountWords(answer?.amount, lamp.amountUnit), note].filter(Boolean).join('\n'),
+      content: canAnswer ? (
+        <View style={styles.sheetBtns}>
+          {[['yes', t('widget.tonight.did'), 'cal.markDid'], ['skip', t('later.nope'), 'cal.markNotYet']].map(([status, label, key]) => {
+            const on = status === 'yes' ? answer?.status === 'yes' || answer?.status === 'late' : answer?.status === 'skip'
+            return (
+              <Pressable
+                key={status}
+                accessibilityRole="button"
+                accessibilityLabel={t(key, { question: shortLabel(lamp), date: formatBoardDate(cell.iso) })}
+                accessibilityState={{ selected: on }}
+                onPress={() => reply(status)}
+                style={[styles.sheetBtn, { borderColor: colors.line, backgroundColor: on ? colors.line : 'transparent' }]}
+              >
+                <Text style={[styles.sheetBtnText, { color: colors.ink }]}>{label}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      ) : null,
       closeLabel: t('cal.close'),
       colors,
       onClose: close,
     })
   }
+
+  const hasMore = (cell) => {
+    const a = answerFor(book, lamp.id, periodKeyFor(lamp, cell.iso))
+    return Boolean(String(a?.note || '').trim() || a?.amount)
+  }
+  const hasLate = cells.some((cell) => cell?.state === 'late')
 
   function Arrow({ label, glyph, on, onPress }) {
     return (
@@ -151,7 +184,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
                 disabled={!cell.state}
                 onPress={() => openDay(cell)}
                 accessibilityRole={cell.state ? 'button' : undefined}
-                accessibilityLabel={cell.state ? `${formatBoardDate(cell.iso)}, ${t(stateWord(cell))}` : formatBoardDate(cell.iso)}
+                accessibilityLabel={cell.state ? `${formatBoardDate(cell.iso)}, ${t(stateWord(cell))}` : cell.iso > dateIso ? `${formatBoardDate(cell.iso)}, ${t('cal.ahead')}` : formatBoardDate(cell.iso)}
               >
                 <View
                   style={[
@@ -168,6 +201,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
                   <Text maxFontSizeMultiplier={1.4} style={[styles.dayText, { color: fill && !(cell.state === 'missed' && colors.missRing) ? colors.bg : cell.state ? colors.ink : colors.inkDim }]}>
                     {cell.day}
                   </Text>
+                  {cell.state && hasMore(cell) ? <View style={[styles.more, { backgroundColor: colors.inkDim }]} /> : null}
                 </View>
               </Pressable>
             )
@@ -191,7 +225,7 @@ export function LampMonth({ book, lamp, colors, dateIso }) {
           <View style={[styles.keyDot, { borderWidth: 1, borderColor: colors.openRing || colors.open || colors.line }]} />
           <Text style={[styles.keyText, { color: colors.inkSoft }]}>{t('jewelKey.open')}</Text>
         </View>
-        <Text style={[styles.keyText, styles.keyWhy, { color: colors.inkDim }]}>{t('jewelKey.lateWhy')}</Text>
+        {hasLate ? <Text style={[styles.keyText, styles.keyWhy, { color: colors.inkDim }]}>{t('jewelKey.lateWhy')}</Text> : null}
       </View>
     </View>
   )
@@ -212,5 +246,9 @@ const styles = StyleSheet.create({
   keyItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   keyDot: { width: 10, height: 10, borderRadius: 5 },
   keyText: { fontFamily: fonts.ui, fontSize: 11 },
+  sheetBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  sheetBtn: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  sheetBtnText: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  more: { position: 'absolute', top: 0, right: 0, width: 5, height: 5, borderRadius: 3 },
   keyWhy: { width: '100%', textAlign: 'center' },
 })

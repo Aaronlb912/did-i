@@ -39,7 +39,7 @@ import {
   UNIT_MAX,
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
-import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { bulkLamps, hangInto, moveLamps, putAnswer, putPastAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
@@ -2740,7 +2740,19 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         </View>
       ) : null}
 
-      <LampMonth book={lampBook} lamp={lamp} colors={colors} dateIso={dateIso} />
+      <LampMonth
+        book={lampBook}
+        lamp={lamp}
+        colors={colors}
+        dateIso={dateIso}
+        onAnswer={(row, status) => {
+          const next = putPastAnswer(lampBook, row, status, clock)
+          if (next === lampBook) return null
+          const saved = commitBook(next, clock)
+          onChange(saved)
+          return saved
+        }}
+      />
 
       {lamp.trackAmount ? (
         <View style={styles.amounts}>
