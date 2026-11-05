@@ -7241,6 +7241,20 @@ await testAsync('times a week: a fully paused week keeps the run, a part-paused 
   assert.equal(questionStreak(mk([7, 9, 19], base), base, evDay(22)), 0, 'unpaused, one Did is short')
 })
 
+await testAsync('times a week: past weeks are judged by the schedule they ran under', async () => {
+  const { addDaysIso } = await import('../src/lib/recurrence.js')
+  const days = []
+  for (let w = 0; w < 8; w += 1) for (let i = 0; i < 3; i += 1) days.push(addDaysIso('2026-07-20', w * 7 + i))
+  const answers = days.map((d) => ({ id: 'a' + d, lampId: 'gym', periodKey: d, status: 'yes', answeredAt: d + 'T20:00:00' }))
+  const was = [{ until: '2026-09-14', cadence: 'daily', perWeek: 3 }]
+  const now = lamp('gym', { perWeek: 5, was, createdOn: '2026-07-01' })
+  const book = { id: 'b', lamps: [now], answers }
+  assert.equal(questionStreak(book, now, '2026-09-14'), 8, 'raising 3 to 5 keeps the 8 weeks that met 3')
+  assert.equal(questionStreak({ ...book, lamps: [{ ...now, was: undefined }] }, { ...now, was: undefined }, '2026-09-14'), 0, 'without history the old weeks fail 5')
+  const daily = lamp('gym', { cadence: 'daily', createdOn: '2026-07-01', was: [{ until: '2026-09-14', cadence: 'daily', perWeek: 3 }] })
+  assert.equal(questionStreak({ id: 'b', lamps: [daily], answers }, daily, '2026-09-14'), 0, 'a now-daily question is not per week')
+})
+
 await testAsync('times a week: best streak walks the weeks', async () => {
   const per = { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', perWeek: 2, archived: false, createdOn: '2026-08-01' }
   const book = everyBook([7, 9, 14, 16, 21, 28, 29].map((d) => ['gym', evDay(d), 'yes']), [per])
