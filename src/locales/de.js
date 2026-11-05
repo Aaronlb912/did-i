@@ -2291,7 +2291,7 @@ export const de = {
   'we.askMore': 'Noch jemanden fragen',
   'we.pickName': "{name} fragen",
   'we.sendAsk': 'Anfrage senden',
-  'we.edit': 'Regeln ändern',
+  'we.edit': 'Karte ändern',
   'we.save': 'Speichern',
   'we.leave': 'Verlassen',
   'we.leaveTitle': 'Dieses Did we verlassen?',

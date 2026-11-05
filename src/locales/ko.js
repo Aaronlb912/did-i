@@ -2251,7 +2251,7 @@ export const ko = {
   'we.askMore': '다른 사람 초대',
   'we.pickName': "{name}님에게 묻기",
   'we.sendAsk': '초대 보내기',
-  'we.edit': '규칙 바꾸기',
+  'we.edit': '카드 바꾸기',
   'we.save': '저장',
   'we.leave': '나가기',
   'we.leaveTitle': '이 Did we에서 나갈까요?',

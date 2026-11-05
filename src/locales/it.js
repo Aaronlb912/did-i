@@ -2282,7 +2282,7 @@ export const it = {
   'we.askMore': 'Invita qualcun altro',
   'we.pickName': "Invita {name}",
   'we.sendAsk': 'Invia',
-  'we.edit': 'Cambia le regole',
+  'we.edit': 'Modifica la scheda',
   'we.save': 'Salva',
   'we.leave': 'Esci',
   'we.leaveTitle': 'Uscire da questo Did we?',

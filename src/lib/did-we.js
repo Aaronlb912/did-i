@@ -134,7 +134,9 @@ export async function weEdit(card, { question, mode, shows, cadence, weekdays, g
     want_goal: goal || null,
   })
   if (error) return bad(error)
-  return saveExtras(db, card, { askAfter, remind, note })
+  // The rules are saved even when the time, reminder or note miss.
+  const extras = await saveExtras(db, card, { askAfter, remind, note })
+  return extras?.miss ? { ...extras, saved: true } : extras
 }
 
 // Where you file a card for yourself: a folder and topics, like your own questions.

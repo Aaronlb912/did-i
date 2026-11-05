@@ -2283,7 +2283,7 @@ export const es = {
   'we.askMore': 'Invitar a alguien más',
   'we.pickName': "Invitar a {name}",
   'we.sendAsk': 'Enviar',
-  'we.edit': 'Cambiar las reglas',
+  'we.edit': 'Cambiar tarjeta',
   'we.save': 'Guardar',
   'we.leave': 'Salir',
   'we.leaveTitle': '¿Salir de este Did we?',

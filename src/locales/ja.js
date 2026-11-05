@@ -2249,7 +2249,7 @@ export const ja = {
   'we.askMore': 'ほかの人を招待',
   'we.pickName': "{name}さんを誘う",
   'we.sendAsk': '招待を送る',
-  'we.edit': 'ルールを変える',
+  'we.edit': 'カードを変える',
   'we.save': '保存',
   'we.leave': '抜ける',
   'we.leaveTitle': 'この Did we から抜けますか？',
