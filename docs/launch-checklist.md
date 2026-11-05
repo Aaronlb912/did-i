@@ -3,10 +3,10 @@
 What has to be true before Did I goes live on the App Store and Play Store.
 Tick items as they land. Details and history live in `docs/not-yet.md`.
 
-Last updated 2026-09-26. Latest iOS build: **55** (Expo). Next build takes 56.
-Over-the-air updates (`expo-updates`) start with build 56. After that, JS-only
-fixes go out with `npm run update:prod`; native changes still need a build
-(`docs/native-rebuild.md`).
+Last updated 2026-11-05. Latest iOS build: **95** (1.5.0, release/ios-1.5.0).
+Next build: 1.6.0, iOS build 96 (scripts/ios-bump-build.mjs takes it). Android AABs
+build locally. JS-only fixes go out with `npm run update:prod` to
+every live runtime; native changes need a build (`docs/native-rebuild.md`).
 
 ## App Review switch (every submission)
 

@@ -1,6 +1,6 @@
 import NetInfo from '@react-native-community/netinfo'
 import { useState } from 'react'
-import { Dimensions, Image, Linking, Text, View } from 'react-native'
+import { Dimensions, Image, Linking, Platform, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { addProof, freshProofUrl, removeProof, reportProof } from '../../src/lib/proofs.js'
@@ -132,8 +132,10 @@ export async function shareProof(row) {
   }
 }
 
-// Hidden on a build without the media library module.
+// Hidden on a build without the media library module, and on Android 10 and
+// below, where saving needs the storage permission the manifest removes.
 export function canSaveProof() {
+  if (Platform.OS === 'android' && Number(Platform.Version) < 30) return false
   try {
     return Boolean(require('expo-media-library').Asset)
   } catch {

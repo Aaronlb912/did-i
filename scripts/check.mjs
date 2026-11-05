@@ -221,6 +221,15 @@ function lamp(id, extra = {}) {
 }
 
 // A name used but never declared crashes the screen in Hermes ("Property 'got' doesn't exist").
+// npm 10 (node 22 in the build workflows) wants these nested copies; #895 dropped them and npm ci failed.
+test('the lockfile keeps the nested typescript npm ci needs in the build workflows', () => {
+  const lock = JSON.parse(readFileSync('package-lock.json', 'utf8')).packages
+  for (const parent of ['@bacons/apple-targets', 'expo-quick-actions']) {
+    if (!lock['node_modules/' + parent]) continue
+    assert.ok(lock['node_modules/' + parent + '/node_modules/typescript'], parent + ' needs its nested typescript in package-lock.json')
+  }
+})
+
 test('phone app code uses no undeclared names', () => {
   const { parse } = require('@babel/parser')
   const traverse = require('@babel/traverse').default
