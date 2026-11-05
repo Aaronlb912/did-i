@@ -3010,6 +3010,30 @@ await testAsync('the dots legend seen flag rides in the synced prefs', async () 
   }
 })
 
+await testAsync('a Did we card unanswered on an away day keeps the streak', async () => {
+  const { shelfStreak } = await import('../src/lib/hall-feel.js')
+  const { setWeNightRows, clearWeNights } = await import('../src/lib/we-nights.js')
+  const { readPrefs, writePrefs, awayOn } = await import('../src/lib/prefs.js')
+  const before = globalThis.localStorage.getItem('did-i-prefs')
+  const did = (day) => ({ id: 'a' + day, lampId: 'p', periodKey: day, status: 'yes', answeredAt: day + 'T20:00:00.000Z', note: '' })
+  const q = { ...lamp('p'), cadence: 'daily', createdOn: '2026-10-20' }
+  const book = { id: 'b', title: 'Home', lamps: [q], answers: ['2026-10-20', '2026-10-21', '2026-10-22', '2026-10-24', '2026-10-25'].map(did) }
+  const now = new Date(2026, 9, 25, 22)
+  try {
+    readPrefs()
+    setWeNightRows([{ card: 'w1', folder: '', night: '2026-10-23', status: 'nope' }])
+    writePrefs({ away: [] })
+    assert.equal(shelfStreak([book], now), 2, 'a missed Did we on a normal day breaks the streak')
+    writePrefs({ away: [['2026-10-23', '2026-10-24']] })
+    assert.equal(awayOn('2026-10-23'), true)
+    assert.equal(shelfStreak([{ ...book }], now), 5, 'the same card on an away day keeps it')
+  } finally {
+    clearWeNights()
+    if (before == null) globalThis.localStorage.removeItem('did-i-prefs')
+    else globalThis.localStorage.setItem('did-i-prefs', before)
+  }
+})
+
 await testAsync('the update prompt compares x.y.z and never locks out on a bad row', async () => {
   const { updateState, versionBelow } = await import('../src/lib/app-update.js')
   assert.equal(versionBelow('1.2.0', '1.10.0'), true)
@@ -8410,7 +8434,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-8), ['streak-bonus.sql', 'we-left-push.sql', 'we-month-open.sql', 'we-link-blocked.sql', 'we-link-already.sql', 'did-you-when.sql', 'we-timing.sql', 'we-week-anchor.sql'])
+  assert.deepEqual(files.slice(-9), ['streak-bonus.sql', 'we-left-push.sql', 'we-month-open.sql', 'we-link-blocked.sql', 'we-link-already.sql', 'did-you-when.sql', 'we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
