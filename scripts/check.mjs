@@ -64,7 +64,7 @@ import {
   togglePack,
   togglePick,
 } from '../src/lib/first-run.js'
-import { mergeBackup, mergeShelves } from '../src/lib/shelf-merge.js'
+import { mergeBackup, mergeShelves, planBackupLoad } from '../src/lib/shelf-merge.js'
 import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
@@ -2484,6 +2484,21 @@ test('loading a backup keeps this phone’s coins, shop items and question setti
   assert.ok(!(book.looks || []).includes('sky'), 'shop items do not come from the file')
   assert.equal(book.lamps[0].archived, true, 'a question paused here stays paused')
   assert.equal(book.answers.length, 1, 'the backup answers come in')
+})
+
+test('planning a backup load counts what is new, never deletes, and stops at the cap', () => {
+  const q = { ...lamp('q'), question: 'Did I read?' }
+  const here = { currentId: 'b', boards: [{ id: 'b', title: 'General', lamps: [q], answers: [] }] }
+  const ans = { lampId: 'q', periodKey: '2026-10-01', status: 'yes', answeredAt: '2026-10-01T20:00:00' }
+  const copy = { shelf: { currentId: 'b', boards: [{ id: 'b', title: 'General', lamps: [q, { ...lamp('r'), question: 'Did I stretch?' }], answers: [ans] }] } }
+  const plan = planBackupLoad(here, copy)
+  assert.equal(plan.q, 1)
+  assert.equal(plan.a, 1)
+  assert.equal(plan.merged.boards[0].lamps.length, 2)
+  assert.equal(planBackupLoad(here, { hello: 1 }).miss, 'file')
+  const many = { currentId: 'b', boards: [{ id: 'b', title: 'General', lamps: Array.from({ length: 301 }, (_, i) => ({ ...lamp('m' + i), question: 'Did I ' + i + '?' })), answers: [] }] }
+  assert.equal(planBackupLoad(here, many).miss, 'cap')
+  assert.equal(planBackupLoad(plan.merged, { boards: [] }).q, 0)
 })
 
 test('a never-answered starter the account already has does not merge in as a twin', () => {

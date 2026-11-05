@@ -3,6 +3,7 @@ import { normalizeShelf } from './board-shelf.js'
 import { mergeAnswer } from './board-ops.js'
 import { capSkips } from './travel.js'
 import { CHEER_STAGE_MAX, normalizePurse } from './purse.js'
+import { overCap } from './question-cap.js'
 
 // Two phones can both be right. Questions and answers always combine.
 // Names and switches come from whichever phone saved last.
@@ -152,6 +153,24 @@ export function mergeBackup(local, backup) {
     return out
   })
   return mergeShelves(local, { ...backup, boards }, '', '')
+}
+
+// What loading a backup file would do, before anything is saved. The file can
+// be the account export, a whole shelf, or one folder. miss: 'file' (not a
+// Did I copy) or 'cap' (it would pass the question limit).
+export function planBackupLoad(local, parsed) {
+  const shelf = parsed?.shelf?.boards ? parsed.shelf : parsed?.boards ? parsed : null
+  const one = !shelf && parsed?.lamps ? { currentId: parsed.id, boards: [parsed] } : null
+  const coming = shelf || one
+  if (!coming || !Array.isArray(coming.boards)) return { miss: 'file' }
+  const merged = mergeBackup(local, coming)
+  if (overCap(local.boards, merged.boards)) return { miss: 'cap' }
+  const count = (target, key) => target.boards.reduce((n, book) => n + (book[key] || []).length, 0)
+  return {
+    merged,
+    q: Math.max(0, count(merged, 'lamps') - count(local, 'lamps')),
+    a: Math.max(0, count(merged, 'answers') - count(local, 'answers')),
+  }
 }
 
 export function mergeShelves(local, remote, localSavedAt = '', remoteSavedAt = '') {
