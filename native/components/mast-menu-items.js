@@ -54,6 +54,7 @@ export function menuItems(showAdd, inbox, asks, signedIn, we = 0, recent = 0) {
     // Did you asks count on Friends and family only.
     { key: 'recent', path: '/recent', label: t('recent.cog'), on: path === '/recent', a11y: recent ? t('recent.cogNew', { n: recent }) : '', count: recent, icon: 'bell' },
     { key: 'kit', path: '/kit', label: t('kit.title'), on: path === '/kit', icon: 'collection' },
+    { key: 'photos', path: '/photos', label: t('photos.title'), on: path === '/photos' || path === '/photo', icon: 'camera', stroke: true },
     {
       key: 'settings',
       path: '/settings',

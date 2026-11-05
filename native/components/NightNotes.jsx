@@ -324,9 +324,10 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
         </View>
       ) : null}
       </Reveal>
-      {photoNight ? (
+      {photoNight || lamp.sendId ? (
         <View style={styles.keys}>
-          <KeyButton
+          <KeyButton colors={colors} label={t('photos.title')} onPress={() => goHash('/photos')} />
+          {photoNight ? <KeyButton
             colors={colors}
             label={t('proof.add')}
             onPress={() =>
@@ -341,7 +342,7 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
                 },
               })
             }
-          />
+          /> : null}
         </View>
       ) : null}
       {noted.length ? (

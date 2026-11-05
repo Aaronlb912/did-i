@@ -5,6 +5,7 @@ import { t } from '../../src/lib/i18n.js'
 import { loadProofs } from '../../src/lib/proofs.js'
 import { boardDate } from '../../src/lib/recurrence.js'
 import { addProofFlow, canAddProof, openProofView } from '../lib/proof-flow.jsx'
+import { goHash } from '../navigation/hash.js'
 import { sectionLabel } from '../theme.js'
 import { ProofRow } from './ProofRow.jsx'
 import { KeyButton } from './ui.jsx'
@@ -34,12 +35,12 @@ export function WeProofs({ card, mine, colors }) {
   const tonight = rows.filter((row) => row.night === night)
   const mineHere = tonight.some((row) => row.owner_id === uid)
   const canAdd = card.due && mine?.status === 'did' && !mineHere && card.shows !== 'count' && canAddProof()
-  if (!tonight.length && !canAdd) return null
   const nameOf = (id) => (id === uid ? t('we.you') : (card.people || []).find((p) => p.id === id)?.name || t('people.someone'))
 
   return (
     <View style={styles.wrap}>
       <Text style={[styles.label, { color: colors.inkDim }]}>{t('proof.title')}</Text>
+      <KeyButton colors={colors} label={t('photos.title')} onPress={() => goHash('/photos')} />
       {tonight.map((row) => (
         <ProofRow
           key={row.id}
