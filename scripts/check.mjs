@@ -1953,6 +1953,13 @@ await testAsync('a paused Did we is not asked, and "you both did it" needs two d
   const turns = { ...live, mode: 'turns', people: [{ ...me, status: null }, { ...pal, status: null }] }
   assert.notEqual(weReminders([{ ...turns, turn: 'p' }])[0].skipNight, '', 'no reminder today when it is their turn, not mine')
   assert.equal(weReminders([{ ...turns, turn: 'm' }])[0].skipNight, '', 'my turn keeps the reminder')
+  const nights = (extra, night = '2026-11-10') => weReminders([{ ...live, startsOn: '2026-11-01', people: [], ...extra }], night)[0].nights
+  assert.deepEqual(nights({ cadence: 'monthly', monthDay: 15 }, '2026-11-12'), ['2026-11-15'], 'monthly asks on its day')
+  assert.deepEqual(nights({ cadence: 'every_n', everyDays: 3, everyAnchor: '2026-11-01' }), ['2026-11-10', '2026-11-13', '2026-11-16'], 'every 3 days')
+  assert.deepEqual(nights({ cadence: 'once_on', onceOn: '2026-11-12' }), ['2026-11-12'], 'once asks on its day only')
+  assert.deepEqual(nights({ cadence: 'deadline', dueBy: '2026-11-11' }), ['2026-11-10', '2026-11-11'], 'a deadline stops at its date')
+  assert.deepEqual(nights({ cadence: 'monthly', monthDay: 15, done: true, periodEnd: '2026-11-30' }, '2026-11-12'), [], 'a done month skips to its end')
+  assert.equal(nights({ cadence: 'daily' }).length, 7, 'daily asks every night')
 })
 
 test('a night says why it broke, by the same rules as the dots', () => {
@@ -11372,7 +11379,7 @@ test('did we: every Did I timing maps to we_make2 and we_edit3 arguments', async
   assert.deepEqual(weTiming({ cadence: 'daily' }, today), { cadence: 'daily', weekdays: [], n: null, on: null })
   assert.deepEqual(weTiming({ cadence: 'weekly', weekdays: [1, 3] }, today).weekdays, [1, 3])
   assert.equal(weTiming({ cadence: 'weekly', weekdays: [] }, today).miss, 'we.missDays')
-  assert.equal(weTiming({ cadence: 'monthly', monthDay: '' }, today).n, null)
+  assert.equal(weTiming({ cadence: 'monthly', monthDay: '' }, today).n, 1)
   assert.equal(weTiming({ cadence: 'monthly', monthDay: 'last' }, today).n, 0)
   assert.equal(weTiming({ cadence: 'monthly', monthDay: 15 }, today).n, 15)
   assert.equal(weTiming({ cadence: 'every_n', everyDays: 3 }, today).n, 3)

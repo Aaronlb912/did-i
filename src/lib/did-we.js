@@ -5,7 +5,7 @@ import { readShelf } from './board-shelf.js'
 import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
-import { readWeOpen, saveWeLine, saveWeOpen, saveWePings } from './we-widget.js'
+import { readWeOpen, saveWeLine, saveWeOpen, saveWePings, weMonthlyPingDay } from './we-widget.js'
 import { markWeDone, refreshWeNights, weHiddenOn } from './we-nights.js'
 import { weekKind, weSlotDay } from './we-look.js'
 import { weDueOn, weNextDue, weNextLabel, wePrevDue, weSlotOf } from './we-next.js'
@@ -116,7 +116,7 @@ export function weTiming(draft, today = tonightIso()) {
     out.weekdays = draft.weekdays
   } else if (cadence === 'monthly') {
     const day = draft.monthDay === 'last' ? 0 : draft.monthDay === '' || draft.monthDay == null ? null : Number(draft.monthDay)
-    out.n = day != null && Number.isInteger(day) && day >= 0 && day <= 31 ? day : null
+    out.n = day != null && Number.isInteger(day) && day >= 0 && day <= 31 ? day : 1
   } else if (cadence === 'every_n' || cadence === 'every') {
     if (!Number.isInteger(days) || days < 2 || days > 365) return { miss: cadence === 'every' ? 'hang.miss.everyDays' : 'hang.miss.everyN' }
     out.n = days
@@ -231,6 +231,7 @@ export function weReminders(cards, night = tonightIso()) {
       cadence: card.cadence,
       weekdays: card.weekdays || [],
       startsOn: card.startsOn,
+      nights: weReminderNights(card, night),
       // For the start line: one other person by first name, or how many others.
       ...weOthers(card),
       // Not yet keeps the day's reminder, as solo questions do. In turns,
@@ -239,9 +240,27 @@ export function weReminders(cards, night = tonightIso()) {
     }))
 }
 
+// The next 7 nights (ISO) the card asks, for the reminder scheduler. A done
+// open-period card (month, every, per week, deadline) skips through its
+// period end; a monthly card also asks on the last 3 days of the month.
+function weReminderNights(card, night) {
+  const end = String(card.periodEnd || '').slice(0, 10)
+  const open = end > night
+  const mine = weMine(card)?.status === 'did'
+  const skipTo = open && (card.done || (mine && ['monthly', 'every', 'every_n', 'deadline'].includes(card.cadence))) ? end : ''
+  const out = []
+  for (let ahead = 0; ahead < 7; ahead += 1) {
+    const day = addDays(night, ahead)
+    if (day <= skipTo) continue
+    const lateMonth = card.cadence === 'monthly' && day >= String(card.startsOn || '') && weMonthlyPingDay(day) && Number(day.slice(8)) >= Number(card.monthDay || 1)
+    if (weCadenceDue(card, day) || lateMonth) out.push(day)
+  }
+  return out
+}
+
 function weOthers(card) {
   const others = (card.people || []).filter((p) => p.state === 'in' && !p.me)
-  const first = String(others[0]?.name || '').trim().split(/s+/)[0]
+  const first = String(others[0]?.name || '').trim().split(/\s+/)[0]
   return { buddy: others.length === 1 ? first : '', others: others.length }
 }
 
@@ -459,11 +478,44 @@ function addDays(iso, days) {
 // The card's next asked night after tonight, within a week, for answering
 // early ("done it already"). Same window as we_answer on the server.
 export function weNextNight(card, night = tonightIso()) {
-  for (let ahead = 1; ahead <= 7; ahead += 1) {
+  for (let ahead = 1; ahead <= 62; ahead += 1) {
     const day = addDays(night, ahead)
-    if (weDueOn(card, day)) return day
+    if (weCadenceDue(card, day)) return day
   }
-  return ''
+  const end = String(card.periodEnd || '').slice(0, 10)
+  return end > night ? end : ''
+}
+
+// Whether the card's own schedule asks on this night (daily, weekdays, month
+// day, every so many days, once, up to a deadline). Per-week cards ask any day.
+export function weCadenceDue(card, night) {
+  if (night < String(card.startsOn || '')) return false
+  const [year, month, date] = night.split('-').map(Number)
+  switch (card.cadence) {
+    case 'weekly':
+      return weDueOn(card, night)
+    case 'monthly': {
+      const last = new Date(year, month, 0).getDate()
+      const want = card.monthDay == null || card.monthDay === '' ? 1 : Number(card.monthDay)
+      return date === (want === 0 || want > last ? last : want)
+    }
+    case 'every':
+      return true
+    case 'every_n': {
+      const days = Number(card.everyDays)
+      if (!(days >= 2)) return true
+      const from = String(card.everyAnchor || card.startsOn || '')
+      if (!from) return true
+      const gap = Math.round((Date.parse(`${night}T12:00:00Z`) - Date.parse(`${from.slice(0, 10)}T12:00:00Z`)) / 86400000)
+      return gap >= 0 && gap % days === 0
+    }
+    case 'once_on':
+      return !card.onceOn || night === String(card.onceOn).slice(0, 10)
+    case 'deadline':
+      return !card.dueBy || night <= String(card.dueBy).slice(0, 10)
+    default:
+      return true
+  }
 }
 
 export { weDueOn, weSlotOf }

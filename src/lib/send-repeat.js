@@ -26,7 +26,7 @@ export function repeatFrom(cadence, weekdays = [], everyDays = 0, extra = {}) {
   }
   if (cadence === 'every') {
     const n = Number(everyDays)
-    return Number.isInteger(n) && n >= 1 && n <= 365 ? `every:${n}` : ''
+    return Number.isInteger(n) && n >= 2 && n <= 365 ? `every:${n}` : ''
   }
   if (cadence === 'weekly') {
     const days = [...new Set(weekdays.map(Number))].filter((d) => d >= 0 && d <= 6).sort()
@@ -41,7 +41,8 @@ export function readRepeat(repeat) {
   const days = /^weekly:([0-6](,[0-6])*)$/.exec(text)
   if (days) return { cadence: 'weekly', weekdays: days[1].split(',').map(Number) }
   const every = /^every:(\d{1,3})$/.exec(text)
-  if (every && Number(every[1]) >= 1 && Number(every[1]) <= 365) {
+  if (every && Number(every[1]) === 1) return { cadence: 'daily', weekdays: [] }
+  if (every && Number(every[1]) >= 2 && Number(every[1]) <= 365) {
     return { cadence: 'every', weekdays: [], everyDays: Number(every[1]) }
   }
   const dated = /^(on|by):(\d{4}-\d{2}-\d{2})$/.exec(text)
