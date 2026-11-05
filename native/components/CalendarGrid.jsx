@@ -35,7 +35,7 @@ export function dayLabel(night, locale, gentle = false) {
       : night.freeze
         ? t('freeze.dot')
         : night.miss
-          ? gentle ? '' : t('cal.keyMissed')
+          ? gentle ? '' : t('cal.notAnswered')
           : t('later.tonight')
   return t('cal.day', { date: state ? `${date}, ${state}` : date })
 }
