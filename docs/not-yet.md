@@ -32,12 +32,11 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 - **No background voice capture.** Speech starts only after the app opens; the OS does not allow listening from a widget or shortcut alone.
 - **Sign-out clears reminders.** Waiting Remind me notes and their text are dropped on sign-out, so one account's words never reach another account's Today.
 - **Reminders live on one phone.** They are not synced to the account or a second phone.
-- **Android widget label.** The mic reads `p.remindLabel` and falls back to English; the widget props builder should pass `t('remind.mic')`.
 
 ## 1.4.0 native release (branch `native/road-to-ten`, needs a store build)
 
 - **Built:** Share my year sends a picture of the year (react-native-view-shot, expo-sharing; the text share is the fallback). A Calendar grid widget on iOS and Android. A store rating sheet after the Did that takes the streak to 7 (or the first one past it), once ever; it shares the `asked` flag with the Home rate card, so the card then stays away.
-- **Not done:** none of it seen on a phone or a widget. The picture is drawn off screen: check it on Android and iPhone. The rating sheet follows the all-folders streak only (not inside a folder view), and the OS decides whether it shows. The grid widget has no today marker and no Not yet legend.
+- **Not done:** none of it seen on a phone or a widget. The picture is drawn off screen: check it on Android and iPhone. The rating sheet follows the all-folders streak only (not inside a folder view), and the OS decides whether it shows. The grid widget has no Not yet legend.
 
 ## Product Hunt buddy (branch `hunt-buddy`, needs SQL, OTA, then a build)
 
@@ -228,7 +227,7 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 
 ## Reminder answers and streak freezes (branch `feat/answer-freeze-r10`)
 
-- **Reminder buttons when the app is fully closed need a native build.** With `opensAppToForeground: false` the answer is saved only when JS gets the response: app open or in the background (both platforms), and on iOS when the system wakes the app. A phone that killed the app may drop the tap. A sure path needs `expo-task-manager` plus `Notifications.registerTaskAsync` (a headless task that runs `applyWidgetTapOnce`), which is a new native module, so a new build on both platforms. Test on the device before shipping the OTA: if taps are lost from a killed app, set `opensAppToForeground` back to true in `src/lib/notify-answer.js`.
+- **Reminder buttons open the app.** `src/lib/notify-answer.js` uses `opensAppToForeground: true`, so a tap is never lost from a killed app. Answering without opening needs `expo-task-manager` plus `Notifications.registerTaskAsync` (a new native module). Before that change: with `opensAppToForeground: false` the answer is saved only when JS gets the response: app open or in the background (both platforms), and on iOS when the system wakes the app. A phone that killed the app may drop the tap. A sure path needs `expo-task-manager` plus `Notifications.registerTaskAsync` (a headless task that runs `applyWidgetTapOnce`), which is a new native module, so a new build on both platforms. Test on the device before shipping the OTA: if taps are lost from a killed app, set `opensAppToForeground` back to true in `src/lib/notify-answer.js`.
 - **No tap feedback on the notification itself.** The reminder is cleared; a refused answer (night over, already answered) shows a toast the next time the app is open.
 - **Freezes on the web (branch `gaps-2`).** The web calendar and week strip draw a covered night as the freeze ring, from the same night data as the phone. Checked with tests and `vite build` only.
 - **First streak walk is slower on long histories.** Freezes walk every night from the first one; about 85 ms on a laptop for two years of 8 daily questions, once per day per launch. Later walks reuse the settled nights.
@@ -272,7 +271,7 @@ Last worked through 2026-10-09 (branch `gaps-2`).
 
 ## Save a copy
 
-- **Shares text, not a file.** Save a copy uses the share sheet with the JSON as text; Drive or Files save it as .txt, which Load a copy now accepts. A real .json file needs expo-file-system + expo-sharing (a native build).
+- **A .json file from the next build.** #878 shares a real .json file (expo-file-system + expo-sharing); builds without expo-sharing fall back to text, which Load a copy also accepts.
 
 ## Did you links and sends from Did I (branch `did-you-links`)
 
@@ -624,13 +623,14 @@ cheer skip under reduce-motion.
 
 - A free holiday item claimed signed out reaches the account only if you sign in within a day of the drop closing. Later, it stays on that phone (and its board sync). Letting the server take late claims would let a changed phone clock claim any past drop.
 
-- Siri and Google Assistant answers open the card and ask for a tap; they do not save on their own. Saving from Siri needs a store build with an App Intent that writes natively (Streaks and Habitify do this). Siri phrases are English only, and the Assistant phrases in android res/values/arrays.xml still say nope, did not and tonight; both change with that build.
+- Siri and Google Assistant answers open the card and ask for a tap; they do not save on their own. Saving from Siri needs a store build with an App Intent that writes natively (Streaks and Habitify do this). Siri phrases are English only, and the Assistant phrases in android res/values/arrays.xml are English only (they keep "nope" and "did not" because that is what people say; "not yet" is matched from the next build).
 
 ## Proof photos (2026-11-05)
 
 - Phone only. The web app does not add or show photos.
 - Add photo sits in the done toast and on the Did we card. No row on the question page yet.
 - Needs a device pass: picker, camera, signed images, full-screen view, push.
+- Save to Photos (expo-media-library) arrives with the next native build; older builds hide the button. Android 10 and below also hide it (saving there needs the storage permission the manifest removes).
 - No auto-expire. Photos stay until removed.
 - Photo files of other people are left behind when a question or card goes away (SQL cannot delete storage files; the phone removes only its own). A service-role sweep is needed: list the proofs bucket and remove files with no proofs row.
 - The question's calendar marks a day that has your photo. Tapping the day opens the day sheet, which has View photo.

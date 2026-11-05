@@ -12,5 +12,6 @@
     <item>I didn\'t $question</item>
     <item>I did not $question</item>
     <item>nope to $question</item>
+    <item>not yet $question</item>
   </string-array>
 </resources>
