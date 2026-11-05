@@ -2790,6 +2790,8 @@ export const it = {
   'weLink.full': "Questo Did we è pieno. Chiedi a chi l’ha inviato di fare spazio.",
   'weLink.blocked': 'Non puoi unirti a questo Did we.',
   'weLink.cap': "Sei già in tutte le carte Did we possibili. Lasciane una per unirti a questa.",
+  'weLink.capTitle': "Troppe schede Did we",
+  'weLink.capGo': "Le tue schede Did we",
   'weLink.signIn': 'Accedi per unirti al Did we del tuo link.',
   'weLink.share': "Manda come link",
   'weLink.makeShare': "Crea e manda come link",

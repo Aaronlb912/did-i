@@ -2757,6 +2757,8 @@ export const ko = {
   'weLink.full': "이 Did we는 꽉 찼어요. 보낸 사람에게 자리를 만들어 달라고 해 보세요.",
   'weLink.blocked': '이 Did we에는 참여할 수 없어요.',
   'weLink.cap': "참여할 수 있는 Did we 카드가 꽉 찼어요. 하나를 나가면 참여할 수 있어요.",
+  'weLink.capTitle': "Did we 카드가 너무 많아요",
+  'weLink.capGo': "내 Did we 카드",
   'weLink.signIn': '링크의 Did we에 참여하려면 로그인하세요.',
   'weLink.share': "링크로 보내기",
   'weLink.makeShare': "만들고 링크로 보내기",

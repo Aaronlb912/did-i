@@ -267,6 +267,7 @@ export async function lookUpWeLink(code) {
     people: Number(row.people) || 0,
     full: Boolean(row.full_up),
     blocked: Boolean(row.blocked),
+    already: Boolean(row.already),
   }
 }
 

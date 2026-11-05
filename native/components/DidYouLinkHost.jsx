@@ -17,6 +17,7 @@ import {
   saveDidYouClaim,
   saveLinkFriend,
 } from '../../src/lib/did-you-links.js'
+import { savePendingDidYou } from '../../src/lib/did-you-links.js'
 import { t } from '../../src/lib/i18n.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { readMine } from '../../src/lib/people.js'
@@ -144,6 +145,13 @@ export function DidYouLinkHost({ colors, onKeep }) {
         setTick((n) => n + 1)
         return
       }
+      if (we && found?.already) {
+        refreshWeNights()
+        goHash('/tonight', { tag: 'all' })
+        showToast({ id: 'did-you-link', text: t('weLink.already'), ms: 3200 })
+        setTick((n) => n + 1)
+        return
+      }
       if (found?.blocked) {
         showToast({ id: 'did-you-link', kind: 'error', text: t('weLink.blocked'), ms: 5200 })
         setTick((n) => n + 1)
@@ -190,7 +198,21 @@ export function DidYouLinkHost({ colors, onKeep }) {
           // No name: ask for one, or join without the friend request.
           const addFriend = wantsFriend && (await nameFirst(colors))
           const out = await joinWeLink(code, addFriend)
-          if (out.miss) {
+          if (out.miss === 'cap') {
+            publishSheet({
+              title: t('weLink.capTitle'),
+              body: t('weLink.cap'),
+              goLabel: t('weLink.capGo'),
+              colors,
+              onClose: next,
+              onGo: () => {
+                publishSheet(null)
+                goHash('/we')
+              },
+            })
+          } else if (out.miss) {
+            // Not reached: keep the link so it comes up again, as the toast says.
+            if (!WE_MISS[out.miss]) savePendingDidYou(code)
             showToast({ id: 'did-you-link', kind: 'error', text: t(WE_MISS[out.miss] || 'didYouLink.reach'), ms: 5200 })
           } else if (out.already) {
             refreshWeNights()

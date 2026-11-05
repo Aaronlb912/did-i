@@ -2785,6 +2785,8 @@ export const en = {
   'weLink.full': "That Did we is full. Ask whoever sent it to make room.",
   'weLink.blocked': 'You cannot join that Did we.',
   'weLink.cap': "You are on as many Did we cards as you can be. Leave one to join this.",
+  'weLink.capTitle': "Too many Did we cards",
+  'weLink.capGo': "Your Did we cards",
   'weLink.signIn': 'Sign in to join the Did we from your link.',
   'weLink.share': "Send as a link",
   'weLink.makeShare': "Make it and send as a link",
