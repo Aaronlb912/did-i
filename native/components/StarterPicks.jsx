@@ -17,7 +17,7 @@ export function StarterPicks({ book, onChange, now, colors, label, readyNow = fa
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.label, { color: colors.inkDim }]}>{label || t('first.picks')}</Text>
+      <Text style={[styles.label, { color: colors.inkSoft }]}>{label || t('first.picks')}</Text>
       <View style={styles.row}>
         {open.map((starter) => (
           <KeyButton
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   wrap: { gap: 8, marginTop: 12, marginBottom: 4 },
   label: {
     fontFamily: fonts.mono,
-    fontSize: 11,
+    fontSize: 13,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },

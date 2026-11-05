@@ -2924,6 +2924,7 @@ export function CheerBurst() {
             end - REAL_FADE_MS,
           )
         : null
+    window.__didICheerUntil = Date.now() + end
     const timer = setTimeout(() => setBurst(null), end)
     return () => {
       clearTimeout(timer)
