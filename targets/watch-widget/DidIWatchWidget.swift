@@ -98,6 +98,19 @@ struct CountView: View {
         Text("Did I")
           .font(.caption2)
       }
+    case .accessoryCorner:
+      Text(entry.total > 0 ? "(entry.answered)" : "Did I")
+        .font(.title3)
+        .widgetLabel {
+          if entry.total > 0 {
+            Gauge(value: Double(entry.answered), in: 0...Double(entry.total)) {
+              Text("Did I")
+            }
+            .gaugeStyle(.accessoryLinearCapacity)
+          } else {
+            Text("Did I")
+          }
+        }
     case .accessoryInline:
       Text(entry.total > 0 ? "Did I \(line)" : String(localized: "Did I"))
     default:
@@ -121,6 +134,6 @@ struct DidIWatchWidget: Widget {
     }
     .configurationDisplayName("Did I")
     .description(String(localized: "Questions answered today"))
-    .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline])
+    .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline, .accessoryCorner])
   }
 }

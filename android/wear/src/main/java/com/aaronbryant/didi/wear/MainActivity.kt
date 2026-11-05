@@ -95,6 +95,8 @@ fun reduceMotion(): Boolean {
 @Composable
 fun WatchApp() {
   val cards = CardStore.cards.value
+  // Not yet on a waiting card sends it to the back for this session only.
+  var kept by remember { mutableStateOf(setOf<String>()) }
   val openPhone = cards?.openPhoneLabel?.orNull() ?: stringResource(R.string.open_phone)
   Box(Modifier.fillMaxSize().background(cards?.palette?.bg ?: Color.Black)) {
     when {
@@ -105,10 +107,10 @@ fun WatchApp() {
       else -> {
         // Said Not yet to some: they are not done, so do not say all clear.
         // Show them one at a time with a Did button.
-        val waiting = cards.items.firstOrNull { it.status == "nope" }
+        val waiting = cards.items.firstOrNull { it.status == "nope" && !kept.contains(it.id + "|" + it.night) }
         val allDone = cards.allDoneLabel.orNull() ?: stringResource(R.string.all_done)
         when {
-          waiting != null -> CardView(cards, waiting, didOnly = true)
+          waiting != null -> CardView(cards, waiting, onNope = { kept = kept + (waiting.id + "|" + waiting.night) })
           cards.streak > 0 -> DoneView(
             cards,
             allDone,
@@ -172,7 +174,7 @@ fun ProgressRing(progress: Float, palette: Palette) {
 }
 
 @Composable
-fun CardView(cards: WatchCards, card: WatchCard, didOnly: Boolean = false) {
+fun CardView(cards: WatchCards, card: WatchCard, onNope: (() -> Unit)? = null) {
   val context = LocalContext.current
   val view = LocalView.current
   val palette = cards.palette
@@ -212,7 +214,7 @@ fun CardView(cards: WatchCards, card: WatchCard, didOnly: Boolean = false) {
         horizontalArrangement = Arrangement.spacedBy(18.dp),
         verticalAlignment = Alignment.Top,
       ) {
-        if (!didOnly) RoundAnswer(
+        RoundAnswer(
           check = false,
           label = cards.nopeLabel.orNull() ?: stringResource(R.string.not_yet),
           size = 46.dp,
@@ -220,7 +222,9 @@ fun CardView(cards: WatchCards, card: WatchCard, didOnly: Boolean = false) {
           stroke = palette.line,
           iconColor = palette.soft,
           labelColor = palette.soft,
-        ) { CardStore.answer(context, card, did = false) }
+        ) {
+          if (onNope != null) onNope() else CardStore.answer(context, card, did = false)
+        }
         RoundAnswer(
           check = true,
           label = cards.didLabel.orNull() ?: stringResource(R.string.did),

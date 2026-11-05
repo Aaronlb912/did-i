@@ -56,7 +56,7 @@ const DidIGridWidget = (props: DidIGridWidgetProps, environment: WidgetEnvironme
     inkSoft: '#99a1b0',
     on: '#c9f24d',
     skip: '#7d8694',
-    miss: '#ff6f61',
+    miss: '#2b3140',
     line: '#2b3140',
   }
 
