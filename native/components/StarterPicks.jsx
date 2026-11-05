@@ -1,7 +1,8 @@
 import { useRef } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
-import { confirmDone } from '../lib/confirm.js'
+import { showToast } from '../lib/toast-queue.js'
+import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { hangStarter, unusedStarters } from '../../src/lib/starters.js'
 import { KeyButton } from './ui.jsx'
 import { fonts } from '../theme.js'
@@ -11,6 +12,8 @@ export function StarterPicks({ book, onChange, now, colors, label, readyNow = fa
   // Two quick picks land before the new book comes back as a prop; build the
   // second on the first so neither is lost.
   const last = useRef({ from: null, next: null })
+  const latest = useRef(book)
+  latest.current = book
   const base = () => (last.current.from === book ? last.current.next : book)
   const open = unusedStarters(book, clock, readyNow)
   if (!open.length || !onChange) return null
@@ -32,7 +35,24 @@ export function StarterPicks({ book, onChange, now, colors, label, readyNow = fa
               const next = hangStarter(from, starter, clock, readyNow)
               last.current = { from: book, next }
               onChange(next)
-              confirmDone(t('confirm.questionAdded'))
+              const ids = new Set((from.lamps || []).map((lamp) => lamp.id))
+              const added = (next.lamps || []).find((lamp) => !ids.has(lamp.id))
+              const at = Date.now()
+              // A mistaken tap on the first screen can be taken back.
+              showToast({
+                id: 'undo:starter',
+                kind: 'undo',
+                rev: at,
+                label: t('confirm.questionAdded'),
+                hint: t('tonight.undoTap'),
+                until: at + DELETE_UNDO_MS,
+                total: DELETE_UNDO_MS,
+                onPress: () => {
+                  if (!added) return
+                  const live = latest.current
+                  onChange({ ...live, lamps: (live.lamps || []).filter((lamp) => lamp.id !== added.id) })
+                },
+              })
             }}
           />
         ))}

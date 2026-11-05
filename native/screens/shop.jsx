@@ -2126,7 +2126,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
       : tab === 'cheers'
         ? t('kit.using', { name: purse.cheerOn ? t(cheerText(purse.cheerOn, 'name')) : none })
         : tab === 'buddies'
-          ? t('kit.wearing', { names: t(buddyText(purse.buddyOn || 'ant', 'name')) })
+          ? t('kit.wearing', { names: purse.buddyOn ? t(buddyText(purse.buddyOn, 'name')) : none })
           : tab === 'frames'
             ? t('kit.wearing', { names: frameInfo.worn ? t(frameText(frameInfo.worn, 'name')) : none })
             : tab === 'wish'
@@ -2236,7 +2236,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
               label={t(buddyText(item.id, 'name'))}
               worn={purse.buddyOn === item.id}
               colors={colors}
-              onPress={() => wearOn(wearBuddy(book, item.id), purse.buddyOn === item.id ? '' : t(buddyText(item.id, 'name')))}
+              onPress={() => wearOn(onLiveBook(wearBuddy(liveBook(book), item.id)), purse.buddyOn === item.id ? '' : t(buddyText(item.id, 'name')))}
             >
               <BuddyChip id={item.id} alive={purse.buddyOn === item.id} />
             </KitTile>
@@ -2245,7 +2245,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
             label={t('kit.buddyOff')}
             worn={!purse.buddyOn}
             colors={colors}
-            onPress={() => onChange(wearBuddy(book, '').book)}
+            onPress={() => wearOn(onLiveBook(wearBuddy(liveBook(book), '')), '')}
           >
             <View style={[styles.kitOffChip, { borderColor: colors.line }]} />
           </KitTile>
