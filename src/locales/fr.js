@@ -1199,6 +1199,7 @@ export const fr = {
   "sent.waitingName": "{name} n’a pas répondu",
   "sent.waitingNone": "Pas encore de réponse",
   'sent.takeBack': 'Reprendre',
+  'sent.takeBackBody': "Elle disparaît de sa liste. Impossible d’annuler.",
   'sent.emptyTitle': 'Rien envoyé',
   'sent.emptyBody': 'Envoie un did you à un ami et ça apparaît ici.',
   'sent.goFriends': 'Aller aux amis',

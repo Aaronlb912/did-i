@@ -1202,6 +1202,7 @@ export const de = {
   "sent.waitingName": "{name} hat nicht geantwortet",
   "sent.waitingNone": "Noch nicht beantwortet",
   'sent.takeBack': 'Zurücknehmen',
+  'sent.takeBackBody': "Die Karte verschwindet aus ihrer Liste. Das lässt sich nicht rückgängig machen.",
   'sent.emptyTitle': 'Noch nichts gesendet',
   'sent.emptyBody': 'Schick einem Freund ein did you und es erscheint hier.',
   'sent.goFriends': 'Zu Freunde',

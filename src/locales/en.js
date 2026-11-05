@@ -1194,6 +1194,7 @@ export const en = {
   "sent.waitingName": "{name} has not answered",
   "sent.waitingNone": "Not answered yet",
   'sent.takeBack': 'Take it back',
+  'sent.takeBackBody': "It comes off their list. This can’t be undone.",
   'sent.emptyTitle': 'Nothing sent yet',
   'sent.emptyBody': 'Send a friend a Did you and it shows up here.',
   'sent.goFriends': 'Go to friends',

@@ -1196,6 +1196,7 @@ export const pt = {
   "sent.waitingName": "{name} não respondeu",
   "sent.waitingNone": "Ainda sem resposta",
   'sent.takeBack': 'Retirar',
+  'sent.takeBackBody': "Sai da lista da pessoa. Não dá para desfazer.",
   'sent.emptyTitle': 'Nada enviado ainda',
   'sent.emptyBody': 'Envia um did you a um amigo e aparece aqui.',
   'sent.goFriends': 'Ir a amigos',
