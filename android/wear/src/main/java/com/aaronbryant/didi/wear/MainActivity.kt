@@ -102,6 +102,10 @@ fun WatchApp() {
     when {
       cards == null -> MessageView(stringResource(R.string.app_name), openPhone)
       cards.stale -> MessageView(stringResource(R.string.app_name), openPhone)
+      cards.items.isEmpty() && cards.phoneWaiting > 0 -> MessageView(
+        stringResource(R.string.app_name),
+        fill(cards.phoneWaitingLabel, "n" to cards.phoneWaiting) ?: stringResource(R.string.waiting_n, cards.phoneWaiting),
+      )
       cards.items.isEmpty() -> MessageView(stringResource(R.string.app_name), cards.emptyLabel.orNull() ?: openPhone)
       cards.openCards.isNotEmpty() -> CardView(cards, cards.openCards.first())
       else -> {
@@ -111,6 +115,11 @@ fun WatchApp() {
         val allDone = cards.allDoneLabel.orNull() ?: stringResource(R.string.all_done)
         when {
           waiting != null -> CardView(cards, waiting, onNope = { kept = kept + (waiting.id + "|" + waiting.night) })
+          // Did we cards wait on the phone: not all done yet.
+          cards.phoneWaiting > 0 -> MessageView(
+            stringResource(R.string.app_name),
+            fill(cards.phoneWaitingLabel, "n" to cards.phoneWaiting) ?: stringResource(R.string.waiting_n, cards.phoneWaiting),
+          )
           cards.streak > 0 -> DoneView(
             cards,
             allDone,

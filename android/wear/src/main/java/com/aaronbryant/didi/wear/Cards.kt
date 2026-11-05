@@ -59,6 +59,10 @@ data class WatchCards(
   // build, which counts every card and every answer the old way.
   val offDone: Int? = null,
   val offLater: Int = 0,
+  // Did we cards that wait on the phone (they open the app), and the phone's
+  // "{n} waiting on your phone". 0 and empty from an older phone build.
+  val phoneWaiting: Int = 0,
+  val phoneWaitingLabel: String = "",
 ) {
   val openCards: List<WatchCard> get() = items.filter { it.status == "open" }
   val answered: Int get() = items.count { it.status != "open" }
@@ -114,6 +118,8 @@ data class WatchCards(
           streak = o.optInt("streak", 0),
           offDone = if (o.has("done")) o.optInt("done", 0).coerceAtLeast(0) else null,
           offLater = o.optInt("later", 0).coerceAtLeast(0),
+          phoneWaiting = o.optInt("phoneWaiting", 0).coerceAtLeast(0),
+          phoneWaitingLabel = o.optString("phoneWaitingLabel"),
           streakLabel = o.optString("streakLabel"),
           streakOneLabel = o.optString("streakOneLabel"),
           cheer = o.optJSONArray("cheer")?.let { a -> (0 until a.length()).map { a.optString(it) } } ?: emptyList(),
