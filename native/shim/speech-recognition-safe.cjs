@@ -6,6 +6,7 @@ function fallback() {
   return softModule({
     ExpoSpeechRecognitionModule: {
       requestPermissionsAsync: () => Promise.resolve({ granted: false, canAskAgain: false }),
+      isRecognitionAvailable: () => false,
       start() {},
       stop() {},
       abort() {},

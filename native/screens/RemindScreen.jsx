@@ -80,6 +80,7 @@ export function RemindScreen({ book, route }) {
   const [listening, setListening] = useState(false)
   const [notHeard, setNotHeard] = useState(false)
   const [denied, setDenied] = useState(false)
+  const [noVoice, setNoVoice] = useState(false)
   const [typing, setTyping] = useState(false)
   const [chip, setChip] = useState('20')
   const [custom, setCustom] = useState('')
@@ -99,6 +100,12 @@ export function RemindScreen({ book, route }) {
     setNotHeard(false)
     setMiss('')
     try {
+      // No speech service (some Android phones, older builds): type instead of a Try again loop.
+      if (ExpoSpeechRecognitionModule.isRecognitionAvailable && !ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
+        setNoVoice(true)
+        setTyping(true)
+        return
+      }
       const asked = await ExpoSpeechRecognitionModule.requestPermissionsAsync()
       if (!asked.granted) {
         setDenied(true)
@@ -144,6 +151,9 @@ export function RemindScreen({ book, route }) {
     setListening(false)
     if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
       setDenied(true)
+      setTyping(true)
+    } else if (event.error === 'language-not-supported') {
+      setNoVoice(true)
       setTyping(true)
     } else if (!heard.current) setNotHeard(true)
   })
@@ -256,8 +266,12 @@ export function RemindScreen({ book, route }) {
         </Pressable>
       </View>
       <Text style={[styles.say, { color: colors.ink }]} accessibilityLiveRegion="polite">
-        {listening ? t('remind.listening') : denied ? t('remind.micOff') : notHeard ? t('remind.notHeard') : text ? '' : t('remind.say')}
+        {listening ? t('remind.listening') : noVoice ? t('remind.noVoice') : denied ? t('remind.micOff') : notHeard ? t('remind.notHeard') : text ? '' : t('remind.say')}
       </Text>
+
+      {denied && !noVoice && !listening ? (
+        <KeyButton colors={colors} label={t('pings.openSettings')} onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))} />
+      ) : null}
 
       {notHeard && !listening ? (
         <View style={styles.stack}>
