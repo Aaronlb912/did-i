@@ -283,7 +283,7 @@ export function SwipeCard({
               { borderColor: colors.line, backgroundColor: colors.panel2, opacity: blockNope ? 0.4 : pressed ? 0.8 : 1 },
             ]}
           >
-            <Text style={[styles.answerText, { color: colors.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={2}>
+            <Text style={[styles.answerText, { color: colors.ink }]} numberOfLines={2} maxFontSizeMultiplier={2}>
               {nopeLabel || stampNope}
             </Text>
           </Pressable>
@@ -298,7 +298,7 @@ export function SwipeCard({
               { borderColor: colors.on, backgroundColor: colors.on, opacity: blockDid ? 0.4 : pressed ? 0.85 : 1 },
             ]}
           >
-            <Text style={[styles.answerText, { color: colors.bg }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={2}>
+            <Text style={[styles.answerText, { color: colors.bg }]} numberOfLines={2} maxFontSizeMultiplier={2}>
               {didLabel || stampDid}
             </Text>
           </Pressable>
