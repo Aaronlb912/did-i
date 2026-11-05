@@ -158,7 +158,7 @@ import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { marksToToast, streakLength } from '../src/lib/achievements.js'
 import { addNotice, markNoticesSeen, NOTICE_CAP, readNotices, unseenNotices } from '../src/lib/notices.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
-import { matchLamps } from '../src/lib/hall-pages.js'
+import { feedRows, feedSearch, matchLamps } from '../src/lib/hall-pages.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
 import {
@@ -748,6 +748,14 @@ test('question search matches every word, and tonight states come from one pass 
   assert.equal(searchRows(notedRows, 'morning').filter((row) => row.lamp.id === 'door').length, 0, 'and only on its own question')
   assert.equal(searchRows([{ ...rows[0], lamp: lamp('c', 'Did I order a café table?') }], 'cafe').length, 1, 'accents fold')
   assert.equal(matchLamps({ lamps: [lamp('h', 'Did I hem the pants?')] }, 'dishes').length, 0, 'search words are not split on the letter s')
+  const homeBook = { title: 'Kitchen', lamps: [lamp('k', 'Did I wipe the counter?')], answers: [{ lampId: 'k', periodKey: '2026-10-01', status: 'yes', answeredAt: '2026-10-01T20:00:00Z' }] }
+  assert.equal(matchLamps(homeBook, 'kitchen').length, 1, 'question search finds the folder title')
+  assert.equal(feedSearch(feedRows(homeBook), 'kitchen').length, 1, 'answer search finds the folder title')
+  assert.equal(feedSearch(feedRows(homeBook), '  counter   WIPE ').length, 1, 'feed words in any order, extra spaces ignored')
+  assert.equal(feedSearch(feedRows(homeBook), 'wipe garage').length, 0, 'feed needs every word')
+  assert.equal(feedSearch(feedRows({ ...homeBook, lamps: [lamp('k', 'Did I order a café table?')] }), 'cafe').length, 1, 'feed folds accents')
+  assert.equal(feedRows({ ...homeBook, answers: [{ lampId: 'gone', status: 'yes' }] })[0].lamp, null, 'answer on a deleted question has no lamp')
+  assert.equal(feedRows(homeBook)[0].lamp.id, 'k', 'feed rows pair each answer with its lamp by id')
   const clock = new Date(2026, 8, 21, 20, 0)
   const night = boardDate(clock)
   book.answers = [{ id: 'a', lampId: 'door', periodKey: night, status: 'yes', answeredAt: clock.toISOString() }]

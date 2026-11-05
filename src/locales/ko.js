@@ -514,6 +514,7 @@ export const ko = {
   'boards.moveDownShort': '아래로',
   'boards.moveBottomShort': '맨 아래로',
   'confirm.folderMoved': '{title}을(를) 옮겼어요.',
+  'confirm.folderRenamed': '{title}(으)로 이름을 바꿨어요.',
   'boards.removeMove': '질문을 {folder}(으)로 옮기기',
   'boards.removeWith': '질문과 함께 삭제',
   'boards.moveUp': '{title} 위로',

@@ -521,6 +521,7 @@ export const de = {
   'boards.moveDownShort': 'Nach unten',
   'boards.moveBottomShort': 'Ganz nach unten',
   'confirm.folderMoved': '{title} verschoben.',
+  'confirm.folderRenamed': 'Umbenannt in {title}.',
   'boards.removeMove': 'Fragen nach {folder} verschieben',
   'boards.removeWith': 'Mit den Fragen entfernen',
   'boards.moveUp': '{title} nach oben',

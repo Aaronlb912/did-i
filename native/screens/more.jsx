@@ -1325,6 +1325,17 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
 
   // The title last saved, so a blur right after a save does not save twice.
   const savedTitle = useRef(book?.title || '')
+  const [renamed, setRenamed] = useState(null)
+  // A rename has an undo: the folder gets its old title back.
+  useUndoToast('folder-rename', renamed, () => {
+    const now = (readShelf().boards || []).find((item) => item.id === renamed?.id)
+    if (now) {
+      savedTitle.current = renamed.prior
+      setTitleDraft(renamed.prior)
+      onChange({ ...now, title: renamed.prior, at: new Date().toISOString() })
+    }
+    setRenamed(null)
+  }, DELETE_UNDO_MS, t('tonight.undoTap'))
   // Returns false when the typed name cannot be saved (a clash).
   function commitName() {
     const title = titleDraft.trim()
@@ -1335,10 +1346,12 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
       confirmMiss(clash.archived ? t('boards.addSameParked', { name: clash.title }) : t('boards.addSame'))
       return false
     }
+    const prior = savedTitle.current
     savedTitle.current = title
     setTitleDraft(title)
     onChange({ ...book, title, at: new Date().toISOString() })
-    confirmDone(t('settings.saved'))
+    if (prior) setRenamed({ id: book.id, stamp: Date.now(), label: t('confirm.folderRenamed', { title }), prior })
+    else confirmDone(t('settings.saved'))
     return true
   }
 

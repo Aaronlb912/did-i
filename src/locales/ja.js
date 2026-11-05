@@ -514,6 +514,7 @@ export const ja = {
   'boards.moveDownShort': '下へ',
   'boards.moveBottomShort': '一番下へ',
   'confirm.folderMoved': '{title}を移動しました。',
+  'confirm.folderRenamed': '{title}に名前を変更しました。',
   'boards.removeMove': '質問を{folder}へ移す',
   'boards.removeWith': '質問ごと削除',
   'boards.moveUp': '{title}を上へ',

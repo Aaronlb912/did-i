@@ -514,6 +514,7 @@ export const zh = {
   'boards.moveDownShort': '下移',
   'boards.moveBottomShort': '移到底部',
   'confirm.folderMoved': '已移动{title}。',
+  'confirm.folderRenamed': '已重命名为{title}。',
   'boards.removeMove': '把问题移到{folder}',
   'boards.removeWith': '连同问题一起移除',
   'boards.moveUp': '上移{title}',

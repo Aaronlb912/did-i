@@ -521,6 +521,7 @@ export const pt = {
   'boards.moveDownShort': 'Descer',
   'boards.moveBottomShort': 'Mover para o fim',
   'confirm.folderMoved': '{title} movida.',
+  'confirm.folderRenamed': 'Renomeada para {title}.',
   'boards.removeMove': 'Mover as perguntas para {folder}',
   'boards.removeWith': 'Remover com as perguntas',
   'boards.moveUp': 'Subir {title}',

@@ -699,23 +699,25 @@ export function nextStreakGoal(n) {
 }
 
 export function feedRows(book) {
-  const lamps = book.lamps || []
+  const byId = new Map((book.lamps || []).map((item) => [item.id, item]))
   return [...(book.answers || [])]
     .sort((a, b) => stampMs(b.answeredAt) - stampMs(a.answeredAt))
     .map((answer) => ({
       answer,
-      lamp: lamps.find((item) => item.id === answer.lampId) || null,
+      lamp: byId.get(answer.lampId) || null,
+      folderTitle: book.title || '',
     }))
 }
 
 // Every answer search: question text, short name, or note, any case.
 export function feedSearch(rows, query) {
   const fold = (text) => String(text || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
-  const want = fold(query).trim()
-  if (!want) return rows
-  return rows.filter((row) =>
-    [row.lamp?.question, row.lamp?.short, row.answer?.note].some((text) => fold(text).includes(want)),
-  )
+  const words = fold(query).split(/\s+/).filter(Boolean)
+  if (!words.length) return rows
+  return rows.filter((row) => {
+    const blob = [row.lamp?.question, row.lamp?.short, row.answer?.note, row.folderTitle || row.folder].map(fold).join(' ')
+    return words.every((word) => blob.includes(word))
+  })
 }
 
 // Did days, Not yet days and the Did rate (whole percent) from yearMonths output.
@@ -886,7 +888,7 @@ export function matchLamps(book, query) {
   const lamps = book.lamps || []
   if (!q) return lamps
   return lamps.filter((lamp) => {
-    const blob = [lamp.question, lamp.short, lamp.kind, lamp.notes, shortLabel(lamp)]
+    const blob = [lamp.question, lamp.short, lamp.kind, lamp.notes, shortLabel(lamp), book.title]
       .join(' ')
       .toLowerCase()
       .normalize('NFD').replace(/\p{M}/gu, '')
