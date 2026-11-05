@@ -546,6 +546,7 @@ export const pt = {
   'hang.tagNew': 'Nova pasta',
   'hang.tagWillMake': 'Nova pasta: {name}',
   'hang.dupTitle': "Você já tem esta pergunta",
+  'hang.dupIn': "Você já tem esta pergunta em {name}",
   'hang.dupAdd': "Adicionar mesmo assim",
   'hang.dupPaused': "Você tem esta pergunta pausada",
   'hang.dupResume': "Retomar",

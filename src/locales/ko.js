@@ -539,6 +539,7 @@ export const ko = {
   'hang.tagNew': '새 폴더',
   'hang.tagWillMake': '새 폴더: {name}',
   'hang.dupTitle': "이미 있는 질문이에요",
+  'hang.dupIn': "이 질문은 {name}에 있어요",
   'hang.dupAdd': "그래도 추가",
   'hang.dupPaused': "이 질문은 일시정지 중이에요",
   'hang.dupResume': "다시 시작",

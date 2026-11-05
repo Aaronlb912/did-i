@@ -26,6 +26,9 @@ export function AddScreen({ book, boards, onChange, onSaveTo, route, mode: start
   // Add another starts over with a blank question on the same screen.
   const [round, setRound] = useState(0)
   const words = useRef(startMode === 'i' ? '' : route?.start || '')
+  // The whole Did I draft, so a trip to Did we and back keeps schedule, time, folder and priority.
+  const draftRef = useRef(null)
+  const tagRef = useRef('')
   // Did I words that sound shared offer Did we, once, without switching.
   const [together, setTogether] = useState(false)
   // A Did we or Did you from a person's card keeps that person picked.
@@ -60,8 +63,16 @@ export function AddScreen({ book, boards, onChange, onSaveTo, route, mode: start
           onSaveTo={onSaveTo}
           route={route}
           initialBlank={words.current}
+          initialDraft={draftRef.current}
+          initialTag={tagRef.current}
+          onDraftChange={(draft, tag) => {
+            draftRef.current = draft
+            tagRef.current = tag
+          }}
           onAnother={() => {
             words.current = ''
+            draftRef.current = null
+            tagRef.current = ''
             setTogether(false)
             setRound((n) => n + 1)
           }}

@@ -4601,6 +4601,8 @@ test('first run picks questions and packs, adds them with one time, face is the 
   assert.ok(live.every((lamp) => lamp.askAfter), 'every question gets a reminder time')
   assert.equal(made.faceId, live.find((lamp) => lamp.question === picks[0].question).id)
   assert.equal(firstRunBook(book, [], null, '21:00').faceId, '')
+  const twice = firstRunBook(made.book, [], { question: 'did i water the fern', short: 'Fern' }, '21:00')
+  assert.equal(twice.book.lamps.length, made.book.lamps.length, 'a typed question already on the shelf is not added again')
 })
 
 test('coaching stays for 3 nights, night one is the first cleared night', () => {
@@ -11322,7 +11324,7 @@ test('bugs 1104b: leaving the account clears iOS widget taps; past pings skipped
   assert.ok(loop.indexOf('<= Date.now()') > 0 && loop.indexOf('<= Date.now()') < loop.indexOf('scheduleNotificationAsync('), 'a past trigger is skipped before scheduling')
   assert.ok(nat.includes("return Share.share({ title: 'Did I', message: text })"), 'shareShelf returns the share result')
   assert.ok(more.includes('res?.action !== Share.dismissedAction'), 'a closed share sheet saves no copy date')
-  assert.ok(qs.includes('!item.archived && sameWords(item)'), 'an active twin wins over a paused one')
+  assert.ok(qs.includes('!hit.lamp.archived && sameWords(hit.lamp)'), 'an active twin wins over a paused one')
 })
 
 test('folder screen: top and bottom keys, Remove inside the selected folder, Open on parked, add row for an empty folder', async () => {

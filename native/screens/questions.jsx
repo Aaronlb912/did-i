@@ -1403,7 +1403,7 @@ function newFolderTitle(boards, book, tagId) {
   return (shownOne || live[0] || book).title
 }
 
-export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initialBlank = '', onBlankChange, onLeadPress, onAnother, below = null }) {
+export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initialBlank = '', initialDraft = null, initialTag = '', onDraftChange, onBlankChange, onLeadPress, onAnother, below = null }) {
   const { colors, clock, dateIso } = useHall(book)
   const reduce = useReduceMotion()
   const lampId = route?.id || ''
@@ -1422,7 +1422,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     boards,
     now: clock,
     lamp: existing,
-    seed: copySource
+    seed: initialDraft
+      ? { ...initialDraft }
+      : copySource
       ? duplicateLamp(copySource, clock)
       : spoken
         ? { ...blankLamp(clock), question: didQuestion(spoken) }
@@ -1430,9 +1432,13 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           ? { ...blankLamp(clock), question: didQuestion(initialBlank) }
           : null,
     start,
-    tagTitle: sourceBook?.title || newFolderTitle(boards, book, route?.tag),
+    tagTitle: sourceBook?.title || initialTag || newFolderTitle(boards, book, route?.tag),
   })
   const { draft } = hang
+  // The Add screen keeps the whole draft so a trip to Did we and back loses nothing.
+  useEffect(() => {
+    onDraftChange?.(draft, hang.tagTitle)
+  }, [draft, hang.tagTitle]) // eslint-disable-line react-hooks/exhaustive-deps
   // A question that does not read "Did I ..." keeps its own words, with no fixed lead.
   const [lead] = useState(() => !draft.question || /^did i\b/i.test(draft.question))
   const [blank, setBlank] = useState(() => (lead ? starterBlank(draft) : draft.question))
@@ -1760,7 +1766,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     const target = bookForTag(boards, existing && sourceBook ? sourceBook : book, hang.tagTitle)
     const words = String(next.question || '').trim().toLowerCase()
     const sameWords = (item) => item.id !== existing?.id && String(item.question || '').trim().toLowerCase() === words
-    const twin = (target.lamps || []).find((item) => !item.archived && sameWords(item)) || (target.lamps || []).find(sameWords)
+    // A twin in any folder counts; the target folder is searched first.
+    const everyLamp = [target, ...(boards || []).filter((item) => item.id !== target.id)].flatMap((item) =>
+      (item.lamps || []).map((lamp) => ({ lamp, folder: item })),
+    )
+    const found = everyLamp.find((hit) => !hit.lamp.archived && sameWords(hit.lamp)) || everyLamp.find((hit) => sameWords(hit.lamp))
+    const twin = found?.lamp
+    const twinBook = found?.folder || target
+    const elsewhere = twinBook.id !== target.id
     if (twin?.archived && !confirmed && !hang.editing) {
       publishSheet({
         title: t('hang.dupPaused'),
@@ -1775,7 +1788,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         },
         onGo: () => {
           publishSheet(null)
-          onChange(commitBook(toggleArchive(target, twin), clock))
+          onChange(commitBook(toggleArchive(twinBook, twin), clock))
           confirmDone(t('confirm.questionResumed'))
           goHash('/lamps')
         },
@@ -1784,7 +1797,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     }
     if (twin && !twin.archived && !confirmed && !hang.editing) {
       publishSheet({
-        title: t('hang.dupTitle'),
+        title: elsewhere ? t('hang.dupIn', { name: twinBook.title }) : t('hang.dupTitle'),
         goLabel: t('hang.dupAdd'),
         closeLabel: t('hang.cancel'),
         colors,

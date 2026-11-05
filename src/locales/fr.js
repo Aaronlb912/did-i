@@ -548,6 +548,7 @@ export const fr = {
   'hang.tagNew': 'Nouveau dossier',
   'hang.tagWillMake': 'Nouveau dossier : {name}',
   'hang.dupTitle': "Tu as déjà cette question",
+  'hang.dupIn': "Tu as déjà cette question dans {name}",
   'hang.dupAdd': "Ajouter quand même",
   'hang.dupPaused': "Tu as cette question en pause",
   'hang.dupResume': "Reprendre",

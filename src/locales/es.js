@@ -547,6 +547,7 @@ export const es = {
   'hang.tagNew': 'Nueva carpeta',
   'hang.tagWillMake': 'Carpeta nueva: {name}',
   'hang.dupTitle': "Ya tienes esta pregunta",
+  'hang.dupIn': "Ya tienes esta pregunta en {name}",
   'hang.dupAdd': "Añadir igualmente",
   'hang.dupPaused': "Tienes esta pregunta en pausa",
   'hang.dupResume': "Reanudar",

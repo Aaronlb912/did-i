@@ -539,6 +539,7 @@ export const zh = {
   'hang.tagNew': '新文件夹',
   'hang.tagWillMake': '新文件夹：{name}',
   'hang.dupTitle': "你已经有这个问题了",
+  'hang.dupIn': "这个问题已在{name}里",
   'hang.dupAdd': "仍然添加",
   'hang.dupPaused': "这个问题已暂停",
   'hang.dupResume': "恢复",

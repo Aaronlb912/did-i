@@ -1,6 +1,6 @@
 // First run and the first nights: what to pick, when someone is still new,
 // and the one-time moments after night one. Plain data in, plain data out.
-import { blankLamp } from './board-json.js'
+import { blankLamp, didQuestion } from './board-json.js'
 import { hangInto } from './board-ops.js'
 import { hangStarter } from './starters.js'
 import { addDaysIso, boardDate } from './recurrence.js'
@@ -73,7 +73,8 @@ export function firstRunBook(book, picks, own, askAfter, now = new Date()) {
       times.set(added.id, String(pick.askAfter || '').trim() || askAfter || '')
     }
   }
-  if (own?.question) {
+  const sameAsOwn = (lamp) => didQuestion(lamp.question).toLowerCase() === didQuestion(own?.question).toLowerCase()
+  if (own?.question && !(next.lamps || []).some(sameAsOwn)) {
     const lamp = {
       ...blankLamp(now),
       question: own.question,
