@@ -2645,6 +2645,8 @@ export const zh = {
   'widget.settings.howAddIos': '长按主屏幕空白处。点按“编辑”，再点“添加小组件”（或 +）。搜索 Did I，选择尺寸，然后点按“添加小组件”。要回答问题，请选 Did I questions。Did I together 只显示你的朋友。',
   'widget.settings.howAddAndroid': '长按主屏幕空白处。点按“小组件”。找到 Did I，拖到你想放的位置。要回答问题，请选 Did I questions。Did I together 只显示你的朋友。',
   'widget.settings.howAdd': '如何添加小组件',
+  'shop.earnRow': "如何获得金币",
+  'shop.earnBody': "回答 Did 就能获得金币。完成今天的所有问题，最多可得 {cap} 金币。",
   'shop.howEarn': '完成今天，最多 {cap} 金币',
   'shop.needMoreGems': '还差 {n} 颗宝石。',
   'shop.needMoreCoins': '还差 {n} 枚金币。',

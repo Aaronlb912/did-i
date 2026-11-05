@@ -2694,6 +2694,8 @@ export const fr = {
   'widget.settings.howAddIos': 'Appuie longuement sur un espace vide de l’écran d’accueil. Touche Modifier, puis Ajouter un widget (ou +). Cherche Did I, choisis une taille et touche Ajouter le widget. Pour tes questions, choisis Did I questions. Did I together montre seulement tes amis.',
   'widget.settings.howAddAndroid': 'Appuie longuement sur un espace vide de l’écran d’accueil. Touche Widgets. Trouve Did I et fais-le glisser où tu veux. Pour tes questions, choisis Did I questions. Did I together montre seulement tes amis.',
   'widget.settings.howAdd': 'Ajouter le widget',
+  'shop.earnRow': "Comment gagner des pièces",
+  'shop.earnBody': "Tu gagnes des pièces quand tu réponds Did. Termine aujourd’hui pour jusqu’à {cap} pièces.",
   'shop.howEarn': 'Termine aujourd’hui pour jusqu’à {cap} pièces',
   'shop.needMoreGems': 'Il te manque {n} gemmes.',
   'shop.needMoreCoins': 'Il te manque {n} pièces.',

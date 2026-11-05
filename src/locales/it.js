@@ -2687,6 +2687,8 @@ export const it = {
   'widget.settings.howAddIos': 'Tieni premuto un punto vuoto della schermata Home. Tocca Modifica, poi Aggiungi widget (o +). Cerca Did I, scegli una dimensione e tocca Aggiungi widget. Per le tue domande scegli Did I questions. Did I together mostra solo i tuoi amici.',
   'widget.settings.howAddAndroid': 'Tieni premuto un punto vuoto della schermata Home. Tocca Widget. Trova Did I e trascinalo dove vuoi. Per le tue domande scegli Did I questions. Did I together mostra solo i tuoi amici.',
   'widget.settings.howAdd': 'Come aggiungere il widget',
+  'shop.earnRow': "Come guadagnare monete",
+  'shop.earnBody': "Guadagni monete quando rispondi Did. Completa oggi per ottenere fino a {cap} monete.",
   'shop.howEarn': 'Completa oggi per fino a {cap} monete',
   'shop.needMoreGems': 'Ti mancano {n} gemme.',
   'shop.needMoreCoins': 'Ti mancano {n} monete.',

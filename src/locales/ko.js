@@ -2654,6 +2654,8 @@ export const ko = {
   'widget.settings.howAddIos': '홈 화면의 빈 곳을 길게 누르세요. 편집을 누른 뒤 위젯 추가(또는 +)를 탭하세요. Did I를 검색해 크기를 고르고 위젯 추가를 탭하세요. 질문에 답하려면 Did I questions를 고르세요. Did I together는 친구만 보여 줘요.',
   'widget.settings.howAddAndroid': '홈 화면의 빈 곳을 길게 누르세요. 위젯을 탭하세요. Did I를 찾아 원하는 곳으로 끌어다 놓으세요. 질문에 답하려면 Did I questions를 고르세요. Did I together는 친구만 보여 줘요.',
   'widget.settings.howAdd': '위젯 추가 방법',
+  'shop.earnRow': "코인 얻는 방법",
+  'shop.earnBody': "Did로 답하면 코인을 받아요. 오늘 질문을 모두 마치면 최대 {cap}코인을 받아요.",
   'shop.howEarn': '오늘을 끝내면 최대 {cap}코인',
   'shop.needMoreGems': '젬이 {n}개 더 필요해요.',
   'shop.needMoreCoins': '코인이 {n}개 더 필요해요.',

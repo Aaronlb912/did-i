@@ -2652,6 +2652,8 @@ export const ja = {
   'widget.settings.howAddIos': 'ホーム画面の空いている所を長押しします。「編集」から「ウィジェットを追加」(または +)をタップ。Did I を検索し、サイズを選んで「ウィジェットを追加」をタップします。質問に答えるには Did I questions を選んでください。Did I together は友だちを表示するだけです。',
   'widget.settings.howAddAndroid': 'ホーム画面の空いている所を長押しします。「ウィジェット」をタップ。Did I を探して好きな場所へドラッグします。質問に答えるには Did I questions を選んでください。Did I together は友だちを表示するだけです。',
   'widget.settings.howAdd': 'ウィジェットの追加方法',
+  'shop.earnRow': "コインのためかた",
+  'shop.earnBody': "Did と答えるとコインがもらえます。今日をすべて終えると最大 {cap} コインです。",
   'shop.howEarn': '今日を終えると最大 {cap} コイン',
   'shop.needMoreGems': 'あと{n}ジェム必要です。',
   'shop.needMoreCoins': 'あと{n}コイン必要です。',
