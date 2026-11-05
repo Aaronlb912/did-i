@@ -71,7 +71,7 @@ export function JewelKey({ colors, onDone }) {
     { color: colors.late, shape: 'half', label: t('jewelKey.late') },
     { color: colors.skip, shape: 'cross', label: t('jewelKey.notYet') },
     { color: colors.open, shape: 'ring', label: t('jewelKey.open') },
-    { color: colors.miss, shape: 'ringThick', label: t('jewelKey.due') },
+    { color: colors.late, shape: 'ringThick', label: t('jewelKey.due') },
   ]
   const done = () => {
     markSeen()
