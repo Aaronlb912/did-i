@@ -397,6 +397,7 @@ export function HelpScreen() {
           short={t(Platform.OS === 'ios' ? 'help.widgetPIos' : 'help.widgetPAndroid')}
           go={<KeyButton colors={colors} label={t('help.widgetGo')} onPress={() => pinWidget(colors)} />}
         >
+          <Meta colors={colors}>{t('help.widgetMore')}</Meta>
           <Meta colors={colors}>{t('help.widgetWatch')}</Meta>
         </HelpTopic>
       </HelpFold>
