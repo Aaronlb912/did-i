@@ -2276,7 +2276,7 @@ export const en = {
   'we.askMore': 'Ask someone else',
   'we.pickName': "Ask {name}",
   'we.sendAsk': 'Send ask',
-  'we.edit': 'Change the rules',
+  'we.edit': 'Change card',
   'we.save': 'Save',
   'we.leave': 'Leave',
   'we.leaveTitle': 'Leave this Did we?',

@@ -2244,7 +2244,7 @@ export const zh = {
   'we.askMore': '邀请其他人',
   'we.pickName': "邀请 {name}",
   'we.sendAsk': '发送邀请',
-  'we.edit': '修改规则',
+  'we.edit': '修改卡片',
   'we.save': '保存',
   'we.leave': '退出',
   'we.leaveTitle': '退出这个 Did we？',

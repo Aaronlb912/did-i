@@ -990,18 +990,16 @@ function WeCardPage({ book, cardId, onChange }) {
     // A thrown call must not leave Save off for good.
     const out = await weEdit(card.id, edit).catch(() => ({ miss: 'people.reach' }))
     setBusy(false)
-    if (out.miss) {
-      const text = tMiss(out.miss)
-      return setMiss(text)
-    }
+    // Nothing saved: the line in the sheet says so, no toast on top.
+    if (out.miss && !out.saved) return setMissText(tMiss(out.miss))
     const before = editFrom(card)
-    const moved = before.cadence !== edit.cadence || before.weekdays.join() !== edit.weekdays.join()
+    const changed = Object.keys(before).some((key) => JSON.stringify(before[key]) !== JSON.stringify(edit[key]))
     setEdit(null)
-    setMiss('')
-    if (moved) {
+    setMissText(out.miss ? tMiss(out.miss) : '')
+    if (changed) {
       const now = Date.now()
       showToast({
-        id: 'undo:we-schedule',
+        id: 'undo:we-edit',
         kind: 'undo',
         rev: now,
         label: t('confirm.saved'),
@@ -1018,7 +1016,8 @@ function WeCardPage({ book, cardId, onChange }) {
           load()
         },
       })
-    } else confirmDone(t('confirm.saved'))
+    } else if (out.miss) confirmMiss(tMiss(out.miss))
+    else confirmDone(t('confirm.saved'))
     load()
   }
 
@@ -1477,7 +1476,7 @@ function WeCardPage({ book, cardId, onChange }) {
         </SetSheet>
       ) : null}
 
-      {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
+      {miss && !edit ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
       {menu ? <WeMenu title={card.question} items={menuItems} colors={colors} onClose={() => setMenu(false)} /> : null}
     </ScreenShell>
   )

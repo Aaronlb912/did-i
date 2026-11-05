@@ -2280,7 +2280,7 @@ export const pt = {
   'we.askMore': 'Convidar mais alguém',
   'we.pickName': "Convidar {name}",
   'we.sendAsk': 'Enviar',
-  'we.edit': 'Mudar as regras',
+  'we.edit': 'Mudar cartão',
   'we.save': 'Salvar',
   'we.leave': 'Sair',
   'we.leaveTitle': 'Sair deste Did we?',

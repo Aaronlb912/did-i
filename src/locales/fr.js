@@ -2285,7 +2285,7 @@ export const fr = {
   'we.askMore': 'Inviter quelqu’un d’autre',
   'we.pickName': "Inviter {name}",
   'we.sendAsk': 'Envoyer',
-  'we.edit': 'Changer les règles',
+  'we.edit': 'Modifier la carte',
   'we.save': 'Enregistrer',
   'we.leave': 'Quitter',
   'we.leaveTitle': 'Quitter ce Did we ?',
