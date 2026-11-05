@@ -178,18 +178,20 @@ function eveningShare(clock) {
   const h = d.getHours() + d.getMinutes() / 60
   return h < 5 ? 1 : Math.min(1, Math.max(0, (h - 17) / 7))
 }
-// The earliest evening reminder among tonight's questions on the same scale, 9 pm if none.
+// A quiet text button for side actions on Today: a 44pt tap, no bar.
 function WideRow({ label, onPress, colors }) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={{ alignSelf: 'stretch', minHeight: 48, marginTop: 10, borderWidth: 1.5, borderColor: colors.on, borderRadius: 999, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 }}
+      hitSlop={4}
+      style={({ pressed }) => ({ alignSelf: 'center', minHeight: 44, marginTop: 6, paddingHorizontal: 14, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
     >
-      <Text style={{ fontFamily: fonts.uiSemi, fontSize: 15, color: colors.on }}>{label}</Text>
+      <Text style={{ fontFamily: fonts.ui, fontSize: 14, color: colors.inkSoft }}>{label}</Text>
     </Pressable>
   )
 }
+// The earliest evening reminder among tonight's questions on the same scale, 9 pm if none.
 function remindShare(due) {
   const times = (due || []).map((row) => String(row.lamp?.askAfter || '')).filter((v) => /^\d{2}:\d{2}$/.test(v)).sort()
   const at = times.find((v) => v >= '17:00') || '21:00'
@@ -1366,8 +1368,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
               <Text style={[faceCardStyles.meta, { color: colors.ink }]}>{t('signInNudge.title')}</Text>
               <View style={styles.actions}>
                 <DidButton small label={t('signInNudge.go')} colors={colors} onPress={() => goHash('/account')} />
-                <KeyButton label={t('signInNudge.later')} colors={colors} onPress={dropNudge} />
               </View>
+              <WideRow label={t('signInNudge.later')} colors={colors} onPress={dropNudge} />
             </View>
           ) : null}
         </GemFaceShell>
@@ -1439,7 +1441,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         <DidButton label={t('tonight.write')} colors={colors} small onPress={() => goHash('/add')} />
         {firstAdd && !account.user ? (
           // The menu waits for a first question, so signing in has to be here.
-          <KeyButton label={t('tonight.haveAccount')} colors={colors} onPress={() => goHash('/account')} />
+          <WideRow label={t('tonight.haveAccount')} colors={colors} onPress={() => goHash('/account')} />
         ) : null}
       </GemFaceShell>
     )
