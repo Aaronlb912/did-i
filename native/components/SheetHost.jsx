@@ -306,7 +306,7 @@ function MoreButton({ sheet, colors }) {
           <KeyButton label={label} colors={colors} />
         </View>
       ))}
-      <KeyButton danger={sheet.moreDanger} label={sheet.moreLabel} onPress={() => sheet.onMore()} colors={colors} />
+      <KeyButton danger={sheet.moreDanger} label={sheet.moreLabel} accessibilityLabel={sheet.moreA11y} onPress={() => sheet.onMore()} colors={colors} />
     </View>
   )
 }
