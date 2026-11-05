@@ -8634,7 +8634,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-10), ['we-link-blocked.sql', 'we-link-already.sql', 'did-you-when.sql', 'we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql'])
+  assert.deepEqual(files.slice(-10), ['we-link-already.sql', 'did-you-when.sql', 'we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -11683,7 +11683,7 @@ await testAsync('question cap: counts stopped ones, refuses only a write that ad
   assert.equal(overCap([book(300)], [book(300)]), false, 'a full shelf still saves edits')
   assert.equal(overCap([book(305)], [book(304)]), false, 'a shelf over the cap can shrink')
   const sync = readFileSync(new URL('../src/lib/cloud-sync.js', import.meta.url), 'utf8')
-  assert.ok(sync.includes("error?.code === '23514'") && sync.includes("'sync:cap'") && sync.includes('cappedAt'), 'a refused shelf shows a notice and is not resent')
+  assert.ok(sync.includes("error?.code === '23514'") && sync.includes("'sync:cap'") && sync.includes('cappedAt') && sync.includes("includes('question cap')"), 'a refused shelf shows a notice and is not resent')
   const shelf = readFileSync(new URL('../native/hooks/useAppShelf.js', import.meta.url), 'utf8')
   assert.ok(shelf.includes('overCap(shelf.boards, nextShelf.boards)') && shelf.includes('questionRoom('), 'every add goes through the cap')
 })

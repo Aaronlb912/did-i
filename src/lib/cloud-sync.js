@@ -846,7 +846,7 @@ export async function pushNow(shelf) {
     setState({ how: 'saved', at: new Date().toISOString(), miss: '' })
     return true
   } catch (error) {
-    if (error?.code === '23514') {
+    if (error?.code === '23514' && String(error?.message || '').includes('question cap')) {
       cappedAt = questionCount(readShelf()?.boards)
       addNotice({ id: 'sync:cap', kind: 'sync', title: t('sync.capTitle'), text: t('sync.capBody', { n: QUESTION_CAP }), go: { path: '/lamps' } })
       setState({ how: 'miss', miss: 'sync.capMiss' })
