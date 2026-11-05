@@ -4312,6 +4312,7 @@ test('native metro shims are wired and pin default exports', () => {
     'expo-splash-screen',
     'expo-document-picker',
     'expo-file-system',
+    'expo-media-library',
     'expo-sharing',
     'react-native-view-shot',
     'expo-apple-authentication',
@@ -4376,6 +4377,8 @@ test('native metro shims are wired and pin default exports', () => {
 
   const fileSys = require(path.join(root, 'native/shim/file-system-safe.cjs'))
   assert.ok(fileSys.default !== undefined || fileSys.File === undefined || typeof fileSys.File === 'function', 'file system shim loads without the module')
+  const mediaLib = require(path.join(root, 'native/shim/media-library-safe.cjs'))
+  assert.ok(mediaLib.Asset === undefined || typeof mediaLib.Asset.create === 'function', 'media library shim loads without the module')
   const nativeShim = readFileSync(path.join(root, 'native/shim/native.js'), 'utf8')
   assert.ok(nativeShim.includes('export function backupFileReady()'), 'backup file row can ask whether the module exists')
   const profileScreen = readFileSync(path.join(root, 'native/screens/profile.jsx'), 'utf8')
@@ -5239,6 +5242,7 @@ const phoneStubs = {
   'expo-linking': { addEventListener: () => ({ remove() {} }), getInitialURL: async () => null, parse: () => ({}) },
   'expo-splash-screen': {},
   'expo-file-system': {},
+  'expo-media-library': {},
   'expo-sharing': {},
   'expo-haptics': {},
   'expo-notifications': {},

@@ -4080,5 +4080,9 @@ export const zh = {
   'photos.options': "照片选项",
   'photos.share': "分享照片",
   'photos.shareFail': "无法分享这张照片。",
+  'photos.save': "保存到相册",
+  'photos.saved': "已保存到相册",
+  'photos.saveFail': "无法保存这张照片。",
+  'photos.saveOff': "Did I 的照片权限已关闭。请在手机设置中开启，以便保存照片。",
   'photos.of': "{n} / {total}",
 }

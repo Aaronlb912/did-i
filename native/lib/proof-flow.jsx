@@ -125,6 +125,52 @@ export async function shareProof(row) {
   }
 }
 
+// Hidden on a build without the media library module.
+export function canSaveProof() {
+  try {
+    return Boolean(require('expo-media-library').Asset)
+  } catch {
+    return false
+  }
+}
+
+// Save the photo to the phone's library. Add-only permission; denied shows the
+// Settings sheet. Same download as shareProof, deleted when done.
+export async function saveProof(row, colors) {
+  let target = null
+  try {
+    const MediaLibrary = require('expo-media-library')
+    const FileSystem = require('expo-file-system')
+    if (!MediaLibrary.Asset || typeof FileSystem.File?.downloadFileAsync !== 'function') throw new Error('no save')
+    const ask = await MediaLibrary.requestPermissionsAsync(true)
+    if (!ask?.granted) {
+      publishSheet({
+        title: t('proof.deniedTitle'),
+        body: t('photos.saveOff'),
+        content: <DidButton colors={colors} label={t('proof.openSettings')} onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))} />,
+        closeLabel: t('proof.close'),
+        colors,
+        onClose: () => publishSheet(null),
+      })
+      return
+    }
+    target = new FileSystem.File(FileSystem.Paths.cache, `did-i-save-${row.id}.jpg`)
+    if (target.exists) target.delete()
+    const url = (await freshProofUrl(row)) || row.url
+    const file = await FileSystem.File.downloadFileAsync(url, target)
+    await MediaLibrary.Asset.create(file.uri)
+    confirmDone(t('photos.saved'))
+  } catch {
+    confirmMiss(t('photos.saveFail'))
+  } finally {
+    try {
+      if (target?.exists) target.delete()
+    } catch {
+      // The cache is cleared by the system anyway.
+    }
+  }
+}
+
 // One fresh link on a load miss (the one in the list may have expired), then a plain note.
 function ProofImage({ row, name, size, colors }) {
   const [uri, setUri] = useState(row.url)

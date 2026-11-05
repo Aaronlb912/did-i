@@ -166,6 +166,15 @@ export default ({ config }) => ({
         microphonePermission: 'Did I listens when you tap the mic to hear your reminder.',
       },
     ],
+    // Save to Photos on a proof photo. Add-only: no read access to the library.
+    [
+      'expo-media-library',
+      {
+        photosPermission: false,
+        savePhotosPermission: 'Did I saves a photo to your library when you tap Save to Photos.',
+        granularPermissions: [],
+      },
+    ],
     // Scans friend and family QR codes. No video. Same mic string as Remind me so this plugin keeps it.
     [
       'expo-camera',

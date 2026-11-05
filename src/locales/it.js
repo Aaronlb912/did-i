@@ -4122,5 +4122,9 @@ export const it = {
   'photos.options': "Opzioni della foto",
   'photos.share': "Condividi foto",
   'photos.shareFail': "Non è stato possibile condividere la foto.",
+  'photos.save': "Salva in Foto",
+  'photos.saved': "Salvata in Foto",
+  'photos.saveFail': "Non è stato possibile salvare la foto.",
+  'photos.saveOff': "L’accesso alle foto è disattivato per Did I. Attivalo nelle Impostazioni del telefono per salvare le foto.",
   'photos.of': "{n} di {total}",
 }

@@ -4117,5 +4117,9 @@ export const en = {
   'photos.options': "Photo options",
   'photos.share': "Share photo",
   'photos.shareFail': "The photo could not be shared.",
+  'photos.save': "Save to Photos",
+  'photos.saved': "Saved to Photos",
+  'photos.saveFail': "The photo could not be saved.",
+  'photos.saveOff': "Photo access is off for Did I. Turn it on in your phone’s Settings to save photos.",
   'photos.of': "{n} of {total}",
 }

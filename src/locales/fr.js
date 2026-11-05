@@ -4129,5 +4129,9 @@ export const fr = {
   'photos.options': "Options de la photo",
   'photos.share': "Partager la photo",
   'photos.shareFail': "La photo n’a pas pu être partagée.",
+  'photos.save': "Enregistrer dans Photos",
+  'photos.saved': "Enregistrée dans Photos",
+  'photos.saveFail': "La photo n’a pas pu être enregistrée.",
+  'photos.saveOff': "L’accès aux photos est désactivé pour Did I. Active-le dans les Réglages du téléphone pour enregistrer des photos.",
   'photos.of': "{n} sur {total}",
 }
