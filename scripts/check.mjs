@@ -7926,7 +7926,7 @@ await testAsync('gentle mode tells the widgets to hide streak numbers, and the s
     assert.equal(soft.gentle, true)
     assert.equal(soft.left, plain.left)
     assert.equal(soft.leadLampId, plain.leadLampId)
-    assert.ok(!/streak/i.test(JSON.stringify(soft)), 'no streak text in widget props')
+    assert.equal(soft.streak, 0, 'no streak number in widget props')
   } finally {
     writePrefs({ gentle: false })
   }
@@ -11876,24 +11876,43 @@ test('a one-time question saved to JSON has no end date', () => {
 await testAsync('the android tonight widget has no bare text or number children in any state', async () => {
   const require = createRequire(import.meta.url)
   const babel = require('@babel/core')
-  const file = path.join(checkRoot, 'widgets/android/DidITonightAndroidWidget.jsx')
-  const code = babel.transformFileSync(file, {
-    filename: file,
-    babelrc: false,
-    configFile: false,
-    plugins: [
-      [require.resolve('@babel/plugin-transform-react-jsx'), { runtime: 'classic', pragma: 'mkEl', pragmaFrag: 'null' }],
-      require.resolve('@babel/plugin-transform-modules-commonjs'),
-    ],
-  }).code
   const h = (type, props, ...children) => ({ type, props: { ...props, children } })
   const kinds = Object.fromEntries(['FlexWidget', 'OverlapWidget', 'SvgWidget', 'TextWidget'].map((k) => [k, k]))
-  const mod = { exports: {} }
-  const stubRequire = (id) =>
-    id === 'react-native-android-widget' ? kinds : id === 'react' ? { createElement: h } : require(path.resolve(path.dirname(file), id))
-  new Function('require', 'module', 'exports', 'mkEl', code)(stubRequire, mod, mod.exports, h)
-  const render = mod.exports.renderDidITonightAndroidWidget
+  const load = (rel) => {
+    const file = path.join(checkRoot, rel)
+    const code = babel.transformFileSync(file, {
+      filename: file,
+      babelrc: false,
+      configFile: false,
+      plugins: [
+        [require.resolve('@babel/plugin-transform-react-jsx'), { runtime: 'classic', pragma: 'mkEl', pragmaFrag: 'null' }],
+        require.resolve('@babel/plugin-transform-modules-commonjs'),
+      ],
+    }).code
+    const mod = { exports: {} }
+    const stubRequire = (id) =>
+      id === 'react-native-android-widget' ? kinds : id === 'react' ? { createElement: h } : require(path.resolve(path.dirname(file), id))
+    new Function('require', 'module', 'exports', 'mkEl', code)(stubRequire, mod, mod.exports, h)
+    return mod.exports
+  }
+  const render = load('widgets/android/DidITonightAndroidWidget.jsx').renderDidITonightAndroidWidget
+  const renderGrid = load('widgets/android/DidIGridAndroidWidget.jsx').renderDidIGridAndroidWidget
+  const renderTogether = load('widgets/android/DidITogetherAndroidWidget.jsx').renderDidITogetherAndroidWidget
   const bare = []
+  // Every element in a rendered tree, function components expanded.
+  const nodes = (node, out = []) => {
+    if (node == null || typeof node === 'boolean') return out
+    if (Array.isArray(node)) {
+      node.forEach((child) => nodes(child, out))
+      return out
+    }
+    if (typeof node !== 'object') return out
+    if (typeof node.type === 'function') return nodes(node.type(node.props), out)
+    out.push(node)
+    if (node.type !== 'TextWidget' && node.type !== 'SvgWidget') nodes(node.props?.children, out)
+    return out
+  }
+  const texts = (tree) => nodes(tree).filter((n) => n.type === 'TextWidget').map((n) => n.props.text)
   const walk = (node, where) => {
     if (node == null || typeof node === 'boolean') return
     if (Array.isArray(node)) return node.forEach((child) => walk(child, where))
@@ -11928,9 +11947,76 @@ await testAsync('the android tonight widget has no bare text or number children 
   for (const [name, props] of Object.entries(states)) {
     for (const size of sizes) walk(render(props, size), `${name} ${size ? `${size.width}x${size.height}` : 'unsized'}`)
   }
+  const gridStates = {
+    unset: undefined,
+    empty: {},
+    full: { weeks: Array(12).fill('yy.y.. '), countLine: '5 Did days', title: 'x', todayWeek: 11, todayRow: 3 },
+    odd: { weeks: [1, null, 'yy'], countLine: 5, title: 7 },
+  }
+  const person = (i) => ({ id: `p${i}`, name: `N${i}`, initials: 'N', done: i % 2 === 0 })
+  const togetherStates = {
+    unset: undefined,
+    none: { people: [] },
+    three: { people: [0, 1, 2].map(person), countLine: '1 of 3 done' },
+    twenty: { people: Array.from({ length: 20 }, (_, i) => person(i)), countLine: '10 of 20 done' },
+    odd: { people: [null, 1, { id: 'x' }, { id: 'y', name: 7, initials: 3 }], countLine: 4, title: null },
+  }
+  const wideSizes = [...sizes, { width: 400, height: 400 }]
+  for (const [name, props] of Object.entries(gridStates)) {
+    for (const size of wideSizes) walk(renderGrid(props, size), `grid ${name} ${size ? `${size.width}x${size.height}` : 'unsized'}`)
+  }
+  for (const [name, props] of Object.entries(togetherStates)) {
+    for (const size of wideSizes) walk(renderTogether(props, size), `together ${name} ${size ? `${size.width}x${size.height}` : 'unsized'}`)
+  }
   assert.deepEqual([...new Set(bare)], [])
   const notYet = render(states.notYet, sizes[3])
   assert.equal(JSON.stringify(notYet, (k, v) => (typeof v === 'function' ? undefined : v)).includes('"kind":"nope"'), false, 'no Not yet button on a Not yet card')
+
+  // Nothing is cut off: what each widget draws fits the height it is given.
+  // 340x150: the question gets only what is left under the 44dp Did and Not yet pills.
+  const long = buildTonightWidgetProps(shelfOf([lamp('q', { question: 'Did I send the invoice to the client and log the hours?' })], []), clock)
+  const compactTree = render(long, { width: 340, height: 150 })
+  assert.ok(nodes(compactTree).some((n) => n.props?.style?.minHeight === 44), 'the pills are 44dp tall')
+  const questionText = nodes(compactTree).find((n) => n.type === 'TextWidget' && n.props.text === long.question)
+  const roomLeft = 150 - 2 * (8 + 2 + 10) - 15 - 4 - (2 * 8 + 44)
+  assert.ok(
+    questionText.props.maxLines * questionText.props.style.fontSize * 1.2 <= roomLeft,
+    `the question fits the ${roomLeft}dp above the pills at 340x150`,
+  )
+  // Grid: seven rows of squares plus the header.
+  for (const [width, height] of [[250, 130], [250, 150], [250, 170], [340, 180], [340, 220], [400, 400]]) {
+    const squares = nodes(renderGrid(gridStates.full, { width, height })).filter((n) => n.props?.style?.borderRadius === 2)
+    const cell = squares[0].props.style.height
+    const header = height < 170 ? 70 : 84
+    assert.ok(7 * cell + 6 * 2 + header <= height, `grid squares fit ${width}x${height}`)
+  }
+  // Together: the rows shown never need more than the box has.
+  for (const [width, height] of [[250, 110], [250, 150], [250, 180], [340, 260], [340, 300], [340, 400]]) {
+    const shown = texts(renderTogether(togetherStates.twenty, { width, height })).filter((s) => s === '\u2713' || s === ' ').length
+    const compact = height < 170
+    const rows = compact ? Math.ceil(shown / 3) : height >= 260 ? Math.ceil(shown / 2) : 3
+    const rowH = compact ? 44 : height >= 260 ? 30 : 26
+    const header = compact ? 66 : height >= 260 ? 84 : 78
+    assert.ok(shown >= 1 && rows * rowH + header <= height, `together rows fit ${width}x${height} (${shown} people)`)
+  }
+  // All clear: the streak under the line. Not in gentle mode, not at 0, not on a card too short for it.
+  const yes = (night) => ({ lampId: 'a', periodKey: night, status: 'yes', answeredAt: `${night}T12:00:00` })
+  const clear = buildTonightWidgetProps(shelfOf([lamp('a')], [yes('2026-09-22'), yes('2026-09-23')]), clock)
+  assert.equal(clear.streak, 2)
+  const hasLine = (props, size) => texts(render(props, size)).includes('2 days in a row')
+  assert.ok(hasLine(clear, { width: 340, height: 220 }) && hasLine(clear, { width: 250, height: 180 }), 'the streak shows on all clear')
+  assert.ok(!hasLine({ ...clear, gentle: true }, sizes[4]), 'no streak line in gentle mode')
+  assert.ok(!hasLine({ ...clear, streak: 0 }, sizes[4]), 'no streak line at 0')
+  assert.ok(!hasLine({ ...clear, streak: undefined, streakLabel: undefined }, sizes[4]), 'an older snapshot has no streak line')
+  assert.ok(!hasLine(states.waiting, sizes[4]), 'no streak line while a question is open')
+  assert.ok(texts(render({ ...clear, streak: 1 }, sizes[4])).includes('1 day in a row'))
+  try {
+    writePrefs({ gentle: true })
+    assert.equal(buildTonightWidgetProps(shelfOf([lamp('a')], [yes('2026-09-22'), yes('2026-09-23')]), clock).streak, 0, 'gentle mode builds no streak')
+  } finally {
+    writePrefs({ gentle: false })
+  }
+  assert.equal(buildTonightWidgetProps(shelfOf([lamp('a'), lamp('b')], []), clock).streak, 0, 'no streak number until all clear')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

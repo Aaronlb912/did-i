@@ -90,7 +90,12 @@ export function renderDidITogetherAndroidWidget(props, widgetInfo) {
   const { compact, large, narrow } = widgetSize(widgetInfo)
   const people = Array.isArray(p.people) ? p.people.filter((item) => item && typeof item === 'object') : []
   const grid = compact || narrow
-  const shown = people.slice(0, large && !narrow ? 14 : 6)
+  const h = widgetInfo?.height || 0
+  // Rows only as tall as the box: a row is 30dp and the header takes ~84dp
+  // (the grid rows are ~44dp each under ~70dp of header).
+  const gridRows = h > 0 && h < 160 ? 1 : 2
+  const listRows = h > 0 ? Math.max(3, Math.floor((h - 84) / 30)) : 7
+  const shown = people.slice(0, grid ? gridRows * 3 : large ? listRows * 2 : 6)
   const half = Math.ceil(shown.length / 2)
   const uri = p.openUri || 'didi://open/friends'
   const radius = compact ? 16 : large ? 24 : 22

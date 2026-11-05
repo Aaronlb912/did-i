@@ -20,10 +20,11 @@ const FALLBACK = {
 const GAP = 2
 
 // Square height from the widget height, so seven rows fit under the title.
-function cellHeight(widgetInfo) {
+// Padding, title, count line and margin take ~70dp compact, ~84dp otherwise.
+function cellHeight(widgetInfo, compact) {
   const h = widgetInfo?.height || 0
   if (!h) return 9
-  return Math.max(5, Math.min(16, Math.floor((h - 64 - GAP * 6) / 7)))
+  return Math.max(5, Math.min(16, Math.floor((h - (compact ? 70 : 84) - GAP * 6) / 7)))
 }
 
 export function renderDidIGridAndroidWidget(props, widgetInfo) {
@@ -32,8 +33,8 @@ export function renderDidIGridAndroidWidget(props, widgetInfo) {
   const weeks = Array.isArray(p.weeks) ? p.weeks.map((w) => String(w || '')) : []
   const anyDay = weeks.some((w) => /[yn]/.test(w))
   const uri = p.openUri || 'didi://open/calendar'
-  const cell = cellHeight(widgetInfo)
   const compact = (widgetInfo?.height || 0) > 0 && widgetInfo.height < 170
+  const cell = cellHeight(widgetInfo, compact)
   const radius = compact ? 16 : 22
 
   const colorOf = (ch) => (ch === 'y' ? C.on : ch === 'n' ? C.miss : ch === ' ' ? C.panel : C.line)
