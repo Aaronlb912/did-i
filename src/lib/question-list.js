@@ -29,12 +29,14 @@ function blobOf(row) {
     .map((part) => String(part || ''))
     .join(' ')
     .toLowerCase()
+    .normalize('NFD').replace(/\p{M}/gu, '')
 }
 
 // Every word typed has to appear somewhere in the question, its names, notes or tag.
 export function searchRows(rows, query) {
   const words = String(query || '')
     .toLowerCase()
+    .normalize('NFD').replace(/\p{M}/gu, '')
     .split(/\s+/)
     .filter(Boolean)
   if (!words.length) return rows

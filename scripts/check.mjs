@@ -157,6 +157,7 @@ import { setWeNightRows, weCardState, weCardsOn } from '../src/lib/we-nights.js'
 import { marksToToast, streakLength } from '../src/lib/achievements.js'
 import { addNotice, markNoticesSeen, NOTICE_CAP, readNotices, unseenNotices } from '../src/lib/notices.js'
 import { joinTime, timeParts } from '../src/lib/hang-time.js'
+import { matchLamps } from '../src/lib/hall-pages.js'
 import { searchRows, tonightStates } from '../src/lib/question-list.js'
 import { holdSpoken, spokenQuestion, takeSpoken } from '../src/lib/voice-add.js'
 import {
@@ -740,6 +741,8 @@ test('question search matches every word, and tonight states come from one pass 
   assert.deepEqual(searchRows(rows, 'GARAGE').map((row) => row.lamp.id), ['door'], 'notes count, any case')
   assert.deepEqual(searchRows(rows, 'home pills').map((row) => row.lamp.id), ['pills'], 'tag counts')
   assert.equal(searchRows(rows, 'door pills').length, 0, 'every word has to match')
+  assert.equal(searchRows([{ ...rows[0], lamp: lamp('c', 'Did I order a café table?') }], 'cafe').length, 1, 'accents fold')
+  assert.equal(matchLamps({ lamps: [lamp('h', 'Did I hem the pants?')] }, 'dishes').length, 0, 'search words are not split on the letter s')
   const clock = new Date(2026, 8, 21, 20, 0)
   const night = boardDate(clock)
   book.answers = [{ id: 'a', lampId: 'door', periodKey: night, status: 'yes', answeredAt: clock.toISOString() }]

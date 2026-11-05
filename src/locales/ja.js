@@ -670,6 +670,8 @@ export const ja = {
   'questions.list': '聞いている',
   'questions.searchPh': '質問を検索',
   'questions.searchClear': '検索をクリア',
+  'questions.noMatchFolder': 'このフォルダに一致する質問はありません。',
+  'questions.clearFilters': '検索とフォルダをクリア',
   'questions.noMatch': '一致する質問はありません。',
   'questions.filter': '表示',
   'questions.filterAll': 'すべて',

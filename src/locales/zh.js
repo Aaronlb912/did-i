@@ -670,6 +670,8 @@ export const zh = {
   'questions.list': '正在问',
   'questions.searchPh': '搜索你的问题',
   'questions.searchClear': '清除搜索',
+  'questions.noMatchFolder': '这个文件夹里没有匹配的问题。',
+  'questions.clearFilters': '清除搜索和文件夹',
   'questions.noMatch': '没有匹配的问题。',
   'questions.filter': '显示',
   'questions.filterAll': '全部',

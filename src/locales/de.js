@@ -679,6 +679,8 @@ export const de = {
   'questions.list': 'Wird gefragt',
   'questions.searchPh': 'Fragen durchsuchen',
   'questions.searchClear': 'Suche leeren',
+  'questions.noMatchFolder': 'Keine Fragen in diesem Ordner passen dazu.',
+  'questions.clearFilters': 'Suche und Ordner zurücksetzen',
   'questions.noMatch': 'Keine Frage passt dazu.',
   'questions.filter': 'Anzeigen',
   'questions.filterAll': 'Alle',

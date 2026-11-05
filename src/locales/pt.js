@@ -677,6 +677,8 @@ export const pt = {
   'questions.list': 'Perguntando',
   'questions.searchPh': 'Procura nas tuas perguntas',
   'questions.searchClear': 'Limpar pesquisa',
+  'questions.noMatchFolder': 'Nenhuma pergunta desta pasta corresponde.',
+  'questions.clearFilters': 'Limpar pesquisa e pasta',
   'questions.noMatch': 'Nenhuma pergunta corresponde.',
   'questions.filter': 'Mostrar',
   'questions.filterAll': 'Todas',

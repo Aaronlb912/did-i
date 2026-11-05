@@ -676,6 +676,8 @@ export const it = {
   'questions.list': 'In corso',
   'questions.searchPh': 'Cerca tra le tue domande',
   'questions.searchClear': 'Cancella ricerca',
+  'questions.noMatchFolder': 'Nessuna domanda di questa cartella corrisponde.',
+  'questions.clearFilters': 'Cancella ricerca e cartella',
   'questions.noMatch': 'Nessuna domanda corrisponde.',
   'questions.filter': 'Mostra',
   'questions.filterAll': 'Tutte',
