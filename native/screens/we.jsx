@@ -63,6 +63,7 @@ import { fonts } from '../theme.js'
 import { ScreenShell } from './more.jsx'
 import { useWeCheer } from '../../src/lib/we-cheer.js'
 import { WeNotes } from '../components/WeNotes.jsx'
+import { WeProofs } from '../components/WeProofs.jsx'
 import { endWeLinks, makeWeLink, myWeLink, sharedDidYouLine } from '../../src/lib/did-you-links.js'
 import { passAlong } from '../../src/lib/native.js'
 import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
@@ -1502,6 +1503,7 @@ function WeCardPage({ book, cardId, onChange }) {
       {cheer.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{cheer.miss}</Text> : null}
       {ans.miss ? <Text style={[styles.miss, { color: colors.miss }]}>{ans.miss}</Text> : null}
       <WeNotes card={card} mine={mine} colors={colors} cheer={cheer} />
+      <WeProofs card={card} mine={mine} colors={colors} />
 
       <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
         <Cap colors={colors}>{t('we.together')}</Cap>
