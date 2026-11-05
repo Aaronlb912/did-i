@@ -91,6 +91,17 @@ export function putPastAnswer(book, row, status, clock = new Date()) {
   return putAnswer(book, row, status === 'yes' ? 'late' : status, clock, true)
 }
 
+// Undo for a past-day change: puts the earlier status back on the day's answer,
+// stamped now so a sync keeps it over the change. Pays nothing; past keeps it
+// out of today's paid taps. Note, amount and paid stay as they are now.
+export function restorePastAnswer(book, prev, clock = new Date()) {
+  const cur = answerFor(book, prev?.lampId, prev?.periodKey)
+  if (!cur) return book
+  lastAnswerAt = Date.now()
+  const back = { ...cur, id: newAnswerId(), status: prev.status, answeredAt: answeredAtIso(clock), past: true }
+  return { ...book, answers: (book.answers || []).map((item) => (item === cur ? back : item)) }
+}
+
 // The gone list is how a sync knows a question was taken off this tag on
 // purpose (see shelf-merge.js). Putting one back adds a newer back entry.
 function noteGone(book, ids, back, clock = new Date()) {

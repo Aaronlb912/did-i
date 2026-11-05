@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { shortLabel } from '../../src/lib/board-json.js'
 import { firstAnswerMonth, monthStripNights, nightDueRows, nightWhy, yearMonths, yearTotals } from '../../src/lib/hall-pages.js'
 import { openNightWhy } from './NightSheets.jsx'
+import { openAnswerNote } from './NightNotes.jsx'
+import { goHash } from '../navigation/hash.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { awayKey, usePrefs } from '../../src/lib/prefs.js'
 import { boardDate, formatBoardDate, nightOpen } from '../../src/lib/recurrence.js'
@@ -65,7 +67,7 @@ function markOf(answer, when = 0, open = when === 0) {
   return { key: 'hole', label: upFirst(t('cal.open')) }
 }
 
-export function CalendarGrid({ book, boards = [], tagId = '', now, colors, startShift = 0, onAnswer }) {
+export function CalendarGrid({ book, boards = [], tagId = '', now, colors, startShift = 0, onAnswer, onNote }) {
   const prefs = usePrefs()
   // A missed day reads like any other unlit day, never a warning (gentle or not).
   const missTone = colors.open
@@ -123,7 +125,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
       kicker: t('why.kicker'),
       title: formatBoardDate(iso),
       body: nightWhyLines(why, { itemsShown: rows.length > 0 || weOpen.length > 0 }).join('\n'),
-      content: rows.length || weOpen.length ? (
+      content: rows.length || weOpen.length || when === 0 ? (
         <View style={styles.marks}>
           {weOpen.map((id) => {
             const weMark = weMarkOf(id)
@@ -143,13 +145,16 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
             const date = formatBoardDate(iso)
             const answer = (status) => {
               const next = onAnswer(row, status)
-              if (next) openDay(iso, shelfNow.map((item) => (item.id === next.id ? next : item)))
+              // A changed answer offers Undo in the toast, which sits under the sheet.
+              if (next && row.answer) close()
+              else if (next) openDay(iso, shelfNow.map((item) => (item.id === next.id ? next : item)))
               // A sheet left open past midnight can be outside the window now: redraw without the buttons.
               else if (!pastAnswerOpen(row, new Date())) openDay(iso, shelfNow)
             }
+            const didIt = row.answer?.status === 'yes' || row.answer?.status === 'late'
             return (
+              <View key={`${row.boardId}-${row.lamp.id}`}>
               <Pressable
-                key={`${row.boardId}-${row.lamp.id}`}
                 style={styles.markRow}
                 disabled={!onAnswer || canAnswer || iso >= boardDate(new Date())}
                 accessibilityRole={onAnswer && !canAnswer && iso < boardDate(new Date()) ? 'text' : undefined}
@@ -182,8 +187,24 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                   </View>
                 ) : null}
               </Pressable>
+              {didIt && onNote ? (
+                <View style={styles.markNote}>
+                  <KeyButton
+                    colors={colors}
+                    label={row.answer.note ? t('note.edit') : t('note.add')}
+                    accessibilityLabel={`${row.answer.note ? t('note.edit') : t('note.add')}: ${shortLabel(row.lamp)}, ${date}`}
+                    onPress={() => openAnswerNote({ boardId: row.boardId, lampId: row.lamp.id, periodKey: row.periodKey, colors, onChange: onNote })}
+                  />
+                </View>
+              ) : null}
+              </View>
             )
           })}
+          {when === 0 ? (
+            <View style={styles.markNote}>
+              <KeyButton colors={colors} label={t('empty.goTonight')} onPress={() => { close(); goHash('/tonight') }} />
+            </View>
+          ) : null}
         </View>
       ) : null,
       closeLabel: t('cal.close'),
@@ -470,6 +491,7 @@ const styles = StyleSheet.create({
   markRow: { flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 10 },
   markPip: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
   markLabel: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  markNote: { alignSelf: 'flex-start', marginLeft: 18, marginTop: -4, marginBottom: 10 },
   markBtns: { flexDirection: 'row', gap: 8 },
   markBtn: { minHeight: 44, minWidth: 44, paddingHorizontal: 12, borderWidth: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   markBtnText: { fontFamily: fonts.uiSemi, fontSize: 14 },

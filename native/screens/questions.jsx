@@ -41,7 +41,8 @@ import {
 } from '../../src/lib/board-json.js'
 import { commitBook } from '../../src/lib/achievements.js'
 import { QUESTION_CAP, questionCount } from '../../src/lib/question-cap.js'
-import { bulkLamps, hangInto, moveLamps, putAnswer, putPastAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { savePastAnswer } from '../lib/past-answer.js'
+import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
@@ -2949,13 +2950,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         lamp={lamp}
         colors={colors}
         dateIso={dateIso}
-        onAnswer={(row, status) => {
-          const next = putPastAnswer(lampBook, row, status, clock)
-          if (next === lampBook) return null
-          const saved = commitBook(next, clock)
-          onChange(saved)
-          return saved
-        }}
+        onAnswer={(row, status) => savePastAnswer(lampBook, row, status, onChange)}
+        onNote={onChange}
       />
 
       {lamp.trackAmount ? (

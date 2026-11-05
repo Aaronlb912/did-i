@@ -3879,6 +3879,7 @@ export const ko = {
   'weAmount.unitPh': '잔',
   'cal.hintGentle': "끝낸 날에는 점이 있어요. 다른 날은 비어 있어요.",
   'cal.emptyBody': "오늘 질문에 답하면 여기에 표시돼요.",
+  'cal.answerChanged': "답변을 바꿨어요",
   'calendar.tooOld': "그날은 너무 오래되어 바꿀 수 없어요.",
   'stats.folderEmpty': "이 폴더에는 아직 답이 없어요.",
   'lamp.rate': "최근 30일 중 해야 할 날의 {pct}%에 Did",

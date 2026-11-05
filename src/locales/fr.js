@@ -3919,6 +3919,7 @@ export const fr = {
   'weAmount.unitPh': 'verres',
   'cal.hintGentle': "Un point pour chaque jour terminé. Les autres jours restent vides.",
   'cal.emptyBody': "Réponds à une question aujourd’hui et elle apparaîtra ici.",
+  'cal.answerChanged': "Réponse modifiée",
   'calendar.tooOld': "Ce jour est trop ancien pour être modifié.",
   'stats.folderEmpty': "Ce dossier n’a pas encore de réponses.",
   'lamp.rate': "Did sur {pct} % des jours prévus ces 30 derniers jours",

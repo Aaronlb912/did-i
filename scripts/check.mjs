@@ -728,6 +728,68 @@ test('an answer for a day 3 to 6 back counts in the streak as late, pays nothing
   assert.equal(fixed.past, true, 'kept out of the paid taps of today')
 })
 
+test('a past-day tap saves with the time of the tap, so a day that closed since the screen drew pays nothing and wins the merge', async () => {
+  const { putPastAnswer, restorePastAnswer } = await import('../src/lib/board-ops.js')
+  const { periodKeyFor } = await import('../src/lib/recurrence.js')
+  const item = lamp('walk', { createdOn: '2026-10-01' })
+  const row = { lamp: item, dateIso: '2026-10-19', periodKey: periodKeyFor(item, '2026-10-19') }
+  const book = { id: 'b', dayFoldHour: 0, coins: 5, lamps: [item], answers: [] }
+  const drawn = new Date(2026, 9, 20, 8, 50)
+  const tapped = new Date(2026, 9, 20, 9, 30)
+  const stale = answerFor(putPastAnswer(book, row, 'yes', drawn), 'walk', row.periodKey)
+  assert.equal(stale.status, 'yes', 'with the drawn clock yesterday still looks open')
+  const real = answerFor(putPastAnswer(book, row, 'yes', tapped), 'walk', row.periodKey)
+  assert.equal(real.status, 'late', 'with the tap time it is a late Did')
+  assert.equal(real.past, true)
+  assert.equal(putPastAnswer(book, row, 'yes', tapped).coins, 5, 'no coins')
+  assert.equal(real.answeredAt, tapped.toISOString(), 'stamped with the tap time')
+  const read = (file) => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
+  const helper = read('native/lib/past-answer.js')
+  const at = (text) => helper.indexOf(text)
+  assert.ok(at('const clock = new Date()') > 0 && at('const clock = new Date()') < at('putPastAnswer(from, row, status, clock)') && at('putPastAnswer(from, row, status, clock)') < at('commitBook(next, clock)'), 'the time is made at the tap and used for save and commit')
+  for (const file of ['native/screens/more.jsx', 'native/screens/questions.jsx']) {
+    const src = read(file)
+    assert.ok(src.includes('savePastAnswer('), `${file} saves through the tap-time helper`)
+    assert.ok(!src.includes('putPastAnswer('), `${file} never hands a screen clock to putPastAnswer`)
+  }
+  // Undo puts the earlier status back, stamped later than the change, and pays nothing.
+  const onTime = { ...book, answers: [{ id: 'a1', lampId: 'walk', periodKey: row.periodKey, status: 'yes', answeredAt: '2026-10-19T20:00:00.000Z', paid: true }] }
+  const flipped = putPastAnswer(putPastAnswer(onTime, row, 'skip', tapped), row, 'yes', new Date(2026, 9, 20, 9, 31))
+  assert.equal(answerFor(flipped, 'walk', row.periodKey).status, 'late')
+  const back = restorePastAnswer(flipped, onTime.answers[0], new Date(2026, 9, 20, 9, 32))
+  const restored = answerFor(back, 'walk', row.periodKey)
+  assert.equal(restored.status, 'yes', 'back to the on-time Did')
+  assert.ok(restored.answeredAt > answerFor(flipped, 'walk', row.periodKey).answeredAt, 'newer than the change, so a sync keeps it')
+  assert.equal(restored.past, true)
+  assert.equal(back.coins, 5)
+  assert.equal(restorePastAnswer(book, onTime.answers[0]), book, 'nothing to restore on an empty day')
+})
+
+test('a blank day in the last 7 that was due and unanswered takes a tap (gentle mode, times a week, every so often)', async () => {
+  const { lampMonthCells } = await import('../src/lib/lamp-month.js')
+  const askOf = (book, item, gentle, dateIso = '2026-10-20') => {
+    const cells = lampMonthCells(book, item, dateIso, 2026, 9, gentle, 0).filter(Boolean)
+    return Object.fromEntries(cells.map((cell) => [cell.iso, cell]))
+  }
+  const daily = lamp('walk', { createdOn: '2026-09-01' })
+  const none = { id: 'b', dayFoldHour: 0, lamps: [daily], answers: [] }
+  const gentle = askOf(none, daily, true)
+  assert.equal(gentle['2026-10-17'].state, '', 'gentle keeps the blank look')
+  assert.equal(gentle['2026-10-17'].ask, true, 'but the day takes a tap')
+  assert.equal(gentle['2026-10-12'].ask, undefined, '8 back is outside the window')
+  assert.equal(gentle['2026-10-20'].ask, undefined, 'today is not a past day')
+  assert.equal(askOf(none, daily, false)['2026-10-17'].state, 'missed', 'not gentle: still the missed state')
+  const answered = { ...none, answers: [{ lampId: 'walk', periodKey: '2026-10-17', status: 'yes', answeredAt: '2026-10-17T20:00:00.000Z' }] }
+  assert.equal(askOf(answered, daily, true)['2026-10-17'].ask, undefined, 'an answered day is not asked')
+  const paused = { ...daily, archived: true }
+  assert.equal(askOf({ ...none, lamps: [paused] }, paused, true)['2026-10-17'].ask, undefined, 'a paused question is not asked')
+  const weekly = lamp('stretch', { createdOn: '2026-09-01', perWeek: 2 })
+  const book = { id: 'b', dayFoldHour: 0, lamps: [weekly], answers: [] }
+  assert.equal(askOf(book, weekly, false)['2026-10-17'].ask, true, 'times a week: due and open')
+  const full = { ...book, answers: ['2026-10-12', '2026-10-13'].map((iso) => ({ lampId: 'stretch', periodKey: iso, status: 'yes', answeredAt: `${iso}T20:00:00.000Z` })) }
+  assert.equal(askOf(full, weekly, false)['2026-10-14'].ask, undefined, 'times a week: the week already has its Dids')
+})
+
 test('question search matches every word, and tonight states come from one pass per tag', () => {
   const lamp = (id, question, extra = {}) => ({ id, question, cadence: 'daily', archived: false, createdOn: '2020-01-01', ...extra })
   const book = {
@@ -8593,9 +8655,9 @@ test('gentle mode: a missed night is blank on Home, week, month, list and why sh
   assert.match(readSrc('native/components/DoneCard.jsx'), /night\.miss && !gentle\s*\?\s*missDot\(colors, colors\.open\)/)
   assert.ok(!readSrc('native/components/WeekStrip.jsx').includes('colors.miss'), 'phone week strip: missed days never red')
   assert.match(readSrc('src/lib/WeekStrip.jsx'), /night\.miss && prefs\.gentle !== true \? 'is-miss'/)
-  const month = readSrc('native/components/LampMonth.jsx')
+  const month = readSrc('src/lib/lamp-month.js')
   assert.match(month, /nightOpen\(iso\) \? 'open' : gentle \? '' : 'missed'/)
-  assert.match(month, /\.\.\.\(gentle \? \[\] : \[\{ id: 'missed'/)
+  assert.match(readSrc('native/components/LampMonth.jsx'), /\.\.\.\(gentle \? \[\] : \[\{ id: 'missed'/)
   assert.ok(month.includes('getDay() - weekStart + 7) % 7'), 'lamp month starts on the locale first weekday')
   const list = readSrc('native/screens/questions.jsx')
   assert.match(list, /earlierStates\(earlier, gentle\)/)

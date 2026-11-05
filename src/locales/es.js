@@ -3916,6 +3916,7 @@ export const es = {
   'weAmount.unitPh': 'vasos',
   'cal.hintGentle': "Un punto marca cada día que terminaste. Los demás días quedan en blanco.",
   'cal.emptyBody': "Responde una pregunta hoy y aparecerá aquí.",
+  'cal.answerChanged': "Respuesta cambiada",
   'calendar.tooOld': "Ese día es demasiado antiguo para cambiarlo.",
   'stats.folderEmpty': "Esta carpeta aún no tiene respuestas.",
   'lamp.rate': "Did en el {pct}% de los días pendientes de los últimos 30",

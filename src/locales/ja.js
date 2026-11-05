@@ -3877,6 +3877,7 @@ export const ja = {
   'weAmount.unitPh': '杯',
   'cal.hintGentle': "終えた日には点。ほかの日は空白のまま。",
   'cal.emptyBody': "今日の質問に答えると、ここに表示されます。",
+  'cal.answerChanged': "回答を変更しました",
   'calendar.tooOld': "その日は古すぎて変更できません。",
   'stats.folderEmpty': "このフォルダにはまだ回答がありません。",
   'lamp.rate': "直近30日の予定日の{pct}%でDid",

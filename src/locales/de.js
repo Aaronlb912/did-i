@@ -3924,6 +3924,7 @@ export const de = {
   'weAmount.unitPh': 'Gläser',
   'cal.hintGentle': "Ein Punkt für jeden Tag, den du geschafft hast. Alle anderen Tage bleiben leer.",
   'cal.emptyBody': "Beantworte heute eine Frage, dann erscheint sie hier.",
+  'cal.answerChanged': "Antwort geändert",
   'calendar.tooOld': "Dieser Tag ist zu alt zum Ändern.",
   'stats.folderEmpty': "In diesem Ordner gibt es noch keine Antworten.",
   'lamp.rate': "Did an {pct} % der fälligen Tage in den letzten 30",
