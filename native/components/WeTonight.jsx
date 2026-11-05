@@ -20,7 +20,7 @@ import {
   wePausedCards,
   weRestart,
 } from '../../src/lib/did-we.js'
-import { boardDate } from '../../src/lib/recurrence.js'
+import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { hideWeFor } from '../../src/lib/we-nights.js'
 import { weFaceFor, weFaceRow, weMissKey, wePersonKey, weSlotDay, weStatus, weWeekKey } from '../../src/lib/we-look.js'
 import { refreshTogether } from '../../src/lib/people.js'
@@ -239,10 +239,28 @@ export function weDoneStyle(card, colors) {
 
 // How often a card repeats.
 export function whenValue(draft) {
-  if (draft.cadence === 'monthly') return t('we.monthly')
-  if (draft.cadence !== 'weekly') return t('we.daily')
-  if (!draft.weekdays?.length) return t('we.someDays')
-  return draft.weekdays.map((day) => t(`we.day.${day}`)).join(' ')
+  const days = Number(draft.everyDays) || 0
+  switch (draft.cadence) {
+    case 'monthly': {
+      const day = draft.monthDay
+      if (day === 'last' || day === 0) return t('cadence.monthlyLast')
+      return day > 1 ? t('cadence.monthlyOn', { day }) : t('we.monthly')
+    }
+    case 'every_n':
+      return t('cadence.everyN', { n: days })
+    case 'every':
+      return t('cadence.every', { n: days })
+    case 'per_week':
+      return Number(draft.perWeek) === 1 ? t('cadence.perWeekOne') : t('cadence.perWeek', { n: draft.perWeek })
+    case 'once_on':
+      return draft.onceOn ? t('cadence.onceOn', { date: formatBoardDate(draft.onceOn) }) : t('hang.once')
+    case 'deadline':
+      return draft.dueBy ? t('cadence.onceBy', { date: formatBoardDate(draft.dueBy) }) : t('hang.dueByPick')
+    case 'weekly':
+      return draft.weekdays?.length ? draft.weekdays.map((day) => t(`we.day.${day}`)).join(' ') : t('we.someDays')
+    default:
+      return t('we.daily')
+  }
 }
 
 // The card's schedule line: how often, then the time.

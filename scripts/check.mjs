@@ -8403,7 +8403,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-6), ['streak-bonus.sql', 'we-left-push.sql', 'we-month-open.sql', 'we-link-blocked.sql', 'we-link-already.sql', 'did-you-when.sql'])
+  assert.deepEqual(files.slice(-7), ['streak-bonus.sql', 'we-left-push.sql', 'we-month-open.sql', 'we-link-blocked.sql', 'we-link-already.sql', 'did-you-when.sql', 'we-timing.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -11364,6 +11364,30 @@ test('a monthly question still open this month does not break the streaks', () =
   const nope = { ...book, answers: [...answers, { id: '2026-11', lampId: 'rent', periodKey: '2026-11', status: 'yes' }] }
   assert.equal(shelfStreak([nope], nov20), open + 1, 'open month: overall streak holds, answered adds one')
   assert.equal(questionStreak(nope, rent, '2026-11-20', 400, nov20), 4, 'answered counts')
+})
+
+test('did we: every Did I timing maps to we_make2 and we_edit3 arguments', async () => {
+  const { weTiming } = await import('../src/lib/did-we.js')
+  const today = '2026-11-04'
+  assert.deepEqual(weTiming({ cadence: 'daily' }, today), { cadence: 'daily', weekdays: [], n: null, on: null })
+  assert.deepEqual(weTiming({ cadence: 'weekly', weekdays: [1, 3] }, today).weekdays, [1, 3])
+  assert.equal(weTiming({ cadence: 'weekly', weekdays: [] }, today).miss, 'we.missDays')
+  assert.equal(weTiming({ cadence: 'monthly', monthDay: '' }, today).n, null)
+  assert.equal(weTiming({ cadence: 'monthly', monthDay: 'last' }, today).n, 0)
+  assert.equal(weTiming({ cadence: 'monthly', monthDay: 15 }, today).n, 15)
+  assert.equal(weTiming({ cadence: 'every_n', everyDays: 3 }, today).n, 3)
+  assert.equal(weTiming({ cadence: 'every_n', everyDays: 1 }, today).miss, 'hang.miss.everyN')
+  assert.equal(weTiming({ cadence: 'every', everyDays: 400 }, today).miss, 'hang.miss.everyDays')
+  assert.equal(weTiming({ cadence: 'every', everyDays: 7, everyAnchor: '2026-10-30' }, today).on, '2026-10-30')
+  assert.equal(weTiming({ cadence: 'per_week', perWeek: 3 }, today).n, 3)
+  assert.equal(weTiming({ cadence: 'per_week', perWeek: 7 }, today).miss, 'hang.miss.everyN')
+  assert.equal(weTiming({ cadence: 'once_on', onceOn: '2026-12-01' }, today).on, '2026-12-01')
+  assert.equal(weTiming({ cadence: 'once_on', onceOn: '' }, today).miss, 'hang.miss.onceOn')
+  assert.equal(weTiming({ cadence: 'deadline', dueBy: '2026-11-01' }, today).miss, 'hang.miss.dueByBefore')
+  assert.equal(weTiming({ cadence: 'deadline', dueBy: '2026-11-30' }, today).on, '2026-11-30')
+  assert.equal(weTiming({ cadence: 'nonsense' }, today).cadence, 'daily')
+  const src = readFileSync(new URL('../src/lib/did-we.js', import.meta.url), 'utf8')
+  assert.ok(src.includes("rpc('we_make2'") && src.includes("rpc('we_edit3'"))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

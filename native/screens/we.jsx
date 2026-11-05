@@ -9,7 +9,8 @@ import { PickSheet } from '../components/PickSheet.jsx'
 import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
 import { HangTimePick } from '../components/HangTimePick.jsx'
 import { clockWords } from '../../src/lib/hall-pages.js'
-import { Pill, TopicPick, useAddFeel } from './questions.jsx'
+import { EveryNStep, Pill, TopicPick, useAddFeel } from './questions.jsx'
+import { HangMonthCal } from '../components/HangMonthCal.jsx'
 import { useLeaveAsk } from '../hooks/useLeaveAsk.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { shelfTopics } from '../../src/lib/board-json.js'
@@ -38,6 +39,7 @@ import {
   weStreak,
   takeWeScheduleNote,
   weCardKept,
+  weTiming,
   weTonight,
   weWaiting,
   useWeTonight,
@@ -192,6 +194,95 @@ function FilingFolds({ folder, topics, onFolder, onTopics, open, fold, last, col
   )
 }
 
+const WHEN_TILES = [
+  ['daily', 'we.daily', 'hang.tileSub.daily'],
+  ['weekly', 'we.someDays', 'hang.tileSub.weekly'],
+  ['monthly', 'we.monthly', 'we.monthlySub'],
+  ['per_week', 'hang.perWeek', 'hang.tileSub.per_week'],
+  ['every_n', 'hang.everyN', 'hang.tileSub.every_n'],
+  ['every', 'hang.every', 'hang.tileSub.every'],
+  ['once_on', 'hang.once', 'hang.tileSub.once_on'],
+  ['deadline', 'hang.dueByPick', 'hang.tileSub.deadline'],
+]
+const EVERY_DAYS = [
+  [7, 'hang.everyWeek'],
+  [14, 'hang.every2Weeks'],
+  [30, 'hang.everyMonth'],
+]
+
+// Every Did I timing for a Did we: the tiles, then the pick each one needs.
+function WhenChoices({ draft, setDraft, colors }) {
+  const set = (key) => (value) => setDraft((was) => ({ ...was, [key]: value }))
+  const today = boardDate()
+  const days = Number(draft.everyDays) || 0
+  const customEvery = days && !EVERY_DAYS.some(([n]) => n === days)
+  return (
+    <>
+      <ScheduleTiles label={t('we.when')}>
+        {WHEN_TILES.map(([id, label, sub]) => (
+          <ScheduleTile
+            key={id}
+            label={t(label)}
+            sub={t(sub)}
+            accent={colors.we}
+            on={draft.cadence === id}
+            onPress={() => setDraft((was) => ({ ...was, cadence: id, everyDays: id === 'every' && !(Number(was.everyDays) >= 2) ? 7 : id === 'every_n' && !(Number(was.everyDays) >= 2) ? 3 : was.everyDays, perWeek: was.perWeek || 3, onceOn: id === 'once_on' && !was.onceOn ? today : was.onceOn }))}
+            colors={colors}
+          />
+        ))}
+      </ScheduleTiles>
+      {draft.cadence === 'weekly' ? (
+        <Reveal>
+          <View style={styles.pillRow}>
+            {DAYS.map((day) => {
+              const on = draft.weekdays.includes(day)
+              return (
+                <Pill
+                  key={day}
+                  label={t(`we.day.${day}`)}
+                  on={on}
+                  onPress={() => set('weekdays')(on ? draft.weekdays.filter((d) => d !== day) : [...draft.weekdays, day].sort())}
+                  colors={colors}
+                />
+              )
+            })}
+          </View>
+        </Reveal>
+      ) : null}
+      {draft.cadence === 'every_n' ? (
+        <EveryNStep draft={{ everyN: String(days || 3), everyNAnchor: draft.everyAnchor || today }} dateIso={today} onChange={(value) => set('everyDays')(Number(value))} colors={colors} />
+      ) : null}
+      {draft.cadence === 'every' ? (
+        <View style={styles.pillRow}>
+          {EVERY_DAYS.map(([n, label]) => (
+            <Pill key={n} label={t(label)} on={days === n} onPress={() => set('everyDays')(n)} colors={colors} radio />
+          ))}
+          {customEvery ? <Pill label={t('cadence.every', { n: days })} on onPress={() => {}} colors={colors} radio /> : null}
+        </View>
+      ) : null}
+      {draft.cadence === 'per_week' ? (
+        <>
+          <View style={styles.pillRow}>
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <Pill key={n} label={String(n)} on={Number(draft.perWeek) === n} onPress={() => set('perWeek')(n)} colors={colors} radio />
+            ))}
+          </View>
+          <Text style={[styles.hint, { color: colors.inkDim }]}>{t('hang.perWeekHint')}</Text>
+        </>
+      ) : null}
+      {draft.cadence === 'monthly' ? (
+        <HangMonthCal mode="monthly" value={draft.monthDay} onChange={set('monthDay')} colors={colors} />
+      ) : null}
+      {draft.cadence === 'once_on' ? (
+        <HangMonthCal mode="date" value={draft.onceOn || today} onChange={set('onceOn')} colors={colors} />
+      ) : null}
+      {draft.cadence === 'deadline' ? (
+        <HangMonthCal mode="date" value={draft.dueBy} onChange={set('dueBy')} colors={colors} />
+      ) : null}
+    </>
+  )
+}
+
 // Each rule row on its own, so the new form and the edit form can lay them out differently.
 function ruleParts({ draft, setDraft, open, fold, colors }) {
   const set = (key) => (value) => setDraft({ ...draft, [key]: value })
@@ -239,29 +330,7 @@ function ruleParts({ draft, setDraft, open, fold, colors }) {
             onToggle={() => fold('when')}
             colors={colors}
           >
-            <ScheduleTiles label={t('we.when')}>
-              <ScheduleTile label={t('we.daily')} sub={t('hang.tileSub.daily')} accent={colors.we} on={draft.cadence === 'daily'} onPress={() => set('cadence')('daily')} colors={colors} />
-              <ScheduleTile label={t('we.someDays')} sub={t('hang.tileSub.weekly')} accent={colors.we} on={draft.cadence === 'weekly'} onPress={() => set('cadence')('weekly')} colors={colors} />
-              <ScheduleTile label={t('we.monthly')} sub={t('we.monthlySub')} accent={colors.we} on={draft.cadence === 'monthly'} onPress={() => set('cadence')('monthly')} colors={colors} />
-            </ScheduleTiles>
-            {draft.cadence === 'weekly' ? (
-              <View style={styles.pillRow}>
-                {DAYS.map((day) => {
-                  const on = draft.weekdays.includes(day)
-                  return (
-                    <Pill
-                      key={day}
-                      label={t(`we.day.${day}`)}
-                      on={on}
-                      onPress={() =>
-                        set('weekdays')(on ? draft.weekdays.filter((d) => d !== day) : [...draft.weekdays, day].sort())
-                      }
-                      colors={colors}
-                    />
-                  )
-                })}
-              </View>
-            ) : null}
+            <WhenChoices draft={draft} setDraft={setDraft} colors={colors} />
           </HangFold>
     ),
     goal: (last) => (
@@ -347,29 +416,7 @@ function WeSheets({ draft, setDraft, sheet, setSheet, colors }) {
     <>
       <PickSheet open={sheet === 'when'} title={t('hang.whenAsk')} onClose={() => setSheet('')} colors={colors}>
         <View style={styles.countsBody}>
-          <ScheduleTiles label={t('we.when')}>
-            <ScheduleTile label={t('we.daily')} sub={t('hang.tileSub.daily')} accent={colors.we} on={draft.cadence === 'daily'} onPress={() => set('cadence')('daily')} colors={colors} />
-            <ScheduleTile label={t('we.someDays')} sub={t('hang.tileSub.weekly')} accent={colors.we} on={draft.cadence === 'weekly'} onPress={() => set('cadence')('weekly')} colors={colors} />
-            <ScheduleTile label={t('we.monthly')} sub={t('we.monthlySub')} accent={colors.we} on={draft.cadence === 'monthly'} onPress={() => set('cadence')('monthly')} colors={colors} />
-          </ScheduleTiles>
-          {draft.cadence === 'weekly' ? (
-<Reveal>
-            <View style={styles.pillRow}>
-              {DAYS.map((day) => {
-                const on = draft.weekdays.includes(day)
-                return (
-                  <Pill
-                    key={day}
-                    label={t(`we.day.${day}`)}
-                    on={on}
-                    onPress={() => set('weekdays')(on ? draft.weekdays.filter((d) => d !== day) : [...draft.weekdays, day].sort())}
-                    colors={colors}
-                  />
-                )
-              })}
-            </View>
-          </Reveal>
-) : null}
+          <WhenChoices draft={draft} setDraft={setDraft} colors={colors} />
         </View>
         <SetCard colors={colors}>
           {part.time(false)}
@@ -441,6 +488,11 @@ const BLANK = {
   shows: 'waiting',
   cadence: 'daily',
   weekdays: [],
+  monthDay: '',
+  everyDays: 0,
+  perWeek: 3,
+  onceOn: '',
+  dueBy: '',
   goal: null,
   askAfter: '',
   remind: true,
@@ -519,9 +571,10 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
       if (open !== 'who') fold('who')
       return
     }
-    if (draft.cadence === 'weekly' && !draft.weekdays.length) {
+    const wrong = weTiming(draft).miss
+    if (wrong) {
       feel.buzz()
-      setMiss(t('we.missDays'))
+      setMiss(tMiss(wrong))
       setSheet('when')
       return
     }
@@ -1139,6 +1192,13 @@ function WeCardPage({ book, cardId, onChange }) {
       shows: c.shows,
       cadence: c.cadence,
       weekdays: c.weekdays || [],
+      monthDay: c.monthDay == null ? '' : c.monthDay === 0 ? 'last' : c.monthDay,
+      everyDays: c.everyDays || 0,
+      everyAnchor: c.everyAnchor || '',
+      perWeek: c.perWeek || 3,
+      onceOn: c.onceOn || '',
+      dueBy: c.dueBy || '',
+      keepOn: (c.cadence === 'once_on' ? c.onceOn : c.cadence === 'deadline' ? c.dueBy : '') || '',
       goal: c.goal || null,
       askAfter: c.askAfter || '',
       remind: c.remind !== false,
