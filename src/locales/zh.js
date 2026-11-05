@@ -3019,6 +3019,7 @@ export const zh = {
   'admin.removeAsk': "确定移除？在这里无法恢复。",
   'admin.banAsk': "封禁 {name}？在 Supabase 中解除前无法登录。",
   'admin.isBanned': "已封禁",
+  'hang.cap': "你已有 300 个问题，这是一个账号的上限。请先删除一个再添加。",
   'toast.tapRetry': "点按重试。",
   'gems.restoreSignIn': '登录后即可恢复购买。',
   'gems.restoreSetup': "这部手机上尚未设置应用商店。请从 App Store 或 Google Play 打开 Did I，然后再试一次。",

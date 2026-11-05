@@ -3074,6 +3074,7 @@ export const de = {
   'admin.removeAsk': "Entfernen? Von hier aus lässt es sich nicht zurückholen.",
   'admin.banAsk': "{name} sperren? Anmelden geht erst wieder, wenn die Sperre in Supabase aufgehoben wird.",
   'admin.isBanned': "Schon gesperrt",
+  'hang.cap': "Du hast 300 Fragen, das Maximum für ein Konto. Entferne eine, um eine neue hinzuzufügen.",
   'toast.tapRetry': "Tippen, um es noch mal zu versuchen.",
   'gems.restoreSignIn': 'Melde dich an, um Käufe wiederherzustellen.',
   'gems.restoreSetup': "Der Store ist auf diesem Handy noch nicht eingerichtet. Öffne Did I aus dem App Store oder von Google Play und versuch es noch mal.",

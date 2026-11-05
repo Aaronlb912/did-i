@@ -3061,6 +3061,7 @@ export const pt = {
   'admin.removeAsk': "Remover isto? Não dá para repor a partir daqui.",
   'admin.banAsk': "Banir {name}? Não poderá iniciar sessão até o banimento ser levantado no Supabase.",
   'admin.isBanned': "Já banido",
+  'hang.cap': "Você tem 300 perguntas, o máximo que uma conta pode ter. Remova uma para adicionar outra.",
   'toast.tapRetry': "Toca para tentar de novo.",
   'gems.restoreSignIn': 'Entre para restaurar compras.',
   'gems.restoreSetup': "A loja ainda não está configurada neste celular. Abra o Did I pela App Store ou pelo Google Play e tente de novo.",

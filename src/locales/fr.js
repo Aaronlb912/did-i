@@ -3068,6 +3068,7 @@ export const fr = {
   'admin.removeAsk': "Retirer ceci ? Impossible de le remettre depuis ici.",
   'admin.banAsk': "Bannir {name} ? Plus de connexion tant que le bannissement n’est pas levé dans Supabase.",
   'admin.isBanned': "Déjà banni",
+  'hang.cap': "Vous avez 300 questions, le maximum pour un compte. Supprimez-en une pour en ajouter une autre.",
   'toast.tapRetry': "Touche pour réessayer.",
   'gems.restoreSignIn': 'Connecte-toi pour restaurer tes achats.',
   'gems.restoreSetup': "La boutique n'est pas encore configurée sur ce téléphone. Ouvre Did I depuis l'App Store ou Google Play et réessaie.",

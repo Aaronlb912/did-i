@@ -3065,6 +3065,7 @@ export const es = {
   'admin.removeAsk': "¿Quitar esto? No se puede recuperar desde aquí.",
   'admin.banAsk': "¿Vetar a {name}? No podrá iniciar sesión hasta que se levante el veto en Supabase.",
   'admin.isBanned': "Ya vetado",
+  'hang.cap': "Tienes 300 preguntas, el máximo que puede tener una cuenta. Quita una para añadir otra.",
   'toast.tapRetry': "Toca para intentarlo de nuevo.",
   'gems.restoreSignIn': 'Inicia sesión para restaurar compras.',
   'gems.restoreSetup': "La tienda aún no está configurada en este teléfono. Abre Did I desde la App Store o Google Play e inténtalo de nuevo.",
