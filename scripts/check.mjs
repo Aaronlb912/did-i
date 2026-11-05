@@ -11389,7 +11389,7 @@ test('streak milestones: line names the frame, shows once, gems paid by the serv
   const { readFileSync } = await import('node:fs')
   const m = await import('../src/lib/streak-milestones.js')
   assert.deepEqual(m.STREAK_MILESTONES, [7, 30, 100, 365])
-  assert.deepEqual(m.STREAK_BONUS, { 30: 1, 100: 2 })
+  assert.deepEqual(m.STREAK_BONUS, { 30: 1, 100: 2, 365: 3 })
   assert.equal(m.milestoneLine(30, '2026-11-03'), '30 days in a row. Ember is yours.')
   assert.equal(m.milestoneLine(100, '2026-11-03'), '100 days in a row. Royal is yours.')
   assert.equal(m.milestoneLine(365, '2026-11-03'), '365 days in a row')
@@ -11397,9 +11397,17 @@ test('streak milestones: line names the frame, shows once, gems paid by the serv
   assert.equal(m.milestoneGemLine(2), '+2 gems')
   assert.equal(m.milestoneGemLine(0), '')
   localStorage.removeItem('did-i-streak-seen')
-  assert.equal(m.takeStreakMilestone(12), false, 'not a milestone')
-  assert.equal(m.takeStreakMilestone(30), true)
-  assert.equal(m.takeStreakMilestone(30), false, 'once per milestone')
+  assert.equal(m.takeStreakMilestone(12), 0, 'not a milestone')
+  assert.equal(m.takeStreakMilestone(30), 30)
+  assert.equal(m.takeStreakMilestone(30), 0, 'once per milestone')
+  localStorage.removeItem('did-i-streak-seen')
+  // Finished in the grace hours or by fixing a past day: it plays up to 2 days late, once.
+  assert.equal(m.takeStreakMilestone(31), 30, 'a day late still plays')
+  assert.equal(m.takeStreakMilestone(32), 0, 'and only once')
+  assert.equal(m.takeStreakMilestone(102), 100)
+  assert.equal(m.takeStreakMilestone(33), 0, 'three days late is too late')
+  assert.equal(m.takeStreakMilestone(150), 0, 'a new phone at 150 does not play 100')
+  assert.equal(m.takeStreakMilestone(367), 365)
   localStorage.removeItem('did-i-streak-seen')
   m.addBonusPending(30)
   m.addBonusPending(30)
@@ -11412,11 +11420,139 @@ test('streak milestones: line names the frame, shows once, gems paid by the serv
     assert.ok(sql.includes(bit), bit)
   }
   const screen = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
+  // A folder's streak never spends the overall milestone or claims its frame.
+  assert.ok(screen.includes('const n = stack.overallStreak') && !screen.includes('const n = stack.streak'), 'the milestone reads the overall streak')
+  assert.ok(!/payStreakBonus\(d, stack\.streak\)/.test(screen), 'bonus claims send the overall streak')
+  const stackSrc = readFileSync(new URL('../src/lib/useTonightStack.js', import.meta.url), 'utf8')
+  assert.ok(stackSrc.includes('shelfStreak(shelf, clock) : 0'), 'overall streak ignores the picked folder')
   assert.ok(screen.includes('fireCheer(purse.cheerOn, CHEER_STAGE_MAX)'), 'the biggest cheer')
   assert.ok(screen.includes('retryStreakBonus()'), 'a failed claim is tried on the next open')
   assert.ok(!/to the next reward|days to go/i.test(screen))
   const freeze = readFileSync(new URL('../native/components/FreezeBits.jsx', import.meta.url), 'utf8')
   assert.ok(freeze.includes("body: t('freeze.earnedBody')"), 'a freeze earned gets the pop-up')
+})
+
+await testAsync('365 days pays 3 gems once, in the SQL and on the phone', async () => {
+  const sql = readFileSync(new URL('../supabase/streak-bonus.sql', import.meta.url), 'utf8')
+  assert.ok(sql.includes('when 365 then 3'), 'the function pays 3 at 365')
+  assert.ok(sql.includes('check (days in (30, 100, 365))'), 'the table accepts a 365 claim')
+  assert.ok(sql.includes('(current_date - joined) + 1 < claim_streak_bonus.days') && sql.includes('coalesce(run, 0) < claim_streak_bonus.days'), '365 gets the same streak and account age checks')
+  const test = readFileSync(new URL('../supabase/tests/streak-bonus.test.sql', import.meta.url), 'utf8')
+  assert.ok(test.includes('claim_streak_bonus(365)'), 'the SQL test covers 365')
+  const m = await import('../src/lib/streak-milestones.js')
+  m.addBonusPending(365, 365)
+  assert.deepEqual(m.readBonusPending(), [365], 'a 365 claim that did not go through waits')
+  m.clearBonusPending()
+})
+
+await testAsync('the year view best streak is that year only', async () => {
+  const { bestShelfStreak, bestShelfStreakIn } = await import('../src/lib/hall-feel.js')
+  const book = {
+    id: 'y1',
+    title: 'Home',
+    dayFoldHour: 0,
+    lamps: [{ id: 'daily', question: 'Did I stretch?', cadence: 'daily', archived: false, createdOn: '2025-10-01' }],
+    answers: [],
+  }
+  const did = (iso) => book.answers.push({ lampId: 'daily', periodKey: iso, status: 'yes', answeredAt: `${iso}T21:00:00` })
+  for (let i = 0; i < 112; i += 1) did(addDaysIso('2025-10-01', i))
+  for (let i = 0; i < 3; i += 1) did(addDaysIso('2026-02-01', i))
+  const now = new Date(2026, 2, 1, 12, 0)
+  assert.equal(bestShelfStreak([book], now), 112, 'all time')
+  assert.equal(bestShelfStreakIn([book], 2026, now), 20, 'this year starts on Jan 1')
+  assert.equal(bestShelfStreakIn([book], 2025, now), 92, 'a past year stops on Dec 31')
+  assert.equal(bestShelfStreakIn([book], 2027, now), 0, 'a future year has none')
+  assert.equal(bestShelfStreakIn([], 2026, now), 0)
+  const grid = readFileSync(new URL('../native/components/CalendarGrid.jsx', import.meta.url), 'utf8')
+  assert.ok(grid.includes('bestShelfStreakIn(shelf, year, clock)'), 'the year view asks for the shown year')
+  assert.ok(grid.includes('thisYear - 1 : thisYear') && grid.includes('<= 7'), 'Jan 1 to 7 opens on last year')
+})
+
+await testAsync('a question streak runs past 400 days; Done with this one ends it with its history', async () => {
+  const day0 = '2025-01-01'
+  const daily = { id: 'q', question: 'Did I read?', cadence: 'daily', archived: false, createdOn: day0 }
+  const answers = Array.from({ length: 500 }, (_, i) => ({ lampId: 'q', periodKey: addDaysIso(day0, i), status: 'yes', answeredAt: `${addDaysIso(day0, i)}T21:00:00` }))
+  const book = { id: 'b', title: 'Home', dayFoldHour: 0, lamps: [daily], answers }
+  const last = addDaysIso(day0, 499)
+  assert.equal(questionStreak(book, daily, last), 500, 'no 400 stop')
+  assert.equal(lampRecord(book, daily, last).streak, 500)
+  const ops = await import('../src/lib/board-ops.js')
+  const { dueTonight: due } = await import('../src/lib/recurrence.js')
+  const clock = new Date(2026, 9, 20, 12)
+  const open = { ...book, answers: answers.slice(0, 100) }
+  const ended = ops.endQuestion(open, open.lamps[0], clock)
+  assert.equal(ended.lamps[0].endsOn, '2026-10-19', 'nothing today: it ends yesterday, so today is not left open')
+  assert.equal(ended.answers.length, 100, 'history stays')
+  assert.equal(due(ended, clock).length, 0, 'it is not asked today')
+  const todayDid = { ...open, answers: [...open.answers, { lampId: 'q', periodKey: '2026-10-20', status: 'yes', answeredAt: '2026-10-20T09:00:00' }] }
+  assert.equal(ops.endQuestion(todayDid, todayDid.lamps[0], clock).lamps[0].endsOn, '2026-10-20', 'answered today: it ends today')
+  const todayNot = { ...open, answers: [...open.answers, { lampId: 'q', periodKey: '2026-10-20', status: 'skip', answeredAt: '2026-10-20T09:00:00' }] }
+  assert.equal(ops.endQuestion(todayNot, todayNot.lamps[0], clock).lamps[0].endsOn, '2026-10-19', 'a Not yet today is not an answer: it ends yesterday')
+  const planned = { ...open, lamps: [{ ...open.lamps[0], endsOn: '2026-12-01' }] }
+  const plannedEnded = ops.endQuestion(planned, planned.lamps[0], clock)
+  assert.equal(ops.reopenQuestion(plannedEnded, plannedEnded.lamps[0], '2026-12-01').lamps[0].endsOn, '2026-12-01', 'undo of Done puts a planned end date back')
+  assert.equal(ops.questionEnded({ cadence: 'daily', endsOn: '2026-10-20' }, '2026-10-20'), true, 'Resume shows on the last day')
+  assert.equal(ops.questionEnded({ cadence: 'daily', endsOn: '2026-10-21' }, '2026-10-20'), false, 'a planned end later is not ended')
+  const { milestoneReached } = await import('../src/lib/streak-milestones.js')
+  assert.deepEqual([29, 30, 32, 33, 100, 102, 103].map(milestoneReached), [0, 30, 30, 0, 100, 100, 0], 'undo re-arms a milestone up to 2 days late')
+  assert.ok(readFileSync(new URL('../src/lib/useTonightStack.js', import.meta.url), 'utf8').includes('milestoneReached(overallStreak)'), 'undo uses the late window')
+  assert.equal(ops.reopenQuestion(ended, ended.lamps[0]).lamps[0].endsOn, undefined, 'Resume clears the end date')
+  assert.equal(due(ops.reopenQuestion(ended, ended.lamps[0]), clock).length, 1, 'and it is asked again')
+  const once = { id: 'o', question: 'Did I call?', cadence: 'once', onceOn: '2026-10-25', createdOn: '2026-10-01' }
+  const onceBook = { id: 'b2', dayFoldHour: 0, lamps: [once], answers: [] }
+  assert.equal(ops.endQuestion(onceBook, once, clock), onceBook, 'a one-time question has no end date to set')
+  const manage = readFileSync(new URL('../native/components/LampManage.jsx', import.meta.url), 'utf8')
+  assert.ok(manage.includes("'lamp.doneBody'") && manage.includes('endQuestion(live, was)'), 'Done with this one asks first, then ends it')
+  assert.ok(manage.includes('stopCheckOns(lamp.id)') && manage.includes("'confirm.questionDoneToday'") && manage.includes("'lamp.doneBodyToday'"), 'Done stops friend check-ons and says when it ends today')
+  assert.ok(manage.includes('questionEnded(one.lamp'), 'a finished question drops its friend check-ons')
+  assert.ok(readFileSync(new URL('../native/screens/questions.jsx', import.meta.url), 'utf8').includes("'lamp.deleteDaysMany'"), 'bulk delete with several says their days')
+  assert.ok(manage.includes("t('lamp.doneRow')") && manage.includes('reopenQuestion('), 'Manage has Done with this one and Resume for a finished one')
+  const qs = readFileSync(new URL('../native/screens/questions.jsx', import.meta.url), 'utf8')
+  assert.ok(qs.includes('menuGo(actions.askDone)') && qs.includes('menuGo(actions.askAgain)'), 'the question page menu has both too')
+})
+
+await testAsync('bulk delete offers Pause and both delete sheets say deleting takes the days away', async () => {
+  const qs = readFileSync(new URL('../native/screens/questions.jsx', import.meta.url), 'utf8')
+  const at = qs.indexOf('function askDelete()')
+  const sheet = qs.slice(at, qs.indexOf('function takeBack()', at))
+  assert.ok(sheet.includes("moreLabel: canPause ? t('lamp.pauseBtn')") && sheet.includes("apply('stop')"), 'bulk delete has a Pause button on the stop path')
+  assert.ok(sheet.includes("'lamp.deleteDays'") && sheet.includes("'lamp.deleteDaysMany'"), 'bulk delete says its days leave the streak and history')
+  const manage = readFileSync(new URL('../native/components/LampManage.jsx', import.meta.url), 'utf8')
+  assert.ok(manage.includes("t('lamp.deleteDays')"), 'one question delete says the same')
+  assert.ok(!/Stop asking/i.test(en['lamp.deleteKeep']) && /Pause/.test(en['lamp.deleteKeep']), 'the keep line names the Pause button')
+})
+
+await testAsync('a question with no Did in 3 weeks says so, plainly', async () => {
+  const { staleDidLine } = await import('../src/lib/every-copy.js')
+  const lamp = { id: 'q', question: 'Did I stretch?', cadence: 'daily', archived: false, createdOn: '2026-09-01' }
+  const book = (answers) => ({ id: 'b', dayFoldHour: 0, lamps: [lamp], answers })
+  const did = (iso) => ({ lampId: 'q', periodKey: iso, status: 'yes', answeredAt: `${iso}T21:00:00` })
+  assert.equal(staleDidLine(book([did('2026-09-10')]), lamp, '2026-10-15'), 'No Did in 35 days')
+  assert.equal(staleDidLine(book([did('2026-10-10')]), lamp, '2026-10-15'), '', 'a recent Did')
+  assert.equal(staleDidLine(book([]), lamp, '2026-10-15'), 'No Did in 44 days', 'never done counts from when it was made')
+  assert.equal(staleDidLine(book([]), { ...lamp, createdOn: '2026-10-05' }, '2026-10-15'), '', 'made under 3 weeks ago')
+  assert.equal(staleDidLine(book([]), { ...lamp, archived: true }, '2026-10-15'), '', 'paused')
+  assert.equal(staleDidLine(book([]), { ...lamp, endsOn: '2026-10-01' }, '2026-10-15'), '', 'finished')
+  assert.equal(staleDidLine(book([]), { ...lamp, cadence: 'every', everyDays: 30 }, '2026-10-15'), '', 'every so often has its own pill')
+  const qs = readFileSync(new URL('../native/screens/questions.jsx', import.meta.url), 'utf8')
+  assert.ok(/colors\.inkDim \}\]\} numberOfLines=\{1\}>\s*\{stale\}/.test(qs), 'it is a grey meta line, not red')
+})
+
+await testAsync('a year of use: one card per phone, no reward, in gentle mode too', async () => {
+  const { showYearCard, yearCardSeen, markYearCardSeen } = await import('../src/lib/first-run.js')
+  localStorage.removeItem('did-i-year-card')
+  assert.equal(yearCardSeen(), false)
+  assert.equal(showYearCard({ sinceFirst: 365, nightDone: true, seen: false }), true)
+  assert.equal(showYearCard({ sinceFirst: 364, nightDone: true, seen: false }), false)
+  assert.equal(showYearCard({ sinceFirst: 400, nightDone: false, seen: false }), false, 'only once Today is done')
+  markYearCardSeen()
+  assert.equal(yearCardSeen(), true)
+  assert.equal(showYearCard({ sinceFirst: 400, nightDone: true, seen: yearCardSeen() }), false, 'once per phone')
+  localStorage.removeItem('did-i-year-card')
+  const screen = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(screen.includes("goHash('/calendar', 'year')") && screen.includes("t('year.see')"), 'See my year opens the year view')
+  assert.ok(!/yearUp[^\n]*gentle/.test(screen), 'gentle mode sees it too')
+  assert.ok(!en['year.line'].includes('{n}'), 'no streak number in the line')
 })
 
 test('big streak achievements open a sheet, frames can be shared, frost shows the freeze path', () => {
@@ -11882,7 +12018,7 @@ test('first reminder ask waits for the tour, cheer and sheets', () => {
 
 test('streak bonus pays on open for every day reached, and milestone marks leave on sign-out', () => {
   const screen = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
-  assert.ok(screen.includes('bonusAsked') && screen.includes('d > stack.streak'), 'bonus days already reached are claimed on open')
+  assert.ok(screen.includes('bonusAsked') && screen.includes('d > stack.overallStreak'), 'bonus days already reached are claimed on open')
   assert.ok(screen.includes('!account.user'), 'no claim while signed out')
   const sync = readFileSync(new URL('../src/lib/cloud-sync.js', import.meta.url), 'utf8')
   assert.ok(sync.includes('clearMilestoneSeen()'), 'sign-out clears milestone marks')

@@ -5,12 +5,14 @@ declare
   a uuid := gen_random_uuid();
   b uuid := gen_random_uuid();
   c uuid := gen_random_uuid();
+  d uuid := gen_random_uuid();
 begin
   insert into auth.users (id, email, aud, role, created_at) values
     (a, a || '@test.invalid', 'authenticated', 'authenticated', now() - interval '120 days'),
     (b, b || '@test.invalid', 'authenticated', 'authenticated', now() - interval '120 days'),
-    (c, c || '@test.invalid', 'authenticated', 'authenticated', now() - interval '5 days');
-  insert into public.profiles (user_id) values (a), (b), (c) on conflict (user_id) do nothing;
+    (c, c || '@test.invalid', 'authenticated', 'authenticated', now() - interval '5 days'),
+    (d, d || '@test.invalid', 'authenticated', 'authenticated', now() - interval '400 days');
+  insert into public.profiles (user_id) values (a), (b), (c), (d) on conflict (user_id) do nothing;
 
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   set local role authenticated;
@@ -50,6 +52,17 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
   update public.profiles set streak = 100 where user_id = c;
   if (public.claim_streak_bonus(30)->>'paid')::int <> 0 then raise exception 'FAIL: 5 day old account paid'; end if;
+
+  -- A year of use pays 3, once, and not before 365 days.
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  update public.profiles set streak = 364 where user_id = d;
+  if (public.claim_streak_bonus(365)->>'paid')::int <> 0 then raise exception 'FAIL: 364 days paid the 365 bonus'; end if;
+  update public.profiles set streak = 365 where user_id = d;
+  if (public.claim_streak_bonus(365)->>'paid')::int <> 3 then raise exception 'FAIL: 365 days did not pay 3'; end if;
+  if (public.claim_streak_bonus(365)->>'paid')::int <> 0 then raise exception 'FAIL: 365 paid twice'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  update public.profiles set streak = 365 where user_id = a;
+  if (public.claim_streak_bonus(365)->>'paid')::int <> 0 then raise exception 'FAIL: 120 day old account paid 365'; end if;
 
   reset role;
   if (select gem_balance from public.profiles where user_id = a) <> 3 then raise exception 'FAIL: a balance moved'; end if;

@@ -1,7 +1,7 @@
 import { PAUSES_MAX, answeredAtIso, cleanAmount, duplicateLamp, newAnswerId } from './board-json.js'
 import { activeLook } from './active-look.js'
 import { fireCheer, noteCheer, normalizePurse, cheerPlayOf, payTap } from './purse.js'
-import { addDaysIso, answerFor, boardDate, didStatusForRow, inPause, nightOpen, openFloorIso, periodPassed, stampMs } from './recurrence.js'
+import { addDaysIso, answerFor, boardDate, didStatusForRow, inPause, nightOpen, openFloorIso, periodKeyFor, periodPassed, stampMs } from './recurrence.js'
 import { readShelf } from './board-shelf.js'
 
 // Pausing notes the day, so the question's record stops counting there.
@@ -235,6 +235,34 @@ export function toggleArchive(book, lamp, clock = new Date()) {
       item.id === lamp.id ? withPause(item, !item.archived, clock) : item,
     ),
   }
+}
+
+// Done with a repeating question: it stops being asked and moves to Earlier,
+// with all its history. The end date is today when today already has an
+// answer for it, yesterday otherwise, so today is not left open.
+// A Not yet today is not an answer, so it does not count.
+export function endQuestionDate(book, lamp, clock = new Date()) {
+  const today = boardDate(clock, book.dayFoldHour)
+  const a = answerFor(book, lamp.id, periodKeyFor(lamp, today))
+  return a && a.status !== 'skip' ? today : addDaysIso(today, -1)
+}
+
+export function endQuestion(book, lamp, clock = new Date()) {
+  if (!lamp || lamp.cadence === 'once') return book
+  return hangInto(book, { ...lamp, endsOn: endQuestionDate(book, lamp, clock) }, true)
+}
+
+// Ask a finished question again: its end date goes, or comes back to `back`
+// (undo of Done keeps a date that was planned before).
+export function reopenQuestion(book, lamp, back = '') {
+  if (!lamp || (!lamp.endsOn && !back)) return book
+  const { endsOn: _endsOn, ...rest } = lamp
+  return hangInto(book, back ? { ...rest, endsOn: back } : rest, true)
+}
+
+// Its last day is today or earlier. On the last day itself it is still asked.
+export function questionEnded(lamp, dateIso) {
+  return Boolean(lamp?.cadence !== 'once' && lamp?.endsOn && lamp.endsOn <= dateIso)
 }
 
 export function hangCopy(book, lamp, clock = new Date()) {

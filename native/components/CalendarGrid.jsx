@@ -16,7 +16,7 @@ import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
 import { missDot } from '../palette.js'
-import { bestShelfStreak } from '../../src/lib/hall-feel.js'
+import { bestShelfStreakIn } from '../../src/lib/hall-feel.js'
 import { scopedBooks } from '../../src/lib/tags.js'
 import { passAlong } from '../../src/lib/native.js'
 import { KeyButton } from './ui.jsx'
@@ -307,14 +307,15 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
   const dateIso = boardDate(clock, book?.dayFoldHour)
   const thisYear = Number(dateIso.slice(0, 4))
   const thisMonth = Number(dateIso.slice(5, 7)) - 1
-  const [year, setYear] = useState(thisYear)
-
-  useEffect(() => {
-    setYear(thisYear)
-  }, [tagId, thisYear])
-
   const firstMonth = useMemo(() => firstAnswerMonth(shelf, clock, tagId), [shelf, tagId, dateIso, awayKey()])
   const firstYear = Number(firstMonth.slice(0, 4))
+  // Jan 1 to 7 the new year is nearly empty: open on the year just finished.
+  const openYear = thisMonth === 0 && Number(dateIso.slice(8, 10)) <= 7 && firstYear < thisYear ? thisYear - 1 : thisYear
+  const [year, setYear] = useState(openYear)
+
+  useEffect(() => {
+    setYear(openYear)
+  }, [tagId, openYear])
   // One walk per [shelf, year]; the night changing also refreshes today.
   // The first year starts at the first month with answers, not January.
   const months = useMemo(() => {
@@ -325,7 +326,8 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
   }, [shelf, year, tagId, dateIso, firstMonth, firstYear, prefs.locale, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const totals = useMemo(() => yearTotals(months), [months])
   // Best streak is shelf-wide, so it is left out while a folder is picked.
-  const best = useMemo(() => (tagId || lampId || prefs.gentle === true ? 0 : bestShelfStreak(shelf, clock)), [shelf, tagId, lampId, dateIso, prefs.gentle, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
+  // It is also this year's own: a past year does not show a longer run from another year.
+  const best = useMemo(() => (tagId || lampId || prefs.gentle === true ? 0 : bestShelfStreakIn(shelf, year, clock)), [shelf, year, tagId, lampId, dateIso, prefs.gentle, awayKey()]) // eslint-disable-line react-hooks/exhaustive-deps
   const cardRef = useRef(null)
   // The share card is about 900 views, so it is only drawn while sharing.
   const [carding, setCarding] = useState(false)

@@ -42,13 +42,13 @@ import {
 import { commitBook } from '../../src/lib/achievements.js'
 import { QUESTION_CAP, questionCount } from '../../src/lib/question-cap.js'
 import { savePastAnswer } from '../lib/past-answer.js'
-import { bulkLamps, hangInto, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { bulkLamps, hangInto, questionEnded, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps, weekdayName } from '../../src/lib/hall-pages.js'
 import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
-import { gapLine, lastTimeLine, sinceBadge } from '../../src/lib/every-copy.js'
+import { gapLine, lastTimeLine, sinceBadge, staleDidLine } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
 import { awayKey, readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { NightNotes } from '../components/NightNotes.jsx'
@@ -302,6 +302,7 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
           const urgency = dueByUrgency(row.lamp, dateIso)
           const on = Boolean(picking && picked?.has(rowKey(row)))
           const noteDay = query.trim() ? noteHitDay(row, query) : ''
+          const stale = staleDidLine(row.book, row.lamp, dateIso)
           const meta = [
             isTodayOnce(row.lamp, dateIso) ? t('morning.label') : '',
             row.lamp.fromName ? t('inbox.from', { name: row.lamp.fromName }) : '',
@@ -351,6 +352,11 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
                 <Text style={[styles.lampMeta, { color: colors.inkDim }]} numberOfLines={1}>
                   {meta}
                 </Text>
+                {stale ? (
+                  <Text style={[styles.lampMeta, { color: colors.inkDim }]} numberOfLines={1}>
+                    {stale}
+                  </Text>
+                ) : null}
                 {noteDay ? (
                   <Text style={[styles.lampMeta, { color: colors.inkDim }]} numberOfLines={1}>
                     {t('questions.noteOn', { date: formatBoardDate(noteDay) })}
@@ -761,9 +767,17 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
 
   function askDelete() {
     if (!chosen.length) return
+    const canPause = chosen.some((row) => !row.lamp.archived)
     publishSheet({
       title: t('questions.bulkDeleteTitle'),
-      body: chosen.length === 1 ? t('questions.bulkDeleteBodyOne') : t('questions.bulkDeleteBody', { n: chosen.length }),
+      body: `${chosen.length === 1 ? t('questions.bulkDeleteBodyOne') : t('questions.bulkDeleteBody', { n: chosen.length })} ${t(chosen.length === 1 ? 'lamp.deleteDays' : 'lamp.deleteDaysMany')}${canPause ? ` ${t('lamp.deleteKeep')}` : ''}`,
+      moreLabel: canPause ? t('lamp.pauseBtn') : undefined,
+      onMore: canPause
+        ? () => {
+            publishSheet(null)
+            apply('stop')
+          }
+        : undefined,
       goLabel: t('lamp.delete'),
       danger: true,
       closeLabel: t(chosen.length > 1 ? 'lamp.keepMany' : 'lamp.keep'),
@@ -2710,6 +2724,12 @@ export function LampScreen({ book, boards = [], onChange, route }) {
             plain
             onPress={() => menuGo(actions.togglePause)}
           />
+          {!lamp.archived && !questionEnded(lamp, dateIso) && lamp.cadence !== 'once' ? (
+            <SetRow colors={colors} icon="folder" label={t('lamp.doneRow')} sub={t('lamp.doneSub')} plain onPress={() => menuGo(actions.askDone)} />
+          ) : null}
+          {questionEnded(lamp, dateIso) ? (
+            <SetRow colors={colors} icon="play" label={t('lamp.askAgain')} sub={t('lamp.askAgainSub')} plain onPress={() => menuGo(actions.askAgain)} />
+          ) : null}
           <SetRow colors={colors} icon="trash" label={t('lamp.delete')} sub={t('lamp.deleteSub')} danger last onPress={() => menuGo(actions.askDelete)} />
         </SetCard>
       ),
@@ -2786,6 +2806,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           colors={colors}
         />
       ) : null}
+
+      {questionEnded(lamp, dateIso) ? <KeyButton label={t('lamp.askAgain')} onPress={actions.askAgain} colors={colors} /> : null}
 
       {lamp.optional ? (
         // Added for you: it only counts once you choose it.

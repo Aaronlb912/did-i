@@ -8,7 +8,7 @@ import { takeBackAnswer } from './answer-log.js'
 import { reportRejection } from './report.js'
 import { markedToast, toastName } from './pill-status.js'
 import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
-import { isStreakMilestone } from './streak-milestones.js'
+import { milestoneReached } from './streak-milestones.js'
 import { clearStreakSeen, deliverStreakHit, maybeStreakHit } from './streak-moments.js'
 import { clockWords } from './hall-pages.js'
 import { feelTap, playClick } from './native.js'
@@ -238,6 +238,12 @@ export function useTonightStack({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [shelf, tagId, dateIso, hallOn, weTonight.due, weTonight.done],
   )
+  // The streak of the whole shelf: milestones belong to it, not to a folder.
+  const overallStreak = useMemo(
+    () => (!tagId ? streak : hallOn ? shelfStreak(shelf, clock) : 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shelf, tagId, streak, dateIso, hallOn],
+  )
   const openReady = ready.filter((row) => !row.answer)
   // An every so often question never holds the night open, but while it is
   // due and unanswered it is still dealt as a card, after the night is clear.
@@ -421,7 +427,8 @@ export function useTonightStack({
     if (allClearTonight(current, clock) && !allClearTonight(next, clock)) {
       clearStreakSeen('hit', dateIso)
       // Dropping below a milestone just reached: its moment plays again.
-      if (isStreakMilestone(streak)) clearStreakSeen('milestone', String(streak))
+      const reached = milestoneReached(overallStreak)
+      if (reached) clearStreakSeen('milestone', String(reached))
     }
     setOverlay(next)
     change(next)
@@ -689,6 +696,7 @@ export function useTonightStack({
     catchUp,
     heat,
     streak,
+    overallStreak,
     cheer: cheer && cheer.dateIso === dateIso && nightDone ? cheer : null,
     nightDone,
     cheered,
