@@ -303,6 +303,7 @@ export function normalizeLamp(raw) {
     ...(asBool(lamp.fromDidYou) && SEND_ID.test(asString(lamp.fromId)) ? { fromId: asString(lamp.fromId).toLowerCase() } : {}),
     ...(asBool(lamp.fromDidYou) && SEND_ID.test(asString(lamp.sendId)) ? { sendId: asString(lamp.sendId).toLowerCase() } : {}),
     ...(asBool(lamp.fromDidYou) && asBool(lamp.shareOff) ? { shareOff: true } : {}),
+    ...(asBool(lamp.fromDidYou) && asBool(lamp.wantsPhoto) ? { wantsPhoto: true } : {}),
     // Put on one night's tonight by Did I itself: answer it if you like, it
     // never counts for or against a streak.
     ...(asBool(lamp.fromDidI) ? { fromDidI: true } : {}),

@@ -54,6 +54,8 @@ export async function addProof(target, night, bytes, ready) {
     await db.from('proofs').delete().eq('id', id)
     return { miss: /size|large/i.test(up.error.message || '') ? 'proof.tooBig' : 'proof.fail' }
   }
+  // The push to the other person waits for the file. A miss here only loses the push.
+  await db.rpc('proof_uploaded', { pid: id }).catch(() => {})
   return { id, miss: '' }
 }
 

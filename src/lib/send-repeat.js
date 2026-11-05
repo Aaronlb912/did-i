@@ -102,6 +102,7 @@ export function keptLamp(item, clock = new Date(), dayFoldHour = 0) {
     // sender can see its answers. A Did you link or Did I has none.
     const sendId = String(item?.sendId || item?.id || '').toLowerCase()
     if (!item?.fromDidI && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(sendId)) base.sendId = sendId
+    if (base.sendId && (item?.wants_photo === true || item?.wantsPhoto === true)) base.wantsPhoto = true
   }
   const { cadence, weekdays, everyDays, date, n, monthDay } = readRepeat(typeof item === 'string' ? '' : item.repeat)
   if (cadence === 'on') return { ...base, cadence: 'once', onceWhen: 'on', onceOn: date >= night ? date : night }

@@ -58,6 +58,9 @@ import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
 import { STREAK_BONUS, milestoneGemLine, milestoneLine, takeStreakMilestone } from '../../src/lib/streak-milestones.js'
 import { payStreakBonus, retryStreakBonus } from '../lib/streak-bonus.js'
 import { TonightNote, openAnswerNote } from '../components/NightNotes.jsx'
+import { addProofFlow, canAddProof } from '../lib/proof-flow.jsx'
+import { proofNight } from '../../src/lib/proofs.js'
+import { pushSendAnswers } from '../../src/lib/send-answers.js'
 import { useHoldMarks } from '../lib/mark-hold.js'
 import { useAnswerButtons } from '../lib/swipe-wheels.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
@@ -103,7 +106,7 @@ import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { syncTonightWidget } from '../widget-sync.js'
-import { cloudSetUp } from '../../src/lib/cloud.js'
+import { cloud, cloudSetUp } from '../../src/lib/cloud.js'
 import {
   countWidgetTipDay,
   isNewShelf,
@@ -137,6 +140,20 @@ const WE_SWIPE_OVER = new Set(['hall', 'finish', 'rest', 'off', 'waiting'])
 
 // A kept did you says who sent it next to its tag.
 // With no wishlist: the cheapest coin item not owned yet, as a wish line.
+// The Did toast's photo button: the answer reaches the server first, then the photo.
+function addPhotoForDid(lamp, periodKey, colors) {
+  addProofFlow({
+    target: { sendId: lamp.sendId },
+    night: proofNight(lamp, periodKey),
+    colors,
+    ready: async () => {
+      const db = cloud()
+      const { data } = (await db?.auth.getSession()) || {}
+      if (data?.session?.user) await pushSendAnswers(db, data.session.user, readShelf())
+    },
+  })
+}
+
 function nextCoinItem(purse) {
   const left = [...shopRow('look', LOOKS, purse).map((item) => ['look', item]), ...shopRow('accessory', ACCESSORIES, purse).map((item) => ['accessory', item])]
     .filter(([, item]) => item.coins > 0)
@@ -806,6 +823,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const undoToast = useMemo(() => {
     if (!undoNow || (undoNow.status !== 'yes' && undoNow.status !== 'late')) return undoNow
     const target = { boardId: undoNow.book?.id, lampId: undoNow.lampId, periodKey: undoNow.periodKey }
+    const lamp = (undoNow.book?.lamps || []).find((item) => item.id === undoNow.lampId)
+    if (lamp?.sendId && lamp.wantsPhoto && !lamp.shareOff && canAddProof()) {
+      return { ...undoNow, extra: { label: t('proof.addShort'), onPress: () => addPhotoForDid(lamp, undoNow.periodKey, noteDeps.current.colors) } }
+    }
     return { ...undoNow, extra: { label: t('note.addShort'), onPress: () => openAnswerNote({ ...target, ...noteDeps.current }) } }
   }, [undoNow])
   useUndoToast('tonight', undoToast, undoAnswer, UNDO_MS, stack.undoCount > 1 ? t('tonight.undoMore', { n: stack.undoCount - 1 }) : t('tonight.undoTap'), stack.holdUndo)
