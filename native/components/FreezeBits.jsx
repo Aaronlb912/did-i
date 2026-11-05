@@ -2,7 +2,7 @@
 // are held, and the toasts when one is earned or used.
 import { useEffect } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { FREEZE_MAX, freezeState, nightsToNextFreeze } from '../../src/lib/hall-feel.js'
+import { FREEZE_MAX, freezeState } from '../../src/lib/hall-feel.js'
 import { t } from '../../src/lib/i18n.js'
 import { addDaysIso, boardDate } from '../../src/lib/recurrence.js'
 import { showToast } from '../lib/toast-queue.js'
@@ -22,16 +22,13 @@ export const FREEZE_RULES = [
   'freeze.rule9',
 ]
 
-// "1 of 2 · next in 9 nights", or "2 of 2" when full.
+// "1 of 2".
 export function freezeLine(state) {
-  const held = t('freeze.ofMax', { n: state.held, max: FREEZE_MAX })
-  const next = nightsToNextFreeze(state.run, state.held)
-  return next ? `${held} · ${t(next === 1 ? 'freeze.nextShortOne' : 'freeze.nextShort', { n: next })}` : held
+  return t('freeze.ofMax', { n: state.held, max: FREEZE_MAX })
 }
 
 function FreezeHow({ colors, state }) {
   const ink = { color: colors.inkSoft }
-  const next = state ? nightsToNextFreeze(state.run, state.held) : 0
   return (
     <View style={styles.how}>
       {FREEZE_RULES.slice(0, 4).map((key) => (
@@ -45,10 +42,7 @@ function FreezeHow({ colors, state }) {
         <Text key={key} style={[styles.line, ink]}>{t(key)}</Text>
       ))}
       {state ? (
-        <>
           <Text style={[styles.head, { color: colors.ink }]}>{t('freeze.youHave', { n: state.held, max: FREEZE_MAX })}</Text>
-          {next ? <Text style={[styles.line, ink]}>{t(next === 1 ? 'freeze.nextInOne' : 'freeze.nextIn', { n: next })}</Text> : null}
-        </>
       ) : null}
     </View>
   )

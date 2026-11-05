@@ -11445,8 +11445,15 @@ test('first reminder ask waits for the tour, cheer and sheets', () => {
   assert.match(shell, /!tourActive\(\)[\s\S]{0,160}await whenNoSheet\(\)/)
 })
 
+test('streak bonus pays on open for every day reached, and milestone marks leave on sign-out', () => {
+  const screen = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(screen.includes('bonusAsked') && screen.includes('d > stack.streak'), 'bonus days already reached are claimed on open')
+  assert.ok(screen.includes('!account.user'), 'no claim while signed out')
+  const sync = readFileSync(new URL('../src/lib/cloud-sync.js', import.meta.url), 'utf8')
+  assert.ok(sync.includes('clearMilestoneSeen()'), 'sign-out clears milestone marks')
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
 if (failed) process.exit(1)
-

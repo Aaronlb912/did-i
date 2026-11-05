@@ -728,6 +728,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   // with the biggest cheer (CheerBurst skips it under reduced motion).
   // 30 and 100 also ask the server for their gems.
   const [milestone, setMilestone] = useState(null)
+  const bonusAsked = useRef(new Set())
+  const bonusUser = useRef(account.user?.id)
   useEffect(() => {
     retryStreakBonus()
   }, [])
@@ -744,6 +746,21 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stack.nightDone, stack.streak, gentle])
+  // A bonus day that passed without opening Today still pays: ask once per day
+  // number per account for every bonus the streak has reached. The server pays
+  // each once and ignores repeats. Gentle mode pays too, with no moment.
+  useEffect(() => {
+    if (bonusUser.current !== account.user?.id) {
+      bonusUser.current = account.user?.id
+      bonusAsked.current = new Set()
+    }
+    if (!account.user || !(stack.streak > 0)) return
+    for (const d of Object.keys(STREAK_BONUS).map(Number)) {
+      if (d > stack.streak || bonusAsked.current.has(d)) continue
+      bonusAsked.current.add(d)
+      payStreakBonus(d, stack.streak)
+    }
+  }, [account.user?.id, stack.streak])
   const milestoneUp = Boolean(milestone && stack.nightDone && !gentle && milestone.n === stack.streak)
   const [widgetOn, setWidgetOn] = useState(false)
   useEffect(() => {
