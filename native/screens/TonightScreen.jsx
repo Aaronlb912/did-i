@@ -1878,7 +1878,7 @@ const styles = StyleSheet.create({
   tomorrowRow: { marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: 10, columnGap: 12 },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   streakChip: { marginTop: 14 },
-  streakTap: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6 },
+  streakTap: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, minHeight: 44 },
   streakChevron: { fontSize: 22, marginTop: 10 },
   nudge: { marginTop: 16, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
   social: { marginTop: 14, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },

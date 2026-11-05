@@ -61,6 +61,8 @@ export function routeFromDeepLink(url) {
     }
     const lampId = String(parsed.queryParams?.face || parsed.queryParams?.id || '')
     if (lampId) return { path: '/tonight', face: lampId }
+    // An unknown didi:// link still opens the app on Today, so the tap shows something.
+    if (String(parsed.scheme || '').toLowerCase() === 'didi') return { path: '/tonight' }
   } catch {
     // ok
   }
