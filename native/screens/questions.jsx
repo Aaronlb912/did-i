@@ -495,6 +495,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
   const allRows = inHandOrder(taggedLamps(shelf, tagId))
   const [deadlineOnly, setDeadlineOnly] = useLayoutState(false)
   const [didYouOnly, setDidYouOnly] = useLayoutState(false)
+  const questionsTour = useTourTarget('questions')
   const [query, setQuery] = useState('')
   const rows = searchRows(allRows, query)
   const states = useMemo(() => tonightStates(allRows, clock), [shelf, tagId, clock])
@@ -770,7 +771,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             It scrolls sideways instead of wrapping, so a picked filter never pushes Edit down. */}
         {/* Select and Reorder swap this row for their pinned bar. */}
         {ordering || picking ? null : (
-          <Reveal style={styles.topWrap}>
+          <View {...questionsTour}><Reveal style={styles.topWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.topRow}>
             <TagFilter
               boards={shelf}
@@ -816,7 +817,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
               </>
             )}
           </ScrollView>
-          </Reveal>
+          </Reveal></View>
         )}
         {/* Room under the pinned Select bar, where the top row was. */}
         {picking ? <View style={styles.modeRoom} /> : null}
