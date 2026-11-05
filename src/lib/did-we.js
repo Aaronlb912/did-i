@@ -352,7 +352,9 @@ export function noteAsked(ids) {
 export async function weKnownPeople() {
   const db = cloud()
   if (!db) return []
-  const { data } = await db.rpc('known_people')
+  const { data, error } = await db.rpc('known_people')
+  // A failed load is null, so a saved list is not replaced with nobody.
+  if (error) return null
   const recent = recentAsked()
   const rank = (row) => (recent.includes(row.id) ? recent.indexOf(row.id) : RECENT_MAX)
   return (data || [])
