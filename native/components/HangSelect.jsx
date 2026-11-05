@@ -42,6 +42,8 @@ export function HangSelect({ value, onChange, options, ariaLabel, colors, open: 
         <Pressable accessible={false} style={[styles.backdrop, { backgroundColor: colors.veil }]} onPress={() => setOpen(false)}>
           <Pressable
             accessible={false}
+            accessibilityViewIsModal
+            onAccessibilityEscape={() => setOpen(false)}
             style={[
               styles.menu,
               {

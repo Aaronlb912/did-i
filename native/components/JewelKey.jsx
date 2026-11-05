@@ -80,7 +80,7 @@ export function JewelKey({ colors, onDone }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={done}>
     <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={done}>
-    <Pressable accessible={false} onPress={(e) => e.stopPropagation()} style={[styles.box, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
+    <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={done} onPress={(e) => e.stopPropagation()} style={[styles.box, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
       <Text accessibilityRole="header" style={[styles.title, { color: colors.ink }]}>{t('jewelKey.title')}</Text>
       <Text style={[styles.label, styles.tap, { color: colors.inkSoft }]}>{t('pill.openHint')}</Text>
       <View style={styles.grid}>

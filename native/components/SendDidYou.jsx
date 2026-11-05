@@ -178,11 +178,22 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                 <Meta colors={colors}>{t("didYouLink.pickWho")}</Meta>
                 {friends === null ? <Meta colors={colors}>{t("family.loading")}</Meta> : null}
                 {friends?.length === 0 && !loadMiss ? <Meta colors={colors}>{t("people.noFriendsTitle")}</Meta> : null}
+                {friends?.length === 0 && !loadMiss ? (
+                  <KeyButton
+                    colors={colors}
+                    label={t("people.addOne")}
+                    onPress={() => {
+                      onClose();
+                      goHash("/people/connect");
+                    }}
+                  />
+                ) : null}
                 {friends?.map((row) => (
                   <Pressable
                     key={row.person.user_id}
                     onPress={() => setPerson(row.person)}
                     accessibilityRole="button"
+                    accessibilityLabel={t("lead.toLine", { name: personName(row.person) || t("people.someone") })}
                     style={({ pressed }) => [styles.pickRow, { borderColor: colors.line }, pressFx(pressed)]}
                   >
                     <Avatar person={row.person} colors={colors} />
@@ -197,6 +208,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                 <Pressable
                   onPress={() => setAsLink(true)}
                   accessibilityRole="button"
+                  accessibilityLabel={`${t("didYouLink.asLink")}. ${t("didYouLink.asLinkSub")}`}
                   style={({ pressed }) => [styles.pickRow, { borderColor: colors.line }, pressFx(pressed)]}
                 >
                   <View style={styles.pickCopy}>
@@ -219,6 +231,17 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
                   ? t("people.sendHintFamily", { name })
                   : t("people.sendHint", { name })}
             </Meta>
+            {pick && !given ? (
+              <KeyButton
+                colors={colors}
+                label={t("people.sendChange")}
+                onPress={() => {
+                  setPerson(null);
+                  setAsLink(false);
+                  setMiss("");
+                }}
+              />
+            ) : null}
             <HangCard
               tag={linkOnly ? t("lead.you") : t("lead.toLine", { name })}
               lead={false}

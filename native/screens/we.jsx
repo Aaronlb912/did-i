@@ -761,6 +761,8 @@ function WeNewForm({ book, start = '', withId = '', onBlankChange, onLeadPress }
 // "By Nov 30", and the days left once it is the last week of the month.
 function monthlyLine(card) {
   const left = Math.round((Date.parse(card.periodEnd) - Date.parse(boardDate())) / 86400000)
+  // A card read before the month turned still holds last month's end; no line until it reloads.
+  if (left < 0) return ''
   if (left === 0 || (left > 0 && left <= 6)) return left === 0 ? t('we.dayLeft') : t('we.daysLeft', { n: left + 1 })
   return t('we.byDate', { date: formatBoardDate(card.periodEnd) })
 }
@@ -1424,7 +1426,7 @@ function WeCardPage({ book, cardId, onChange }) {
           {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
         </Text>
         {!card.mine && card.makerName ? <Meta colors={colors}>{t('we.onlyMaker', { name: card.makerName })}</Meta> : null}
-        {card.cadence === 'monthly' && card.periodEnd ? <Meta colors={colors}>{monthlyLine(card)}</Meta> : null}
+        {card.cadence === 'monthly' && card.periodEnd && monthlyLine(card) ? <Meta colors={colors}>{monthlyLine(card)}</Meta> : null}
         <Meta colors={colors}>{`${t('we.howCounts')}: ${t(weRuleKey(card.mode))}`}</Meta>
         {card.note ? <Meta colors={colors}>{card.note}</Meta> : null}
         <WeWeek card={card} colors={colors} />

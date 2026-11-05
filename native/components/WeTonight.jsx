@@ -137,11 +137,13 @@ export function WeFaces({ card, colors, cheer, dots = true }) {
           <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={() => setOpen(false)}>
             <Pressable
               accessible={false}
+              accessibilityViewIsModal
+              onAccessibilityEscape={() => setOpen(false)}
               onPress={(event) => event.stopPropagation()}
               style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
             >
               <Text style={[styles.popKicker, { color: colors.inkDim }]}>{t('we.onCard')}</Text>
-              <Text style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
+              <Text accessibilityRole="header" style={[styles.question, { color: colors.ink }]}>{card.question}</Text>
               <ScrollView style={styles.popList}>
                 {listed.map((person) => (
                   <View key={person.id} style={[styles.popRow, { borderTopColor: colors.line }]}>

@@ -82,7 +82,7 @@ import { openBrainDump } from '../components/BrainDumpSheet.jsx'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { setSendShare } from '../../src/lib/send-answers.js'
 import { askPingsNow, offerPingPrimer } from '../lib/ping-primer.js'
-import { useUndoToast } from '../lib/toast-queue.js'
+import { showToast, useUndoToast } from '../lib/toast-queue.js'
 import { useShakeUndo } from '../hooks/useShakeUndo.js'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderBottom } from '../hooks/useHeaderSpace.js'
@@ -1859,7 +1859,25 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     }
     if (hang.editing) {
       playClick()
-      confirmDone(doneMessage(target, next, 'confirm.questionSaved'))
+      if (existing && onSaveTo) {
+        // Undo puts the old version back, and the old folder if the folder changed.
+        const wasIn = sourceBook && sourceBook.id !== target.id ? sourceBook : target
+        const total = DELETE_UNDO_MS
+        const now = Date.now()
+        showToast({
+          id: 'undo:edit',
+          kind: 'undo',
+          rev: now,
+          label: doneMessage(target, next, 'confirm.questionSaved'),
+          hint: t('tonight.undoTap'),
+          until: now + total,
+          total,
+          onPress: () => {
+            onSaveTo(wasIn, existing, target)
+            followCheckOn(next, existing).catch(() => confirmMiss(t('confirm.checkOnMiss')))
+          },
+        })
+      } else confirmDone(doneMessage(target, next, 'confirm.questionSaved'))
       swapHash('/lamp', { id: next.id })
       offerPingPrimer(newTime, colors)
       return
@@ -1902,7 +1920,19 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   }, [tourOnFolders])
   const leadTour = useTourTarget('lead')
   const whenWords = [whenLine(draft), draft.askAfter ? timeLabel(draft.askAfter) : t('hang.askAny')].join(' · ')
-  const meta = [whenWords, hang.priority === 'high' ? t('hang.metaHigh') : ''].filter(Boolean).join(' · ')
+  // "Next: Thu" for a schedule that skips days, so a typo in the day shows before saving.
+  let nextLine = ''
+  if (['weekly', 'monthly', 'every_n'].includes(draft.cadence)) {
+    const shown = { ...draft, archived: false }
+    for (let ahead = 0; ahead <= 62; ahead += 1) {
+      const iso = addDaysIso(dateIso, ahead)
+      if (!isDueOn(shown, iso)) continue
+      const day = ahead === 0 ? t('home.tonight') : ahead <= 6 ? t(`hang.day.${new Date(`${iso}T12:00:00`).getDay()}`) : formatBoardDate(iso)
+      nextLine = t('hang.nextShort', { day })
+      break
+    }
+  }
+  const meta = [whenWords, nextLine, hang.priority === 'high' ? t('hang.metaHigh') : ''].filter(Boolean).join(' · ')
   // Topics stay out of the way until someone uses them.
   const topicsShown = topicsOn || topicCount > 0 || shelfTopics(boards.length ? boards : [book]).length > 0
   // Shown in the main rows, and in When next to the time while that is open.

@@ -213,6 +213,8 @@ export function SetSheet({ title, onClose, children, colors }) {
         <Pressable accessible={false} style={[styles.veil, { backgroundColor: colors.veil }]} onPress={onClose}>
           <Pressable
             accessible={false}
+            accessibilityViewIsModal
+            onAccessibilityEscape={onClose}
             style={[
               styles.sheet,
               { backgroundColor: colors.panel, borderColor: colors.line, paddingBottom: insets.bottom },
@@ -221,7 +223,7 @@ export function SetSheet({ title, onClose, children, colors }) {
           >
             <View style={[styles.grabber, { backgroundColor: colors.line }]} />
             <View style={[styles.sheetBar, { borderBottomColor: colors.lineSoft }]}>
-              <Text style={[styles.sheetTitle, { color: colors.ink }]}>{title}</Text>
+              <Text accessibilityRole="header" style={[styles.sheetTitle, { color: colors.ink }]}>{title}</Text>
               <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('settings.close')} hitSlop={8}>
                 <Text style={[styles.sheetX, { color: colors.inkDim }]}>×</Text>
               </Pressable>

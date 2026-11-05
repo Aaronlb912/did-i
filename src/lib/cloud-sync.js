@@ -1,4 +1,4 @@
-import { appMiss } from './i18n.js'
+import { appMiss, t } from './i18n.js'
 import { useEffect, useState } from 'react'
 import { recordAppError } from './app-errors.js'
 import { deviceKey, deviceLabel, deviceModel, devicePlatform, takeOldDeviceKey } from './account.js'
@@ -593,6 +593,10 @@ async function pullAndMergeOnce() {
       localSavedAt = ''
     }
     const remote = shelfRow.data?.doc || null
+    const remoteIds = new Set((remote?.boards || []).flatMap((item) => (item.lamps || []).map((lamp) => lamp.id)))
+    const hadOwnQuestions = (stripDemoShelf(local)?.boards || []).some((item) =>
+      (item.lamps || []).some((lamp) => !remoteIds.has(lamp.id)),
+    )
     const remoteSavedAt = shelfRow.data?.saved_at || ''
     const merged = mergeShelves(local, remote, localSavedAt, remoteSavedAt)
     const metaAt = remoteSavedAt > localSavedAt ? remoteSavedAt : localSavedAt
@@ -633,6 +637,10 @@ async function pullAndMergeOnce() {
 
     writeShelfOwner(user.id)
     let written = land(closeShelfPastNights(pulled.shelf), metaAt)
+    // First sign in on a phone that had questions of its own: say they are on the account now.
+    if (!lastUser && hadOwnQuestions) {
+      addNotice({ id: 'sync:added', kind: 'sync', title: t('sync.addedTitle'), text: t('sync.addedBody'), go: { path: '/lamps' } })
+    }
     // The account's questions are on the phone now; Tonight can draw them.
     if (state.firstPull) setState({ firstPull: false })
     // Gifts go straight into the collection; the rest wait for the pop-up.

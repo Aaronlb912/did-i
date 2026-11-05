@@ -2830,6 +2830,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
         <Meta colors={colors}>{t('inbox.emptyBody')}</Meta>
         <Meta colors={colors}>{t('inbox.autoNote')}</Meta>
         <DidButton colors={colors} label={t('friend.sendDidYou')} onPress={() => setSending(true)} />
+        <KeyButton colors={colors} label={t('people.addOne')} onPress={() => goHash('/people/connect')} />
         {sending ? (
           <SendSheet book={book} person={null} pick colors={colors} onClose={() => setSending(false)} onSent={(words) => confirmDone(words)} />
         ) : null}

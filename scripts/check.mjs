@@ -11568,6 +11568,25 @@ test('streak bonus pays on open for every day reached, and milestone marks leave
   assert.ok(sync.includes('clearMilestoneSeen()'), 'sign-out clears milestone marks')
 })
 
+await testAsync('monthly day 29 to 31 lands on the last day of a short month, and Away skips a due day without losing it', async () => {
+  const { isDueOn } = await import('../src/lib/recurrence.js')
+  const q = { id: 'm31', question: 'Did I pay rent?', cadence: 'monthly', monthDay: 31, archived: false, createdOn: '2026-01-01' }
+  assert.equal(isDueOn(q, '2026-02-28'), true, 'February: due on the 28th')
+  assert.equal(isDueOn(q, '2026-04-30'), true, 'April: due on the 30th')
+  assert.equal(isDueOn(q, '2026-04-29'), false, 'not early')
+  assert.equal(isDueOn(q, '2028-02-29'), true, 'leap year: the 29th')
+  assert.equal(isDueOn({ ...q, monthDay: 29 }, '2026-02-28'), true, 'day 29 in a 28 day month')
+  assert.equal(isDueOn({ ...q, monthDay: 30 }, '2026-02-28'), true, 'day 30 in a 28 day month')
+  try {
+    writePrefs({ away: [['2026-04-25', '2026-05-01']] })
+    assert.equal(isDueOn(q, '2026-04-30'), false, 'due inside Away: not asked')
+    writePrefs({ away: [] })
+    assert.equal(isDueOn(q, '2026-04-30'), true, 'same day with Away off is due')
+  } finally {
+    writePrefs({ away: [] })
+  }
+})
+
 // Keep this last: every test above counts, and any failure exits non-zero.
 await Promise.all(pendingTests)
 console.log(`\n${ran - failed} of ${ran} passed`)
