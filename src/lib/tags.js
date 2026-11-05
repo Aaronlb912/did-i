@@ -61,6 +61,14 @@ export function moveFolder(boards, id, step, stamp = new Date().toISOString()) {
   return list.flatMap((book, at) => (book.order === at ? [] : [{ ...book, order: at, at: stamp }]))
 }
 
+// Where a removed folder's questions go: a live folder (the General one first),
+// and only a parked one when nothing else is live. null when there is no other folder.
+export function moveTargetFor(boards, id, isGeneral = () => false) {
+  const others = (boards || []).filter((book) => book.id !== id)
+  const live = others.filter((book) => !book.archived)
+  return live.find(isGeneral) || live[0] || others[0] || null
+}
+
 // `ids` is the whole hand-set order. Moves `a` to where `b` sits among `own`
 // (one folder's questions); every other id keeps its slot.
 export function moveWithin(ids, own, a, b, step) {

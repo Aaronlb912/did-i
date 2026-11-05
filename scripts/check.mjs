@@ -146,7 +146,7 @@ import { kitCount } from '../native/lib/kit-flight.js'
 import { makeFeelTap } from '../native/lib/feel-tap.js'
 import { phoneMatchMedia } from '../native/lib/reduce-media.js'
 import { readReduceMotion } from '../src/lib/useReduceMotion.js'
-import { joinTagIds, leftoverOn, moveFolder, moveWithin, scopedBooks, sortFolders, tagIdsOf, taggedDue } from '../src/lib/tags.js'
+import { joinTagIds, leftoverOn, moveFolder, moveTargetFor, moveWithin, scopedBooks, sortFolders, tagIdsOf, taggedDue } from '../src/lib/tags.js'
 import { normalizeBook } from '../src/lib/board-json.js'
 import { mergeBooks } from '../src/lib/shelf-merge.js'
 import { ownedLookIds, widgetLookId, widgetTonightUri } from '../src/lib/widget-config.js'
@@ -367,6 +367,16 @@ test('moving a folder renumbers only what changed, and the order survives normal
   const newer = { id: 'a', title: 'A', order: 4, at: '2026-11-02T00:00:00.000Z' }
   assert.equal(mergeBooks(older, newer).order, 4)
   assert.equal(mergeBooks(newer, older).order, 4)
+})
+
+test('removing a folder moves its questions to a live folder, a parked one only as the last resort', () => {
+  const a = { id: 'a', title: 'A' }
+  const parked = { id: 'p', title: 'P', archived: true }
+  const live = { id: 'l', title: 'L' }
+  assert.equal(moveTargetFor([a, parked, live], 'a').id, 'l')
+  assert.equal(moveTargetFor([a, parked, live], 'a', (book) => book.id === 'l').id, 'l')
+  assert.equal(moveTargetFor([a, parked], 'a').id, 'p')
+  assert.equal(moveTargetFor([a], 'a'), null)
 })
 
 test('reordering one folder moves its questions and leaves every other slot alone', () => {

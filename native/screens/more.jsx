@@ -112,7 +112,7 @@ import { FirstPacks } from '../components/FirstPacks.jsx'
 import { cloudSetUp } from '../../src/lib/cloud.js'
 import { authSkipped, clearAuthSkip } from '../../src/lib/auth-gate.js'
 import { AuthLegalNote } from '../components/AuthLegalNote.jsx'
-import { leftoverOn, moveFolder, scopedBooks, sortFolders, tagIdsOf } from '../../src/lib/tags.js'
+import { leftoverOn, moveFolder, moveTargetFor, scopedBooks, sortFolders, tagIdsOf } from '../../src/lib/tags.js'
 import { ripple } from '../lib/ripple.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -1320,17 +1320,29 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
     setRemoved(null)
   }, DELETE_UNDO_MS, t('tonight.undoTap'))
 
-  function saveName() {
+  // The title last saved, so a blur right after a save does not save twice.
+  const savedTitle = useRef(book?.title || '')
+  // Returns false when the typed name cannot be saved (a clash).
+  function commitName() {
     const title = titleDraft.trim()
-    if (!title || title === book?.title) return
+    if (!title || title === savedTitle.current) return true
     // Same name as another folder: saving would merge the two.
-    if ((boards || []).some((item) => item.id !== book?.id && folderNameKey(item.title) === folderNameKey(title))) {
-      confirmMiss(t('boards.addSame'))
-      return
+    const clash = (boards || []).find((item) => item.id !== book?.id && folderNameKey(item.title) === folderNameKey(title))
+    if (clash) {
+      confirmMiss(clash.archived ? t('boards.addSameParked', { name: clash.title }) : t('boards.addSame'))
+      return false
     }
+    savedTitle.current = title
     setTitleDraft(title)
     onChange({ ...book, title, at: new Date().toISOString() })
     confirmDone(t('settings.saved'))
+    return true
+  }
+
+  // Picking another folder saves a rename first; a name that clashes stays put with its message.
+  function pick(id) {
+    if (id !== book?.id && !commitName()) return
+    onSelect?.(id)
   }
 
   function addFolder() {
@@ -1349,7 +1361,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
       setAdding(false)
       setNewName('')
       setAddMiss('')
-      onSelect?.(asleep.id)
+      pick(asleep.id)
       return
     }
     onAdd?.(title)
@@ -1363,9 +1375,58 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
   const parked = (boards || []).filter((item) => item.archived)
   const [showParked, setShowParked] = useState(false)
 
+  const [reordered, setReordered] = useState(null)
+  // Move has an undo: the folders go back to the order they had.
+  useUndoToast('folder-order', reordered, () => {
+    const stamp = new Date().toISOString()
+    const fresh = readShelf().boards || []
+    const back = (reordered?.prior || []).flatMap((one) => {
+      const now = fresh.find((item) => item.id === one.id)
+      return now && now.order !== one.order ? [{ ...now, order: one.order, at: stamp }] : []
+    })
+    if (back.length) onReorder?.(back)
+    setReordered(null)
+  }, DELETE_UNDO_MS, t('tonight.undoTap'))
+
   function shift(item, step) {
     const changed = moveFolder(live, item.id, step)
-    if (changed.length) onReorder?.(changed)
+    if (!changed.length) return
+    setReordered({ id: Date.now(), label: t('confirm.folderMoved', { title: item.title }), prior: live.map((one, at) => ({ id: one.id, order: at })) })
+    onReorder?.(changed)
+  }
+
+  function askMove(item, at) {
+    const last = live.length - 1
+    const rows = [
+      ['boards.moveTop', -live.length, at === 0],
+      ['boards.moveUp', -1, at === 0],
+      ['boards.moveDown', 1, at === last],
+      ['boards.moveBottom', live.length, at === last],
+    ]
+    publishSheet({
+      bottom: true,
+      title: t('boards.moveTitle', { title: item.title }),
+      content: (
+        <View style={styles.moveRows}>
+          {rows.map(([key, step, off]) => (
+            <KeyButton
+              key={key}
+              colors={colors}
+              disabled={off}
+              label={t(`${key}Short`)}
+              accessibilityLabel={t(key, { title: item.title })}
+              onPress={() => {
+                publishSheet(null)
+                shift(item, step)
+              }}
+            />
+          ))}
+        </View>
+      ),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+    })
   }
 
   function removeFolder(moveTo) {
@@ -1381,11 +1442,8 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
 
   function askRemove() {
     const n = (book.lamps || []).length
-    const others = (boards || []).filter((item) => item.id !== book.id)
-    const home =
-      others.find((item) => folderNameKey(item.title) === folderNameKey(t('tags.general'))) ||
-      others.find((item) => !item.archived) ||
-      others[0]
+    // A live folder takes them; a parked one only when nothing else is live (the move wakes it).
+    const home = moveTargetFor(boards, book.id, (item) => folderNameKey(item.title) === folderNameKey(t('tags.general')))
     if (!n || !home) {
       publishSheet({
         title: t('boards.removeTitle', { title: book.title }),
@@ -1415,6 +1473,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
 
   useEffect(() => {
     setTitleDraft(book?.title || '')
+    savedTitle.current = book?.title || ''
   }, [book?.title, book?.id])
 
   // The keyboard covers Add and Cancel. Once it is up, scroll so they sit above it.
@@ -1476,7 +1535,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
                   label={item.title}
                   sub={on ? `${t('boards.addsHere')} · ${countNote} · ${leftNote}` : `${countNote} · ${leftNote}`}
                   last={at === live.length - 1 && !on && n > 0}
-                  onPress={() => onSelect?.(item.id)}
+                  onPress={() => pick(item.id)}
                 />
                 {n === 0 ? (
                   <SetRow
@@ -1487,38 +1546,22 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
                     chevron
                     last={at === live.length - 1 && !on}
                     onPress={() => {
-                      onSelect?.(item.id)
+                      pick(item.id)
                       goHash('/add', { tag: item.id })
                     }}
                   />
                 ) : null}
               </View>
               {live.length > 1 ? (
-                <View style={styles.folderMoves}>
-                  {[
-                    ['⤒', -live.length, 'boards.moveTop'],
-                    ['▲', -1, 'boards.moveUp'],
-                    ['▼', 1, 'boards.moveDown'],
-                    ['⤓', live.length, 'boards.moveBottom'],
-                  ].map(([glyph, step, key]) => {
-                    const off = step < 0 ? at === 0 : at === live.length - 1
-                    const label = t(key, { title: item.title })
-                    return (
-                      <Pressable
-                        key={key}
-                        disabled={off}
-                        onPress={() => shift(item, step)}
-                        accessibilityRole="button"
-                        accessibilityLabel={label}
-                        accessibilityState={{ disabled: off }}
-                        android_ripple={ripple(colors.panel3)}
-                        style={[styles.moveBtn, { opacity: off ? 0.3 : 1 }]}
-                      >
-                        <Text style={{ color: colors.ink, fontSize: 16 }}>{glyph}</Text>
-                      </Pressable>
-                    )
-                  })}
-                </View>
+                <Pressable
+                  onPress={() => askMove(item, at)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('boards.moveBtnNamed', { title: item.title })}
+                  android_ripple={ripple(colors.panel3)}
+                  style={styles.moveBtn}
+                >
+                  <Text maxFontSizeMultiplier={1.3} style={{ color: colors.ink, fontSize: 14 }}>{t('boards.moveBtn')}</Text>
+                </Pressable>
               ) : null}
             </View>
             {on ? (
@@ -1535,12 +1578,12 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
                 label={t('boards.name')}
                 value={titleDraft}
                 onChangeText={setTitleDraft}
-                onSubmitEditing={saveName}
+                onEndEditing={commitName}
                 returnKeyType="done"
                 maxLength={60}
                 autoCapitalize="words"
               />
-              <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={saveName} />
+              <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={commitName} />
               {live.length > 1 ? (
                 <KeyButton colors={colors} label={t('boards.removeNamed', { title: item.title })} onPress={askRemove} />
               ) : (
@@ -1573,7 +1616,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
                   label={item.title}
                   chevron
                   last={at === parked.length - 1 && item.id !== book?.id}
-                  onPress={() => onSelect?.(item.id)}
+                  onPress={() => pick(item.id)}
                 />
                 {/* A parked folder picked here can be renamed too. */}
                 {item.id === book?.id ? (
@@ -1590,12 +1633,12 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
                     label={t('boards.name')}
                     value={titleDraft}
                     onChangeText={setTitleDraft}
-                    onSubmitEditing={saveName}
+                    onEndEditing={commitName}
                     returnKeyType="done"
                     maxLength={60}
                     autoCapitalize="words"
                   />
-                  <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={saveName} />
+                  <KeyButton colors={colors} label={t('settings.save')} disabled={!renameDirty} onPress={commitName} />
                   {live.length > 0 ? (
                     <KeyButton colors={colors} label={t('boards.removeNamed', { title: item.title })} onPress={askRemove} />
                   ) : null}
@@ -3262,8 +3305,8 @@ const styles = StyleSheet.create({
   lastFolder: { fontSize: 13, lineHeight: 18, marginTop: 10 },
   folderLine: { flexDirection: 'row', alignItems: 'center' },
   folderMain: { flex: 1 },
-  folderMoves: { flexDirection: 'row' },
-  moveBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  moveRows: { gap: 8 },
+  moveBtn: { minWidth: 44, minHeight: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   addRow: { flexDirection: 'row', gap: 10 },
   addCell: { flex: 1 },
   enterFields: { padding: 14, gap: 8 },
