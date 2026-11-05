@@ -941,6 +941,7 @@ export const ko = {
   'people.friends': '친구',
   'people.cog': '친구와 가족',
   'people.cogWaiting': '친구와 가족, {n}건 대기',
+  'recent.cogNew': "최근, 새 항목 {n}개",
   'people.inboxQuiet': '대기 없음',
   'people.addOne': '친구 추가',
   'people.startFamily': '가족 만들거나 참여',

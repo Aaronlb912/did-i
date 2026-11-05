@@ -957,6 +957,7 @@ export const de = {
   'people.friends': 'Freunde',
   'people.cog': 'Freunde und Familie',
   'people.cogWaiting': 'Freunde und Familie, {n} warten',
+  'recent.cogNew': "Zuletzt, {n} neu",
   'people.inboxQuiet': 'Nichts wartet',
   'people.addOne': 'Freund hinzufügen',
   'people.startFamily': 'Familie starten oder beitreten',
