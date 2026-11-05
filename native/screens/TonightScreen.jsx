@@ -1703,9 +1703,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           onPress={() => goHash('/remind', { listen: '1' })}
           accessibilityRole="button"
           accessibilityLabel={t('remind.mic')}
-          style={[styles.remindRow, { borderColor: colors.line, backgroundColor: colors.panel2 }]}
+          hitSlop={4}
+          style={styles.remindRow}
         >
-          <Text style={[styles.remindText, { color: colors.ink }]}>{t('remind.mic')}</Text>
+          <Text style={[styles.remindText, { color: colors.inkSoft }]}>{t('remind.mic')}</Text>
         </Pressable>
       )}
       {extraRow === 'reminders' ? <RemindersRow colors={colors} label={pingLabel} onAsk={onAskPings} /> : null}
@@ -1836,8 +1837,8 @@ function DoneIn({ children, style: box }) {
 const GRACE_TIME = `${String(GRACE_END).padStart(2, '0')}:00`
 
 const styles = StyleSheet.create({
-  remindRow: { minHeight: 48, borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, marginBottom: 8, justifyContent: 'center' },
-  remindText: { fontFamily: fonts.uiSemi, fontSize: 15 },
+  remindRow: { minHeight: 44, alignSelf: 'center', paddingHorizontal: 14, marginBottom: 4, justifyContent: 'center' },
+  remindText: { fontFamily: fonts.ui, fontSize: 14 },
   everyLine: { fontFamily: fonts.ui, fontSize: 14, marginTop: 6 },
   frame: { flex: 1, position: 'relative' },
   aboveHalo: { flex: 1, zIndex: 2, position: 'relative' },

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { HangCard } from '../components/HangCard.jsx'
 import { HangFold } from '../components/HangFold.jsx'
-import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
+import { SetCap, SetCard, SetRow, SetSwitch } from '../components/SetBits.jsx'
 import { Reveal } from '../lib/motion.jsx'
 import { PickSheet } from '../components/PickSheet.jsx'
 import { ScheduleTile, ScheduleTiles } from '../components/ScheduleTile.jsx'
@@ -1319,6 +1319,19 @@ function WeCardPage({ book, cardId, onChange }) {
     .map((p) => (p.me ? t('we.you') : p.name))
     .join(', ')
 
+  // A page, not a Modal: the day and time pickers open in the app's sheet
+  // host, which a Modal would cover.
+  if (card.mine && edit) {
+    return (
+      <ScreenShell book={book} title={t('we.edit')} colors={colors}>
+        <RulesForm draft={edit} setDraft={setEdit} colors={colors} />
+        {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
+        <DidButton colors={colors} label={t('we.save')} disabled={busy || !edit.question.trim()} onPress={save} />
+        <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
+      </ScreenShell>
+    )
+  }
+
   return (
     <ScreenShell book={book} title={t('we.title')} colors={colors} onRefresh={load}>
       {shareFirst ? shareCard : null}
@@ -1343,7 +1356,6 @@ function WeCardPage({ book, cardId, onChange }) {
             <Text style={[styles.moreText, { color: colors.inkSoft }]}>⋯</Text>
           </Pressable>
         </View>
-        {card.mine && !edit ? <KeyButton colors={colors} label={t('we.edit')} onPress={startEdit} /> : null}
         <Text style={[styles.weStatus, { color: card.done && card.due ? colors.we : colors.ink }]}>
           {card.due ? weStatusLine(card) : weNotTonightLine(card, readPrefs().locale)}
         </Text>
@@ -1465,18 +1477,7 @@ function WeCardPage({ book, cardId, onChange }) {
         />
       ) : null}
 
-      {card.mine && edit ? (
-        <SetSheet colors={colors} title={t('we.edit')} onClose={() => setEdit(null)}>
-          <ScrollView style={styles.editSheet} contentContainerStyle={styles.editSheetBody} keyboardShouldPersistTaps="handled">
-            <RulesForm draft={edit} setDraft={setEdit} colors={colors} />
-            {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
-            <DidButton colors={colors} label={t('we.save')} disabled={busy || !edit.question.trim()} onPress={save} />
-            <KeyButton colors={colors} label={t('settings.neverMind')} onPress={() => setEdit(null)} />
-          </ScrollView>
-        </SetSheet>
-      ) : null}
-
-      {miss && !edit ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
+      {miss ? <Text style={[styles.miss, { color: colors.miss }]}>{miss}</Text> : null}
       {menu ? <WeMenu title={card.question} items={menuItems} colors={colors} onClose={() => setMenu(false)} /> : null}
     </ScreenShell>
   )
@@ -1626,8 +1627,6 @@ export function WeHomeList({ book, onChange }) {
 }
 
 const styles = StyleSheet.create({
-  editSheet: { maxHeight: '80%' },
-  editSheetBody: { padding: 16, gap: 12 },
   earlyKeys: { flexDirection: 'row', gap: 10, marginTop: 0, marginBottom: 8 },
   earlyKey: { flex: 1 },
   earlyFace: { minHeight: 0, paddingTop: 18, paddingBottom: 18 },
