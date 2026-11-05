@@ -2,7 +2,7 @@ import { PAUSES_MAX, normalizeBook, normalizeGone } from './board-json.js'
 import { normalizeShelf } from './board-shelf.js'
 import { mergeAnswer } from './board-ops.js'
 import { capSkips } from './travel.js'
-import { CHEER_STAGE_MAX, normalizePurse } from './purse.js'
+import { CHEER_STAGE_MAX, mergeLater, normalizePurse } from './purse.js'
 import { overCap } from './question-cap.js'
 
 // Two phones can both be right. Questions and answers always combine.
@@ -58,6 +58,7 @@ function foldPurse(winner, loser) {
     accessories: unionList(win.accessories, lose.accessories),
     worn: win.worn,
     buddies: unionList(win.buddies, lose.buddies),
+    later: mergeLater([win.later, lose.later]),
     buddyOn: win.buddyOn,
     frames: unionList(win.frames, lose.frames),
     frame: win.frame,
@@ -76,13 +77,26 @@ function atMs(item) {
   return Number.isFinite(ms) ? ms : 0
 }
 
+// Same stamp: the same edit, saved by two builds. An older build drops the
+// fields it doesn't know, so they come from the other copy. Only these: other
+// fields can be taken off without a new stamp (a removed friend's link).
+const NEWER_FIELDS = ['askFrom', 'askAfter2', 'endsOn']
+
+function fillNewer(lamp, other) {
+  const out = { ...lamp }
+  for (const key of NEWER_FIELDS) {
+    if (out[key] === undefined && other[key] !== undefined) out[key] = other[key]
+  }
+  return out
+}
+
 export function mergeBooks(winner, loser) {
   const win = normalizeBook(winner)
   const lose = normalizeBook(loser)
   const loseById = byId(lose.lamps)
   win.lamps = win.lamps.map((lamp) => {
     const other = loseById.get(lamp.id)
-    const keep = other && atMs(other) > atMs(lamp) ? other : lamp
+    const keep = !other ? lamp : atMs(other) > atMs(lamp) ? other : atMs(lamp) && atMs(other) === atMs(lamp) ? fillNewer(lamp, other) : lamp
     // A pause resumed on the other phone stays, or its days read as misses.
     const both = [...(lamp.pauses || []), ...(other?.pauses || [])]
     if (!other || !both.length) return keep
@@ -146,7 +160,7 @@ export function mergeBooks(winner, loser) {
 // but this phone's question settings win, and coins, gems and shop items
 // stay as they are here, so a copy cannot bring back what was spent.
 export function mergeBackup(local, backup) {
-  const PURSE = ['coins', 'gems', 'cheers', 'looks', 'accessories', 'buddies', 'frames', 'cheerStages', 'buddyOn', 'cheerOn', 'worn', 'frame', 'wish']
+  const PURSE = ['coins', 'gems', 'cheers', 'looks', 'accessories', 'buddies', 'frames', 'later', 'cheerStages', 'buddyOn', 'cheerOn', 'worn', 'frame', 'wish']
   const boards = (backup?.boards || []).map((book) => {
     const out = { ...book }
     for (const key of PURSE) delete out[key]

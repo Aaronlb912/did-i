@@ -428,6 +428,7 @@ export function normalizeBook(raw) {
     frame: purse.frame,
     friendCheers: purse.friendCheers,
     wish: purse.wish,
+    ...(Object.keys(purse.later).length ? { later: purse.later } : {}),
   }
 }
 

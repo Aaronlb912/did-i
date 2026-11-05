@@ -2285,6 +2285,8 @@ test('signal back with the app open sends a failed push again', () => {
 
 test('a cut-off shelf is kept aside, not overwritten; hearts survive a save', () => {
   const before = localStorage.getItem('did-i-shelf')
+  const kept = localStorage.getItem('did-i-shelf-before')
+  localStorage.removeItem('did-i-shelf-before')
   try {
     const bad = '{"boards":[{"lamps":[{"id":"a"}],"ans'
     localStorage.setItem('did-i-shelf', bad)
@@ -2297,9 +2299,78 @@ test('a cut-off shelf is kept aside, not overwritten; hearts survive a save', ()
     assert.deepEqual(saved.boards[0].wish, ['frame:thin'])
   } finally {
     localStorage.removeItem('did-i-shelf-bad')
+    if (kept != null) localStorage.setItem('did-i-shelf-before', kept)
     if (before == null) localStorage.removeItem('did-i-shelf')
     else localStorage.setItem('did-i-shelf', before)
   }
+})
+
+test('an update keeps the old shelf text, and a shelf that later fails to read comes back from it', () => {
+  const before = localStorage.getItem('did-i-shelf')
+  const kept = localStorage.getItem('did-i-shelf-before')
+  try {
+    const book = emptyBoard()
+    const old = JSON.stringify({ currentId: book.id, boards: [{ ...book, lamps: [{ id: 'q1', question: 'Did I read?', cadence: 'daily', createdOn: '2026-10-01' }], answers: [], olderField: 1 }] })
+    localStorage.setItem('did-i-shelf', old)
+    readShelf()
+    assert.equal(localStorage.getItem('did-i-shelf-before'), old, 'the pre-update text is kept')
+    localStorage.setItem('did-i-shelf', '{"boards":[{"lamps":[{"id":"a"}],"ans')
+    const back = readShelf()
+    assert.deepEqual(back.boards[0].lamps.map((lamp) => lamp.id), ['q1'])
+    assert.equal(localStorage.getItem('did-i-shelf'), '{"boards":[{"lamps":[{"id":"a"}],"ans', 'not written back until the next save')
+    clearLocalShelf()
+    assert.equal(localStorage.getItem('did-i-shelf-before'), null, 'cleared with the shelf')
+  } finally {
+    localStorage.removeItem('did-i-shelf-bad')
+    if (kept == null) localStorage.removeItem('did-i-shelf-before')
+    else localStorage.setItem('did-i-shelf-before', kept)
+    if (before == null) localStorage.removeItem('did-i-shelf')
+    else localStorage.setItem('did-i-shelf', before)
+  }
+})
+
+test('an older build saving the same edit does not drop the second reminder or end date', async () => {
+  const { mergeBooks } = await import('../src/lib/shelf-merge.js')
+  const at = '2026-11-01T10:00:00.000Z'
+  const base = { id: 'q', question: 'Did I stretch?', cadence: 'daily', createdOn: '2026-10-01', askAfter: '20:00', at }
+  const newer = { id: 'b', title: 'b', lamps: [{ ...base, askAfter2: '21:30', endsOn: '2026-12-01' }], answers: [] }
+  const older = { id: 'b', title: 'b', lamps: [{ ...base }], answers: [] }
+  for (const merged of [mergeBooks(older, newer), mergeBooks(newer, older)]) {
+    assert.equal(merged.lamps[0].askAfter2, '21:30')
+    assert.equal(merged.lamps[0].endsOn, '2026-12-01')
+  }
+  // A later edit that took the second reminder off still wins.
+  const off = { id: 'b', title: 'b', lamps: [{ ...base, at: '2026-11-02T10:00:00.000Z' }], answers: [] }
+  assert.equal(mergeBooks(newer, off).lamps[0].askAfter2, undefined)
+  // Other fields still follow the winner: a removed friend's link stays off.
+  const kept = { ...base, fromName: 'Sam', sendId: 's1' }
+  const forgot = { id: 'b', title: 'b', lamps: [{ ...base }], answers: [] }
+  const stale = { id: 'b', title: 'b', lamps: [kept], answers: [] }
+  assert.equal(mergeBooks(forgot, stale).lamps[0].fromName, undefined)
+})
+
+test('shop ids this build does not know stay on the account and come back when a build knows them', async () => {
+  const { normalizePurse, stampPurse, mergePurses, BUDDY_IDS } = await import('../src/lib/purse.js')
+  const { mergeShelves } = await import('../src/lib/shelf-merge.js')
+  const known = [...BUDDY_IDS][1]
+  const book = { ...emptyBoard(), buddies: [known, 'reindeer-2099'], frames: ['frame-from-later'], looks: ['bad id!'] }
+  const purse = normalizePurse(book)
+  assert.ok(!purse.buddies.includes('reindeer-2099'), 'not shown or equipped here')
+  assert.deepEqual(purse.later, { buddies: ['reindeer-2099'], frames: ['frame-from-later'] })
+  const saved = normalizeBook(book)
+  assert.deepEqual(saved.later, purse.later, 'kept on save')
+  assert.deepEqual(normalizeBook(saved).later, purse.later, 'kept on the next save')
+  assert.equal(normalizeBook(emptyBoard()).later, undefined, 'no field when nothing waits')
+  // A hand-built purse (a buy) keeps them too.
+  assert.deepEqual(stampPurse(saved, { ...purse, later: undefined, coins: 5 }).later, purse.later)
+  assert.deepEqual(mergePurses([saved, emptyBoard()]).later, purse.later)
+  const a = { currentId: saved.id, boards: [saved] }
+  const b = { currentId: saved.id, boards: [{ ...saved, later: undefined, buddies: [known] }] }
+  assert.deepEqual(mergeShelves(b, a, '2026-11-02', '2026-11-01').boards[0].later, purse.later, 'a sync from the older phone keeps them')
+  // A build whose catalog has the id moves it back to owned.
+  const back = normalizePurse({ ...emptyBoard(), later: { buddies: [known] } })
+  assert.ok(back.buddies.includes(known))
+  assert.deepEqual(back.later, {})
 })
 
 test('rows from a deleted folder do not land in the first folder', () => {

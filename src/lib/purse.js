@@ -447,10 +447,39 @@ function asCheerPlayStages(book, owned, cheerStages) {
   return out
 }
 
+// Shop ids a newer app sold that this one doesn't know yet. They wait here,
+// so a save from this phone doesn't take them off the account, and a build
+// that knows them moves them back into the owned list.
+const LATER_ID = /^[a-z0-9_-]{1,40}$/i
+const LATER_MAX = 60
+const LATER_KINDS = ['cheers', 'looks', 'buddies', 'accessories', 'frames']
+
+function shopList(book, key) {
+  const own = Array.isArray(book?.[key]) ? book[key] : []
+  const later = Array.isArray(book?.later?.[key]) ? book.later[key] : []
+  return [...own, ...later].map((id) => String(id))
+}
+
+function asLater(book, known) {
+  const out = {}
+  for (const key of LATER_KINDS) {
+    const ids = [...new Set(shopList(book, key).filter((id) => LATER_ID.test(id) && !known[key].has(id)))].slice(0, LATER_MAX)
+    if (ids.length) out[key] = ids
+  }
+  return out
+}
+
+export function mergeLater(list) {
+  const out = {}
+  for (const key of LATER_KINDS) {
+    const ids = [...new Set((list || []).flatMap((later) => (Array.isArray(later?.[key]) ? later[key] : [])))].slice(0, LATER_MAX)
+    if (ids.length) out[key] = ids
+  }
+  return out
+}
+
 export function normalizePurse(book) {
-  const cheers = Array.isArray(book?.cheers)
-    ? book.cheers.map((id) => String(id)).filter((id) => CHEER_IDS.has(id))
-    : []
+  const cheers = [...new Set(shopList(book, 'cheers').filter((id) => CHEER_IDS.has(id)))]
   const owned = cheers.includes('lime') ? cheers : ['lime', ...cheers]
   const rawCheerOn = book?.cheerOn
   const cheerOn =
@@ -459,23 +488,17 @@ export function normalizePurse(book) {
       : CHEER_IDS.has(rawCheerOn) && owned.includes(rawCheerOn)
         ? rawCheerOn
         : 'lime'
-  const looks = Array.isArray(book?.looks)
-    ? book.looks.map((id) => String(id)).filter((id) => LOOK_IDS.has(id))
-    : []
+  const looks = [...new Set(shopList(book, 'looks').filter((id) => LOOK_IDS.has(id)))]
   const lookOwned = looks.includes('lime') ? looks : ['lime', ...looks]
   const lookOn = LOOK_IDS.has(book?.lookOn) && lookOwned.includes(book.lookOn) ? book.lookOn : 'lime'
-  const buddyList = Array.isArray(book?.buddies)
-    ? book.buddies.map((id) => String(id)).filter((id) => BUDDY_IDS.has(id))
-    : []
+  const buddyList = [...new Set(shopList(book, 'buddies').filter((id) => BUDDY_IDS.has(id)))]
   // Everyone has the ant, like the lime look and cheer.
   const buddies = buddyList.includes(FREE_BUDDY) ? buddyList : [FREE_BUDDY, ...buddyList]
   const buddyOn =
     BUDDY_IDS.has(book?.buddyOn) && buddies.includes(book.buddyOn) ? book.buddyOn : ''
-  const accessories = Array.isArray(book?.accessories)
-    ? [...new Set(book.accessories.map((id) => String(id)).filter((id) => ACCESSORY_IDS.has(id)))]
-    : []
+  const accessories = [...new Set(shopList(book, 'accessories').filter((id) => ACCESSORY_IDS.has(id)))]
   const worn = normalizeWorn(book?.worn, accessories)
-  const frames = normalizeFrames(book?.frames)
+  const frames = normalizeFrames(shopList(book, 'frames'))
   const frame = normalizeWornFrame(book?.frame, frames)
   const cheerUses = asCount(book?.cheerUses)
   const cheerStages = asCheerStages(book, owned)
@@ -501,11 +524,13 @@ export function normalizePurse(book) {
     cheerPlayStages,
     friendCheers: asFriendCheers(book?.friendCheers),
     wish: asWish(book?.wish, { looks: lookOwned, cheers: owned, buddies, accessories, frames }),
+    later: asLater(book, { cheers: CHEER_IDS, looks: LOOK_IDS, buddies: BUDDY_IDS, accessories: ACCESSORY_IDS, frames: FRAME_IDS }),
   }
 }
 
 export function stampPurse(book, purse) {
-  const next = normalizePurse(purse)
+  // A purse built by hand without later keeps the book's.
+  const next = normalizePurse(purse && !purse.later ? { ...purse, later: book?.later } : purse)
   return { ...book, ...next }
 }
 
@@ -547,6 +572,7 @@ export function mergePurses(boards) {
     friendCheers: Math.max(...purses.map((item) => item.friendCheers)),
     // The first folder holds this phone's list: a union would bring back a removed heart.
     wish: purses[0]?.wish || [],
+    later: mergeLater(purses.map((item) => item.later)),
   }
 }
 
