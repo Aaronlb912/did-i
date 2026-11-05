@@ -3061,6 +3061,7 @@ export const it = {
   'admin.removeAsk': "Rimuovere? Da qui non si può ripristinare.",
   'admin.banAsk': "Bannare {name}? Non potrà accedere finché il ban non viene tolto in Supabase.",
   'admin.isBanned': "Già bannato",
+  'hang.cap': "Hai 300 domande, il massimo per un account. Eliminane una per aggiungerne un'altra.",
   'toast.tapRetry': "Tocca per riprovare.",
   'gems.restoreSignIn': 'Accedi per ripristinare gli acquisti.',
   'gems.restoreSetup': "Lo store non è ancora configurato su questo telefono. Apri Did I dall'App Store o da Google Play e riprova.",

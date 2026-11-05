@@ -3026,6 +3026,7 @@ export const ja = {
   'admin.removeAsk': "削除しますか？ここからは元に戻せません。",
   'admin.banAsk': "{name} を利用停止にしますか？Supabase で解除するまでサインインできません。",
   'admin.isBanned': "停止済み",
+  'hang.cap': "質問が300件あります。1つのアカウントで持てる上限です。追加するには1つ削除してください。",
   'toast.tapRetry': "タップしてもう一度試す。",
   'gems.restoreSignIn': '購入を復元するにはサインインしてください。',
   'gems.restoreSetup': "このスマホではまだストアが設定されていません。App StoreまたはGoogle PlayからDid Iを開いて、もう一度お試しください。",

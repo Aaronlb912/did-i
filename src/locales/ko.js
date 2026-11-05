@@ -3028,6 +3028,7 @@ export const ko = {
   'admin.removeAsk': "삭제할까요? 여기서는 되돌릴 수 없어요.",
   'admin.banAsk': "{name} 님을 이용 정지할까요? Supabase에서 풀기 전까지 로그인할 수 없어요.",
   'admin.isBanned': "이미 정지됨",
+  'hang.cap': "질문이 300개 있습니다. 한 계정이 가질 수 있는 최대치입니다. 추가하려면 하나를 삭제하세요.",
   'toast.tapRetry': "탭해서 다시 시도해요.",
   'gems.restoreSignIn': '구매를 복원하려면 로그인하세요.',
   'gems.restoreSetup': "이 휴대폰에는 아직 스토어가 설정되지 않았어요. App Store 또는 Google Play에서 Did I를 열고 다시 시도하세요.",

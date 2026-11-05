@@ -1811,6 +1811,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       })
       return
     }
+    if (!existing && !hang.editing && boards.reduce((sum, item) => sum + (item.lamps || []).length, 0) >= 300) {
+      confirmMiss(t('hang.cap'))
+      return
+    }
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
     // Only an edit moves from its old folder; a copy is new wherever it lands.
     if (onSaveTo) onSaveTo(target, next, existing ? sourceBook : null)

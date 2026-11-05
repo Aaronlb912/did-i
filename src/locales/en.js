@@ -3056,6 +3056,7 @@ export const en = {
   'admin.removeAsk': "Remove this? It can not be put back from here.",
   'admin.banAsk': "Ban {name}? They can not sign in until the ban is lifted in Supabase.",
   'admin.isBanned': "Already banned",
+  'hang.cap': "You have 300 questions, the most one account can hold. Remove one to add another.",
   'toast.tapRetry': "Tap to try again.",
   'gems.restoreSignIn': 'Sign in to restore purchases.',
   'gems.restoreSetup': "The store is not set up on this phone yet. Open Did I from the App Store or Google Play and try again.",
