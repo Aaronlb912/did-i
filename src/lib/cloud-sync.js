@@ -28,6 +28,7 @@ import {
 } from './answer-log.js'
 import { stripDemoShelf } from './demo-strip.js'
 import { clearBonusPending } from './streak-milestones.js'
+import { clearMilestoneSeen } from './streak-moments.js'
 import { personZone } from './zone.js'
 import { pushSendAnswers } from './send-answers.js'
 import { shelfStreak } from './hall-feel.js'
@@ -207,6 +208,7 @@ export function signedOutSync() {
   keepProfileName('')
   writeLastUser('')
   clearBonusPending()
+  clearMilestoneSeen()
   writeShelfOwner('')
   clearAuthSkip()
   // Settings go with the account; theme, language and clock stay with the

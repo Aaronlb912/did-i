@@ -74,6 +74,18 @@ export function clearStreakSeen(kind, dateIso) {
   }
 }
 
+// Sign-out: milestone marks belong to the account that left.
+export function clearMilestoneSeen() {
+  try {
+    const raw = localStorage.getItem(SEEN)
+    const bag = raw ? JSON.parse(raw) : {}
+    for (const key of Object.keys(bag)) if (key.startsWith('milestone:')) delete bag[key]
+    localStorage.setItem(SEEN, JSON.stringify(bag))
+  } catch {
+    // ok
+  }
+}
+
 export function queueStreakMoment(detail, dateIso) {
   if (!detail?.kind || streakSeen(detail.kind, dateIso)) return
   let stored = false

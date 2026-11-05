@@ -8,6 +8,7 @@ import { takeBackAnswer } from './answer-log.js'
 import { reportRejection } from './report.js'
 import { markedToast, toastName } from './pill-status.js'
 import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
+import { isStreakMilestone } from './streak-milestones.js'
 import { clearStreakSeen, deliverStreakHit, maybeStreakHit } from './streak-moments.js'
 import { clockWords } from './hall-pages.js'
 import { feelTap, playClick } from './native.js'
@@ -417,7 +418,11 @@ export function useTonightStack({
     const current = shelf.find((item) => item.id === undo.book.id) || undo.book
     const next = undoneBook(current, undo)
     // Reopening a cleared day: a real clear later plays the streak moment again.
-    if (allClearTonight(current, clock) && !allClearTonight(next, clock)) clearStreakSeen('hit', dateIso)
+    if (allClearTonight(current, clock) && !allClearTonight(next, clock)) {
+      clearStreakSeen('hit', dateIso)
+      // Dropping below a milestone just reached: its moment plays again.
+      if (isStreakMilestone(streak)) clearStreakSeen('milestone', String(streak))
+    }
     setOverlay(next)
     change(next)
     // The card you took back comes to the front, not the one after it. A
