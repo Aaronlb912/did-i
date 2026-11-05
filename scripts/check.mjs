@@ -8661,7 +8661,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-10), ['we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql'])
+  assert.deepEqual(files.slice(-11), ['we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -11746,11 +11746,78 @@ await testAsync('freeze card is for yesterday only, a first coin is the first da
 
 test('photo library: resets per account, reloads when links age, share refreshes and cleans up', () => {
   const photos = readFileSync(new URL('../native/screens/PhotosScreen.jsx', import.meta.url), 'utf8')
-  assert.ok(photos.includes('setRows(null)') && photos.includes('showing = []') && photos.includes('[uid, load]'), 'rows and the swipe list reset when the account changes')
+  assert.ok(photos.includes('setRows(null)') && photos.includes('photoList.rows = []') && photos.includes('[uid, load]'), 'rows and the swipe list reset when the account changes')
   assert.ok(photos.includes('STALE_MS') && photos.includes('useIsFocused'), 'the library reloads on focus when links are old')
   const flow = readFileSync(new URL('../native/lib/proof-flow.jsx', import.meta.url), 'utf8')
   assert.ok(flow.includes('freshProofUrl(row)'), 'share makes a fresh link')
   assert.ok(flow.includes('finally {') && flow.includes('target.delete()'), 'share deletes the cached file when it settles')
+})
+
+await testAsync('proof photos: a half-done upload is cleared before a retry, and a failed cleanup is checked', async () => {
+  const out = inFakeCloud(`
+    const A = '11111111-2222-3333-4444-555555555555'
+    const B = '66666666-2222-3333-4444-555555555555'
+    let uploadFails = false
+    let deleteFails = false
+    db.storage = { from: () => ({
+      upload: async () => (uploadFails ? { error: { message: 'down' } } : { error: null }),
+      remove: async (paths) => { calls.push({ table: 'file-remove', ops: [paths] }); return { error: null, data: paths } },
+    }) }
+    answer = (table, ops) => {
+      if (table === 'rpc:add_proof') return { data: B, error: null }
+      if (table === 'proofs' && ops.some(([k]) => k === 'select')) return { data: [{ id: A }], error: null }
+      if (table === 'proofs' && ops.some(([k]) => k === 'delete')) return { error: deleteFails ? { message: 'down' } : null }
+      return { data: null, error: null }
+    }
+    const { addProof } = await import(url('proofs.js'))
+    const bytes = new Uint8Array(10)
+    const ok = await addProof({ sendId: A }, '2026-11-05', bytes)
+    const order = calls.map((c) => c.table + ':' + (c.ops[0]?.[0] || ''))
+    const cleared = calls.find((c) => c.table === 'file-remove').ops[0]
+    const asked = calls.find((c) => c.table === 'proofs').ops.some(([k, key]) => k === 'is' && key === 'pushed_at')
+    calls.length = 0
+    uploadFails = true
+    deleteFails = true
+    const bad = await addProof({ cardId: A }, '2026-11-05', bytes)
+    const deletes = calls.filter((c) => c.table === 'proofs' && c.ops.some(([k, key, val]) => k === 'eq' && key === 'id' && val === B)).length
+    return { ok, order, cleared, asked, bad, deletes }
+  `)
+  assert.equal(out.ok.id, '66666666-2222-3333-4444-555555555555')
+  assert.ok(out.asked, 'only rows with no push yet are cleared')
+  assert.deepEqual(out.cleared, ['user-a/11111111-2222-3333-4444-555555555555.jpg'])
+  assert.ok(out.order.indexOf('file-remove:') < out.order.indexOf('rpc:add_proof:'), 'the old file goes before the new row is made')
+  assert.deepEqual(out.bad, { miss: 'proof.fail' })
+  assert.equal(out.deletes, 2, 'a row that would not go is tried again')
+})
+
+await testAsync('proof photos: the account delete clears the files first through the Storage API', async () => {
+  const out = inFakeCloud(`
+    const log = []
+    let pages = [['a.jpg', 'b.jpg'], []]
+    let removeFails = false
+    db.storage = { from: () => ({
+      list: async (folder, opts) => { log.push('list:' + folder + ':' + opts.limit); return { data: (pages.shift() || []).map((name) => ({ name })), error: null } },
+      remove: async (paths) => { log.push('remove:' + paths.join(',')); return removeFails ? { error: { message: 'down' } } : { error: null, data: paths } },
+    }) }
+    answer = (table) => { log.push(table); return { data: null, error: null } }
+    const { deleteAccount } = await import(url('account.js'))
+    const done = await deleteAccount()
+    const first = log.slice()
+    log.length = 0
+    pages = [['a.jpg'], []]
+    removeFails = true
+    const blocked = await deleteAccount()
+    return { done, first, blocked, ranDelete: log.includes('rpc:delete_me') }
+  `)
+  assert.deepEqual(out.first.slice(0, 4), ['list:user-a:100', 'remove:user-a/a.jpg,user-a/b.jpg', 'list:user-a:100', 'rpc:delete_me'])
+  assert.deepEqual(out.blocked, { miss: 'account.syncMiss' })
+  assert.equal(out.ranDelete, false, 'files that would not go stop the delete, so the photos are not left behind')
+  const sql = readFileSync(new URL('../supabase/proof-files-api.sql', import.meta.url), 'utf8')
+  assert.ok(sql.includes("where_to := '/photos?id=' || p.id::text"), 'the push opens the photo')
+  assert.ok(sql.includes('"proofs own read"'))
+  const test = readFileSync(new URL('../supabase/tests/proof-files-api.test.sql', import.meta.url), 'utf8')
+  assert.ok(test.includes('perform public.delete_me();'))
+  assert.ok(test.includes("raise exception 'SQL TESTS PASSED';"))
 })
 
 test('a one-time question saved to JSON has no end date', () => {

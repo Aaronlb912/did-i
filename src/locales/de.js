@@ -4141,4 +4141,11 @@ export const de = {
   'photos.saveFail': "Das Foto konnte nicht gesichert werden.",
   'photos.saveOff': "Der Fotozugriff ist für Did I ausgeschaltet. Schalte ihn in den Einstellungen deines Telefons ein, um Fotos zu sichern.",
   'photos.of': "{n} von {total}",
+  'photos.deleteAll': "Alle meine Fotos löschen",
+  'photos.deleteAllTitle': "Alle deine Fotos löschen?",
+  'photos.deleteAllBody': "Jedes Foto, das du hinzugefügt hast, verschwindet für alle, und die Dateien werden gelöscht. Deine Dids bleiben. Das lässt sich nicht rückgängig machen.",
+  'photos.deleteAllDone': "Alle deine Fotos wurden gelöscht",
+  'photos.deleteAllFail': "Einige Fotos konnten nicht gelöscht werden. Versuche es noch einmal.",
+  'photos.viewDay': "Foto ansehen",
+  'photos.dayMark': "Foto",
 }

@@ -4124,4 +4124,11 @@ export const en = {
   'photos.saveFail': "The photo could not be saved.",
   'photos.saveOff': "Photo access is off for Did I. Turn it on in your phone’s Settings to save photos.",
   'photos.of': "{n} of {total}",
+  'photos.deleteAll': "Delete all my photos",
+  'photos.deleteAllTitle': "Delete all your photos?",
+  'photos.deleteAllBody': "Every photo you added is removed for everyone, and the files are deleted. Your Dids stay. This cannot be undone.",
+  'photos.deleteAllDone': "All your photos were deleted",
+  'photos.deleteAllFail': "Some photos could not be deleted. Try again.",
+  'photos.viewDay': "View photo",
+  'photos.dayMark': "Photo",
 }

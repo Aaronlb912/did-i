@@ -632,3 +632,5 @@ cheer skip under reduce-motion.
 - Add photo sits in the done toast and on the Did we card. No row on the question page yet.
 - Needs a device pass: picker, camera, signed images, full-screen view, push.
 - No auto-expire. Photos stay until removed.
+- Photo files of other people are left behind when a question or card goes away (SQL cannot delete storage files; the phone removes only its own). A service-role sweep is needed: list the proofs bucket and remove files with no proofs row.
+- The question's calendar marks a day that has your photo. Tapping the day opens the day sheet, which has View photo.

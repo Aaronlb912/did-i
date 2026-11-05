@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useIsFocused } from '@react-navigation/native'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useAccount } from '../../src/lib/account.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
+import { loadProofs } from '../../src/lib/proofs.js'
 import { usePrefs } from '../../src/lib/prefs.js'
 import { answerFor, formatBoardDate, isDueOn, isEvery, isPerWeek, nightOpen, periodKeyFor, periodPassed } from '../../src/lib/recurrence.js'
 import { pastAnswerOpen } from '../../src/lib/board-ops.js'
@@ -11,6 +14,8 @@ import { publishSheet } from './SheetHost.jsx'
 import { fonts } from '../theme.js'
 import { Reveal, useLayoutState } from '../lib/motion.jsx'
 import { missDot } from '../palette.js'
+import { photoList } from '../lib/photo-list.js'
+import { goHash } from '../navigation/hash.js'
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -72,6 +77,28 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
   const gentle = prefs.gentle === true
   const locale = prefs.locale || undefined
   const weekStart = firstWeekday(prefs.locale)
+  const uid = useAccount().user?.id
+  const focused = useIsFocused()
+  const sendId = lamp?.sendId || ''
+  const [photos, setPhotos] = useState([])
+  // My photos on this question. Read again on return, since the viewer can remove one.
+  useEffect(() => {
+    if (!sendId || !uid) {
+      setPhotos([])
+      return undefined
+    }
+    if (!focused) return undefined
+    let live = true
+    loadProofs({ sendIds: [sendId] })
+      .then((out) => {
+        if (live && !out.miss) setPhotos(out.rows.filter((row) => row.owner_id === uid).map((row) => ({ ...row, kind: 'you', question: lamp.question || '', name: '' })))
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [sendId, uid, focused])
+  const photoOn = useMemo(() => new Map(photos.map((photo) => [photo.night, photo])), [photos])
   const cells = useMemo(
     () => (lamp && dateIso ? lampMonthCells(book, lamp, dateIso, y, m, gentle, weekStart) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,6 +127,7 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
     const close = () => publishSheet(null)
     const row = { lamp, boardId: bookNow.id, dateIso: cell.iso, periodKey: periodKeyFor(lamp, cell.iso), answer }
     const canAnswer = Boolean(onAnswer) && Boolean(cell.state) && pastAnswerOpen(row, new Date())
+    const photo = photoOn.get(cell.iso)
     const reply = (status) => {
       const next = onAnswer(row, status)
       if (next) openDay(cell, next)
@@ -128,6 +156,17 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
           })}
         </View>
       ) : null,
+      ...(photo
+        ? {
+            moreLabel: t('photos.viewDay'),
+            onMore: () => {
+              close()
+              photoList.rows = [...photos].sort((a, b) => String(b.night).localeCompare(String(a.night)))
+              photoList.uid = uid
+              goHash('/photo', { id: photo.id })
+            },
+          }
+        : null),
       closeLabel: t('cal.close'),
       colors,
       onClose: close,
@@ -184,7 +223,7 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
                 disabled={!cell.state}
                 onPress={() => openDay(cell)}
                 accessibilityRole={cell.state ? 'button' : undefined}
-                accessibilityLabel={cell.state ? `${formatBoardDate(cell.iso)}, ${t(stateWord(cell))}` : cell.iso > dateIso ? `${formatBoardDate(cell.iso)}, ${t('cal.ahead')}` : formatBoardDate(cell.iso)}
+                accessibilityLabel={cell.state ? `${formatBoardDate(cell.iso)}, ${t(stateWord(cell))}${photoOn.has(cell.iso) ? `, ${t('photos.dayMark')}` : ''}` : cell.iso > dateIso ? `${formatBoardDate(cell.iso)}, ${t('cal.ahead')}` : formatBoardDate(cell.iso)}
               >
                 <View
                   style={[
@@ -202,6 +241,7 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
                     {cell.day}
                   </Text>
                   {cell.state && hasMore(cell) ? <View style={[styles.more, { backgroundColor: colors.inkDim }]} /> : null}
+                  {photoOn.has(cell.iso) ? <View style={[styles.photo, { borderColor: colors.ink }]} /> : null}
                 </View>
               </Pressable>
             )
@@ -225,6 +265,12 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer }) {
           <View style={[styles.keyDot, { borderWidth: 1, borderColor: colors.openRing || colors.open || colors.line }]} />
           <Text style={[styles.keyText, { color: colors.inkSoft }]}>{t('jewelKey.open')}</Text>
         </View>
+        {photos.length ? (
+          <View style={styles.keyItem}>
+            <View style={[styles.photo, styles.keyPhoto, { borderColor: colors.ink }]} />
+            <Text style={[styles.keyText, { color: colors.inkSoft }]}>{t('photos.dayMark')}</Text>
+          </View>
+        ) : null}
         {hasLate ? <Text style={[styles.keyText, styles.keyWhy, { color: colors.inkDim }]}>{t('jewelKey.lateWhy')}</Text> : null}
       </View>
     </View>
@@ -250,5 +296,7 @@ const styles = StyleSheet.create({
   sheetBtn: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   sheetBtnText: { fontFamily: fonts.uiSemi, fontSize: 14 },
   more: { position: 'absolute', top: 0, right: 0, width: 5, height: 5, borderRadius: 3 },
+  photo: { position: 'absolute', bottom: 0, right: 0, width: 7, height: 6, borderRadius: 2, borderWidth: 1.5 },
+  keyPhoto: { position: 'relative', bottom: undefined, right: undefined },
   keyWhy: { width: '100%', textAlign: 'center' },
 })

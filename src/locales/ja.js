@@ -4094,4 +4094,11 @@ export const ja = {
   'photos.saveFail': "写真を保存できませんでした。",
   'photos.saveOff': "Did I の写真へのアクセスがオフです。写真を保存するには、スマートフォンの設定でオンにしてください。",
   'photos.of': "{n} / {total}",
+  'photos.deleteAll': "自分の写真をすべて削除",
+  'photos.deleteAllTitle': "写真をすべて削除しますか？",
+  'photos.deleteAllBody': "追加した写真はすべて全員から見えなくなり、ファイルも削除されます。Did はそのままです。元に戻せません。",
+  'photos.deleteAllDone': "写真をすべて削除しました",
+  'photos.deleteAllFail': "削除できなかった写真があります。もう一度お試しください。",
+  'photos.viewDay': "写真を見る",
+  'photos.dayMark': "写真",
 }

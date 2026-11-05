@@ -164,7 +164,7 @@ export function SureModal({ sure, colors, onClose, onGo }) {
           style={[styles.pop, { backgroundColor: colors.panel, borderColor: colors.line }]}
           onPress={(event) => event.stopPropagation()}
         >
-          <Text style={[styles.popKicker, { color: colors.on }]}>{t('account.kicker')}</Text>
+          <Text style={[styles.popKicker, { color: colors.on }]}>{sure?.kicker || t('account.kicker')}</Text>
           <Text accessibilityRole="header" style={[styles.popTitle, { color: colors.ink }]}>{sure?.title}</Text>
           <Text style={[styles.popBody, { color: colors.inkSoft }]}>{sure?.body}</Text>
           {sure?.extra ? <KeyButton label={sure.extra.label} onPress={sure.extra.go} colors={colors} accessibilityLabel={sure.extra.label} /> : null}

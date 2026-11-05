@@ -1096,7 +1096,7 @@ async function exportSocial() {
   const db = cloud()
   const user = db ? await me() : null
   if (!db || !user) return {}
-  const [mine, answers, sends] = await Promise.all([
+  const [mine, answers, sends, proofs] = await Promise.all([
     db
       .from('we_members')
       .select('card_id, state, turn, asked_at, joined_at, said_no_at, folder, topics')
@@ -1111,8 +1111,12 @@ async function exportSocial() {
         .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
         .order('id'),
     ),
+    // My photos, with the question and day of each. The pictures stay on the server.
+    allPages(() => db.from('proofs').select('id, send_id, card_id, night, made_at').eq('owner_id', user.id).order('id')),
   ])
-  const failed = [mine, answers, sends].find((res) => res.error)
+  // Before the photos file is applied the table is not there: no photos.
+  const noPhotos = proofs.error && /relation|does not exist|schema cache/i.test(proofs.error.message || '')
+  const failed = [mine, answers, sends, noPhotos ? {} : proofs].find((res) => res.error)
   if (failed) throw failed.error
   const ids = (mine.data || []).map((row) => row.card_id)
   let cards = []
@@ -1124,8 +1128,16 @@ async function exportSocial() {
     if (res.error) throw res.error
     cards = res.data || []
   }
+  const questionOf = new Map([...(sends.data || []), ...cards].map((row) => [row.id, row.question || '']))
+  const photos = (noPhotos ? [] : proofs.data || []).map((row) => ({
+    kind: row.card_id ? 'did-we' : 'did-you',
+    question: questionOf.get(row.send_id || row.card_id) || '',
+    day: row.night,
+    added_at: row.made_at,
+  })).sort((a, b) => String(a.day).localeCompare(String(b.day)))
   return {
     didWe: { cards, memberships: mine.data || [], answers: answers.data || [] },
     didYou: sends.data || [],
+    photos,
   }
 }

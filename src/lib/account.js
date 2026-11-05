@@ -4,6 +4,7 @@ import { cloud, cloudSetUp } from './cloud.js'
 import { appMiss, t } from './i18n.js'
 import { saveTogetherPeople } from './together-widget.js'
 import { removeAvatar } from './avatar.js'
+import { removeAllProofFiles } from './proofs.js'
 import { forgetAccountCaches, forgetPendingLinks } from './account-cache.js'
 import { dropEarnedCoins } from './purse.js'
 import { clearGifts } from './gift-inbox.js'
@@ -232,6 +233,10 @@ export async function signOutEverywhere() {
 export async function deleteAccount() {
   const db = cloud()
   if (!db) return { miss: 'off' }
+  // Photo files go through the Storage API (SQL cannot delete them), and
+  // before the delete, while the account can still see its own folder.
+  const files = await removeAllProofFiles()
+  if (files.miss) return { miss: 'account.syncMiss' }
   const { error } = await db.rpc('delete_me')
   if (error) return { miss: appMiss(error, 'account.syncMiss') }
   // Only once the delete went through: a failed delete keeps its photo.

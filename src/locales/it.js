@@ -4129,4 +4129,11 @@ export const it = {
   'photos.saveFail': "Non è stato possibile salvare la foto.",
   'photos.saveOff': "L’accesso alle foto è disattivato per Did I. Attivalo nelle Impostazioni del telefono per salvare le foto.",
   'photos.of': "{n} di {total}",
+  'photos.deleteAll': "Elimina tutte le mie foto",
+  'photos.deleteAllTitle': "Eliminare tutte le tue foto?",
+  'photos.deleteAllBody': "Ogni foto che hai aggiunto sparisce per tutti e i file vengono eliminati. I tuoi Did restano. Non si può annullare.",
+  'photos.deleteAllDone': "Tutte le tue foto sono state eliminate",
+  'photos.deleteAllFail': "Alcune foto non si sono potute eliminare. Riprova.",
+  'photos.viewDay': "Vedi foto",
+  'photos.dayMark': "Foto",
 }

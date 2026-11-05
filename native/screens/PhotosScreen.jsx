@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FlatList, Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
-import { loadLibrary } from '../../src/lib/proofs.js'
+import { loadLibrary, removeAllProofs } from '../../src/lib/proofs.js'
 import { formatBoardDate } from '../../src/lib/recurrence.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { EmptyCard } from '../components/PersonCard.jsx'
@@ -11,9 +11,13 @@ import { publishSheet } from '../components/SheetHost.jsx'
 import { DidButton, KeyButton, Meta } from '../components/ui.jsx'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
+import { useWeCheer } from '../../src/lib/we-cheer.js'
+import { confirmDone, confirmMiss, once } from '../lib/confirm.js'
+import { photoList } from '../lib/photo-list.js'
 import { askRemoveProof, askReportProof, canSaveProof, saveProof, shareProof } from '../lib/proof-flow.jsx'
 import { goBack, goHash, onRoute } from '../navigation/hash.js'
 import { fonts, sectionLabel } from '../theme.js'
+import { SureModal } from './more.jsx'
 
 const GAP = 6
 const COLUMNS = 3
@@ -23,10 +27,8 @@ const FILTERS = [
   ['we', 'we.title'],
 ]
 
-// What the viewer swipes through (the grid as it was drawn), and the photos
-// removed or reported since the last read, so the grid is right on return.
-let showing = []
-let showingFor = null
+// The photos removed or reported since the last read, so the grid is right
+// on return. The viewer swipes through photoList (the grid as it was drawn).
 const STALE_MS = 50 * 60 * 1000
 const gone = new Set()
 const goneWatchers = new Set()
@@ -52,8 +54,8 @@ function groupRows(rows, by, nameOf) {
   return [...groups.values()]
 }
 
-/** The photo library: every photo you may see, by question or by person. */
-export function PhotosScreen() {
+/** The photo library: every photo you may see, by question or by person. openId: a photo a push or link points at. */
+export function PhotosScreen({ openId = '' }) {
   const colors = useHallColors()
   const account = useAccount()
   const nameOf = useNameOf()
@@ -63,6 +65,8 @@ export function PhotosScreen() {
   const [filter, setFilter] = useState('all')
   const [by, setBy] = useState('question')
   const [tick, bump] = useState(0)
+  const [sure, setSure] = useState(null)
+  const opened = useRef(false)
   const signedIn = Boolean(account.user)
   const uid = account.user?.id || null
   const focused = useIsFocused()
@@ -90,8 +94,8 @@ export function PhotosScreen() {
     setMiss('')
     loadedAt.current = 0
     gone.clear()
-    showing = []
-    showingFor = uid
+    photoList.rows = []
+    photoList.uid = uid
     return uid ? load() : undefined
   }, [uid, load])
   useEffect(() => {
@@ -113,9 +117,40 @@ export function PhotosScreen() {
   const size = Math.floor((win.width - 40 - GAP * (COLUMNS - 1)) / COLUMNS)
 
   function open(row) {
-    showing = groups.flatMap((group) => group.rows)
-    showingFor = uid
+    photoList.rows = groups.flatMap((group) => group.rows)
+    photoList.uid = uid
     goHash('/photo', { id: row.id })
+  }
+
+  // A push that says "added a photo" lands on that photo once the library is read.
+  useEffect(() => {
+    if (!openId || opened.current || !rows) return
+    opened.current = true
+    const row = rows.find((item) => item.id === openId)
+    if (row) open(row)
+    else confirmMiss(t('proof.gone'))
+  }, [rows])
+
+  function askDeleteAll() {
+    setSure({
+      kicker: t('photos.title'),
+      title: t('photos.deleteAllTitle'),
+      body: t('photos.deleteAllBody'),
+      yes: t('photos.deleteAll'),
+      danger: true,
+    })
+  }
+  function deleteAll() {
+    setSure(null)
+    return once('photos-delete-all', async () => {
+      const out = await removeAllProofs()
+      if (out.miss) {
+        load()
+        return confirmMiss(t('photos.deleteAllFail'))
+      }
+      confirmDone(t('photos.deleteAllDone'))
+      return load()
+    })
   }
 
   let body
@@ -187,6 +222,7 @@ export function PhotosScreen() {
         ) : (
           <EmptyCard title={t('photos.emptyFilter')} colors={colors} />
         )}
+        {rows.some((row) => row.owner_id === uid) ? <KeyButton danger colors={colors} label={t('photos.deleteAll')} onPress={askDeleteAll} /> : null}
       </>
     )
   }
@@ -194,19 +230,22 @@ export function PhotosScreen() {
   return (
     <BoardShell book={currentBook(readShelf())} title={t('photos.title')} colors={colors} showCogs>
       <View style={styles.page}>{body}</View>
+      <SureModal sure={sure} colors={colors} onClose={() => setSure(null)} onGo={deleteAll} />
     </BoardShell>
   )
 }
 
 /** One photo full width, swipe for the next. The actions are in a sheet. */
-export function PhotoViewScreen({ id }) {
+export function PhotoViewScreen({ id, book, onChange }) {
   const colors = useHallColors()
   const nameOf = useNameOf()
   const uid = useAccount().user?.id
   const list = useRef(null)
   const [, bump] = useState(0)
   const [width, setWidth] = useState(0)
-  const rows = showingFor === uid ? showing.filter((row) => !gone.has(row.id)) : []
+  const cheer = useWeCheer(book, onChange)
+  const [cheerFor, setCheerFor] = useState('')
+  const rows = photoList.uid === uid ? photoList.rows.filter((row) => !gone.has(row.id)) : []
   const start = Math.max(0, rows.findIndex((row) => row.id === id))
   const [at, setAt] = useState(start)
   const row = rows[Math.min(at, rows.length - 1)]
@@ -277,6 +316,19 @@ export function PhotoViewScreen({ id }) {
         <Text style={[styles.who, { color: colors.ink }]}>{name}</Text>
         {row.question ? <Text style={[styles.what, { color: colors.inkSoft }]}>{row.question}</Text> : null}
         <Meta colors={colors}>{`${formatBoardDate(row.night)}  ·  ${t('photos.of', { n: Math.min(at, rows.length - 1) + 1, total: rows.length })}`}</Meta>
+        {!mine && cheer.can ? (
+          <KeyButton
+            colors={colors}
+            label={t('we.cheerName', { name })}
+            disabled={Boolean(cheer.busy)}
+            onPress={() => {
+              setCheerFor(row.id)
+              cheer.cheer({ id: row.owner_id, name }, row.question)
+            }}
+          />
+        ) : null}
+        {cheerFor === row.id && cheer.note ? <Meta colors={colors}>{cheer.note}</Meta> : null}
+        {cheerFor === row.id && cheer.miss ? <Text style={[styles.what, { color: colors.miss }]}>{cheer.miss}</Text> : null}
         <DidButton label={t('photos.options')} onPress={options} colors={colors} />
       </View>
     </BoardShell>
