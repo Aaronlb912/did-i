@@ -1,6 +1,6 @@
 import { Dimensions, Image } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
-import { addProof, removeProof, reportProof } from '../../src/lib/proofs.js'
+import { addProof, freshProofUrl, removeProof, reportProof } from '../../src/lib/proofs.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { confirmDone, confirmMiss } from './confirm.js'
 import { canAddProof, pickProofBytes } from './proof-pick.js'
@@ -80,16 +80,25 @@ export function askReportProof({ row, colors, back, onGone }) {
 // The photo as a file in the share sheet. The signed link is downloaded to
 // the cache first, since sharing needs a file on the phone.
 export async function shareProof(row) {
+  let target = null
   try {
     const FileSystem = require('expo-file-system')
     const Sharing = require('expo-sharing')
     if (typeof FileSystem.File?.downloadFileAsync !== 'function' || !(await Sharing.isAvailableAsync())) throw new Error('no share')
-    const target = new FileSystem.File(FileSystem.Paths.cache, `did-i-photo-${row.id}.jpg`)
+    target = new FileSystem.File(FileSystem.Paths.cache, `did-i-photo-${row.id}.jpg`)
     if (target.exists) target.delete()
-    const file = await FileSystem.File.downloadFileAsync(row.url, target)
+    // The link in the list may be an hour old; make a new one.
+    const url = (await freshProofUrl(row)) || row.url
+    const file = await FileSystem.File.downloadFileAsync(url, target)
     await Sharing.shareAsync(file.uri, { mimeType: 'image/jpeg', dialogTitle: t('photos.share'), UTI: 'public.jpeg' })
   } catch (error) {
     if (!/cancel|dismiss/i.test(String(error?.message || ''))) confirmMiss(t('photos.shareFail'))
+  } finally {
+    try {
+      if (target?.exists) target.delete()
+    } catch {
+      // The cache is cleared by the system anyway.
+    }
   }
 }
 

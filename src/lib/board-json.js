@@ -269,7 +269,7 @@ export function normalizeLamp(raw) {
     // A second reminder time. Only with a first one. Builds without it drop it on save.
     ...(askAfter && SECOND_TIME.test(asString(lamp.askAfter2).trim()) && asString(lamp.askAfter2).trim() !== askAfter ? { askAfter2: asString(lamp.askAfter2).trim() } : {}),
     // Last day it is asked. After it the question is not due; its history stays.
-    ...(/^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.endsOn).trim()) ? { endsOn: asString(lamp.endsOn).trim() } : {}),
+    ...(cadence !== 'once' && /^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.endsOn).trim()) ? { endsOn: asString(lamp.endsOn).trim() } : {}),
     slot,
     notes: asString(lamp.notes).slice(0, 500),
     priority: lampPriority(lamp),
