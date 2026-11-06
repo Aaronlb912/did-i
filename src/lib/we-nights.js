@@ -109,7 +109,17 @@ export function weHiddenOn(card, night) {
 
 export function hideWeFor(card, night) {
   if (!card || !night || weHiddenOn(card, night)) return
-  hidden = [...hidden.filter((key) => key.slice(-10) >= night), `${card}|${night}`]
+  keepHidden([...hidden.filter((key) => key.slice(-10) >= night), `${card}|${night}`])
+}
+
+// A Not yet that did not save puts the card back on Today.
+export function showWeFor(card, night) {
+  if (!weHiddenOn(card, night)) return
+  keepHidden(hidden.filter((key) => key !== `${card}|${night}`))
+}
+
+function keepHidden(list) {
+  hidden = list
   try {
     globalThis.localStorage?.setItem(HIDE_KEY, JSON.stringify(hidden))
   } catch {
