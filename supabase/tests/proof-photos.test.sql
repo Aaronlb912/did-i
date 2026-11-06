@@ -82,9 +82,9 @@ begin
   if n <> 1 then raise exception 'FAIL: owner can not see own photo'; end if;
   execute 'reset role';
 
-  -- Ann got a push in her language.
+  -- No push yet: it goes once the file is uploaded (proof-push-after-upload.sql).
   select count(*) into n from public.push_queue q where q.to_id = a and q.body = 'Bea added a photo';
-  if n <> 1 then raise exception 'FAIL: expected one photo push, got %', n; end if;
+  if n <> 0 then raise exception 'FAIL: a photo push went out before the upload, got %', n; end if;
 
   -- Ann sees it; a stranger does not.
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
@@ -121,6 +121,9 @@ begin
   if n <> 0 then raise exception 'FAIL: blocker still sees the photo'; end if;
   execute 'reset role';
   delete from public.blocks where blocker = a;
+  -- A block ends the friendship (and its shared answers); make friends again.
+  insert into public.friend_links (from_id, to_id, state) values (a, b, 'ok'), (b, a, 'ok') on conflict do nothing;
+  insert into public.send_answers (send_id, night, answer) values (s1, current_date, 'did') on conflict do nothing;
 
   -- A report hides it for the reporter at once, and for nobody else.
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);

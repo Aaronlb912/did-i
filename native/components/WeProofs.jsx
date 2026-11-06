@@ -46,6 +46,7 @@ export function WeProofs({ card, mine, colors }) {
           key={row.id}
           row={row}
           name={nameOf(row.owner_id)}
+          mine={row.owner_id === uid}
           colors={colors}
           onOpen={() => openProofView({ row, mine: row.owner_id === uid, name: nameOf(row.owner_id), colors, onGone: load })}
         />

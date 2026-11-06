@@ -9269,7 +9269,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql'].slice(-11))
+  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql'].slice(-11))
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -12507,6 +12507,24 @@ test('battery savers: re-arm keeps old reminders until new ones replace them; th
   assert.ok(readFileSync('native/lib/proof-flow.jsx', 'utf8').includes('pickProofBytes(from, { target, night })'))
   assert.ok(readFileSync('native/lib/camera-pending.js', 'utf8').includes('getPendingResultAsync()'))
   assert.ok(readFileSync('native/AppShell.jsx', 'utf8').includes('if (booted && !gated && !locked && userId) finishCameraPhoto(userId)'), 'picked up once signed in and past the PIN, for the same account only')
+})
+
+test('proof photos: monthly answers take a photo all month, photos follow the Did and the friendship, one Add photo per answer', () => {
+  const sql = readFileSync('supabase/proof-ux.sql', 'utf8')
+  assert.ok(sql.includes('current_date - 35'), 'a monthly answer dated the 1st still takes a photo late in the month')
+  assert.ok(sql.includes("a.answer = 'nope')") && sql.includes("a.status = 'did')") && sql.includes('s.share_answers') && sql.includes('new.night >= current_date - 5'), 'others see a photo only while its Did stands and sharing is on; old Did you nights need no shared row')
+  assert.ok(sql.includes('public.are_friends(p.owner_id)') && sql.includes('public.shares_family_of(p.owner_id'), 'the asker sees Did you photos only as a friend or family')
+  assert.ok(readFileSync('scripts/apply-all-sql.mjs', 'utf8').includes("'supabase/proof-ux.sql'"), 'proof-ux.sql is in the apply order')
+  const proofs = readFileSync('src/lib/proofs.js', 'utf8')
+  assert.ok(proofs.includes("return 'proof.old'") && proofs.includes("return 'proof.already'"), 'too old and already has a photo get their own lines')
+  assert.ok(proofs.includes('export function proofNight(lamp, periodKey, answeredAt)') && proofs.includes('knownWeCard(row.card_id)'), 'one time answers are dated by when they were answered; library names fall back to the card')
+  const flow = readFileSync('native/lib/proof-flow.jsx', 'utf8')
+  assert.ok(flow.indexOf('pickProofBytes(from') < flow.indexOf("showToast({ id: 'proof-sending'"), 'Sending photo shows only after a photo is picked')
+  const notes = readFileSync('native/components/NightNotes.jsx', 'utf8')
+  assert.ok(notes.includes('hasPhoto !== photoOn') && notes.includes('{canPhoto ? <KeyButton'), 'Add photo hides once that Did has a photo')
+  assert.ok(readFileSync('native/components/WeProofs.jsx', 'utf8').includes('mine={row.owner_id === uid}'), 'your own Did we photo reads Your photo')
+  assert.ok(readFileSync('native/screens/social.jsx', 'utf8').includes('day={formatBoardDate(proof.night)}'), 'Sent photo rows say the day')
+  assert.ok(readFileSync('native/screens/TonightScreen.jsx', 'utf8').includes("row.lamp.wantsPhoto && !row.lamp.shareOff && canAddProof() ? t('proof.pleaseMark')"), 'the Today card says Photo please')
 })
 
 test('social noise: read inbox pushes leave the tray, cheers play in turn, Thanks for all, quieting friends is one tap away', async () => {

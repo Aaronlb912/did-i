@@ -4139,6 +4139,8 @@ export const ko = {
   'proof.offline': "신호가 없어요. 다시 연결되면 사진을 추가하세요.",
   'proof.family': "여기서는 사진이 가족 안에서만 보여요.",
   'proof.noDid': "먼저 Did를 누른 다음 사진을 추가하세요.",
+  'proof.already': "이 답에는 이미 사진이 있어요.",
+  'proof.old': "그날은 너무 지나서 사진을 추가할 수 없어요.",
   'proof.please': "사진 부탁해요",
   'proof.pleaseSub': "{name}님이 Did를 누를 때 사진도 추가하도록 부탁해요.",
   'proof.pleaseMark': "사진 부탁해요",

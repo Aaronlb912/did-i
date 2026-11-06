@@ -4167,6 +4167,8 @@ export const en = {
   'proof.offline': "No signal. Add the photo when you are back online.",
   'proof.family': "Photos here stay in the family.",
   'proof.noDid': "Say Did first, then add the photo.",
+  'proof.already': "This answer already has a photo.",
+  'proof.old': "That day is too far back to add a photo.",
   'proof.please': "Photo please",
   'proof.pleaseSub': "Ask {name} to add a photo when they say Did.",
   'proof.pleaseMark': "Photo please",

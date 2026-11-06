@@ -4179,6 +4179,8 @@ export const fr = {
   'proof.offline': "Pas de réseau. Ajoute la photo quand tu seras de nouveau en ligne.",
   'proof.family': "Ici, les photos restent dans la famille.",
   'proof.noDid': "Dis Did d’abord, puis ajoute la photo.",
+  'proof.already': "Cette réponse a déjà une photo.",
+  'proof.old': "Ce jour est trop ancien pour ajouter une photo.",
   'proof.please': "Une photo, s’il te plaît",
   'proof.pleaseSub': "Demande à {name} d’ajouter une photo en disant Did.",
   'proof.pleaseMark': "Une photo, s’il te plaît",

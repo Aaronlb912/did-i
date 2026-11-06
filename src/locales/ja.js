@@ -4137,6 +4137,8 @@ export const ja = {
   'proof.offline': "電波がありません。オンラインに戻ってから写真を追加してください。",
   'proof.family': "ここでは写真は家族の中だけで見られます。",
   'proof.noDid': "先に Did を押してから、写真を追加してください。",
+  'proof.already': "この答えにはもう写真があります。",
+  'proof.old': "その日は前すぎて写真を追加できません。",
   'proof.please': "写真をお願い",
   'proof.pleaseSub': "{name}さんが Did を押すときに、写真も追加してもらいます。",
   'proof.pleaseMark': "写真をお願い",

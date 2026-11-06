@@ -3,6 +3,7 @@
 // Did was for. Phone only; the web app does not add or show them.
 import { cloud } from './cloud.js'
 import { listKnownPeople, personName } from './people.js'
+import { knownWeCard } from './did-we.js'
 import { boardDate, periodNight } from './recurrence.js'
 
 export const PROOF_MAX_BYTES = 409600
@@ -11,9 +12,13 @@ const SIGNED_SECONDS = 3600
 
 export const proofPath = (ownerId, id) => `${ownerId}/${id}.jpg`
 
-// The night a Did answer belongs to, the same way send-answers.js dates it.
-export function proofNight(lamp, periodKey) {
-  if (String(periodKey || '').startsWith('once:')) return boardDate(new Date())
+// The night a Did answer belongs to, the same way send-answers.js dates it:
+// a one time question by the day it was answered.
+export function proofNight(lamp, periodKey, answeredAt) {
+  if (String(periodKey || '').startsWith('once:')) {
+    const when = answeredAt ? Date.parse(answeredAt) : NaN
+    return boardDate(Number.isNaN(when) ? new Date() : new Date(when))
+  }
   const night = periodNight(lamp, periodKey)
   return /^\d{4}-\d{2}-\d{2}$/.test(night) ? night : boardDate(new Date())
 }
@@ -24,6 +29,8 @@ function missFor(error) {
   if (/too many photos/i.test(text)) return 'proof.limit'
   if (/family only/i.test(text)) return 'proof.family'
   if (/no Did|not your|not on this card/i.test(text)) return 'proof.noDid'
+  if (/bad night/i.test(text)) return 'proof.old'
+  if (/duplicate key|proofs_send_night_key|proofs_card_owner_night_key/i.test(text)) return 'proof.already'
   return 'proof.fail'
 }
 
@@ -142,7 +149,8 @@ async function libraryRows(db, found) {
       ...row,
       kind: row.card_id ? 'we' : 'you',
       question: questionOf.get(row.send_id || row.card_id) || '',
-      name: nameOf.get(row.owner_id) || '',
+      // A Did we member who is not a friend: the name from the card.
+      name: nameOf.get(row.owner_id) || (knownWeCard(row.card_id)?.people || []).find((p) => p.id === row.owner_id)?.name || '',
       url: urls.get(proofPath(row.owner_id, row.id)) || '',
     }))
     .filter((row) => row.url)
