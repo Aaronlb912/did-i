@@ -316,22 +316,44 @@ export function walkFreezes(nights, every = FREEZE_EVERY, max = FREEZE_MAX, star
   let weekUsed = start?.weekUsed || ''
   const frozen = []
   const free = []
+  // Freezes spent in the current stretch of misses. If the run breaks anyway
+  // in that stretch, they come back and those days are no longer frozen.
+  // spent and broken carry in start, so a walk split in two lands the same.
+  // giveBack: freezes of the carried start given back, for the caller to
+  // drop from the end of start.frozen.
+  let spent = start?.spent || 0
+  let broken = start?.broken === true
+  let giveBack = 0
   for (let i = 0; i < nights.length; i += 1) {
     const state = nights[i]
     if (state === 'clear') {
       run += 1
+      spent = 0
+      broken = false
       if (run % every === 0 && held < max) held += 1
     } else if (state === 'miss') {
       if (weekly && weekly[i] && weekly[i] !== weekUsed) {
         weekUsed = weekly[i]
         free.push(i)
+      } else if (broken) {
+        // Already broken in this stretch: nothing left to spend.
       } else if (held > 0) {
         held -= 1
+        spent += 1
         frozen.push(i)
-      } else run = 0
+      } else {
+        run = 0
+        broken = true
+        held = Math.min(max, held + spent)
+        const here = Math.min(spent, frozen.length)
+        frozen.splice(frozen.length - here, here)
+        giveBack += spent - here
+        spent = 0
+      }
     }
   }
-  return weekly ? { run, held, frozen, free, weekUsed } : { run, held, frozen }
+  const out = { run, held, frozen, spent, broken, giveBack }
+  return weekly ? { ...out, free, weekUsed } : out
 }
 
 // A freeze was really earned when more are held and the run crossed a new
@@ -407,7 +429,9 @@ export function freezeState(boards, now = new Date()) {
       run: walk.run,
       held: walk.held,
       weekUsed: walk.weekUsed,
-      frozen: [...(start?.frozen || []), ...walk.frozen.map((i) => isos[i])],
+      spent: walk.spent,
+      broken: walk.broken,
+      frozen: [...(start?.frozen || []).slice(0, (start?.frozen || []).length - walk.giveBack), ...walk.frozen.map((i) => isos[i])],
       free: [...(start?.free || []), ...(walk.free || []).map((i) => isos[i])],
     }
   }

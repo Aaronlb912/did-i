@@ -346,6 +346,18 @@ export function browsableItems(items) {
   return open.length ? open : list.filter((item) => item.status === 'skip')
 }
 
+// The iPhone timeline's last entry, after the final day turn: no card, one line
+// that sends the tap to Today, so a widget the app has not refreshed for a week
+// does not show a stale question. times are the timeline's dates.
+export function widgetOpenEntry(props, times) {
+  const last = Math.max(Date.now(), ...(times || []).map((at) => at.getTime()))
+  const line = t('widget.tonight.openToday')
+  return {
+    date: new Date(last + 60000),
+    props: { ...props, items: [], leadLampId: '', leadNight: '', question: '', sinceLine: '', left: 0, weLeft: 0, streak: 0, weLine: '', footer: line, emptyLabel: line, openUri: 'didi://tonight' },
+  }
+}
+
 function leadCardItem(props) {
   return widgetLeadFromItems(props?.items, props?.leadLampId, props?.leadNight)
 }
