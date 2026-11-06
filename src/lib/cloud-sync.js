@@ -1,4 +1,5 @@
 import { appMiss, t } from './i18n.js'
+import { syncMissKey } from './sync-line.js'
 import { useEffect, useState } from 'react'
 import { recordAppError } from './app-errors.js'
 import { deviceKey, deviceLabel, deviceModel, devicePlatform, leftHereLately, takeOldDeviceKey } from './account.js'
@@ -784,7 +785,7 @@ async function pullAndMergeOnce() {
     return written
   } catch (error) {
     if (run !== syncRun) return null
-    setState({ how: 'miss', miss: appMiss(error, 'account.syncMiss') })
+    setState({ how: 'miss', miss: syncMissKey(error) })
     recordAppError('sync', error).catch(() => {})
     return null
   }
@@ -812,7 +813,7 @@ export async function pushNow(shelf) {
   try {
     user = await meOrThrow()
   } catch (error) {
-    setState({ how: 'miss', miss: appMiss(error, 'account.syncMiss') })
+    setState({ how: 'miss', miss: syncMissKey(error) })
     return
   }
   if (!user) {
@@ -869,7 +870,7 @@ export async function pushNow(shelf) {
       setState({ how: 'miss', miss: 'sync.capMiss' })
       return answersSent
     }
-    setState({ how: 'miss', miss: appMiss(error, 'account.syncMiss') })
+    setState({ how: 'miss', miss: syncMissKey(error) })
     recordAppError('sync', error).catch(() => {})
     return answersSent
   }

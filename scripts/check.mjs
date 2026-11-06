@@ -6950,7 +6950,7 @@ test('every action that changes data on the server says so on the phone', () => 
   assert.ok(/function creditMissToast[\s\S]{0,300}onPress/.test(gemStore), 'the credit miss toast retries on tap')
   assert.ok(/startGemPurchase\(packId\)\s*\}\s*catch/.test(readFileSync(path.join(checkRoot, 'src/lib/GemShop.jsx'), 'utf8')), 'web gem buy shows a store error')
   const tonightSrc = readFileSync(path.join(checkRoot, 'native/screens/TonightScreen.jsx'), 'utf8')
-  assert.ok(/id: 'sync-miss'[^\n]*onPress: \(\) => pullAndMerge\(\)/.test(tonightSrc), 'the sync miss toast retries on tap')
+  assert.ok(/retry: \(\) => pullAndMerge\(\)[\s\S]{0,900}id: 'sync-miss'[^\n]*onPress \}\)/.test(tonightSrc), 'the sync miss toast retries on tap')
   // After sign-in, loading rows until the first pull lands; never the done card.
   assert.ok(/if \(pullWait\) \{[\s\S]{0,300}<LateMeta/.test(tonightSrc), 'Tonight shows loading rows while the first pull is out')
   assert.ok(tonightSrc.indexOf('if (pullWait)') < tonightSrc.indexOf("'tonight.doneTitle'"), 'loading comes before the done card')
@@ -7499,7 +7499,7 @@ test('every Settings row moved under More is still on a route, phone and web', (
     assert.ok(phone.includes(`'${key}'`), `phone ${key}`)
     assert.ok(web.includes(`'${key}'`), `web ${key}`)
   }
-  for (const key of ['settings.phonePrivacy', 'appVersionLines', 'settings.replayIntro']) assert.ok(phone.includes(key), `phone ${key}`)
+  for (const key of ['settings.phonePrivacy', 'appVersionLines', 'tour.help']) assert.ok(phone.includes(key), `phone ${key}`)
   assert.ok(phone.includes("goHash('/settings/more')") && web.includes("goHash('/settings/more')"))
 })
 
@@ -7630,6 +7630,102 @@ await testAsync('the sync line says synced just now, or saved on this phone afte
   assert.ok(!syncFailed({ how: 'saved' }))
   const { en } = await import('../src/locales/en.js')
   for (const key of ['account.syncJust', 'account.syncLocal', 'settings.syncMiss', 'pings.test', 'pings.testOff']) assert.ok(en[key], key)
+})
+
+await testAsync('a sync that cannot work again says what to do, and only offline or a timeout offers a retry', async () => {
+  const { syncMissKey, syncMissAct, syncMissShown } = await import('../src/lib/sync-line.js')
+  // Offline and timeouts keep "Tap to try again".
+  for (const error of [new TypeError('Network request failed'), new Error('Failed to fetch'), { name: 'AuthRetryableFetchError', message: 'fetch failed', status: 0 }, { name: 'AbortError', message: 'The operation was aborted' }, new Error('account.syncMiss')]) {
+    assert.equal(syncMissKey(error), 'people.reach')
+    assert.equal(syncMissAct(syncMissKey(error)), 'retry')
+  }
+  // The session ran out: sign in again, no retry.
+  for (const error of [{ name: 'AuthApiError', status: 400, message: 'Invalid Refresh Token: Refresh Token Not Found' }, { name: 'AuthSessionMissingError', message: 'Auth session missing!' }]) {
+    assert.equal(syncMissKey(error), 'sync.signIn')
+    assert.equal(syncMissAct('sync.signIn'), 'account')
+  }
+  // An expired access token refreshes by itself: it stays a retry, not a sign-in.
+  assert.equal(syncMissKey({ code: 'PGRST301', message: 'JWT expired' }), 'people.reach')
+  assert.equal(syncMissKey({ code: 'PGRST303', message: 'JWT issued at future' }), 'people.reach')
+  assert.equal(syncMissKey(new Error('JWT expired')), 'people.reach')
+  // The server said no: write to us. A check violation that is not the shelf is a refusal too.
+  assert.equal(syncMissKey({ code: '23514', message: 'new row for relation "profiles" violates check constraint "name_len"' }), 'sync.refused')
+  assert.equal(syncMissKey({ code: '42501', message: 'new row violates row-level security policy for table "shelves"' }), 'sync.refused')
+  assert.equal(syncMissAct('sync.refused'), 'feedback')
+  // A shelf over the 2 MB check, or the question cap: remove some, no retry.
+  assert.equal(syncMissKey({ code: '23514', message: 'new row for relation "shelves" violates check constraint "shelves_doc_size"' }), 'sync.tooBig')
+  assert.equal(syncMissKey({ code: '23514', message: 'question cap' }), 'sync.capMiss')
+  assert.equal(syncMissAct('sync.tooBig'), 'lamps')
+  assert.equal(syncMissAct('sync.capMiss'), 'lamps')
+  // Answer pushes pass the message along as text, and still classify.
+  assert.equal(syncMissKey(new Error('permission denied for table answers')), 'sync.refused')
+  assert.equal(syncMissShown('account.syncMiss'), 'people.reach')
+  const { en } = await import('../src/locales/en.js')
+  for (const key of ['sync.signIn', 'sync.refused', 'sync.tooBig', 'settings.syncMissNo']) assert.ok(en[key], key)
+  // cloud-sync records the classified key, not "account.syncMiss"; the toast and the Settings row follow it.
+  const cloud = readFileSync(path.join(checkRoot, 'src/lib/cloud-sync.js'), 'utf8')
+  assert.ok(!cloud.includes("appMiss(error, 'account.syncMiss')"))
+  assert.equal(cloud.split('miss: syncMissKey(error)').length - 1, 3)
+  const today = readFileSync(path.join(checkRoot, 'native/screens/TonightScreen.jsx'), 'utf8')
+  assert.match(today, /syncAct === 'retry' \? ` \$\{t\('toast\.tapRetry'\)\}` : syncAct === 'feedback' \? ` \$\{t\('toast\.tapFeedback'\)\}` : ''/)
+  assert.ok(today.includes("account: () => goHash('/account', { id: 'data' })"), 'a sign-in miss opens Account on the data fold')
+  const profile = readFileSync(path.join(checkRoot, 'native/screens/profile.jsx'), 'utf8')
+  assert.match(profile, /\.then\(\(out\) => out \|\| confirmMiss\(/, 'a failed retry on Settings shows the failure')
+})
+
+await testAsync('the feedback mail names the sign-in type and the last sync, never the address, name or full id', async () => {
+  const { feedbackStateLines, signInKind } = await import('../src/lib/feedback.js')
+  assert.equal(signInKind(null), 'none')
+  assert.equal(signInKind({ id: 'u1', email: 'a@b.co', app_metadata: { provider: 'apple' } }), 'apple')
+  assert.equal(signInKind({ app_metadata: { provider: 'google' } }), 'google')
+  assert.equal(signInKind({ app_metadata: { provider: 'email' } }), 'email')
+  assert.equal(signInKind({ id: 'u1' }), 'email')
+  const user = { id: '0b1c2d3e-aaaa-bbbb-cccc-123456789abc', email: 'sam@example.com', user_metadata: { full_name: 'Sam Lee' }, app_metadata: { provider: 'apple' } }
+  const ok = feedbackStateLines(user, { how: 'saved', at: '2026-11-05T08:00:00.000Z', miss: '' })
+  assert.deepEqual(ok, ['Sign-in: apple', 'Account: 0b1c2d3e', 'Sync: last ok 2026-11-05T08:00:00.000Z'])
+  const bad = feedbackStateLines(null, { how: 'miss', at: '', miss: 'sync.signIn' })
+  assert.deepEqual(bad, ['Sign-in: none', 'Sync: error sync.signIn'])
+  const all = [...ok, ...bad].join('\n')
+  assert.ok(!/sam|example\.com|aaaa|Lee/.test(all), 'no address, name or more than the first 8 of the id')
+  const mail = readFileSync(path.join(checkRoot, 'native/lib/feedback-mail.js'), 'utf8')
+  assert.ok(mail.includes('feedbackStateLines(await sessionUser(), readSync())'))
+  const { en } = await import('../src/locales/en.js')
+  for (const key of ['feedback.account', 'feedback.accountId', 'feedback.sync', 'feedback.crash', 'feedback.crashPage']) assert.ok(en[key], key)
+})
+
+test('the crash screen and the boot fail screen can send feedback without the app loaded', () => {
+  const boundary = readFileSync(path.join(checkRoot, 'native/components/Boundary.jsx'), 'utf8')
+  const boot = readFileSync(path.join(checkRoot, 'native/Boot.jsx'), 'utf8')
+  for (const [name, src] of [['Boundary', boundary], ['Boot', boot]]) {
+    assert.ok(src.includes("t('feedback.send')"), `${name} has the Send feedback button`)
+    assert.ok(src.includes("require('../lib/feedback-mail.js').openFeedbackMail(") || src.includes("require('./lib/feedback-mail.js').openFeedbackMail("), `${name} loads the mail helper only when tapped`)
+    assert.ok(src.includes("t('feedback.crash'") && src.includes('feedbackMailto('), `${name} falls back to a plain mail with what broke`)
+  }
+  assert.ok(!/^import .*feedback-mail/m.test(boundary) && !/^import .*feedback-mail/m.test(boot), 'no static import of the app modules')
+  assert.match(boundary, /alignSelf: 'stretch'[\s\S]*minHeight: 44/, 'full width, 44pt')
+  assert.match(boot, /minHeight: 44/)
+})
+
+test('Help links from Reminders, Ideas and About open the matching Help topic, and Help can open one', () => {
+  const more = readFileSync(path.join(checkRoot, 'native/screens/more.jsx'), 'utf8')
+  const router = readFileSync(path.join(checkRoot, 'native/screens/ScreenRouter.jsx'), 'utf8')
+  assert.ok(more.includes("label={t('pings.help')} sub={t('pings.helpSub')} chevron last onPress={() => goHash('/help', { id: 'pings' })}"))
+  assert.ok(more.includes("label={t('ideas.help')} onPress={() => goHash('/help', { id: 'questions' })}"))
+  assert.ok(more.includes("label={t('about.how')} onPress={() => goHash('/help', { id: 'tonight' })}"))
+  assert.ok(router.includes('<HelpScreen key={route.id} openId={route.id} />'))
+  assert.ok(more.includes('export function HelpScreen({ openId'))
+  // Every id a link uses has a topic with that id inside the fold the map names.
+  for (const id of ['pings', 'questions', 'tonight', 'fixSync', 'phone']) assert.ok(more.includes(`id="${id}"`), id)
+  for (const pair of ["pings: 'daily'", "questions: 'daily'", "tonight: 'daily'", "fixSync: 'fix'", "phone: 'app'"]) assert.ok(more.match(/const HELP_FOLD = \{[^}]*\}/)[0].includes(pair), pair)
+  // The Account fold that holds Sync now opens when Help sends you there.
+  assert.ok(more.includes('useState(openData)') && router.includes("openData={route.id === 'data'}"))
+  // Troubleshooting: widget, sync and iPhone reminders each have a row that opens the right place.
+  for (const key of ['help.groupFix', 'help.fixWidget', 'help.fixSync', 'help.fixLateIos']) assert.ok(more.includes(key), key)
+  // Settings > Help uses the tour's name and has the friends tour row.
+  const profile = readFileSync(path.join(checkRoot, 'native/screens/profile.jsx'), 'utf8')
+  assert.ok(profile.includes("label={t('tour.help')}") && profile.includes("label={t('tour.showFriends')}") && profile.includes("startTour('more', { replay: true })"))
+  assert.ok(!profile.includes("t('settings.replayIntro')"))
+  assert.ok(!readFileSync(path.join(checkRoot, 'src/locales/en.js'), 'utf8').includes('settings.replayIntro'), 'replayIntro is gone from the locales')
 })
 
 await testAsync('the error log keeps no personal content and is capped', async () => {

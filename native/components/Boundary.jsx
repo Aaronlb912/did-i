@@ -1,6 +1,8 @@
 import { Component } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import { t } from '../../src/lib/i18n.js'
+import { feedbackMailto } from '../../src/lib/feedback.js'
+import { legalEmail } from '../../src/lib/legal.js'
 import { hallColors, fonts } from '../theme.js'
 import * as Updates from '../shim/updates-safe.cjs'
 
@@ -39,11 +41,44 @@ export function lastBreak() {
   }
 }
 
+// The lines a crash mail starts with: what broke and on which screen.
+export function crashLines(line) {
+  const out = []
+  if (line?.what) out.push(t('feedback.crash', { what: String(line.what).slice(0, 300) }))
+  if (line?.page) out.push(t('feedback.crashPage', { page: String(line.page).slice(0, 80) }))
+  return out
+}
+
 export class Boundary extends Component {
   constructor(props) {
     super(props)
-    this.state = { broke: null, where: '' }
+    this.state = { broke: null, where: '', noMail: false }
     this.tries = 0
+  }
+
+  // This screen sits outside the app tree, so nothing here may depend on it:
+  // the full mail (version, sign-in, sync) is tried first and any failure
+  // falls back to a plain mail with just what broke.
+  async feedback() {
+    const extra = crashLines(lastBreak())
+    let sent = false
+    try {
+      sent = await require('../lib/feedback-mail.js').openFeedbackMail(extra)
+    } catch {
+      sent = false
+    }
+    if (!sent) {
+      try {
+        const url = feedbackMailto(extra)
+        if (url) {
+          await Linking.openURL(url)
+          sent = true
+        }
+      } catch {
+        sent = false
+      }
+    }
+    this.setState({ noMail: !sent })
   }
 
   // A second break in a row would throw again on the same stored state:
@@ -101,6 +136,18 @@ export class Boundary extends Component {
           >
             <Text style={[styles.againText, { color: colors.bg }]}>{t('broke.again')}</Text>
           </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => this.feedback()}
+            style={[styles.send, { borderColor: colors.line }]}
+          >
+            <Text style={[styles.sendText, { color: colors.ink }]}>{t('feedback.send')}</Text>
+          </Pressable>
+          {this.state.noMail ? (
+            <Text style={[styles.detail, { color: colors.inkDim }]} selectable>
+              {t('feedback.noMail', { email: legalEmail() })}
+            </Text>
+          ) : null}
         </View>
       </View>
     )
@@ -127,4 +174,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   againText: { fontFamily: fonts.uiBold, fontSize: 15 },
+  send: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 999,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  sendText: { fontFamily: fonts.uiBold, fontSize: 15 },
 })

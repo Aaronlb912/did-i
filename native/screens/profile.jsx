@@ -3,9 +3,9 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { startTour } from '../lib/tour.js'
 import { useEffect, useState } from 'react'
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
-import { exportAll, pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
-import { syncFailed } from '../../src/lib/sync-line.js'
-import { t } from '../../src/lib/i18n.js'
+import { exportAll, pullAndMerge, readSync, useSync } from '../../src/lib/cloud-sync.js'
+import { syncFailed, syncMissAct, syncMissShown } from '../../src/lib/sync-line.js'
+import { t, tMiss } from '../../src/lib/i18n.js'
 import { setShareDiagnostics } from '../../src/lib/diagnostics.js'
 import {
   CLOCK_IDS,
@@ -115,6 +115,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const [csvBusy, setCsvBusy] = useState(false)
   const [fileBusy, setFileBusy] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const syncAct = syncMissAct(syncMissShown(sync.miss))
 
   // Signed in, the copy is the whole account, like Account > Download my data.
   async function sendCopy() {
@@ -583,10 +584,18 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           colors={colors}
           icon="play"
           tint={colors.on}
-          label={t('settings.replayIntro')}
+          label={t('tour.help')}
+          chevron
+          onPress={() => startTour('basics', { replay: true })}
+        />
+        <SetRow
+          colors={colors}
+          icon="people"
+          tint={colors.on}
+          label={t('tour.showFriends')}
           chevron
           last
-          onPress={() => startTour('basics', { replay: true })}
+          onPress={() => startTour('more', { replay: true })}
         />
       </SetCard>
       </>,
@@ -598,12 +607,27 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
     <BoardShell book={book} title={t('settings.kicker')} date={date} colors={colors}>
       {account.email && syncFailed(sync) ? (
         <SetCard colors={colors}>
-          <SetRow colors={colors} icon="settings" tint={colors.late} label={t('settings.syncMiss')} value={syncing ? t('app.loading') : undefined} last onPress={syncing ? undefined : () => {
-            setSyncing(true)
-            Promise.resolve(pullAndMerge())
-              .catch(() => confirmMiss(t('tonight.syncMiss')))
-              .finally(() => setSyncing(false))
-          }} />
+          {syncAct === 'retry' ? (
+            <SetRow colors={colors} icon="settings" tint={colors.late} label={t('settings.syncMiss')} value={syncing ? t('app.loading') : undefined} last onPress={syncing ? undefined : () => {
+              setSyncing(true)
+              // pullAndMerge never throws: null means it did not go through.
+              Promise.resolve(pullAndMerge())
+                .then((out) => out || confirmMiss(tMiss(syncMissShown(readSync().miss)) || t('tonight.syncMiss')))
+                .catch(() => confirmMiss(t('tonight.syncMiss')))
+                .finally(() => setSyncing(false))
+            }} />
+          ) : (
+            <SetRow
+              colors={colors}
+              icon="settings"
+              tint={colors.late}
+              label={t('settings.syncMissNo')}
+              sub={tMiss(syncMissShown(sync.miss))}
+              chevron
+              last
+              onPress={() => (syncAct === 'account' ? goHash('/account', { id: 'data' }) : syncAct === 'lamps' ? goHash('/lamps') : sendFeedback())}
+            />
+          )}
         </SetCard>
       ) : null}
       <View style={styles.gap} />
