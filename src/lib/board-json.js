@@ -60,6 +60,16 @@ export function slotFromAskAfter(askAfter) {
   if (hour < 17) return 'whenever'
   return 'night'
 }
+// The part of the day a question's ask time falls in, for section headers.
+// Unlike slot, afternoon times are not 'whenever'.
+export function daySection(askAfter) {
+  const after = asString(askAfter).trim()
+  const hour = after ? Number(after.split(':')[0]) : NaN
+  if (Number.isNaN(hour)) return 'any'
+  if (hour < 12) return 'morning'
+  if (hour < 17) return 'afternoon'
+  return 'evening'
+}
 const SECOND_TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 const STATUSES = ['yes', 'skip', 'late']
 const SEND_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -95,17 +105,19 @@ export function lampOrder(lamp) {
   return lamp?.order !== '' && lamp?.order != null && Number.isFinite(n) ? n : Infinity
 }
 
-// Tonight's order: questions with no set time first (they can be asked all
-// evening), then by ask time. A hand-set order comes next, then priority.
+// Today's order: a hand-set order (Reorder) first, so a routine is asked in
+// the order it was set and a new question goes after it. Then questions with
+// no set time, then by ask time, then priority. The ask time still decides
+// when a card shows up (askAfterPassed), not where it sits once it is up.
 export function byAskTime(rows) {
   return byPriority(rows)
     .map((row, at) => ({ row, at }))
     .sort((a, b) => {
-      const time = askKey(a.row.lamp).localeCompare(askKey(b.row.lamp))
-      if (time) return time
       const ao = lampOrder(a.row.lamp)
       const bo = lampOrder(b.row.lamp)
       if (ao !== bo) return ao === Infinity ? 1 : bo === Infinity ? -1 : ao - bo
+      const time = askKey(a.row.lamp).localeCompare(askKey(b.row.lamp))
+      if (time) return time
       return a.at - b.at
     })
     .map((item) => item.row)

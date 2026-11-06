@@ -2,7 +2,7 @@ import { ANSWER_UNDO_MS } from './undo-times.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
-import { byAskTime, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
+import { byAskTime, daySection, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
 import { putAnswer, setAnswerNote } from './board-ops.js'
 import { takeBackAnswer } from './answer-log.js'
 import { reportRejection } from './report.js'
@@ -491,7 +491,10 @@ export function useTonightStack({
       setSkipReview(go.skipReview)
       setFaceId(go.faceId)
     } else {
-      setFaceId('')
+      // On to the next open card after this one, wrapping like Not yet, so a
+      // routine keeps its order instead of jumping back to the top.
+      const after = at >= 0 ? [...ready.slice(at + 1), ...ready.slice(0, at)].find((item) => !item.answer) : null
+      setFaceId(after ? after.lamp.id : '')
       setSkipReview(false)
     }
     setRestNight(false)
@@ -499,7 +502,7 @@ export function useTonightStack({
     setOverlay(next)
     change(next)
     setHolePick(null)
-    setWaitPick(null)
+    setWaitPick(finalStatus !== 'skip' && waitPick && rowKey(waitPick) === rowKey(row) ? nextWaiting(row) : null)
     // A picked card stays open in its answered state, with its note.
     if (!pillPick || rowKey(pillPick) !== rowKey(row)) setPillPick(null)
     armUndo({ book, after: next, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
@@ -644,6 +647,14 @@ export function useTonightStack({
   function pickHole(lamp, periodKey, row) {
     setHolePick({ lamp, periodKey, book: row?.book, boardId: row?.boardId })
     setWaitPick(null)
+  }
+
+  // Doing a routine early: the next question waiting in the same part of the day.
+  function nextWaiting(row) {
+    const section = daySection(row.lamp.askAfter)
+    const at = dueWithWait.findIndex((item) => rowKey(item) === rowKey(row))
+    const order = at >= 0 ? [...dueWithWait.slice(at + 1), ...dueWithWait.slice(0, at)] : dueWithWait
+    return order.find((item) => item.waiting && !item.answer && rowKey(item) !== rowKey(row) && daySection(item.lamp.askAfter) === section) || null
   }
 
   function closePlates() {
