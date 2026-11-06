@@ -5,6 +5,11 @@
 // for after install and sign-in.
 
 export const SCAN_URL = 'https://did-i.app/'
+
+// Shared text ends with where to get the app.
+export function withAppLink(text) {
+  return `${text}\nhttps://did-i.app`
+}
 const KEY = 'did-i-pending-scan'
 
 export function friendQrLink(friendId) {

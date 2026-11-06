@@ -9269,7 +9269,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql'].slice(-11))
+  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql', 'invite-friend.sql'].slice(-11))
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -11624,7 +11624,7 @@ test('a tap on an answered or removed question says so once, and a missed invite
   assert.ok(stack.includes('onFocusNote({ gone: true })'), 'a removed question is named')
   assert.ok(stack.includes('onFocusNote({ status: row.answer.status'), 'an answered question is named')
   const invite = readFileSync(new URL('../src/lib/invite-link.js', import.meta.url), 'utf8')
-  assert.ok(invite.includes("MISS_KEY, miss === 'used' || miss === 'self' ? miss : 'bad'"), 'every final miss is kept')
+  assert.ok(invite.includes("MISS_KEY, JSON.stringify({ miss: miss === 'used' || miss === 'self' ? miss : 'bad', code })"), 'every final miss is kept')
   const host = readFileSync(new URL('../native/components/InviteAskHost.jsx', import.meta.url), 'utf8')
   assert.ok(host.includes('takeInviteMiss()'), 'the host shows the kept miss')
   for (const key of ['invite.missUsed', 'invite.missSelf', 'invite.missBad', 'tonight.focusGone']) assert.ok(t(key) !== key, key)
@@ -12507,6 +12507,32 @@ test('battery savers: re-arm keeps old reminders until new ones replace them; th
   assert.ok(readFileSync('native/lib/proof-flow.jsx', 'utf8').includes('pickProofBytes(from, { target, night })'))
   assert.ok(readFileSync('native/lib/camera-pending.js', 'utf8').includes('getPendingResultAsync()'))
   assert.ok(readFileSync('native/AppShell.jsx', 'utf8').includes('if (booted && !gated && !locked && userId) finishCameraPhoto(userId)'), 'picked up once signed in and past the PIN, for the same account only')
+})
+
+await testAsync('sharing outside the app: every share says where to get Did I, older accounts get the friend instead of an invite', async () => {
+  const { withAppLink } = await import('../src/lib/qr-links.js')
+  assert.equal(withAppLink('My week'), 'My week\nhttps://did-i.app')
+  for (const lang of ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
+    const line = readFileSync(`src/locales/${lang}.js`, 'utf8').split(/\r?\n/).find((l) => l.startsWith("  'family.codeInvite':")) || ''
+    assert.ok(line.includes('{link}'), `${lang}: the family code message carries the link`)
+  }
+  assert.ok(readFileSync('native/screens/FamilyDetail.jsx', 'utf8').includes('link: familyQrLink(fam.code)'), 'the family code share fills the link')
+  const card = readFileSync('native/lib/share-card.jsx', 'utf8')
+  assert.ok(card.includes('Did I · did-i.app') && card.includes('passAlong(withAppLink(text), title)'), 'pictures and text both say did-i.app')
+  const year = readFileSync('native/components/CalendarGrid.jsx', 'utf8')
+  assert.ok(year.includes('<CardMark') && year.includes("passText(text, t('cal.yearShare'))") && year.includes('{scope ? <Text'), 'the year card names its question or folder and the text fallback says what happened')
+  assert.ok(readFileSync('native/screens/more.jsx', 'utf8').includes("lampId={lampId} label={oneLamp ? shortLabel(oneLamp) : ''}"), 'a question year is labelled as that question')
+  const q = readFileSync('native/screens/questions.jsx', 'utf8')
+  assert.ok(q.includes('!record.streak || every ? null'), 'no streak share on every so often questions')
+  const tonight = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
+  assert.ok(tonight.includes("text: t('lamp.shareAll', { n: stack.overallStreak })"), 'a milestone can be shared')
+  assert.ok(tonight.includes("passText(t('frames.shareLine'"), 'the frame share says what happened')
+  const ladder = readFileSync('native/components/ReferLadder.jsx', 'utf8')
+  assert.ok(!ladder.includes("t('refer.toGo'") && !ladder.includes("t('refer.next')") && ladder.includes('ladder.toFrame ? null : referLadderNote'), 'no next-reward lines on the refer page')
+  const host = readFileSync('native/components/InviteAskHost.jsx', 'utf8')
+  assert.ok(host.includes("miss?.miss === 'used' && !isNewAccount(user, Date.now(), INVITE_FOR_MS)) showOld") && host.includes("confirmMiss(t('invite.missSelf'))") && host.includes('friend:${id}'), 'an older account is offered the friend, filled in on Connect')
+  assert.ok(readFileSync('scripts/apply-all-sql.mjs', 'utf8').includes("'supabase/invite-friend.sql'"), 'invite-friend.sql is in the apply order')
+  assert.ok(readFileSync('supabase/invite-friend.sql', 'utf8').includes('public.blocked_with(them.user_id)'), 'a block hides the friend ID')
 })
 
 test('proof photos: monthly answers take a photo all month, photos follow the Did and the friendship, one Add photo per answer', () => {

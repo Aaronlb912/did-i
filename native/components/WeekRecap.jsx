@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import { recapLine, recapShareText } from '../../src/lib/hall-pages.js'
 import { t } from '../../src/lib/i18n.js'
 import { passAlong } from '../../src/lib/native.js'
+import { withAppLink } from '../../src/lib/qr-links.js'
 import { gentleOn, usePrefs } from '../../src/lib/prefs.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { KeyButton } from './ui.jsx'
@@ -9,7 +10,7 @@ import { fonts, sectionLabel } from '../theme.js'
 
 /** Shares the week as text, with a visible copied or failed note. */
 export async function shareRecap(recap) {
-  const how = await passAlong(recapShareText(recap, gentleOn()), t('recap.kicker'))
+  const how = await passAlong(withAppLink(recapShareText(recap, gentleOn())), t('recap.kicker'))
   if (how === 'copied') confirmDone(t('recap.copied'))
   else if (!how) confirmMiss(t('confirm.shareMiss'))
 }
