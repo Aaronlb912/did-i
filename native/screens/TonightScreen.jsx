@@ -1,3 +1,4 @@
+import { rateAskDue } from '../../src/lib/rate-ask.js'
 import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
@@ -948,11 +949,24 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     return () => clearTimeout(timer)
   }, [stack.cheer, stack.cheered])
   // A Did that clears the day at a shelf streak of 7: the review sheet, after the cheer.
+  // The cheer clears itself before the ask, so the timer is not tied to it; only
+  // unmount cancels. With a sheet or the milestone up it waits for a later Did.
+  const cheerTo = stack.cheer ? stack.cheer.to : 0
+  const reviewTimer = useRef(null)
+  const milestoneUpRef = useRef(false)
+  // Set below once the done card's extra row is picked.
+  const rateCardOn = useRef(false)
+  milestoneUpRef.current = milestoneUp
   useEffect(() => {
-    if (!stack.cheer || tagId || Platform.OS === 'web' || !(stack.cheer.to >= 7)) return undefined
-    const timer = setTimeout(() => askReviewAtStreak(stack.cheer.to), CELEBRATE_MS + 600)
-    return () => clearTimeout(timer)
-  }, [stack.cheer, tagId])
+    if (!(cheerTo >= 7) || tagId || Platform.OS === 'web') return
+    clearTimeout(reviewTimer.current)
+    reviewTimer.current = setTimeout(() => {
+      // A Rate card on the done card owns the ask; never both.
+      if (sheetIsUp() || milestoneUpRef.current || (rateAskDue() && rateCardOn.current)) return
+      askReviewAtStreak(cheerTo)
+    }, CELEBRATE_MS + 600)
+  }, [cheerTo, tagId])
+  useEffect(() => () => clearTimeout(reviewTimer.current), [])
   // The folder and topic filters apply to Did we cards the same way.
   const folderTitles = tagId
     ? (boards || [])
@@ -1250,6 +1264,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const reminderRowUp = !stack.empty && Platform.OS !== 'web' && Boolean(onAskPings) && (pingLabel === 'pings.state.ask' || pingLabel === 'pings.state.blocked')
   const ctaRow = nightOne ? '' : widgetBtn ? 'widget' : signInNudge && (!firstWeek || day >= 3) ? 'signin' : day === 5 ? 'invite' : ''
   const extraRow = nightOne || (stack.cheer && !pickKey) ? '' : reminderRowUp ? 'reminders' : stack.nightDone ? (dropLineUp(book) ? 'drop' : 'rate') : ''
+  rateCardOn.current = extraRow === 'rate'
   // First open of a new week: last week's recap, once. Sunday's done card counts as seen.
   useEffect(() => {
     if (summary?.recap && isRecapNight(stack.dateIso)) {
@@ -1914,7 +1929,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       {/* One extra row at most: reminders, then the drop, then the rate card. Drop and rate wait for the last answer. */}
       {extraRow === 'reminders' ? <RemindersRow colors={colors} label={pingLabel} onAsk={onAskPings} /> : null}
       {extraRow === 'drop' ? <DropLine colors={colors} book={book} /> : null}
-      {extraRow === 'rate' ? <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} /> : null}
+      {extraRow === 'rate' ? <RateCard colors={colors} nightDone={stack.nightDone} dateIso={stack.dateIso} ready={!milestoneUp && stack.overallStreak >= 7} /> : null}
 
       {stack.pillPick || stack.waitPick || pickedWe ? (
         <Pressable

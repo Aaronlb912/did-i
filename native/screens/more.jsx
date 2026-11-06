@@ -56,7 +56,7 @@ import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
 import { loadBackupFile } from '../lib/backup-load.js'
 import { currentBook, enterLand, folderNameKey, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
-import { feedbackMailto } from '../../src/lib/feedback.js'
+import { sendFeedback } from '../lib/feedback-mail.js'
 import { legalEmail } from '../../src/lib/legal.js'
 import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
 import {
@@ -507,12 +507,7 @@ export function HelpScreen() {
         <DidButton
           colors={colors}
           label={t('feedback.send')}
-          onPress={() => {
-            const url = feedbackMailto()
-            // No mail app (or no address): say so instead of a dead tap.
-            if (!url) return confirmMiss(t('confirm.miss'))
-            return Linking.openURL(url).catch(() => confirmMiss(t('confirm.miss')))
-          }}
+          onPress={sendFeedback}
         />
       </HelpFold>
       <DidButton colors={colors} label={t('nav.home')} onPress={() => goHash('/tonight')} />
