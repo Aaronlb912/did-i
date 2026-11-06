@@ -5923,6 +5923,7 @@ const phoneStubs = {
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
     BackHandler: { addEventListener: () => ({ remove() {} }) },
     Platform: { OS: 'ios' },
+    Linking: { openSettings: async () => {}, openURL: async () => {} },
     Share: { share: async () => ({}) },
   },
   'expo-clipboard': { setStringAsync: async () => {} },
@@ -5959,6 +5960,19 @@ Object.assign(phoneStubs['expo-haptics'], {
   impactAsync: async (style) => felt.push(`impact:${style}`),
   notificationAsync: async (type) => felt.push(`notify:${type}`),
   selectionAsync: async () => felt.push('selection'),
+})
+// The notifications module, recording what the scheduler sets. Read when it first loads.
+const setNotes = []
+Object.assign(phoneStubs['expo-notifications'], {
+  AndroidImportance: { HIGH: 4, NONE: 0, MIN: 1, LOW: 2 },
+  SchedulableTriggerInputTypes: { DATE: 'date', CALENDAR: 'calendar' },
+  getPermissionsAsync: async () => ({ status: 'granted', canAskAgain: true }),
+  setNotificationChannelAsync: async () => {},
+  setNotificationCategoryAsync: async () => {},
+  getAllScheduledNotificationsAsync: async () => [],
+  cancelScheduledNotificationAsync: async () => {},
+  cancelAllScheduledNotificationsAsync: async () => {},
+  scheduleNotificationAsync: async (note) => setNotes.push(note),
 })
 const phone = await import('../native/shim/native.js')
 
@@ -11554,7 +11568,7 @@ test('reminder fatigue: back off, one buzz, no night Later, a week quiet stops t
   const nat = readFileSync('native/shim/native.js', 'utf8')
   assert.ok(nat.includes('aheads.slice(0, 2)'), 'streak notes only for today and the next day')
   assert.ok(nat.includes("const gracePings = pingOn('streakRisk')") && nat.includes('gracePings ? graceFires'), 'the 7:00 note stays in gentle mode')
-  assert.ok(nat.includes('ahead < backOff && !row.answer') && nat.includes('if (dayAhead >= backOff) continue'), 'backed off: no second time or day nudges')
+  assert.ok(nat.includes('ahead < backOff && afterQuiet(at2)') && nat.includes('if (dayAhead >= backOff) continue'), 'backed off: no second time or day nudges')
   assert.ok(nat.includes('laterClash(notes[i], data, snoozeAt)') && nat.includes('if (i < regularCount) regularCount -= 1'), 'a Later replaces its own note on the same minute')
   assert.ok(nat.includes('askGroups(notes, isAsk)') && nat.indexOf('askGroups(notes, isAsk)') < nat.indexOf('readWePings()) {'), 'asks group before Did we and the cap')
   const widget = readFileSync('native/widget-setup.android.js', 'utf8')
@@ -13771,6 +13785,156 @@ test('a question whose end date passed gets one finished popup: last 7 days, onc
   assert.deepEqual(ids([]), ['fresh', 'week'])
   assert.deepEqual(ids([finishKey(book.lamps[0])]), ['week'], 'seen ones do not come back')
   assert.deepEqual(finishedToShow([{ ...book, archived: true }], new Set(), now), [])
+})
+
+// Runs the phone's real scheduler at a pretend time and returns each note it set
+// as [question or title, Date it rings].
+async function ringsAt(books, now) {
+  setNotes.length = 0
+  const realNow = Date.now
+  Date.now = () => now.getTime()
+  try {
+    await phone.scheduleNativePings(books, now)
+  } finally {
+    Date.now = realNow
+  }
+  return setNotes.map((note) => {
+    const at = note.trigger.date || new Date(note.trigger.year, note.trigger.month - 1, note.trigger.day, note.trigger.hour, note.trigger.minute)
+    return [note.content.body || note.content.title, at]
+  })
+}
+const at24 = (rings, body) => rings.filter(([text]) => text === body).map(([, when]) => `${when.getDate()} ${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`)
+
+await testAsync('Another time still rings after the first time passed, until the question is Did', async () => {
+  const q = { id: 'meds', question: 'Did I take my meds?', cadence: 'daily', createdOn: '2026-10-01', archived: false, askAfter: '08:00', askAfter2: '20:00' }
+  const book = { id: 'b1', dayFoldHour: 0, lamps: [q], answers: [] }
+  const open = await ringsAt([book], new Date(2026, 9, 14, 9, 0))
+  assert.ok(at24(open, q.question).includes('14 20:00'), 'the 8 PM note is set after the app opens at 9:00')
+  assert.ok(!at24(open, q.question).includes('14 08:00'), 'the 8:00 note has passed')
+  const did = { ...book, answers: [{ lampId: 'meds', periodKey: '2026-10-14', status: 'yes', answeredAt: '2026-10-14T09:00:00' }] }
+  assert.ok(!at24(await ringsAt([did], new Date(2026, 9, 14, 9, 5)), q.question).includes('14 20:00'), 'a Did today drops it')
+  const notYet = { ...book, answers: [{ lampId: 'meds', periodKey: '2026-10-14', status: 'skip', answeredAt: '2026-10-14T08:00:00' }] }
+  assert.ok(at24(await ringsAt([notYet], new Date(2026, 9, 14, 8, 5)), q.question).includes('14 20:00'), 'a Not yet at 8:00 still rings at 20:00')
+  assert.ok(at24(await ringsAt([book], new Date(2026, 9, 14, 19, 0)), q.question).includes('14 20:00'), 'still there at 19:00')
+})
+
+await testAsync('a reminder quiet hours moved to 7:00 survives re-arms before 7:00', async () => {
+  writePrefs({ quietOn: true, quietFrom: '22:00', quietTo: '07:00' })
+  try {
+    const q = { id: 'teeth', question: 'Did I brush my teeth?', cadence: 'daily', createdOn: '2026-10-01', archived: false, askAfter: '22:30' }
+    const book = { id: 'b1', dayFoldHour: 0, lamps: [q], answers: [] }
+    assert.ok(at24(await ringsAt([book], new Date(2026, 9, 14, 23, 0)), q.question).includes('15 07:00'), 'before midnight')
+    assert.ok(at24(await ringsAt([book], new Date(2026, 9, 15, 0, 40)), q.question).includes('15 07:00'), 'after midnight, the day before is still open')
+    assert.ok(at24(await ringsAt([book], new Date(2026, 9, 15, 6, 59)), q.question).includes('15 07:00'), 'a minute before')
+    const did = { ...book, answers: [{ lampId: 'teeth', periodKey: '2026-10-14', status: 'yes', answeredAt: '2026-10-14T22:40:00' }] }
+    assert.ok(!at24(await ringsAt([did], new Date(2026, 9, 15, 0, 40)), q.question).includes('15 07:00'), 'a Did drops it')
+    // Did we: the same.
+    localStorage.setItem('did-i-we-pings', JSON.stringify([{ id: 'w1', question: 'Did we walk?', askAfter: '22:30', cadence: 'daily', startsOn: '2026-10-01' }]))
+    assert.ok(at24(await ringsAt([book], new Date(2026, 9, 14, 23, 0)), 'Did we walk?').includes('15 07:00'), 'Did we, before midnight')
+    assert.ok(at24(await ringsAt([book], new Date(2026, 9, 15, 0, 40)), 'Did we walk?').includes('15 07:00'), 'Did we, after midnight')
+    assert.ok(!at24(await ringsAt([book], new Date(2026, 9, 15, 7, 30)), 'Did we walk?').includes('15 07:00'), 'Did we, once 7:00 has passed')
+    // The app re-arms after midnight: the list it saved before midnight says whether last night is still open.
+    const { weReminders } = await import('../src/lib/did-we.js')
+    const { markWeNight } = await import('../src/lib/we-nights.js')
+    const arm = (cards, at) => {
+      const real = Date
+      globalThis.Date = class extends real {
+        constructor(...args) {
+          super(...(args.length ? args : [at.getTime()]))
+        }
+        static now() {
+          return at.getTime()
+        }
+      }
+      try {
+        return weReminders(cards, at.getHours() < 9 ? '2026-10-15' : '2026-10-14')
+      } finally {
+        globalThis.Date = real
+      }
+    }
+    const walk = { id: 'w1', question: 'Did we walk?', askAfter: '22:30', cadence: 'daily', startsOn: '2026-10-01', myState: 'in', people: [{ id: 'me', me: true, state: 'in' }, { id: 'pal', state: 'in', name: 'Sam' }] }
+    const store = (cards, at) => localStorage.setItem('did-i-we-pings', JSON.stringify(arm(cards, at)))
+    // The Did we note body is its own line, so tell it from the question note by text.
+    const weAt = async (at) => at24((await ringsAt([book], at)).filter(([text]) => text !== q.question).map(([, when]) => ['we', when]), 'we')
+    const night14 = new Date(2026, 9, 14, 23, 0)
+    const after = new Date(2026, 9, 15, 0, 40)
+    store([walk], night14)
+    store([walk], after)
+    assert.equal(JSON.parse(localStorage.getItem('did-i-we-pings'))[0].nights[0], '2026-10-14', 'nights keep last night while it is open')
+    assert.ok((await weAt(after)).includes('15 07:00'), 'Did we with saved nights, after midnight')
+    markWeNight('w1', '2026-10-14', 'did')
+    try {
+      assert.ok(!(await weAt(after)).includes('15 07:00'), 'a Did on last night drops it')
+    } finally {
+      markWeNight('w1', '2026-10-14', '')
+    }
+    // Turns: yesterday was the partner's turn, so last night never rings for me.
+    const turns = { ...walk, mode: 'turns', turn: 'pal' }
+    store([turns], night14)
+    store([turns], after)
+    assert.ok(!JSON.parse(localStorage.getItem('did-i-we-pings'))[0].nights.includes('2026-10-14'), 'the partner turn keeps last night out')
+    assert.ok(!(await weAt(after)).includes('15 07:00'), 'no 7:00 note for the partner turn')
+  } finally {
+    localStorage.removeItem('did-i-we-pings')
+    writePrefs({ quietOn: false })
+  }
+})
+
+await testAsync('the Still waiting today list matches what rings: Another time and the last call, with their own keys', async () => {
+  const { upcomingPings } = await import('../src/lib/notify.js')
+  const q = { id: 'meds', question: 'Did I take my meds?', cadence: 'daily', createdOn: '2026-10-01', archived: false, askAfter: '08:00', askAfter2: '20:00', priority: 'high' }
+  const book = { id: 'b1', dayFoldHour: 0, lamps: [q], answers: [] }
+  const rows = (now) => upcomingPings(book, now).map((fire) => `${fire.tag.replace('meds:2026-10-14', 'm')} ${new Date(fire.at).getHours()}`)
+  assert.deepEqual(rows(new Date(2026, 9, 14, 7, 0)), ['m 8', 'm:2 20', 'm:late 21'])
+  assert.deepEqual(rows(new Date(2026, 9, 14, 9, 0)), ['m:2 20', 'm:late 21'], 'Another time stays after the first has passed')
+  const tags = upcomingPings(book, new Date(2026, 9, 14, 7, 0)).map((fire) => fire.tag)
+  assert.equal(new Set(tags).size, tags.length, 'one key per row')
+  assert.equal(upcomingPings(book, new Date(2026, 9, 14, 7, 0)).filter((fire) => fire.lastCall).length, 1, 'only the last call is marked')
+  // Quiet hours from 21:00: the last call moves to 20:30 (lastCallAt), as the phone sets it.
+  writePrefs({ quietOn: true, quietFrom: '21:00', quietTo: '07:00' })
+  try {
+    const late = upcomingPings({ ...book, lamps: [{ ...q, askAfter2: undefined }] }, new Date(2026, 9, 14, 9, 0)).find((fire) => fire.lastCall)
+    assert.equal(new Date(late.at).getHours() * 60 + new Date(late.at).getMinutes(), 20 * 60 + 30)
+  } finally {
+    writePrefs({ quietOn: false })
+  }
+  const did = { ...book, answers: [{ lampId: 'meds', periodKey: '2026-10-14', status: 'yes', answeredAt: '2026-10-14T09:00:00' }] }
+  assert.deepEqual(upcomingPings(did, new Date(2026, 9, 14, 9, 0)), [])
+})
+
+await testAsync('an Another time before the first swaps, so the card is up before anything rings', async () => {
+  const { orderedTimes, secondDefault } = await import('../src/lib/hang-time.js')
+  assert.deepEqual(orderedTimes('20:00', '08:00'), { askAfter: '08:00', askAfter2: '20:00' })
+  assert.deepEqual(orderedTimes('08:00', '20:00'), { askAfter: '08:00', askAfter2: '20:00' })
+  assert.deepEqual(orderedTimes('08:00', ''), { askAfter: '08:00', askAfter2: '' })
+  assert.equal(secondDefault('20:00'), '22:00', 'the picker starts away from the first time')
+  assert.equal(secondDefault('08:30'), '10:30')
+  assert.equal(secondDefault('22:30'), '23:55', 'past midnight falls back to 23:55, after the first')
+  assert.equal(secondDefault('23:55'), '', 'nothing later than 23:55')
+  assert.notEqual(secondDefault('21:00'), '21:00')
+  const draft = readFileSync(new URL('../src/lib/useHangDraft.js', import.meta.url), 'utf8')
+  assert.ok(draft.includes('orderedTimes(next.askAfter, next.askAfter2)') && draft.includes('next.slot = slotFromAskAfter(next.askAfter)'), 'saving swaps the times and keeps the part of the day with the earlier one')
+})
+
+await testAsync('Remind me asks again after quiet hours, and a time inside them says so on the question page', async () => {
+  const { quietMovedTo } = await import('../src/lib/quiet.js')
+  const prefs = { quietOn: true, quietFrom: '22:00', quietTo: '07:00' }
+  assert.equal(quietMovedTo('22:30', prefs), '07:00')
+  assert.equal(quietMovedTo('03:00', prefs), '07:00')
+  assert.equal(quietMovedTo('20:00', prefs), '')
+  assert.equal(quietMovedTo('22:30', { ...prefs, quietOn: false }), '')
+  assert.equal(quietMovedTo('', prefs), '')
+  const { remindNext, remindAgainAt } = await import('../src/lib/remind-me.js')
+  writePrefs(prefs)
+  try {
+    const at = new Date(2026, 9, 14, 22, 5).getTime()
+    const next = remindNext({ id: 'r1', text: 'lock the back door', at, tries: 0 }, 'nope', at)
+    assert.equal(new Date(next.item.at).getHours(), 7, 'the re-ask waits for 7:00')
+    assert.equal(new Date(remindAgainAt(new Date(2026, 9, 14, 12, 0).getTime())).getHours(), 12, 'outside quiet hours it is 15 minutes')
+  } finally {
+    writePrefs({ quietOn: false })
+    localStorage.removeItem('did-i-remind')
+  }
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

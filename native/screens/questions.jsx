@@ -55,6 +55,8 @@ import { KitSegment } from '../components/KitSegment.jsx'
 import { gapLine, lastTimeLine, sinceBadge, staleDidLine } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
 import { awayKey, readPrefs, usePrefs } from '../../src/lib/prefs.js'
+import { quietMovedTo } from '../../src/lib/quiet.js'
+import { secondDefault } from '../../src/lib/hang-time.js'
 import { NightNotes } from '../components/NightNotes.jsx'
 import { addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../../src/lib/starters.js'
 import { WEEKDAYS_MON_FRI, WEEKEND_DAYS, dayPreset, schedulePick } from '../../src/lib/hang-schedule.js'
@@ -1668,7 +1670,14 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const ready = Boolean(draft.question.trim())
   const topicCount = topicsOf({ kind: draft.kind }).length
   const phone = usePhoneQuiet()
-  const remindersOff = usePrefs().pingsOff.includes('reminders')
+  const pingPrefs = usePrefs()
+  const remindersOff = pingPrefs.pingsOff.includes('reminders')
+  // A time inside quiet hours rings when they end; say so under its picker.
+  const quietLine = (time) => {
+    const moved = quietMovedTo(time, pingPrefs)
+    return moved ? <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.quietMoved', { time: clockWords(moved) })}</Text> : null
+  }
+  const quietRow = Boolean(quietMovedTo(draft.askAfter, pingPrefs) || quietMovedTo(draft.askAfter2, pingPrefs))
   // The short name shows in full, filled with the one made from the question
   // until they type their own, so it never changes behind their back.
   const [shortTyped, setShortTyped] = useState(false)
@@ -2323,13 +2332,16 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
               <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
               {/^0[0-4]:/.test(draft.askAfter || '') ? <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.earlyHint')}</Text> : null}
-              {draft.askAfter ? (
+              {quietLine(draft.askAfter)}
+              {draft.askAfter && (secondDefault(draft.askAfter) || draft.askAfter2) ? (
                 <>
                   <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.another')}</Text>
-                  <HangTimePick value={draft.askAfter2 || ''} onChange={(value) => hang.change('askAfter2', value === draft.askAfter ? '' : value)} colors={colors} noneLabel={t('hang.anotherNone')} />
+                  <HangTimePick value={draft.askAfter2 || ''} onChange={(value) => hang.change('askAfter2', value === draft.askAfter ? '' : value)} colors={colors} noneLabel={t('hang.anotherNone')} fallback={secondDefault(draft.askAfter)} without={draft.askAfter} />
                   <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.secondHint')}</Text>
+                  {quietLine(draft.askAfter2)}
                 </>
               ) : null}
+              {quietRow ? <Row colors={colors} label={t('pings.quiet')} onPress={() => goHash('/pings')} /> : null}
               {draft.askAfter && exactOff ? (
                 <>
                   <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('notify.exactBody')}</Text>

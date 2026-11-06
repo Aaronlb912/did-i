@@ -1,5 +1,22 @@
 export const DEFAULT_TIME = '20:00'
 
+// Where the Another time picker starts: two hours after the first time, else
+// 23:55 when that passes midnight, or '' when the first is 23:55 or later. So it
+// is never the first time (that picks nothing) and never before it.
+export function secondDefault(first) {
+  const match = String(first || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
+  if (!match) return DEFAULT_TIME
+  const hour = Number(match[1]) + 2
+  if (hour <= 23) return `${String(hour).padStart(2, '0')}:${match[2]}`
+  return first >= '23:55' ? '' : '23:55'
+}
+
+// The earlier time is the question's own, so its card is on Today before the
+// second one rings. A second time before the first swaps with it.
+export function orderedTimes(first, second) {
+  return first && second && second < first ? { askAfter: second, askAfter2: first } : { askAfter: first, askAfter2: second }
+}
+
 const MINUTES = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']
 
 export function from24(value) {

@@ -17,7 +17,8 @@ import { KeyButton } from './ui.jsx'
 
 const QUICK_TIMES = ['08:00', '12:00', '18:00', '20:00', '21:00']
 
-export function HangTimePick({ value, onChange, colors, noneLabel = '' }) {
+// fallback: the time "At a time" starts from. without: a quick time to leave out.
+export function HangTimePick({ value, onChange, colors, noneLabel = '', fallback = DEFAULT_TIME, without = '' }) {
   const [openMenu, setOpenMenu] = useState(null)
   usePrefs()
   const h24 = uses24h()
@@ -33,7 +34,7 @@ export function HangTimePick({ value, onChange, colors, noneLabel = '' }) {
   )
 
   function setPart(part, next) {
-    const bits = timeParts(value || DEFAULT_TIME, h24)
+    const bits = timeParts(value || fallback, h24)
     bits[part] = next
     onChange(joinTime(bits, h24))
   }
@@ -46,11 +47,11 @@ export function HangTimePick({ value, onChange, colors, noneLabel = '' }) {
           label={t('hang.askAt')}
           colors={colors}
           picked={timed}
-          onPress={() => onChange(value || DEFAULT_TIME)}
+          onPress={() => onChange(value || fallback)}
         />
       </View>
       <View style={styles.chips}>
-        {QUICK_TIMES.map((time) => (
+        {QUICK_TIMES.filter((time) => time !== without).map((time) => (
           <KeyButton
             key={time}
             label={clockWords(time)}

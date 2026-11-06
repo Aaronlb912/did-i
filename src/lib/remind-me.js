@@ -1,7 +1,9 @@
 // Remind me in: a spoken or typed reminder that asks "Did I ...?" after a
 // delay. Kept on the phone only (no shelf, no account). A Did clears it, a Not
-// yet asks again in 15 minutes, and the third Not yet becomes a one-day
-// question on Today.
+// yet asks again in 15 minutes (held until quiet hours end), and the third
+// Not yet becomes a one-day question on Today.
+
+import { afterQuiet } from './prefs.js'
 
 export const REMIND_KEY = 'did-i-remind'
 export const REMIND_MAX = 10
@@ -82,6 +84,12 @@ export function restoreRemind(item) {
   write([...readReminds().filter((x) => x.id !== one.id), one].sort((a, b) => a.at - b.at))
 }
 
+// When a re-ask rings: the first ring is what the person asked for, so only
+// the asks after it wait out quiet hours.
+export function remindAgainAt(now = Date.now()) {
+  return afterQuiet(new Date(now + REMIND_AGAIN_MIN * 60 * 1000)).getTime()
+}
+
 // The store is written here, before the caller schedules anything.
 export function remindNext(item, action, now = Date.now()) {
   const one = clean(item)
@@ -90,7 +98,7 @@ export function remindNext(item, action, now = Date.now()) {
   if (action === 'did') return { done: true }
   const tries = one.tries + 1
   if (tries >= REMIND_TRIES) return { toToday: true }
-  const next = { ...one, tries, at: now + REMIND_AGAIN_MIN * 60 * 1000 }
+  const next = { ...one, tries, at: remindAgainAt(now) }
   restoreRemind(next)
   return { item: next }
 }

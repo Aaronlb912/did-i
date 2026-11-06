@@ -512,8 +512,12 @@ async function schedulePingsNow(books, now = new Date()) {
       const [y, m, d] = iso.split('-').map(Number)
       return !awayOn(iso) && list.some((book) => dueTonight(book, new Date(y, m - 1, d, 12)).some((row) => !row.answer || row.answer.status === 'skip'))
     })
+    // Between midnight and 9:00 last night is still open: a note quiet hours
+    // moved to this morning belongs to it, and a re-arm must keep it (ahead -1).
+    const grace = graceNightIso(now)
+    const graceAhead = grace && !awayOn(grace) ? [-1] : []
     for (const listed of list) {
-      for (const ahead of aheads) {
+      for (const ahead of [...graceAhead, ...aheads]) {
         // Midday of that calendar day sits inside the right board night.
         const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
         // Every open row, so a re-arm after the ask time still keeps the 21:00
@@ -549,15 +553,14 @@ async function schedulePingsNow(books, now = new Date()) {
               wall: true,
             })
           }
-          // Second reminder time: same rules, cleared and rebuilt with the first.
-          // Not tied to the first time having passed or not.
+          // Second reminder time: cleared and rebuilt with the first. Not tied to
+          // the first time having passed, or opening the app after it would drop it.
+          // A Not yet keeps it (a Did is dropped with the row above).
           const second = String(row.lamp.askAfter2 || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
           const at2 = at && second ? new Date(year, month - 1, date, Number(second[1]), Number(second[2]), 0, 0) : null
-          // It waits like the first one, and quiet hours that land both on the
-          // same minute send one note.
-          const moved2 = at2 && afterQuiet(at2).getTime() !== at2.getTime()
+          // Quiet hours that land both on the same minute send one note.
           const sameMinute = at && at2 && afterQuiet(at).getTime() === afterQuiet(at2).getTime()
-          if (at2 && !sameMinute && ahead < backOff && !row.answer && afterQuiet(at2).getTime() > now.getTime() && nightOpen(night, afterQuiet(at2)) && (!waiting || row.lamp.morning || moved2 || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
+          if (at2 && !sameMinute && ahead < backOff && afterQuiet(at2).getTime() > now.getTime() && nightOpen(night, afterQuiet(at2))) {
             notes.push({
               identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}:2`)),
               content,
@@ -566,6 +569,8 @@ async function schedulePingsNow(books, now = new Date()) {
               second: true,
             })
           }
+          // Last night has no last call left; only moved notes carry over.
+          if (ahead < 0) continue
           // A high one still open gets a last call. Backed off, only when it has no time of its own.
           if (!lampNudgesLate(row.lamp) || (ahead >= backOff && at)) continue
           // 21:00, or around quiet hours and the question's own time (lastCallAt).
@@ -657,10 +662,12 @@ async function schedulePingsNow(books, now = new Date()) {
       for (const we of readWePings()) {
         const match = String(we.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
         if (!match) continue
-        for (let ahead = 0; ahead < PING_DAYS; ahead += 1) {
+        for (let ahead = graceAhead[0] ?? 0; ahead < PING_DAYS; ahead += 1) {
           const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
           const night = boardDate(day)
           if (awayOn(night)) continue
+          // Last night, still open: only if it has no Did yet.
+          if (ahead < 0 && weNightStatus(night, we.id) === 'did') continue
           if (night < String(we.startsOn || '') || (we.cadence !== 'monthly' && night === we.skipNight)) continue
           // The weekday of the app day, not the phone calendar.
           const [year, month, date] = night.split('-').map(Number)
@@ -671,7 +678,8 @@ async function schedulePingsNow(books, now = new Date()) {
             if (we.cadence === 'weekly' && !(we.weekdays || []).includes(new Date(year, month - 1, date).getDay())) continue
           }
           const at = new Date(year, month - 1, date, Number(match[1]), Number(match[2]), 0, 0)
-          if (at.getTime() <= now.getTime()) continue
+          // Quiet hours can move a time that has passed to this morning; that note stays.
+          if (afterQuiet(at).getTime() <= now.getTime()) continue
           // Quiet hours can push it into the next day, when this one is closed.
           if (!nightOpen(night, afterQuiet(at))) continue
           // Entries saved before buddy and others existed keep the question as the body.

@@ -1,9 +1,10 @@
 import { lampBuzzes, lampNudgesLate } from './board-json.js'
 import { clockWords } from './hall-pages.js'
 import { t } from './i18n.js'
-import { boardDate, dueTonight, pingWaitingTonight } from './recurrence.js'
+import { boardDate, dueTonight, nightOpen, pingWaitingTonight } from './recurrence.js'
 import { checkNativePings, isNativeHall, pingsCanAskAgain, requestNativePings, scheduleNativePings } from './native.js'
 import { afterQuiet, gentleOn, pingOn, readPrefs } from './prefs.js'
+import { lastCallAt } from './quiet.js'
 import { savePrefsForSw } from './board-store.js'
 import { streakRiskFire } from './streak-risk.js'
 import { shelfStreak } from './hall-feel.js'
@@ -34,9 +35,6 @@ export async function requestPings() {
   }
 }
 
-// The last call of the night for a high one that is still open.
-const LATE_NUDGE_HOUR = 21
-
 // Takes one board or every board. Low priority questions stay quiet
 // (lampBuzzes). Tags are per question and night, so two questions do not
 // replace each other's notification.
@@ -49,6 +47,7 @@ export function upcomingPings(book, now = new Date()) {
   // Every open row, so a re-arm after the ask time still keeps the 21:00
   // late note. The ask note itself only goes to rows still waiting. Not yet
   // (status skip) is not done, so it keeps the late note too.
+  // The same rules as the phone's reminders (native/shim/native.js).
   const rows = books.flatMap((one) => dueTonight(one, now)).filter((row) => !row.answer || row.answer.status === 'skip')
   const waiting = new Set(books.flatMap((one) => pingWaitingTonight(one, now)).map((row) => `${row.lamp.id}:${row.periodKey}`))
   for (const row of rows) {
@@ -56,7 +55,7 @@ export function upcomingPings(book, now = new Date()) {
     // No time set: no ask note, but a high one still gets the late note.
     const match = String(row.lamp.askAfter || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
     const at = match ? new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0) : null
-    if (at && !row.answer && at.getTime() > now.getTime() && (row.lamp.morning || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
+    if (at && !row.answer && afterQuiet(at).getTime() > now.getTime() && nightOpen(dateIso, afterQuiet(at)) && (row.lamp.morning || afterQuiet(at).getTime() !== at.getTime() || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
       fires.push({
         id: row.lamp.id,
         tag: `${row.lamp.id}:${row.periodKey}`,
@@ -65,16 +64,28 @@ export function upcomingPings(book, now = new Date()) {
         at: afterQuiet(at).getTime(),
       })
     }
+    // Another time: rings later the same day while the question is open.
+    const second = String(row.lamp.askAfter2 || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/)
+    const at2 = at && second ? new Date(year, month - 1, day, Number(second[1]), Number(second[2]), 0, 0) : null
+    const sameMinute = at && at2 && afterQuiet(at).getTime() === afterQuiet(at2).getTime()
+    if (at2 && !sameMinute && afterQuiet(at2).getTime() > now.getTime() && nightOpen(dateIso, afterQuiet(at2))) {
+      fires.push({
+        id: row.lamp.id,
+        tag: `${row.lamp.id}:${row.periodKey}:2`,
+        question: String(row.lamp.question ?? ''),
+        at: afterQuiet(at2).getTime(),
+      })
+    }
     if (!lampNudgesLate(row.lamp)) continue
-    const late = new Date(year, month - 1, day, LATE_NUDGE_HOUR, 0, 0, 0)
-    if (late.getTime() <= now.getTime() || (at && late.getTime() <= at.getTime())) continue
-    // Quiet hours would push it to morning, which is no last call.
-    if (afterQuiet(late).getTime() !== late.getTime()) continue
+    // 21:00, or around quiet hours and the question's own time (lastCallAt).
+    const late = lastCallAt(year, month, day, at2 && at2 > at ? at2 : at, readPrefs(), now)
+    if (!late) continue
     fires.push({
       id: row.lamp.id,
       tag: `${row.lamp.id}:${row.periodKey}:late`,
       question: String(row.lamp.question ?? ''),
       at: late.getTime(),
+      lastCall: true,
     })
   }
   return fires
