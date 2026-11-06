@@ -2294,6 +2294,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
               <View ref={timeDetail} onLayout={showTimeDetail}>
               <HangTimePick value={draft.askAfter} onChange={hang.changeAskAfter} colors={colors} />
               <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{draft.askAfter ? t('hang.timeHint') : t('hang.anyTimeHint')}</Text>
+              {/^0[0-4]:/.test(draft.askAfter || '') ? <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.earlyHint')}</Text> : null}
               {draft.askAfter ? (
                 <>
                   <Text style={[styles.foldCap, { color: colors.inkSoft }]}>{t('hang.another')}</Text>

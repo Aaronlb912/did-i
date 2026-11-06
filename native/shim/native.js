@@ -649,6 +649,7 @@ async function schedulePingsNow(books, now = new Date()) {
               categoryIdentifier: ASK_CATEGORY,
             },
             trigger: when(at),
+            wall: true,
           })
         }
       }
@@ -674,6 +675,7 @@ async function schedulePingsNow(books, now = new Date()) {
             data: ask ? { go: '/tonight', morning: true } : { go: '/tonight' },
           },
           trigger: when(nudge.at),
+          wall: true,
           nudge: true,
         })
       }
