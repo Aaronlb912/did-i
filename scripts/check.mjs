@@ -3720,6 +3720,17 @@ await testAsync('a phone moves to its stable id once and hands back the old key'
     assert.equal(deviceKey(), 'i-0123456789abcdef')
     assert.equal(takeOldDeviceKey(), 'random-old-key')
     assert.equal(takeOldDeviceKey(), '')
+    // A backup restored onto a new phone: the old phone's id is not handed over
+    // (its row stays live), and its reminder ask does not count on this phone.
+    localStorage.setItem('did-i-device', 'a-feedfacefeedface')
+    localStorage.setItem('did-i-ping-primer', '1')
+    assert.equal(deviceKey(), 'i-0123456789abcdef')
+    assert.equal(takeOldDeviceKey(), '')
+    assert.equal(localStorage.getItem('did-i-ping-primer'), null)
+    const shell = readFileSync(new URL('../native/AppShell.jsx', import.meta.url), 'utf8')
+    assert.match(shell, /if \(OPENS_SEEN < 2 && !hasAnswers\) return undefined/, 'a returning account is asked for reminders on its first open')
+    const tour = readFileSync(new URL('../native/components/TourHost.jsx', import.meta.url), 'utf8')
+    assert.match(tour, /first && account\.user && !isNewShelf\(readShelf\(\)\.boards\)\) \{\s+writeTour\(\{ basics: 'seen', more: 'seen' \}\)/, 'no welcome tour for an account from another phone')
   } finally {
     delete globalThis.__didIStableDeviceId
     if (before) localStorage.setItem('did-i-device', before)
@@ -12423,6 +12434,8 @@ await testAsync('a year of use: one card per phone, no reward, in gentle mode to
   assert.equal(yearCardSeen(), false)
   assert.equal(showYearCard({ sinceFirst: 365, nightDone: true, seen: false }), true)
   assert.equal(showYearCard({ sinceFirst: 364, nightDone: true, seen: false }), false)
+  assert.equal(showYearCard({ sinceFirst: 371, nightDone: true, seen: false }), true)
+  assert.equal(showYearCard({ sinceFirst: 500, nightDone: true, seen: false }), false, 'not again on a new phone at day 500')
   assert.equal(showYearCard({ sinceFirst: 400, nightDone: false, seen: false }), false, 'only once Today is done')
   markYearCardSeen()
   assert.equal(yearCardSeen(), true)

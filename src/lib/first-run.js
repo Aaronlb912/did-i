@@ -213,8 +213,10 @@ export function markYearCardSeen() {
     // Shows again next time; harmless.
   }
 }
+// A week after the mark at most: the seen flag is per phone, so a new phone at
+// day 500 would show it again.
 export function showYearCard({ sinceFirst, nightDone, seen }) {
-  return Boolean(nightDone && !seen && sinceFirst >= YEAR_CARD_DAYS)
+  return Boolean(nightDone && !seen && sinceFirst >= YEAR_CARD_DAYS && sinceFirst < YEAR_CARD_DAYS + 7)
 }
 
 // The widget tip: one sheet, once ever, after the first day every question is

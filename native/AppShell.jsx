@@ -5,7 +5,7 @@ import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/un
 import { closeSession, hasPin, needsEnter } from '../src/lib/session.js'
 import { onWeRefused, weRefusedText } from '../src/lib/did-we.js'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { useAccount } from '../src/lib/account.js'
+import { deviceKey, useAccount } from '../src/lib/account.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { readTour } from '../src/lib/first-run.js'
 import { firstPullWaiting, useSync } from '../src/lib/cloud-sync.js'
@@ -356,14 +356,20 @@ export function AppShell() {
   const settingUp = OWN_BACK.has(route.path)
   // Nothing to remind about yet: a Not now on the empty Today would spend the ask.
   const hasQuestion = (app.shelf?.boards || []).some((one) => (one.lamps || []).some((lamp) => !lamp.archived))
+  // Signed in on a new phone: answers came with the pull, so there is no first answer to wait for.
+  const hasAnswers = (app.shelf?.boards || []).some((one) => (one.answers || []).length > 0)
   useEffect(() => {
     if (gated || settingUp || !shelfReady || !hasQuestion || Platform.OS === 'web') return undefined
     // The ask comes after the first answer. Anyone who never answers gets it on the second app open.
-    if (OPENS_SEEN < 2) return undefined
-    const timer = setTimeout(() => offerFirstPingPrimer(colors).catch(() => {}), 3000)
+    if (OPENS_SEEN < 2 && !hasAnswers) return undefined
+    // deviceKey first: a restored backup drops the old phone's ask flags there.
+    const timer = setTimeout(() => {
+      deviceKey()
+      whenQuiet().then(() => offerFirstPingPrimer(colors)).catch(() => {})
+    }, 3000)
     return () => clearTimeout(timer)
     // colors only styles the sheet; a theme change should not re-arm the ask.
-  }, [gated, settingUp, shelfReady, hasQuestion])
+  }, [gated, settingUp, shelfReady, hasQuestion, hasAnswers])
 
   // A Did made in this run is the one later ask for a Not now.
   const didCount = useRef(null)

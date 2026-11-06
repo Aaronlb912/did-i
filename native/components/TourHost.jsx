@@ -9,7 +9,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useAccount } from '../../src/lib/account.js'
-import { readTour } from '../../src/lib/first-run.js'
+import { readShelf } from '../../src/lib/board-shelf.js'
+import { isNewShelf, readTour, writeTour } from '../../src/lib/first-run.js'
 import { t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
 import { TOUR_PARTS } from '../../src/lib/tour-steps.js'
@@ -142,6 +143,12 @@ export function TourHost({ scope = 'main', path = '', hasQuestion = false }) {
       if (!ok()) return
       await whenNoSheet()
       if (!ok()) return
+      // An account with days of answers came from another phone: it knows the app,
+      // and the coins were paid there. Help still replays the tour.
+      if (first && account.user && !isNewShelf(readShelf().boards)) {
+        writeTour({ basics: 'seen', more: 'seen' })
+        return
+      }
       if (first) startTour('basics', { welcome: true })
       else startMoreNudge()
     }, Math.max(0, BOOT_WAIT - (Date.now() - mounted.current)))
