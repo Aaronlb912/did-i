@@ -51,7 +51,10 @@ function everyDaysOf(lamp) {
 /** The extra columns the server needs for this question's kind. */
 export function checkOnShape(lamp) {
   const kind = checkOnKind(lamp)
-  const shape = { kind: kind || 'night', month_day: null, on_date: null, starts_on: null, every_days: null }
+  const shape = { kind: kind || 'night', month_day: null, on_date: null, starts_on: null, every_days: null, ends_on: null }
+  // The last day it is asked; the server stops pushing after it. Not for a Just once.
+  const end = String(lamp?.endsOn || '').trim()
+  if (kind && kind !== 'once' && kind !== 'by' && ISO.test(end)) shape.ends_on = end
   if (kind === 'monthly') shape.month_day = lamp.monthDay === 'last' ? 0 : Number(lamp.monthDay)
   if (kind === 'once') shape.on_date = String(lamp.onceOn).trim()
   if (kind === 'by') {
@@ -87,6 +90,8 @@ function lastOfMonth(night) {
 /** Is the question asked on this night, per kind? `lastDid` is the newest Did night before it (every). */
 export function checkOnAsked(link, { night, weekday, lastDid = '', learned = 0 }) {
   const kind = link?.kind || 'night'
+  // After its end date the question is not asked.
+  if (link?.ends_on && night > link.ends_on) return false
   if (kind === 'night') {
     const days = Array.isArray(link.days) ? link.days : []
     return days.length === 0 || days.includes(weekday)
@@ -203,6 +208,12 @@ export function checkOnRule(lamp) {
  * update, no read; with no check-on it touches nothing. Fire and forget:
  * the card shows the saved rule next time it opens.
  */
+// A finished question asked again: the server row's end date has to follow.
+export function followReopen(before, book) {
+  const after = (book?.lamps || []).find((item) => item.id === before?.id)
+  return followCheckOn(before, after)
+}
+
 export async function followCheckOn(before, after) {
   if (!before || !after || before.id !== after.id) return { miss: '' }
   const rule = checkOnRule(after)

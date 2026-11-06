@@ -1,15 +1,19 @@
-import { endQuestion, endQuestionDate, questionEnded, reopenQuestion, setPauseUntil, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { useState } from 'react'
+import { View } from 'react-native'
+import { endQuestion, endQuestionDate, questionEnded, reopenQuestion, resumeOnDate, setPauseUntil, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { addDaysIso, boardDate, formatBoardDate, isPerWeek } from '../../src/lib/recurrence.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { questionStreak } from '../../src/lib/lamp-record.js'
 import { finishLine } from '../../src/lib/lamp-finish.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
-import { dropCheckOn } from '../../src/lib/check-on.js'
+import { dropCheckOn, followReopen } from '../../src/lib/check-on.js'
 import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { goHash } from '../navigation/hash.js'
 import { openEditAt } from '../lib/edit-fold.js'
 import { SetCap, SetCard, SetRow } from './SetBits.jsx'
 import { SetChoice } from './SetChoice.jsx'
+import { HangMonthCal } from './HangMonthCal.jsx'
+import { markFinishSeen } from './FinishedHost.jsx'
 import { publishSheet } from './SheetHost.jsx'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { showToast } from '../lib/toast-queue.js'
@@ -133,6 +137,8 @@ export function lampActions({ book, lamp, colors, onChange, onPaused, onLess }) 
         const planned = was.endsOn || ''
         const endsToday = (next.lamps || []).find((item) => item.id === lamp.id)?.endsOn === boardDate(new Date(), live.dayFoldHour)
         onChange(next)
+        // Done is its own moment; the finished popup is for end dates set in advance.
+        markFinishSeen((next.lamps || []).find((item) => item.id === lamp.id))
         stopCheckOns(lamp.id)
         const now = Date.now()
         showToast({
@@ -156,7 +162,10 @@ export function lampActions({ book, lamp, colors, onChange, onPaused, onLess }) 
   // Ask a finished question again: the end date goes.
   function askAgain() {
     const live = liveBook(book) || book
-    onChange(reopenQuestion(live, (live.lamps || []).find((item) => item.id === lamp.id) || lamp))
+    const was = (live.lamps || []).find((item) => item.id === lamp.id) || lamp
+    const next = reopenQuestion(live, was)
+    onChange(next)
+    followReopen(was, next).catch(() => confirmMiss(t('confirm.checkOnMiss')))
     confirmDone(t('confirm.questionResumed'))
   }
 
@@ -238,18 +247,24 @@ export function lampActions({ book, lamp, colors, onChange, onPaused, onLess }) 
 }
 
 const PAUSE_DAYS = [1, 2, 3, 7, 14, 30]
+// The "Pick a date" choice opens the calendar, up to a year ahead.
+const PICK = '__pick'
+const PICK_DAYS = 365
 
 // No date, or a day from tomorrow on; a day picked earlier stays in the list.
 function pauseUntilOptions(lamp, today) {
   const days = PAUSE_DAYS.map((n) => addDaysIso(today, n))
   if (lamp.pausedUntil && !days.includes(lamp.pausedUntil)) days.push(lamp.pausedUntil)
-  return [{ id: '', label: t('lamp.pauseNoDate') }, ...days.sort().map((id) => ({ id, label: formatBoardDate(id) }))]
+  return [{ id: '', label: t('lamp.pauseNoDate') }, ...days.sort().map((id) => ({ id, label: formatBoardDate(id) })), { id: PICK, label: t('lamp.pauseOther') }]
 }
 
 export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate, onLess }) {
+  const [picking, setPicking] = useState(false)
   if (!lamp) return null
   const { togglePause, askDelete, askDone, askAgain } = lampActions({ book, lamp, colors, onChange, onPaused, onLess })
-  const ended = questionEnded(lamp, boardDate(new Date(), book.dayFoldHour))
+  const today = boardDate(new Date(), book.dayFoldHour)
+  const ended = questionEnded(lamp, today)
+  // `picking` shows the calendar: for a paused question its day to come back, for a finished one the day to be asked again.
   const canFinish = !lamp.archived && !ended && lamp.cadence !== 'once'
   return (
     <>
@@ -272,17 +287,64 @@ export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate
             icon="clock"
             label={t('lamp.pauseUntil')}
             sub={t('lamp.pauseUntilSub')}
-            options={pauseUntilOptions(lamp, boardDate(new Date(), book.dayFoldHour))}
-            selected={lamp.pausedUntil || ''}
+            options={pauseUntilOptions(lamp, today)}
+            selected={picking ? PICK : lamp.pausedUntil || ''}
             onSelect={(id) => {
+              if (id === PICK) {
+                setPicking(true)
+                return
+              }
+              setPicking(false)
               const live = liveBook(book) || book
               onChange(setPauseUntil(live, (live.lamps || []).find((item) => item.id === lamp.id) || lamp, id))
               confirmDone(id ? t('confirm.pauseUntil', { date: formatBoardDate(id) }) : t('confirm.questionPaused'))
             }}
           />
         ) : null}
+        {lamp.archived && !ended && picking ? (
+          <View style={{ padding: 16 }}>
+            <HangMonthCal
+              mode="date"
+              value={lamp.pausedUntil || ''}
+              minIso={addDaysIso(today, 1)}
+              maxIso={addDaysIso(today, PICK_DAYS)}
+              onChange={(iso) => {
+                const live = liveBook(book) || book
+                onChange(setPauseUntil(live, (live.lamps || []).find((item) => item.id === lamp.id) || lamp, iso))
+                setPicking(false)
+                confirmDone(t('confirm.pauseUntil', { date: formatBoardDate(iso) }))
+              }}
+              now={new Date()}
+              dayFoldHour={book.dayFoldHour}
+              colors={colors}
+            />
+          </View>
+        ) : null}
         {canFinish ? <SetRow colors={colors} icon="folder" label={t('lamp.doneRow')} sub={t('lamp.doneSub')} plain onPress={askDone} /> : null}
         {ended ? <SetRow colors={colors} icon="play" label={t('lamp.askAgain')} sub={t('lamp.askAgainSub')} plain onPress={askAgain} /> : null}
+        {ended ? <SetRow colors={colors} icon="clock" label={t('lamp.resumeOn')} sub={t('lamp.resumeOnSub')} plain onPress={() => setPicking((on) => !on)} /> : null}
+        {ended && picking ? (
+          <View style={{ padding: 16 }}>
+            <HangMonthCal
+              mode="date"
+              value=""
+              minIso={addDaysIso(today, 1)}
+              maxIso={addDaysIso(today, PICK_DAYS)}
+              onChange={(iso) => {
+                const live = liveBook(book) || book
+                const was = (live.lamps || []).find((item) => item.id === lamp.id) || lamp
+                const next = resumeOnDate(live, was, iso)
+                onChange(next)
+                followReopen(was, next).catch(() => confirmMiss(t('confirm.checkOnMiss')))
+                setPicking(false)
+                confirmDone(t('confirm.pauseUntil', { date: formatBoardDate(iso) }))
+              }}
+              now={new Date()}
+              dayFoldHour={book.dayFoldHour}
+              colors={colors}
+            />
+          </View>
+        ) : null}
         <SetRow
           colors={colors}
           icon="trash"

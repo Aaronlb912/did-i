@@ -1,7 +1,7 @@
 import { t } from './i18n.js'
 import { readPrefs } from './prefs.js'
 import { bestQuestionStreak, isDayCadence, lampNights, questionStreak } from './lamp-record.js'
-import { formatMonthYear, isPerWeek, weekStartOf } from './recurrence.js'
+import { boardDate, daysBetween, formatMonthYear, isPerWeek, weekStartOf } from './recurrence.js'
 
 // What a streak counts for a question: 'weeks' (times a week), 'days'
 // (daily or set weekdays), or '' for the rest (every so often, monthly, once).
@@ -9,6 +9,31 @@ export function streakUnit(lamp) {
   if (!lamp) return ''
   if (isPerWeek(lamp)) return 'weeks'
   return lamp.cadence === 'daily' || lamp.cadence === 'weekly' ? 'days' : ''
+}
+
+// An end date set in advance gets one moment when it passes: the popup shows
+// once per question and end date, only for endings in the last 7 days (so an
+// update does not bring up old ones). A tap on Done is marked seen when it is
+// made, so it never pops up for the person who ended it.
+export const FINISH_DAYS = 7
+
+export function finishKey(lamp) {
+  return `${lamp.id}:${lamp.endsOn}`
+}
+
+// [{ book, lamp }] not yet shown. `seen` is a Set of finishKey values.
+export function finishedToShow(boards, seen, now = new Date()) {
+  const out = []
+  for (const book of boards || []) {
+    if (book.archived) continue
+    const today = boardDate(now, book.dayFoldHour)
+    for (const lamp of book.lamps || []) {
+      if (!lamp.endsOn || lamp.archived || lamp.cadence === 'once' || seen.has(finishKey(lamp))) continue
+      const ago = daysBetween(lamp.endsOn, today)
+      if (ago != null && ago >= 1 && ago <= FINISH_DAYS) out.push({ book, lamp })
+    }
+  }
+  return out
 }
 
 // The record said out loud before a question ends: how many Dids, since

@@ -12,6 +12,7 @@ import {
 } from './board-json.js'
 import { findBookByTitle } from './board-shelf.js'
 import { applySchedulePick, pickDays } from './hang-schedule.js'
+import { pauseAfterEdit } from './board-ops.js'
 import { answerFor, boardDate, keepPastSchedule, periodKeyFor } from './recurrence.js'
 import { starterList } from './starters.js'
 
@@ -164,6 +165,12 @@ export function useHangDraft({
     const was = editing ? keepPastSchedule(lamp, next, today, !!answerFor(book, lamp.id, periodKeyFor(lamp, today))) : []
     if (was.length) next.was = was
     else delete next.was
+    // A finished question moved to a later or no end date: its days since the
+    // end were never asked, so they are a pause, not misses.
+    if (editing) {
+      const kept = pauseAfterEdit(lamp, next, today)
+      if (kept.pauses) next.pauses = kept.pauses
+    }
     return { lamp: next, problem: missLamp(next) || passedDay(next) || endPassed(next) }
   }
 
