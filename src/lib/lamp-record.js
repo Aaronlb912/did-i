@@ -1,6 +1,6 @@
 import { t } from './i18n.js'
 import { readPrefs } from './prefs.js'
-import { addDaysIso, daysBetween, answerFor, graceNightIso, inPause, isDueOn, everyBest, everyStreak, isEvery, isPerWeek, monthKey, perWeekBest, perWeekStreak, periodKeyFor, periodNight, periodPassed, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, daysBetween, answerFor, graceNightIso, inPause, isDueOn, everyBest, everyStreak, isEvery, isPerWeek, lastDidNight, monthKey, perWeekBest, perWeekOn, perWeekStreak, perWeekWeeks, periodKeyFor, periodNight, periodPassed, previousDueDate, recentPeriodKeys, weekStartOf } from './recurrence.js'
 import { travelNightState, travelSkipped } from './travel.js'
 
 function didStatus(status) {
@@ -73,8 +73,20 @@ function openGrace(dateIso, now) {
   return grace && addDaysIso(grace, 1) === dateIso ? grace : ''
 }
 
+// A finished question (same rule as questionEnded in board-ops).
+function endedBy(lamp, dateIso) {
+  return Boolean(lamp?.cadence !== 'once' && lamp?.endsOn && lamp.endsOn <= dateIso)
+}
+
+// A finished question is read as of its last day: its run, weeks and best
+// stay on show instead of going blank once the days after it were never asked.
+function endedAsOf(lamp, dateIso) {
+  return endedBy(lamp, dateIso) ? lamp.endsOn : dateIso
+}
+
 export function bestQuestionStreak(book, lamp, dateIso, cap = 1000, now = new Date()) {
   if (!lamp || !dateIso) return 0
+  dateIso = endedAsOf(lamp, dateIso)
   if (isEvery(lamp)) return everyBest(book, lamp, dateIso)
   if (isPerWeek(lamp)) return perWeekBest(book, lamp, dateIso)
   if (lamp.cadence === 'once') return questionStreak(book, lamp, dateIso)
@@ -94,6 +106,9 @@ export function topQuestionStreaks(book, lamp, dateIso, count = 5, now = new Dat
 // Every run of Did nights, newest first. The run still going (nothing broke it
 // since) is marked current.
 function streakRuns(book, lamp, dateIso, cap, now) {
+  // A finished question has no run going: the last one is a past one.
+  const ended = endedBy(lamp, dateIso)
+  dateIso = endedAsOf(lamp, dateIso)
   const live = { ...lamp, archived: false }
   let first = String(lamp.createdOn || '').slice(0, 10)
   if (!first) {
@@ -112,7 +127,7 @@ function streakRuns(book, lamp, dateIso, cap, now) {
   let from = ''
   let broke = false
   const close = () => {
-    if (run) runs.push({ n: run, from, to, current: !broke && !runs.length })
+    if (run) runs.push({ n: run, from, to, current: !ended && !broke && !runs.length })
     run = 0
   }
   let steps = 0
@@ -143,9 +158,84 @@ function streakRuns(book, lamp, dateIso, cap, now) {
 export function lampRecord(book, lamp, dateIso, days = 30, now = new Date()) {
   if (!lamp) return { streak: 0, did: 0, asked: 0, tonight: '', due: false }
   const tonight = answerFor(book, lamp.id, periodKeyFor(lamp, dateIso))?.status || ''
-  const { did, asked } = recordCounts(book, lamp, dateIso, days, now)
-  const streak = questionStreak(book, lamp, dateIso, 1100, now)
-  return { streak, did, asked, tonight, due: !lamp.archived && isDueOn(lamp, dateIso) }
+  const asOf = endedAsOf(lamp, dateIso)
+  const weekly = isPerWeek(lamp)
+  // Times a week has no due days to count: it reports weeks met of the last 4.
+  const { did, asked } = weekly ? weekCounts(book, lamp, asOf) : recordCounts(book, lamp, dateIso, days, now)
+  const streak = questionStreak(book, lamp, asOf, 1100, now)
+  return { streak, did, asked, tonight, due: !lamp.archived && isDueOn(lamp, dateIso), weekly }
+}
+
+// Times a week: the last `count` weeks as { from, need, done }. need 0 is a
+// week that does not count: before the question was added, after it was
+// paused, or fully closed. A week short of its count is never read as a miss
+// here, it just reads done of need.
+function perWeekRows(book, lamp, dateIso, count) {
+  const created = String(lamp.createdOn || '').slice(0, 10)
+  const paused = lamp.archived && lamp.pausedOn ? lamp.pausedOn : ''
+  return perWeekWeeks(book, lamp, dateIso, count).map(({ from, need, done }) => {
+    const met = need > 0 && done >= need
+    const open = !met && ((created && from < created) || (paused && addDaysIso(from, 6) >= paused))
+    return { from, need: open ? 0 : need, done }
+  })
+}
+
+// Weeks met out of the weeks that counted in the last 4. The week still going
+// counts only once met, same as the week streak.
+function weekCounts(book, lamp, dateIso) {
+  const current = weekStartOf(dateIso)
+  let did = 0
+  let asked = 0
+  for (const week of perWeekRows(book, lamp, dateIso, 4)) {
+    if (!week.need) continue
+    const met = week.done >= week.need
+    if (week.from === current && !met) continue
+    asked += 1
+    if (met) did += 1
+  }
+  return { did, asked }
+}
+
+// Every Did of this question: how many, and the first and last day. For a
+// finished question's page.
+export function lampDidSpan(book, lamp) {
+  let n = 0
+  let from = ''
+  let to = ''
+  for (const { answer, night } of lampNights(book, lamp)) {
+    if (!didStatus(answer.status) || !night) continue
+    n += 1
+    if (!to) to = night
+    from = night
+  }
+  return { n, from, to }
+}
+
+// True when a question still asked has had no Did across its last 21 asked
+// days (and has been around that long): the page then offers Ask fewer days.
+// Not for once, monthly or every so often, nor paused, finished, away or optional.
+export const EASE_OFF_DAYS = 21
+export function easeOffDue(book, lamp, dateIso) {
+  if (!lamp || !dateIso || lamp.archived || lamp.optional || lamp.cadence === 'once' || lamp.cadence === 'monthly' || isEvery(lamp)) return false
+  if (endedBy(lamp, dateIso) || inPause(lamp, dateIso)) return false
+  const created = String(lamp.createdOn || '').slice(0, 10)
+  if (!created) return false
+  // Count from the last schedule change: after Ask fewer days the row goes away.
+  const since = lamp.was?.length ? String(lamp.was[lamp.was.length - 1].until || '') : ''
+  const weekly = isPerWeek(lamp)
+  let asked = 0
+  let first = ''
+  for (let back = 1; back <= 400 && asked < EASE_OFF_DAYS; back += 1) {
+    const iso = addDaysIso(dateIso, -back)
+    if (iso < created || (since && iso < since)) return false
+    if (inPause(lamp, iso) || travelSkipped(book, iso)) continue
+    if (weekly ? !perWeekOn(lamp, iso) : !isDueOn(lamp, iso)) continue
+    asked += 1
+    first = iso
+  }
+  if (asked < EASE_OFF_DAYS) return false
+  const last = lastDidNight(book, lamp.id, dateIso, true)
+  return !last || last < first
 }
 
 // Did and asked counts alone, without the streak walk.
@@ -181,6 +271,13 @@ export function lampRate(record) {
 // questions have no weekly shape, so they get none.
 export function lampWeeks(book, lamp, dateIso, weeks = 8) {
   if (!lamp || lamp.cadence === 'once' || lamp.cadence === 'monthly' || isEvery(lamp) || !dateIso) return []
+  dateIso = endedAsOf(lamp, dateIso)
+  if (isPerWeek(lamp)) {
+    // Times a week: Monday weeks, Did of its count (3/3), capped at the count.
+    const rows = perWeekRows(book, lamp, dateIso, weeks).map((week) => ({ from: week.from, due: week.need, did: Math.min(week.done, week.need) }))
+    const start = rows.findIndex((week) => week.due > 0)
+    return start < 0 ? [] : rows.slice(start)
+  }
   const live = { ...lamp, archived: false }
   const created = String(lamp.createdOn || '').slice(0, 10)
   const out = []
@@ -216,6 +313,7 @@ export function lampDays(book, lamp, dateIso, weeks = 26, firstDay = 0) {
   if (!lamp || lamp.cadence === 'once' || lamp.cadence === 'monthly' || isEvery(lamp) || !dateIso) return empty
   const live = { ...lamp, archived: false }
   const created = String(lamp.createdOn || '').slice(0, 10)
+  const weekly = isPerWeek(lamp)
   const back = (new Date(`${dateIso}T12:00:00`).getDay() - firstDay + 7) % 7
   const start = addDaysIso(dateIso, -((weeks - 1) * 7 + back))
   const byDay = [0, 1, 2, 3, 4, 5, 6].map((day) => ({ day, due: 0, did: 0 }))
@@ -225,7 +323,14 @@ export function lampDays(book, lamp, dateIso, weeks = 26, firstDay = 0) {
     const iso = addDaysIso(start, i)
     if (iso > dateIso) break
     let state = ''
-    if (!(created && iso < created) && isDueOn(live, iso)) {
+    if (weekly) {
+      // Times a week has no due days: only the Did days are marked, never a miss.
+      if (didStatus(answerFor(book, lamp.id, periodKeyFor(lamp, iso))?.status)) {
+        state = 'did'
+        byDay[new Date(`${iso}T12:00:00`).getDay()].did += 1
+        any = true
+      }
+    } else if (!(created && iso < created) && isDueOn(live, iso)) {
       const answer = answerFor(book, lamp.id, periodKeyFor(lamp, iso))
       const status = answer?.status || ''
       const away = travelSkipped(book, iso) && travelNightState(answer, iso) === 'none'
@@ -239,7 +344,7 @@ export function lampDays(book, lamp, dateIso, weeks = 26, firstDay = 0) {
     }
     days.push({ iso, state })
   }
-  return any ? { days, byDay } : empty
+  return any ? { days, byDay, weekly } : empty
 }
 
 // This question's answers, newest night first, each with its readable night.

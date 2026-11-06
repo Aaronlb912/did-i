@@ -97,6 +97,7 @@ import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
 import { mergeNoteRows, sortNoteRows, weNoteRows, withMonthHeads, yearAgoNote } from '../src/lib/hall-pages.js'
 import { csvShelf } from '../src/lib/csv-import.js'
 import { isDayCadence, lampRate, shelfRate30 } from '../src/lib/lamp-record.js'
+import { countsFromThisWeek, finishLine, streakUnit, unitChangeLine } from '../src/lib/lamp-finish.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor, sunRayLayout } from '../src/lib/cheer-pops.js'
 import {
@@ -8204,6 +8205,106 @@ await testAsync('times a week: best streak walks the weeks', async () => {
   assert.equal(questionStreak(book, per, '2026-10-05'), 1, 'the current streak is the last good week')
 })
 
+await testAsync('times a week: raising the count midweek keeps the week already met, lowering stays lenient', async () => {
+  const { addDaysIso, perWeekLastDay } = await import('../src/lib/recurrence.js')
+  const answersFor = (days) => days.map((d) => ({ id: 'a' + d, lampId: 'gym', periodKey: d, status: 'yes', answeredAt: d + 'T20:00:00' }))
+  // 8 weeks of 2 Dids (Monday and Tuesday from 2026-07-13), then the week of 2026-09-07 with 2 Dids.
+  const days = []
+  for (let w = 0; w < 9; w += 1) for (let i = 0; i < 2; i += 1) days.push(addDaysIso('2026-07-13', w * 7 + i))
+  // Thursday 2026-09-10: raised from 2 a week to 4.
+  const raised = lamp('gym', { perWeek: 4, createdOn: '2026-07-01', was: [{ until: '2026-09-10', cadence: 'daily', perWeek: 2 }] })
+  const book = { id: 'b', lamps: [raised], answers: answersFor(days) }
+  assert.equal(questionStreak(book, raised, '2026-09-10'), 9, 'the week met at 2 still counts after the raise')
+  assert.ok(!perWeekLastDay(book, raised, '2026-09-13'), 'Sunday does not hold a day for a week that met its old count')
+  assert.equal(questionStreak(book, raised, '2026-09-14'), 9, 'the next week is open, the run holds')
+  assert.equal(bestQuestionStreak(book, raised, '2026-09-10'), 9)
+  assert.equal(questionStreak(book, raised, '2026-09-21'), 0, 'the new count of 4 binds from the week after the change')
+  // A week with one Did is short of the smaller count too.
+  const short = { ...book, answers: answersFor(days.slice(0, -1)) }
+  assert.ok(perWeekLastDay(short, raised, '2026-09-13'), 'one Did is short of 2: Sunday holds')
+  // Lowered 4 to 2 on the Thursday: 4 Dids a week before, 2 so far this week.
+  const full = []
+  for (let w = 0; w < 3; w += 1) for (let i = 0; i < 4; i += 1) full.push(addDaysIso('2026-08-17', w * 7 + i))
+  full.push('2026-09-07', '2026-09-08')
+  const lowered = lamp('gym', { perWeek: 2, createdOn: '2026-07-01', was: [{ until: '2026-09-10', cadence: 'daily', perWeek: 4 }] })
+  assert.equal(questionStreak({ id: 'b', lamps: [lowered], answers: answersFor(full) }, lowered, '2026-09-10'), 4, 'lowering counts the split week at the new, smaller count')
+  // 4 on Monday with one Did, lowered to 1 on Wednesday (met), raised to 3 on Friday: still met.
+  const zig = lamp('gym', {
+    perWeek: 3,
+    createdOn: '2026-07-01',
+    was: [
+      { until: '2026-09-09', cadence: 'daily', perWeek: 4 },
+      { until: '2026-09-11', cadence: 'daily', perWeek: 1 },
+    ],
+  })
+  const zigDays = []
+  for (let w = 0; w < 8; w += 1) for (let i = 0; i < 4; i += 1) zigDays.push(addDaysIso('2026-07-13', w * 7 + i))
+  zigDays.push('2026-09-07')
+  const zigBook = { id: 'b', lamps: [zig], answers: answersFor(zigDays) }
+  assert.ok(!perWeekLastDay(zigBook, zig, '2026-09-13'), 'a lower count set midweek keeps the week met after a later raise')
+  assert.equal(questionStreak(zigBook, zig, '2026-09-14'), 9, 'lowered then raised in one week takes back nothing')
+})
+
+await testAsync('times a week: the question page has weeks, a tile count and Did days, never misses', async () => {
+  const { lampDays } = await import('../src/lib/lamp-record.js')
+  const per = lamp('gym', { perWeek: 3, createdOn: '2026-08-01' })
+  const did = ['2026-08-24', '2026-08-26', '2026-08-28', '2026-08-31', '2026-09-02', '2026-09-04', '2026-09-07', '2026-09-09', '2026-09-11', '2026-09-14']
+  const book = { id: 'b', lamps: [per], answers: did.map((d) => ({ id: 'a' + d, lampId: 'gym', periodKey: d, status: 'yes', answeredAt: d + 'T20:00:00' })) }
+  const record = lampRecord(book, per, '2026-09-16')
+  assert.equal(record.weekly, true)
+  assert.deepEqual([record.did, record.asked], [3, 3], '3 weeks met of 3 that counted; the unfinished week is left out')
+  const weeks = lampWeeks(book, per, '2026-09-16', 8)
+  assert.deepEqual(weeks.slice(-2), [{ from: '2026-09-07', due: 3, did: 3 }, { from: '2026-09-14', due: 3, did: 1 }])
+  assert.ok(weeks.every((week) => week.from >= '2026-08-03'), 'no weeks before it was added')
+  const grid = lampDays(book, per, '2026-09-16', 26, 0)
+  assert.equal(grid.weekly, true)
+  assert.equal(grid.days.filter((day) => day.state === 'did').length, did.length)
+  assert.ok(grid.days.every((day) => day.state === '' || day.state === 'did'), 'a missed day is left blank')
+})
+
+await testAsync('a finished question keeps its record and reads as past', async () => {
+  const { lampDidSpan } = await import('../src/lib/lamp-record.js')
+  const { addDaysIso } = await import('../src/lib/recurrence.js')
+  const days = []
+  for (let d = '2026-07-01'; d <= '2026-08-31'; d = addDaysIso(d, 1)) days.push(d)
+  const done = lamp('course', { createdOn: '2026-07-01', endsOn: '2026-08-31' })
+  const book = { id: 'b', lamps: [done], answers: days.map((d) => ({ id: 'a' + d, lampId: 'course', periodKey: d, status: 'yes', answeredAt: d + 'T20:00:00' })) }
+  for (const today of ['2026-09-20', '2026-11-30']) {
+    const record = lampRecord(book, done, today)
+    assert.equal(record.streak, 62, `the last run stays at ${today}`)
+    assert.equal(bestQuestionStreak(book, done, today), 62)
+    const runs = topQuestionStreaks(book, done, today)
+    assert.equal(runs[0].n, 62)
+    assert.equal(runs[0].current, false, 'a finished run is not the current one')
+    assert.ok(lampWeeks(book, done, today, 8).length > 1, 'its last weeks still show')
+  }
+  assert.deepEqual(lampDidSpan(book, done), { n: 62, from: '2026-07-01', to: '2026-08-31' })
+  assert.equal(lampDidSpan(book, lamp('none')).n, 0)
+  const going = { ...done, endsOn: '2026-12-31' }
+  assert.equal(topQuestionStreaks({ ...book, lamps: [going] }, going, '2026-08-31')[0].current, true, 'a question still asked keeps its current run')
+})
+
+await testAsync('ask fewer days shows after 21 asked days with no Did, never for the ones left out', async () => {
+  const { easeOffDue } = await import('../src/lib/lamp-record.js')
+  const book = (lampRow, days = []) => ({ id: 'b', lamps: [lampRow], answers: days.map((d) => ({ id: 'a' + d, lampId: lampRow.id, periodKey: d, status: 'yes', answeredAt: d + 'T20:00:00' })) })
+  const daily = lamp('walk', { createdOn: '2026-07-01' })
+  assert.equal(easeOffDue(book(daily), daily, '2026-09-01'), true)
+  assert.equal(easeOffDue(book(daily, ['2026-08-20']), daily, '2026-09-01'), false, 'a Did in the last 21 days')
+  assert.equal(easeOffDue(book(daily, ['2026-09-01']), daily, '2026-09-01'), false, 'a Did today')
+  assert.equal(easeOffDue(book(daily, ['2026-07-02']), daily, '2026-09-01'), true, 'an old Did does not hold it back')
+  const fresh = lamp('walk', { createdOn: '2026-08-20' })
+  assert.equal(easeOffDue(book(fresh), fresh, '2026-09-01'), false, 'not around 21 days yet')
+  for (const extra of [{ archived: true }, { endsOn: '2026-08-15' }, { cadence: 'once' }, { cadence: 'monthly', monthDay: 1 }, { optional: true }]) {
+    const one = { ...daily, ...extra }
+    assert.equal(easeOffDue(book(one), one, '2026-09-01'), false, JSON.stringify(extra))
+  }
+  const weekly = lamp('walk', { createdOn: '2026-07-01', cadence: 'weekly', weekdays: [1] })
+  assert.equal(easeOffDue(book(weekly), weekly, '2026-09-01'), false, 'one day a week needs 21 asked days, not 21 days')
+  const per = lamp('walk', { createdOn: '2026-07-01', perWeek: 3 })
+  assert.equal(easeOffDue(book(per), per, '2026-09-01'), true)
+  assert.equal(easeOffDue(book(per, ['2026-08-25']), per, '2026-09-01'), false)
+})
+
 await testAsync('every so often: an Away trip keeps the run, and best streak counts it', async () => {
   const book = everyBook([1, 8, 29].map((d) => ['sheets', evDay(d), 'yes']))
   const lamp = { ...book.lamps[0], everyDays: 7 }
@@ -13486,6 +13587,30 @@ test('recapNotes lists up to 3 notes from the week, newest day first', () => {
   assert.deepEqual(out.map((row) => row.answer.note), ['newest', 'late one', 'mid'])
   assert.equal(recapNotes([book], week, '', 10).length, 4)
   assert.deepEqual(recapNotes([book], [], ''), [])
+})
+
+test('finishing names the record, a unit change says the new streak, a midweek count says it counts from this week', () => {
+  const day = (n) => `2026-03-${String(n).padStart(2, '0')}`
+  const lamp = { id: 'f1', question: 'Did I stretch?', cadence: 'daily', createdOn: day(1) }
+  const answers = []
+  for (let n = 1; n <= 5; n += 1) answers.push({ lampId: 'f1', periodKey: day(n), status: 'yes' })
+  const book = { id: 'b', lamps: [lamp], answers }
+  const line = finishLine(book, lamp, day(6))
+  assert(/You did this 5 times since March 2026\./.test(line), 'finishLine names count and month: ' + line)
+  assert(/Best run 5 days\./.test(line), 'finishLine names best run: ' + line)
+  assert(finishLine({ ...book, answers: [] }, lamp, day(6)) === '', 'finishLine is empty with no Did')
+  assert(streakUnit({ cadence: 'daily', perWeek: 3 }) === 'weeks', 'times a week counts weeks')
+  assert(streakUnit({ cadence: 'daily' }) === 'days', 'daily counts days')
+  assert(streakUnit({ cadence: 'every', everyDays: 7 }) === '', 'every so often has no unit')
+  const weekly = { ...lamp, perWeek: 3 }
+  assert(/counts weeks/.test(unitChangeLine(book, lamp, weekly, day(6))), 'daily to times a week says weeks')
+  assert(unitChangeLine(book, lamp, lamp, day(6)) === '', 'same unit says nothing')
+  // 2026-03-04 is a Wednesday, 2026-03-02 a Monday.
+  assert(countsFromThisWeek(weekly, 2, '2026-03-04') === true, 'a lowered count midweek counts from this week')
+  assert(countsFromThisWeek(weekly, 4, '2026-03-04') === false, 'a raised count binds from next week')
+  assert(countsFromThisWeek(lamp, 4, '2026-03-04') === true, 'switching to times a week midweek counts from this week')
+  assert(countsFromThisWeek(weekly, 3, '2026-03-04') === false, 'same count says nothing')
+  assert(countsFromThisWeek(weekly, 4, '2026-03-02') === false, 'Monday says nothing')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

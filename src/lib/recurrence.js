@@ -433,7 +433,7 @@ export function perWeekLastDay(book, lamp, dateIso) {
   if (!weekLastDay(dateIso) || !perWeekDueOn(book, lamp, dateIso) || closedDay(book, lamp, dateIso)) return false
   // Paused or travel days lower the count, same as the question's own week streak.
   const sched = lamp.was ? scheduleAt(lamp, dateIso) : lamp
-  return perWeekDone(book, lamp.id, dateIso, false) < weekNeed(book, sched, weekStartOf(dateIso))
+  return perWeekDone(book, lamp.id, dateIso, false) < splitWeekNeed(book, lamp, sched, weekStartOf(dateIso))
 }
 
 // A Not yet on a times a week question is a miss only on a last day it held.
@@ -455,13 +455,29 @@ function weekNeed(book, lamp, start) {
   return Math.max(1, Math.ceil((Number(lamp.perWeek) * open) / 7))
 }
 
+// weekNeed for sched (the schedule at the week's end). When changes to the
+// count split the week, the smallest count that ran in it: raising it midweek
+// takes back nothing, lowering it stays lenient.
+function splitWeekNeed(book, lamp, sched, start) {
+  let need = weekNeed(book, sched, start)
+  if (!lamp.was) return need
+  const end = addDaysIso(start, 6)
+  for (const old of lamp.was) {
+    if (!(old.until > start && old.until <= end)) continue
+    const ran = { ...lamp, ...old, was: null }
+    if (isPerWeek(ran) && Number(ran.perWeek) < Number(sched.perWeek)) need = Math.min(need, weekNeed(book, ran, start))
+  }
+  return need
+}
+
 // One past week judged by the schedule it ran under (the newer one when a
-// change split it). A times-a-week schedule needs its count; any other needs a
-// Did on every day it asked. need 0 means the week does not count either way.
+// change split it, unless the older count was smaller). A times-a-week schedule
+// needs its count; any other needs a Did on every day it asked. need 0 means
+// the week does not count either way.
 function weekScore(book, lamp, start, list) {
   const sched = lamp.was ? scheduleAt(lamp, addDaysIso(start, 6)) : lamp
   if (isPerWeek(sched)) {
-    return { need: weekNeed(book, sched, start), done: didCountBefore(list, addDaysIso(start, 6), true) - didCountBefore(list, start) }
+    return { need: splitWeekNeed(book, lamp, sched, start), done: didCountBefore(list, addDaysIso(start, 6), true) - didCountBefore(list, start) }
   }
   let need = 0
   let done = 0
@@ -516,6 +532,21 @@ export function perWeekBest(book, lamp, dateIso, cap = 1000) {
     start = addDaysIso(start, 7)
   }
   return best
+}
+
+// The last `count` weeks (Monday first, oldest first, the week of dateIso
+// last), each { from, need, done } as perWeekStreak judges them.
+export function perWeekWeeks(book, lamp, dateIso, count = 4) {
+  if (!isPerWeek(lamp)) return []
+  const list = didNightsOf(book, lamp.id)
+  const out = []
+  let start = addDaysIso(weekStartOf(dateIso), -7 * (count - 1))
+  for (let i = 0; i < count; i += 1) {
+    const { need, done } = weekScore(book, lamp, start, list)
+    out.push({ from: start, need, done })
+    start = addDaysIso(start, 7)
+  }
+  return out
 }
 
 // Days between two dates, less the days the question was not asked.

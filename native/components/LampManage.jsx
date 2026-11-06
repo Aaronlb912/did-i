@@ -2,10 +2,12 @@ import { endQuestion, endQuestionDate, questionEnded, reopenQuestion, setPauseUn
 import { addDaysIso, boardDate, formatBoardDate, isPerWeek } from '../../src/lib/recurrence.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { questionStreak } from '../../src/lib/lamp-record.js'
+import { finishLine } from '../../src/lib/lamp-finish.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { dropCheckOn } from '../../src/lib/check-on.js'
 import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { goHash } from '../navigation/hash.js'
+import { openEditAt } from '../lib/edit-fold.js'
 import { SetCap, SetCard, SetRow } from './SetBits.jsx'
 import { SetChoice } from './SetChoice.jsx'
 import { publishSheet } from './SheetHost.jsx'
@@ -93,16 +95,32 @@ function deleteNote(book, lamp) {
 
 // Stop asking and Delete, shared by the question page and its edit page.
 // `onPaused` lets the edit page keep its unsaved draft in step with the pause.
+// `onLess` is how the edit page opens its own When section; elsewhere "Ask less often" opens Edit there.
 // The question page's ⋯ menu uses the same two actions.
-export function lampActions({ book, lamp, colors, onChange, onPaused }) {
+export function lampActions({ book, lamp, colors, onChange, onPaused, onLess }) {
   // Done with this one: asks first, then ends it (moves to Earlier). It can be taken back for a few seconds.
   function askDone() {
     const from = liveBook(book) || book
     const here = (from.lamps || []).find((item) => item.id === lamp.id) || lamp
     const lastToday = endQuestionDate(from, here) === boardDate(new Date(), from.dayFoldHour)
+    // The record comes first; with no Did yet the plain body stands alone.
+    const record = finishLine(from, here, boardDate(new Date(), from.dayFoldHour))
+    const plain = t(lastToday ? 'lamp.doneBodyToday' : 'lamp.doneBody')
     publishSheet({
       title: t('lamp.doneTitle'),
-      body: t(lastToday ? 'lamp.doneBodyToday' : 'lamp.doneBody'),
+      body: record ? `${record} ${plain}` : plain,
+      moreLabel: here.cadence === 'once' ? undefined : t('lamp.doneLess'),
+      onMore:
+        here.cadence === 'once'
+          ? undefined
+          : () => {
+              publishSheet(null)
+              if (onLess) onLess()
+              else {
+                openEditAt('when')
+                goHash('/hang', { id: lamp.id })
+              }
+            },
       goLabel: t('lamp.doneRow'),
       closeLabel: t('settings.neverMind'),
       colors,
@@ -228,9 +246,9 @@ function pauseUntilOptions(lamp, today) {
   return [{ id: '', label: t('lamp.pauseNoDate') }, ...days.sort().map((id) => ({ id, label: formatBoardDate(id) }))]
 }
 
-export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate }) {
+export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate, onLess }) {
   if (!lamp) return null
-  const { togglePause, askDelete, askDone, askAgain } = lampActions({ book, lamp, colors, onChange, onPaused })
+  const { togglePause, askDelete, askDone, askAgain } = lampActions({ book, lamp, colors, onChange, onPaused, onLess })
   const ended = questionEnded(lamp, boardDate(new Date(), book.dayFoldHour))
   const canFinish = !lamp.archived && !ended && lamp.cadence !== 'once'
   return (
