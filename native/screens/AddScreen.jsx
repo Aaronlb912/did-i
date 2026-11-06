@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Platform } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
+import { soundsStop } from '../../src/lib/board-json.js'
 import { soundsTogether } from '../../src/lib/did-we.js'
 import { t } from '../../src/lib/i18n.js'
 import { LeadPicker } from '../components/LeadPicker.jsx'
@@ -31,17 +32,31 @@ export function AddScreen({ book, boards, onChange, onSaveTo, route, mode: start
   const tagRef = useRef('')
   // Did I words that sound shared offer Did we, once, without switching.
   const [together, setTogether] = useState(false)
+  // Words that start with no, stop, quit... offer a hint to ask what was kept. A tap hides it.
+  const [stop, setStop] = useState(false)
+  const stopHint = stop ? <Pill label={t('add.stopHint')} onPress={() => setStop(false)} colors={colors} /> : null
   // A Did we or Did you from a person's card keeps that person picked.
   const withId = startMode === 'i' ? '' : route?.id || ''
 
   if (editing) {
-    return <HangScreen book={book} boards={boards} onChange={onChange} onSaveTo={onSaveTo} route={route} />
+    return (
+      <HangScreen
+        book={book}
+        boards={boards}
+        onChange={onChange}
+        onSaveTo={onSaveTo}
+        route={route}
+        onBlankChange={(value) => setStop(soundsStop(value))}
+        below={stopHint}
+      />
+    )
   }
 
   const shared = {
     onBlankChange: (value) => {
       words.current = value
       setTogether(soundsTogether(value))
+      setStop(soundsStop(value))
     },
     onLeadPress: () => setPicking(true),
     // Signed out, Did we and Did you only offer sign in, so give a way back.
@@ -74,19 +89,23 @@ export function AddScreen({ book, boards, onChange, onSaveTo, route, mode: start
             draftRef.current = null
             tagRef.current = ''
             setTogether(false)
+            setStop(false)
             setRound((n) => n + 1)
           }}
           below={
-            together && account.user ? (
-              <Pill
-                label={t('lead.makeWe')}
-                onPress={() => {
-                  setTogether(false)
-                  setMode('we')
-                }}
-                colors={{ ...colors, ink: colors.we || colors.ink }}
-              />
-            ) : null
+            <>
+              {together && account.user ? (
+                <Pill
+                  label={t('lead.makeWe')}
+                  onPress={() => {
+                    setTogether(false)
+                    setMode('we')
+                  }}
+                  colors={{ ...colors, ink: colors.we || colors.ink }}
+                />
+              ) : null}
+              {stopHint}
+            </>
           }
           {...shared}
         />

@@ -508,6 +508,13 @@ export function didQuestion(raw) {
   return `Did I ${rest}?`
 }
 
+// Words that start a habit someone wants to stop ("no sugar", "quit vaping").
+// Asked that way, a clean day is a Not yet. Whole words only: "notice" is fine.
+export function soundsStop(raw) {
+  const text = asString(raw).trim().replace(/^did i\b\s*/i, '')
+  return /^(no|not|stop|quit|don['\u2019]?t|never|avoid)(?![\p{L}\p{N}])/iu.test(text)
+}
+
 export function shortLabel(lamp) {
   const short = asString(lamp?.short).trim()
   if (short) return short
