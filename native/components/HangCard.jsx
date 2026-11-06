@@ -187,7 +187,7 @@ export const HangCard = forwardRef(function HangCard(
         ref={inputRef}
         liftsItself={liftsItself}
         value={blank}
-        onChangeText={onBlank}
+        onChangeText={(value) => onBlank?.(value.replace(/[\r\n]+/g, ' '))}
         onFocus={onFocus}
         onBlur={onBlur}
         onSubmitEditing={onSubmit}
@@ -199,7 +199,7 @@ export const HangCard = forwardRef(function HangCard(
         returnKeyType="done"
         submitBehavior="blurAndSubmit"
         multiline
-        maxLength={120}
+        maxLength={BLANK_MAX}
         style={[
           faceCardStyles.title,
           styles.blank,
@@ -229,6 +229,12 @@ export const HangCard = forwardRef(function HangCard(
       ) : null}
       </View>
       </View>
+      {/* Near the limit, so the last letters are never dropped without a word. */}
+      {focused && String(blank || '').length >= BLANK_MAX - 20 ? (
+        <Text accessibilityLiveRegion="polite" style={[styles.meta, styles.count, { color: colors.inkSoft }]}>
+          {String(blank || '').length}/{BLANK_MAX}
+        </Text>
+      ) : null}
       {meta && metaAction ? (
         <Pressable
           onPress={metaAction.onPress}
@@ -256,8 +262,10 @@ export const HangCard = forwardRef(function HangCard(
 
 // About one wide letter at the title size (26).
 const TYPE_ROOM = 28
+const BLANK_MAX = 120
 
 const styles = StyleSheet.create({
+  count: { textAlign: 'right', fontVariant: ['tabular-nums'] },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4, marginBottom: -12 },
   metaGrow: { flex: 1, marginTop: 0 },
   metaGo: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end' },

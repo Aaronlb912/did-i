@@ -47,6 +47,8 @@ const LEGACY_KINDS = ['house', 'pills', 'money', 'people', 'other']
 // Topics live in lamp.kind as one comma-separated string ("Pets, Morning").
 const KIND_MAX = 160
 export const QUESTION_MAX = 120
+// What is typed is up to 120; a saved question also has "Did I " and "?".
+const QUESTION_SAVED_MAX = QUESTION_MAX + 'Did I ?'.length
 const TOPICS_MAX = 8
 const CADENCES = ['daily', 'weekly', 'monthly', 'once', 'every_n', 'every']
 const SLOTS = ['morning', 'whenever', 'night']
@@ -263,7 +265,7 @@ export function normalizeLamp(raw) {
   const everyDays = cadence === 'every' && Number.isInteger(everyDaysRaw) && everyDaysRaw >= 1 && everyDaysRaw <= 365 ? everyDaysRaw : ''
   return {
     id: asString(lamp.id) || newLampId(),
-    question: asString(lamp.question).trim().slice(0, QUESTION_MAX),
+    question: asString(lamp.question).trim().slice(0, QUESTION_SAVED_MAX),
     short: asString(lamp.short).trim(),
     kind,
     cadence,
@@ -503,7 +505,8 @@ export function shortFromQuestion(question, max = 0) {
   const cleaned = text.replace(/^did i\s+/i, '').replace(/\?+$/, '').trim()
   if (!cleaned) return ''
   const out = cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
-  return max > 0 ? out.slice(0, max) : out
+  // By character, not code unit, so an emoji is never cut in half.
+  return max > 0 ? Array.from(out).slice(0, max).join('') : out
 }
 
 // Whatever finishes "Did I ___" becomes a whole question. A pasted
