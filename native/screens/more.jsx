@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { pingsFailed } from '../shim/native.js'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import { takeSpoken } from '../../src/lib/voice-add.js'
@@ -24,6 +24,7 @@ import { useUndoToast } from '../lib/toast-queue.js'
 import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { AppVersion } from '../components/AppVersion.jsx'
 import { MenuIcon } from '../components/MenuIcon.jsx'
+import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import {
   accountMissText,
   checkCode,
@@ -55,7 +56,7 @@ import {
 import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
 import { loadBackupFile } from '../lib/backup-load.js'
 import { currentBook, enterLand, folderNameKey, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
-import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
+import { pullAndMerge, readSync, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { sendFeedback } from '../lib/feedback-mail.js'
 import { legalEmail } from '../../src/lib/legal.js'
 import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
@@ -104,7 +105,7 @@ import { lastCallAt as sharedLastCallAt, quietToFor } from '../../src/lib/quiet.
 import { PING_KINDS, afterQuiet, awayEnd, awayKey, awayLeft, awayNow, awayStart, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
 import { backupFileReady, copyText, pingTest, playClick, shareShelf } from '../../src/lib/native.js'
-import { syncLine } from '../../src/lib/sync-line.js'
+import { syncLine, syncMissAct, syncMissShown } from '../../src/lib/sync-line.js'
 import {
   checkPin,
   clearPin,
@@ -257,7 +258,7 @@ export function AboutScreen({ book }) {
         </View>
       ))}
       <View style={[styles.card, { backgroundColor: colors.panel2, borderColor: colors.line }]}>
-        <KeyButton colors={colors} label={t('about.how')} onPress={() => goHash('/help')} />
+        <KeyButton colors={colors} label={t('about.how')} onPress={() => goHash('/help', { id: 'tonight' })} />
         <AppVersion colors={colors} />
       </View>
     </ScreenShell>
@@ -305,9 +306,14 @@ export function SeenScreen({ book }) {
   )
 }
 
+// Which fold holds each topic a link can open (/help with an id), and the page's scroller.
+const HELP_FOLD = { tonight: 'daily', questions: 'daily', pings: 'daily', widget: 'daily', fixWidget: 'fix', fixSync: 'fix', fixLate: 'fix', phone: 'app' }
+const HelpAt = createContext({ at: '', scroller: null, reduce: false, inset: 0 })
+
 // One topic group of the help page; folded until tapped so the page scans.
-function HelpFold({ colors, title, children }) {
-  const [open, setOpen] = useState(false)
+function HelpFold({ colors, title, id, children }) {
+  const { at } = useContext(HelpAt)
+  const [open, setOpen] = useState(Boolean(id) && (at === id || HELP_FOLD[at] === id))
   return (
     <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
       <Pressable
@@ -328,10 +334,23 @@ function HelpFold({ colors, title, children }) {
 
 // One help topic: title, one short line, its Go buttons. Any longer text folds
 // behind a full-width More row.
-function HelpTopic({ colors, title, short, go, children }) {
-  const [open, setOpen] = useState(false)
+function HelpTopic({ colors, id, title, short, go, children }) {
+  const { at, scroller, reduce, inset } = useContext(HelpAt)
+  const mine = Boolean(id) && at === id
+  const [open, setOpen] = useState(mine)
+  const node = useRef(null)
+  // Opened from a link: bring the topic up under the header once the fold has opened.
+  useEffect(() => {
+    if (!mine) return undefined
+    const timer = setTimeout(() => {
+      const inner = scroller?.current?.getInnerViewRef?.()
+      if (!scroller?.current?.scrollTo || !inner || !node.current?.measureLayout) return
+      node.current.measureLayout(inner, (_x, top) => scroller.current.scrollTo({ y: Math.max(-inset, top - inset - 12), animated: !reduce }), () => {})
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [mine])
   return (
-    <>
+    <View ref={node} collapsable={false} style={styles.foldBody}>
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{title}</Text>
       <Meta colors={colors} style={go || children ? styles.beforeBtn : undefined}>{short}</Meta>
       {go}
@@ -342,15 +361,22 @@ function HelpTopic({ colors, title, short, go, children }) {
           <KeyButton colors={colors} label={t('help.more')} onPress={() => setOpen(true)} />
         )
       ) : null}
-    </>
+    </View>
   )
 }
 
-export function HelpScreen() {
+// openId: a topic or fold to show open (a link from Reminders, Ideas, About or Account).
+export function HelpScreen({ openId = '' }) {
   const colors = useHallColors()
   const closeAt = clockWords(`${String(GRACE_END).padStart(2, '0')}:00`)
+  const scroller = useRef(null)
+  const reduce = useReduceMotion()
+  // On iOS the page runs under the navigation bar, so the topic stops below it.
+  const inset = useHeaderInset()
+  const here = useMemo(() => ({ at: openId, scroller, reduce, inset }), [openId, reduce, inset])
   return (
-    <ScreenShell title={t('settings.howDidIWorks')} colors={colors}>
+    <HelpAt.Provider value={here}>
+    <ScreenShell title={t('settings.howDidIWorks')} colors={colors} scrollHandle={scroller}>
       <View style={[styles.card, { backgroundColor: colors.panel, borderColor: colors.line }]}>
         <Meta colors={colors} style={styles.beforeBtn}>{t('help.lead')}</Meta>
         <KeyButton colors={colors} label={t('settings.ideas')} onPress={() => goHash('/ideas')} />
@@ -358,8 +384,8 @@ export function HelpScreen() {
       </View>
       <KeyButton colors={colors} label={t('tour.help')} onPress={() => startTour('basics', { replay: true })} />
       <KeyButton colors={colors} label={t('tour.showFriends')} onPress={() => startTour('more', { replay: true })} />
-      <HelpFold colors={colors} title={t('help.groupDaily')}>
-        <HelpTopic colors={colors} title={t('help.tonight')} short={t('help.tonightP1')}>
+      <HelpFold colors={colors} id="daily" title={t('help.groupDaily')}>
+        <HelpTopic colors={colors} id="tonight" title={t('help.tonight')} short={t('help.tonightP1')}>
           <Meta colors={colors}>{t('help.tonightP2', { time: closeAt })}</Meta>
         </HelpTopic>
         <HelpTopic colors={colors} title={t('help.streak')} short={t('help.streakP', { time: closeAt })}>
@@ -391,28 +417,23 @@ export function HelpScreen() {
         />
         <HelpTopic
           colors={colors}
+          id="questions"
           title={t('help.questions')}
           short={t('help.questionsP')}
           go={<KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />}
         />
         <HelpTopic
           colors={colors}
+          id="pings"
           title={t('help.pings')}
           short={t('help.pingsP')}
           go={<KeyButton colors={colors} label={t('help.pingsGo')} onPress={() => goHash('/pings')} />}
         >
           <Meta colors={colors}>{t('help.pingsZone')}</Meta>
         </HelpTopic>
-        {Platform.OS === 'android' ? (
-          <HelpTopic
-            colors={colors}
-            title={t('pings.lateTitle')}
-            short={t('pings.lateBody')}
-            go={<KeyButton colors={colors} label={t('pings.lateGo')} onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))} />}
-          />
-        ) : null}
         <HelpTopic
           colors={colors}
+          id="widget"
           title={t('help.widget')}
           short={t(Platform.OS === 'ios' ? 'help.widgetPIos' : 'help.widgetPAndroid')}
           go={<KeyButton colors={colors} label={t('help.widgetGo')} onPress={() => pinWidget(colors)} />}
@@ -421,7 +442,35 @@ export function HelpScreen() {
           <Meta colors={colors}>{t('help.widgetWatch')}</Meta>
         </HelpTopic>
       </HelpFold>
-      <HelpFold colors={colors} title={t('help.groupSocial')}>
+      <HelpFold colors={colors} id="fix" title={t('help.groupFix')}>
+        <HelpTopic
+          colors={colors}
+          id="fixWidget"
+          title={t('help.fixWidget')}
+          short={t('help.fixWidgetP')}
+          go={<KeyButton colors={colors} label={t('help.fixWidgetGo')} onPress={() => pinWidget(colors)} />}
+        />
+        <HelpTopic
+          colors={colors}
+          id="fixSync"
+          title={t('help.fixSync')}
+          short={t('help.fixSyncP', { path: `${t('settings.account')}, ${t('account.privacyRow')}, ${t('account.syncNow')}` })}
+          go={
+            <View style={styles.moveRows}>
+              <KeyButton colors={colors} label={t('account.syncNow')} onPress={() => goHash('/account', { id: 'data' })} />
+              <KeyButton colors={colors} label={t('feedback.send')} onPress={sendFeedback} />
+            </View>
+          }
+        />
+        <HelpTopic
+          colors={colors}
+          id="fixLate"
+          title={t('pings.lateTitle')}
+          short={t(Platform.OS === 'android' ? 'pings.lateBody' : 'help.fixLateIos')}
+          go={<KeyButton colors={colors} label={t('pings.lateGo')} onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))} />}
+        />
+      </HelpFold>
+      <HelpFold colors={colors} id="social" title={t('help.groupSocial')}>
         <HelpTopic
           colors={colors}
           title={t('help.people')}
@@ -444,7 +493,7 @@ export function HelpScreen() {
           go={<KeyButton colors={colors} label={t('photos.title')} onPress={() => goHash('/photos')} />}
         />
       </HelpFold>
-      <HelpFold colors={colors} title={t('help.groupShop')}>
+      <HelpFold colors={colors} id="shop" title={t('help.groupShop')}>
         <HelpTopic
           colors={colors}
           title={t('help.coins')}
@@ -460,7 +509,7 @@ export function HelpScreen() {
           go={<KeyButton colors={colors} label={t('frames.all')} onPress={() => goHash('/kit', { id: 'frames' })} />}
         />
       </HelpFold>
-      <HelpFold colors={colors} title={t('help.groupApp')}>
+      <HelpFold colors={colors} id="app" title={t('help.groupApp')}>
         <HelpTopic
           colors={colors}
           title={t('help.switch')}
@@ -471,7 +520,13 @@ export function HelpScreen() {
           <Meta colors={colors}>{t('help.switchP3')}</Meta>
           <Meta colors={colors}>{t('help.switchP4')}</Meta>
         </HelpTopic>
-        <HelpTopic colors={colors} title={t('help.phone')} short={t('help.phonePApp')}>
+        <HelpTopic
+          colors={colors}
+          id="phone"
+          title={t('help.phone')}
+          short={t('help.phonePApp', { path: `${t('settings.account')}, ${t('account.privacyRow')}, ${t('account.syncNow')}` })}
+          go={<KeyButton colors={colors} label={t('settings.account')} onPress={() => goHash('/account', { id: 'data' })} />}
+        >
           {backupFileReady() ? <Meta colors={colors}>{t('help.phoneBackup', { save: t('settings.sendFile'), load: t('account.loadFile') })}</Meta> : null}
         </HelpTopic>
         <HelpTopic
@@ -514,6 +569,7 @@ export function HelpScreen() {
       <Text style={[styles.blockTitle, { color: colors.ink }]}>{t('help.versionTitle')}</Text>
       <AppVersion colors={colors} />
     </ScreenShell>
+    </HelpAt.Provider>
   )
 }
 
@@ -613,7 +669,7 @@ export function IdeasScreen() {
         </View>
       ))}
       <DidButton colors={colors} label={t('ideas.writeOwn')} onPress={() => goHash('/add')} />
-      <KeyButton colors={colors} label={t('ideas.help')} onPress={() => goHash('/help')} />
+      <KeyButton colors={colors} label={t('ideas.help')} onPress={() => goHash('/help', { id: 'questions' })} />
     </ScreenShell>
   )
 }
@@ -2780,7 +2836,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange,
       ) : null}
       <SetCard colors={colors}>
         <SetRow colors={colors} icon="clock" label={t('pings.comingUp')} sub={t('pings.comingUpSub')} chevron onPress={() => goHash('/later')} />
-        <SetRow colors={colors} icon="help" label={t('pings.help')} sub={t('pings.helpSub')} chevron last onPress={() => goHash('/help')} />
+        <SetRow colors={colors} icon="help" label={t('pings.help')} sub={t('pings.helpSub')} chevron last onPress={() => goHash('/help', { id: 'pings' })} />
       </SetCard>
     </ScreenShell>
   )
@@ -2996,7 +3052,7 @@ function RenamePhone({ row, colors, onClose, onSaved }) {
   )
 }
 
-function AccountSignedIn({ book, email, onChange, onImport }) {
+function AccountSignedIn({ book, email, onChange, onImport, openData = false }) {
   const colors = useHallColors()
   const sync = useSync()
   const purse = normalizePurse(book)
@@ -3047,7 +3103,7 @@ function AccountSignedIn({ book, email, onChange, onImport }) {
 
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState(0)
-  const [dataOpen, setDataOpen] = useState(false)
+  const [dataOpen, setDataOpen] = useState(openData)
   const [allPhones, setAllPhones] = useState(false)
   const shownPhones = allPhones ? phones : phones.slice(0, 3)
   const phonesHidden = !allPhones && phones.length > 3
@@ -3117,7 +3173,9 @@ function AccountSignedIn({ book, email, onChange, onImport }) {
       if (!merged) throw new Error('sync')
       confirmDone(t('account.syncJust'))
     } catch {
-      confirmMiss(t('tonight.syncMiss'))
+      // A refusal says what to do; offline keeps the line that says it will try again.
+      const miss = syncMissShown(readSync().miss)
+      confirmMiss(syncMissAct(miss) === 'retry' ? t('tonight.syncMiss') : tMiss(miss))
     }
     setBusy('')
   }
@@ -3478,10 +3536,10 @@ ${lastCopyLine(copied)}` : t('account.exportSub')} value={busy === 'export' ? t(
   )
 }
 
-export function AccountScreen({ book, onChange, onImport }) {
+export function AccountScreen({ book, onChange, onImport, openData = false }) {
   const account = useAccount()
   if (account.user) {
-    return <AccountSignedIn book={book} email={account.email} onChange={onChange} onImport={onImport} />
+    return <AccountSignedIn book={book} email={account.email} onChange={onChange} onImport={onImport} openData={openData} />
   }
   return <AccountSignedOut on={account.on} />
 }

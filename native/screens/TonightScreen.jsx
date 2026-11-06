@@ -36,6 +36,8 @@ import {
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { openStreakCard, passText } from '../lib/share-card.jsx'
 import { keptButMissing } from '../lib/kept-send.js'
+import { sendFeedback } from '../lib/feedback-mail.js'
+import { syncMissAct, syncMissShown } from '../../src/lib/sync-line.js'
 import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
@@ -935,15 +937,24 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     if (back && account.user && sync.how === 'miss') pullAndMerge()
   }, [online])
   // A sync that cannot reach the account says so once, in the same line.
-  const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(sync.miss) : t('tonight.syncMiss')) : ''
+  const syncMiss = account.user && sync.how === 'miss' ? (sync.miss ? tMiss(syncMissShown(sync.miss)) : t('tonight.syncMiss')) : ''
+  const syncAct = syncMissAct(syncMissShown(sync.miss))
   useEffect(() => {
     if (!syncMiss) {
       dropToast('sync-miss')
       return
     }
-    // Tap to try now rather than wait for the next wake.
-    showToast({ id: 'sync-miss', kind: 'error', text: `${syncMiss} ${t('toast.tapRetry')}`, ms: 5200, onPress: () => pullAndMerge() })
-  }, [syncMiss])
+    // Offline or a timeout: tap to try now rather than wait for the next wake.
+    // A refusal will not pass on a retry, so the tap goes to what fixes it.
+    const onPress = {
+      retry: () => pullAndMerge(),
+      account: () => goHash('/account', { id: 'data' }),
+      lamps: () => goHash('/lamps'),
+      feedback: () => sendFeedback(),
+    }[syncAct]
+    const hint = syncAct === 'retry' ? ` ${t('toast.tapRetry')}` : syncAct === 'feedback' ? ` ${t('toast.tapFeedback')}` : ''
+    showToast({ id: 'sync-miss', kind: 'error', text: `${syncMiss}${hint}`, ms: 5200, onPress })
+  }, [syncMiss, syncAct])
   useEffect(() => {
     if (!stack.cheer) return undefined
     const timer = setTimeout(stack.cheered, CELEBRATE_MS)

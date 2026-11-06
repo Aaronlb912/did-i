@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { DevSettings, Pressable, ScrollView, Text, View } from 'react-native'
+import { DevSettings, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import * as SplashScreen from 'expo-splash-screen'
 import { t } from '../src/lib/i18n.js'
 
@@ -19,6 +19,33 @@ export function Boot() {
   const [App, setApp] = useState(null)
   const [fail, setFail] = useState('')
   const [retryFailed, setRetryFailed] = useState(false)
+  const [noMail, setNoMail] = useState('')
+
+  // The app did not load, so none of its modules can be trusted: try the full
+  // mail, then a plain one with just the error, then show the address.
+  async function sendFail() {
+    const what = String(fail).split('\n')[0].slice(0, 300)
+    const extra = [t('feedback.crash', { what })]
+    setNoMail('')
+    try {
+      if (await require('./lib/feedback-mail.js').openFeedbackMail(extra)) return
+    } catch {
+      // Falls through to the plain mail.
+    }
+    let email = ''
+    try {
+      const { feedbackMailto } = require('../src/lib/feedback.js')
+      email = require('../src/lib/legal.js').legalEmail()
+      const url = feedbackMailto(extra)
+      if (url) {
+        await Linking.openURL(url)
+        return
+      }
+    } catch {
+      // No mail app, or the helpers did not load either.
+    }
+    setNoMail(email ? t('feedback.noMail', { email }) : t('boot.retryFail'))
+  }
 
   function retry() {
     setRetryFailed(false)
@@ -77,6 +104,14 @@ export function Boot() {
         >
           <Text style={{ color: '#0e1014', fontSize: 17 }}>{t('boot.retry')}</Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={sendFail}
+          style={{ marginTop: 12, minHeight: 44, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#99a1b0', alignItems: 'center' }}
+        >
+          <Text style={{ color: '#f4f6fa', fontSize: 17 }}>{t('feedback.send')}</Text>
+        </Pressable>
+        {noMail ? <Text style={{ color: '#99a1b0', fontSize: 15, marginTop: 12 }}>{noMail}</Text> : null}
         {retryFailed ? (
           <Text style={{ color: '#99a1b0', fontSize: 15, marginTop: 12 }}>{t('boot.retryFail')}</Text>
         ) : null}

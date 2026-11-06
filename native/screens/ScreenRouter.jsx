@@ -148,7 +148,7 @@ export function ScreenRouter({
   if (HALL.has(path) && emptyHall && !welcomeSeen()) return <GoTo path="/first" from={path} />
   if (path === '/about') return <AboutScreen book={book} />
   if (path === '/settings/seen') return <SeenScreen book={book} />
-  if (path === '/help') return <HelpScreen />
+  if (path === '/help') return <HelpScreen key={route.id} openId={route.id} />
   if (path === '/ideas') return <IdeasScreen />
   if (path === '/recent') return <RecentScreen />
   if (path === '/later') return <LaterScreen book={book} boards={boards} />
@@ -163,7 +163,7 @@ export function ScreenRouter({
   if (path === '/gifts') return <GiftsSentScreen book={book} />
   if (path === '/gift') return <GiftScreen key={route.id} book={book} onChange={change} toId={route.id} />
   if (path === '/kit') return <CollectionScreen key={route.id} book={book} onChange={change} startTab={route.id} />
-  if (path === '/account') return <AccountScreen book={book} onChange={change} onImport={onImport} />
+  if (path === '/account') return <AccountScreen book={book} onChange={change} onImport={onImport} openData={route.id === 'data'} />
   if (path === '/people') return <PeopleScreen book={book} onChange={change} />
   if (path === '/photos') return <PhotosScreen key={route.id} openId={route.id} />
   if (path === '/photo') return <PhotoViewScreen key={route.id} id={route.id} book={book} onChange={change} />

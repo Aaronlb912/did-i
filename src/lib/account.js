@@ -270,6 +270,19 @@ export async function deleteAccount() {
   return { miss: '' }
 }
 
+// The signed-in user from the saved session, without a network call to the
+// server. Gives up after a moment: a mail must not wait on a slow refresh.
+export async function sessionUser(ms = 1500) {
+  const db = cloud()
+  if (!db) return null
+  try {
+    const { data } = await Promise.race([db.auth.getSession(), new Promise((resolve) => setTimeout(() => resolve({}), ms))])
+    return data?.session?.user || null
+  } catch {
+    return null
+  }
+}
+
 export async function readUser() {
   const db = cloud()
   if (!db) return null
