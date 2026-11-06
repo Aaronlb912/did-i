@@ -5,7 +5,7 @@ import { boardDate, isDueOn } from './recurrence.js'
 
 export const STARTERS = [
   { idea: 'pills', question: 'Did I take my meds?', short: 'Meds', kind: 'pills', cadence: 'daily', askAfter: '20:00', slot: 'night' },
-  { idea: 'water', question: 'Did I drink enough water?', short: 'Water', kind: 'other', cadence: 'daily', askAfter: '20:00', slot: 'night' },
+  { idea: 'water', question: 'Did I drink enough water?', short: 'Water', kind: 'other', cadence: 'daily', askAfter: '20:00', slot: 'night', trackAmount: true },
   { idea: 'text', question: 'Did I text them back?', short: 'Text back', kind: 'people', cadence: 'daily', askAfter: '', slot: 'whenever' },
   { idea: 'skin', question: 'Did I do my skincare?', short: 'Skincare', kind: 'other', cadence: 'daily', askAfter: '21:30', slot: 'night' },
   {
@@ -24,11 +24,17 @@ export const STARTERS = [
 // The ideas in the app's language: "Did I" stays, the words after it and the
 // short name follow the language (like first.ownHint).
 export function starterList() {
-  return STARTERS.map((item) => ({
+  return STARTERS.map(ideaWords)
+}
+
+// An idea's words in the app's language, and the unit when it counts an amount.
+function ideaWords(item) {
+  return {
     ...item,
     question: t(`ideas.${item.idea}.question`),
     short: t(`ideas.${item.idea}.start`),
-  }))
+    ...(item.trackAmount ? { amountUnit: t(`ideas.${item.idea}.unit`) } : {}),
+  }
 }
 
 // Folds case, the "Did I" lead and the end mark, so "Meds" matches "meds".
@@ -87,7 +93,7 @@ export const PACKS = [
     id: 'meds',
     items: [
       { idea: 'pills', kind: 'pills', cadence: 'daily', askAfter: '20:00', slot: 'night' },
-      { idea: 'water', kind: 'other', cadence: 'daily', askAfter: '20:00', slot: 'night' },
+      { idea: 'water', kind: 'other', cadence: 'daily', askAfter: '20:00', slot: 'night', trackAmount: true },
       { idea: 'eat', kind: 'other', cadence: 'daily', askAfter: '', slot: 'whenever' },
     ],
   },
@@ -119,11 +125,7 @@ export function packList(book) {
     id: pack.id,
     title: t(`pack.${pack.id}`),
     items: pack.items
-      .map((item) => ({
-        ...item,
-        question: t(`ideas.${item.idea}.question`),
-        short: t(`ideas.${item.idea}.start`),
-      }))
+      .map(ideaWords)
       .filter((item) => !ideaTaken(hung, item.idea)),
   })).filter((pack) => pack.items.length)
 }
