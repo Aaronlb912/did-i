@@ -268,10 +268,40 @@ export function endQuestion(book, lamp, clock = new Date()) {
 
 // Ask a finished question again: its end date goes, or comes back to `back`
 // (undo of Done keeps a date that was planned before).
-export function reopenQuestion(book, lamp, back = '') {
+export function reopenQuestion(book, lamp, back = '', clock = new Date()) {
   if (!lamp || (!lamp.endsOn && !back)) return book
   const { endsOn: _endsOn, ...rest } = lamp
-  return hangInto(book, back ? { ...rest, endsOn: back } : rest, true)
+  const today = boardDate(clock, book.dayFoldHour)
+  // Asked again, but the days it was finished are not misses.
+  const gap = back && back < today ? rest : pauseGap(rest, addDaysIso(lamp.endsOn || today, 1), today)
+  return hangInto(book, back ? { ...gap, endsOn: back } : gap, true)
+}
+
+// A finished question asked again from a later day: it waits as paused until
+// then (resumeDuePauses), and the days between its end and that day are
+// recorded as a pause then, so they are not misses. Today or earlier is
+// the same as asking again now.
+export function resumeOnDate(book, lamp, iso, clock = new Date()) {
+  if (!lamp?.endsOn || !iso) return book
+  if (iso <= boardDate(clock, book.dayFoldHour)) return reopenQuestion(book, lamp, '', clock)
+  const { endsOn, ...rest } = lamp
+  const today = boardDate(clock, book.dayFoldHour)
+  return hangInto(book, { ...rest, archived: true, pausedOn: [addDaysIso(endsOn, 1), today].sort()[0], pausedUntil: iso }, true)
+}
+
+// Saving an edit that moves a finished question's end date later, or drops
+// it: the days since the old end are a pause. `next` is returned as it is
+// for any other edit.
+export function pauseAfterEdit(old, next, today) {
+  if (!old?.endsOn || next.endsOn === old.endsOn || (next.endsOn && next.endsOn <= old.endsOn)) return next
+  return pauseGap(next, addDaysIso(old.endsOn, 1), today)
+}
+
+// Records [from, until) as days the question was not asked, so a streak
+// runs across the gap. Nothing to add when the gap is empty.
+export function pauseGap(lamp, fromIso, untilIso) {
+  if (!fromIso || !untilIso || fromIso >= untilIso) return lamp
+  return { ...lamp, pauses: [...(lamp.pauses || []), [fromIso, untilIso]].slice(-PAUSES_MAX) }
 }
 
 // Its last day is today or earlier. On the last day itself it is still asked.

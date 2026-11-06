@@ -32,7 +32,8 @@ function monthDays(year, month, todayIso, locale) {
   return nights
 }
 
-export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldHour = 0, colors }) {
+// minIso and maxIso narrow the days that can be picked (default: today on, no end).
+export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldHour = 0, colors, minIso = '', maxIso = '' }) {
   const prefs = usePrefs()
   const todayIso = boardDate(now, dayFoldHour)
   const todayDate = parseIsoDate(todayIso) || now
@@ -73,7 +74,8 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
   }
 
   // A date to do it by or on can't be in the past.
-  const gone = (night) => mode !== 'monthly' && night.iso < todayIso
+  const gone = (night) => mode !== 'monthly' && (night.iso < (minIso || todayIso) || Boolean(maxIso && night.iso > maxIso))
+  const lastMonth = Boolean(maxIso) && isoDate(new Date(view.start.getFullYear(), view.start.getMonth() + 1, 1)) > maxIso
 
   function pickDay(night) {
     if (gone(night)) return
@@ -89,8 +91,8 @@ export function HangMonthCal({ mode, value, onChange, now = new Date(), dayFoldH
           <Text style={[styles.shift, { color: monthShift <= 0 ? colors.line : colors.inkDim }]}>‹</Text>
         </Pressable>
         <Text style={[styles.label, { color: colors.ink }]}>{view.label}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.next')} onPress={() => setMonthShift((n) => n + 1)} style={styles.shiftBtn}>
-          <Text style={[styles.shift, { color: colors.inkDim }]}>›</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('cal.next')} accessibilityState={{ disabled: lastMonth }} disabled={lastMonth} onPress={() => setMonthShift((n) => n + 1)} style={styles.shiftBtn}>
+          <Text style={[styles.shift, { color: lastMonth ? colors.line : colors.inkDim }]}>›</Text>
         </Pressable>
       </View>
       )}

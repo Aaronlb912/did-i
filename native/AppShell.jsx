@@ -39,6 +39,7 @@ import { SheetHost, onSheetUp, publishSheet, sheetIsUp, whenNoSheet } from './co
 import { DidYouLinkHost } from './components/DidYouLinkHost.jsx'
 import { HuntHost } from './components/HuntHost.jsx'
 import { InviteAskHost } from './components/InviteAskHost.jsx'
+import { FinishedHost } from './components/FinishedHost.jsx'
 import { TourHost } from './components/TourHost.jsx'
 import { setTourBalanceHandler, tourActive } from './lib/tour.js'
 import { lazyScreen } from './lib/lazy-screen.jsx'
@@ -611,6 +612,7 @@ export function AppShell() {
         {booted && app.book && !gated && !locked ? <GiftHost book={app.book} onChange={app.change} /> : null}
         {app.book && !gated && !locked ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
         {booted && app.book && !gated && !locked ? <InviteAskHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
+        {booted && app.book && !gated && !locked ? <FinishedHost colors={colors} path={route.path} onChange={app.change} /> : null}
         {booted && app.book && !gated && !locked ? <HuntHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
         {booted && app.book && !gated && !locked ? <TourHost path={route.path} hasQuestion={(app.book.lamps || []).some((lamp) => !lamp.archived)} /> : null}
         <SheetHost />

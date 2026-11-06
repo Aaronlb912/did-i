@@ -50,7 +50,7 @@ import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps, weekdayName } from '../../src/lib/hall-pages.js'
-import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek, nextDueIso, periodLabel } from '../../src/lib/recurrence.js'
+import { addDaysIso, answerFor, boardDate, daysBetween, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek, nextDueIso, periodLabel } from '../../src/lib/recurrence.js'
 import { KitSegment } from '../components/KitSegment.jsx'
 import { gapLine, lastTimeLine, sinceBadge, staleDidLine } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
@@ -2908,6 +2908,9 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const notedCount = (lampBook.answers || []).filter((item) => item.lampId === lamp.id && String(item.note || '').trim()).length
   const checkFits = !lamp.fromName && Boolean(account.user) && checkOnFits(lamp)
   const actions = lampActions({ book: lampBook, lamp, colors, onChange: change })
+  // A question with an end date still ahead counts the days left, today through the last day.
+  const left = lamp.endsOn && lamp.cadence !== 'once' && lamp.endsOn >= dateIso ? (daysBetween(dateIso, lamp.endsOn) ?? -1) + 1 : 0
+  const daysLeftLine = left > 0 ? t(left === 1 ? 'lamp.daysLeftOne' : 'lamp.daysLeftN', { n: left }) : ''
   // One look at the settings; changing them happens on Edit question.
   const summary = [
     cadenceLine(lamp),
@@ -2915,6 +2918,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
     priority !== 'low' && phone.quiet ? t('lamp.sumPhoneOff') : reminderLine(lamp, true),
     t(`hang.priority.${priority}`),
     lamp.endsOn ? t('hang.endsOn', { date: formatBoardDate(lamp.endsOn) }) : '',
+    daysLeftLine,
   ].filter(Boolean).join(' · ')
 
   return (

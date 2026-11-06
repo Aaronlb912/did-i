@@ -9020,7 +9020,7 @@ await testAsync('check-on: monthly, once, deadline and every-so-often nights', a
   assert.equal(checkOnDue(every, at('2026-10-09', { lastDid: '2026-10-05', learned: 3 })), true)
   // From the question to the row.
   assert.equal(checkOnKind({ cadence: 'monthly', monthDay: 'last' }), 'monthly')
-  assert.deepEqual(checkOnShape({ cadence: 'monthly', monthDay: 12 }), { kind: 'monthly', month_day: 12, on_date: null, starts_on: null, every_days: null })
+  assert.deepEqual(checkOnShape({ cadence: 'monthly', monthDay: 12 }), { kind: 'monthly', month_day: 12, on_date: null, starts_on: null, every_days: null, ends_on: null })
   assert.equal(checkOnShape({ cadence: 'monthly', monthDay: 'last' }).month_day, 0)
   assert.equal(checkOnShape({ cadence: 'once', onceOn: '2026-10-20' }).on_date, '2026-10-20')
   assert.equal(checkOnFits({ cadence: 'once' }), false, 'a once with no day')
@@ -9633,7 +9633,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql', 'invite-friend.sql', 'leave-keep.sql'].slice(-11))
+  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql', 'invite-friend.sql', 'leave-keep.sql', 'check-on-ends.sql'].slice(-11))
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -13632,6 +13632,83 @@ test('finishing names the record, a unit change says the new streak, a midweek c
   assert(countsFromThisWeek(lamp, 4, '2026-03-04') === true, 'switching to times a week midweek counts from this week')
   assert(countsFromThisWeek(weekly, 3, '2026-03-04') === false, 'same count says nothing')
   assert(countsFromThisWeek(weekly, 4, '2026-03-02') === false, 'Monday says nothing')
+})
+
+test('asking a finished question again keeps its streak: the days since the end are a pause, not misses', async () => {
+  const { reopenQuestion, resumeOnDate, pauseAfterEdit } = await import('../src/lib/board-ops.js')
+  const { shelfStreak } = await import('../src/lib/hall-feel.js')
+  const { resumeDuePauses } = await import('../src/lib/board-json.js')
+  const { inPause } = await import('../src/lib/recurrence.js')
+  const clock = new Date(2026, 2, 20, 12, 0)
+  const day = (n) => `2026-03-${String(n).padStart(2, '0')}`
+  const ended = lamp('walk', { createdOn: day(1), endsOn: day(10) })
+  const answers = Array.from({ length: 10 }, (_, i) => ({ lampId: 'walk', periodKey: day(i + 1), status: 'yes', answeredAt: `${day(i + 1)}T20:00:00.000Z` }))
+  const book = { id: 'b', dayFoldHour: 0, lamps: [ended], answers }
+  const before = shelfStreak([book], clock)
+  const streakBefore = questionStreak(book, ended, day(20), 1100, clock)
+  assert.equal(streakBefore, 10)
+  // Ask again now.
+  const again = reopenQuestion(book, ended, '', clock)
+  const back = again.lamps[0]
+  assert.equal(back.endsOn, undefined)
+  assert.deepEqual(back.pauses, [[day(11), day(20)]])
+  assert.equal(inPause(back, day(15)), true, 'a day while it was finished is in the pause')
+  assert.equal(inPause(back, day(20)), false, 'today is asked again')
+  assert.equal(questionStreak(again, back, day(20), 1100, clock), streakBefore, 'the question keeps its streak')
+  assert.equal(shelfStreak([again], clock), before, 'the shelf keeps its streak')
+  const naive = { ...book, lamps: [{ ...ended, endsOn: undefined }] }
+  assert.ok(questionStreak(naive, naive.lamps[0], day(20), 1100, clock) < streakBefore, 'without the pause the days count as misses')
+  // Ended today, resumed the same day: nothing to record.
+  assert.equal(reopenQuestion(book, { ...ended, endsOn: day(20) }, '', clock).lamps[0].pauses, undefined)
+  // An end date planned before keeps its pause-free undo.
+  assert.equal(reopenQuestion(book, { ...ended, endsOn: day(20) }, day(25), clock).lamps[0].endsOn, day(25))
+  // Edit: no end date, or a later one, records the gap; a past end date or any other edit does not.
+  assert.deepEqual(pauseAfterEdit(ended, { ...ended, endsOn: undefined }, day(20)).pauses, [[day(11), day(20)]])
+  assert.deepEqual(pauseAfterEdit(ended, { ...ended, endsOn: day(30) }, day(20)).pauses, [[day(11), day(20)]])
+  assert.equal(pauseAfterEdit(ended, { ...ended, question: 'x' }, day(20)).pauses, undefined)
+  // A day to resume on: paused until then, the gap lands in the pauses when it comes.
+  const later = resumeOnDate(book, ended, day(25), clock).lamps[0]
+  assert.deepEqual([later.archived, later.pausedOn, later.pausedUntil, later.endsOn], [true, day(11), day(25), undefined])
+  const there = resumeDuePauses({ ...book, lamps: [later] }, day(25))
+  assert.equal(there.lamps[0].archived, false)
+  assert.deepEqual(there.lamps[0].pauses, [[day(11), day(25)]])
+  assert.equal(questionStreak({ ...there, answers }, there.lamps[0], day(25), 1100, new Date(2026, 2, 25, 12, 0)), 10, 'the streak runs across the long break')
+})
+
+test('check-ons stop after the question end date: the column, the server rule and the app rule', async () => {
+  const { checkOnAsked, checkOnShape } = await import('../src/lib/check-on.js')
+  assert.equal(checkOnShape({ cadence: 'daily', endsOn: '2026-03-10' }).ends_on, '2026-03-10')
+  assert.equal(checkOnShape({ cadence: 'daily' }).ends_on, null)
+  assert.equal(checkOnAsked({ kind: 'night', days: [], ends_on: '2026-03-10' }, { night: '2026-03-10', weekday: 2 }), true, 'the last day is asked')
+  assert.equal(checkOnAsked({ kind: 'night', days: [], ends_on: '2026-03-10' }, { night: '2026-03-11', weekday: 3 }), false, 'after it is not')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(root, 'supabase/check-on-ends.sql'), 'utf8').replace(/\r\n/g, '\n')
+  assert.match(sql, /add column if not exists ends_on date/)
+  assert.match(sql, /grant insert \([^)]*ends_on\) on public\.check_ons to authenticated/)
+  assert.match(sql, /grant update \([^)]*ends_on\) on public\.check_ons to authenticated/)
+  assert.match(sql, /and \(k\.ends_on is null or k\.local::date <= k\.ends_on\)/)
+  const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
+  assert.equal(files[files.length - 1], 'check-on-ends.sql', 'it runs after every file that defines queue_check_ons')
+})
+
+test('a question whose end date passed gets one finished popup: last 7 days, once, never for Done or old ones', async () => {
+  const { finishKey, finishedToShow } = await import('../src/lib/lamp-finish.js')
+  const now = new Date(2026, 2, 20, 12, 0)
+  const book = { id: 'b', dayFoldHour: 0, lamps: [
+    lamp('fresh', { endsOn: '2026-03-19' }),
+    lamp('week', { endsOn: '2026-03-13' }),
+    lamp('old', { endsOn: '2026-03-12' }),
+    lamp('today', { endsOn: '2026-03-20' }),
+    lamp('ahead', { endsOn: '2026-03-25' }),
+    lamp('once', { endsOn: '2026-03-19', cadence: 'once' }),
+    lamp('paused', { endsOn: '2026-03-19', archived: true }),
+    lamp('open'),
+  ] }
+  const ids = (seen) => finishedToShow([book], new Set(seen), now).map((row) => row.lamp.id)
+  assert.deepEqual(ids([]), ['fresh', 'week'])
+  assert.deepEqual(ids([finishKey(book.lamps[0])]), ['week'], 'seen ones do not come back')
+  assert.deepEqual(finishedToShow([{ ...book, archived: true }], new Set(), now), [])
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
