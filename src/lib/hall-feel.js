@@ -13,19 +13,20 @@ import { LOOKS_LATE, wallClock } from './zone.js'
 // keeps its answer, missed or not, so a miss does not vanish with it.
 // On a night skipped by travel only answered questions count: a Did as
 // usual, a tapped Not yet as a Not yet. The rest are not due, as before the start.
-// A monthly question due earlier this month and still unanswered is not a miss
-// until the month ends, same as the grace night.
+// A monthly question due earlier this month with no Did yet (unanswered or
+// Not yet) is not a miss until the month ends, same as the grace night. Once
+// it ends, a Not yet on its day counts as a miss (monthWait comes off).
 export function dueThatNight(book, iso, at, now = new Date()) {
   const skipped = travelSkipped(book, iso)
   const today = boardDate(now, book.dayFoldHour)
   return dueTonight(withPastOnce(book), at).filter((row) => {
-    if (row.lamp.cadence === 'monthly' && !row.answer && !periodPassed(row.lamp, row.periodKey, today)) return false
+    if (row.lamp.cadence === 'monthly' && (!row.answer || row.answer.status === 'skip') && !periodPassed(row.lamp, row.periodKey, today)) return false
     if (skipped && travelNightState(row.answer, iso) === 'none') return false
     if (isEvery(row.lamp) || (row.lamp.createdOn && row.lamp.createdOn > iso)) return false
     if (row.lamp.pauses && inPause(row.lamp, iso) && row.answer?.status !== 'yes' && row.answer?.status !== 'late') return false
     const done = onceDoneNight(row.lamp, row.answer)
     return !done || done === iso
-  }).concat(archivedDids(book, iso))
+  }).map((row) => (row.monthWait ? { ...row, monthWait: false } : row)).concat(archivedDids(book, iso))
 }
 
 // An archived daily, weekly, every-N-days or monthly question keeps the nights it was done, so

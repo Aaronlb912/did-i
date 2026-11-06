@@ -94,6 +94,8 @@ function missedRows(book, now, skipped) {
       // A paused day is left out of the record, not closed as Not yet.
       if (iso === grace || skipped(iso) || inPause(lamp, iso)) continue
       const periodKey = periodKeyFor(lamp, iso)
+      // A monthly question can still be answered till its month ends, so it closes then.
+      if (periodKey.length === 7 && !periodPassed(lamp, periodKey, openFloorIso(now))) continue
       if (seen.has(periodKey)) continue
       if (answerFor(book, lamp.id, periodKey)) break
       seen.add(periodKey)

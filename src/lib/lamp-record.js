@@ -63,9 +63,9 @@ export function questionStreak(book, lamp, dateIso, cap = 1100, now = new Date()
 
 // The longest run this question ever had, same rule as questionStreak.
 // Walks due nights back to the question's first; callers memoize it.
-// A monthly question left open this month neither counts nor breaks until the month ends.
+// A monthly question with no Did yet this month neither counts nor breaks until the month ends.
 function monthOpen(lamp, key, answer, todayIso) {
-  return lamp.cadence === 'monthly' && !answer && !periodPassed(lamp, key, todayIso)
+  return lamp.cadence === 'monthly' && (!answer || answer.status === 'skip') && !periodPassed(lamp, key, todayIso)
 }
 
 function openGrace(dateIso, now) {

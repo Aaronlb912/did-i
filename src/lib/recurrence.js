@@ -412,6 +412,25 @@ export function perWeekDueOn(book, lamp, dateIso) {
   return perWeekDone(book, lamp.id, dateIso, false) < Number(lamp.perWeek)
 }
 
+// Times a week holds a day only on the week's last day while still short, so
+// a Not yet mid-week costs nothing and a short week costs one day.
+export function weekLastDay(dateIso) {
+  const start = weekStartOf(dateIso)
+  return Boolean(start) && addDaysIso(start, 6) === dateIso
+}
+
+export function perWeekLastDay(book, lamp, dateIso) {
+  if (!weekLastDay(dateIso) || !perWeekDueOn(book, lamp, dateIso) || closedDay(book, lamp, dateIso)) return false
+  // Paused or travel days lower the count, same as the question's own week streak.
+  const sched = lamp.was ? scheduleAt(lamp, dateIso) : lamp
+  return perWeekDone(book, lamp.id, dateIso, false) < weekNeed(book, sched, weekStartOf(dateIso))
+}
+
+// A Not yet on a times a week question is a miss only on a last day it held.
+export function perWeekNotMiss(book, lamp, dayIso) {
+  return isPerWeek(lamp) && !perWeekLastDay(book, lamp, dayIso)
+}
+
 // A day the question was not asked: paused, Away, or skipped for travel.
 function closedDay(book, lamp, iso) {
   return inPause(lamp, iso) || travelSkipped(book, iso)
@@ -561,13 +580,19 @@ export function dueTonight(book, now = new Date()) {
     }
     if (isPerWeek(lamp)) {
       const answer = answerFor(book, lamp.id, dateIso) || null
-      if (answer || perWeekDueOn(book, lamp, dateIso)) lamps.push({ lamp, dateIso, periodKey: dateIso, answer })
+      if (!answer && !perWeekDueOn(book, lamp, dateIso)) continue
+      lamps.push(perWeekLastDay(book, lamp, dateIso) ? { lamp, dateIso, periodKey: dateIso, answer, weekLast: true } : { lamp, dateIso, periodKey: dateIso, answer })
       continue
     }
     if (!isDueOn(lamp, dateIso)) continue
     const periodKey = periodKeyFor(lamp, dateIso)
     const answer = answerFor(book, lamp.id, periodKey) || null
     if (lamp.cadence === 'once' && isOnceClosed(book, lamp.id) && !answer) continue
+    // A monthly Not yet on its day waits for the month's end (dueThatNight).
+    if (periodKey.length === 7 && answer?.status === 'skip') {
+      lamps.push({ lamp, dateIso, periodKey, answer, monthWait: true })
+      continue
+    }
     lamps.push({
       lamp,
       dateIso,
@@ -576,6 +601,29 @@ export function dueTonight(book, now = new Date()) {
     })
   }
   return lamps
+}
+
+// A monthly question past its day this month and not done yet stays on Today's
+// cards and the widget to answer till the month ends. Only faceReadyTonight
+// adds it, so it never pings, holds the day or shows on past days; a Did
+// on it counts (countedTonightRows).
+export function monthCarryRow(book, lamp, dateIso) {
+  if (lamp.archived || (lamp.endsOn && dateIso > lamp.endsOn) || inPause(lamp, dateIso)) return null
+  const sched = lamp.was ? scheduleAt(lamp, dateIso) : lamp
+  if (sched.cadence !== 'monthly') return null
+  const date = parseIsoDate(dateIso)
+  if (!date) return null
+  const last = lastDayOfMonth(date.getFullYear(), date.getMonth())
+  const day = sched.monthDay === 'last' ? last : Number(sched.monthDay)
+  if (!Number.isFinite(day) || day < 1) return null
+  const due = `${dateIso.slice(0, 8)}${pad(Math.min(day, last))}`
+  if (due >= dateIso || !isDueOn(lamp, due) || inPause(lamp, due)) return null
+  if (lamp.createdOn && lamp.createdOn > due) return null
+  const periodKey = periodKeyFor(lamp, due)
+  if (periodKey.length !== 7) return null
+  const answer = answerFor(book, lamp.id, periodKey) || null
+  if (answer?.status === 'yes' || answer?.status === 'late') return null
+  return { lamp, dateIso, periodKey, answer, monthCarry: true }
 }
 
 // A one-time question with a window (due by, or no day at all) is due every
@@ -679,6 +727,12 @@ export function faceReadyTonight(book, now = new Date()) {
   const due = dueTonight(book, now)
   const open = due.filter((row) => !row.answer && !standingBy(row, now))
   const noped = due.filter((row) => row.answer?.status === 'skip')
+  const dateIso = boardDate(now, book.dayFoldHour)
+  for (const lamp of book.lamps || []) {
+    if (lamp.cadence !== 'monthly' && !lamp.was) continue
+    const carry = monthCarryRow(book, lamp, dateIso)
+    if (carry) (carry.answer ? noped : open).push(carry)
+  }
   return [...open, ...noped]
 }
 
@@ -736,8 +790,9 @@ function requiredTonightRows(rows) {
 // question before its day is the same as an optional one: it counts once
 // answered, so adding one never clears the night by itself. An every so
 // often question counts the same way: a Did helps, Not yet never holds the
-// night open. A due by question done on an earlier night is not due on later
-// nights of its window (as in the streak walk, dueThatNight), so it cannot
+// night open. Times a week too, except on the week's last day while short, and
+// a monthly question past its day or said Not yet while its month is open.
+// A due by question done on an earlier night is not due on later nights of its window (as in the streak walk, dueThatNight), so it cannot
 // clear them on its own.
 function doneOtherNight(row) {
   if (row?.lamp?.cadence !== 'once') return false
@@ -756,7 +811,7 @@ export function countedTonightRows(rows) {
     (row) =>
       !row?.lamp?.fromDidI &&
       !doneOtherNight(row) &&
-      ((!countsOnlyOnDid(row?.lamp) && !isEvery(row?.lamp)) || rowDoneTonight(row)) &&
+      ((!countsOnlyOnDid(row?.lamp) && !isEvery(row?.lamp) && (!isPerWeek(row?.lamp) || row.weekLast) && !row.monthWait && !row.monthCarry) || rowDoneTonight(row)) &&
       (mustSwipeDeadline(row.lamp, row.dateIso) || rowDoneTonight(row)),
   )
 }
