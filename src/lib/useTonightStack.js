@@ -32,6 +32,7 @@ import { rowKey, taggedCatchUp, taggedDue, scopedBooks } from './tags.js'
 import { graceRowsFor } from './grace.js'
 import { graceFirst as graceFirstAt, graceNightIso } from './recurrence.js'
 import { onWeNights, weNight } from './we-nights.js'
+import { weOutOfTopics } from './did-we.js'
 
 // Yesterday cards set aside with Not yet, by day.
 const graceSetAside = new Map()
@@ -212,7 +213,8 @@ export function useTonightStack({
   // Did wes due for you tonight: in the bar's count and in the streak.
   const [, setWeTick] = useState(0)
   useEffect(() => onWeNights(() => setWeTick((n) => n + 1)), [])
-  const weTonight = weNight(dateIso, tagId)
+  // With topics picked, a Did we without them is off Today, so it does not hold the day.
+  const weTonight = weNight(dateIso, tagId, weOutOfTopics(dateIso, topics))
   // Tonight is done only once your Did wes due tonight are done too. Until
   // then the done look (sky, glow, cheer) waits and the Did we card comes
   // first. The Did we nights are kept on the phone, so this is known at once.

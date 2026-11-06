@@ -204,9 +204,10 @@ export function weFirstNight() {
 
 // { due, done, clear } for a night. With a tag picked, only Did wes filed
 // under it count; with none, all of them do.
-export function weNight(nightIso, tagId = '') {
+// `skip`: card ids left out (a topic pick the card does not have).
+export function weNight(nightIso, tagId = '', skip = null) {
   const titles = pickedTitles(tagId)
-  const list = (index().get(nightIso) || []).filter((row) => inPicked(row, titles))
+  const list = (index().get(nightIso) || []).filter((row) => inPicked(row, titles) && !skip?.has(row.card))
   const due = list.length
   const done = list.filter((row) => row.status === 'did').length
   // Hidden for today: off Today and the widget, but not done for the streak.

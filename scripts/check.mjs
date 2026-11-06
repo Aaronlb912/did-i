@@ -5849,6 +5849,44 @@ await testAsync('Not yet on a monthly Did we hides it for today, so Today and th
   }
 })
 
+await testAsync('shared cards: a reminder Not yet hides a monthly card, turns stay off the widget, topics do not hold the day', async () => {
+  const { setWeNightRows, clearWeNights, weNight, weHiddenOn, weNightStatus } = await import('../src/lib/we-nights.js')
+  const { weNoteAnswer, weOpenPastList, weOutOfTopics, saveWeWidgetLine } = await import('../src/lib/did-we.js')
+  const { saveWeOpen } = await import('../src/lib/we-widget.js')
+  const clock = new Date(2026, 10, 5, 21, 0)
+  const night = boardDate(clock)
+  const month = { id: 'm1', question: 'Did we pay rent?', myState: 'in', due: true, done: false, periodEnd: '2026-11-30', topics: 'home', people: [{ id: 'me', me: true, status: '' }] }
+  const turns = { ...month, id: 't1', mode: 'turns', turn: 'ana', topics: '' }
+  const daily = { ...month, id: 'd1', periodEnd: night, topics: 'work' }
+  try {
+    saveWeWidgetLine([month, turns, daily], night)
+    assert.deepEqual(weOpenPastList(night).map((card) => card.id), ['m1'], "not your turn: off the widget and the watch")
+    setWeNightRows([{ card: 'd1', folder: '', night, status: '' }])
+    assert.equal(weNight(night, '', weOutOfTopics(night, ['home'])).due, 0, 'a Did we without the picked topic does not hold the day')
+    assert.equal(weNight(night, '', weOutOfTopics(night, ['work'])).due, 1)
+    assert.equal(weOutOfTopics(night, []), null)
+    saveWeOpen([{ id: 'd1', question: 'q', periodEnd: night, done: false, mine: '' }], night)
+    assert.equal(weOutOfTopics(night, ['home']).size, 0, 'a list saved before topics were kept still counts its cards')
+    saveWeWidgetLine([month, turns, daily], night)
+    setWeNightRows([])
+    const open = buildTonightWidgetProps({ currentId: 'b1', boards: [] }, clock)
+    assert.ok(open.left === 0 && open.items.some((item) => item.lampId === 'we:m1'), 'a monthly card past its day shows on the widget but is not left, like Today')
+    setWeNightRows([{ card: 'd1', folder: '', night, status: '' }])
+    weNoteAnswer('m1', night, 'nope')
+    assert.ok(weHiddenOn('m1', night) && weNightStatus(night, 'm1') === '', 'a reminder Not yet on a monthly card hides it, no made-up day')
+    assert.deepEqual(weOpenPastList(night), [])
+    weNoteAnswer('d1', night, 'nope')
+    assert.equal(weNightStatus(night, 'd1'), 'nope', 'a daily card is answered as before')
+  } finally {
+    clearWeNights()
+    saveWeOpen([], night)
+  }
+  const tonight = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
+  assert.ok(tonight.includes("saidNope ? null : () => weAns.answer(pickedWe, 'nope')"), 'a Did we pill after Not yet can still take a Did')
+  assert.ok(readFileSync('native/components/WeTonight.jsx', 'utf8').includes("const locked = mine === 'did' ||"))
+  assert.ok(readFileSync('src/lib/widget-tonight.js', 'utf8').includes('if (hide) showWeFor(card, night)'), 'a widget Not yet that did not save shows the card again')
+})
+
 await testAsync('a skip reads Not yet while its night is open, Said not yet once it closed', async () => {
   const { answerWord, nightOpen } = await import('../src/lib/recurrence.js')
   const { nightWhyLines } = await import('../src/lib/night-why.js')
@@ -8260,8 +8298,8 @@ test('delivered notes that an answer made untrue are dismissed; cheers and socia
 test('a Did we button press updates the phone record and the widget', () => {
   const app = readFileSync(new URL('../native/NativeApp.jsx', import.meta.url), 'utf8')
   const we = app.slice(app.indexOf('onWeAnswer: async'), app.indexOf("text: t('people.reach')", app.indexOf('onWeAnswer: async')))
-  assert.ok(we.includes('markWeNight(cardId') && we.includes('syncTonightWidget(readShelf())'), 'marks the night and redraws the widget')
-  assert.ok(we.indexOf('markWeNight') > we.indexOf('if (!out.miss)'), 'only on a saved answer')
+  assert.ok(we.includes('weNoteAnswer(cardId') && we.includes('syncTonightWidget(readShelf())'), 'marks the night and redraws the widget')
+  assert.ok(we.indexOf('weNoteAnswer(cardId') > we.indexOf('if (!out.miss)'), 'only on a saved answer')
 })
 
 await testAsync('coins earned for the server survive a reload, for that account only', async () => {
@@ -12287,15 +12325,17 @@ test('folder screen: top and bottom keys, Remove inside the selected folder, Ope
   assert.ok(folders.includes("t('boards.addQuestionHere')") && folders.includes("goHash('/add', { tag: item.id })"), 'an empty folder has a full row that opens add')
 })
 
-test('monthly Did we: slot day is paused until the month ends, and the widget and watch count it open', async () => {
+test('monthly Did we: slot day is paused until the month ends; the widget shows it but, like Today, does not count it', async () => {
   const { readFileSync } = await import('node:fs')
   const sql = readFileSync('supabase/we-month-open.sql', 'utf8')
   assert.match(sql, /security definer/)
   assert.match(sql, /set search_path = public/)
   assert.ok(sql.includes("s.how = 'monthly' and not s.done and s.night >= date_trunc('month', current_date)::date"))
   assert.ok(sql.includes("grant execute on function public.my_we_nights() to authenticated;"))
-  assert.match(readFileSync('src/lib/watch-count.js', 'utf8'), /weOpenPastList/)
-  assert.match(readFileSync('src/lib/widget-tonight.js', 'utf8'), /weOpenPastList/)
+  assert.doesNotMatch(readFileSync('src/lib/watch-count.js', 'utf8'), /weOpenPastList/, 'the watch counts like Today')
+  const widget = readFileSync('src/lib/widget-tonight.js', 'utf8')
+  assert.match(widget, /weOpenPastList/, 'the widget still shows it to answer')
+  assert.ok(widget.includes('const weLeft = Math.max(0, we.due - we.done - we.hidden)\n') || widget.includes('const weLeft = Math.max(0, we.due - we.done - we.hidden)\r\n'), 'and does not count it as left')
 })
 
 test('findable: Other settings, Frames and buddies, topic folds, People waiting rows, signed-out account has no duplicate links', async () => {

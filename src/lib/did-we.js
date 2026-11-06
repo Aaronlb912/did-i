@@ -6,7 +6,7 @@ import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
 import { boardDate, isoDate } from './recurrence.js'
 import { readWeOpen, saveWeLine, saveWeOpen, saveWePings, weMonthlyPingDay } from './we-widget.js'
-import { markWeDone, refreshWeNights, weHiddenOn } from './we-nights.js'
+import { hideWeFor, markWeDone, markWeNight, refreshWeNights, weHiddenOn } from './we-nights.js'
 import { weekKind, weSlotDay } from './we-look.js'
 import { weDueOn, weNextDue, weNextLabel, wePrevDue, weSlotOf } from './we-next.js'
 
@@ -660,8 +660,28 @@ export function weOpenPastToday(card, night = tonightIso()) {
 // with no Did from you. The widget and the watch count these like Today does.
 export function weOpenPastList(night) {
   return readWeOpen(night).filter(
-    (card) => !card.done && card.mine !== 'did' && weOpenPastToday(card, night) && !weHiddenOn(card.id, night),
+    (card) => !card.done && !card.notMine && card.mine !== 'did' && weOpenPastToday(card, night) && !weHiddenOn(card.id, night),
   )
+}
+
+// A saved Did we still open past today (a monthly card): a Not yet from the
+// widget or a reminder hides it for today, as on Today.
+export function weSavedOpenPast(cardId, night) {
+  return readWeOpen(night).some((card) => card.id === cardId && !card.done && weOpenPastToday(card, night))
+}
+
+// The phone's own record after a saved answer from a reminder: a Not yet on
+// a monthly card hides it for today instead of adding a day it does not have.
+export function weNoteAnswer(cardId, night, status) {
+  if (status !== 'did' && weSavedOpenPast(cardId, night)) hideWeFor(cardId, night)
+  else markWeNight(cardId, night, status)
+}
+
+// Saved Did wes left out by the topic picks, so they do not hold the day.
+export function weOutOfTopics(night, topics = []) {
+  if (!topics.length) return null
+  // A list saved before topics were kept has no field: those cards still count.
+  return new Set(readWeOpen(night).filter((card) => card.topics !== undefined && !weInFilter(card, [], topics)).map((card) => card.id))
 }
 
 // One line for the home screen widget.
@@ -690,6 +710,8 @@ export function saveWeWidgetLine(cards, night = tonightIso()) {
       periodEnd: card.periodEnd || '',
       done: Boolean(card.done),
       mine: weMine(card)?.status || '',
+      notMine: notMyTurn(card),
+      topics: String(card.topics || ''),
     }))
   const openChanged = saveWeOpen(due, night)
   return saveWeLine(weWidgetLine(cards), night) || openChanged

@@ -1314,7 +1314,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     face = graceTop ? withAnswerButtons(graceCard, graceTop.onDid, graceTop.onNope) : graceCard
   } else if (pickedWe && !stack.cheer) {
     // A picked Did we stays up after its answer, with its stamp, like your own pills.
-    const open = !weMine(pickedWe)?.status && !pickedWe.done && !notMyTurn(pickedWe)
+    const saidNope = weMine(pickedWe)?.status === 'nope'
+    const open = weMine(pickedWe)?.status !== 'did' && !pickedWe.done && !notMyTurn(pickedWe)
     face = (
       <WeSwipeCard
         cards={[pickedWe]}
@@ -1327,7 +1328,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         frame={cardFrame}
       />
     )
-    if (open) face = withAnswerButtons(face, () => weAns.answer(pickedWe, 'did'), () => weAns.answer(pickedWe, 'nope'))
+    if (open) face = withAnswerButtons(face, () => weAns.answer(pickedWe, 'did'), saidNope ? null : () => weAns.answer(pickedWe, 'nope'))
   } else if (weTop) {
     // Like Did you: the open Did we is a card in the stack, with the same buttons.
     face = withAnswerButtons(weSwipe, () => weAns.answer(weTop, 'did'), () => weAns.answer(weTop, 'nope'))
