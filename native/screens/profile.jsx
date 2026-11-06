@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { exportAll, pullAndMerge, useSync } from '../../src/lib/cloud-sync.js'
 import { syncFailed } from '../../src/lib/sync-line.js'
-import * as DocumentPicker from 'expo-document-picker'
 import { t } from '../../src/lib/i18n.js'
 import { setShareDiagnostics } from '../../src/lib/diagnostics.js'
 import {
@@ -28,7 +27,7 @@ import { legalEmail } from '../../src/lib/legal.js'
 import { backupFileReady, shareBackupFile, shareCsv, shareShelf } from '../../src/lib/native.js'
 import { restoreGemPurchases } from '../../src/lib/gem-buy.js'
 import { answersCsv } from '../../src/lib/answers-csv.js'
-import { mergeBackup } from '../../src/lib/shelf-merge.js'
+import { loadBackupFile } from '../lib/backup-load.js'
 import { zoneWords } from '../../src/lib/zone.js'
 import { useHallColors } from '../hooks/useHallColors.js'
 import { goHash } from '../navigation/hash.js'
@@ -102,7 +101,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   const prefs = usePrefs()
   const account = useAccount()
   const sync = useSync()
-  const [loadNote, setLoadNote] = useState('')
   const widget = readWidgetSettings()
   const widgetShelf = readShelf()
   const widgetLooks = [...ownedLookIds(widgetShelf)].sort()
@@ -184,33 +182,8 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   async function pickFile() {
     if (loading) return
     setLoading(true)
-    await loadFile()
+    await loadBackupFile({ ask: setSure, onImport })
     setLoading(false)
-  }
-
-  async function loadFile() {
-    try {
-      const picked = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain'] })
-      if (picked.canceled || !picked.assets?.[0]?.uri) return
-      const response = await fetch(picked.assets[0].uri)
-      const parsed = JSON.parse(await response.text())
-      const shelf = parsed?.shelf?.boards ? parsed.shelf : parsed?.boards ? parsed : null
-      const one = !shelf && parsed?.lamps ? { currentId: parsed.id, boards: [parsed] } : null
-      const coming = shelf || one
-      if (!coming) {
-        setLoadNote(t('settings.loadMiss'))
-        return
-      }
-      const before = readShelf()
-      const merged = mergeBackup(before, coming)
-      if (onImport) onImport(merged)
-      const count = (shelf, key) => shelf.boards.reduce((n, b) => n + (b[key] || []).length, 0)
-      const q = Math.max(0, count(merged, 'lamps') - count(before, 'lamps'))
-      const a = Math.max(0, count(merged, 'answers') - count(before, 'answers'))
-      setLoadNote(q || a ? t('settings.loadOkBoth', { q, a }) : t('settings.loadSame'))
-    } catch {
-      setLoadNote(t('settings.loadMiss'))
-    }
   }
 
   const date = formatBoardDate(boardDate(new Date(), book.dayFoldHour))
@@ -279,7 +252,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           />
         </SetCard>
         {!account.user ? <SetNote colors={colors}>{t('settings.sendCopyAcct')}</SetNote> : null}
-        {loadNote ? <SetNote colors={colors}>{loadNote}</SetNote> : null}
 
         <SetCap colors={colors}>{t('settings.legal')}</SetCap>
         <SetCard colors={colors}>

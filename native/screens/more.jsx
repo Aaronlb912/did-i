@@ -53,8 +53,7 @@ import {
   shortLabel,
 } from '../../src/lib/board-json.js'
 import { emptyBoard, newBoardId } from '../../src/lib/board-json.js'
-import * as DocumentPicker from 'expo-document-picker'
-import { planBackupLoad } from '../../src/lib/shelf-merge.js'
+import { loadBackupFile } from '../lib/backup-load.js'
 import { currentBook, enterLand, folderNameKey, liveLampCount, readShelf } from '../../src/lib/board-shelf.js'
 import { pullAndMerge, signedOutSync, useSync } from '../../src/lib/cloud-sync.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
@@ -81,7 +80,7 @@ import { shareRecap } from '../components/WeekRecap.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, freezeLine, openFreezeHow } from '../components/FreezeBits.jsx'
 import { weCardState, weCardsOn } from '../../src/lib/we-nights.js'
-import { weCardShort } from '../../src/lib/did-we.js'
+import { weCardShort, weCardTitle, weCardsKnown } from '../../src/lib/did-we.js'
 import { bestQuestionStreak, isDayCadence, shelfRate30 } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
 import { pinWidget } from '../lib/widget-pin.js'
@@ -1049,7 +1048,8 @@ export function WeekGridScreen({ book, boards, tagId = '', now }) {
   const doneNights = cleared.size
   const frozen = new Set(strip.filter((night) => night.freeze).map((night) => night.iso))
   const freeDays = new Set(strip.filter((night) => night.free).map((night) => night.iso))
-  const weCards = weCardsOn(nights.map((night) => night.iso), tagId)
+  // A card you left or that ended keeps its days in the streak but has no row here.
+  const weCards = weCardsOn(nights.map((night) => night.iso), tagId).filter((card) => !weCardsKnown() || weCardTitle(card))
   const anyOff =
     lamps.some((lamp) => nights.some((night) => weekCell(night, lamp).state === 'off')) ||
     weCards.some((card) => nights.some((night) => weCardState(night.iso, card) === 'off'))
@@ -2960,7 +2960,7 @@ function AccountSignedIn({ book, email, onChange, onImport }) {
   function askDelete() {
     setSure({
       title: t('account.deleteTitle'),
-      body: `${t('account.deleteBody')}\n\n${t('account.deleteGone')}`,
+      body: `${t('account.deleteBody')}\n\n${t('account.deletePeople')}\n\n${t('account.deleteGone')}`,
       // After the copy is saved, the delete question comes back.
       extra: { label: t('account.deleteCopy'), go: () => { setSure(null); download(askDelete) } },
       yes: t('account.deleteYes'),
@@ -2992,32 +2992,8 @@ function AccountSignedIn({ book, email, onChange, onImport }) {
   async function loadBackup() {
     if (busy) return
     setBusy('load')
-    try {
-      const picked = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain'] })
-      if (picked.canceled || !picked.assets?.[0]?.uri) return
-      const response = await fetch(picked.assets[0].uri)
-      const parsed = JSON.parse(await response.text())
-      const plan = planBackupLoad(readShelf(), parsed)
-      if (plan.miss === 'cap') return confirmMiss(t('hang.cap'))
-      if (plan.miss) return confirmMiss(t('settings.loadMiss'))
-      if (!plan.q && !plan.a) return confirmDone(t('settings.loadSame'))
-      setSure({
-        title: t('account.loadSureTitle'),
-        body: t('account.loadSureBody', { q: plan.q, a: plan.a }),
-        yes: t('account.loadSureYes'),
-        go: () => {
-          const now = planBackupLoad(readShelf(), parsed)
-          if (now.miss === 'cap') return confirmMiss(t('hang.cap'))
-          if (now.miss) return confirmMiss(t('settings.loadMiss'))
-          onImport?.(now.merged)
-          confirmDone(t('settings.loadOkBoth', { q: now.q, a: now.a }))
-        },
-      })
-    } catch {
-      confirmMiss(t('settings.loadMiss'))
-    } finally {
-      setBusy('')
-    }
+    await loadBackupFile({ ask: setSure, onImport })
+    setBusy('')
   }
 
   // Forgetting a phone: one at a time, and a failure says so.

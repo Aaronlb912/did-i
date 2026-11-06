@@ -1,7 +1,7 @@
 import { appMiss, t } from './i18n.js'
 import { useEffect, useState } from 'react'
 import { recordAppError } from './app-errors.js'
-import { deviceKey, deviceLabel, deviceModel, devicePlatform, takeOldDeviceKey } from './account.js'
+import { deviceKey, deviceLabel, deviceModel, devicePlatform, leftHereLately, takeOldDeviceKey } from './account.js'
 import { noteAvatar } from './avatar.js'
 import { QUESTION_CAP, questionCount } from './question-cap.js'
 import { addNotice, clearNotices, markNoticesSeen } from './notices.js'
@@ -228,6 +228,16 @@ export function signedOutSync() {
   }
 }
 
+// Signed out by another phone (sign out everywhere, a deleted account) or a
+// sign in that ran out: the sign in screen says why the questions went.
+const OUT_ELSEWHERE = 'did-i-out-elsewhere'
+export function outElsewhere() {
+  try { return localStorage.getItem(OUT_ELSEWHERE) === '1' } catch { return false }
+}
+export function forgetOutElsewhere() {
+  try { localStorage.removeItem(OUT_ELSEWHERE) } catch {}
+}
+
 // No session. A phone that was signed in lost its account (signed out
 // somewhere else), so it starts the next person from nothing. A phone-only
 // shelf never belonged to an account, and wiping it throws away the
@@ -240,6 +250,9 @@ export function sessionMissing() {
     if (answersToSend(readShelf()).length) {
       if (state.how !== 'out' || state.firstPull) setState({ how: 'out', miss: '', firstPull: false })
       return
+    }
+    if (!leftHereLately()) {
+      try { localStorage.setItem(OUT_ELSEWHERE, '1') } catch {}
     }
     signedOutSync()
     return
@@ -379,6 +392,7 @@ export function bindAuthSync() {
 
   db.auth.onAuthStateChange((event, session) => {
     if (session?.user) {
+      forgetOutElsewhere()
       armSyncForUser()
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') pullAndMerge()
       // Another account signed in: drop the old one's topics first.

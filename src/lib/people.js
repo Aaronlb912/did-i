@@ -2072,3 +2072,12 @@ export async function listCheersGot() {
   if (error) return { miss: appMiss(error), rows: [] }
   return { miss: '', rows: data || [] }
 }
+
+/** Ids of your friends and family (known_people), or null when the look failed. */
+export async function knownPeopleIds() {
+  const db = cloud()
+  if (!db) return null
+  const { data, error } = await db.rpc('known_people')
+  if (error || !Array.isArray(data)) return null
+  return new Set(data.map((row) => String(row.user_id || '').toLowerCase()))
+}

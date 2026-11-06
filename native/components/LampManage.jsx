@@ -1,6 +1,7 @@
 import { endQuestion, endQuestionDate, questionEnded, reopenQuestion, setPauseUntil, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
-import { addDaysIso, boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
+import { addDaysIso, boardDate, formatBoardDate, isPerWeek } from '../../src/lib/recurrence.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
+import { questionStreak } from '../../src/lib/lamp-record.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { dropCheckOn } from '../../src/lib/check-on.js'
 import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
@@ -172,9 +173,13 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
   function askDelete() {
     const hasAnswers = (book.answers || []).some((item) => item.lampId === lamp.id)
     const stoppable = hasAnswers && !lamp.archived
+    // A run worth keeping is said out loud before it goes (days only).
+    const days = (lamp.cadence === 'daily' && !isPerWeek(lamp)) || lamp.cadence === 'weekly'
+    const streak = days ? questionStreak(book, lamp, boardDate(new Date(), book.dayFoldHour)) : 0
+    const note = streak >= 7 ? `${deleteNote(book, lamp)} ${t('lamp.deleteStreak', { n: streak })}` : deleteNote(book, lamp)
     publishSheet({
       title: t('lamp.deleteTitle'),
-      body: stoppable ? `${deleteNote(book, lamp)} ${t('lamp.deleteDays')} ${t('lamp.deleteKeep')}` : hasAnswers ? `${deleteNote(book, lamp)} ${t('lamp.deleteDays')}` : deleteNote(book, lamp),
+      body: stoppable ? `${note} ${t('lamp.deleteDays')} ${t('lamp.deleteKeep')}` : hasAnswers ? `${note} ${t('lamp.deleteDays')}` : note,
       moreLabel: stoppable ? t('lamp.pauseBtn') : undefined,
       onMore: stoppable
         ? () => {

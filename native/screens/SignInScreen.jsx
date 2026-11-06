@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Platform, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { cloudSetUp } from '../../src/lib/cloud.js'
+import { forgetOutElsewhere, outElsewhere, useSync } from '../../src/lib/cloud-sync.js'
 import { skipAuth } from '../../src/lib/auth-gate.js'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import { t } from '../../src/lib/i18n.js'
@@ -41,7 +42,12 @@ export function SignInScreen({ onDone }) {
   const [signInOpen, setSignInOpen] = useState(false)
   const showSignIn = auth.step !== 'start' || signInOpen
 
+  // Re-read when sync changes: the sign out can land after this screen is up.
+  useSync()
+  const outNote = outElsewhere()
+
   const useLocalOnly = () => {
+    forgetOutElsewhere()
     skipAuth()
     onDone?.()
   }
@@ -54,6 +60,9 @@ export function SignInScreen({ onDone }) {
     </View>
   ) : (
     <View style={styles.panel}>
+      {outNote ? (
+        <Text accessibilityRole="alert" style={[styles.meta, { color: colors.ink }]}>{t('sync.outElsewhere')}</Text>
+      ) : null}
       {auth.step !== 'start' ? (
         <Text style={[styles.title, { color: colors.ink }]}>{t('auth.title')}</Text>
       ) : null}

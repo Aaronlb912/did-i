@@ -75,6 +75,7 @@ import { useTour, useTourTarget } from '../lib/tour.js'
 import { TOUR_PARTS } from '../../src/lib/tour-steps.js'
 import { SetCap, SetCard, SetRow, SetSheet, SetSwitch } from '../components/SetBits.jsx'
 import { LampManage, flushCheckOnStops, lampActions, stopCheckOns } from '../components/LampManage.jsx'
+import { forgetGoneSender } from '../components/removeFriend.js'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { noteHitDay, rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
@@ -2647,6 +2648,10 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
 function ShareAnswersSwitch({ lamp, lampBook, change, colors }) {
   const [busy, setBusy] = useState(false)
   const name = lamp.fromName || t('people.someone')
+  // Removed by them, or gone: this switch goes once the server says so.
+  useEffect(() => {
+    forgetGoneSender(lamp).catch(() => {})
+  }, [lamp.fromId])
   return (
     <SetCard colors={colors}>
       <SetSwitch

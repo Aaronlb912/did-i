@@ -624,7 +624,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
         onPress={() =>
           publishSheet({
             title: t('family.leaveTitle', { name: fam.name || t('people.familyOne') }),
-            body: t('family.leaveBody'),
+            // The last one out closes the family, and its questions go with it.
+            body: t(fam.members.length <= 1 ? 'family.leaveLastBody' : 'family.leaveBody'),
             goLabel: t('family.leave'),
             closeLabel: t('settings.neverMind'),
             colors,

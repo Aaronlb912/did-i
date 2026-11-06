@@ -172,11 +172,19 @@ export async function dropPushToken(ms = 3000) {
   }
 }
 
+// When this phone signed itself out. The sign out event that follows is not
+// "signed out somewhere else" (cloud-sync.js sessionMissing).
+let leavingAt = 0
+export function leftHereLately(now = Date.now()) {
+  return now - leavingAt < 60000
+}
+
 export async function signOutHere() {
   const db = cloud()
   if (!db) return
   // This device's push token and answer key go first, while the session can
   // still reach the account.
+  leavingAt = Date.now()
   await Promise.all([dropPushToken(), endAnswerKeys(deviceKey())])
   // signOut() defaults to global, which would end the session on every other device.
   await db.auth.signOut({ scope: 'local' })
@@ -216,6 +224,7 @@ export async function signOutEverywhere() {
   if (!db) return
   await Promise.all([dropPushToken(), dropAllPushTokens(), endAnswerKeys(null)])
   // The server has to end the other sessions; if it could not, say so.
+  leavingAt = Date.now()
   const { error } = await db.auth.signOut({ scope: 'global' })
   if (error) {
     // Still signed in here: put this phone's push token back, or its pushes stop.
@@ -244,6 +253,7 @@ export async function deleteAccount() {
   await removeAvatar().catch(() => {})
   // The account's keys went with it (cascade); take this phone's copy too.
   await endAnswerKeys(null)
+  leavingAt = Date.now()
   await db.auth.signOut({ scope: 'local' })
   saveTogetherPeople([])
   forgetAccountCaches()

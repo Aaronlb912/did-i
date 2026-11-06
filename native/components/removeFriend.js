@@ -1,6 +1,6 @@
 import { readShelf, writeShelf } from '../../src/lib/board-shelf.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
-import { dropFriend, personName, weLeaveShared, weSharedCount } from '../../src/lib/people.js'
+import { dropFriend, knownPeopleIds, personName, weLeaveShared, weSharedCount } from '../../src/lib/people.js'
 import { refreshWeNights } from '../../src/lib/we-nights.js'
 import { pushShelfAfterWidgetAnswer } from '../../src/lib/widget-cloud-sync.js'
 import { publishShelf } from '../../src/lib/widget-tonight.js'
@@ -30,6 +30,16 @@ function forgetSender(name, id) {
   const next = writeShelf({ ...shelf, boards })
   publishShelf(next)
   pushShelfAfterWidgetAnswer(next, { now: true }).catch(() => {})
+}
+
+// A kept Did you whose sender is no longer a friend or in your family (they
+// removed you, left, or deleted the account): the server already stopped
+// their view, so the line saying they see your answers goes here too.
+export async function forgetGoneSender(lamp) {
+  if (!lamp?.fromDidYou || !lamp.fromId) return
+  const known = await knownPeopleIds()
+  if (!known || known.has(lamp.fromId)) return
+  forgetSender('', lamp.fromId)
 }
 
 // The one remove-a-friend sheet, from the friends list and the friend page.
