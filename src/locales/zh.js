@@ -3038,7 +3038,7 @@ export const zh = {
   'gems.restore': '恢复购买',
   'gems.restoring': '正在恢复...',
   'gems.restored': '已恢复购买，增加 {n} 颗宝石。',
-  'gems.restoreNone': '没有可恢复的购买。',
+  'gems.restoreNone': '宝石已在你的账户中，没有需要新增的内容。',
   'gems.restoreMiss': '无法恢复，请再试一次。',
   'gems.creditMiss': "宝石已付款，但还没到账。",
   'gems.testMiss': "测试购买不会增加宝石。",

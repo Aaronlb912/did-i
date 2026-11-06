@@ -63,6 +63,8 @@ function rowsOf(shelf) {
         // Always sent, null when there is none, so the server can tell a
         // cleared amount from an older app that never sends one.
         m: cleanAmount(answer.amount),
+        // A Not yet from a phone with no answer: the server keeps a Did it already holds.
+        ...(answer.first === true ? { f: true } : {}),
       })
     }
   }

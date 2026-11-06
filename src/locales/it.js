@@ -3080,7 +3080,7 @@ export const it = {
   'gems.restore': 'Ripristina acquisti',
   'gems.restoring': 'Ripristino...',
   'gems.restored': 'Acquisti ripristinati. {n} gemme aggiunte.',
-  'gems.restoreNone': 'Niente da ripristinare.',
+  'gems.restoreNone': 'Le tue gemme sono sul tuo account. Niente di nuovo da aggiungere.',
   'gems.restoreMiss': 'Ripristino non riuscito. Riprova.',
   'gems.creditMiss': "Le tue gems sono pagate ma non ancora arrivate.",
   'gems.testMiss': "Gli acquisti di prova non aggiungono gems.",

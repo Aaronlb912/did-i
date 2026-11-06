@@ -3075,7 +3075,7 @@ export const en = {
   'gems.restore': 'Restore purchases',
   'gems.restoring': 'Restoring...',
   'gems.restored': 'Purchases restored. {n} gems added.',
-  'gems.restoreNone': 'Nothing to restore.',
+  'gems.restoreNone': 'Your gems are on your account. Nothing new to add.',
   'gems.restoreMiss': 'Could not restore. Try again.',
   'gems.creditMiss': "Your gems are paid for but not in yet.",
   'gems.testMiss': "Test purchases don't add gems.",

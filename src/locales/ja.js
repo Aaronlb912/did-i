@@ -3045,7 +3045,7 @@ export const ja = {
   'gems.restore': '購入を復元',
   'gems.restoring': '復元中...',
   'gems.restored': '購入を復元しました。ジェム{n}個を追加。',
-  'gems.restoreNone': '復元するものはありません。',
+  'gems.restoreNone': 'ジェムはアカウントに入っています。追加するものはありません。',
   'gems.restoreMiss': '復元できませんでした。もう一度お試しください。',
   'gems.creditMiss': "ジェムの支払いは済んでいますが、まだ届いていません。",
   'gems.testMiss': "テスト購入ではジェムは増えません。",

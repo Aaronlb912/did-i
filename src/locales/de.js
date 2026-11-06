@@ -3093,7 +3093,7 @@ export const de = {
   'gems.restore': 'Käufe wiederherstellen',
   'gems.restoring': 'Wird wiederhergestellt...',
   'gems.restored': 'Käufe wiederhergestellt. {n} Edelsteine dazu.',
-  'gems.restoreNone': 'Nichts wiederherzustellen.',
+  'gems.restoreNone': 'Deine Edelsteine sind auf deinem Konto. Nichts Neues hinzuzufügen.',
   'gems.restoreMiss': 'Wiederherstellen ging nicht. Versuch es noch mal.',
   'gems.creditMiss': "Deine Gems sind bezahlt, aber noch nicht da.",
   'gems.testMiss': "Testkäufe bringen keine Gems.",
