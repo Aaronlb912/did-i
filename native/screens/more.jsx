@@ -90,6 +90,7 @@ import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { exactAlarmsOn, openExactAlarms } from '../lib/exact-alarms.js'
 import { openReminderChannel, reminderChannelOn } from '../lib/notification-perms.js'
 import { publishSheet } from '../components/SheetHost.jsx'
+import { openBrainDump } from '../components/BrainDumpSheet.jsx'
 import { AFTERNOON_AT_DEFAULT, AFTERNOON_AT_TIMES, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
 import { LATER_MINUTES } from '../../src/lib/notify-answer.js'
 import { lastCallAt as sharedLastCallAt, quietToFor } from '../../src/lib/quiet.js'
@@ -453,6 +454,16 @@ export function HelpScreen() {
         />
       </HelpFold>
       <HelpFold colors={colors} title={t('help.groupApp')}>
+        <HelpTopic
+          colors={colors}
+          title={t('help.switch')}
+          short={t('help.switchP1', { dump: t('dump.title') })}
+          go={<KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />}
+        >
+          <Meta colors={colors}>{t('help.switchP2')}</Meta>
+          <Meta colors={colors}>{t('help.switchP3')}</Meta>
+          <Meta colors={colors}>{t('help.switchP4')}</Meta>
+        </HelpTopic>
         <HelpTopic colors={colors} title={t('help.phone')} short={t('help.phonePApp')}>
           {backupFileReady() ? <Meta colors={colors}>{t('help.phoneBackup', { save: t('settings.sendFile'), load: t('account.loadFile') })}</Meta> : null}
         </HelpTopic>
@@ -2024,6 +2035,26 @@ export function FirstNightScreen({ book, onChange, now }) {
     goHash('/tonight')
   }
 
+  // A typed or pasted list from another app: the sheet adds them as daily
+  // questions, then Today opens on them.
+  function addList() {
+    if (finished.current) return
+    playClick()
+    openBrainDump({
+      book,
+      colors,
+      every: true,
+      // Same reminder as the picks: the chosen time, from tomorrow.
+      lamp: { askAfter, askFrom: addDaysIso(boardDate(new Date()), 1) },
+      onChange: (made) => {
+        finished.current = true
+        onChange?.(made)
+        markWelcomeSeen()
+        goHash('/tonight')
+      },
+    })
+  }
+
   // A second tap on Done before the page leaves would add the picks again.
   const finished = useRef(false)
   function finish() {
@@ -2147,6 +2178,9 @@ export function FirstNightScreen({ book, onChange, now }) {
                 { color: colors.ink, borderBottomColor: focused ? colors.on : colors.line },
               ]}
             />
+          </View>
+          <View style={styles.firstList}>
+            <Row colors={colors} label={t('first.addList')} note={t('first.addListSub')} onPress={addList} />
           </View>
           {packs.length ? (
             <Text style={[styles.stepCap, styles.firstOr, { color: colors.inkSoft }]}>{t('first.orPack')}</Text>
@@ -3479,6 +3513,7 @@ const styles = StyleSheet.create({
   firstTime: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14 },
   stepCap: { ...sectionLabel, marginBottom: 6 },
   firstOr: { marginTop: 16, marginBottom: 0 },
+  firstList: { marginTop: 12 },
   stepNav: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   quietRow: { alignSelf: 'stretch', marginTop: 8 },
   idea: { borderWidth: 1, borderRadius: 12, padding: 14, gap: 8, marginBottom: 8 },

@@ -5,6 +5,13 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Moving from another habit app (UX loop 2026-11-06)
+
+- Loop's .zip backup does not load: it needs an unzip dependency (Aaron). Loop's CSV and a plain sheet load.
+- A long streak from another app does not carry over: only the last 7 days come in. A "Before Did I: N days" line on the question's own page, never paying gems or frames, needs Aaron.
+- Streaks and Habitify export shapes were not checked against real files.
+- Slash dates like 05/06/2026 are not read (month or day first depends on the country); the confirm counts them and asks for year-month-day.
+
 ## Leaving and deleting (UX loop 2026-11-06)
 
 - No Recently deleted list. A deleted question has the undo toast, cloud sync and a backup file that brings it back; an automatic copy on the phone needs a plan for shared phones with two accounts first.

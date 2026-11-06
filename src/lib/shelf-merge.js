@@ -4,6 +4,7 @@ import { mergeAnswer } from './board-ops.js'
 import { capSkips } from './travel.js'
 import { CHEER_STAGE_MAX, mergeLater, normalizePurse } from './purse.js'
 import { overCap } from './question-cap.js'
+import { csvShelf } from './csv-import.js'
 
 // Two phones can both be right. Questions and answers always combine.
 // Names and switches come from whichever phone saved last.
@@ -187,16 +188,20 @@ export function mergeBackup(local, backup, nowIso = new Date().toISOString()) {
 }
 
 // What loading a backup file would do, before anything is saved. The file can
-// be the account export, a whole shelf, or one folder. miss: 'file' (not a
-// Did I copy) or 'cap' (it would pass the question limit). back: questions
-// deleted here that the file brings back.
+// be the account export, a whole shelf, or one folder; or a string, which is
+// a CSV (csv-import.js). miss: 'file' (not a Did I copy), 'cap' (it would pass
+// the question limit) or 'big' (the server refuses a shelf over 2 MB). back:
+// questions deleted here that the file brings back. old: CSV answers left out
+// for being older than the past-answer window. bad: CSV rows whose date did not read.
 export function planBackupLoad(local, parsed) {
-  const shelf = parsed?.shelf?.boards ? parsed.shelf : parsed?.boards ? parsed : null
+  const sheet = typeof parsed === 'string' ? csvShelf(parsed, local) : null
+  const shelf = sheet ? sheet.shelf : parsed?.shelf?.boards ? parsed.shelf : parsed?.boards ? parsed : null
   const one = !shelf && parsed?.lamps ? { currentId: parsed.id, boards: [parsed] } : null
   const coming = shelf || one
   if (!coming || !Array.isArray(coming.boards)) return { miss: 'file' }
   const merged = mergeBackup(local, coming)
   if (overCap(local.boards, merged.boards)) return { miss: 'cap' }
+  if (JSON.stringify(merged).length > 1_900_000) return { miss: 'big' }
   const count = (target, key) => target.boards.reduce((n, book) => n + (book[key] || []).length, 0)
   const gone = goneHere(local)
   const back = merged.boards.reduce((n, book) => n + (book.lamps || []).filter((lamp) => gone.lamps.has(String(lamp.id)) || gone.folders.has(String(book.id))).length, 0)
@@ -205,6 +210,8 @@ export function planBackupLoad(local, parsed) {
     back,
     q: Math.max(0, count(merged, 'lamps') - count(local, 'lamps')),
     a: Math.max(0, count(merged, 'answers') - count(local, 'answers')),
+    old: sheet ? sheet.old : 0,
+    bad: sheet ? sheet.bad : 0,
   }
 }
 

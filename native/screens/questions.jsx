@@ -44,6 +44,7 @@ import {
 import { commitBook } from '../../src/lib/achievements.js'
 import { QUESTION_CAP, questionCount } from '../../src/lib/question-cap.js'
 import { savePastAnswer } from '../lib/past-answer.js'
+import { BACK_MAX, backFill, backFits, backLamp, markBookStreak } from '../lib/back-fill.js'
 import { bulkLamps, hangInto, stampEdit, questionEnded, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
@@ -1591,6 +1592,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     foldNext = ''
     return first
   })
+  // "Already doing this?": how many days back a new question counts as done.
+  const [back, setBack] = useState(0)
   const [timeOpen, setTimeOpen] = useState(true)
   const [endOpen, setEndOpen] = useState(false)
   const timeTapped = useRef(false)
@@ -1679,8 +1682,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   useEffect(() => () => clearTimeout(leave.current), [])
 
   // Pause saves at once, so it is not an unsaved change.
-  const [startSnap] = useState(() => JSON.stringify([{ ...draft, archived: false }, hang.tagTitle]))
-  const dirty = JSON.stringify([{ ...draft, archived: false }, hang.tagTitle]) !== startSnap
+  const [startSnap] = useState(() => JSON.stringify([{ ...draft, archived: false }, hang.tagTitle, 0]))
+  const dirty = JSON.stringify([{ ...draft, archived: false }, hang.tagTitle, back]) !== startSnap
   const leaveRef = useRef(null)
   // Set once Add has saved or Cancel was chosen: the back that leaves is ours, not one to ask about.
   const leaving = useRef(false)
@@ -1972,8 +1975,21 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     }
     const wasEmpty = (target.lamps || []).filter((item) => !item.archived).length === 0
     // Only an edit moves from its old folder; a copy is new wherever it lands.
-    if (onSaveTo) onSaveTo(target, next, existing ? sourceBook : null)
-    else onChange(commitBook(hangInto(target, next, hang.editing), clock))
+    // Already doing it: the question starts that many days ago, with a Late Did on each day it was due.
+    const days = !hang.editing && backFits(next) ? back : 0
+    const started = backLamp(next, days, dateIso)
+    const settle = days
+      ? (held) => {
+          const filled = backFill(held, started, days, dateIso, new Date())
+          markBookStreak(filled)
+          return filled
+        }
+      : null
+    if (onSaveTo) onSaveTo(target, started, existing ? sourceBook : null, new Date(), settle)
+    else {
+      const placed = hangInto(target, started, hang.editing)
+      onChange(commitBook(settle ? settle(placed) : placed, clock))
+    }
     // A check-on follows the question's new words and schedule.
     if (existing) followCheckOn(existing, next).catch(() => confirmMiss(t('confirm.checkOnMiss')))
     const newTime = next.askAfter && next.askAfter !== existing?.askAfter ? next.askAfter : ''
@@ -1981,6 +1997,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       playClick()
       confirmDone(doneMessage(target, next, 'confirm.questionAdded'))
       offerPingPrimer(newTime, colors)
+      setBack(0)
       onAnother()
       return
     }
@@ -2411,6 +2428,37 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           </View>
         ) : null}
       </Glide>
+
+      {!hang.editing && backFits(draft) ? (
+        <View style={styles.backBlock}>
+          <SetCap colors={colors}>{t('hang.backTitle')}</SetCap>
+          <View style={styles.backRow} accessibilityRole="radiogroup" accessibilityLabel={t('hang.backTitle')}>
+            {Array.from({ length: BACK_MAX }, (_, at) => at + 1).map((n) => (
+              <Pressable
+                key={n}
+                accessibilityRole="radio"
+                accessibilityLabel={t(n === 1 ? 'hang.backOne' : 'hang.back', { n })}
+                accessibilityState={{ checked: back === n }}
+                onPress={() => {
+                  playClick()
+                  setBack((was) => (was === n ? 0 : n))
+                }}
+                android_ripple={ripple(`${colors.on}33`)}
+                style={({ pressed }) => [
+                  styles.backDay,
+                  { borderColor: back === n ? colors.onDeep : colors.line, backgroundColor: back === n ? colors.panel3 : colors.panel },
+                  pressFx(pressed),
+                ]}
+              >
+                <Text style={[styles.backDayText, { color: back === n ? colors.on : colors.ink }]}>{n}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={[styles.fieldHint, { color: colors.inkDim }]}>
+            {back ? t(back === 1 ? 'hang.backOne' : 'hang.back', { n: back }) : t('hang.backHint')}
+          </Text>
+        </View>
+      ) : null}
 
       {moreOpen ? (
         <Reveal>
@@ -3285,6 +3333,11 @@ const styles = StyleSheet.create({
   summaryChev: { fontFamily: fonts.ui, fontSize: 22, paddingTop: 8, paddingRight: 14 },
   summary: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 20, paddingHorizontal: 16, paddingTop: 12 },
   settings: { marginTop: 4 },
+  backBlock: { marginTop: 12 },
+  backRow: { flexDirection: 'row', gap: 6 },
+  // 44 tall and about as wide: seven fit across a 390 screen.
+  backDay: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  backDayText: { fontFamily: fonts.uiSemi, fontSize: 16 },
   editBtn: { marginTop: 16, marginBottom: 8 },
   whenBody: { padding: 16, gap: 12 },
   whenDetail: { gap: 12 },
