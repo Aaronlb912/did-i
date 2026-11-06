@@ -2299,12 +2299,14 @@ test('one streak rule per question: a nope breaks it, late keeps it, every scree
   const gap = { ...shelfBook, answers: answers.filter((answer) => answer.periodKey !== '2026-10-02' && answer.periodKey !== '2026-09-30') }
   assert.equal(questionStreak(gap, q, '2026-10-05'), 2)
   assert.equal(bestQuestionStreak(gap, q, '2026-10-05'), 4)
-  // Amount totals: week from the chosen first day, month from the 1st, Did days only.
+  // Amount totals: week from the chosen first day, month from the 1st, any answer with an amount.
   const water = { id: 'w', cadence: 'daily', trackAmount: true, createdOn: '2026-09-01' }
   const amt = (night, status, amount) => ({ lampId: 'w', periodKey: night, status, amount, answeredAt: `${night}T20:00:00` })
   const wbook = { id: 'b', dayFoldHour: 0, lamps: [water], answers: [amt('2026-09-30', 'yes', 9), amt('2026-10-01', 'yes', 2), amt('2026-10-04', 'yes', 1.5), amt('2026-10-05', 'late', 3), amt('2026-10-06', 'skip', 5), amt('2026-10-07', 'yes', 4)] }
-  assert.deepEqual(lampAmountTotals(wbook, water, '2026-10-06', 1), { week: 3, month: 6.5, weekDays: 1, monthDays: 3, weekDuePassed: true }, 'Monday week starts 10/05; no future, no Not yet, no last month')
-  assert.deepEqual(lampAmountTotals(wbook, water, '2026-10-06', 0), { week: 4.5, month: 6.5, weekDays: 2, monthDays: 3, weekDuePassed: true }, 'Sunday week starts 10/04')
+  assert.deepEqual(lampAmountTotals(wbook, water, '2026-10-06', 1), { week: 8, month: 11.5, weekDays: 2, monthDays: 4, weekDuePassed: true }, 'Monday week starts 10/05; no future, Not yet amounts count, no last month')
+  assert.deepEqual(lampAmountTotals(wbook, water, '2026-10-06', 0), { week: 9.5, month: 11.5, weekDays: 3, monthDays: 4, weekDuePassed: true }, 'Sunday week starts 10/04')
+  const dec = { ...wbook, answers: [amt('2026-11-29', 'yes', 2), amt('2026-11-30', 'yes', 3), amt('2026-12-01', 'yes', 1)] }
+  assert.deepEqual(lampAmountTotals(dec, water, '2026-12-01', 0), { week: 6, month: 1, weekDays: 3, monthDays: 1, weekDuePassed: true }, 'a week that starts last month keeps those days')
   assert.equal(lampAmountTotals(wbook, { ...water, trackAmount: false }, '2026-10-06').month, 0)
   // Top streaks: each run once, longest first, the live one marked.
   const top = topQuestionStreaks(shelfBook, q, '2026-10-05')
@@ -7856,6 +7858,37 @@ await testAsync('every so often: saved shape, pack, and the toast note action', 
   assert.ok(screen.includes('openAnswerNote(') && screen.includes("t('note.addShort')"), 'a Did offers a note from the undo toast')
 })
 
+await testAsync('amounts by week and month for the chart, and Water counts glasses from the start', async () => {
+  const { lampAmountSpans } = await import('../src/lib/lamp-record.js')
+  const { starterList, packList } = await import('../src/lib/starters.js')
+  const lamp = { id: 'w', cadence: 'daily', trackAmount: true }
+  const at = (key, status, amount) => ({ lampId: 'w', periodKey: key, status, answeredAt: `${key}T21:00:00.000Z`, amount })
+  const answers = [at('2026-12-01', 'yes', 2), at('2026-11-30', 'skip', 3), at('2026-11-29', 'yes', 1), at('2026-11-28', 'yes', 4), at('2025-12-31', 'yes', 9), at('2025-11-30', 'yes', 50)]
+  const out = lampAmountSpans({ answers }, lamp, '2026-12-01', 0)
+  assert.equal(out.weeks.length, 12)
+  assert.equal(out.months.length, 12)
+  assert.deepEqual(out.weeks.at(-1), { key: '2026-11-29', amount: 6 }, 'this week from Sunday 11/29')
+  assert.deepEqual(out.weeks.at(-2), { key: '2026-11-22', amount: 4 })
+  assert.deepEqual(out.months.at(-1), { key: '2026-12', amount: 2 })
+  assert.deepEqual(out.months.at(-2), { key: '2026-11', amount: 8 })
+  assert.deepEqual(out.months[0], { key: '2026-01', amount: 0 }, 'twelve months back, older ones left out')
+  assert.equal(out.monthMax, 8)
+  assert.deepEqual(lampAmountSpans({ answers }, { ...lamp, trackAmount: false }, '2026-12-01').weeks, [])
+  const water = starterList().find((item) => item.idea === 'water')
+  assert.ok(water.trackAmount && water.amountUnit === t('ideas.water.unit'), 'the Water starter counts glasses')
+  const pills = starterList().find((item) => item.idea === 'pills')
+  assert.ok(!pills.trackAmount && !('amountUnit' in pills))
+  assert.ok(packList({ lamps: [] }).flatMap((pack) => pack.items).filter((item) => item.idea === 'water').every((item) => item.amountUnit), 'and from a pack')
+  const page = readFileSync('native/screens/questions.jsx', 'utf8')
+  assert.ok(page.includes("{ id: 'months', label: t('amounts.months') }") && page.includes('lampAmountSpans(lampBook, lamp, dateIso'), 'Days, Weeks and Months on the amount chart')
+  const notes = readFileSync('native/components/NightNotes.jsx', 'utf8')
+  assert.ok(readFileSync('native/screens/TonightScreen.jsx', 'utf8').includes("lamp?.trackAmount ? t('note.addAmount') : t('note.addShort')") && notes.includes('note.addAmount'), 'a counted question says Add amount, not Add note')
+  assert.ok(notes.includes("accessibilityLabel={t('amounts.plusOne')}") && notes.includes("accessibilityLabel={t('amounts.minusOne')}"), 'plus and minus one beside the amount')
+  assert.ok(notes.includes("t('note.addAmountFor', { question: shortLabel(missing.lamp) })"), 'the done card asks for a missing amount')
+  assert.ok(readFileSync('src/lib/useHangDraft.js', 'utf8').includes('setDraft(({ trackAmount, amountUnit, ...prev }) => ({ ...prev, ...fields }))'), 'picking Water then another idea does not leave it counting glasses')
+  assert.ok(readFileSync('native/screens/TonightScreen.jsx', 'utf8').includes("if (!did && !(undoNow.status === 'skip' && lamp?.trackAmount)) return undoNow"), 'a Not yet on a counted question offers Add amount')
+})
+
 await testAsync('amounts: average over 30 nights, 14 night chart, rounding', async () => {
   const { lampAmounts, roundAmount, amountAverageLine } = await import('../src/lib/lamp-record.js')
   const lamp = { id: 'w', question: 'Did I drink water?', cadence: 'daily', trackAmount: true, amountUnit: 'glasses' }
@@ -7865,18 +7898,18 @@ await testAsync('amounts: average over 30 nights, 14 night chart, rounding', asy
     return { lampId: 'w', periodKey: key, status, answeredAt: `${key}T21:00:00.000Z`, ...(amount == null ? {} : { amount }) }
   }
   const answers = [
-    at(0, 'yes', 6), at(1, 'late', 5), at(2, 'skip', 99), at(3, 'yes'), at(13, 'yes', 7),
+    at(0, 'yes', 6), at(1, 'late', 5), at(2, 'skip', 6), at(3, 'yes'), at(13, 'yes', 7),
     at(14, 'yes', 6), at(29, 'yes', 6), at(30, 'yes', 100), { lampId: 'z', periodKey: today, status: 'yes', amount: 50 },
   ]
   const out = lampAmounts({ answers }, lamp, today)
-  assert.equal(out.count, 5, 'only Did nights with an amount in the last 30')
+  assert.equal(out.count, 6, 'days with an amount in the last 30, Not yet ones too')
   assert.equal(out.average, 6)
   assert.equal(out.bars.length, 14)
   assert.equal(out.bars[0].night, addDaysIso(today, -13))
   assert.equal(out.bars[0].amount, 7)
   assert.equal(out.bars[13].night, today)
   assert.equal(out.bars[13].amount, 6)
-  assert.equal(out.bars[11].amount, null, 'a nope amount is not charted')
+  assert.equal(out.bars[11].amount, 6, 'a Not yet amount is charted: 5 of 8 still counts')
   assert.equal(out.bars[10].amount, null, 'a Did with no amount is a gap')
   assert.equal(out.max, 7)
   assert.equal(roundAmount(2.46), 2.5)

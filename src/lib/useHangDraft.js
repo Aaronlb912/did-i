@@ -92,7 +92,7 @@ export function useHangDraft({
   // An idea brings its own schedule, time and name along with the question.
   function applyStarter(starter) {
     const { idea, ...fields } = starter
-    setDraft((prev) => ({ ...prev, ...fields }))
+    setDraft(({ trackAmount, amountUnit, ...prev }) => ({ ...prev, ...fields }))
     if (miss) setMiss('')
   }
 

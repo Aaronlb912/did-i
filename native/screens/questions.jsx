@@ -49,7 +49,8 @@ import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps, weekdayName } from '../../src/lib/hall-pages.js'
-import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek, nextDueIso } from '../../src/lib/recurrence.js'
+import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek, nextDueIso, periodLabel } from '../../src/lib/recurrence.js'
+import { KitSegment } from '../components/KitSegment.jsx'
 import { gapLine, lastTimeLine, sinceBadge, staleDidLine } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
 import { awayKey, readPrefs, usePrefs } from '../../src/lib/prefs.js'
@@ -77,7 +78,7 @@ import { LampManage, flushCheckOnStops, lampActions, stopCheckOns } from '../com
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { noteHitDay, rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { amountAverageLine, amountWords, bestQuestionStreak, lampAmountTotals, lampAmounts, lampDays, lampRecord, lampNights, lampRate, lampWeeks, lastDidTimes, topQuestionStreaks } from '../../src/lib/lamp-record.js'
+import { amountAverageLine, amountWords, bestQuestionStreak, lampAmountSpans, lampAmountTotals, lampAmounts, lampDays, lampRecord, lampNights, lampRate, lampWeeks, lastDidTimes, topQuestionStreaks } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -2685,6 +2686,33 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const lastFive = useMemo(() => lastDidTimes(lampBook, lamp, 5), [lampBook, lamp])
   const amounts = useMemo(() => lampAmounts(lampBook, lamp, dateIso, 14, 30), [lampBook, lamp, dateIso, awayKey()])
   const totals = useMemo(() => lampAmountTotals(lampBook, lamp, dateIso, firstWeekday(readPrefs().locale)), [lampBook, lamp, dateIso, awayKey()])
+  const [amountSpan, setAmountSpan] = useState('days')
+  const anyAmount = useMemo(() => amounts.count > 0 || (lamp?.trackAmount && lampNights(lampBook, lamp).some((row) => typeof row.answer.amount === 'number')), [amounts, lampBook, lamp])
+  const spans = useMemo(
+    () => (amountSpan === 'days' ? null : lampAmountSpans(lampBook, lamp, dateIso, firstWeekday(readPrefs().locale))),
+    [amountSpan, lampBook, lamp, dateIso, awayKey()],
+  )
+  const amountChart = !spans
+    ? {
+        max: amounts.max,
+        cap: t('amounts.cap'),
+        bars: amounts.bars.map((bar) => ({
+          key: bar.night,
+          amount: bar.amount,
+          label: bar.amount === null ? t('amounts.barNone', { date: formatBoardDate(bar.night) }) : t('amounts.bar', { date: formatBoardDate(bar.night), amount: amountWords(bar.amount, lamp?.amountUnit) }),
+        })),
+      }
+    : amountSpan === 'weeks'
+    ? {
+        max: spans.weekMax,
+        cap: t('amounts.capWeeks'),
+        bars: spans.weeks.map((bar) => ({ ...bar, label: t('amounts.barWeek', { date: formatBoardDate(bar.key), amount: amountWords(bar.amount, lamp?.amountUnit) }) })),
+      }
+    : {
+        max: spans.monthMax,
+        cap: t('amounts.capMonths'),
+        bars: spans.months.map((bar) => ({ ...bar, label: t('amounts.barMonth', { month: periodLabel(lamp, bar.key), amount: amountWords(bar.amount, lamp?.amountUnit) }) })),
+      }
   // Every so often: no streak, so the tiles say when it was last done and the usual gap.
   const every = useMemo(() => {
     if (!isEvery(lamp)) return null
@@ -3059,32 +3087,35 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       {lamp.trackAmount ? (
         <View style={styles.amounts}>
           <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('amounts.title')}</Text>
-          {amounts.count ? (
+          {anyAmount ? (
             <>
-              <Text style={[styles.amountAvg, { color: colors.ink }]}>{amountAverageLine(amounts.average, lamp.amountUnit)}</Text>
+              {amounts.count ? <Text style={[styles.amountAvg, { color: colors.ink }]}>{amountAverageLine(amounts.average, lamp.amountUnit)}</Text> : null}
               {totals.weekDays || totals.weekDuePassed ? <Text style={[styles.tileCap, { color: colors.inkSoft }]}>{t('amounts.week', { amount: amountWords(totals.week, lamp.amountUnit) })}</Text> : null}
               <Text style={[styles.tileCap, { color: colors.inkSoft }]}>{t('amounts.month', { amount: amountWords(totals.month, lamp.amountUnit) })}</Text>
+              <View style={styles.amountSpan}>
+                <KitSegment
+                  items={[
+                    { id: 'days', label: t('amounts.days') },
+                    { id: 'weeks', label: t('amounts.weeks') },
+                    { id: 'months', label: t('amounts.months') },
+                  ]}
+                  selected={amountSpan}
+                  onSelect={setAmountSpan}
+                  colors={colors}
+                />
+              </View>
               <View style={styles.amountBars}>
-                {amounts.bars.map((bar) => (
-                  <View
-                    key={bar.night}
-                    style={[styles.amountBar, { backgroundColor: colors.lineSoft }]}
-                    accessible
-                    accessibilityLabel={
-                      bar.amount === null
-                        ? t('amounts.barNone', { date: formatBoardDate(bar.night) })
-                        : t('amounts.bar', { date: formatBoardDate(bar.night), amount: amountWords(bar.amount, lamp.amountUnit) })
-                    }
-                  >
+                {amountChart.bars.map((bar) => (
+                  <View key={bar.key} style={[styles.amountBar, { backgroundColor: colors.lineSoft }]} accessible accessibilityLabel={bar.label}>
                     {bar.amount ? (
                       <View
-                        style={{ backgroundColor: colors.on, height: `${Math.max(4, Math.round((bar.amount / amounts.max) * 100))}%` }}
+                        style={{ backgroundColor: colors.on, height: `${Math.max(4, Math.round((bar.amount / amountChart.max) * 100))}%` }}
                       />
                     ) : null}
                   </View>
                 ))}
               </View>
-              <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('amounts.cap')}</Text>
+              <Text style={[styles.tileCap, { color: colors.inkDim }]}>{amountChart.cap}</Text>
             </>
           ) : (
             <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('amounts.empty')}</Text>
@@ -3352,6 +3383,7 @@ const styles = StyleSheet.create({
   amounts: { gap: 6, marginBottom: 12 },
   amountAvg: { fontFamily: fonts.uiSemi, fontSize: 15 },
   amountBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 64 },
+  amountSpan: { marginTop: 10, marginBottom: 10 },
   amountBar: { flex: 1, height: '100%', borderRadius: 3, overflow: 'hidden', justifyContent: 'flex-end' },
   lastFive: { gap: 6, marginBottom: 12 },
   lastRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 8, gap: 2 },

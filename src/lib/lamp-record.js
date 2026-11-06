@@ -1,6 +1,6 @@
 import { t } from './i18n.js'
 import { readPrefs } from './prefs.js'
-import { addDaysIso, answerFor, graceNightIso, inPause, isDueOn, everyBest, everyStreak, isEvery, isPerWeek, perWeekBest, perWeekStreak, periodKeyFor, periodNight, periodPassed, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, daysBetween, answerFor, graceNightIso, inPause, isDueOn, everyBest, everyStreak, isEvery, isPerWeek, perWeekBest, perWeekStreak, periodKeyFor, periodNight, periodPassed, previousDueDate, recentPeriodKeys } from './recurrence.js'
 import { travelNightState, travelSkipped } from './travel.js'
 
 function didStatus(status) {
@@ -297,8 +297,8 @@ export function amountAverageLine(average, unit = '') {
   return u ? t('amounts.avg', { n, unit: u }) : t('amounts.avgPlain', { n })
 }
 
-// Amounts for a question's page: the average over Did nights with an amount
-// in the last avgDays nights, and one bar per night for the last chartDays,
+// Amounts for a question's page: the average over days with an amount (Did or
+// Not yet: 5 of 8 glasses still counts) in the last avgDays days, and one bar per night for the last chartDays,
 // oldest first (amount null when there is none). One pass over the answers;
 // callers memoize it on [book, lamp, dateIso].
 export function lampAmounts(book, lamp, dateIso, chartDays = 14, avgDays = 30) {
@@ -311,7 +311,7 @@ export function lampAmounts(book, lamp, dateIso, chartDays = 14, avgDays = 30) {
   let count = 0
   for (const { answer, night } of lampNights(book, lamp)) {
     if (!night || night > dateIso || night < avgFrom) continue
-    if (!didStatus(answer.status) || typeof answer.amount !== 'number') continue
+    if (typeof answer.amount !== 'number') continue
     if (byNight.has(night)) continue
     byNight.set(night, answer.amount)
     sum += answer.amount
@@ -329,7 +329,7 @@ export function lampAmounts(book, lamp, dateIso, chartDays = 14, avgDays = 30) {
 }
 
 // Amount totals for this week (starting on firstDay, 0 = Sunday) and this
-// calendar month, over Did days with an amount, one amount per day. Days after
+// calendar month, over days with an amount, one amount per day. Days after
 // dateIso are left out. Callers memoize it on [book, lamp, dateIso, firstDay].
 export function lampAmountTotals(book, lamp, dateIso, firstDay = 0) {
   const out = { week: 0, month: 0, weekDays: 0, monthDays: 0, weekDuePassed: false }
@@ -340,13 +340,17 @@ export function lampAmountTotals(book, lamp, dateIso, firstDay = 0) {
   // A due day already behind us this week: until then "This week: 0" says nothing.
   const live = { ...lamp, archived: false }
   for (let day = weekFrom; day < dateIso && !out.weekDuePassed; day = addDaysIso(day, 1)) out.weekDuePassed = isDueOn(live, day)
+  // A week can start in last month: read from whichever comes first.
+  const from = weekFrom < monthFrom ? weekFrom : monthFrom
   const seen = new Set()
   for (const { answer, night } of lampNights(book, lamp)) {
-    if (!night || night > dateIso || night < monthFrom || seen.has(night)) continue
-    if (!didStatus(answer.status) || typeof answer.amount !== 'number') continue
+    if (!night || night > dateIso || night < from || seen.has(night)) continue
+    if (typeof answer.amount !== 'number') continue
     seen.add(night)
-    out.month += answer.amount
-    out.monthDays += 1
+    if (night >= monthFrom) {
+      out.month += answer.amount
+      out.monthDays += 1
+    }
     if (night >= weekFrom) {
       out.week += answer.amount
       out.weekDays += 1
@@ -354,6 +358,49 @@ export function lampAmountTotals(book, lamp, dateIso, firstDay = 0) {
   }
   out.week = Math.round(out.week * 100) / 100
   out.month = Math.round(out.month * 100) / 100
+  return out
+}
+
+// Amount totals per week (the last count weeks, starting on firstDay) and per
+// calendar month (the last count months), oldest first, for the Weeks and
+// Months chart. One amount per day, as in lampAmountTotals.
+export function lampAmountSpans(book, lamp, dateIso, firstDay = 0, count = 12) {
+  const out = { weeks: [], months: [], weekMax: 0, monthMax: 0 }
+  if (!lamp || !lamp.trackAmount || !dateIso) return out
+  const back = (new Date(`${dateIso}T12:00:00`).getDay() - firstDay + 7) % 7
+  const weekFrom = addDaysIso(dateIso, -back - 7 * (count - 1))
+  const [y, m] = dateIso.split('-').map(Number)
+  const weekSum = new Map()
+  const monthSum = new Map()
+  for (let i = 0; i < count; i += 1) {
+    weekSum.set(addDaysIso(weekFrom, 7 * i), 0)
+    const d = new Date(y, m - count + i, 1)
+    monthSum.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, 0)
+  }
+  const weekKeys = [...weekSum.keys()]
+  const monthFrom = `${[...monthSum.keys()][0]}-01`
+  const from = weekFrom < monthFrom ? weekFrom : monthFrom
+  const seen = new Set()
+  for (const { answer, night } of lampNights(book, lamp)) {
+    if (!night || night > dateIso || night < from || seen.has(night)) continue
+    if (typeof answer.amount !== 'number') continue
+    seen.add(night)
+    const month = night.slice(0, 7)
+    if (monthSum.has(month)) monthSum.set(month, monthSum.get(month) + answer.amount)
+    if (night >= weekFrom) {
+      const week = weekKeys[Math.floor(daysBetween(weekFrom, night) / 7)]
+      if (week) weekSum.set(week, weekSum.get(week) + answer.amount)
+    }
+  }
+  const round = (n) => Math.round(n * 100) / 100
+  for (const [key, sum] of weekSum) {
+    out.weeks.push({ key, amount: round(sum) })
+    out.weekMax = Math.max(out.weekMax, sum)
+  }
+  for (const [key, sum] of monthSum) {
+    out.months.push({ key, amount: round(sum) })
+    out.monthMax = Math.max(out.monthMax, sum)
+  }
   return out
 }
 

@@ -106,6 +106,12 @@ function shareAfter(share, on, note) {
 
 // The amount box only shows for a question that tracks one. undefined means
 // "leave the amount alone" to setAnswerNote, so other questions never touch it.
+// A counting question with nothing yet reads "Add amount", not "Add a note".
+function sheetTitle(lamp, answer) {
+  if (answer?.note) return t('note.edit')
+  return lamp?.trackAmount && typeof answer?.amount !== 'number' ? t('note.addAmount') : t('note.add')
+}
+
 function amountProps(lamp, answer) {
   if (!lamp?.trackAmount) return null
   return { initial: typeof answer?.amount === 'number' ? String(answer.amount) : '', unit: lamp.amountUnit || '' }
@@ -134,20 +140,16 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
     // Share only a note that was saved on the answer.
     if (onSave(draft, amount ? count : undefined) === true) shareAfter(share, on, draft.replace(/\s+/g, ' ').trim().slice(0, NOTE_MAX))
   }
-  return (
-    <View style={styles.edit}>
-      <Field
-        colors={colors}
-        label={label}
-        value={draft}
-        onChangeText={setDraft}
-        placeholder={t('note.ph')}
-        maxLength={NOTE_MAX}
-        autoFocus
-        returnKeyType="done"
-        onSubmitEditing={save}
-      />
-      {amount ? (
+  // +1 and -1 edit the same text the box saves. Empty counts as 0 going up and stays empty going down.
+  const step = (by) => {
+    const now = cleanAmount(count)
+    if (by < 0 && now === null) return
+    const next = cleanAmount(Math.max(0, (now ?? 0) + by))
+    if (next !== null) setCount(String(next))
+  }
+  const amountField = amount ? (
+    <View style={styles.amountRow}>
+      <View style={styles.amountBox}>
         <Field
           colors={colors}
           label={amount.unit ? t('note.amountIn', { unit: amount.unit }) : t('note.amount')}
@@ -159,8 +161,29 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
           returnKeyType="done"
           maxLength={9}
           onSubmitEditing={save}
+          autoFocus
         />
-      ) : null}
+      </View>
+      <View style={styles.amountKeys}>
+        <KeyButton colors={colors} label="-1" accessibilityLabel={t('amounts.minusOne')} onPress={() => step(-1)} />
+        <KeyButton colors={colors} label="+1" accessibilityLabel={t('amounts.plusOne')} onPress={() => step(1)} />
+      </View>
+    </View>
+  ) : null
+  return (
+    <View style={styles.edit}>
+      {amountField}
+      <Field
+        colors={colors}
+        label={label}
+        value={draft}
+        onChangeText={setDraft}
+        placeholder={t('note.ph')}
+        maxLength={NOTE_MAX}
+        autoFocus={!amount}
+        returnKeyType="done"
+        onSubmitEditing={save}
+      />
       {share ? (
         <SetSwitch colors={colors} label={t('sharedNote.toggle')} sub={t('sharedNote.who')} last on={on} onPress={() => {
           touched.current = true
@@ -224,7 +247,7 @@ export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange })
   const answer = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
   if (!book || !lamp || !answer) return
   openNoteSheet({
-    title: answer.note ? t('note.edit') : t('note.add'),
+    title: sheetTitle(lamp, answer),
     label: shortLabel(lamp),
     initial: answer.note,
     amount: amountProps(lamp, answer),
@@ -252,7 +275,7 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
   function edit(answer) {
     setPicking(false)
     openNoteSheet({
-      title: answer.note ? t('note.edit') : t('note.add'),
+      title: sheetTitle(lamp, answer),
       label: nightLine(lamp, answer),
       initial: answer.note,
       amount: amountProps(lamp, answer),
@@ -381,35 +404,46 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
   }
   // One card with a note already: say Edit note, not Add a note.
   const label = answered.length === 1 && answered[0].answer.note ? t('note.edit') : t('note.add')
-  const openSheet = () =>
+  const openSheet = (only = answered) =>
     publishSheet({
-      title: label,
+      title: only.length === 1 ? sheetTitle(only[0].lamp, only[0].answer) : label,
       colors,
       closeLabel: t('settings.neverMind'),
       onClose: close,
       // The note box has its own Never mind, so the sheet adds none.
       noClose: true,
-      content: <NotePick answered={answered} colors={colors} onSave={save} onRemove={remove} onCancel={close} />,
+      content: <NotePick answered={only} colors={colors} onSave={save} onRemove={remove} onCancel={close} />,
     })
 
   if (quiet) {
+    // A counting question answered Did with no amount (widget, watch, a notification button): the first one gets a full row.
+    const missing = answered.find(
+      (row) => row.lamp.trackAmount && (row.answer.status === 'yes' || row.answer.status === 'late') && typeof row.answer.amount !== 'number',
+    )
     // Just the pen: the done card stays light. Full 44pt tap target, named for screen readers.
     return (
-      <Pressable
-        onPress={openSheet}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        style={({ pressed }) => [styles.pen, pressFx(pressed)]}
-      >
-        <MenuIcon name="pen" color={colors.inkSoft} size={20} stroke />
-      </Pressable>
+      <>
+        <Pressable
+          onPress={() => openSheet()}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          style={({ pressed }) => [styles.pen, pressFx(pressed)]}
+        >
+          <MenuIcon name="pen" color={colors.inkSoft} size={20} stroke />
+        </Pressable>
+        {missing ? (
+          <View style={styles.full}>
+            <Row colors={colors} label={t('note.addAmountFor', { question: shortLabel(missing.lamp) })} onPress={() => openSheet([missing])} />
+          </View>
+        ) : null}
+      </>
     )
   }
   const note = answered.length === 1 ? answered[0].answer.note : ''
   return (
     <View style={styles.keys}>
       {note ? <Text style={[styles.quiet, styles.noteText, { color: colors.ink }]}>{note}</Text> : null}
-      <KeyButton colors={colors} label={label} onPress={openSheet} />
+      <KeyButton colors={colors} label={label} onPress={() => openSheet()} />
     </View>
   )
 }
@@ -460,6 +494,11 @@ const styles = StyleSheet.create({
   // Full width, so in a row of buttons the open note drops to its own line.
   edit: { gap: 8, marginTop: 8, width: '100%' },
   keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  amountRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  amountBox: { flex: 1 },
+  // The Field's own 10pt bottom margin keeps the keys level with the box.
+  amountKeys: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  full: { width: '100%' },
   quiet: { fontSize: 14 },
   pen: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   noteText: { width: '100%', fontStyle: 'italic' },

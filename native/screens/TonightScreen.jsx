@@ -885,13 +885,16 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const noteDeps = useRef({ colors, onChange })
   noteDeps.current = { colors, onChange }
   const undoToast = useMemo(() => {
-    if (!undoNow || (undoNow.status !== 'yes' && undoNow.status !== 'late')) return undoNow
+    if (!undoNow) return undoNow
     const target = { boardId: undoNow.book?.id, lampId: undoNow.lampId, periodKey: undoNow.periodKey }
     const lamp = (undoNow.book?.lamps || []).find((item) => item.id === undoNow.lampId)
-    if (lamp?.sendId && lamp.wantsPhoto && !lamp.shareOff && canAddProof()) {
+    const did = undoNow.status === 'yes' || undoNow.status === 'late'
+    // A Not yet can still carry an amount: 5 of 8 glasses counts.
+    if (!did && !(undoNow.status === 'skip' && lamp?.trackAmount)) return undoNow
+    if (did && lamp?.sendId && lamp.wantsPhoto && !lamp.shareOff && canAddProof()) {
       return { ...undoNow, extra: { label: t('proof.addShort'), onPress: () => addPhotoForDid(lamp, undoNow.periodKey, noteDeps.current.colors) } }
     }
-    return { ...undoNow, extra: { label: t('note.addShort'), onPress: () => openAnswerNote({ ...target, ...noteDeps.current }) } }
+    return { ...undoNow, extra: { label: lamp?.trackAmount ? t('note.addAmount') : t('note.addShort'), onPress: () => openAnswerNote({ ...target, ...noteDeps.current }) } }
   }, [undoNow])
   useUndoToast('tonight', undoToast, undoAnswer, UNDO_MS, stack.undoCount > 1 ? t('tonight.undoMore', { n: stack.undoCount - 1 }) : t('tonight.undoTap'), stack.holdUndo)
   // An answer saved with no signal says where it is, once per offline stretch.
