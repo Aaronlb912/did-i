@@ -14,7 +14,7 @@ import {
 } from './widget-config.js'
 import { t } from './i18n.js'
 import { lastTimeLine, perWeekLine } from './every-copy.js'
-import { awayOn, gentleOn } from './prefs.js'
+import { awayOn, gentleOn, readPrefs } from './prefs.js'
 import { shelfStreak } from './hall-feel.js'
 import { alignShelfPurse, normalizePurse, spreadPurseFrom } from './purse.js'
 import { weOpenPastList, weSavedOpenPast } from './did-we.js'
@@ -329,6 +329,8 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     weLine: readWeLine(boardDate(now)),
     // Gentle mode: the widgets draw no streak numbers.
     gentle,
+    // Hide questions on the lock screen: the lock screen widgets show the count line.
+    hideOnLock: Boolean(readPrefs().pingsPrivate),
     streak,
     streakLabel: t('tonight.streakMany', { n: '{n}' }),
     streakOneLabel: t('tonight.streakOne'),

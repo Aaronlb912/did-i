@@ -20,7 +20,7 @@ import { applyWidgetPrefs } from '../../src/lib/widget-settings.js'
 import { pinWidget, showWidgetHow } from '../lib/widget-pin.js'
 import { signOutHere, useAccount } from '../../src/lib/account.js'
 import { leaveAccount } from '../lib/leave-account.js'
-import { SureModal } from './more.jsx'
+import { PhoneLockSection, SureModal, flipPingsPrivate } from './more.jsx'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { feedbackMailto } from '../../src/lib/feedback.js'
@@ -554,6 +554,14 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           on={Boolean(prefs.shareDiagnostics)}
           onPress={() => setShareDiagnostics(!prefs.shareDiagnostics)}
         />
+        <SetSwitch
+          colors={colors}
+          icon="bell"
+          label={t('pings.private')}
+          sub={t('pings.privateSub')}
+          on={Boolean(prefs.pingsPrivate)}
+          onPress={() => flipPingsPrivate().then((ok) => ok || confirmMiss(t('pings.kindsMiss')))}
+        />
         <SetRow
           colors={colors}
           icon="shield"
@@ -565,6 +573,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))}
         />
       </SetCard>
+      <PhoneLockSection colors={colors} />
       </>,
     )
   }

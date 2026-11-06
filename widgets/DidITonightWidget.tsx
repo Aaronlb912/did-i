@@ -85,6 +85,8 @@ export type DidITonightWidgetProps = {
   weLine?: string
   // Gentle mode. The widget shows no streak numbers today; keep it that way when set.
   gentle?: boolean
+  // Hide questions on the lock screen: lock screen families show the footer, never the words.
+  hideOnLock?: boolean
   // The current streak, shown on the all-clear card only. 0 hides it. Labels carry {n}.
   streak?: number
   streakLabel?: string
@@ -174,6 +176,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   const nopeLabel = String(props?.nopeLabel || 'Not yet')
   const leadId = String(lead?.lampId || '')
   const gentle = props?.gentle === true
+  const hideOnLock = props?.hideOnLock === true
   const leadNight = String(lead?.periodKey || '')
   // The night rides along so a "Last night" card answers last night.
   const leadTarget = leadNight ? leadId + '|' + leadNight : leadId
@@ -906,7 +909,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
   if (family === 'accessoryInline') {
     return (
       <Text modifiers={[foregroundStyle(ink)]}>
-        {lead ? questionText : footer}
+        {lead && !hideOnLock ? questionText : footer}
       </Text>
     )
   }
@@ -951,7 +954,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
         frame({ maxWidth: 10000 }),
       ]}
     >
-      {lead ? questionText : footer}
+      {lead && !(hideOnLock && !home) ? questionText : footer}
     </Text>
   )
   // Under the question on home sizes: when an every so often question was last done.
@@ -1103,7 +1106,7 @@ const DidITonightWidget = (props: DidITonightWidgetProps, environment: WidgetEnv
           fill,
         ]}
       >
-        {kicker}
+        {hideOnLock ? null : kicker}
         {question}
       </VStack>
     )

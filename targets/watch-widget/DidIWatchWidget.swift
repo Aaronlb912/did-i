@@ -99,7 +99,7 @@ struct CountView: View {
           .font(.caption2)
       }
     case .accessoryCorner:
-      Text(entry.total > 0 ? "(entry.answered)" : "Did I")
+      Text(entry.total > 0 ? "\(entry.answered)" : "Did I")
         .font(.title3)
         .widgetLabel {
           if entry.total > 0 {

@@ -333,7 +333,7 @@ async function scheduleOneRemind(Notifications, item) {
     identifier: remindNoteId(item),
     content: {
       title: 'Did I',
-      body: t('remind.ask', { text: item.text }),
+      body: readPrefs().pingsPrivate ? t('pings.privateBody') : t('remind.ask', { text: item.text }),
       data: { go: '/remind', remindId: item.id, remindText: item.text },
       categoryIdentifier: REMIND_CATEGORY,
     },

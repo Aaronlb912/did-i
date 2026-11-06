@@ -185,5 +185,5 @@ revoke all on function public.push_private() from public;
 
 drop trigger if exists push_private on public.push_queue;
 create trigger push_private
-  before insert on public.push_queue
+  before insert or update of body on public.push_queue
   for each row execute function public.push_private();
