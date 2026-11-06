@@ -134,6 +134,7 @@ const files = [
   'supabase/social-noise.sql',
   'supabase/proof-ux.sql',
   'supabase/invite-friend.sql',
+  'supabase/leave-keep.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

@@ -2855,6 +2855,40 @@ test('planning a backup load counts what is new, never deletes, and stops at the
   assert.equal(planBackupLoad(plan.merged, { boards: [] }).q, 0)
 })
 
+test('leaving and deleting: a backup file brings back deleted questions and folders, and both Load a copy rows ask first', () => {
+  const q = { ...lamp('q'), question: 'Did I read?' }
+  const r = { ...lamp('r'), question: 'Did I stretch?' }
+  const ans = { lampId: 'q', periodKey: '2026-10-01', status: 'yes', answeredAt: '2026-10-01T20:00:00' }
+  const here = { currentId: 'b', boards: [{ id: 'b', title: 'General', lamps: [r], answers: [], gone: [{ id: 'q', at: '2026-11-01T10:00:00.000Z' }] }], goneTags: [{ id: 'w', at: '2026-11-01T10:00:00.000Z' }] }
+  const copy = { currentId: 'b', boards: [{ id: 'b', title: 'General', lamps: [q, r], answers: [ans] }, { id: 'w', title: 'Work', lamps: [{ ...lamp('s'), question: 'Did I plan?' }], answers: [] }] }
+  const plan = planBackupLoad(here, copy)
+  assert.equal(plan.back, 2, 'the deleted question and the deleted folder question are counted')
+  assert.ok(plan.merged.boards[0].lamps.some((item) => item.id === 'q'), 'the deleted question comes back')
+  assert.equal(plan.merged.boards[0].answers.length, 1, 'with its answers')
+  assert.ok(plan.merged.boards.some((book) => book.id === 'w'), 'the deleted folder comes back')
+  const later = mergeShelves(plan.merged, here, '2026-11-06', '2026-11-02')
+  assert.ok(later.boards[0].lamps.some((item) => item.id === 'q'), 'an older copy of this phone does not delete it again')
+  assert.equal(planBackupLoad(here, { currentId: 'b', boards: [{ id: 'b', title: 'General', lamps: [r], answers: [] }] }).back, 0)
+  const loader = readFileSync('native/lib/backup-load.js', 'utf8')
+  assert.match(loader, /planBackupLoad/)
+  assert.match(loader, /hang\.cap/)
+  assert.match(loader, /account\.loadSureBack/)
+  for (const screen of ['native/screens/more.jsx', 'native/screens/profile.jsx']) {
+    const text = readFileSync(screen, 'utf8')
+    assert.match(text, /loadBackupFile\(\{ ask: setSure, onImport \}\)/, `${screen}: Load a copy asks first and checks the cap`)
+    assert.doesNotMatch(text, /mergeBackup\(/, `${screen}: no merge without the plan`)
+  }
+  assert.match(readFileSync('native/screens/more.jsx', 'utf8'), /account\.deletePeople/)
+  assert.match(readFileSync('native/screens/FamilyDetail.jsx', 'utf8'), /fam\.members\.length <= 1 \? 'family\.leaveLastBody'/)
+  assert.match(readFileSync('native/components/LampManage.jsx', 'utf8'), /streak >= 7 \?[^\n]*lamp\.deleteStreak/)
+  assert.match(readFileSync('native/screens/questions.jsx', 'utf8'), /forgetGoneSender\(lamp\)/)
+  const sync = readFileSync('src/lib/cloud-sync.js', 'utf8')
+  assert.match(sync, /if \(!leftHereLately\(\)\) \{\s+try \{ localStorage\.setItem\(OUT_ELSEWHERE, '1'\) \} catch \{\}\s+\}\s+signedOutSync\(\)/, 'the note is set before the wipe, only when this phone did not sign itself out')
+  const acct = readFileSync('src/lib/account.js', 'utf8')
+  assert.equal(acct.split('leavingAt = Date.now()').length - 1, 3, 'sign out, sign out everywhere and delete all mark this phone')
+  assert.match(readFileSync('native/screens/SignInScreen.jsx', 'utf8'), /outNote \?[\s\S]*sync\.outElsewhere/)
+})
+
 test('a never-answered starter the account already has does not merge in as a twin', () => {
   const water = (id, cadence = 'daily') => ({ ...lamp(id), question: 'Did I drink water?', cadence })
   const shelf = normalizeShelf({
@@ -9269,7 +9303,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql', 'invite-friend.sql'].slice(-11))
+  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql', 'invite-friend.sql', 'leave-keep.sql'].slice(-11))
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)

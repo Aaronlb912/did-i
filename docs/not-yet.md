@@ -5,6 +5,13 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Leaving and deleting (UX loop 2026-11-06)
+
+- No Recently deleted list. A deleted question has the undo toast, cloud sync and a backup file that brings it back; an automatic copy on the phone needs a plan for shared phones with two accounts first.
+- Re-joining a Did we you left starts its days from the re-join, as before; the days you kept stay only while you are off the card.
+- Whether a kid can be handed the parent role when the last parent deletes their account is unchanged; that is Aaron's call.
+- The website's Load a copy still merges with no confirm (the website is frozen).
+
 ## Battery savers (UX loop 2026-11-06)
 
 - A time zone change with no Android widget placed probably does not re-set reminders until the next open: DidITonight.java starts PingRearmService from a background broadcast, which Android 8+ refuses (caught silently). Needs a WorkManager worker, a build and an emulator check (remove the widget, change the zone, logcat).

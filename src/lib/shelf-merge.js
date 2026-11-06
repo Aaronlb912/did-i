@@ -156,22 +156,40 @@ export function mergeBooks(winner, loser) {
   })
 }
 
+// Questions and folders deleted on this phone.
+function goneHere(local) {
+  const lamps = new Set()
+  for (const book of local?.boards || []) {
+    for (const item of normalizeGone(book?.gone)) if (!item.back) lamps.add(item.id)
+  }
+  const folders = new Set(normalizeGone(local?.goneTags).filter((item) => !item.back).map((item) => item.id))
+  return { lamps, folders }
+}
+
 // A backup file loaded on this phone: its answers and new questions come in,
 // but this phone's question settings win, and coins, gems and shop items
 // stay as they are here, so a copy cannot bring back what was spent.
-export function mergeBackup(local, backup) {
+// A question or folder deleted here comes back from the file: after the undo
+// is gone, the file is the way back.
+export function mergeBackup(local, backup, nowIso = new Date().toISOString()) {
   const PURSE = ['coins', 'gems', 'cheers', 'looks', 'accessories', 'buddies', 'frames', 'later', 'cheerStages', 'buddyOn', 'cheerOn', 'worn', 'frame', 'wish']
+  const gone = goneHere(local)
   const boards = (backup?.boards || []).map((book) => {
     const out = { ...book }
     for (const key of PURSE) delete out[key]
+    const back = (book?.lamps || []).filter((lamp) => gone.lamps.has(String(lamp?.id))).map((lamp) => ({ id: String(lamp.id), at: nowIso, back: true }))
+    if (back.length) out.gone = [...(Array.isArray(book.gone) ? book.gone : []), ...back]
     return out
   })
-  return mergeShelves(local, { ...backup, boards }, '', '')
+  const foldersBack = boards.filter((book) => gone.folders.has(String(book?.id))).map((book) => ({ id: String(book.id), at: nowIso, back: true }))
+  const goneTags = foldersBack.length ? { goneTags: [...(Array.isArray(backup?.goneTags) ? backup.goneTags : []), ...foldersBack] } : {}
+  return mergeShelves(local, { ...backup, boards, ...goneTags }, '', '')
 }
 
 // What loading a backup file would do, before anything is saved. The file can
 // be the account export, a whole shelf, or one folder. miss: 'file' (not a
-// Did I copy) or 'cap' (it would pass the question limit).
+// Did I copy) or 'cap' (it would pass the question limit). back: questions
+// deleted here that the file brings back.
 export function planBackupLoad(local, parsed) {
   const shelf = parsed?.shelf?.boards ? parsed.shelf : parsed?.boards ? parsed : null
   const one = !shelf && parsed?.lamps ? { currentId: parsed.id, boards: [parsed] } : null
@@ -180,8 +198,11 @@ export function planBackupLoad(local, parsed) {
   const merged = mergeBackup(local, coming)
   if (overCap(local.boards, merged.boards)) return { miss: 'cap' }
   const count = (target, key) => target.boards.reduce((n, book) => n + (book[key] || []).length, 0)
+  const gone = goneHere(local)
+  const back = merged.boards.reduce((n, book) => n + (book.lamps || []).filter((lamp) => gone.lamps.has(String(lamp.id)) || gone.folders.has(String(book.id))).length, 0)
   return {
     merged,
+    back,
     q: Math.max(0, count(merged, 'lamps') - count(local, 'lamps')),
     a: Math.max(0, count(merged, 'answers') - count(local, 'answers')),
   }

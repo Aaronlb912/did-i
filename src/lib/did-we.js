@@ -905,6 +905,12 @@ export function weCardTitle(id) {
   return (shared.cards || []).find((card) => card.id === id)?.question || ''
 }
 
+// Cards are known once a load or today's saved copy has some; before that a
+// missing title means not loaded yet, not a card you left.
+export function weCardsKnown() {
+  return (shared.cards || []).length > 0
+}
+
 // The card as a short name, like the Home pill: no "Did we", no "?". Lists
 // that also hold your own questions' short names use this.
 export function weCardShort(id) {
