@@ -3,6 +3,18 @@ import { AccessibilityInfo, Modal, Pressable, StyleSheet, Text, View } from 'rea
 import { boardDate } from '../../src/lib/recurrence.js'
 import { markStreakSeen, takePendingStreakMoment } from '../../src/lib/streak-moments.js'
 import { gentleOn } from '../../src/lib/prefs.js'
+import { readShelf } from '../../src/lib/board-shelf.js'
+import { COME_BACK_DAYS, cameBack } from '../../src/lib/come-back.js'
+import { isNewShelf } from '../../src/lib/first-run.js'
+import { shelfStreak } from '../../src/lib/hall-feel.js'
+
+// Back after a real gap, Today's welcome back sheet owns the return (it has the
+// gentle mode offer). A second Welcome back card on top would stack.
+function todayOwns(moment) {
+  if (moment?.kind !== 'back') return false
+  const boards = readShelf()?.boards || []
+  return shelfStreak(boards, new Date()) === 0 && cameBack(boards, boardDate(new Date()), isNewShelf(boards) ? 2 : COME_BACK_DAYS)
+}
 import { t } from '../../src/lib/i18n.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -42,7 +54,7 @@ export function StreakMomentHost({ now }) {
   useEffect(() => {
     const pending = takePendingStreakMoment()
     // Gentle mode: no streak cards, so no count and no broken-streak note.
-    if (pending && gentleOn()) markStreakSeen(pending.kind, pending.dateIso || boardDate(new Date()))
+    if (pending && (gentleOn() || todayOwns(pending))) markStreakSeen(pending.kind, pending.dateIso || boardDate(new Date()))
     else if (pending) setMoment(pending)
   }, [])
 
@@ -52,7 +64,7 @@ export function StreakMomentHost({ now }) {
       if (!detail?.kind) return
       // A night cleared with the app open is celebrated on Tonight's done
       // card; a second card on top of it would only crowd the moment.
-      if (detail.kind === 'hit' || gentleOn()) {
+      if (detail.kind === 'hit' || gentleOn() || todayOwns(detail)) {
         markStreakSeen(detail.kind, detail.dateIso || boardDate(new Date()))
         return
       }

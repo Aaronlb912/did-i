@@ -1,3 +1,5 @@
+import { autoClosed } from './travel.js'
+
 // Someone back after a few missed days gets a calm return, not a scolding.
 export const COME_BACK_DAYS = 3
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
@@ -7,19 +9,32 @@ function dayNumber(iso) {
   return Math.round(Date.UTC(y, m - 1, d) / 86400000)
 }
 
-// Days from the newest dated answer before dateIso to dateIso. 0 when there is
-// an answer on dateIso, Infinity when there is none at all. One pass over the shelf.
-export function daysSinceLastAnswer(shelf, dateIso) {
-  if (!DATE_KEY.test(String(dateIso || ''))) return 0
+// The Not yet the app writes for a day that closed unanswered (closePastNights),
+// in any zone the phone was in then. Nobody tapped it.
+export function closedByItself(answer) {
+  return autoClosed(answer, String(answer?.periodKey || ''))
+}
+
+// The newest day on or before dateIso with a real answer, '' for none.
+export function newestAnswerIso(shelf, dateIso) {
+  if (!DATE_KEY.test(String(dateIso || ''))) return ''
   let newest = ''
   for (const item of shelf || []) {
     for (const answer of item?.answers || []) {
       const key = String(answer?.periodKey || '')
-      if (!DATE_KEY.test(key) || key > dateIso) continue
-      if (key === dateIso) return 0
-      if (key > newest) newest = key
+      if (!DATE_KEY.test(key) || key > dateIso || key <= newest || closedByItself(answer)) continue
+      newest = key
+      if (key === dateIso) return key
     }
   }
+  return newest
+}
+
+// Days from the newest real answer before dateIso to dateIso. 0 when there is
+// an answer on dateIso, Infinity when there is none at all. One pass over the shelf.
+export function daysSinceLastAnswer(shelf, dateIso) {
+  if (!DATE_KEY.test(String(dateIso || ''))) return 0
+  const newest = newestAnswerIso(shelf, dateIso)
   return newest ? dayNumber(dateIso) - dayNumber(newest) : Infinity
 }
 

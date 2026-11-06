@@ -12,7 +12,7 @@ import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, a
 import { REMIND_TRIES, readReminds, remindNext } from '../../src/lib/remind-me.js'
 import { afterQuiet, awayOn, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { askGroups, capNotes, earlyCallAt, lastCallAt, laterClash, leftNote } from '../../src/lib/quiet.js'
-import { backOffFrom } from '../../src/lib/come-back.js'
+import { backOffFrom, newestAnswerIso } from '../../src/lib/come-back.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, graceNightIso, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
@@ -175,6 +175,24 @@ export function pingsFailed() {
     return localStorage.getItem(PING_FAILED_KEY) === '1'
   } catch {
     return false
+  }
+}
+
+// The gap the come-back push was last set for, and when it fires.
+const COME_BACK_PUSH_KEY = 'did-i-come-back-push'
+function readComeBackPush() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COME_BACK_PUSH_KEY) || 'null')
+    return saved && typeof saved.gap === 'string' && Number.isFinite(saved.at) ? saved : null
+  } catch {
+    return null
+  }
+}
+function saveComeBackPush(gap, at) {
+  try {
+    localStorage.setItem(COME_BACK_PUSH_KEY, JSON.stringify({ gap, at }))
+  } catch {
+    // ok
   }
 }
 
@@ -650,7 +668,13 @@ async function schedulePingsNow(books, now = new Date()) {
     // A week away: the last question reminder in the window becomes one gentle
     // push. It is never repeated, and the next open sets reminders fresh.
     const lastAhead = aheads[aheads.length - 1] ?? 0
-    if (reminders && lastAhead >= 3) {
+    // One come-back push and one No rush per gap (the newest real answer day):
+    // an open with no answer does not start a second round of them.
+    const gap = newestAnswerIso(list, today) || 'none'
+    const pushedFor = readComeBackPush()
+    const pushedThisGap = pushedFor?.gap === gap && pushedFor.at <= Date.now()
+    let comeBackAt = 0
+    if (reminders && lastAhead >= 3 && !pushedThisGap) {
       const lastDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + lastAhead)
       const onLastDay = (note) => {
         const d = note.trigger.date
@@ -658,19 +682,24 @@ async function schedulePingsNow(books, now = new Date()) {
       }
       const finals = notes.filter((note) => !note.lateCall && (note.group || note.content.categoryIdentifier === ASK_CATEGORY) && onLastDay(note))
       const final = finals.sort((a, b) => b.trigger.date - a.trigger.date)[0]
-      if (final) final.content = { title: t('pings.comeBackTitle'), body: t('pings.comeBackBody'), data: { go: '/tonight' } }
+      if (final) {
+        final.content = { title: t('pings.comeBackTitle'), body: t('pings.comeBackBody'), data: { go: '/tonight' } }
+        final.comeBack = true
+        comeBackAt = final.trigger.date.getTime()
+      }
     }
     if (reminders && notes.length) {
       const last = Math.max(...notes.map((note) => note.trigger.date.getTime()))
       const renewAt = new Date(last + 60 * 1000)
-      // when() moves it past quiet hours.
+      // when() moves it past quiet hours. Dropped below if the come-back push survives the cap.
       notes.push({
         identifier: String(notifyId('renew', 'pings')),
         content: { title: 'Did I', body: t('pings.renew'), data: { go: '/tonight' } },
         trigger: when(renewAt),
+        renew: true,
       })
       // One soft nudge 3 days after that, then nothing (Aaron, 2026-11-03).
-      notes.push({
+      if (!pushedThisGap) notes.push({
         identifier: String(notifyId('renew', 'norush')),
         content: { title: 'Did I', body: t('pings.noRush'), data: { go: '/tonight' } },
         trigger: when(new Date(renewAt.getTime() + 3 * 24 * 60 * 60 * 1000)),
@@ -766,6 +795,15 @@ async function schedulePingsNow(books, now = new Date()) {
     // iOS keeps 64 and drops the last to fire (renew, no rush), so extras push out the latest regular notes.
     const spill = notes.length - (PING_CAP - waitingReminds)
     if (spill > 0) notes.splice(Math.max(0, regularCount - spill), spill)
+    // The come-back push, once it is sure to be set, says it all: no renew a
+    // minute later. Cut by the cap, nothing is marked as sent for this gap.
+    if (notes.some((note) => note.comeBack)) {
+      const renew = notes.findIndex((note) => note.renew)
+      if (renew >= 0) notes.splice(renew, 1)
+      saveComeBackPush(gap, comeBackAt)
+    } else if (!pushedThisGap) {
+      saveComeBackPush('', 0)
+    }
     let failed = 0
     for (const note of notes) {
       // A time already past is not a failure; it would never fire.

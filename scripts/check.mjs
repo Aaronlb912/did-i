@@ -450,6 +450,29 @@ test('flying LA to Tokyo skips the 15th and the streak goes on', () => {
   assert.equal(travelShelfStreak([closed], noon), 14)
 })
 
+test('back after two weeks: days that closed by themselves are not answers', async () => {
+  const { closedByItself: autoClosed, cameBack, daysSinceLastAnswer, graceLost } = await import('../src/lib/come-back.js')
+  const answers = [1, 2].map((d) => ({ id: `r${d}`, lampId: 'walk', periodKey: `2026-10-0${d}`, status: 'yes', answeredAt: new Date(2026, 9, d, 20, 13).toISOString(), note: '' }))
+  const book = { id: 'back', dayFoldHour: 0, lamps: [lamp('walk', { createdOn: '2026-10-01' })], answers, travelSkips: [] }
+  const closed = closePastNights(book, new Date(2026, 9, 17, 12), [])
+  const auto = closed.answers.filter((x) => x.status === 'skip')
+  assert.ok(auto.length >= 13 && auto.every(autoClosed), 'every missed day closed as Not yet at its midnight')
+  assert.ok(!autoClosed(answers[0]) && !autoClosed({ status: 'skip', periodKey: '2026-10-03', answeredAt: new Date(2026, 9, 3, 21, 5).toISOString() }), 'a tapped Not yet is real')
+  assert.ok(autoClosed({ status: 'skip', periodKey: '2026-10-03', answeredAt: '2026-10-03T04:00:00.000Z' }), 'a close made at midnight in another zone is still a close')
+  assert.equal(daysSinceLastAnswer([closed], '2026-10-17'), 15, 'the gap survives closing the days')
+  assert.ok(cameBack([closed], '2026-10-17') && graceLost([closed], '2026-10-17'), 'welcome back shows and the grace card stays away')
+  const ach = readFileSync('src/lib/achievements.js', 'utf8')
+  assert.ok(ach.includes("answer.status === 'skip' && !closedByItself(answer)) s.nopes") && ach.includes("answer.status === 'skip' && !closedByItself(answer))) add('honest-skip')"), 'a break earns no Not yet marks')
+  const nat = readFileSync('native/shim/native.js', 'utf8')
+  assert.ok(nat.includes('if (!pushedThisGap) notes.push({') && nat.includes('lastAhead >= 3 && !pushedThisGap'), 'one come-back push per gap')
+  assert.ok(nat.indexOf('notes.some((note) => note.comeBack)') > nat.indexOf('const spill = '), 'the renew drop and the sent mark wait for the cap')
+  const today = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
+  assert.ok(today.includes('comeBackSeen(gap)') && today.includes('markComeBackSeen(gap)'), 'welcome back once per gap')
+  assert.ok(today.includes('!streakAlive && cameBack(') && today.includes('!streakAlive && graceLost('), 'a streak a freeze kept is not a gap: the grace card stays')
+  const moment = readFileSync('native/components/StreakMoment.jsx', 'utf8')
+  assert.ok(moment.includes('gentleOn() || todayOwns(pending)') && moment.includes('gentleOn() || todayOwns(detail)'), 'one Welcome back, not two stacked')
+})
+
 test('changing every so often to daily leaves past days not due', async () => {
   const { keepPastSchedule, isDueOn } = await import('../src/lib/recurrence.js')
   const old = lamp('gym', { cadence: 'every', everyDays: 7, createdOn: '2026-09-20' })

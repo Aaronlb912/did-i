@@ -42,7 +42,7 @@ import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
 import { CHEER_STAGE_MAX, LOOKS, NIGHT_COIN_CAP, coinsToday, fireCheer, takeFirstCoin, isGemLook, mergePurses, shopRow, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { ACCESSORIES } from '../../src/lib/accessories.js'
 import { awayKey, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
-import { COME_BACK_DAYS, cameBack, daysSinceFirstAnswer, graceLost } from '../../src/lib/come-back.js'
+import { COME_BACK_DAYS, cameBack, daysSinceFirstAnswer, graceLost, newestAnswerIso } from '../../src/lib/come-back.js'
 import { answerFor, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
 import { lastTimeLine, perWeekLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
@@ -1089,7 +1089,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   }
   const graceWeOpen = graceNight ? weOpenOn(graceNight) : new Set()
   // Back after 3+ missed days: no grace card. Its words promise a streak that is gone.
-  const returning = useMemo(() => cameBack(stack.shelf, stack.dateIso, isNewShelf(stack.shelf) ? 2 : COME_BACK_DAYS), [stack.shelf, stack.dateIso])
+  // A streak a freeze kept alive is not a gap: the grace card can still save it.
+  const streakAlive = useMemo(() => Boolean(stack.shelf) && shelfStreak(stack.shelf, stack.clock) > 0, [stack.shelf, stack.clock])
+  const returning = useMemo(() => !streakAlive && cameBack(stack.shelf, stack.dateIso, isNewShelf(stack.shelf) ? 2 : COME_BACK_DAYS), [stack.shelf, stack.dateIso, streakAlive])
   // Week one, one missed day: one calm line that day (the welcome-back sheet covers longer gaps).
   const [missSeen, setMissSeen] = useState(firstMissDay)
   const missUp = !returning && showFirstMiss(stack.shelf, stack.dateIso, missSeen)
@@ -1099,7 +1101,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     setMissSeen(stack.dateIso)
   }, [missUp, missSeen, stack.dateIso])
   const focusLamp = graceFocusLamp()
-  const graceItems = graceLost(stack.shelf, stack.dateIso) ? [] : [
+  const graceItems = !streakAlive && graceLost(stack.shelf, stack.dateIso) ? [] : [
     ...[...stack.graceOpen].sort((a, b) => (b.lamp.id === focusLamp) - (a.lamp.id === focusLamp)).map((row) => ({
       key: `grace:${stack.rowKey(row)}:${row.periodKey}`,
       title: row.lamp.question,
@@ -1170,10 +1172,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       onClose: () => publishSheet(null),
     })
   }, [graceShowing, colors])
-  // Back after 3+ missed days: one calm welcome a day.
+  // Back after 3+ missed days: one calm welcome per gap, not every day until an answer.
   useEffect(() => {
-    if (!returning || graceShowing || stack.cheer || !stack.dateIso || comeBackSeen(stack.dateIso) || sheetIsUp()) return
-    markComeBackSeen(stack.dateIso)
+    const gap = `gap:${newestAnswerIso(stack.shelf, stack.dateIso)}`
+    if (!returning || graceShowing || stack.cheer || !stack.dateIso || comeBackSeen(gap) || sheetIsUp()) return
+    markComeBackSeen(gap)
     publishSheet({
       title: t('comeBack.title'),
       body: t('comeBack.body'),
