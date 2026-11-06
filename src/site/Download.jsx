@@ -1,8 +1,7 @@
 import { t } from '../lib/i18n.js'
-import { APP_STORE_URL } from '../lib/store-skus.js'
 import { BETA_PATH } from '../lib/invite-link.js'
 import { MarketingShell } from './MarketingShell.jsx'
-import { AppleIcon, PlayIcon } from './StoreButtons.jsx'
+import { AppleIcon, PlayIcon, siteAppStoreUrl } from './StoreButtons.jsx'
 
 const D = (key) => t(`web.download.${key}`)
 
@@ -37,7 +36,7 @@ export function Download() {
             note={D('iphoneNote')}
             lines={[D('i1'), D('i2'), D('i3')]}
           >
-            <a className="di-did di-did-small di-link-did" href={APP_STORE_URL} target="_blank" rel="noopener noreferrer">
+            <a className="di-did di-did-small di-link-did" href={siteAppStoreUrl()} target="_blank" rel="noopener noreferrer">
               <AppleIcon />
               {t('web.store.apple')}
             </a>
