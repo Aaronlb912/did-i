@@ -1,8 +1,8 @@
 import { Platform } from 'react-native'
 import { nativeBridgeReady, queueWidgetSync } from './lib/defer-native.js'
 import { nativeWidgetsEnabled } from './lib/widgets-enabled.js'
-import { widgetRedrawTimes, widgetTimelineTimes, widgetColorBook, widgetLookId, widgetTheme } from '../src/lib/widget-config.js'
-import { buildTonightWidgetProps, mergeWidgetPropsIntoShelf, tonightWidgetKey, WIDGET_NAME } from '../src/lib/widget-tonight.js'
+import { widgetRedrawTimes, widgetTimelineTimes, widgetColorBook, widgetLookId, widgetTheme, WIDGET_TIMELINE_NIGHTS } from '../src/lib/widget-config.js'
+import { buildTonightWidgetProps, mergeWidgetPropsIntoShelf, tonightWidgetKey, widgetOpenEntry, WIDGET_NAME } from '../src/lib/widget-tonight.js'
 import { readWidgetTonightProps, writeWidgetTonightProps } from '../src/lib/widget-store.js'
 import { hallColors } from './palette.js'
 import { wornShapes } from '../src/lib/accessory-shapes.js'
@@ -177,7 +177,7 @@ export async function syncTonightWidget(shelf) {
       // One entry per ask time, midnight and grace end, for the next few
       // nights, so a widget-only night still shows its own card.
       // A question back from a pause in these days gets its ask times too.
-      const boards = (shelf?.boards || []).filter((b) => !b.archived).map((b) => resumeDuePauses(b, addDaysIso(boardDate(), 3)))
+      const boards = (shelf?.boards || []).filter((b) => !b.archived).map((b) => resumeDuePauses(b, addDaysIso(boardDate(), WIDGET_TIMELINE_NIGHTS)))
       const times = widgetTimelineTimes(boards, new Date())
       const later = times.map((date) => ({
         date,
@@ -187,6 +187,8 @@ export async function syncTonightWidget(shelf) {
         // Not in writeWidgetTonightProps above: a carried tap must still read as a tap.
         const carry = (p) => (carriedTaps().length ? { ...p, items: [...(p.items || []), ...pendingTaps] } : p)
         const entries = [{ date: new Date(), props }, ...later].map((entry) => ({ ...entry, props: carry(entry.props) }))
+        // After the last day turn, no stale card: a line that opens Today.
+        entries.push(widgetOpenEntry(props, times))
         await api.updateTimeline(entries.map((entry) => ({ date: entry.date, props: plainProps(entry.props) })))
       } else await api.updateSnapshot(plainProps(props))
     } catch (error) {
@@ -323,16 +325,16 @@ export async function syncGridWidget(shelf = readShelf()) {
     try {
       const api = await gridWidgetApi()
       if (!api) return
-      // A second entry at midnight moves the grid on without the app open.
-      const midnight = new Date()
-      midnight.setHours(24, 0, 0, 0)
-      const tomorrow = enrichGridWidgetProps(shelf, buildGridWidgetProps(shelf, new Date(midnight.getTime() + 60000)))
-      if (api.updateTimeline) {
-        await api.updateTimeline([
-          { date: new Date(), props: plainProps(props) },
-          { date: midnight, props: plainProps(tomorrow) },
-        ])
-      } else await api.updateSnapshot(plainProps(props))
+      // An entry at each midnight for a week moves the grid on without the app open.
+      const start = new Date()
+      const entries = [{ date: start, props: plainProps(props) }]
+      for (let day = 1; day <= WIDGET_TIMELINE_NIGHTS; day += 1) {
+        const midnight = new Date(start.getFullYear(), start.getMonth(), start.getDate() + day)
+        const next = enrichGridWidgetProps(shelf, buildGridWidgetProps(shelf, new Date(midnight.getTime() + 60000)))
+        entries.push({ date: midnight, props: plainProps(next) })
+      }
+      if (api.updateTimeline) await api.updateTimeline(entries)
+      else await api.updateSnapshot(plainProps(props))
     } catch (error) {
       warnWidget('grid widget updateSnapshot', error)
     }

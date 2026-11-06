@@ -1,5 +1,5 @@
 import { t } from './i18n.js'
-import { daysBetween, daysSinceDid, everyGap, isEvery, isPerWeek, learnedGap, perWeekDone } from './recurrence.js'
+import { dateTag, daysBetween, daysSinceDid, everyGap, isEvery, isoDate, isPerWeek, learnedGap, perWeekDone } from './recurrence.js'
 
 // "Last time: 12 days ago" under an every so often question. upTo counts a
 // Did tonight (the question page); the card leaves tonight out.
@@ -93,6 +93,19 @@ export function sendLastLine(repeat, lastDidOn, night) {
   const on = String(lastDidOn || '')
   if (!/^\d{4}-\d{2}-\d{2}$/.test(on)) return t('every.never')
   return sinceLine(Math.max(0, daysBetween(on, night)))
+}
+
+// A one-off Did you ask that has waited: "Was due Oct 3" past its day, else
+// "Asked Oct 3" once made 2 or more days ago. '' for a repeating one or a fresh ask.
+export function sendAskLine(row, night) {
+  if (/^every:\d+$/.test(String(row?.repeat || '')) || !/^\d{4}-\d{2}-\d{2}$/.test(String(night || ''))) return ''
+  const say = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString(dateTag(), { month: 'short', day: 'numeric' })
+  const due = String(row?.due_on || '')
+  if (/^\d{4}-\d{2}-\d{2}$/.test(due) && due < night) return t('tonight.wasDue', { day: say(due) })
+  const ms = Date.parse(row?.made_at || '')
+  if (!ms) return ''
+  const made = isoDate(new Date(ms))
+  return daysBetween(made, night) >= 2 ? t('tonight.askedOn', { day: say(made) }) : ''
 }
 
 function sinceLine(days) {

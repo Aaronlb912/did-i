@@ -45,10 +45,10 @@ import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
 import { CHEER_STAGE_MAX, LOOKS, NIGHT_COIN_CAP, coinsToday, fireCheer, takeFirstCoin, isGemLook, mergePurses, shopRow, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { ACCESSORIES } from '../../src/lib/accessories.js'
 import { awayEnd, awayKey, awayNow, awayOn, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
-import { COME_BACK_DAYS, cameBack, daysSinceFirstAnswer, graceLost, newestAnswerIso } from '../../src/lib/come-back.js'
+import { COME_BACK_DAYS, cameBack, daysSinceFirstAnswer, cameBackDays, graceLost, newestAnswerIso } from '../../src/lib/come-back.js'
 import { BAD_WEEK_DAYS, badWeekSeen, markBadWeekSeen, notYetRun } from '../../src/lib/bad-week.js'
 import { answerFor, dueTonight, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
-import { lastTimeLine, perWeekLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
+import { lastTimeLine, perWeekLine, sendAskLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
 import { DidButton, KeyButton, LateMeta, Row } from '../components/ui.jsx'
 import { daySection, dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
@@ -1190,7 +1190,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     return {
       ...item,
       kicker: t('tonight.peopleFrom', { name: personName(row.person) || t('people.someone') }),
-      line: sendLastLine(row.repeat, row.last_did_on, stack.dateIso),
+      line: sendLastLine(row.repeat, row.last_did_on, stack.dateIso) || sendAskLine(row, stack.dateIso),
       onDid: save(true),
       onNope: notYet,
     }
@@ -1317,19 +1317,30 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     const gap = `gap:${newestAnswerIso(stack.shelf, stack.dateIso)}`
     if (!returning || graceShowing || stack.cheer || !stack.dateIso || comeBackSeen(gap) || sheetIsUp()) return
     markComeBackSeen(gap)
+    // A week or less: fill in the days that were done. Longer: pause some questions.
+    const short = cameBackDays(stack.shelf, stack.dateIso) <= 7
     publishSheet({
       title: t('comeBack.title'),
       body: t('comeBack.body'),
       goLabel: t('comeBack.start'),
-      moreLabel: t('comeBack.gentle'),
+      ...(gentle
+        ? {}
+        : {
+            moreLabel: t('comeBack.gentle'),
+            onMore: () => {
+              writePrefs({ gentle: true })
+              publishSheet(null)
+            },
+          }),
+      footLabel: t(short ? 'comeBack.fill' : 'comeBack.pause'),
+      onFoot: () => {
+        publishSheet(null)
+        goHash(short ? '/calendar' : '/lamps')
+      },
       noClose: true,
       colors,
       onClose: () => publishSheet(null),
       onGo: () => publishSheet(null),
-      onMore: () => {
-        writePrefs({ gentle: true })
-        publishSheet(null)
-      },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [returning, graceShowing, Boolean(stack.cheer), stack.dateIso])

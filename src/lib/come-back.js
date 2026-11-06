@@ -1,3 +1,4 @@
+import { awayOn } from './prefs.js'
 import { autoClosed } from './travel.js'
 
 // Someone back after a few missed days gets a calm return, not a scolding.
@@ -57,9 +58,20 @@ export function backOffFrom(shelf, dateIso, isDue, horizon = 15) {
   return Infinity
 }
 
+// Days of gap with Away days left out: counted from the last Away day, so
+// someone Away yesterday is not back from anything. Infinity for no answer at all.
+export function cameBackDays(shelf, dateIso) {
+  const days = daysSinceLastAnswer(shelf, dateIso)
+  if (days === Infinity) return Infinity
+  for (let back = 1; back < days; back += 1) {
+    if (awayOn(new Date((dayNumber(dateIso) - back) * 86400000).toISOString().slice(0, 10))) return back
+  }
+  return days
+}
+
 // A real gap, but not a brand new shelf with nothing answered yet.
 export function cameBack(shelf, dateIso, minDays = COME_BACK_DAYS) {
-  const days = daysSinceLastAnswer(shelf, dateIso)
+  const days = cameBackDays(shelf, dateIso)
   return days >= minDays && days !== Infinity
 }
 

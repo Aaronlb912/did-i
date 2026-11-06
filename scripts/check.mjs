@@ -480,6 +480,42 @@ test('back after two weeks: days that closed by themselves are not answers', asy
   assert.ok(moment.includes('gentleOn() || todayOwns(pending)') && moment.includes('gentleOn() || todayOwns(detail)'), 'one Welcome back, not two stacked')
 })
 
+await testAsync('Away days are not missed days for Welcome back', async () => {
+  const { cameBack, cameBackDays } = await import('../src/lib/come-back.js')
+  const { writePrefs } = await import('../src/lib/prefs.js')
+  const answers = ['2026-10-01', '2026-10-02'].map((night) => ({ lampId: 'walk', periodKey: night, status: 'yes', answeredAt: night + 'T15:00:00' }))
+  const shelf = [{ id: 'b', lamps: [], answers }]
+  try {
+    writePrefs({ away: [] })
+    assert.equal(cameBack(shelf, '2026-10-10'), true, 'a week of nothing is a gap')
+    writePrefs({ away: [['2026-10-03', '2026-10-10']] })
+    assert.equal(cameBack(shelf, '2026-10-10'), false, 'Away yesterday: not back from anything')
+    writePrefs({ away: [['2026-10-03', '2026-10-09']] })
+    assert.equal(cameBack(shelf, '2026-10-10'), false, 'two days since Away ended is not a gap')
+    writePrefs({ away: [['2026-10-03', '2026-10-07']] })
+    assert.equal(cameBack(shelf, '2026-10-10'), true, 'counted from the last Away day')
+    assert.equal(cameBackDays(shelf, '2026-10-10'), 4, 'the gap the sheet reads leaves Away days out')
+  } finally {
+    writePrefs({ away: [] })
+  }
+})
+
+await testAsync('Welcome back offers fill in days or pause some, and hides gentle mode when it is on', async () => {
+  const today = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
+  assert.ok(today.includes('cameBackDays(stack.shelf, stack.dateIso) <= 7'), 'a week or less is the short gap')
+  assert.ok(today.includes("footLabel: t(short ? 'comeBack.fill' : 'comeBack.pause')") && today.includes("goHash(short ? '/calendar' : '/lamps')"), 'short gap goes to Calendar, long to Questions')
+  assert.ok(/gentle\s*\? \{\}\s*: \{\s*moreLabel: t\('comeBack\.gentle'\)/.test(today), 'gentle mode already on: no gentle row')
+})
+
+await testAsync('a Did you ask that has waited says when it was due or asked', async () => {
+  const { sendAskLine } = await import('../src/lib/every-copy.js')
+  assert.equal(sendAskLine({ due_on: '2026-10-03', made_at: '2026-10-01T12:00:00' }, '2026-10-05'), 'Was due Oct 3')
+  assert.equal(sendAskLine({ due_on: '2026-10-05', made_at: '2026-10-03T12:00:00' }, '2026-10-05'), 'Asked Oct 3')
+  assert.equal(sendAskLine({ due_on: '2026-10-05', made_at: '2026-10-04T12:00:00' }, '2026-10-05'), '', 'a fresh ask says nothing')
+  assert.equal(sendAskLine({ repeat: 'every:7', due_on: '2026-10-01', made_at: '2026-10-01T12:00:00' }, '2026-10-05'), '', 'a repeating ask has its own line')
+  assert.ok(readFileSync('native/screens/TonightScreen.jsx', 'utf8').includes('|| sendAskLine(row, stack.dateIso)'), 'the card shows it')
+})
+
 test('changing every so often to daily leaves past days not due', async () => {
   const { keepPastSchedule, isDueOn } = await import('../src/lib/recurrence.js')
   const old = lamp('gym', { cadence: 'every', everyDays: 7, createdOn: '2026-09-20' })
@@ -7549,7 +7585,7 @@ await testAsync('the widget redraws at midnight and when last night\'s grace end
   const times = widgetRedrawTimes([book], now)
   assert.ok(times.length >= 2, `got ${times.length}`)
   // Night turns come first, so Android's alarm cap of 12 (WidgetAlarms) never
-  // drops midnight. The iPhone timeline uses widgetTimelineTimes (cap 30).
+  // drops midnight. The iPhone timeline uses widgetTimelineTimes (cap 70).
   const turn = times[0]
   assert.notEqual(boardDate(turn), boardDate(now), 'the first redraw is on the new night')
   assert.equal(boardDate(new Date(turn.getTime() - 70 * 1000)), boardDate(now), 'and within a minute of the turn')
@@ -7571,21 +7607,21 @@ await testAsync('the iPhone widget timeline reaches the next nights, a card per 
   const shelf = writeShelf({ currentId: 't1', boards: [book] })
   const now = new Date('2026-09-23T19:00:00')
   const times = widgetTimelineTimes([book], now)
-  assert.ok(times.length <= 30 && times.every((d) => d > now), `got ${times.length}`)
+  assert.ok(times.length <= 70 && times.every((d) => d > now), `got ${times.length}`)
   assert.equal(new Set(times.map((d) => d.getTime())).size, times.length, 'no repeats')
-  for (const night of ['2026-09-23', '2026-09-24', '2026-09-25']) {
+  for (const night of ['2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28', '2026-09-29']) {
     const ask = times.find((d) => boardDate(d) === night && d.getHours() === 21)
     assert.ok(ask, `ask time on ${night}`)
     const props = buildTonightWidgetProps(shelf, ask)
     assert.equal(props.leadLampId, 'late', night)
     assert.ok(props.items.some((item) => item.lampId === 'late' && item.periodKey === night && item.status === 'open'), night)
   }
-  assert.ok(times.some((d) => boardDate(d) === '2026-09-26'), 'the third midnight turns over too')
+  assert.ok(times.some((d) => boardDate(d) === '2026-09-30'), 'the seventh midnight turns over too')
   // Twelve ask times a day fill the cap during day 2: the turns still stay.
   const many = { ...book, lamps: Array.from({ length: 12 }, (_, i) => ({ ...book.lamps[0], id: 'q' + i, askAfter: String(8 + i).padStart(2, '0') + ':00' })) }
   const crowded = widgetTimelineTimes([many], new Date('2026-09-23T07:00:00'))
-  assert.ok(crowded.length <= 30)
-  assert.ok(crowded.some((d) => boardDate(d) === '2026-09-26'), 'many ask times never cut the third midnight')
+  assert.ok(crowded.length <= 70)
+  assert.ok(crowded.some((d) => boardDate(d) === '2026-09-30'), 'many ask times never cut the seventh midnight')
   // The native tap patch (patches/expo-widgets) closes lampId:periodKey in
   // later entries; each later night keeps its own open card.
   const entries = times.map((date) => ({ date, props: buildTonightWidgetProps(shelf, date) }))
@@ -7596,6 +7632,17 @@ await testAsync('the iPhone widget timeline reaches the next nights, a card per 
   assert.ok(later.every((e) => e.props.items.every((item) => item.lampId !== 'late' || item.periodKey !== '2026-09-23' || item.status === 'open')), 'the tapped card is the one the patch closes')
   const sync = readFileSync(path.join(checkRoot, 'native/widget-sync.js'), 'utf8')
   assert.ok(sync.includes('widgetTimelineTimes(boards'), 'iOS timeline uses the multi-night times')
+  // Past the last day turn the timeline ends on a line that opens Today, not a stale card.
+  const { widgetOpenEntry } = await import('../src/lib/widget-tonight.js')
+  const open = widgetOpenEntry(buildTonightWidgetProps(shelf, now), times)
+  assert.ok(open.date > times[times.length - 1], 'after every time on the timeline')
+  assert.deepEqual(open.props.items, [])
+  assert.equal(open.props.emptyLabel, 'Open Did I for today')
+  assert.equal(open.props.openUri, 'didi://tonight')
+  assert.equal(open.props.leadLampId, '', 'no lead question on the last entry')
+  assert.ok(open.props.streak === 0 && open.props.weLine === '', 'no old streak or Did we line on the last entry')
+  assert.ok(sync.includes('entries.push(widgetOpenEntry(props, times))'), 'iOS adds the last entry')
+  assert.ok(sync.includes('for (let day = 1; day <= WIDGET_TIMELINE_NIGHTS; day += 1)'), 'the Calendar grid widget reaches the same 7 days')
 })
 
 await testAsync('iOS reads widget taps out of the timeline before writing it again', async () => {
@@ -8698,28 +8745,73 @@ test('shop rows hide owned items and drops before their day', () => {
 
 // r10-answer: earned streak freezes and Did / Nope from a reminder.
 const { FREEZE_MAX, freezeEarnedNow, freezeState, nightsToNextFreeze, walkFreezes } = await import('../src/lib/hall-feel.js')
+const core = ({ run, held, frozen }) => ({ run, held, frozen })
+const wf = (...args) => core(walkFreezes(...args))
 const { askActions, askNoteData, firstResponse, notificationAnswer } = await import('../src/lib/notify-answer.js')
 
 test('a freeze is earned every 14 nights in a row, capped at two, and spent on the next miss', () => {
   const clears = (n) => Array(n).fill('clear')
-  assert.deepEqual(walkFreezes(clears(13)), { run: 13, held: 0, frozen: [] })
+  assert.deepEqual(wf(clears(13)), { run: 13, held: 0, frozen: [] })
   assert.equal(walkFreezes(clears(14)).held, 1)
   assert.equal(walkFreezes(clears(28)).held, 2)
   assert.equal(walkFreezes(clears(42)).held, FREEZE_MAX, 'never more than two held')
-  const spent = walkFreezes([...clears(14), 'none', 'miss', 'clear'])
+  const spent = wf([...clears(14), 'none', 'miss', 'clear'])
   assert.deepEqual(spent, { run: 15, held: 0, frozen: [15] }, 'the miss is covered, the run goes on but does not grow on it')
-  assert.deepEqual(walkFreezes([...clears(13), 'miss', 'clear']), { run: 1, held: 0, frozen: [] }, 'no freeze yet: the miss breaks it')
+  assert.deepEqual(wf([...clears(13), 'miss', 'clear']), { run: 1, held: 0, frozen: [] }, 'no freeze yet: the miss breaks it')
   assert.equal(walkFreezes([...clears(14), 'miss', 'miss']).run, 0, 'one freeze covers one miss only')
   assert.equal(walkFreezes([...clears(14), 'miss', ...clears(13)]).held, 0, 'the covered night does not count toward the next 14')
   assert.equal(walkFreezes([...clears(14), 'miss', ...clears(14)]).held, 1)
 })
 
+test('a run that breaks inside a stretch of misses gives its freezes back', () => {
+  const clears = (n) => Array(n).fill('clear')
+  assert.deepEqual(wf([...clears(14), 'miss', 'miss']), { run: 0, held: 1, frozen: [] }, 'the freeze spent on the first miss comes back')
+  assert.deepEqual(wf([...clears(28), 'miss', 'miss', 'miss', 'miss']), { run: 0, held: 2, frozen: [] }, 'both come back, none spent on the rest')
+  assert.deepEqual(wf([...clears(14), 'miss', 'clear']), { run: 15, held: 0, frozen: [14] }, 'a covered miss that ends the stretch stays frozen')
+  assert.deepEqual(wf([...clears(14), 'miss', 'clear', 'miss', 'miss']), { run: 0, held: 0, frozen: [14] }, 'an earlier stretch is not given back')
+})
+
+test('a walk split in two lands where the whole walk does, freezes given back included', async () => {
+  const clears = (n) => Array(n).fill('clear')
+  const cases = [
+    [...clears(28), 'miss', 'miss', 'miss', 'miss'],
+    [...clears(14), 'miss', 'clear', 'miss', 'miss', 'miss', 'clear'],
+    ['miss', 'miss', ...clears(14), 'miss', 'none', 'miss', 'miss'],
+    [...clears(28), 'miss', 'clear', ...clears(3), 'miss', 'miss', 'miss', 'clear', 'miss'],
+  ]
+  for (const nights of cases) {
+    const whole = wf(nights)
+    for (let k = 0; k <= nights.length; k += 1) {
+      const first = walkFreezes(nights.slice(0, k))
+      const next = walkFreezes(nights.slice(k), 14, 2, first)
+      const split = core({ run: next.run, held: next.held, frozen: [...first.frozen.slice(0, first.frozen.length - next.giveBack), ...next.frozen.map((i) => i + k)] })
+      assert.deepEqual(split, whole, nights.join() + ' split at ' + k)
+    }
+  }
+  assert.deepEqual(wf(cases[0]), { run: 0, held: 2, frozen: [] }, '28 Did days then 4 misses: both freezes come back')
+  // The app walks the settled days and yesterday apart: the answer must be the same.
+  const days = Array.from({ length: 28 }, (_, i) => '2026-08-' + String(i + 1).padStart(2, '0'))
+  const book = {
+    id: 'b1',
+    title: 'General',
+    dayFoldHour: 0,
+    lamps: [{ id: 'door', question: 'Did I lock the door?', cadence: 'daily', archived: false, createdOn: '2026-08-01' }],
+    answers: days.map((d) => ({ lampId: 'door', periodKey: d, status: 'yes', answeredAt: d + 'T20:00:00' })),
+  }
+  const state = freezeState([book], new Date(2026, 8, 2, 21, 0))
+  assert.equal(state.run, 0)
+  assert.equal(state.held, 2, 'yesterday does not spend a freeze on a streak that is gone')
+  assert.equal(state.frozen.size, 0)
+  const feel = readFileSync('src/lib/hall-feel.js', 'utf8')
+  assert.ok(feel.includes('spent: walk.spent') && feel.includes('walk.giveBack'), 'the settled walk hands spent, broken and give back on')
+})
+
 test('a freeze is never used by accident and there is no balance to add to', () => {
   const clears = (n) => Array(n).fill('clear')
   // Nights with nothing due never spend one, however many there are.
-  assert.deepEqual(walkFreezes([...clears(14), ...Array(30).fill('none')]), { run: 14, held: 1, frozen: [] })
+  assert.deepEqual(wf([...clears(14), ...Array(30).fill('none')]), { run: 14, held: 1, frozen: [] })
   // No streak, no freeze to spend: misses before any run cost nothing.
-  assert.deepEqual(walkFreezes(['miss', 'miss', ...clears(3)]), { run: 3, held: 0, frozen: [] })
+  assert.deepEqual(wf(['miss', 'miss', ...clears(3)]), { run: 3, held: 0, frozen: [] })
   // Freezes come only from the answers walk: nothing stored is read, and the shop has none.
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const feel = readFileSync(path.join(root, 'src/lib/hall-feel.js'), 'utf8')
@@ -12339,7 +12431,7 @@ test('one free miss a week keeps the first missed day of each week', () => {
   const wk = (...keys) => keys
   const nights = ['clear', 'miss', 'clear', 'miss', 'clear']
   const weeks = wk('a', 'a', 'a', 'b', 'b')
-  const off = walkFreezes(nights, 14, 2, null, null)
+  const off = core(walkFreezes(nights, 14, 2, null, null))
   assert.deepEqual(off, { run: 1, held: 0, frozen: [] }, 'weekly off: a miss with no freeze breaks the run')
   const on = walkFreezes(nights, 14, 2, null, weeks)
   assert.deepEqual(on.free, [1, 3], 'first miss in each week is kept')

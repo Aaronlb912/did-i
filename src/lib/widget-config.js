@@ -184,7 +184,8 @@ export function widgetRedrawTimes(boards, now) {
 // The iPhone timeline ends with .atEnd and no JS runs without the app, so it
 // has to reach a few nights ahead: each night's redraws, then the same again
 // from just after that night's turn. Capped, soonest kept.
-export function widgetTimelineTimes(boards, now, nights = 3, cap = 30) {
+export const WIDGET_TIMELINE_NIGHTS = 7
+export function widgetTimelineTimes(boards, now, nights = WIDGET_TIMELINE_NIGHTS, cap = 70) {
   const all = new Map()
   // Every night's turns are kept first: many ask times must not cut day 3.
   const turns = new Set()
