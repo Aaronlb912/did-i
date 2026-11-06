@@ -3,6 +3,7 @@ import { pingsFailed } from '../shim/native.js'
 import { useAuthSignIn } from '../../src/lib/useAuthSignIn.js'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import {
+  AppState,
   Keyboard,
   Linking,
   Modal,
@@ -87,6 +88,8 @@ import { pinWidget } from '../lib/widget-pin.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { readMine, usePeoplePulse } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { exactAlarmsOn, openExactAlarms } from '../lib/exact-alarms.js'
+import { openReminderChannel, reminderChannelOn } from '../lib/notification-perms.js'
 import { publishSheet } from '../components/SheetHost.jsx'
 import { AFTERNOON_AT_DEFAULT, AFTERNOON_AT_TIMES, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, MORNING_AT_TIMES } from '../../src/lib/day-nudges.js'
 import { LATER_MINUTES } from '../../src/lib/notify-answer.js'
@@ -393,6 +396,14 @@ export function HelpScreen() {
         >
           <Meta colors={colors}>{t('help.pingsZone')}</Meta>
         </HelpTopic>
+        {Platform.OS === 'android' ? (
+          <HelpTopic
+            colors={colors}
+            title={t('pings.lateTitle')}
+            short={t('pings.lateBody')}
+            go={<KeyButton colors={colors} label={t('pings.lateGo')} onPress={() => Linking.openSettings().catch(() => confirmMiss(t('confirm.miss')))} />}
+          />
+        ) : null}
         <HelpTopic
           colors={colors}
           title={t('help.widget')}
@@ -2439,23 +2450,27 @@ function PingKinds({ colors, on }) {
   )
 }
 
-// Sends one sample reminder a few seconds out. Permission off says so, with a way to settings.
+// Sends one sample reminder a few seconds out, or a minute out so a locked
+// phone shows what battery saving does. Permission off says so, with a way to settings.
 function PingTest({ colors }) {
   const [state, setState] = useState('')
+  const [wait, setWait] = useState(0)
 
-  async function send() {
+  async function send(seconds) {
     if (state === 'busy') return
     setState('busy')
-    const out = await pingTest(5).catch(() => 'miss')
+    setWait(seconds)
+    const out = await pingTest(seconds).catch(() => 'miss')
     setState(out)
-    if (out === 'set') confirmDone(t('pings.testSet'))
+    if (out === 'set') confirmDone(t(seconds > 5 ? 'pings.testLaterSet' : 'pings.testSet'))
     else if (out === 'miss') confirmMiss(t('confirm.miss'))
   }
 
   return (
     <>
       <SetCard colors={colors}>
-        <SetRow colors={colors} icon="bell" label={t('pings.test')} sub={t('pings.testSub')} on={state === 'set'} last onPress={send} />
+        <SetRow colors={colors} icon="bell" label={t('pings.test')} sub={t('pings.testSub')} on={state === 'set' && wait === 5} onPress={() => send(5)} />
+        <SetRow colors={colors} icon="clock" label={t('pings.testLater')} sub={t('pings.testLaterSub')} on={state === 'set' && wait === 60} last onPress={() => send(60)} />
       </SetCard>
       {state === 'off' ? (
         <>
@@ -2464,6 +2479,39 @@ function PingTest({ colors }) {
         </>
       ) : null}
     </>
+  )
+}
+
+// Android: a muted Did I channel, alarms off, or the battery saver make
+// reminders late or silent. Checked again on the way back from settings.
+function AndroidReminderFixes({ colors }) {
+  const [state, setState] = useState({ channel: true, exact: true })
+  useEffect(() => {
+    if (Platform.OS !== 'android') return undefined
+    let live = true
+    const check = () =>
+      Promise.all([reminderChannelOn(), exactAlarmsOn()]).then(([channel, exact]) => {
+        if (live) setState({ channel, exact })
+      })
+    check()
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') check()
+    })
+    return () => {
+      live = false
+      sub.remove()
+    }
+  }, [])
+  if (Platform.OS !== 'android') return null
+  const miss = () => confirmMiss(t('confirm.miss'))
+  return (
+    <SetCard colors={colors}>
+      {!state.channel ? (
+        <SetRow colors={colors} icon="bell" tint={colors.miss} label={t('pings.channelOff')} sub={t('pings.channelOffSub')} chevron onPress={() => openReminderChannel().catch(miss)} />
+      ) : null}
+      {!state.exact ? <SetRow colors={colors} icon="clock" label={t('notify.exactTitle')} sub={t('notify.exactBody')} chevron onPress={openExactAlarms} /> : null}
+      <SetRow colors={colors} icon="settings" label={t('pings.lateTitle')} sub={t('pings.lateSub')} chevron last onPress={() => Linking.openSettings().catch(miss)} />
+    </SetCard>
   )
 }
 
@@ -2594,6 +2642,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
       <AwayCard colors={colors} />
       <PingKinds colors={colors} on={on && Boolean(onAskPings)} />
       <PingTest colors={colors} />
+      {on ? <AndroidReminderFixes colors={colors} /> : null}
       <Meta colors={colors}>{t('pings.stopNote')}</Meta>
       <SetCap colors={colors}>{t('pings.waitingTonight')}</SetCap>
       {!fires.length ? (

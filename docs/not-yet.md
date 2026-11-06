@@ -5,6 +5,12 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Battery savers (UX loop 2026-11-06)
+
+- A time zone change with no Android widget placed probably does not re-set reminders until the next open: DidITonight.java starts PingRearmService from a background broadcast, which Android 8+ refuses (caught silently). Needs a WorkManager worker, a build and an emulator check (remove the widget, change the zone, logcat).
+- Reminders, friends and cheers share one notification channel; splitting them changes the push payload and loses people's current channel settings.
+- Not checked on a weak phone: widget tap delay, a Restricted battery setting, long lists on Questions, Today and Social.
+
 ## First week (UX loop 2026-11-04)
 
 - /first is three screens and a card before the first question.

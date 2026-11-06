@@ -138,8 +138,11 @@ export function capSpare(note) {
   return note.nudge ? 1 : 0
 }
 
-// Fills the cap in that order. `over` says something was cut.
-export function capNotes(notes, limit) {
-  const sorted = [...notes].sort((a, b) => capSpare(a) - capSpare(b) || a.trigger.date - b.trigger.date)
+// Fills the cap in that order. Notes before `soonUntil` (a time in ms) all
+// come first, so a far day never pushes out today's last call. `over` says
+// something was cut.
+export function capNotes(notes, limit, soonUntil = 0) {
+  const rank = (note) => (note.trigger.date < soonUntil ? -10 : 0) + capSpare(note)
+  const sorted = [...notes].sort((a, b) => rank(a) - rank(b) || a.trigger.date - b.trigger.date)
   return { kept: sorted.slice(0, Math.max(0, limit)), over: sorted.length > limit }
 }

@@ -1382,8 +1382,10 @@ test('lamp notes are cut to 500 on load and save', async () => {
 
 test('reminders are cleared only after the new list is built', () => {
   const src = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
-  const body = src.slice(src.indexOf('async function schedulePingsNow'))
-  assert.ok(body.indexOf('cancelAllScheduledNotificationsAsync') > body.indexOf('const notes = []'))
+  const start = src.indexOf('async function schedulePingsNow')
+  const body = src.slice(start, src.indexOf('\nfunction ', start))
+  assert.ok(body.indexOf('await cancelStale(Notifications, notes)') > body.indexOf('const notes = []'))
+  assert.ok(!body.includes('cancelAllScheduledNotificationsAsync()'), 'no cancel-all before re-arming: a killed run would leave no reminders')
 })
 
 test('Did on a second reminder for a question already Did does not say Not saved', () => {
@@ -10865,10 +10867,10 @@ await testAsync('day nudges: 9:00 and 13:30 while open, none when all Did, an ho
   assert.deepEqual(dayNudges(book, now, { days: 1, shift: (at) => quietEnd(at, quiet) }).map((n) => n.at.getHours()), [13])
   // A week of nudges plus question reminders still fits the 60 the phone keeps (iOS holds 64).
   const native = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../native/shim/native.js'), 'utf8')
-  assert.match(native, /const PING_CAP = 60/)
-  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: [^,]+, reminders, shift: afterQuiet, times \}\)[\s\S]*capNotes\(notes, PING_CAP - 1 - waitingReminds\)/)
+  assert.match(native, /const PING_CAP = Platform\.OS === 'android' \? 200 : 60/)
+  assert.match(native, /pingOn\('day'\)[\s\S]*dayNudges\(list, now, \{ days: [^,]+, reminders, shift: afterQuiet, times \}\)[\s\S]*capNotes\(notes, PING_CAP - 1 - waitingReminds, /)
   // Nothing re-arms while the app is closed: the last slot asks to open it.
-  assert.match(native, /capNotes\(notes, PING_CAP - 1 - waitingReminds\)[\s\S]*notifyId\('renew', 'pings'\)[\s\S]*t\('pings\.renew'\)/)
+  assert.match(native, /capNotes\(notes, PING_CAP - 1 - waitingReminds, [^)]+\)[\s\S]*notifyId\('renew', 'pings'\)[\s\S]*t\('pings\.renew'\)/)
   assert.ok(all.length <= 60)
 })
 
@@ -12475,6 +12477,36 @@ test('Did we link: blocked lookup is in the apply order and the app shows it', (
   const sql = readFileSync('supabase/we-link-blocked.sql', 'utf8')
   assert.ok(sql.includes('drop function if exists public.look_up_we_link(text)') && sql.includes('blocked boolean'))
   assert.ok(readFileSync('native/components/DidYouLinkHost.jsx', 'utf8').includes('found?.blocked'))
+})
+
+test('battery savers: re-arm keeps old reminders until new ones replace them; the next two days fill the cap first; Android fix rows; camera photos survive', async () => {
+  const { capNotes } = await import('../src/lib/quiet.js')
+  const at = (day, hour) => ({ trigger: { date: new Date(2026, 10, 5 + day, hour) } })
+  const notes = []
+  for (let day = 0; day < 7; day += 1) {
+    for (let q = 0; q < 9; q += 1) notes.push({ ...at(day, 8 + q), id: `q${day}-${q}` })
+    notes.push({ ...at(day, 21), lateCall: true, day })
+    notes.push({ ...at(day, 9), nudge: true, day })
+  }
+  const soon = new Date(2026, 10, 7).getTime()
+  const { kept } = capNotes(notes, 30, soon)
+  assert.ok(kept.some((n) => n.lateCall && n.day === 0) && kept.some((n) => n.nudge && n.day === 1), 'today and tomorrow keep last calls and day nudges')
+  assert.ok(!kept.some((n) => n.lateCall && n.day > 1), 'later days still put questions first')
+  assert.deepEqual(capNotes(notes, 30).kept.filter((n) => !n.id), [], 'no soon window: same order as before')
+  const src = readFileSync('native/shim/native.js', 'utf8')
+  const stale = src.slice(src.indexOf('async function cancelStale'), src.indexOf('async function scheduleReminds'))
+  assert.ok(stale.includes("new Set(['did-i-test'])") && stale.includes('getAllScheduledNotificationsAsync') && stale.includes('remindNoteId(item)'), 'only notes left out of the new list are cancelled')
+  const more = readFileSync('native/screens/more.jsx', 'utf8')
+  assert.ok(more.includes('{on ? <AndroidReminderFixes colors={colors} /> : null}') && more.includes('reminderChannelOn(), exactAlarmsOn()'), 'Reminders shows a muted channel and alarms off on Android')
+  assert.ok(more.includes("t('pings.testLater')") && more.includes('send(60)'), 'a test a minute out shows what a locked phone does')
+  assert.ok(more.includes("title={t('pings.lateTitle')}"), 'Help has the battery steps')
+  assert.ok(readFileSync('native/lib/notification-perms.js', 'utf8').includes("getNotificationChannelAsync('did-i')"))
+  for (const file of ['native/lib/proof-pick.js', 'native/lib/avatar-pick.js']) {
+    assert.match(readFileSync(file, 'utf8'), /noteCameraFor\([^)]*\)\s+try \{\s+picked = await ImagePicker\.launchCameraAsync[\s\S]*?finally \{\s+clearCameraFor\(\)/, file + ' keeps what the photo is for while the camera is open')
+  }
+  assert.ok(readFileSync('native/lib/proof-flow.jsx', 'utf8').includes('pickProofBytes(from, { target, night })'))
+  assert.ok(readFileSync('native/lib/camera-pending.js', 'utf8').includes('getPendingResultAsync()'))
+  assert.ok(readFileSync('native/AppShell.jsx', 'utf8').includes('if (booted && !gated && !locked && userId) finishCameraPhoto(userId)'), 'picked up once signed in and past the PIN, for the same account only')
 })
 
 test('reminder cap: question reminders win slots over last calls and nudges', async () => {
