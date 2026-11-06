@@ -10,6 +10,11 @@ export function canShowAppleSignIn() {
   return appleSignInEnabled() && typeof document !== 'undefined'
 }
 
+// The phone app revokes the Apple token on account delete (apple-sign-in.native.js).
+export async function revokeAppleSignIn() {
+  return { miss: '' }
+}
+
 export async function signInWithApple() {
   const db = cloud()
   if (!db) return { miss: 'off' }

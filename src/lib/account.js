@@ -252,6 +252,10 @@ export async function deleteAccount() {
   // before the delete, while the account can still see its own folder.
   const files = await removeAllProofFiles()
   if (files.miss) return { miss: 'account.syncMiss' }
+  // Sign in with Apple: take Did I off the Apple ID first, while the session
+  // can still call the function. A miss is logged and the delete goes on.
+  const apple = await import('./apple-sign-in.js').then(({ revokeAppleSignIn }) => revokeAppleSignIn()).catch(() => ({ miss: 'appleFail' }))
+  if (apple?.miss) console.warn('apple revoke', apple.miss)
   const { error } = await db.rpc('delete_me')
   if (error) return { miss: appMiss(error, 'account.syncMiss') }
   // Only once the delete went through: a failed delete keeps its photo.

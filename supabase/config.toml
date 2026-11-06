@@ -22,3 +22,8 @@ verify_jwt = false
 
 [functions.store-version]
 verify_jwt = true
+
+# Sign in with Apple revoke on account delete. The function also reads the
+# account from the token and only revokes that account's own Apple token.
+[functions.apple-revoke]
+verify_jwt = true

@@ -1637,6 +1637,37 @@ test('a failed account delete keeps the photo and sign out clears hidden sends',
   assert.ok(ACCOUNT_CACHE_PREFIXES.includes('did-i-sent-hidden:'))
 })
 
+test('account delete revokes Sign in with Apple first, only for the caller, and never blocks the delete', () => {
+  const fn = readFileSync(new URL('../supabase/functions/apple-revoke/index.ts', import.meta.url), 'utf8')
+  assert.ok(fn.includes('userClient.auth.getUser()'), 'the caller is read from the token')
+  assert.ok(fn.includes("one.provider === 'apple'") && fn.includes('who !== appleSub'), 'the Apple id token has to be the callers own identity')
+  assert.ok(fn.indexOf("miss: 'notYours'") < fn.indexOf('json({ ok: true })'), 'a token that is not the callers is never reported as the callers revoke')
+  assert.ok(fn.includes('AbortSignal.timeout(8000)'), 'Apple calls time out')
+  for (const name of ['APPLE_TEAM_ID', 'APPLE_SIGNIN_KEY_ID', 'APPLE_SIGNIN_P8']) assert.ok(fn.includes(name), name)
+  assert.ok(fn.includes("alg: 'ES256'") && fn.includes('/auth/token') && fn.includes('/auth/revoke'))
+  const toml = readFileSync(new URL('../supabase/config.toml', import.meta.url), 'utf8')
+  assert.ok(toml.split('[functions.apple-revoke]')[1]?.trim().startsWith('verify_jwt = true'), 'the platform checks the token too')
+  const src = readFileSync(new URL('../src/lib/account.js', import.meta.url), 'utf8')
+  const body = src.slice(src.indexOf('export async function deleteAccount'))
+  const at = body.indexOf('revokeAppleSignIn')
+  assert.ok(at > 0 && at < body.indexOf("rpc('delete_me')"), 'the revoke runs while the session can still call it')
+  assert.ok(body.includes('revokeAppleSignIn()).catch(') && body.includes("console.warn('apple revoke'"), 'a revoke miss is logged, not returned')
+  const phone = readFileSync(new URL('../src/lib/apple-sign-in.native.js', import.meta.url), 'utf8')
+  assert.ok(phone.includes("functions.invoke('apple-revoke'") && phone.includes('authorizationCode'))
+  const notYet = readFileSync(new URL('../docs/not-yet.md', import.meta.url), 'utf8')
+  assert.ok(notYet.includes('## Needs Aaron to deploy') && notYet.includes('supabase functions deploy apple-revoke'))
+})
+
+test('only a family adult can change a kid to an adult, behind a confirm, and the blocked card says who to ask', () => {
+  const people = readFileSync(new URL('../supabase/people.sql', import.meta.url), 'utf8').replace(/\s+/g, ' ')
+  assert.ok(people.includes('create policy "parents set roles" on public.family_members for update using (public.is_parent(family_id)) with check (public.is_parent(family_id))'), 'a kid cannot change roles')
+  const sqlTest = readFileSync(new URL('../supabase/tests/family-kid-switch.test.sql', import.meta.url), 'utf8')
+  assert.ok(sqlTest.includes('a kid changed their own role') && sqlTest.includes("raise exception 'SQL TESTS PASSED';"))
+  const screen = readFileSync(new URL('../native/screens/FamilyDetail.jsx', import.meta.url), 'utf8')
+  assert.ok(screen.includes("t('family.makeAdultTitle'") && screen.includes("t('family.makeAdult')"), 'the member row asks first')
+  assert.equal(en['we.missKidFamily'], "Cards with a kid stay in the kid's family. An adult in Family can change a kid to an adult.")
+})
+
 test('switching daily and monthly keeps the answer given today', async () => {
   const { keepPastSchedule, periodKeyFor } = await import('../src/lib/recurrence.js')
   const daily = lamp('a', { cadence: 'daily', createdOn: '2026-09-01' })

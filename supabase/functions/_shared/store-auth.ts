@@ -17,12 +17,12 @@ export function jwsPayload(jws: string) {
   return JSON.parse(atob(pad))
 }
 
-function pemBytes(pem: string) {
+export function pemBytes(pem: string) {
   const body = pem.replace(/\\n/g, '\n').replace(/-----[^-]+-----/g, '').replace(/\s+/g, '')
   return Uint8Array.from(atob(body), (c) => c.charCodeAt(0))
 }
 
-async function signJwt(header: Record<string, unknown>, payload: Record<string, unknown>, key: CryptoKey, algo: AlgorithmIdentifier | EcdsaParams) {
+export async function signJwt(header: Record<string, unknown>, payload: Record<string, unknown>, key: CryptoKey, algo: AlgorithmIdentifier | EcdsaParams) {
   const input = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`
   const sig = new Uint8Array(await crypto.subtle.sign(algo, key, new TextEncoder().encode(input)))
   return `${input}.${b64url(sig)}`
