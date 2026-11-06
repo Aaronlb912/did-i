@@ -111,6 +111,31 @@ export function staleDelivered(presented, ctx) {
   return out
 }
 
+// Inbox pushes in the tray whose cheer or Did you no longer waits (answered
+// here or on another phone). One with no id (a Did we invite) stays.
+// Returns the identifiers to dismiss.
+export function staleInboxPushes(presented, waiting) {
+  const out = []
+  for (const note of Array.isArray(presented) ? presented : []) {
+    const request = note?.request || {}
+    const id = request.identifier ? String(request.identifier) : ''
+    let data = request.content?.data || {}
+    // Android data-only pushes carry the app's data as a JSON string in body.
+    if (typeof data.body === 'string') {
+      try {
+        data = { ...data, ...JSON.parse(data.body) }
+      } catch {
+        // keep what is there
+      }
+    } else if (data.body && typeof data.body === 'object') data = { ...data, ...data.body }
+    const go = String(data.go || '')
+    if (!id || !go.startsWith('/inbox')) continue
+    const sendId = String(data.sendId || /[?&]id=cheer:([0-9a-f-]{36})/.exec(go)?.[1] || '')
+    if (sendId && !waiting.has(sendId)) out.push(id)
+  }
+  return out
+}
+
 // A cold launch hands the launching tap to the listener and to
 // getLastNotificationResponseAsync. True the first time a tap is seen.
 export function firstResponse(seen, response) {

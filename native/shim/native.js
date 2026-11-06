@@ -8,7 +8,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { daySection, lampBuzzes, lampNudgesLate, resumeDuePauses } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions, staleDelivered } from '../../src/lib/notify-answer.js'
+import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions, staleDelivered, staleInboxPushes } from '../../src/lib/notify-answer.js'
 import { REMIND_TRIES, readReminds, remindNext } from '../../src/lib/remind-me.js'
 import { afterQuiet, awayOn, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { askGroups, capNotes, earlyCallAt, lastCallAt, laterClash, leftNote } from '../../src/lib/quiet.js'
@@ -313,6 +313,18 @@ function flushNativePings() {
       () => job.waiters.forEach((w) => w.resolve()),
       (error) => job.waiters.forEach((w) => w.reject(error)),
     )
+}
+
+// After the inbox loads: clear cheer and Did you pushes that no longer wait.
+export async function dismissReadPushes(waitingIds) {
+  try {
+    const Notifications = await notifications()
+    if (typeof Notifications.getPresentedNotificationsAsync !== 'function' || typeof Notifications.dismissNotificationAsync !== 'function') return
+    const ids = staleInboxPushes(await Notifications.getPresentedNotificationsAsync(), new Set(waitingIds))
+    for (const id of ids) await Notifications.dismissNotificationAsync(id)?.catch?.(() => {})
+  } catch {
+    // They stay in the tray.
+  }
 }
 
 // Sign-out: drop a waiting run and cancel behind any run already going, so
