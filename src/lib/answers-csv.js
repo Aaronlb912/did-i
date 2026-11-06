@@ -36,7 +36,9 @@ export function csvCell(value) {
   return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 
-export function answersCsv(shelf) {
+// weNotes: myWeNotes().rows; cardTitle: the card's question by id. Each is a
+// "did we" row; csv-import skips those, so a copy never grows a question.
+export function answersCsv(shelf, weNotes = [], cardTitle = () => '') {
   const rows = []
   for (const book of shelf?.boards || []) {
     const lamps = new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
@@ -60,6 +62,11 @@ export function answersCsv(shelf) {
         lamp?.createdOn || '',
       ])
     }
+  }
+  for (const item of Array.isArray(weNotes) ? weNotes : []) {
+    const note = String(item?.note || '').trim()
+    if (!note || !item?.night) continue
+    rows.push([String(item.night).slice(0, 10), cardTitle(item.card_id) || 'Did we', '', 'did', note, '', '', '', 'did we', ''])
   }
   rows.sort((a, b) => a[0].localeCompare(b[0]))
   const head = ['date', 'question', 'short name', 'answer', 'note', 'amount', 'unit', 'folder', 'repeats', 'started']

@@ -562,13 +562,81 @@ export function shelfWeekNights(boards, now = new Date(), tagId = '', days = 7, 
 export function shelfFeedRows(boards, tagId = '') {
   const books = scopedBooks(boards, tagId)
   return books
-    .flatMap((book) => feedRows(book).map((row) => ({ ...row, folder: books.length > 1 ? book.title : '' })))
+    .flatMap((book) => feedRows(book).map((row) => ({ ...row, boardId: book.id, folder: books.length > 1 ? book.title : '' })))
     .sort((a, b) => stampMs(b.answer.answeredAt) - stampMs(a.answer.answeredAt))
 }
 
-// Every note across the folders in view, newest first. Notes on deleted questions drop out.
+// The day a note belongs to: the answer's day, not the time it was tapped.
+// A one-time answer is the day it was done (not its due date); a monthly one
+// the day it was tapped, the same as the Last week sheet.
+export function noteDay(row) {
+  if (row.day) return String(row.day)
+  const key = String(row.answer.periodKey || '')
+  if (key.startsWith('once:')) {
+    const dated = row.lamp?.onceWhen !== 'by' && /^\d{4}-\d{2}-\d{2}$/.test(String(row.lamp?.onceOn || '').trim())
+    return String(onceDoneNight(row.lamp, row.answer) || (dated ? '' : stampDay(row.answer.answeredAt)) || periodNight(row.lamp, key) || '')
+  }
+  if (key.length === 7) return String(stampDay(row.answer.answeredAt) || `${key}-01`)
+  return String(periodNight(row.lamp, key) || stampDay(row.answer.answeredAt) || '')
+}
+
+// Newest day first; the same day, the later tap first.
+export function sortNoteRows(rows) {
+  return [...rows].sort((a, b) => noteDay(b).localeCompare(noteDay(a)) || stampMs(b.answer.answeredAt) - stampMs(a.answer.answeredAt))
+}
+
+// Every note across the folders in view, newest day first. Notes on deleted questions drop out.
 export function shelfNoteRows(boards, tagId = '') {
-  return shelfFeedRows(boards, tagId).filter((row) => row.lamp && String(row.answer.note || '').trim())
+  return sortNoteRows(shelfFeedRows(boards, tagId).filter((row) => row.lamp && String(row.answer.note || '').trim()))
+}
+
+// Your Did we notes (we_notes rows) shaped like answer rows, so one list sorts
+// and searches them. A card you left (cards loaded, no title) drops out.
+export function weNoteRows(notes, cardTitle = () => '', known = false) {
+  const out = []
+  for (const item of Array.isArray(notes) ? notes : []) {
+    const note = String(item?.note || '').trim()
+    const day = String(item?.night || '').slice(0, 10)
+    if (!item?.card_id || !note || !parseIsoDate(day)) continue
+    const title = String(cardTitle(item.card_id) || '')
+    if (known && !title) continue
+    out.push({
+      we: item.card_id,
+      day,
+      answer: { id: `we:${item.card_id}:${day}`, status: 'yes', periodKey: day, answeredAt: '', note },
+      lamp: { id: item.card_id, question: title, short: '' },
+      folderTitle: '',
+    })
+  }
+  return out
+}
+
+export function mergeNoteRows(local, we) {
+  return we.length ? sortNoteRows([...local, ...we]) : local
+}
+
+// A note from this calendar day last year, if there is one. A monthly
+// answer's day is only its month's 1st, so it does not count.
+export function yearAgoNote(rows, today) {
+  const match = /^(\d{4})-(\d{2}-\d{2})$/.exec(String(today || ''))
+  if (!match) return null
+  const want = `${Number(match[1]) - 1}-${match[2]}`
+  return rows.find((row) => String(row.answer.periodKey || '').length !== 7 && noteDay(row) === want) || null
+}
+
+// Rows with a { head: 'YYYY-MM' } entry before each new month, for the month labels.
+export function withMonthHeads(rows) {
+  const out = []
+  let month = ''
+  for (const row of rows) {
+    const next = noteDay(row).slice(0, 7)
+    if (next && next !== month) {
+      month = next
+      out.push({ head: next })
+    }
+    out.push({ row })
+  }
+  return out
 }
 
 function countsAsMiss(book, lamp, answer, floor) {

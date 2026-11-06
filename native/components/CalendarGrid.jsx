@@ -153,14 +153,14 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
               // A sheet left open past midnight can be outside the window now: redraw without the buttons.
               else if (!pastAnswerOpen(row, new Date())) openDay(iso, shelfNow)
             }
-            const didIt = row.answer?.status === 'yes' || row.answer?.status === 'late'
+            const note = String(row.answer?.note || '').trim()
             return (
               <View key={`${row.boardId}-${row.lamp.id}`}>
               <Pressable
                 style={styles.markRow}
                 disabled={!onAnswer || canAnswer || iso >= boardDate(new Date())}
                 accessibilityRole={onAnswer && !canAnswer && iso < boardDate(new Date()) ? 'text' : undefined}
-                accessibilityLabel={`${shortLabel(row.lamp)}, ${mark.label}`}
+                accessibilityLabel={`${shortLabel(row.lamp)}, ${mark.label}${note ? `, ${note}` : ''}`}
                 accessibilityHint={onAnswer && !canAnswer && iso < boardDate(new Date()) ? t('calendar.tooOld') : undefined}
                 onPress={() => showToast({ id: 'cal-old', kind: 'error', text: t('calendar.tooOld'), ms: 3000 })}
               >
@@ -168,6 +168,7 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                 <View style={{ flex: 1 }}>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.markLabel, { color: colors.ink }]}>{mark.label}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.markSub, { color: colors.inkDim }]}>{shortLabel(row.lamp)}</Text>
+                  {note ? <Text maxFontSizeMultiplier={1.4} style={[styles.markSub, { color: colors.ink }]}>{note}</Text> : null}
                 </View>
                 {canAnswer ? (
                   <View style={styles.markBtns}>
@@ -189,12 +190,12 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
                   </View>
                 ) : null}
               </Pressable>
-              {didIt && onNote ? (
+              {row.answer && onNote ? (
                 <View style={styles.markNote}>
                   <KeyButton
                     colors={colors}
-                    label={row.answer.note ? t('note.edit') : t('note.add')}
-                    accessibilityLabel={`${row.answer.note ? t('note.edit') : t('note.add')}: ${shortLabel(row.lamp)}, ${date}`}
+                    label={note ? t('note.edit') : t('note.add')}
+                    accessibilityLabel={`${note ? t('note.edit') : t('note.add')}: ${shortLabel(row.lamp)}, ${date}`}
                     onPress={() => openAnswerNote({ boardId: row.boardId, lampId: row.lamp.id, periodKey: row.periodKey, colors, onChange: onNote })}
                   />
                 </View>

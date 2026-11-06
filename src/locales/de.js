@@ -4261,4 +4261,8 @@ export const de = {
   'help.switchP4': "Widget und Uhr bringen die Frage zu dir. Du musst die App nicht öffnen.",
   'settings.loadMissSheet': "Did I lädt seine eigene Sicherungsdatei oder eine Tabelle mit einer Spalte für Frage und einer für Datum. Aus einer anderen App kannst du deine Fragen auch unter Fragen hinzufügen.",
   'account.loadSureBad': "Zeilen mit einem Datum, das Did I nicht lesen konnte, bleiben draußen: {n}. Schreib Daten als Jahr-Monat-Tag, etwa 2026-11-05.",
+  'notes.yearAgo': "Heute vor einem Jahr",
+  'notes.weMiss': "Deine Did we Notizen konnten nicht geladen werden. Die anderen stehen hier.",
+  'note.left': "noch {n}",
+  'note.leftA11y': "Noch {n} Zeichen",
 }

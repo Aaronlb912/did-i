@@ -4244,4 +4244,8 @@ export const en = {
   'help.switchP4': "The widget and your watch bring the question to you, so you do not have to open the app.",
   'settings.loadMissSheet': "Did I loads its own backup file or a spreadsheet with a question and a date column. From another app, you can also add your questions on Questions.",
   'account.loadSureBad': "Rows with a date Did I could not read stay out: {n}. Write dates as year-month-day, like 2026-11-05.",
+  'notes.yearAgo': "A year ago today",
+  'notes.weMiss': "Could not load your Did we notes. The rest are here.",
+  'note.left': "{n} left",
+  'note.leftA11y': "{n} characters left",
 }

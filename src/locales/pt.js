@@ -4249,4 +4249,8 @@ export const pt = {
   'help.switchP4': "O widget e o relógio levam a pergunta até você, então não precisa abrir o app.",
   'settings.loadMissSheet': "O Did I carrega o próprio arquivo de cópia ou uma planilha com uma coluna de pergunta e uma de data. Se você vem de outro app, também pode adicionar suas perguntas em Perguntas.",
   'account.loadSureBad': "Linhas com uma data que o Did I não conseguiu ler ficam de fora: {n}. Escreva as datas como ano-mês-dia, por exemplo 2026-11-05.",
+  'notes.yearAgo': "Há um ano, hoje",
+  'notes.weMiss': "Não foi possível carregar suas notas do Did we. As outras estão aqui.",
+  'note.left': "{n} restantes",
+  'note.leftA11y': "Restam {n} caracteres",
 }

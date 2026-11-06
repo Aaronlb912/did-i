@@ -904,6 +904,33 @@ export function periodLabel(lamp, periodKey) {
   return night ? formatBoardDate(night) : ''
 }
 
+// formatBoardDate, plus the year once the day is not in today's year.
+export function formatBoardDateYear(iso, today = boardDate()) {
+  const date = parseIsoDate(iso)
+  if (!date) return iso
+  const sameYear = String(iso).slice(0, 4) === String(today).slice(0, 4)
+  return date.toLocaleDateString(dateTag(), {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  })
+}
+
+// periodLabel with the year when the answer's day is not in today's year.
+export function periodLabelYear(lamp, periodKey, today = boardDate()) {
+  const key = String(periodKey || '')
+  if (/^\d{4}-\d{2}$/.test(key)) return periodLabel(lamp, key)
+  const night = periodNight(lamp, key)
+  return night ? formatBoardDateYear(night, today) : ''
+}
+
+// "November 2026", for the month rows in Notes.
+export function formatMonthYear(iso) {
+  const date = parseIsoDate(iso)
+  return date ? date.toLocaleDateString(dateTag(), { month: 'long', year: 'numeric' }) : ''
+}
+
 export function recentPeriodKeys(lamp, dateIso, count = 7) {
   if (lamp.cadence === 'once') return [`once:${lamp.id}`]
   if (isEvery(lamp)) return []

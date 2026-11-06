@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { NOTE_MAX, setAnswerNote } from '../../src/lib/board-ops.js'
 import { cleanAmount, shortLabel } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
@@ -46,10 +46,11 @@ function saveNote(book, lampId, periodKey, draft, count, onChange) {
   return true
 }
 
-function removeNote(book, lampId, periodKey, note, onChange) {
+// keep: the amount box was hidden, so the amount stays as it is.
+function removeNote(book, lampId, periodKey, note, onChange, keep = false) {
   const was = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
-  const amount = typeof was?.amount === 'number' ? was.amount : ''
-  onChange(setAnswerNote(book, lampId, periodKey, '', undefined, ''))
+  const amount = keep ? undefined : typeof was?.amount === 'number' ? was.amount : ''
+  onChange(setAnswerNote(book, lampId, periodKey, '', undefined, keep ? undefined : ''))
   // A removed note is no longer shared either.
   if (noteShared(lampId, periodKey)) {
     setNoteShared({ lampId, periodKey, on: false }).then((out) => {
@@ -75,6 +76,9 @@ function removeNote(book, lampId, periodKey, note, onChange) {
 // How many recent nights "Add a note" offers.
 const PICKS = 7
 const NOTES_SHOWN = 3
+// "{n} left" shows from here, and is read out at these counts.
+const LEFT_FROM = 100
+const LEFT_SAID = [20, 10, 0]
 
 // A skip reads Not yet, open day or past, like the calendar and the month view.
 function statusWord(status, open = false) {
@@ -136,7 +140,22 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
       alive = false
     }
   }, [share?.lampId, share?.periodKey])
+  const left = NOTE_MAX - draft.length
+  const leftWas = useRef(left)
+  useEffect(() => {
+    // Only while typing: opening a note that is already 100 long says nothing.
+    if (leftWas.current === left) return
+    leftWas.current = left
+    if (LEFT_SAID.includes(left) && draft) AccessibilityInfo.announceForAccessibility(t('note.leftA11y', { n: left }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [left])
   const save = () => {
+    // An emptied box on a note that exists is a removal: same Undo and message.
+    // Remove note clears the amount too, so with an amount typed it saves instead.
+    if (initial && onRemove && !draft.trim() && !(amount && String(count ?? '').trim())) {
+      onRemove(!amount)
+      return
+    }
     // Share only a note that was saved on the answer.
     if (onSave(draft, amount ? count : undefined) === true) shareAfter(share, on, draft.replace(/\s+/g, ' ').trim().slice(0, NOTE_MAX))
   }
@@ -181,9 +200,15 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
         placeholder={t('note.ph')}
         maxLength={NOTE_MAX}
         autoFocus={!amount}
+        multiline
+        // Return still saves; a long note wraps instead of scrolling sideways.
+        blurOnSubmit
         returnKeyType="done"
         onSubmitEditing={save}
       />
+      {draft.length >= LEFT_FROM ? (
+        <Meta colors={colors} accessibilityLabel={t('note.leftA11y', { n: left })} style={styles.left}>{t('note.left', { n: left })}</Meta>
+      ) : null}
       {share ? (
         <SetSwitch colors={colors} label={t('sharedNote.toggle')} sub={t('sharedNote.who')} last on={on} onPress={() => {
           touched.current = true
@@ -193,7 +218,7 @@ function NoteEdit({ label, initial, amount = null, share = null, colors, onSave,
       <View style={styles.keys}>
         <DidButton small colors={colors} label={t('hang.save')} onPress={save} />
         <KeyButton colors={colors} label={t('settings.neverMind')} onPress={onCancel} />
-        {initial && onRemove ? <KeyButton danger colors={colors} label={t('note.remove')} onPress={onRemove} /> : null}
+        {initial && onRemove ? <KeyButton danger colors={colors} label={t('note.remove')} onPress={() => onRemove(!amount)} /> : null}
       </View>
     </View>
   )
@@ -225,9 +250,9 @@ function openNoteSheet({ title, label, initial, amount = null, share = null, col
         onCancel={close}
         onRemove={
           onRemove
-            ? () => {
+            ? (keep) => {
                 close()
-                onRemove()
+                onRemove(keep)
               }
             : null
         }
@@ -238,14 +263,15 @@ function openNoteSheet({ title, label, initial, amount = null, share = null, col
 
 /**
  * The note for one answer, straight from the toast after a Did. Reads the
- * folder as it is now, since the answer was saved a moment ago.
+ * folder as it is now, since the answer was saved a moment ago. False when
+ * the answer is not on this phone, so a caller can open something else.
  */
 export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange }) {
   const live = () => (readShelf().boards || []).find((item) => item.id === boardId)
   const book = live()
   const lamp = (book?.lamps || []).find((item) => item.id === lampId)
   const answer = (book?.answers || []).find((item) => item.lampId === lampId && item.periodKey === periodKey)
-  if (!book || !lamp || !answer) return
+  if (!book || !lamp || !answer) return false
   openNoteSheet({
     title: sheetTitle(lamp, answer),
     label: shortLabel(lamp),
@@ -254,8 +280,9 @@ export function openAnswerNote({ boardId, lampId, periodKey, colors, onChange })
     share: shareProps(lamp, answer),
     colors,
     onSave: (draft, count) => saveNote(live(), lampId, periodKey, draft, count, onChange),
-    onRemove: () => removeNote(live() || book, lampId, periodKey, answer.note, onChange),
+    onRemove: (keep) => removeNote(live() || book, lampId, periodKey, answer.note, onChange, keep),
   })
+  return true
 }
 
 /** This question's nights that have a note, plus "Add a note" for a recent answered night. */
@@ -299,7 +326,7 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
       share: shareProps(lamp, answer),
       colors,
       onSave: (draft, count) => saveNote(liveBook(book), lamp.id, answer.periodKey, draft, count, onChange),
-      onRemove: () => removeNote(liveBook(book), lamp.id, answer.periodKey, answer.note, onChange),
+      onRemove: (keep) => removeNote(liveBook(book), lamp.id, answer.periodKey, answer.note, onChange, keep),
     })
   }
 
@@ -416,9 +443,9 @@ export function TonightNote({ rows, bookOf, colors, onChange, quiet = false }) {
     if (out) close()
     return out
   }
-  const remove = (row) => {
+  const remove = (row, keep) => {
     close()
-    removeNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, row.answer.note, onChange)
+    removeNote(liveBook(bookOf(row)), row.lamp.id, row.answer.periodKey, row.answer.note, onChange, keep)
   }
   // One card with a note already: say Edit note, not Add a note.
   const label = answered.length === 1 && answered[0].answer.note ? t('note.edit') : t('note.add')
@@ -482,7 +509,7 @@ function NotePick({ answered, colors, onSave, onRemove, onCancel }) {
           share={shareProps(row.lamp, row.answer)}
           colors={colors}
           onSave={(draft, count) => onSave(row, draft, count)}
-          onRemove={() => onRemove(row)}
+          onRemove={(keep) => onRemove(row, keep)}
           onCancel={only ? onCancel : () => setOpen(null)}
         />
       </Reveal>
@@ -518,6 +545,7 @@ const styles = StyleSheet.create({
   amountKeys: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   full: { width: '100%' },
   quiet: { fontSize: 14 },
+  left: { marginTop: -4 },
   pen: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   noteText: { width: '100%', fontStyle: 'italic' },
   seeAll: { alignSelf: 'stretch', minHeight: 44, justifyContent: 'center', marginTop: 8 },

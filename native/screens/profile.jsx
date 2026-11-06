@@ -27,6 +27,8 @@ import { legalEmail } from '../../src/lib/legal.js'
 import { backupFileReady, shareBackupFile, shareCsv, shareShelf } from '../../src/lib/native.js'
 import { restoreGemPurchases } from '../../src/lib/gem-buy.js'
 import { answersCsv } from '../../src/lib/answers-csv.js'
+import { weCardTitle } from '../../src/lib/did-we.js'
+import { myWeNotes } from '../../src/lib/social-amounts.js'
 import { loadBackupFile } from '../lib/backup-load.js'
 import { zoneWords } from '../../src/lib/zone.js'
 import { useHallColors } from '../hooks/useHallColors.js'
@@ -236,7 +238,10 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             value={csvBusy ? t('app.loading') : undefined}
             onPress={csvBusy ? undefined : () => {
               setCsvBusy(true)
-              shareCsv(answersCsv(readShelf()))
+              // Your Did we notes ride along; if that read fails the file still has the rest.
+              myWeNotes()
+                .catch(() => ({ rows: [] }))
+                .then((we) => shareCsv(answersCsv(readShelf(), we.rows, weCardTitle)))
                 .catch(() => confirmMiss(t('confirm.shareMiss')))
                 .finally(() => setCsvBusy(false))
             }}

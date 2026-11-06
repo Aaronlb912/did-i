@@ -4207,4 +4207,8 @@ export const zh = {
   'help.switchP4': "小组件和手表会把问题送到你面前，不用打开应用。",
   'settings.loadMissSheet': "Did I 可以加载自己的备份文件，或带有问题列和日期列的电子表格。如果来自其他应用，也可以在“问题”中添加你的问题。",
   'account.loadSureBad': "Did I 无法读取日期的行不会载入：{n} 行。请按年-月-日写日期，例如 2026-11-05。",
+  'notes.yearAgo': "一年前的今天",
+  'notes.weMiss': "无法加载你的 Did we 笔记。其他笔记在这里。",
+  'note.left': "还剩 {n} 个字",
+  'note.leftA11y': "还可输入 {n} 个字",
 }

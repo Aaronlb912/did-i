@@ -216,7 +216,7 @@ export function ScreenRouter({
   if (path === '/streaks') return <StreaksScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/stats') return <StatsScreen book={book} boards={boards} tagId={tagId} />
   if (path === '/feed') return <FeedScreen book={book} boards={boards} tagId={tagId} />
-  if (path === '/notes') return <NotesScreen book={book} boards={boards} />
+  if (path === '/notes') return <NotesScreen book={book} boards={boards} tagId={tagId} onChangeBooks={changeBooks} />
   if (path === '/pings') return <PingScreen book={book} boards={shelf.boards} onChange={change} onAskPings={onAskPings} pingLabel={pingLabel} openFriends={route.id === 'friends'} />
   if (path === '/me') {
     return (

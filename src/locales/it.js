@@ -4249,4 +4249,8 @@ export const it = {
   'help.switchP4': "Il widget e l’orologio ti portano la domanda, così non devi aprire l’app.",
   'settings.loadMissSheet': "Did I carica il suo file di copia o un foglio di calcolo con una colonna per la domanda e una per la data. Se arrivi da un’altra app, puoi anche aggiungere le tue domande in Domande.",
   'account.loadSureBad': "Le righe con una data che Did I non riesce a leggere restano fuori: {n}. Scrivi le date come anno-mese-giorno, ad esempio 2026-11-05.",
+  'notes.yearAgo': "Un anno fa, oggi",
+  'notes.weMiss': "Impossibile caricare le tue note di Did we. Le altre sono qui.",
+  'note.left': "{n} rimasti",
+  'note.leftA11y': "Rimangono {n} caratteri",
 }

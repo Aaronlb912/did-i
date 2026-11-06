@@ -4216,4 +4216,8 @@ export const ko = {
   'help.switchP4': "위젯과 시계가 질문을 가져다 주니 앱을 열지 않아도 돼요.",
   'settings.loadMissSheet': "Did I는 자체 백업 파일이나 질문 열과 날짜 열이 있는 스프레드시트를 불러와요. 다른 앱에서 옮겨 오는 경우 질문 화면에서 질문을 직접 추가할 수도 있어요.",
   'account.loadSureBad': "Did I가 읽지 못한 날짜가 있는 줄은 제외돼요: {n}개. 날짜는 2026-11-05처럼 연-월-일로 적어 주세요.",
+  'notes.yearAgo': "1년 전 오늘",
+  'notes.weMiss': "Did we 메모를 불러오지 못했어요. 나머지 메모는 여기에 있어요.",
+  'note.left': "{n}자 남음",
+  'note.leftA11y': "{n}자 남았어요",
 }

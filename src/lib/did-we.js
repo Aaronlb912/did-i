@@ -911,6 +911,18 @@ export function weCardsKnown() {
   return (shared.cards || []).length > 0
 }
 
+// A number that changes each time the cards load, for lists that read titles
+// from the last load (weCardTitle). Loads nothing itself.
+export function useWeCardsSeen() {
+  const [seen, setSeen] = useState(0)
+  useEffect(() => {
+    const bump = () => setSeen((n) => n + 1)
+    watchers.add(bump)
+    return () => watchers.delete(bump)
+  }, [])
+  return seen
+}
+
 // The card as a short name, like the Home pill: no "Did we", no "?". Lists
 // that also hold your own questions' short names use this.
 export function weCardShort(id) {
