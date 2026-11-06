@@ -3,7 +3,7 @@
 -- edits between them, and older apps' we_edit2.
 --
 -- Run with: node scripts/test-sql.mjs supabase/tests/we-timing.test.sql
--- Needs we-timing.sql applied first. One DO block that always ends by
+-- Needs we-timing.sql and we-week-miss.sql applied first. One DO block that always ends by
 -- raising, so every made-up person and row is rolled back.
 
 do $$
@@ -104,9 +104,14 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   execute 'set local role authenticated';
   select * into r from public.my_we_nights() x where x.card_id = c3 and x.night = t - 5;
+  if not found or r.done is not false or r.paused is not true then
+    raise exception 'FAIL per_week: a mid-week day in a 2 of 3 week should count for nothing (done %, paused %)', r.done, r.paused;
+  end if;
+  -- A short week costs one day, its last (we-week-miss.sql).
+  select * into r from public.my_we_nights() x where x.card_id = c3 and x.night = t - 1;
   execute 'reset role';
   if not found or r.done is not false or r.paused is not false then
-    raise exception 'FAIL per_week: a day in a 2 of 3 week should be a miss (done %, paused %)', r.done, r.paused;
+    raise exception 'FAIL per_week: the last day of a 2 of 3 week should be a miss (done %, paused %)', r.done, r.paused;
   end if;
   insert into public.we_done (card_id, night) values (c3, t - 5);
   select streak into n from public.we_streaks(c3, t);

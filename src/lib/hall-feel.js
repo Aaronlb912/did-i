@@ -1,5 +1,5 @@
 import { weFirstNight, weNight, weNightsStamp } from './we-nights.js'
-import { addDaysIso, answerFor, boardDate, daysBetween, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor, periodPassed, weekStartOf } from './recurrence.js'
+import { addDaysIso, answerFor, boardDate, daysBetween, countedTonightRows, dueClearTonight, dueTonight, graceNightIso, inPause, isDueOn, isEvery, monthKey, onceDoneNight, oncePastCounts, parseIsoDate, periodKeyFor, periodPassed, perWeekLastDay, perWeekOn, weekStartOf } from './recurrence.js'
 import { scopedBooks } from './tags.js'
 import { travelNightState, travelSkipped, travelWe } from './travel.js'
 import { awayOn, readPrefs } from './prefs.js'
@@ -20,26 +20,37 @@ export function dueThatNight(book, iso, at, now = new Date()) {
   const skipped = travelSkipped(book, iso)
   const today = boardDate(now, book.dayFoldHour)
   return dueTonight(withPastOnce(book), at).filter((row) => {
-    if (row.lamp.cadence === 'monthly' && (!row.answer || row.answer.status === 'skip') && !periodPassed(row.lamp, row.periodKey, today)) return false
+    if (monthKey(row.periodKey) && (!row.answer || row.answer.status === 'skip') && !periodPassed(row.lamp, row.periodKey, today)) return false
     if (skipped && travelNightState(row.answer, iso) === 'none') return false
     if (isEvery(row.lamp) || (row.lamp.createdOn && row.lamp.createdOn > iso)) return false
     if (row.lamp.pauses && inPause(row.lamp, iso) && row.answer?.status !== 'yes' && row.answer?.status !== 'late') return false
     const done = onceDoneNight(row.lamp, row.answer)
     return !done || done === iso
-  }).map((row) => (row.monthWait ? { ...row, monthWait: false } : row)).concat(archivedDids(book, iso))
+  }).map((row) => (row.monthWait ? { ...row, monthWait: false } : row)).concat(archivedDids(book, iso, today))
 }
 
 // An archived daily, weekly, every-N-days or monthly question keeps the nights it was done, so
 // archiving it does not shorten the streak. Unanswered nights stay out.
 const REPEATS = new Set(['daily', 'weekly', 'every_n', 'monthly'])
-function archivedDids(book, iso) {
+function archivedDids(book, iso, today) {
   const rows = []
   for (const lamp of book.lamps || []) {
     if (!lamp.archived || !REPEATS.has(lamp.cadence)) continue
+    // Times a week: its Dids, and a short week's last day before the pause.
+    if (perWeekOn(lamp, iso)) {
+      const answer = answerFor(book, lamp.id, iso)
+      if (answer?.status === 'yes' || answer?.status === 'late') rows.push({ lamp, dateIso: iso, periodKey: iso, answer })
+      else if (lamp.pausedOn && iso < lamp.pausedOn && !inPause(lamp, iso) && perWeekLastDay(book, { ...lamp, archived: false }, iso)) {
+        rows.push({ lamp, dateIso: iso, periodKey: iso, answer, weekLast: true })
+      }
+      continue
+    }
     if (!isDueOn({ ...lamp, archived: false }, iso)) continue
     const periodKey = periodKeyFor(lamp, iso)
     const answer = answerFor(book, lamp.id, periodKey)
     if (answer?.status === 'yes' || answer?.status === 'late') rows.push({ lamp, dateIso: iso, periodKey, answer })
+    // A month still running is open, not a miss.
+    else if (monthKey(periodKey) && !periodPassed(lamp, periodKey, today)) continue
     // Paused on a known day: nights before it keep their misses too, same as the year view.
     else if (lamp.pausedOn && iso < lamp.pausedOn && !inPause(lamp, iso) && !(lamp.createdOn && lamp.createdOn > iso) && !(travelSkipped(book, iso) && travelNightState(answer, iso) === 'none')) {
       rows.push({ lamp, dateIso: iso, periodKey, answer })

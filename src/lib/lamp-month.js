@@ -1,6 +1,6 @@
 import { PAST_DAYS } from './board-ops.js'
 import { pausedOpen } from './lamp-record.js'
-import { addDaysIso, answerFor, everyDueOn, inPause, isDueOn, isEvery, isPerWeek, nightOpen, perWeekDueOn, periodKeyFor, periodPassed } from './recurrence.js'
+import { addDaysIso, answerFor, everyDueOn, inPause, isDueOn, isEvery, monthKey, nightOpen, perWeekDueOn, perWeekOn, periodKeyFor, periodPassed } from './recurrence.js'
 import { travelNightState, travelSkipped } from './travel.js'
 
 function pad(n) {
@@ -24,7 +24,7 @@ export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false, weekSt
     let ask = false
     const inWindow = iso < dateIso && iso >= floor && !lamp.archived && !inPause(lamp, iso)
     // Every so often: only the nights it was done show; nothing reads missed.
-    if (isEvery(lamp) || isPerWeek(lamp)) {
+    if (isEvery(lamp) || perWeekOn(lamp, iso)) {
       const status = iso <= dateIso ? answerFor(book, lamp.id, iso)?.status : ''
       state = status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : ''
       // Same rule as the calendar sheet: only a day an answer would count.
@@ -33,7 +33,7 @@ export function lampMonthCells(book, lamp, dateIso, y, m, gentle = false, weekSt
       const answer = answerFor(book, lamp.id, periodKeyFor(lamp, iso))
       const status = answer?.status
       // A day skipped for travel and left open is not a miss, same as the streak.
-      const away = (travelSkipped(book, iso) && travelNightState(answer, iso) === 'none') || (lamp.cadence === 'monthly' && !answer && !periodPassed(lamp, periodKeyFor(lamp, iso), dateIso)) || pausedOpen(lamp, periodKeyFor(lamp, iso), answer)
+      const away = (travelSkipped(book, iso) && travelNightState(answer, iso) === 'none') || (monthKey(periodKeyFor(lamp, iso)) && !answer && !periodPassed(lamp, periodKeyFor(lamp, iso), dateIso)) || pausedOpen(lamp, periodKeyFor(lamp, iso), answer)
       state = away
         ? ''
         : status === 'yes' ? 'did' : status === 'late' ? 'late' : status === 'skip' ? 'nope' : nightOpen(iso) ? 'open' : gentle ? '' : 'missed'

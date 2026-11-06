@@ -391,6 +391,16 @@ export function isPerWeek(lamp) {
   return lamp?.cadence === 'daily' && Number.isInteger(n) && n >= 1 && n <= 6
 }
 
+// Times a week on that day, by the schedule it ran under then.
+export function perWeekOn(lamp, dateIso) {
+  return isPerWeek(lamp?.was ? scheduleAt(lamp, dateIso) : lamp)
+}
+
+// A month key ('2026-11'): a monthly day, open till its month ends.
+export function monthKey(key) {
+  return /^\d{4}-\d{2}$/.test(String(key || ''))
+}
+
 export function weekStartOf(dateIso) {
   const date = parseIsoDate(dateIso)
   return date ? addDaysIso(dateIso, -((date.getDay() + 6) % 7)) : ''
@@ -428,7 +438,7 @@ export function perWeekLastDay(book, lamp, dateIso) {
 
 // A Not yet on a times a week question is a miss only on a last day it held.
 export function perWeekNotMiss(book, lamp, dayIso) {
-  return isPerWeek(lamp) && !perWeekLastDay(book, lamp, dayIso)
+  return perWeekOn(lamp, dayIso) && !perWeekLastDay(book, lamp, dayIso)
 }
 
 // A day the question was not asked: paused, Away, or skipped for travel.
@@ -578,7 +588,7 @@ export function dueTonight(book, now = new Date()) {
       if (answer || everyDueOn(book, lamp, dateIso)) lamps.push({ lamp, dateIso, periodKey: dateIso, answer })
       continue
     }
-    if (isPerWeek(lamp)) {
+    if (perWeekOn(lamp, dateIso)) {
       const answer = answerFor(book, lamp.id, dateIso) || null
       if (!answer && !perWeekDueOn(book, lamp, dateIso)) continue
       lamps.push(perWeekLastDay(book, lamp, dateIso) ? { lamp, dateIso, periodKey: dateIso, answer, weekLast: true } : { lamp, dateIso, periodKey: dateIso, answer })
@@ -609,21 +619,34 @@ export function dueTonight(book, now = new Date()) {
 // on it counts (countedTonightRows).
 export function monthCarryRow(book, lamp, dateIso) {
   if (lamp.archived || (lamp.endsOn && dateIso > lamp.endsOn) || inPause(lamp, dateIso)) return null
-  const sched = lamp.was ? scheduleAt(lamp, dateIso) : lamp
-  if (sched.cadence !== 'monthly') return null
-  const date = parseIsoDate(dateIso)
-  if (!date) return null
-  const last = lastDayOfMonth(date.getFullYear(), date.getMonth())
-  const day = sched.monthDay === 'last' ? last : Number(sched.monthDay)
-  if (!Number.isFinite(day) || day < 1) return null
-  const due = `${dateIso.slice(0, 8)}${pad(Math.min(day, last))}`
-  if (due >= dateIso || !isDueOn(lamp, due) || inPause(lamp, due)) return null
+  const due = monthDueBefore(lamp, dateIso)
+  if (!due || !isDueOn(lamp, due) || inPause(lamp, due)) return null
   if (lamp.createdOn && lamp.createdOn > due) return null
   const periodKey = periodKeyFor(lamp, due)
   if (periodKey.length !== 7) return null
   const answer = answerFor(book, lamp.id, periodKey) || null
   if (answer?.status === 'yes' || answer?.status === 'late') return null
   return { lamp, dateIso, periodKey, answer, monthCarry: true }
+}
+
+// This month's monthly day before dateIso, '' if none. Switched off monthly
+// this month: the day it had under the old schedule.
+function monthDueBefore(lamp, dateIso) {
+  const sched = lamp.was ? scheduleAt(lamp, dateIso) : lamp
+  if (sched.cadence === 'monthly') {
+    const date = parseIsoDate(dateIso)
+    if (!date) return ''
+    const last = lastDayOfMonth(date.getFullYear(), date.getMonth())
+    const day = sched.monthDay === 'last' ? last : Number(sched.monthDay)
+    if (!Number.isFinite(day) || day < 1) return ''
+    const due = `${dateIso.slice(0, 8)}${pad(Math.min(day, last))}`
+    return due < dateIso ? due : ''
+  }
+  if (!lamp.was) return ''
+  for (let iso = addDaysIso(dateIso, -1); iso.slice(0, 7) === dateIso.slice(0, 7); iso = addDaysIso(iso, -1)) {
+    if (scheduleAt(lamp, iso).cadence === 'monthly' && isDueOn(lamp, iso)) return iso
+  }
+  return ''
 }
 
 // A one-time question with a window (due by, or no day at all) is due every
@@ -725,13 +748,20 @@ export function askedBy(rows, at) {
 
 export function faceReadyTonight(book, now = new Date()) {
   const due = dueTonight(book, now)
-  const open = due.filter((row) => !row.answer && !standingBy(row, now))
+  let open = due.filter((row) => !row.answer && !standingBy(row, now))
   const noped = due.filter((row) => row.answer?.status === 'skip')
   const dateIso = boardDate(now, book.dayFoldHour)
+  // One card per question. Switched off monthly with that month unanswered:
+  // the month's card comes first; once answered, today's card is back.
+  const byLamp = new Map(due.map((row) => [row.lamp.id, row]))
   for (const lamp of book.lamps || []) {
     if (lamp.cadence !== 'monthly' && !lamp.was) continue
+    const today = byLamp.get(lamp.id)
+    if (today?.answer) continue
     const carry = monthCarryRow(book, lamp, dateIso)
-    if (carry) (carry.answer ? noped : open).push(carry)
+    if (!carry || (today && carry.answer)) continue
+    if (today) open = open.filter((row) => row !== today)
+    ;(carry.answer ? noped : open).push(carry)
   }
   return [...open, ...noped]
 }
@@ -811,7 +841,7 @@ export function countedTonightRows(rows) {
     (row) =>
       !row?.lamp?.fromDidI &&
       !doneOtherNight(row) &&
-      ((!countsOnlyOnDid(row?.lamp) && !isEvery(row?.lamp) && (!isPerWeek(row?.lamp) || row.weekLast) && !row.monthWait && !row.monthCarry) || rowDoneTonight(row)) &&
+      ((!countsOnlyOnDid(row?.lamp) && !isEvery(row?.lamp) && (!perWeekOn(row?.lamp, row?.dateIso) || row.weekLast) && !row.monthWait && !row.monthCarry) || rowDoneTonight(row)) &&
       (mustSwipeDeadline(row.lamp, row.dateIso) || rowDoneTonight(row)),
   )
 }

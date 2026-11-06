@@ -13,6 +13,7 @@ import {
   isDueOn,
   isEvery,
   isPerWeek,
+  perWeekOn,
   perWeekLastDay,
   perWeekNotMiss,
   periodPassed,
@@ -439,7 +440,7 @@ export function nightMarksMany(books, isos, today, tagId = '') {
       for (const lamp of each) {
         if (lamp.createdOn && lamp.createdOn > iso) continue
         const daily = lamp.cadence === 'daily' && !lamp.was
-        if (!daily && !isDueOn(lamp, iso)) continue
+        if (!daily && !isDueOn(lamp, iso) && !perWeekOn(lamp, iso)) continue
         const key = daily ? iso : periodKeyFor(lamp, iso)
         const status = book.index.byLamp.get(lamp.id)?.get(key)
         if (lamp.cadence === 'once' && status === undefined && book.index.onceDone.has(lamp.id)) continue
@@ -451,7 +452,7 @@ export function nightMarksMany(books, isos, today, tagId = '') {
         const doneOn = done ? book.doneOn.get(lamp.id) : ''
         if (doneOn && doneOn !== iso) continue
         if (!done && (countsOnlyOnDid(lamp) || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
-        if (!done && isPerWeek(lamp) && !perWeekLastDay(book.book, lamp, iso)) continue
+        if (!done && perWeekOn(lamp, iso) && !perWeekLastDay(book.book, lamp, iso)) continue
         if (!done && key.length === 7 && !periodPassed(lamp, key, today)) continue
         dueCount += 1
         if (!done) clear = false

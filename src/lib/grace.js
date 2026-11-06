@@ -1,6 +1,6 @@
 // The grace period for the previous night: until 9am, last night's questions
 // that are still open (no answer, or a nope you can still turn into a did).
-import { addDaysIso, countedTonightRows, dueTonight, isPerWeek, monthCarryRow, parseIsoDate, rowDoneTonight } from './recurrence.js'
+import { addDaysIso, countedTonightRows, dueTonight, monthCarryRow, parseIsoDate, perWeekOn, rowDoneTonight } from './recurrence.js'
 
 function noonOn(iso) {
   const date = parseIsoDate(iso)
@@ -20,9 +20,10 @@ export function graceRowsFor(books, nightIso) {
   return (books || []).flatMap((book) => {
     const due = dueTonight(book, at)
     const counted = new Set(countedTonightRows(due))
-    const rows = due.filter((row) => counted.has(row) || isPerWeek(row.lamp) || row.monthWait)
+    const rows = due.filter((row) => counted.has(row) || perWeekOn(row.lamp, row.dateIso) || row.monthWait)
     if (month !== nightIso.slice(0, 7)) {
       for (const lamp of book.lamps || []) {
+        if (rows.some((row) => row.lamp.id === lamp.id)) continue
         const carry = lamp.cadence === 'monthly' || lamp.was ? monthCarryRow(book, lamp, nightIso) : null
         if (carry) rows.push(carry)
       }
