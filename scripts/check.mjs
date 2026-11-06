@@ -34,6 +34,7 @@ import {
   activeDeadline,
   byPriority,
   didQuestion,
+  soundsStop,
   dueByUrgency,
   duplicateLamp,
   SHORT_MAX,
@@ -897,6 +898,20 @@ test('the first question finishes "Did I ___" once', () => {
   for (const starter of STARTERS) {
     assert.equal(didQuestion(starterBlank(starter)), starter.question, starter.short)
   }
+})
+
+test('words for a habit to stop get a hint to ask what was kept', () => {
+  for (const words of ['no sugar', 'Did I not snooze?', 'Stop scrolling', 'quit vaping', "don't snack", 'Never late', 'avoid soda']) {
+    assert.equal(soundsStop(words), true, words)
+  }
+  for (const words of ['eat vegetables', 'notice the sky', 'nothing', 'stay off my phone in bed', 'noon walk', '', 'Did I stopwatch?']) {
+    assert.equal(soundsStop(words), false, words)
+  }
+  const add = readFileSync(new URL('../native/screens/AddScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(add.includes('soundsStop(') && add.includes("t('add.stopHint')"), 'Add shows the hint')
+  const bed = PACKS.find((pack) => pack.id === 'bedtime')
+  assert.ok(bed.items.some((item) => item.idea === 'stayoff'), 'the phone-in-bed idea is in Bedtime')
+  assert.equal(t('ideas.stayoff.question'), 'Did I stay off my phone in bed?')
 })
 
 test('the account page intro reads in the language, past the shop names', () => {
@@ -2540,7 +2555,7 @@ test('answer times compare by time: old zoneless rows against new UTC ones', () 
 
 test('a question pack adds only what is missing, and undo takes them off for good', () => {
   for (const pack of PACKS) {
-    assert.equal(pack.items.length, 3, `${pack.id} adds 3`)
+    assert.equal(pack.items.length, pack.id === 'bedtime' ? 4 : 3, `${pack.id} adds ${pack.items.length}`)
     for (const item of pack.items) {
       assert.ok(t(`starter.${item.idea}.blank`) !== `starter.${item.idea}.blank`, `${item.idea} has words`)
       assert.ok(t(`ideas.${item.idea}.start`) !== `ideas.${item.idea}.start`, `${item.idea} has a name`)

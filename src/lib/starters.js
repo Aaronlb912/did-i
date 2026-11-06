@@ -79,6 +79,8 @@ export const PACKS = [
       { idea: 'charge', kind: 'other', cadence: 'daily', askAfter: '22:00', slot: 'night' },
       { idea: 'teeth', kind: 'other', cadence: 'daily', askAfter: '21:30', slot: 'night' },
       { idea: 'skin', kind: 'other', cadence: 'daily', askAfter: '21:30', slot: 'night' },
+      // Asked as what you kept, so a Did in the morning lands on yesterday.
+      { idea: 'stayoff', kind: 'other', cadence: 'daily', askAfter: '', slot: 'whenever' },
     ],
   },
   {

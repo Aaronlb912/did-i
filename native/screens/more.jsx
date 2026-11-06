@@ -352,7 +352,9 @@ export function HelpScreen() {
         <HelpTopic colors={colors} title={t('help.tonight')} short={t('help.tonightP1')}>
           <Meta colors={colors}>{t('help.tonightP2', { time: closeAt })}</Meta>
         </HelpTopic>
-        <HelpTopic colors={colors} title={t('help.streak')} short={t('help.streakP', { time: closeAt })} />
+        <HelpTopic colors={colors} title={t('help.streak')} short={t('help.streakP', { time: closeAt })}>
+          <Meta colors={colors}>{t('help.slipFreeze')}</Meta>
+        </HelpTopic>
         <HelpTopic
           colors={colors}
           title={t('freeze.howTitle')}

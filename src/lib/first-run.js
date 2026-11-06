@@ -8,7 +8,7 @@ import { accountSessionOn, readAccountUserId } from './session-id.js'
 import { daysSinceFirstAnswer, daysSinceLastAnswer } from './come-back.js'
 
 // Every pack question fits, so taking all packs never silently drops one.
-export const FIRST_PICKS_MAX = 12
+export const FIRST_PICKS_MAX = 13
 export const FIRST_TIME = '21:00'
 // Coaching lines show until someone has answered on this many nights.
 export const NEW_NIGHTS = 3
