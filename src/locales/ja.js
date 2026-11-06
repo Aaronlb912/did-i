@@ -80,6 +80,8 @@ export const ja = {
   'clock.24': '24時間 (20:30)',
   'settings.lessMotion': '動きを減らす',
   'settings.lessMotionSub': "アニメーションと効果を減らします。端末の設定にも従います。",
+  'settings.vibrate': "バイブレーション",
+  'settings.vibrateSub': "答えたときと、今日が終わったときに軽く振動します。",
   'settings.gentle': 'やさしいモード',
   'settings.gentleSub': "連続記録の数字を隠します。日の記録は続きます。",
   'settings.gentleHidden': "やさしいモードがオンなので、連続記録の数字は隠れています。日の記録は続きます。設定でオフにすると表示されます。",
@@ -3200,6 +3202,8 @@ export const ja = {
   'freeze.how': "14日連続ごとにフリーズを1つもらえます。1日逃しても連続記録を守ります。",
   'why.freeze': "フリーズが連続記録を守りました。",
   'noteAnswer.notSaved': "回答は保存されませんでした。その日は終わったか、すでに回答済みです。",
+  'noteAnswer.saved': "保存しました。",
+  'noteAnswer.dayDone': "保存しました。今日は完了です。",
   // r10-freeze-info
   'freeze.howTitle': "連続記録の守りのしくみ",
   'freeze.rule1': "守りがあると、1日逃しても連続記録が続きます。",

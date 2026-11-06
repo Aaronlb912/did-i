@@ -26,6 +26,8 @@ function blankPrefs() {
     locale: 'en',
     clock: 'phone',
     lessMotion: false,
+    // Haptics on the phone. On unless turned off in Settings.
+    vibrate: true,
     // Gentle mode: streak numbers hidden from the person themself. Streaks are
     // still counted and stored, and friends and family see the same as before.
     gentle: false,
@@ -203,6 +205,7 @@ function cleanPrefs(raw) {
   if (LOCALES.has(raw?.locale)) next.locale = raw.locale
   if (CLOCKS.has(raw?.clock)) next.clock = raw.clock
   if (raw?.lessMotion === true) next.lessMotion = true
+  if (raw?.vibrate === false) next.vibrate = false
   if (raw?.gentle === true) next.gentle = true
   if (raw?.freeMiss === true) next.freeMiss = true
   next.freeMissSpans = cleanMissSpans(raw?.freeMissSpans)

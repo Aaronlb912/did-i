@@ -57,7 +57,7 @@ import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
 import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
 import { scopedBooks } from '../../src/lib/tags.js'
-import { MILESTONE_LATE_DAYS, STREAK_BONUS, milestoneGemLine, milestoneLine, takeStreakMilestone } from '../../src/lib/streak-milestones.js'
+import { MILESTONE_LATE_DAYS, STREAK_BONUS, milestoneGemLine, milestoneLine, pendingStreakMilestone, takeStreakMilestone } from '../../src/lib/streak-milestones.js'
 import { payStreakBonus, retryStreakBonus } from '../lib/streak-bonus.js'
 import { TonightNote, openAnswerNote } from '../components/NightNotes.jsx'
 import { addProofFlow, canAddProof } from '../lib/proof-flow.jsx'
@@ -259,6 +259,14 @@ function GemFaceShell({ look, theme, style, buddy = '', children }) {
 function sayFocusNote(note) {
   if (note.gone) return confirmMiss(t('tonight.focusGone'))
   return confirmDone(t(note.status === 'skip' ? 'tonight.alreadyNotYet' : 'tonight.alreadyDid', { name: note.name }))
+}
+
+// A clear, a frame and a milestone can land on the same tap: one buzz for them.
+// __didIBigFelt is stamped wherever the day's success buzz plays.
+function feelBig() {
+  if (Date.now() - (window.__didIBigFelt || 0) < 1500) return
+  window.__didIBigFelt = Date.now()
+  feelTap('did')
 }
 
 export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, focusLampId, focusKey, firstAdd = false, onAskPings, pingLabel }) {
@@ -478,7 +486,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     // Frames another folder already holds are not new, only new to this folder.
     const fresh = takeFramesToAnnounce([...(book.frames || []), ...(purse.frames || [])], next.frames)
     if (!fresh.length) return
-    feelTap('did')
+    feelBig()
     if (purse.cheerOn) fireCheer(purse.cheerOn, 3)
     const wear = (id) => {
       const now = bookNow.current
@@ -487,7 +495,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       if (!worn.miss) onChangeNow.current(worn.book)
     }
     // The first new frame gets a pop-up; others, or one while a sheet is up, a toast.
-    const popId = sheetIsUp() ? '' : fresh[0]
+    // A streak milestone due today owns the moment, so the frame is a toast then.
+    const milestoneDue = stack.nightDone && !gentle && pendingStreakMilestone(stack.overallStreak) > 0
+    const popId = sheetIsUp() || milestoneDue ? '' : fresh[0]
     if (popId) {
       publishSheet({
         preview: <FramePreview id={popId} colors={colors} size={120} />,
@@ -796,7 +806,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     const m = takeStreakMilestone(n)
     if (!m) return
     setMilestone({ n: m, gems: 0 })
-    feelTap('did')
+    feelBig()
     if (purse.cheerOn) fireCheer(purse.cheerOn, CHEER_STAGE_MAX)
     if (!STREAK_BONUS[m]) return
     payStreakBonus(m, n).then((paid) => {

@@ -5636,7 +5636,30 @@ test('haptics speak one language on Tonight and do not switch off with Reduce Mo
   // No Did sound on the phone, so playClick adds nothing.
   phone.playClick()
   assert.deepEqual(felt, ['notify:success', 'impact:soft', 'impact:rigid', 'selection', 'selection'])
-  writePrefs({ lessMotion: false })
+  writePrefs({ lessMotion: false, vibrate: false })
+  felt.length = 0
+  phone.feelTap('did')
+  phone.feelTap('skip')
+  assert.deepEqual(felt, [], 'the Vibration switch turns every buzz off')
+  writePrefs({ vibrate: true })
+})
+
+test('a day with a Did we, a reminder answer and a new question each feel like one thing', () => {
+  const stack = readFileSync('src/lib/useTonightStack.js', 'utf8')
+  assert.ok(stack.includes('const dayClears = clears && !weOpen') && stack.includes('if (dayClears && afterStreak > 0'), 'the last own question on a Did we day is a plain Did; the moment waits')
+  assert.ok(stack.includes('if (!wasDone.current && nightDone && weTonight.due) {'), 'a Did we hidden for today still rolls the day')
+  const today = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
+  assert.equal(today.split('feelBig()').length - 1, 3, 'one helper, two calls: frame and milestone share one buzz')
+  assert.ok(today.includes('sheetIsUp() || milestoneDue ?'), 'a frame does not cover the milestone')
+  const we = readFileSync('native/components/WeTonight.jsx', 'utf8')
+  assert.ok(we.indexOf("if (status) feelTap(") < we.indexOf('async function answerNow'), 'a Did we buzzes on the tap')
+  const app = readFileSync('native/NativeApp.jsx', 'utf8')
+  assert.ok(app.includes("confirmDone(t(done ? 'noteAnswer.dayDone' : 'noteAnswer.saved'))"), 'a reminder answer with the app open says it saved')
+  const add = readFileSync('native/screens/questions.jsx', 'utf8')
+  assert.ok(!add.includes("else feelTap('hall-on')"), 'saving a question always buzzes')
+  assert.ok(stack.split('window.__didIBigFelt').length - 1 >= 2 && app.includes('if (done) window.__didIBigFelt = Date.now()'), 'every day-done buzz stamps the shared mark, so a milestone after it stays quiet')
+  assert.ok(app.includes('if (we.done + (we.hidden || 0) < we.due) return false'), 'a reminder answer does not call the day done with a Did we still due')
+  assert.ok(readFileSync('src/lib/cloud-sync.js', 'utf8').includes('writePrefs({ theme, locale, clock, lessMotion, vibrate, at: {} }, true)'), 'Vibration stays through sign-out')
 })
 
 const { deliverStreakHit, takePendingStreakMoment } = await import('../src/lib/streak-moments.js')
@@ -6257,8 +6280,8 @@ function hapticsLog({ refuse = [] } = {}) {
   }
   const Haptics = {
     NotificationFeedbackType: { Success: 'success' },
-    ImpactFeedbackStyle: { Soft: 'soft', Rigid: 'rigid', Heavy: 'heavy' },
-    AndroidHaptics: { Confirm: 'confirm', Reject: 'reject', Segment_Tick: 'segment-tick' },
+    ImpactFeedbackStyle: { Soft: 'soft', Rigid: 'rigid', Light: 'light' },
+    AndroidHaptics: { Confirm: 'confirm', Toggle_Off: 'toggle-off', Context_Click: 'context-click', Clock_Tick: 'clock-tick', Virtual_Key: 'virtual-key', Segment_Tick: 'segment-tick' },
     notificationAsync: play('notify'),
     impactAsync: play('impact'),
     selectionAsync: play('select'),
@@ -6283,6 +6306,12 @@ await testAsync('each answer on an iPhone feels like one thing: a Did is one suc
   assert.deepEqual(await felt('undo'), ['impact:rigid'])
   assert.deepEqual(await felt('edge'), ['select'])
   assert.deepEqual(await felt('tick'), ['select'])
+  assert.deepEqual(await felt(), ['impact:light'], 'a menu or row tap is light, not heavy')
+  const off = hapticsLog()
+  const quietTap = makeFeelTap({ Haptics: off.Haptics, android: false, thresholdModule: () => null, on: () => false })
+  for (const kind of ['did', 'skip', 'undo', 'edge', 'tick', undefined]) quietTap(kind)
+  await settle()
+  assert.deepEqual(off.played, [], 'Vibration off plays nothing')
 })
 
 await testAsync('Android answers with its own HapticFeedbackConstants, and falls back on older phones', async () => {
@@ -6292,8 +6321,11 @@ await testAsync('Android answers with its own HapticFeedbackConstants, and falls
   feel('did')
   feel('skip')
   feel('edge')
+  feel('undo')
+  feel('tick')
+  feel()
   await settle()
-  assert.deepEqual(modern.played, ['android:confirm', 'android:reject'])
+  assert.deepEqual(modern.played, ['android:confirm', 'android:toggle-off', 'android:context-click', 'android:clock-tick', 'android:virtual-key'], 'Not yet is a soft toggle, not an error buzz')
   assert.equal(threshold.calls, 1, 'the swipe edge plays GESTURE_THRESHOLD_ACTIVATE from DidIHaptics')
 
   // A phone without the constants: each answer still plays exactly one haptic.

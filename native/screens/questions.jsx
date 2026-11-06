@@ -1198,7 +1198,7 @@ export function useAddFeel(book, inputRef) {
       setWave((count) => count + 1)
       const purse = mergePurses(readShelf().boards)
       if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
-      else feelTap('hall-on')
+      feelTap('hall-on')
       leave.current = setTimeout(go, reduce ? LAND_HOLD_STILL : LAND_HOLD)
     },
   }
@@ -1935,7 +1935,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     setWave((count) => count + 1)
     const purse = mergePurses(boards.length ? boards : [book])
     if (purse.cheerOn) fireCheer(purse.cheerOn, 1)
-    else feelTap('hall-on')
+    feelTap('hall-on')
     // Back to where Add was opened: Questions stays on Questions; Home opens the new card;
     // any other page (Recent, Settings) is popped back to, params and all.
     const from = behindPath()

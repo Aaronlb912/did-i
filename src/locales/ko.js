@@ -80,6 +80,8 @@ export const ko = {
   'clock.24': '24시간 (20:30)',
   'settings.lessMotion': '모션 줄이기',
   'settings.lessMotionSub': "애니메이션과 효과를 줄여요. 휴대폰 설정도 따라요.",
+  'settings.vibrate': "진동",
+  'settings.vibrateSub': "답할 때와 오늘을 다 마쳤을 때 살짝 진동해요.",
   'settings.gentle': '부드러운 모드',
   'settings.gentleSub': "연속 기록 숫자를 숨깁니다. 날은 계속 기록됩니다.",
   'settings.gentleHidden': "부드러운 모드가 켜져 있어 연속 기록 숫자가 숨겨져 있습니다. 날은 계속 기록됩니다. 설정에서 끄면 다시 보입니다.",
@@ -3202,6 +3204,8 @@ export const ko = {
   'freeze.how': "14일 연속마다 프리즈를 하나 받아요. 하루를 놓쳐도 연속 기록을 지켜 줘요.",
   'why.freeze': "프리즈가 연속 기록을 지켰어요.",
   'noteAnswer.notSaved': "답이 저장되지 않았어요. 그날이 끝났거나 이미 답했을 수 있어요.",
+  'noteAnswer.saved': "저장했어요.",
+  'noteAnswer.dayDone': "저장했어요. 오늘 다 했어요.",
   // r10-freeze-info
   'freeze.howTitle': "연속 기록 보호 방법",
   'freeze.rule1': "보호가 있으면 하루를 놓쳐도 연속 기록이 이어져요.",

@@ -80,6 +80,8 @@ export const de = {
   'clock.24': '24 Stunden (20:30)',
   'settings.lessMotion': 'Weniger Bewegung',
   'settings.lessMotionSub': "Weniger Animationen und Effekte. Folgt auch der Einstellung deines Telefons.",
+  'settings.vibrate': "Vibrieren",
+  'settings.vibrateSub': "Ein kurzes Vibrieren beim Antworten und wenn der Tag fertig ist.",
   'settings.gentle': 'Sanfter Modus',
   'settings.gentleSub': "Serienzahlen ausblenden. Tage zählen weiter.",
   'settings.gentleHidden': "Der sanfte Modus ist an, Serienzahlen sind ausgeblendet. Deine Tage zählen weiter. Schalte ihn in den Einstellungen aus, um sie zu sehen.",
@@ -3247,6 +3249,8 @@ export const de = {
   'freeze.how': "Alle 14 Tage am Stück gibt es einen Joker. Er hält deine Serie, wenn du einen Tag verpasst.",
   'why.freeze': "Ein Joker hat deine Serie gehalten.",
   'noteAnswer.notSaved': "Die Antwort wurde nicht gespeichert. Der Tag ist vielleicht vorbei oder schon beantwortet.",
+  'noteAnswer.saved': "Gespeichert.",
+  'noteAnswer.dayDone': "Gespeichert. Heute ist erledigt.",
   // r10-freeze-info
   'freeze.howTitle': "So funktionieren Serien-Joker",
   'freeze.rule1': "Ein Joker hält deine Serie, wenn du einen Tag verpasst.",

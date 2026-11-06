@@ -336,9 +336,18 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           tint={colors.on}
           label={t('settings.lessMotion')}
           sub={t('settings.lessMotionSub')}
-          last
           on={prefs.lessMotion}
           onPress={() => writePrefs({ lessMotion: !prefs.lessMotion })}
+        />
+        <SetSwitch
+          colors={colors}
+          icon="vibrate"
+          tint={colors.on}
+          label={t('settings.vibrate')}
+          sub={t('settings.vibrateSub')}
+          last
+          on={prefs.vibrate !== false}
+          onPress={() => writePrefs({ vibrate: prefs.vibrate === false })}
         />
       </SetCard>
 

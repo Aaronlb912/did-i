@@ -860,7 +860,7 @@ function thresholdModule() {
   return edgeModule
 }
 
-const feel = makeFeelTap({ Haptics, android, thresholdModule })
+const feel = makeFeelTap({ Haptics, android, thresholdModule, on: () => readPrefs().vibrate !== false })
 
 export function feelTap(kind) {
   feel(kind)

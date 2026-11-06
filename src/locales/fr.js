@@ -80,6 +80,8 @@ export const fr = {
   'clock.24': '24 heures (20:30)',
   'settings.lessMotion': 'Moins de mouvement',
   'settings.lessMotionSub': "Moins d’animations et d’effets. Suit aussi le réglage de ton téléphone.",
+  'settings.vibrate': "Vibrations",
+  'settings.vibrateSub': "Une petite vibration quand tu réponds et quand la journée est finie.",
   'settings.gentle': 'Mode doux',
   'settings.gentleSub': "Masque les chiffres de série. Les jours comptent toujours.",
   'settings.gentleHidden': "Le mode doux est activé, les chiffres de série sont masqués. Tes jours comptent toujours. Désactive-le dans Réglages pour les voir.",
@@ -3242,6 +3244,8 @@ export const fr = {
   'freeze.how': "Chaque série de 14 jours te donne un gel. Il garde ta série si tu manques un jour.",
   'why.freeze': "Un gel a gardé ta série.",
   'noteAnswer.notSaved': "La réponse n’a pas été enregistrée. La journée est peut-être finie, ou déjà répondue.",
+  'noteAnswer.saved': "Enregistré.",
+  'noteAnswer.dayDone': "Enregistré. Aujourd’hui, c’est fait.",
   // r10-freeze-info
   'freeze.howTitle': "Comment marchent les protections de série",
   'freeze.rule1': "Une protection garde ta série si tu manques un jour.",

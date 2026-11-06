@@ -80,6 +80,8 @@ export const it = {
   'clock.24': '24 ore (20:30)',
   'settings.lessMotion': 'Meno movimento',
   'settings.lessMotionSub': "Meno animazioni ed effetti. Segue anche l’impostazione del telefono.",
+  'settings.vibrate': "Vibrazione",
+  'settings.vibrateSub': "Una breve vibrazione quando rispondi e quando la giornata è finita.",
   'settings.gentle': 'Modalità gentile',
   'settings.gentleSub': "Nascondi i numeri della serie. I giorni contano comunque.",
   'settings.gentleHidden': "La modalità gentile è attiva, quindi i numeri della serie sono nascosti. I tuoi giorni contano comunque. Disattivala nelle Impostazioni per vederli.",
@@ -3235,6 +3237,8 @@ export const it = {
   'freeze.how': "Ogni 14 giorni di fila ottieni un congelamento. Salva la tua serie se perdi un giorno.",
   'why.freeze': "Un congelamento ha salvato la tua serie.",
   'noteAnswer.notSaved': "La risposta non è stata salvata. Il giorno forse è finito, o aveva già una risposta.",
+  'noteAnswer.saved': "Salvato.",
+  'noteAnswer.dayDone': "Salvato. Oggi è fatto.",
   // r10-freeze-info
   'freeze.howTitle': "Come funzionano le protezioni della serie",
   'freeze.rule1': "Una protezione tiene viva la serie se salti un giorno.",

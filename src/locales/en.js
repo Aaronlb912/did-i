@@ -80,6 +80,8 @@ export const en = {
   'clock.24': '24-hour (20:30)',
   'settings.lessMotion': 'Less motion',
   'settings.lessMotionSub': "Fewer animations and effects. It also follows your phone’s setting.",
+  'settings.vibrate': "Vibration",
+  'settings.vibrateSub': "A small buzz when you answer and when the day is done.",
   'settings.gentle': 'Gentle mode',
   'settings.gentleSub': "Hide streak numbers. Days still count.",
   'settings.gentleHidden': "Gentle mode is on, so streak numbers are hidden. Your days still count. Turn it off in Settings to see them.",
@@ -3230,6 +3232,8 @@ export const en = {
   'freeze.how': "Every 14 days in a row earns a freeze. It keeps your streak going if you miss a day.",
   'why.freeze': "A freeze kept your streak.",
   'noteAnswer.notSaved': "That answer didn't save. The day may be over, or it was already answered.",
+  'noteAnswer.saved': "Saved.",
+  'noteAnswer.dayDone': "Saved. Today is done.",
   // r10-freeze-info
   'freeze.howTitle': "How streak freezes work",
   'freeze.rule1': "A freeze keeps your streak going if you miss a day.",
