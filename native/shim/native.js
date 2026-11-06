@@ -16,7 +16,7 @@ import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
-import { graceRiskFire, streakRiskFire } from '../../src/lib/streak-risk.js'
+import { graceRiskFire, lastNightGraceFire, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { AFTERNOON_AT_DEFAULT, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges, pingAheads } from '../../src/lib/day-nudges.js'
 import { shelfStreak } from '../../src/lib/hall-feel.js'
@@ -500,6 +500,7 @@ async function schedulePingsNow(books, now = new Date()) {
         content: { title: 'Did I', body: leftBody(group.length, group[0].trigger.date), data: { go: '/tonight' } },
         trigger: group[0].trigger,
         lateCall: true,
+        wall: true,
       })
     }
     // Earlier note: 2 or more open on one day make one, unless a last call
@@ -517,6 +518,7 @@ async function schedulePingsNow(books, now = new Date()) {
         content: { title: 'Did I', body: leftBody(group.length, at), data: { go: '/tonight' } },
         trigger: group[0].trigger,
         earlyCall: true,
+        wall: true,
       })
     }
     // Did we questions with a time and the reminder on, from the last list
@@ -636,12 +638,15 @@ async function schedulePingsNow(books, now = new Date()) {
           data: { go: '/tonight', streakRisk: true },
         },
         trigger: when(new Date(risk.at)),
+        wall: true,
       })
     }
-    const grace = streakPings ? list.map((item) => graceRiskFire(item, now, heat)).find(Boolean) : null
-    // Quiet hours can push it past 9:00, when the streak can no longer be saved.
-    const graceEnd = grace ? new Date(grace.at).setHours(9, 0, 0, 0) : 0
-    if (grace && afterQuiet(new Date(grace.at)).getTime() < graceEnd) {
+    // Before 7am both: this morning's for last night (any folder open then) and tomorrow's.
+    const graces = streakPings ? [lastNightGraceFire, graceRiskFire].map((fire) => list.map((item) => fire(item, now, heat)).find(Boolean)).filter(Boolean) : []
+    for (const grace of graces) {
+      // Quiet hours can push it past 9:00, when the streak can no longer be saved.
+      const graceEnd = new Date(grace.at).setHours(9, 0, 0, 0)
+      if (afterQuiet(new Date(grace.at)).getTime() >= graceEnd) continue
       notes.push({
         identifier: String(notifyId('streak', grace.tag)),
         content: {
@@ -650,6 +655,7 @@ async function schedulePingsNow(books, now = new Date()) {
           data: { go: '/tonight', streakRisk: true },
         },
         trigger: when(new Date(grace.at)),
+        wall: true,
       })
     }
     // Cleared only once the new list is built: a throw above keeps the old ones.
@@ -669,6 +675,7 @@ async function schedulePingsNow(books, now = new Date()) {
       if (data.lampId && !openNow.has(data.lampId)) continue
       // Matched on the period too: a Later from yesterday stays quiet once yesterday has a Did.
       if (data.lampId && data.night && !data.weId && list.some((book) => (book.answers || []).some((a) => a.lampId === data.lampId && a.periodKey === data.night && (a.status === 'yes' || a.status === 'late')))) continue
+      if (data.lampId && !data.weId && /^\d{4}-\d{2}-\d{2}$/.test(data.night || '') && !nightOpen(data.night, afterQuiet(new Date(snooze.at)))) continue
       if (data.weId && data.night && (weNightStatus(data.night, data.weId) === 'did' || pings.some((ping) => ping.id === data.weId && ping.skipNight === data.night))) continue
       keepSnoozes.push(snooze)
       notes.push({

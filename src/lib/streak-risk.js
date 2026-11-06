@@ -1,6 +1,6 @@
 import { hallHeat } from './hall-feel.js'
 import { weNight } from './we-nights.js'
-import { allClearTonight, askedBy, boardDate, countedTonightRows, dueTonight } from './recurrence.js'
+import { allClearTonight, askedBy, boardDate, countedTonightRows, dueTonight, graceNightIso } from './recurrence.js'
 
 export const STREAK_RISK_HOUR = 21
 
@@ -37,6 +37,16 @@ export function streakRiskFire(book, now = new Date(), heat) {
 // 7am, while tonight is still open and a streak is going: the grace
 // period for the previous night is running and ends at 9am.
 export const GRACE_RISK_HOUR = 7
+
+// Between midnight and 7am, this morning's note for last night. A reschedule
+// after midnight (any answer) would otherwise only build tomorrow's.
+export function lastNightGraceFire(book, now = new Date(), heat) {
+  const graceIso = graceNightIso(now)
+  if (!graceIso || now.getHours() >= GRACE_RISK_HOUR) return null
+  const [y, m, d] = graceIso.split('-').map(Number)
+  if (!streakAtRisk(book, new Date(y, m - 1, d, 12), heat)) return null
+  return { at: new Date(now.getFullYear(), now.getMonth(), now.getDate(), GRACE_RISK_HOUR, 0, 0, 0).getTime(), tag: `grace-risk:${graceIso}` }
+}
 
 export function graceRiskFire(book, now = new Date(), heat) {
   if (!streakAtRisk(book, now, heat)) return null
