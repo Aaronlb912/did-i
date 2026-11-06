@@ -3,7 +3,8 @@ import { cloud } from '../../src/lib/cloud.js'
 import { deviceKey } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
 import { readPrefs } from '../../src/lib/prefs.js'
-import { REMIND_CATEGORY, SEND_CATEGORY, firstResponse, notificationAnswer, remindActions, sendActions, snoozeFrom } from '../../src/lib/notify-answer.js'
+import { REMIND_CATEGORY, SEND_CATEGORY, firstResponse, notificationAnswer, opensGrace, remindActions, sendActions, snoozeFrom } from '../../src/lib/notify-answer.js'
+import { askGraceFocus, clearGraceFocus } from '../../src/lib/recurrence.js'
 import {
   askNotificationPermission,
   notificationPermissionGranted,
@@ -166,6 +167,8 @@ async function bindResponseListener(handlers = {}) {
         return
       }
       if (answer?.noteId) Notifications.dismissNotificationAsync?.(answer.noteId)?.catch?.(() => {})
+      // A plain tap during grace on a note about last night: Today leads with yesterday.
+      if (!answer && opensGrace(data, new Date())) askGraceFocus(new Date(), data.lampId)
       if (sendId && (action === 'keep' || action === 'pass') && typeof handlers.onSend === 'function') {
         handlers.onSend(sendId, action === 'keep')
       } else if (answer?.kind === 'we' && typeof handlers.onWeAnswer === 'function') {
@@ -183,6 +186,7 @@ async function bindResponseListener(handlers = {}) {
     keepTrayNotices(Notifications)
     AppState.addEventListener('change', (state) => {
       if (state === 'active') keepTrayNotices(Notifications)
+      if (state === 'background') clearGraceFocus()
     })
     // The tap that launched the app came before this listener existed.
     const first = await Notifications.getLastNotificationResponseAsync?.()

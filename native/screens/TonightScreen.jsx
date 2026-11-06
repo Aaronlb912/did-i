@@ -100,7 +100,7 @@ import { FriendsRow } from '../components/FriendsRow.jsx'
 import { pickSocialLine } from '../../src/lib/social-line.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
 import { weOpenOn } from '../../src/lib/we-nights.js'
-import { didStatusForRow, graceFirst, graceNightIso } from '../../src/lib/recurrence.js'
+import { clearGraceFocus, didStatusForRow, graceFirst, graceFocusLamp, graceFocused, graceNightIso, onGraceFocus } from '../../src/lib/recurrence.js'
 import { notMyTurn, saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weClaim, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
@@ -1084,8 +1084,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     markFirstMissSeen(stack.dateIso)
     setMissSeen(stack.dateIso)
   }, [missUp, missSeen, stack.dateIso])
+  const focusLamp = graceFocusLamp()
   const graceItems = graceLost(stack.shelf, stack.dateIso) ? [] : [
-    ...stack.graceOpen.map((row) => ({
+    ...[...stack.graceOpen].sort((a, b) => (b.lamp.id === focusLamp) - (a.lamp.id === focusLamp)).map((row) => ({
       key: `grace:${stack.rowKey(row)}:${row.periodKey}`,
       title: row.lamp.question,
       late: didStatusForRow(row) === 'late',
@@ -1133,7 +1134,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       ) : null}
     </SwipeCardHost>
   ) : null
-  const graceFirstNow = graceItems.length > 0 && graceFirst()
+  // A note tap during grace asks for yesterday first (askGraceFocus); redraw on it, and let go once yesterday is done.
+  const [, setGraceTick] = useState(0)
+  useEffect(() => onGraceFocus(() => setGraceTick((n) => n + 1)), [])
+  useEffect(() => {
+    if (graceItems.length === 0) clearGraceFocus()
+  }, [graceItems.length])
+  const graceFirstNow = graceItems.length > 0 && (graceFirst() || graceFocused())
   const graceShowing = Boolean(
     graceCard && !stack.cheer && (graceFirstNow ? stack.bodyKind === 'face' || WE_SWIPE_OVER.has(stack.bodyKind) : WE_SWIPE_OVER.has(stack.bodyKind)),
   )

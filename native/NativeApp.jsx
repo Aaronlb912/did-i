@@ -139,7 +139,14 @@ export function NativeApp() {
             const out = await weAnswer(cardId, kind, night || undefined)
             // A weekly card's closed slot says week; unknown cards keep the day line.
             const miss = knownWeCard(cardId) ? weMissKey(knownWeCard(cardId), out.miss) : out.miss
-            if (!out.miss) dropSnoozed({ weId: cardId }).catch(() => {})
+            if (!out.miss) {
+              dropSnoozed({ weId: cardId }).catch(() => {})
+              // Like the widget's Did we tap: the phone's own record and the widget move on now.
+              const { markWeNight } = await import('../src/lib/we-nights.js')
+              const { boardDate: today } = await import('../src/lib/recurrence.js')
+              markWeNight(cardId, night || today(), kind === 'did' ? 'did' : 'nope')
+              if (nativeWidgetsEnabled()) syncTonightWidget(readShelf()).catch(() => {})
+            }
             if (out.miss) showToast({ id: 'we-answer', kind: 'error', text: tMiss(miss), ms: 5200 })
             else if (kind === 'did') {
               const { skipWePing } = await import('../src/lib/we-widget.js')
