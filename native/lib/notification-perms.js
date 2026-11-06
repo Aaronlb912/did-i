@@ -1,3 +1,5 @@
+import { Linking, Platform } from 'react-native'
+
 let lastCheck = null
 let notificationsMod = null
 
@@ -39,4 +41,25 @@ export async function askNotificationPermission() {
     lastCheck = { ok: false, status: 'undetermined' }
     return 'missing'
   }
+}
+
+// Android: the Did I channel can be muted (None, Min or Low) while the app
+// itself is allowed. True off Android, with no channel yet, or on an error.
+export async function reminderChannelOn() {
+  if (Platform.OS !== 'android') return true
+  try {
+    const Notifications = await notifications()
+    const channel = await Notifications.getNotificationChannelAsync('did-i')
+    const { NONE, MIN, LOW } = Notifications.AndroidImportance
+    return !channel || ![NONE, MIN, LOW].includes(channel.importance)
+  } catch {
+    return true
+  }
+}
+
+export function openReminderChannel() {
+  return Linking.sendIntent('android.settings.CHANNEL_NOTIFICATION_SETTINGS', [
+    { key: 'android.provider.extra.APP_PACKAGE', value: 'com.aaronbryant.didi' },
+    { key: 'android.provider.extra.CHANNEL_ID', value: 'did-i' },
+  ]).catch(() => Linking.openSettings())
 }

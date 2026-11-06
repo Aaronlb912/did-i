@@ -18,6 +18,7 @@ import { usePrefs } from '../src/lib/prefs.js'
 import { useHallColors } from './hooks/useHallColors.js'
 import { useAppShelf } from './hooks/useAppShelf.js'
 import { offerExactAlarms } from './lib/exact-alarms.js'
+import { finishCameraPhoto } from './lib/camera-pending.js'
 import { syncTonightWidget } from './widget-sync.js'
 import {
   flushNavigation,
@@ -462,6 +463,11 @@ export function AppShell() {
   const pingLabel = pingButtonLabel(pingState)
 
   const locked = needsEnter(app.book)
+  // A camera photo taken while Android had closed the app is saved now.
+  const userId = account.user?.id
+  useEffect(() => {
+    if (booted && !gated && !locked && userId) finishCameraPhoto(userId)
+  }, [booted, gated, locked, userId])
   // Someone new adds a first question before the tabs show (TonightScreen hides the menu).
   // Signed in, it waits for a first pull that worked, so a returning account on
   // a new phone is never shut out by a shelf that has not arrived.

@@ -40,7 +40,7 @@ export function addProofFlow({ target, night, colors, ready, onDone }) {
           dropToast('proof-sending')
           return confirmMiss(t('proof.offline'))
         }
-        const bytes = await pickProofBytes(from)
+        const bytes = await pickProofBytes(from, { target, night })
         if (!bytes) return
         const out = await addProof(target, night, bytes, ready)
         dropToast('proof-sending')

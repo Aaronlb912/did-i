@@ -154,7 +154,10 @@ export async function requestNativePings() {
 // A week ahead, so reminders still come on nights the app is never opened.
 const PING_DAYS = 7
 // iOS keeps at most 64 pending; leave room for the streak and cheer pings.
-const PING_CAP = 60
+// Android has no such limit (500 alarms per app), so a full week fits there.
+const PING_CAP = Platform.OS === 'android' ? 200 : 60
+// Over the cap, every kind of note in the next two days keeps its slot first.
+const CAP_SOON_MS = 48 * 60 * 60 * 1000
 
 function leftBody(n, at) {
   const { key, vars } = leftNote(n, at)
@@ -197,7 +200,7 @@ function saveComeBackPush(gap, at) {
 }
 
 // Later on a reminder: the same note again in an hour. Kept in storage too,
-// because every re-arm cancels all scheduled notes and would drop it.
+// because a re-arm cancels every scheduled note not in its new list.
 function snoozedNotes(now = Date.now()) {
   try {
     const list = JSON.parse(localStorage.getItem(SNOOZE_KEY) || '[]')
@@ -247,7 +250,7 @@ export async function snoozeNative(snooze) {
 
 // Calls bunch up (a tap and armLampPings land together). The last call in
 // a 500ms window wins, and runs only after the one before it finishes, so a
-// cancel-all never lands in the middle of another run's schedule.
+// cancel never lands in the middle of another run's schedule.
 let pingChain = Promise.resolve()
 let pingTimer = null
 let pingNext = null
@@ -339,6 +342,27 @@ async function scheduleOneRemind(Notifications, item) {
     },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(Math.max(item.at, Date.now() + 2000)), channelId: CHANNEL_ID },
   })
+}
+
+// Cancels pending notes that are not in the new list, before the new ones are
+// set. Same ids replace, so if the app is killed mid run the old notes stay.
+async function cancelStale(Notifications, notes) {
+  const keep = new Set(['did-i-test'])
+  for (const note of notes) {
+    const at = note.trigger?.date
+    if (!(at instanceof Date) || at.getTime() > Date.now()) keep.add(note.identifier)
+  }
+  for (const item of readReminds()) {
+    keep.add(remindNoteId(item))
+    keep.add(remindNoteId({ ...item, tries: (item.tries || 0) + 1 }))
+  }
+  try {
+    for (const note of await Notifications.getAllScheduledNotificationsAsync()) {
+      if (!keep.has(note.identifier)) await Notifications.cancelScheduledNotificationAsync(note.identifier).catch(() => {})
+    }
+  } catch {
+    await Notifications.cancelAllScheduledNotificationsAsync().catch(() => {})
+  }
 }
 
 async function scheduleReminds(Notifications) {
@@ -684,7 +708,7 @@ async function schedulePingsNow(books, now = new Date()) {
     // nudges and last calls only take what is left (capNotes).
     // Waiting Remind me notes count toward the same 64.
     const waitingReminds = readReminds().filter((item) => item.at > Date.now()).length
-    const capped = capNotes(notes, PING_CAP - 1 - waitingReminds)
+    const capped = capNotes(notes, PING_CAP - 1 - waitingReminds, Date.now() + CAP_SOON_MS)
     notes.splice(0, notes.length, ...capped.kept)
     const over = capped.over
     let regularCount = notes.length
@@ -777,13 +801,6 @@ async function schedulePingsNow(books, now = new Date()) {
         wall: true,
       })
     }
-    // Cleared only once the new list is built: a throw above keeps the old ones.
-    try {
-      await Notifications.cancelAllScheduledNotificationsAsync()
-    } catch {
-      // ok
-    }
-    await scheduleReminds(Notifications)
     // A snoozed question answered since then stays quiet.
     const openRows = list.flatMap((book) => dueTonight(book, now).filter((row) => !row.answer || row.answer.status === 'skip'))
     const openNow = new Set(openRows.map((row) => row.lamp.id))
@@ -827,6 +844,9 @@ async function schedulePingsNow(books, now = new Date()) {
     } else if (!pushedThisGap) {
       saveComeBackPush('', 0)
     }
+    // Cleared only once the new list is built: a throw above keeps the old ones.
+    await cancelStale(Notifications, notes)
+    await scheduleReminds(Notifications)
     let failed = 0
     for (const note of notes) {
       // A time already past is not a failure; it would never fire.
