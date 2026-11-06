@@ -47,13 +47,13 @@ import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps, weekdayName } from '../../src/lib/hall-pages.js'
-import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
+import { addDaysIso, answerFor, boardDate, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek, nextDueIso } from '../../src/lib/recurrence.js'
 import { gapLine, lastTimeLine, sinceBadge, staleDidLine } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
 import { awayKey, readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { NightNotes } from '../components/NightNotes.jsx'
 import { addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../../src/lib/starters.js'
-import { schedulePick } from '../../src/lib/hang-schedule.js'
+import { WEEKDAYS_MON_FRI, WEEKEND_DAYS, dayPreset, schedulePick } from '../../src/lib/hang-schedule.js'
 import { feelTap, passAlong, playClick } from '../../src/lib/native.js'
 import { ripple } from '../lib/ripple.js'
 import { fireCheer, mergePurses } from '../../src/lib/purse.js'
@@ -1235,12 +1235,8 @@ function reminderLine(draft, summary = false) {
 
 // Off tonight: say when it comes up next, if that is within two months.
 function nextDueLine(lamp, dateIso) {
-  const shown = { ...lamp, archived: false }
-  for (let day = 1; day <= 62; day += 1) {
-    const iso = addDaysIso(dateIso, day)
-    if (isDueOn(shown, iso)) return t('lamp.notTonightNext', { date: formatBoardDate(iso) })
-  }
-  return t('lamp.notTonight')
+  const iso = nextDueIso(lamp, dateIso)
+  return iso ? t('lamp.notTonightNext', { date: formatBoardDate(iso) }) : t('lamp.notTonight')
 }
 
 // True while the phone has notifications off, so a reminder cannot buzz.
@@ -2092,18 +2088,24 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             ) : null}
 
             {schedule === 'weekly' ? (
-              <View style={styles.pillRow} accessible={false}>
-                {weekdaysFor(readPrefs().locale).map((day) => (
-                  <Pill
-                    key={day}
-                    label={t(`hang.day.${day}`)}
-                    accessibilityLabel={weekdayName(`2026-10-${String(4 + day).padStart(2, '0')}`, 'long')}
-                    on={(draft.weekdays || []).includes(day)}
-                    onPress={() => hang.toggleDay(day)}
-                    colors={colors}
-                  />
-                ))}
-              </View>
+              <>
+                <View style={styles.pillRow} accessible={false}>
+                  {weekdaysFor(readPrefs().locale).map((day) => (
+                    <Pill
+                      key={day}
+                      label={t(`hang.day.${day}`)}
+                      accessibilityLabel={weekdayName(`2026-10-${String(4 + day).padStart(2, '0')}`, 'long')}
+                      on={(draft.weekdays || []).includes(day)}
+                      onPress={() => hang.toggleDay(day)}
+                      colors={colors}
+                    />
+                  ))}
+                </View>
+                <View style={styles.pillRow} accessible={false}>
+                  <Pill label={t('cadence.weekdays')} on={dayPreset(draft.weekdays) === 'weekdays'} onPress={() => hang.setDays(WEEKDAYS_MON_FRI)} colors={colors} />
+                  <Pill label={t('cadence.weekends')} on={dayPreset(draft.weekdays) === 'weekends'} onPress={() => hang.setDays(WEEKEND_DAYS)} colors={colors} />
+                </View>
+              </>
             ) : null}
 
             {schedule === 'per_week' ? (

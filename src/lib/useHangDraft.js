@@ -11,7 +11,7 @@ import {
   slotFromAskAfter,
 } from './board-json.js'
 import { findBookByTitle } from './board-shelf.js'
-import { applySchedulePick } from './hang-schedule.js'
+import { applySchedulePick, pickDays } from './hang-schedule.js'
 import { answerFor, boardDate, keepPastSchedule, periodKeyFor } from './recurrence.js'
 import { starterList } from './starters.js'
 
@@ -117,6 +117,11 @@ export function useHangDraft({
     if (miss) setMiss('')
   }
 
+  function setDays(days) {
+    setDraft((prev) => pickDays(prev, days))
+    if (miss) setMiss('')
+  }
+
   function buildLamp() {
     const next = {
       ...draft,
@@ -208,6 +213,7 @@ export function useHangDraft({
     applyStarter,
     changeAskAfter,
     toggleDay,
+    setDays,
     buildLamp,
     validate,
     isTagSelected,

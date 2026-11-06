@@ -65,3 +65,21 @@ export function applySchedulePick(draft, pick, today) {
   next.dueBy = ''
   return next
 }
+
+// Quick picks for Some days. Sunday is 0, like Date.getDay().
+export const WEEKDAYS_MON_FRI = [1, 2, 3, 4, 5]
+export const WEEKEND_DAYS = [0, 6]
+
+// A pill sets exactly these days, replacing the current pick.
+export function pickDays(draft, days) {
+  return { ...draft, weekdays: [...days].sort((a, b) => a - b) }
+}
+
+// 'weekdays' for Mon to Fri, 'weekends' for Sat and Sun, else ''.
+export function dayPreset(days) {
+  const list = [...new Set(Array.isArray(days) ? days : [])].sort((a, b) => a - b)
+  const same = (set) => list.length === set.length && set.every((day, i) => day === list[i])
+  if (same(WEEKDAYS_MON_FRI)) return 'weekdays'
+  if (same(WEEKEND_DAYS)) return 'weekends'
+  return ''
+}
