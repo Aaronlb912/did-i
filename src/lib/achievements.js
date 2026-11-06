@@ -1,4 +1,5 @@
 import { hallHeat, shelfStreak } from './hall-feel.js'
+import { closedByItself } from './come-back.js'
 import { readShelf } from './board-shelf.js'
 import { hasLocaleKey, t } from './i18n.js'
 import { questionStreak } from './lamp-record.js'
@@ -248,7 +249,8 @@ export function shelfStats(boards, now = new Date()) {
     const onceDone = new Set()
     for (const answer of book.answers || []) {
       if (stampDay(answer.answeredAt) !== today) olderAnswers += 1
-      if (answer.status === 'skip') s.nopes += 1
+      // A day that closed by itself is not someone saying Not yet.
+      if (answer.status === 'skip' && !closedByItself(answer)) s.nopes += 1
       if (answer.status === 'late') s.lates += 1
       if (!isDid(answer)) continue
       s.dids += 1
@@ -332,7 +334,7 @@ export function unlockAchievements(book, now = new Date()) {
   if ((book.opens || []).length >= 3) add('showed-3')
   if ((book.opens || []).length >= 7) add('showed-7')
   if (answers.some(isDid)) add('first-did')
-  if (answers.some((answer) => answer.status === 'skip')) add('honest-skip')
+  if (answers.some((answer) => answer.status === 'skip' && !closedByItself(answer))) add('honest-skip')
   if (answers.some((answer) => answer.status === 'late')) add('late-ok')
   if (lamps.length >= 5) add('hung-five')
   if (

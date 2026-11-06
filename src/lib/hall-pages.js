@@ -665,7 +665,7 @@ export function lastWeekSunday(dateIso) {
   return addDaysIso(dateIso, -(at.getDay() || 7))
 }
 
-// The welcome back sheet shows once a day.
+// The welcome back sheet shows once per gap: the key is the newest real answer day.
 const COME_BACK_KEY = 'did-i-come-back-seen'
 export function comeBackSeen(dateIso) {
   try {
