@@ -1196,14 +1196,14 @@ export function SearchScreen({ book }) {
           <Pressable
             key={lamp.id}
             accessibilityRole="button"
-            accessibilityLabel={`${shortLabel(lamp)}. ${lamp.question}`}
+            accessibilityLabel={sameWords(lamp) ? shortLabel(lamp) : `${shortLabel(lamp)}. ${lamp.question}`}
             onPress={() => goHash('/lamp', { id: lamp.id })}
             android_ripple={ripple(colors.panel3)}
             style={[styles.lampRow, { borderColor: colors.line, backgroundColor: colors.panel }]}
           >
             <View style={styles.lampCopy}>
               <Text style={[styles.lampName, { color: colors.ink }]}>{shortLabel(lamp)}</Text>
-              <Text style={[styles.lampMeta, { color: colors.inkDim }]}>{lamp.question}</Text>
+              {sameWords(lamp) ? null : <Text style={[styles.lampMeta, { color: colors.inkDim }]}>{lamp.question}</Text>}
             </View>
           </Pressable>
         ))

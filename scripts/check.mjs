@@ -3584,7 +3584,7 @@ await testAsync('a hand-set question order beats priority, survives normalize, a
   ]).map((r) => r.lamp.id)
   assert.deepEqual(order, ['first', 'late', 'second', 'high'], 'hand order wins, ask time breaks ties, unmoved ones after')
   assert.equal(normalizeLamp({ id: 'a', question: 'Did I?', order: 3 }).order, 3)
-  assert.equal(normalizeLamp({ id: 'a', question: 'x'.repeat(300) }).question.length, 120)
+  assert.equal(normalizeLamp({ id: 'a', question: 'x'.repeat(300) }).question.length, 127, '120 typed plus Did I and ?')
   assert.equal('order' in normalizeLamp({ id: 'a', question: 'Did I?' }), false)
   const books = [
     { id: 'b1', lamps: [{ id: 'x' }, { id: 'y' }] },
@@ -12507,6 +12507,24 @@ test('battery savers: re-arm keeps old reminders until new ones replace them; th
   assert.ok(readFileSync('native/lib/proof-flow.jsx', 'utf8').includes('pickProofBytes(from, { target, night })'))
   assert.ok(readFileSync('native/lib/camera-pending.js', 'utf8').includes('getPendingResultAsync()'))
   assert.ok(readFileSync('native/AppShell.jsx', 'utf8').includes('if (booted && !gated && !locked && userId) finishCameraPhoto(userId)'), 'picked up once signed in and past the PIN, for the same account only')
+})
+
+test('long and odd text: 120 typed letters survive the save, short names keep whole emoji, pasted line breaks and long folder names stay on one line', async () => {
+  const { QUESTION_MAX, didQuestion, normalizeLamp, shortFromQuestion } = await import('../src/lib/board-json.js')
+  const typed = 'a'.repeat(QUESTION_MAX)
+  const saved = normalizeLamp({ id: 'x', question: didQuestion(typed) }).question
+  assert.ok(saved.endsWith(typed.slice(-6) + '?'), 'the end and the question mark are kept')
+  assert.equal(normalizeLamp({ id: 'y', question: 'b'.repeat(400) }).question.length, QUESTION_MAX + 7, 'still capped')
+  const short = shortFromQuestion('Did I ' + 'x'.repeat(23) + '\u{1F4A7} drink?', 24)
+  assert.ok(short.endsWith('\u{1F4A7}'), 'an emoji is never cut in half')
+  const hang = readFileSync('native/components/HangCard.jsx', 'utf8')
+  assert.ok(hang.includes("onBlank?.(value.replace(/[\\r\\n]+/g, ' '))"), 'a pasted line break becomes a space')
+  assert.ok(hang.includes('length >= BLANK_MAX - 20') && hang.includes('const BLANK_MAX = 120'), 'a counter shows near the 120 limit')
+  const widget = readFileSync('widgets/android/DidITonightAndroidWidget.jsx', 'utf8')
+  assert.ok(widget.includes('WIDE.test(ch) ? 2 : 1') && (widget.match(/truncate="END"/g) || []).length >= 2, 'Android widget counts wide glyphs and ends long text with an ellipsis')
+  const face = readFileSync('native/components/SwipeFace.jsx', 'utf8')
+  assert.ok(face.includes('onEdit ? kickerRoom(buddy) : null') && face.includes("maxWidth: '36%'"), 'a long folder name stays clear of the pen and the stamp')
+  assert.ok(readFileSync('native/screens/questions.jsx', 'utf8').includes('accessibilityLabel={sameWords(lamp) ? shortLabel(lamp)'), 'search says the question once')
 })
 
 test('reminder cap: question reminders win slots over last calls and nudges', async () => {

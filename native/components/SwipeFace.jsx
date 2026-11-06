@@ -22,15 +22,20 @@ export function SwipeFace({ x, head, kicker, mark, title, stampDid, stampNope, b
       {head}
       {mark ? (
         <MarkRow mark={mark}>
-          {kicker ? <Animated.Text style={[faceCardStyles.kicker, styles.kickerInRow, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text> : null}
+          {kicker ? <Animated.Text numberOfLines={1} style={[faceCardStyles.kicker, styles.kickerInRow, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text> : null}
         </MarkRow>
       ) : kicker ? (
-        <Animated.Text style={[faceCardStyles.kicker, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text>
+        <Animated.Text numberOfLines={1} style={[faceCardStyles.kicker, onEdit ? kickerRoom(buddy) : null, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text>
       ) : null}
       <Text style={[faceCardStyles.title, { color: colors.ink }]} maxFontSizeMultiplier={2} numberOfLines={6}>{title}</Text>
       {children}
     </>
   )
+}
+
+// Room for the pen in the top-right corner, and the buddy beside it.
+export function kickerRoom(buddy) {
+  return { paddingRight: buddy ? 96 : 52 }
 }
 
 // The stamp at the top centre of the card, after the folder name. Its
@@ -82,7 +87,8 @@ const styles = StyleSheet.create({
   pen: { position: 'absolute', top: 5, right: 5, zIndex: 3, padding: 13 },
   penBeside: { right: 47 },
   markRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
-  kickerInRow: { marginBottom: 0 },
+  // Stops short of the centred stamp.
+  kickerInRow: { marginBottom: 0, flexShrink: 1, maxWidth: '36%' },
   markSpot: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' },
   mark: {
     marginVertical: -8,

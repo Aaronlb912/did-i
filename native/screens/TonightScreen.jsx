@@ -85,7 +85,7 @@ import { askReviewAtStreak } from '../streak-review.js'
 import { RemindersRow } from '../components/RemindersRow.jsx'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { goHash } from '../navigation/hash.js'
-import { EditPen, MarkRow, MarkStamp } from '../components/SwipeFace.jsx'
+import { EditPen, MarkRow, MarkStamp, kickerRoom } from '../components/SwipeFace.jsx'
 import { useAppInsets } from '../hooks/useAppInsets.js'
 import { useHeaderInset } from '../hooks/useHeaderSpace.js'
 import { gemFrameStyle, gemGlowHostStyle, gemPanelStyle } from '../lib/gem-look-tone.js'
@@ -1659,10 +1659,10 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         />
         {status ? (
           <MarkRow mark={<MarkStamp status={status} colors={colors} />}>
-            {pillRow.tag ? <Text style={[faceCardStyles.kicker, { color: colors.on, marginBottom: 0 }]}>{pillRow.tag}</Text> : null}
+            {pillRow.tag ? <Text numberOfLines={1} style={[faceCardStyles.kicker, { color: colors.on, marginBottom: 0, flexShrink: 1, maxWidth: '36%' }]}>{pillRow.tag}</Text> : null}
           </MarkRow>
         ) : pillRow.tag ? (
-          <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{pillRow.tag}</Text>
+          <Text numberOfLines={1} style={[faceCardStyles.kicker, kickerRoom(activeBuddy(pillBook)), { color: colors.on }]}>{pillRow.tag}</Text>
         ) : null}
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{pillRow.lamp.question}</Text>
         {status ? null : <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{pillStatusLabel(status)}</Text>}

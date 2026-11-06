@@ -537,13 +537,16 @@ function widgetSize(widgetInfo) {
   return { compact, tight, large, h, w }
 }
 
+// CJK and emoji are about 1em wide, so they count as two glyphs.
+const WIDE = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6]|\p{Extended_Pictographic}/u
+
 // Greedy word wrap estimate. Roboto bold averages about 0.5em per glyph.
 function linesFor(text, fontSize, width) {
   const perLine = Math.max(4, Math.floor(width / (fontSize * 0.5)))
   let lines = 1
   let used = 0
   for (const word of String(text).split(/\s+/).filter(Boolean)) {
-    const len = word.length
+    const len = Array.from(word).reduce((n, ch) => n + (WIDE.test(ch) ? 2 : 1), 0)
     if (used === 0) used = len
     else if (used + 1 + len <= perLine) used += 1 + len
     else {
@@ -703,6 +706,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                 paddingHorizontal: showNext ? (compact ? 50 : 56) : 0,
               }}
               maxLines={1}
+              truncate="END"
             />
             <FlexWidget
               style={{
@@ -729,6 +733,7 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                   width: 'match_parent',
                 }}
                 maxLines={questionLines}
+                truncate="END"
               />
               {streakLine ? (
                 <TextWidget
