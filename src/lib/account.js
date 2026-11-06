@@ -20,6 +20,8 @@ function madeUpKey() {
 }
 
 const OLD_DEVICE_KEY = 'did-i-device-old'
+// Per-phone flags a restored backup must not carry (native/lib/ping-primer.js).
+const RESTORED_DROP = ['did-i-ping-primer', 'did-i-ping-primer-again']
 
 // The phone app sets a stable id from the phone itself (native/bootstrap.js),
 // so a reinstall or the Dev app is still the same phone. A random key from
@@ -29,7 +31,11 @@ export function deviceKey() {
     const saved = localStorage.getItem(DEVICE_KEY)
     const stable = globalThis.__didIStableDeviceId
     if (stable && saved !== stable) {
-      if (saved) localStorage.setItem(OLD_DEVICE_KEY, saved)
+      // A stable id from another phone means a restored backup: that phone is
+      // still live, so its row stays, and its reminder ask does not count here.
+      if (saved && /^[ai]-/.test(saved)) {
+        for (const key of RESTORED_DROP) localStorage.removeItem(key)
+      } else if (saved) localStorage.setItem(OLD_DEVICE_KEY, saved)
       localStorage.setItem(DEVICE_KEY, stable)
       return stable
     }
