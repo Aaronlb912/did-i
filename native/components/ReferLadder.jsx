@@ -103,15 +103,13 @@ function rungSub(rung) {
   return ''
 }
 
+// Only what is yours; the count on the left says when the rest comes.
 function rungState(rung) {
-  if (rung.state === 'got') return t('refer.got')
-  if (rung.state === 'next') return rung.left === 1 ? t('refer.next') : t('refer.toGo', { n: rung.left })
-  return t('refer.toGo', { n: rung.left })
+  return rung.state === 'got' ? t('refer.got') : ''
 }
 
 function Rung({ rung, colors, frameColors, onOpen }) {
   const sub = rungSub(rung)
-  const next = rung.state === 'next'
   const got = rung.state === 'got'
   const body = (
     <>
@@ -125,13 +123,13 @@ function Rung({ rung, colors, frameColors, onOpen }) {
       <Text style={[styles.state, { color: got ? colors.on : colors.inkDim }]}>{rungState(rung)}</Text>
     </>
   )
-  const rowStyle = [styles.rung, { borderTopColor: colors.line }, next && [styles.rungNext, { backgroundColor: colors.open }]]
+  const rowStyle = [styles.rung, { borderTopColor: colors.line }]
   if (!onOpen) return <View style={rowStyle}>{body}</View>
   return (
     <Pressable
       onPress={onOpen}
       accessibilityRole="button"
-      accessibilityLabel={`${rungTitle(rung)}, ${rungState(rung)}`}
+      accessibilityLabel={[rungTitle(rung), rungState(rung)].filter(Boolean).join(', ')}
       style={({ pressed }) => [...rowStyle, pressFx(pressed)]}
     >
       {body}
@@ -141,7 +139,8 @@ function Rung({ rung, colors, frameColors, onOpen }) {
 
 export function ReferLadder({ colors, frameColors, joined = 0, book, onChange }) {
   const ladder = referLadder(joined)
-  const note = referLadderNote(ladder)
+  // No "N more and..." line: only the thanks once every reward is yours.
+  const note = ladder.toFrame ? null : referLadderNote(ladder)
   const ctx = { today: '', joined: ladder.joined }
   const count = ladder.toFrame ? t('refer.count', { n: ladder.joined, of: ladder.goal }) : t('refer.countAll', { n: ladder.joined })
   const open = (rung) => {
@@ -161,7 +160,7 @@ export function ReferLadder({ colors, frameColors, joined = 0, book, onChange })
       >
         <View style={[styles.fill, { backgroundColor: colors.on, width: `${ladder.pct}%` }]} />
       </View>
-      <Text style={[styles.note, { color: colors.inkSoft }]}>{t(note.key, note.vars)}</Text>
+      {note ? <Text style={[styles.note, { color: colors.inkSoft }]}>{t(note.key, note.vars)}</Text> : null}
       {ladder.rungs.map((rung) => (
         <Rung key={`${rung.kind}${rung.n}`} rung={rung} colors={colors} frameColors={frameColors || colors} onOpen={open(rung)} />
       ))}
@@ -177,7 +176,6 @@ const styles = StyleSheet.create({
   fill: { height: '100%', borderRadius: radius.pill },
   note: { fontFamily: fonts.ui, fontSize: 13.5, lineHeight: 19 },
   rung: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth, minHeight: 48 },
-  rungNext: { borderRadius: 12, paddingHorizontal: 8, borderTopColor: 'transparent' },
   n: { width: 30, textAlign: 'center', fontFamily: fonts.mono, fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
   what: { flex: 1, gap: 1 },
   whatTitle: { fontFamily: fonts.uiSemi, fontSize: 15, fontWeight: '600' },

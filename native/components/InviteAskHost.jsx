@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
 import { t } from '../../src/lib/i18n.js'
-import { isNewAccount, onInviteJoined, readPendingInvite, takeInviteJoined, takeInviteMiss } from '../../src/lib/invite-link.js'
-import { readMine } from '../../src/lib/people.js'
+import { INVITE_FOR_MS, isNewAccount, onInviteJoined, readPendingInvite, takeInviteJoined, takeInviteMiss } from '../../src/lib/invite-link.js'
+import { cleanInvite, inviteOwner, inviterFriendId, myInvite, readMine } from '../../src/lib/people.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { goHash } from '../navigation/hash.js'
 import { InviteCodeSection } from './InviteCodeSection.jsx'
@@ -36,19 +36,46 @@ function wasAsked(userId) {
   }
 }
 
-function showJoined(name, colors) {
+// Connect with the inviter filled in, so the ask is one more tap; plain
+// Connect when the code does not find them (gone, or a block either way).
+function addInviter(id) {
+  publishSheet(null)
+  goHash('/people/connect', id ? { id: `friend:${id}` } : '')
+}
+
+async function showJoined(name, code, colors) {
+  const id = code ? await inviterFriendId(code).catch(() => null) : null
+  await whenNoSheet()
   publishSheet({
     kicker: t('invite.cardTitle'),
     title: name ? t('invite.joinedTitle', { name }) : t('invite.joinedAny'),
     body: t('invite.joinedBody'),
-    goLabel: t('invite.joinedGo'),
+    goLabel: name && id ? t('invite.addName', { name }) : t('invite.joinedGo'),
     closeLabel: t('invite.joinedOk'),
     colors,
     onClose: () => publishSheet(null),
-    onGo: () => {
-      publishSheet(null)
-      goHash('/people/connect')
-    },
+    onGo: () => addInviter(id),
+  })
+}
+
+// An account past its first week opened a friend's invite link: say why it
+// did not count and offer the friend instead.
+async function showOld(code, colors) {
+  // The server checks age before your own code, so your own link lands here too.
+  const mine = await myInvite().catch(() => '')
+  if (mine && code && cleanInvite(mine) === cleanInvite(code)) return confirmMiss(t('invite.missSelf'))
+  const id = code ? await inviterFriendId(code).catch(() => null) : null
+  const name = id ? await inviteOwner(code).catch(() => null) : null
+  await whenNoSheet()
+  publishSheet({
+    kicker: t('invite.cardTitle'),
+    title: t('invite.oldTitle'),
+    body: name ? t('invite.oldBody', { name }) : t('invite.oldBodyAny'),
+    goLabel: name ? t('invite.addName', { name }) : t('invite.joinedGo'),
+    closeLabel: t('invite.joinedOk'),
+    colors,
+    onClose: () => publishSheet(null),
+    onGo: () => addInviter(id),
   })
 }
 
@@ -93,11 +120,13 @@ export function InviteAskHost({ colors, book, onChange, path }) {
       const joined = takeInviteJoined()
       if (joined) {
         markAsked(userId)
-        showJoined(joined.name, colors)
+        showJoined(joined.name, joined.code, colors)
         return
       }
       const miss = takeInviteMiss()
-      if (miss) confirmMiss(t(MISS_TEXT[miss] || MISS_TEXT.bad))
+      // The server says used for an account too old for invites as well.
+      if (miss?.miss === 'used' && !isNewAccount(user, Date.now(), INVITE_FOR_MS)) showOld(miss.code, colors)
+      else if (miss) confirmMiss(t(MISS_TEXT[miss.miss] || MISS_TEXT.bad))
     }, 900)
     return () => clearTimeout(timer)
   }, [userId, path, joinedTick])

@@ -133,6 +133,7 @@ const files = [
   'supabase/push-private-edit.sql',
   'supabase/social-noise.sql',
   'supabase/proof-ux.sql',
+  'supabase/invite-friend.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

@@ -58,9 +58,11 @@ export function inviteFromPaste(text) {
 
 // Made in the last two days: asked once whether someone invited it.
 const NEW_FOR_MS = 2 * 24 * 60 * 60 * 1000
-export function isNewAccount(user, now = Date.now()) {
+// How long the server takes an invite (use_invite in supabase/sweep-guards.sql).
+export const INVITE_FOR_MS = 7 * 24 * 60 * 60 * 1000
+export function isNewAccount(user, now = Date.now(), forMs = NEW_FOR_MS) {
   const made = Date.parse(String(user?.created_at || ''))
-  return Number.isFinite(made) && now - made >= 0 && now - made < NEW_FOR_MS
+  return Number.isFinite(made) && now - made >= 0 && now - made < forMs
 }
 
 export function savePendingInvite(code) {
@@ -102,7 +104,7 @@ export async function applyPendingInvite() {
   clearPendingInvite()
   if (miss) {
     try {
-      localStorage.setItem(MISS_KEY, miss === 'used' || miss === 'self' ? miss : 'bad')
+      localStorage.setItem(MISS_KEY, JSON.stringify({ miss: miss === 'used' || miss === 'self' ? miss : 'bad', code }))
     } catch {
       // The note is a nicety.
     }
@@ -110,7 +112,7 @@ export async function applyPendingInvite() {
   } else {
     const name = await inviteOwner(code).catch(() => null)
     try {
-      localStorage.setItem(JOINED_KEY, JSON.stringify({ name: name || '' }))
+      localStorage.setItem(JOINED_KEY, JSON.stringify({ name: name || '', code }))
     } catch {
       // The note is a nicety.
     }
@@ -124,14 +126,21 @@ export async function applyPendingInvite() {
 const JOINED_KEY = 'did-i-invite-joined'
 const MISS_KEY = 'did-i-invite-miss'
 const joinedWatchers = new Set()
-// A link whose code did not count: 'used', 'self' or 'bad'. Kept until shown.
+// A link whose code did not count, { miss: 'used' | 'self' | 'bad', code }, or
+// null. Kept until shown. An older build kept the miss as plain text.
 export function takeInviteMiss() {
   try {
-    const miss = localStorage.getItem(MISS_KEY) || ''
-    if (miss) localStorage.removeItem(MISS_KEY)
-    return miss
+    const raw = localStorage.getItem(MISS_KEY) || ''
+    if (!raw) return null
+    localStorage.removeItem(MISS_KEY)
+    let kept = null
+    try {
+      kept = JSON.parse(raw)
+    } catch {}
+    if (kept && typeof kept === 'object') return { miss: String(kept.miss || 'bad'), code: String(kept.code || '') }
+    return { miss: raw, code: '' }
   } catch {
-    return ''
+    return null
   }
 }
 export function onInviteJoined(fn) {
@@ -143,7 +152,8 @@ export function takeInviteJoined() {
     const raw = localStorage.getItem(JOINED_KEY)
     if (!raw) return null
     localStorage.removeItem(JOINED_KEY)
-    return { name: String(JSON.parse(raw)?.name || '') }
+    const kept = JSON.parse(raw)
+    return { name: String(kept?.name || ''), code: String(kept?.code || '') }
   } catch {
     return null
   }

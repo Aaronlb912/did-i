@@ -18,7 +18,7 @@ import { Reveal, useLayoutState } from '../lib/motion.jsx'
 import { missDot } from '../palette.js'
 import { bestShelfStreakIn } from '../../src/lib/hall-feel.js'
 import { scopedBooks } from '../../src/lib/tags.js'
-import { passAlong } from '../../src/lib/native.js'
+import { CardMark, passText } from '../lib/share-card.jsx'
 import { KeyButton } from './ui.jsx'
 
 function dateLocale(code) {
@@ -292,7 +292,8 @@ export function CalendarGrid({ book, boards = [], tagId = '', now, colors, start
 
 // A whole year: twelve small month grids of cleared and not cleared nights.
 // Arrows go back to the year of the first answer. A day opens its sheet.
-export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, onMonth }) {
+// label: the one question's name when lampId is set, for the share.
+export function YearGrid({ book, boards, tagId = '', lampId = '', label = '', now, colors, onMonth }) {
   const prefs = usePrefs()
   const missTone = colors.open
   const clock = now || new Date()
@@ -333,8 +334,10 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
   const [carding, setCarding] = useState(false)
   // A picture of the year to share. Falls back to the text when the phone
   // cannot capture or share an image.
+  // What the year is of, when it is not every question.
+  const scope = label || (tagId ? scopedBooks(shelf, tagId).map((b) => b.title).join(', ') : '')
   const shareYear = async () => {
-    const folder = tagId ? scopedBooks(shelf, tagId).map((b) => b.title).join(', ') : ''
+    const folder = scope
     const text = folder
       ? t('cal.yearShareFolder', { year, folder, did: totals.did, rate: totals.rate })
       : t(best ? 'cal.yearShareText' : 'cal.yearShareNoBest', { year, did: totals.did, rate: totals.rate, best })
@@ -346,7 +349,7 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
       const uri = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile' })
       await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: t('cal.yearShare'), UTI: 'public.png' })
     } catch {
-      passAlong(text)
+      passText(text, t('cal.yearShare'))
     } finally {
       setCarding(false)
     }
@@ -445,6 +448,7 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
       {carding && totals.did ? (
       <View ref={cardRef} collapsable={false} pointerEvents="none" style={[styles.card, { backgroundColor: colors.bg }]}>
         <Text style={[styles.cardYear, { color: colors.ink }]}>{String(year)}</Text>
+        {scope ? <Text style={[styles.cardLine, { color: colors.ink }]} numberOfLines={2}>{scope}</Text> : null}
         <Text style={[styles.cardLine, { color: colors.on }]}>{t('cal.yearTotals', { did: totals.did, rate: totals.rate })}</Text>
         {best ? <Text style={[styles.cardLine, { color: colors.inkDim }]}>{t('cal.yearBest', { n: best })}</Text> : null}
         <View style={styles.year}>
@@ -455,7 +459,7 @@ export function YearGrid({ book, boards, tagId = '', lampId = '', now, colors, o
             </View>
           ))}
         </View>
-        <Text style={[styles.cardMark, { color: colors.inkDim }]}>Did I</Text>
+        <CardMark colors={colors} style={styles.cardMark} />
       </View>
       ) : null}
     </View>

@@ -674,7 +674,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                 onPress={async () => {
                   setMiss('')
                   setSaid('')
-                  const how = await passAlong(t('family.codeInvite', { name: fam.name, code: fam.code }), fam.name)
+                  const how = await passAlong(t('family.codeInvite', { name: fam.name, code: fam.code, link: familyQrLink(fam.code) }), fam.name)
                   // A failed send keeps the sheet open so the miss shows here.
                   if (how === 'shared' || how === 'copied') setCodeOpen(false)
                   if (how === 'shared') setSaid(t('people.shared'))

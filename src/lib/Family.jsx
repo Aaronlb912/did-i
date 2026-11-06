@@ -38,6 +38,7 @@ import {
   normalizePurse,
 } from './purse.js'
 import { passAlong } from './native.js'
+import { familyQrLink } from './qr-links.js'
 import { addDaysIso, boardDate, formatBoardDate } from './recurrence.js'
 import { GemShort } from './shop-bits.jsx'
 import { SetCap, SetCard, SetRow } from './set-bits.jsx'
@@ -621,7 +622,7 @@ export function Family({ book, onChange, now, familyId }) {
                 className="di-did di-did-small"
                 type="button"
                 onClick={async () => {
-                  const how = await passAlong(t('family.codeInvite', { name: fam.name, code: fam.code }), fam.name)
+                  const how = await passAlong(t('family.codeInvite', { name: fam.name, code: fam.code, link: familyQrLink(fam.code) }), fam.name)
                   if (how) setMiss('')
                   setCodeOpen(false)
                 }}

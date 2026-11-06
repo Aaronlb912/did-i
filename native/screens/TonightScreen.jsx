@@ -32,8 +32,8 @@ import {
   weekRecapDue,
   weekStripNights,
 } from '../../src/lib/hall-pages.js'
-import { passAlong } from '../../src/lib/native.js'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { openStreakCard, passText } from '../lib/share-card.jsx'
 import { keptButMissing } from '../lib/kept-send.js'
 import { feelTap } from '../../src/lib/native.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -543,7 +543,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         },
         content: (
           <View>
-            <DidButton label={t('frames.share')} colors={colors} onPress={() => passAlong(t('frames.shareLine', { frame: t(frameText(popId, 'name')) }), 'Did I')} />
+            <DidButton label={t('frames.share')} colors={colors} onPress={() => passText(t('frames.shareLine', { frame: t(frameText(popId, 'name')) }), 'Did I')} />
           </View>
         ),
         colors,
@@ -1272,9 +1272,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       onClose: () => publishSheet(null),
       onGo: async () => {
         publishSheet(null)
-        const how = await passAlong(recapShareText(recap, gentle), t('recap.lastWeek'))
-        if (how === 'copied') confirmDone(t('recap.copied'))
-        else if (!how) confirmMiss(t('confirm.shareMiss'))
+        await passText(recapShareText(recap, gentle), t('recap.lastWeek'))
       },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1466,6 +1464,21 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           </Text>
           {milestoneUp && milestone.gems ? (
             <Text style={[faceCardStyles.meta, { color: colors.on }]}>{milestoneGemLine(milestone.gems)}</Text>
+          ) : null}
+          {milestoneUp ? (
+            <WideRow
+              label={t('lamp.shareBtn')}
+              colors={colors}
+              onPress={() =>
+                openStreakCard({
+                  colors,
+                  n: stack.overallStreak,
+                  cap: t('streaks.title'),
+                  day: formatBoardDate(stack.dateIso),
+                  text: t('lamp.shareAll', { n: stack.overallStreak }),
+                })
+              }
+            />
           ) : null}
           {nightOne ? (
             <>

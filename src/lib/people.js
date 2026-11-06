@@ -1268,6 +1268,17 @@ export async function inviteOwner(code) {
   return String(data)
 }
 
+// The inviter's friend ID, so Connect can open with them filled in. Null for
+// no such code, your own, a block, or a server without supabase/invite-friend.sql.
+export async function inviterFriendId(code) {
+  const db = cloud()
+  const want = cleanInvite(code)
+  if (!db || want.length !== INVITE_CODE_LEN) return null
+  const { data, error } = await db.rpc('inviter_friend_id', { want_code: want })
+  if (error || !/^[1-9]\d{11}$/.test(String(data || ''))) return null
+  return String(data)
+}
+
 export async function useInvite(code) {
   const db = cloud()
   if (!db) return { miss: 'off' }

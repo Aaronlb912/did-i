@@ -939,7 +939,7 @@ export function CalendarScreen({ book, boards, tagId, now, route, onChangeBooks 
   if (lampId) {
     return (
       <ScreenShell title={oneLamp ? shortLabel(oneLamp) : t('settings.history')} colors={colors}>
-        <YearGrid book={book} boards={boards} lampId={lampId} now={clock} colors={colors} />
+        <YearGrid book={book} boards={boards} lampId={lampId} label={oneLamp ? shortLabel(oneLamp) : ''} now={clock} colors={colors} />
       </ScreenShell>
     )
   }

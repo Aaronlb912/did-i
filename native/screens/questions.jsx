@@ -57,7 +57,7 @@ import { awayKey, readPrefs, usePrefs } from '../../src/lib/prefs.js'
 import { NightNotes } from '../components/NightNotes.jsx'
 import { addPack, packList, starterBlank, starterList, undoPack, unusedStarters } from '../../src/lib/starters.js'
 import { WEEKDAYS_MON_FRI, WEEKEND_DAYS, dayPreset, schedulePick } from '../../src/lib/hang-schedule.js'
-import { feelTap, passAlong, playClick } from '../../src/lib/native.js'
+import { feelTap, playClick } from '../../src/lib/native.js'
 import { ripple } from '../lib/ripple.js'
 import { fireCheer, mergePurses } from '../../src/lib/purse.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -85,6 +85,7 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { SheetHost, publishSheet } from '../components/SheetHost.jsx'
 import { openBrainDump } from '../components/BrainDumpSheet.jsx'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
+import { openStreakCard } from '../lib/share-card.jsx'
 import { setSendShare } from '../../src/lib/send-answers.js'
 import { askPingsNow, offerPingPrimer } from '../lib/ping-primer.js'
 import { showToast, useUndoToast } from '../lib/toast-queue.js'
@@ -2732,54 +2733,18 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const reduce = useReduceMotion()
   const [historyOpen, setHistoryOpen] = useState(false)
   const firstDay = firstWeekday(readPrefs().locale)
-  const streakCard = useRef(null)
-  // The card is shown in a sheet first, on screen, so the capture is never blank.
   function previewStreak() {
-    publishSheet({
-      title: t('lamp.shareBtn'),
-      content: (
-        <View ref={streakCard} collapsable={false} pointerEvents="none" style={[styles.shareCard, { backgroundColor: colors.bg, borderColor: colors.on }]}>
-          <Text style={[styles.shareWhat, { color: colors.ink }]}>{shortLabel(lamp)}</Text>
-          <Text style={[styles.shareNum, { color: colors.on }]}>{record.streak}</Text>
-          <Text style={[styles.shareCap, { color: colors.inkDim }]}>{t(isPerWeek(lamp) ? 'lamp.streakCapWeeks' : 'lamp.streakCap')}</Text>
-          <Text style={[styles.shareCap, { color: colors.inkDim }]}>{formatBoardDate(dateIso)}</Text>
-          <Text style={[styles.shareMark, { color: colors.inkDim }]}>Did I</Text>
-        </View>
-      ),
-      goLabel: t('lamp.shareGo'),
-      closeLabel: t('settings.neverMind'),
-      colors,
-      onClose: () => publishSheet(null),
-      onGo: shareStreak,
-    })
-  }
-  async function shareStreak() {
     const n = record.streak
     const what = shortLabel(lamp)
-    const key = isEvery(lamp) ? 'lamp.shareOnTime' : isPerWeek(lamp) ? (n === 1 ? 'lamp.shareWeek' : 'lamp.shareWeeks') : n === 1 ? 'lamp.shareDay' : 'lamp.shareDays'
-    // A picture first. Text only when the picture could not be made or this
-    // phone cannot share one; backing out of the share sheet is not a failure.
-    let uri = ''
-    let Sharing = null
-    try {
-      const [{ captureRef }, sharing] = await Promise.all([import('react-native-view-shot'), import('expo-sharing')])
-      Sharing = sharing
-      if (!streakCard.current || !(await Sharing.isAvailableAsync())) throw new Error('no image share')
-      uri = await captureRef(streakCard, { format: 'png', quality: 1, result: 'tmpfile' })
-    } catch {}
-    publishSheet(null)
-    if (uri) {
-      try {
-        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: t('lamp.shareBtn'), UTI: 'public.png' })
-        return
-      } catch {
-        confirmMiss(t('confirm.shareMiss'))
-        return
-      }
-    }
-    const how = await passAlong(t(key, { n, what }), t('recap.kicker'))
-    if (how === 'copied') confirmDone(t('recap.copied'))
-    else if (!how) confirmMiss(t('confirm.shareMiss'))
+    const key = isPerWeek(lamp) ? (n === 1 ? 'lamp.shareWeek' : 'lamp.shareWeeks') : n === 1 ? 'lamp.shareDay' : 'lamp.shareDays'
+    openStreakCard({
+      colors,
+      what,
+      n,
+      cap: t(isPerWeek(lamp) ? 'lamp.streakCapWeeks' : 'lamp.streakCap'),
+      day: formatBoardDate(dateIso),
+      text: t(key, { n, what }),
+    })
   }
   const grid = useMemo(
     () => (historyOpen ? lampDays(lampBook, lamp, dateIso, 26, firstDay) : null),
@@ -2993,7 +2958,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
         ) : null}
       </SetCard>
 
-      {gentle || !record.streak ? null : <KeyButton colors={colors} label={t('lamp.shareBtn')} onPress={previewStreak} />}
+      {gentle || !record.streak || every ? null : <KeyButton colors={colors} label={t('lamp.shareBtn')} onPress={previewStreak} />}
 
       {weeks.length > 1 ? (
         <View style={styles.trend}>
@@ -3200,11 +3165,6 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 }
 
 const styles = StyleSheet.create({
-  shareCard: { width: '100%', maxWidth: 360, alignSelf: 'center', padding: 24, gap: 8, borderWidth: 2, borderRadius: 20 },
-  shareWhat: { fontFamily: fonts.uiBold, fontSize: 22 },
-  shareNum: { fontFamily: fonts.uiBold, fontSize: 72 },
-  shareCap: { fontFamily: fonts.uiSemi, fontSize: 16 },
-  shareMark: { fontFamily: fonts.uiBold, fontSize: 14, textAlign: 'right', marginTop: 8 },
   mastDate: {
     fontFamily: fonts.mono,
     fontSize: 11,
