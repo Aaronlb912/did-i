@@ -19,9 +19,12 @@ import {
   dueTonight,
   faceReadyTonight,
   faceSwipeTonight,
+  formatBoardDateYear,
+  formatMonthYear,
   isDueOn,
   isoDate,
   periodLabel,
+  periodLabelYear,
   periodNight,
   periodPassed,
 } from '../src/lib/recurrence.js'
@@ -91,6 +94,7 @@ import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
 import { forgetAccountCaches, forgetPendingLinks } from '../src/lib/account-cache.js'
 import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
+import { mergeNoteRows, sortNoteRows, weNoteRows, withMonthHeads, yearAgoNote } from '../src/lib/hall-pages.js'
 import { csvShelf } from '../src/lib/csv-import.js'
 import { isDayCadence, lampRate, shelfRate30 } from '../src/lib/lamp-record.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
@@ -123,6 +127,7 @@ import {
 } from '../src/lib/purse.js'
 import { authGated, clearAuthSkip, needsAuth, skipAuth } from '../src/lib/auth-gate.js'
 import { allClearTonight, didStatusForRow, shouldFinishAfterNope } from '../src/lib/recurrence.js'
+import { recapNotes } from '../src/lib/recap-notes.js'
 import { DAY_FOLD } from '../src/lib/zone.js'
 import { en } from '../src/locales/en.js'
 import { personTint, personTintIndex } from '../src/lib/person-tint.js'
@@ -2113,6 +2118,80 @@ test('So far and Every answer count every folder', () => {
   assert.deepEqual(shelfNoteRows(noted).map((row) => row.answer.id), ['n1'], 'notes only, and only on questions that still exist')
   assert.equal(nextStreakGoal(1), 3)
   assert.equal(nextStreakGoal(5), 7)
+})
+
+test('Notes files a one-time answer on the day it was done and a monthly one on the day it was tapped', async () => {
+  const { noteDay } = await import('../src/lib/hall-pages.js')
+  const once = { id: 'o', question: 'Did I file taxes?', cadence: 'once', onceWhen: 'by', dueBy: '2026-12-31', createdOn: '2025-03-01' }
+  const done = (status) => ({ lamp: once, answer: { lampId: 'o', periodKey: 'once:o', status, answeredAt: '2026-11-04T20:00:00', note: 'x' } })
+  assert.equal(noteDay(done('yes')), '2026-11-04')
+  assert.equal(noteDay(done('skip')), '2026-11-04')
+  const month = { id: 'm', question: 'Did I pay rent?', cadence: 'monthly', createdOn: '2026-01-01' }
+  assert.equal(noteDay({ lamp: month, answer: { lampId: 'm', periodKey: '2026-11', status: 'yes', answeredAt: '2026-11-30T20:00:00', note: 'paid' } }), '2026-11-30')
+})
+
+test('Notes: sorted by the answer day, years and months shown, Did we notes merged, year ago picked', () => {
+  const q = lamp('q', { createdOn: '2025-01-01' })
+  const note = (id, periodKey, answeredAt, text = id) => ({ id, lampId: 'q', periodKey, status: 'yes', note: text, answeredAt })
+  const book = { id: 'b1', title: 'Home', lamps: [q], answers: [
+    // Tapped last, but for the oldest day: a late edit of an old note.
+    note('old', '2026-10-01', '2026-11-05T21:00:00'),
+    note('new', '2026-11-04', '2026-11-04T20:00:00'),
+    note('tie2', '2026-11-04', '2026-11-04T22:00:00'),
+    note('prev', '2025-11-06', '2025-11-06T20:00:00'),
+  ] }
+  const rows = shelfNoteRows([book])
+  assert.deepEqual(rows.map((row) => row.answer.id), ['tie2', 'new', 'old', 'prev'], 'newest day first, same day by tap time')
+  assert.ok(rows.every((row) => row.boardId === 'b1'), 'each row knows its folder, to open the note sheet')
+
+  // The year shows once the day is not this year; the plain date stays as it was.
+  assert.equal(formatBoardDateYear('2026-10-01', '2026-11-06'), 'Thu, Oct 1')
+  assert.equal(formatBoardDateYear('2025-11-06', '2026-11-06'), 'Thu, Nov 6, 2025')
+  assert.equal(periodLabelYear(q, '2025-11-06', '2026-11-06'), 'Thu, Nov 6, 2025')
+  assert.equal(periodLabelYear(q, '2026-10-01', '2026-11-06'), 'Thu, Oct 1')
+  assert.equal(periodLabelYear(lamp('m', { cadence: 'monthly' }), '2025-10', '2026-11-06'), 'Oct 2025')
+  assert.equal(formatMonthYear('2026-11-04'), 'November 2026')
+
+  // A month row before each new month, none repeated.
+  const heads = withMonthHeads(rows).map((item) => (item.head ? item.head : item.row.answer.id))
+  assert.deepEqual(heads, ['2026-11', 'tie2', 'new', '2026-10', 'old', '2025-11', 'prev'])
+
+  // A note from this day last year, only if there is one.
+  assert.equal(yearAgoNote(rows, '2026-11-06')?.answer.id, 'prev')
+  assert.equal(yearAgoNote(rows, '2026-11-07'), null)
+  assert.equal(yearAgoNote(rows, ''), null)
+  const monthly = lamp('m', { cadence: 'monthly' })
+  const monthRows = [{ lamp: monthly, boardId: 'b1', answer: { id: 'mo', lampId: 'm', periodKey: '2025-11', status: 'yes', note: 'x', answeredAt: '2025-11-30T10:00:00' } }]
+  assert.equal(yearAgoNote(monthRows, '2026-11-01'), null, 'a monthly answer is not a day')
+
+  // Did we notes: your own rows, shaped like answer rows, sorted in with the rest.
+  const title = (id) => ({ c1: 'Did we walk the dog?' })[id] || ''
+  const we = weNoteRows(
+    [
+      { card_id: 'c1', night: '2026-11-04', note: 'sunny' },
+      { card_id: 'c1', night: '2025-11-06', note: 'a year back' },
+      { card_id: 'c1', night: '2026-11-03', note: '  ' },
+      { card_id: 'c1', night: 'bad', note: 'no day' },
+      { card_id: 'gone', night: '2026-11-02', note: 'left the card' },
+    ],
+    title,
+    true,
+  )
+  assert.deepEqual(we.map((row) => [row.we, row.day, row.answer.note]), [['c1', '2026-11-04', 'sunny'], ['c1', '2025-11-06', 'a year back']], 'no blank notes, bad days, or cards you left')
+  assert.equal(weNoteRows([{ card_id: 'gone', night: '2026-11-02', note: 'x' }], title, false).length, 1, 'cards not loaded yet keep their notes')
+  const merged = mergeNoteRows(rows, we)
+  assert.deepEqual(merged.map((row) => row.answer.id), ['tie2', 'new', 'we:c1:2026-11-04', 'old', 'prev', 'we:c1:2025-11-06'], 'same day: a tapped note before a Did we note')
+  assert.deepEqual(feedSearch(merged, 'walk the dog').map((row) => row.answer.id), ['we:c1:2026-11-04', 'we:c1:2025-11-06'], 'search finds a Did we note by its card')
+  assert.equal(mergeNoteRows(rows, []), rows, 'no Did we notes, same list')
+  assert.deepEqual(sortNoteRows([]), [])
+
+  // The CSV carries them as "did we" rows, which a copy loaded back skips.
+  const shelf = { currentId: 'b1', boards: [book] }
+  const csv = answersCsv(shelf, [{ card_id: 'c1', night: '2026-11-04', note: 'sunny, warm' }, { card_id: 'c1', night: '2026-11-03', note: '' }], title)
+  assert.match(csv, /\r\n2026-11-04,Did we walk the dog\?,,did,"sunny, warm",,,,did we,\r\n/)
+  assert.equal(csv.split('\r\n').length, answersCsv(shelf).split('\r\n').length + 1, 'one more row, a blank note adds none')
+  const back = csvShelf(csv, { currentId: 'e', boards: [{ id: 'e', title: 'General', lamps: [], answers: [] }] })
+  assert.equal(back.shelf.boards.flatMap((b) => b.lamps).filter((l) => /walk the dog/i.test(l.question)).length, 0, 'loading the file back makes no Did we question')
 })
 
 test('the year view stops at this month and goes back to the first answer', () => {
@@ -8264,7 +8343,8 @@ await testAsync('amounts: saved on the answer, round trip through the answer log
   const removed = setAnswerNote(counted, 'w', '2026-10-01', '', new Date('2026-10-02T10:00:00'), '').answers[0]
   assert.ok(removed.note === '' && !('amount' in removed), 'remove note clears both')
   const notesSrc = readFileSync(path.join(checkRoot, 'native/components/NightNotes.jsx'), 'utf8')
-  assert.ok(/function removeNote[\s\S]{0,400}setAnswerNote\(book, lampId, periodKey, '', undefined, ''\)/.test(notesSrc), 'phone Remove note clears the amount')
+  assert.ok(/function removeNote[\s\S]{0,400}setAnswerNote\(book, lampId, periodKey, '', undefined, keep \? undefined : ''\)/.test(notesSrc), 'phone Remove note clears the amount')
+  assert.ok(/onRemove\(!amount\)/.test(notesSrc), 'a hidden amount box keeps the amount on Remove note')
   assert.ok(readFileSync(path.join(checkRoot, 'src/lib/Tonight.jsx'), 'utf8').includes("onSave('', '', { share: false"), 'web Remove note clears the amount and unshares it')
 
   // Up: m is always sent, null when there is none.
@@ -10860,7 +10940,7 @@ test('a friend request and its yes reach the other phone live, not on the 5 minu
   assert.match(read('native/screens/FamilyDetail.jsx'), /useLiveReload\(\['family', 'familyInfo'\], load\)/)
   assert.ok(read('native/screens/FamilyDetail.jsx').includes('shownLamps.map((lamp)'), 'a question for someone who left the family is not shown as waiting forever')
   assert.ok(read('native/AppShell.jsx').includes('.finally(() => syncTonightWidget(readShelf())'), 'the widget is rebuilt on return even when the ping check fails')
-  assert.equal(read('native/screens/more.jsx').split('const clock = now || today').length, 7, 'Calendar, Week, Marks, Stats, Streaks and Later turn the day over while open')
+  assert.equal(read('native/screens/more.jsx').split('const clock = now || today').length, 8, 'Calendar, Week, Marks, Stats, Streaks, Later and Notes turn the day over while open')
   const order = read('scripts/apply-all-sql.mjs')
   assert.ok(order.indexOf('social-live.sql') < order.indexOf('live-more.sql') && order.indexOf('live-more.sql') < order.indexOf('drop-tonight.sql'))
 })
@@ -10879,6 +10959,15 @@ test('smooth screens: screen files warm after launch, the shelf is read once per
   // Long lists draw a page at a time; Did we keeps its totals; no JS-driven cheer tick or letter wave.
   const more = read('native/screens/more.jsx')
   assert.equal((more.match(/const page = useShown\(rows, query\)/g) || []).length, 2)
+  // Notes: a row opens its note sheet, the folder filter reaches it, Did we notes load in one read.
+  const notes = more.slice(more.indexOf('export function NotesScreen'), more.indexOf('export function CalendarScreen'))
+  assert.match(notes, /openAnswerNote\(\{ boardId: row\.boardId, lampId: row\.lamp\.id/)
+  assert.match(notes, /path="\/notes"/)
+  assert.match(read('native/screens/ScreenRouter.jsx'), /<NotesScreen book=\{book\} boards=\{boards\} tagId=\{tagId\}/)
+  const amounts = read('src/lib/social-amounts.js')
+  const mine = amounts.slice(amounts.indexOf('export async function myWeNotes'), amounts.indexOf('export async function weMyWeek'))
+  assert.equal((mine.match(/\.from\(/g) || []).length, 1, 'one batched own-notes read, no per-card reads')
+  assert.match(mine, /\.eq\('user_id', me\)/)
   const we = read('native/screens/we.jsx')
   assert.match(we, /useKept\(`we\.sums:/)
   assert.match(we, /useKept\(`we\.early:/)
@@ -13372,6 +13461,31 @@ test('a day in another language: Brazilian pt, days not nights in ja, Did in the
 test('Away set after answering says it starts tomorrow', () => {
   const more = readFileSync(new URL('../native/screens/more.jsx', import.meta.url), 'utf8')
   assert.ok(more.includes("t('away.startsTomorrow')"))
+})
+
+test('recapNotes lists up to 3 notes from the week, newest day first', () => {
+  const week = ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08'].map((iso) => ({ iso }))
+  const lamps = [{ id: 'a', question: 'Did I stretch?', short: 'Stretch' }, { id: 'b', question: 'Did I read?', short: 'Read' }]
+  const ans = (lampId, periodKey, note, status = 'yes') => ({ lampId, periodKey, status, note, answeredAt: `${periodKey}T20:00:00.000Z` })
+  const book = {
+    id: 'bk',
+    title: 'Main',
+    lamps,
+    answers: [
+      ans('a', '2026-11-02', 'first'),
+      ans('a', '2026-11-04', 'mid', 'skip'),
+      ans('b', '2026-11-06', 'late one'),
+      ans('b', '2026-11-07', 'newest'),
+      ans('a', '2026-11-03', '   '),
+      ans('a', '2026-10-30', 'before the week'),
+      ans('a', '2026-11-09', 'after the week'),
+      ans('gone', '2026-11-05', 'deleted question'),
+    ],
+  }
+  const out = recapNotes([book], week, '')
+  assert.deepEqual(out.map((row) => row.answer.note), ['newest', 'late one', 'mid'])
+  assert.equal(recapNotes([book], week, '', 10).length, 4)
+  assert.deepEqual(recapNotes([book], [], ''), [])
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

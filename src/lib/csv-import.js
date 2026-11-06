@@ -148,6 +148,8 @@ export function csvShelf(text, local, clock = new Date()) {
   let bad = 0
   for (const row of rows.slice(1)) {
     const cell = (i) => (i < 0 ? '' : clean(row[i]))
+    // A Did we note from an export: not a question of yours.
+    if (cell(at.repeats).toLowerCase() === 'did we') continue
     const text = didQuestion(cell(at.question).slice(0, QUESTION_MAX))
     if (!text) continue
     const folder = cell(at.folder).slice(0, FOLDER_MAX)

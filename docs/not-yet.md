@@ -5,6 +5,14 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Notes and looking back (UX loop 2026-11-06)
+
+- No mood or how-it-went row: a mood step would add a tap to every answer, and a note already says how it went. Idea only.
+- Notes stay at 120 characters: a short line on one day. The box wraps and counts down from 100.
+- Notes has no month or year review screen beyond month captions, the Last week sheet and A year ago today.
+- Did we notes show only your own; others' shared notes stay on the card page. Under a folder filter Did we notes are hidden (a card has no folder).
+- Needs device testing: note box wrap and count at 390px, Notes search, folder filter, a year ago row, Did we notes failing offline and Try again.
+
 ## Moving from another habit app (UX loop 2026-11-06)
 
 - Loop's .zip backup does not load: it needs an unzip dependency (Aaron). Loop's CSV and a plain sheet load.

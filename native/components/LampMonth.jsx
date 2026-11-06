@@ -100,7 +100,6 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer, onNote }) {
     const row = { lamp, boardId: bookNow.id, dateIso: cell.iso, periodKey: periodKeyFor(lamp, cell.iso), answer }
     const canAnswer = Boolean(onAnswer) && Boolean(cell.state || cell.ask) && pastAnswerOpen(row, new Date())
     const photo = photoOn.get(cell.iso)
-    const didIt = answer?.status === 'yes' || answer?.status === 'late'
     const reply = (status) => {
       const next = onAnswer(row, status)
       // A changed answer offers Undo in the toast, which sits under the sheet.
@@ -112,7 +111,7 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer, onNote }) {
       kicker: shortLabel(lamp),
       title: formatBoardDate(cell.iso),
       body: [cell.state ? t(stateWord(cell)) : '', amountWords(answer?.amount, lamp.amountUnit), note].filter(Boolean).join('\n'),
-      content: canAnswer || (didIt && onNote) ? (
+      content: canAnswer || (answer && onNote) ? (
         <>
         {canAnswer ? (
         <View style={styles.sheetBtns}>
@@ -133,7 +132,7 @@ export function LampMonth({ book, lamp, colors, dateIso, onAnswer, onNote }) {
           })}
         </View>
         ) : null}
-        {didIt && onNote ? (
+        {answer && onNote ? (
           <View style={styles.sheetNote}>
             <KeyButton
               colors={colors}

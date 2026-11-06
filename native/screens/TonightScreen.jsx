@@ -60,6 +60,8 @@ import { scopedBooks } from '../../src/lib/tags.js'
 import { MILESTONE_LATE_DAYS, STREAK_BONUS, milestoneGemLine, milestoneLine, pendingStreakMilestone, takeStreakMilestone } from '../../src/lib/streak-milestones.js'
 import { payStreakBonus, retryStreakBonus } from '../lib/streak-bonus.js'
 import { TonightNote, openAnswerNote } from '../components/NightNotes.jsx'
+import { RecapNotes } from '../components/WeekRecap.jsx'
+import { recapNotes } from '../../src/lib/recap-notes.js'
 import { addProofFlow, canAddProof } from '../lib/proof-flow.jsx'
 import { proofNight } from '../../src/lib/proofs.js'
 import { pushSendAnswers } from '../../src/lib/send-answers.js'
@@ -1259,13 +1261,16 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     if (!sunday) return
     markWeekRecapSeen(sunday)
     const [y, m, d] = sunday.split('-').map(Number)
-    const recap = weekRecap(stack.shelf, weekStripNights(stack.shelf, new Date(y, m - 1, d, 12), tagId), tagId, new Date())
+    const week = weekStripNights(stack.shelf, new Date(y, m - 1, d, 12), tagId)
+    const recap = weekRecap(stack.shelf, week, tagId, new Date())
+    const notes = recapNotes(stack.shelf, week, tagId)
     // Nothing answered last week (or a new phone): nothing to show.
     if (!recap.dids && !recap.cleared) return
     publishSheet({
       kicker: t('recap.lastWeek'),
       title: t('recap.cleared', { cleared: recap.cleared, n: recap.nights }),
       body: recapLine(recap, gentle),
+      content: notes.length ? <RecapNotes notes={notes} colors={colors} /> : null,
       goLabel: t('recap.shareBtn'),
       closeLabel: t('settings.close'),
       colors,

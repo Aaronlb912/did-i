@@ -64,6 +64,7 @@ import {
   comingDays,
   markWelcomeSeen,
   shelfFeedRows,
+  noteDay,
   shelfNoteRows,
   shelfStatsCounts,
   shelfWeekNights,
@@ -75,12 +76,18 @@ import {
   weekRecap,
   weekStripNights,
   feedSearch,
+  mergeNoteRows,
+  weNoteRows,
+  withMonthHeads,
+  yearAgoNote,
 } from '../../src/lib/hall-pages.js'
+import { myWeNotes } from '../../src/lib/social-amounts.js'
+import { openAnswerNote } from '../components/NightNotes.jsx'
 import { shareRecap } from '../components/WeekRecap.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, freezeLine, openFreezeHow } from '../components/FreezeBits.jsx'
 import { weCardState, weCardsOn } from '../../src/lib/we-nights.js'
-import { weCardShort, weCardTitle, weCardsKnown } from '../../src/lib/did-we.js'
+import { useWeCardsSeen, weCardShort, weCardTitle, weCardsKnown } from '../../src/lib/did-we.js'
 import { bestQuestionStreak, isDayCadence, shelfRate30 } from '../../src/lib/lamp-record.js'
 import { SearchBox } from './questions.jsx'
 import { pinWidget } from '../lib/widget-pin.js'
@@ -110,7 +117,7 @@ import {
 import { armLampPings, requestPings, upcomingPings } from '../../src/lib/notify.js'
 import { syncPushTokenIfAllowed } from '../../src/lib/push.js'
 import { useDayNow } from '../hooks/useDayNow.js'
-import { addDaysIso, boardDate, dateTag, dueTonight, formatBoardDate, isEvery, isPerWeek, nightOpen, periodLabel, periodNight } from '../../src/lib/recurrence.js'
+import { addDaysIso, boardDate, dateTag, dueTonight, formatBoardDate, formatBoardDateYear, formatMonthYear, isEvery, isPerWeek, nightOpen, periodLabelYear, periodNight } from '../../src/lib/recurrence.js'
 import { perWeekLine } from '../../src/lib/every-copy.js'
 import { packList } from '../../src/lib/starters.js'
 import { FIRST_TIME, answeredNights, firstRunBook, isNewShelf, togglePack, togglePick } from '../../src/lib/first-run.js'
@@ -884,20 +891,84 @@ export function FeedScreen({ book, boards, tagId = '', now }) {
   )
 }
 
-// Every note, newest first, with a search over the note and its question.
-export function NotesScreen({ book, boards }) {
+// Every note, newest day first, with a search over the note and its question.
+// Your Did we notes join them (not under a folder filter: a card has no folder here).
+export function NotesScreen({ book, boards, tagId = '', now, onChangeBooks }) {
   const colors = useHallColors()
-  const allRows = useMemo(() => shelfNoteRows(inView(book, boards)), [book, boards])
+  const today = useDayNow()
+  const clock = now || today
+  const dateIso = boardDate(clock)
+  const filtered = tagIdsOf(tagId).length > 0
+  const [weRead, setWeRead] = useState({ rows: [], miss: '', loading: true })
+  const [again, setAgain] = useState(0)
+  const cardsSeen = useWeCardsSeen()
+  useEffect(() => {
+    let live = true
+    setWeRead((was) => ({ ...was, loading: true }))
+    myWeNotes()
+      .then((out) => live && setWeRead(out))
+      .catch(() => live && setWeRead({ rows: [], miss: 'people.reach' }))
+    return () => {
+      live = false
+    }
+  }, [again])
+  const localRows = useMemo(() => shelfNoteRows(inView(book, boards), tagId), [book, boards, tagId])
+  // cardsSeen: titles come from the last cards load, so read them again when it lands.
+  const weRows = useMemo(() => (filtered ? [] : weNoteRows(weRead.rows, weCardTitle, weCardsKnown())), [filtered, weRead, cardsSeen])
+  const allRows = useMemo(() => mergeNoteRows(localRows, weRows), [localRows, weRows])
   const [query, setQuery] = useState('')
   const rows = useMemo(() => feedSearch(allRows, query), [allRows, query])
   const page = useShown(rows, query)
+  const yearAgo = useMemo(() => (query ? null : yearAgoNote(allRows, dateIso)), [allRows, dateIso, query])
+  const weMiss = !filtered && weRead.miss && weRead.miss !== 'off'
+  const waiting = !filtered && weRead.loading && !localRows.length
+
+  function noteRow(row, key) {
+    if (row.we) {
+      return (
+        <Row
+          key={key}
+          colors={colors}
+          label={weCardShort(row.we) || t('we.title')}
+          note={`${formatBoardDateYear(row.day, dateIso)} · ${statusWord('yes')}\n${row.answer.note}`}
+          onPress={() => goHash('/we', { id: row.we })}
+        />
+      )
+    }
+    const night = String(row.answer.periodKey).startsWith('once:') ? formatBoardDateYear(noteDay(row), dateIso) : periodLabelYear(row.lamp, row.answer.periodKey, dateIso)
+    return (
+      <Row
+        key={key}
+        colors={colors}
+        label={shortLabel(row.lamp)}
+        note={`${night ? `${night} · ` : ''}${statusWord(row.answer.status, nightOpen(periodNight(row.lamp, row.answer.periodKey), clock))}\n${row.answer.note}`}
+        onPress={() => {
+          const opened = Boolean(onChangeBooks && row.boardId) && openAnswerNote({ boardId: row.boardId, lampId: row.lamp.id, periodKey: row.answer.periodKey, colors, onChange: (saved) => onChangeBooks([saved]) })
+          if (!opened) goHash('/lamp', { id: row.lamp.id })
+        }}
+      />
+    )
+  }
 
   return (
     <ScreenShell title={t('notes.title')} colors={colors}>
+      <FolderScope colors={colors} boards={boards} tagId={tagId} path="/notes" />
+      {weMiss ? (
+        <>
+          {localRows.length ? <Meta colors={colors}>{t('notes.weMiss')}</Meta> : null}
+          <KeyButton colors={colors} label={t('boot.retry')} onPress={() => setAgain((n) => n + 1)} />
+        </>
+      ) : null}
+      {yearAgo ? (
+        <>
+          <SetCap colors={colors}>{t('notes.yearAgo')}</SetCap>
+          {noteRow(yearAgo, 'year-ago')}
+        </>
+      ) : null}
       {allRows.length ? (
         <SearchBox value={query} onChange={setQuery} colors={colors} placeholder={t('notes.searchPh')} />
       ) : null}
-      {!allRows.length ? (
+      {waiting ? null : !allRows.length ? (
         <>
           <Meta colors={colors}>{t('notes.empty')}</Meta>
           <KeyButton colors={colors} label={t('help.questionsGo')} onPress={() => goHash('/lamps')} />
@@ -906,18 +977,13 @@ export function NotesScreen({ book, boards }) {
         <><Meta colors={colors}>{t('feed.noMatch')}</Meta><KeyButton colors={colors} label={t('questions.searchClear')} onPress={() => setQuery('')} /></>
       ) : (
         <>
-        {page.shown.map((row) => {
-          const night = periodLabel(row.lamp, row.answer.periodKey)
-          return (
-            <Row
-              key={row.answer.id || `${row.lamp.id}:${row.answer.periodKey}`}
-              colors={colors}
-              label={shortLabel(row.lamp)}
-              note={`${night ? `${night} · ` : ''}${statusWord(row.answer.status, nightOpen(periodNight(row.lamp, row.answer.periodKey)))}\n${row.answer.note}`}
-              onPress={() => goHash('/lamp', { id: row.lamp.id })}
-            />
-          )
-        })}
+        {withMonthHeads(page.shown).map((item) =>
+          item.head ? (
+            <SetCap key={`head:${item.head}`} colors={colors}>{formatMonthYear(`${item.head}-01`)}</SetCap>
+          ) : (
+            noteRow(item.row, item.row.answer.id || `${item.row.lamp.id}:${item.row.answer.periodKey}`)
+          ),
+        )}
         <ShowMore more={page.more} onPress={page.showMore} colors={colors} />
         </>
       )}

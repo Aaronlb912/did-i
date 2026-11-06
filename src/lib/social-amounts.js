@@ -242,6 +242,28 @@ export async function weNotes(cardId, night = boardDate()) {
   return { rows: notes.data || [], me, did: weNoteNights(dids.data, night), miss: '' }
 }
 
+// Every note you wrote on a Did we, newest day first, for the Notes list and
+// the CSV. One read, only your own rows. miss is '' when it worked, 'off' when
+// signed out, else the reason it failed; rows is always an array.
+export async function myWeNotes(limit = 500) {
+  const db = cloud()
+  if (!db) return { rows: [], miss: 'off' }
+  try {
+    const { data } = await db.auth.getSession()
+    const me = data?.session?.user?.id || ''
+    if (!me) return { rows: [], miss: 'off' }
+    const late = new Promise((resolve) => setTimeout(() => resolve({ error: { message: 'people.reach' } }), 8000))
+    const res = await Promise.race([
+      db.from('we_notes').select('card_id, night, note').eq('user_id', me).order('night', { ascending: false }).limit(limit),
+      late,
+    ])
+    if (res.error) return { rows: [], ...bad(res.error) }
+    return { rows: res.data || [], miss: '' }
+  } catch (error) {
+    return { rows: [], ...bad(error) }
+  }
+}
+
 // Your own answers on a card for the last 7 nights, as a Map night -> status.
 // One read; RLS only returns your own rows.
 export async function weMyWeek(cardId, night = boardDate()) {
