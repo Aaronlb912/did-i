@@ -1405,6 +1405,8 @@ export const zh = {
   'pings.kind.streakRiskSub': "今天还没完成时，在当天晚些时候提醒。",
   'pings.kind.streakHit': '连续记录里程碑',
   'pings.kind.streakHitSub': '连续记录达到新里程碑时。',
+  'pings.kind.gentleOff': "温和模式下关闭。",
+  'pings.kind.streakRiskGentle': "温和模式：只在昨天还没完成时于 {time} 提醒一次。",
   'pings.kind.day': '白天提醒',
   'pings.kind.daySub': '还有未回答的问题时，在 {morning} 和 {afternoon} 提醒你。',
   'pings.day.1': '用 Did I 开始新的一天。',

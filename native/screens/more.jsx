@@ -2311,6 +2311,10 @@ function PingKinds({ colors, on }) {
               sub={
                 kind === 'family'
                   ? t('pings.kind.familySubAt', { time: familyTime })
+                  : prefs.gentle === true && kind === 'streakHit'
+                    ? t('pings.kind.gentleOff')
+                  : prefs.gentle === true && kind === 'streakRisk'
+                    ? t('pings.kind.streakRiskGentle', { time: clockWords('07:00') })
                   : kind === 'day'
                     ? t('pings.kind.daySub', {
                         morning: clockWords(prefs.morningAsk !== false ? prefs.morningAt || MORNING_AT_DEFAULT : DAY_NUDGE_TIMES[0]),

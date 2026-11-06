@@ -1429,6 +1429,8 @@ export const de = {
   'pings.kind.streakRiskSub': "Spät am Tag, wenn heute noch offen ist.",
   'pings.kind.streakHit': 'Serien-Meilensteine',
   'pings.kind.streakHitSub': 'Wenn eine Serie eine neue Marke erreicht.',
+  'pings.kind.gentleOff': "Im sanften Modus aus.",
+  'pings.kind.streakRiskGentle': "Sanfter Modus: nur ein Hinweis um {time}, wenn gestern noch offen ist.",
   'pings.kind.day': 'Tageserinnerungen',
   'pings.kind.daySub': 'Ein Hinweis um {morning} und {afternoon}, solange Fragen offen sind.',
   'pings.day.1': 'Starte den Tag mit Did I.',

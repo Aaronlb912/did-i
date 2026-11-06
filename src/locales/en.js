@@ -1418,6 +1418,8 @@ export const en = {
   'pings.kind.streakRiskSub': "Late in the day if today is still open.",
   'pings.kind.streakHit': 'Streak milestones',
   'pings.kind.streakHitSub': 'When a streak reaches a new mark.',
+  'pings.kind.gentleOff': "Off in gentle mode.",
+  'pings.kind.streakRiskGentle': "Gentle mode: only a note at {time} when yesterday is still open.",
   'pings.kind.day': 'Day reminders',
   'pings.kind.daySub': 'A nudge at {morning} and {afternoon} while questions are still open.',
   'pings.day.1': 'Start the day with Did I.',

@@ -23,6 +23,25 @@ export function daysSinceLastAnswer(shelf, dateIso) {
   return newest ? dayNumber(dateIso) - dayNumber(newest) : Infinity
 }
 
+// Reminders back off after three days in a row with something due and no
+// answer. Returns the first day ahead (0 = today) that backs off, or Infinity.
+// Days still to come count as missed: any answer sets reminders again.
+// A shelf with nothing answered yet never backs off. isDue(iso) says whether
+// anything is due that day, so days off and Away do not count.
+export const BACK_OFF_DAYS = 3
+export function backOffFrom(shelf, dateIso, isDue, horizon = 15) {
+  const since = daysSinceLastAnswer(shelf, dateIso)
+  if (since === Infinity || !DATE_KEY.test(String(dateIso || ''))) return Infinity
+  const base = dayNumber(dateIso)
+  let missed = 0
+  for (let k = since === 0 ? 1 : Math.max(1 - since, -10); k < horizon; k += 1) {
+    if (!isDue(new Date((base + k) * 86400000).toISOString().slice(0, 10))) continue
+    missed += 1
+    if (missed >= BACK_OFF_DAYS) return Math.max(0, k + 1)
+  }
+  return Infinity
+}
+
 // A real gap, but not a brand new shelf with nothing answered yet.
 export function cameBack(shelf, dateIso, minDays = COME_BACK_DAYS) {
   const days = daysSinceLastAnswer(shelf, dateIso)

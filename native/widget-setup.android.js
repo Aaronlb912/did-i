@@ -20,7 +20,9 @@ import {
 } from '../src/lib/together-widget.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { resendWatchCards, sendWatchCards } from './watch-sync.js'
-import { armNativePingsNow, pingsStale } from './shim/native.js'
+import { armNativePingsNow, pingZoneMoved, pingsStale } from './shim/native.js'
+import { cameBack } from '../src/lib/come-back.js'
+import { boardDate } from '../src/lib/recurrence.js'
 import { widgetRedrawTimes } from '../src/lib/widget-config.js'
 import {
   applyPendingAndroidWidgetTap,
@@ -99,7 +101,11 @@ async function handleDidITonightWidgetTask({ widgetAction, widgetInfo, clickActi
   // Answered with the app closed: drop that question's later reminders now.
   // A time zone change lands here too (DidITonight.java): reminders are fixed
   // instants, so set them again in the new zone.
-  if (tappedShelf || woke || pingsStale()) await armNativePingsNow(readShelf()?.boards || []).catch(() => {})
+  // A week with no answer: the daily redraw stops setting them again, so the
+  // week runs out and the come back, renew and no rush notes can fire.
+  const boards = readShelf()?.boards || []
+  const quit = cameBack(boards, boardDate(new Date()), 7)
+  if (tappedShelf || woke || pingZoneMoved() || (pingsStale() && !quit)) await armNativePingsNow(boards).catch(() => {})
 }
 
 // Headless widget clicks evaluate the bundle and look for this task immediately.

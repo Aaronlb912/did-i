@@ -1407,6 +1407,8 @@ export const ja = {
   'pings.kind.streakRiskSub': "今日がまだ残っているとき、一日の終わりに。",
   'pings.kind.streakHit': '連続記録の節目',
   'pings.kind.streakHitSub': '連続記録が新しい節目に届いたとき。',
+  'pings.kind.gentleOff': "やさしいモードではオフです。",
+  'pings.kind.streakRiskGentle': "やさしいモード：昨日がまだ残っているときだけ {time} に通知します。",
   'pings.kind.day': '日中のリマインダー',
   'pings.kind.daySub': '答えていない質問があるとき、{morning} と {afternoon} にお知らせします。',
   'pings.day.1': 'Did I で一日を始めよう。',
