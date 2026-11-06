@@ -308,6 +308,9 @@ export function WeAsks({ colors }) {
             <Text style={[styles.meta, { color: colors.inkDim }]}>
               {t(`we.mode.${card.mode}`)} · {t(`we.shows.${card.shows}`)} · {weWhenWords(card)}
             </Text>
+            {/* What the card already shows about everyone, and who is on it. */}
+            <Text style={[styles.meta, { color: colors.inkDim }]}>{t(`we.showsNote.${card.shows}`)}</Text>
+            <WeFaces card={card} colors={colors} dots={false} />
           </View>
           <DidButton colors={colors} small label={t('we.join')} disabled={busy === card.id} onPress={() => reply(card, true)} />
           <KeyButton colors={colors} label={t('we.noThanks')} disabled={busy === card.id} onPress={() => reply(card, false)} />

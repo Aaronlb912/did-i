@@ -9709,7 +9709,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql', 'invite-friend.sql', 'leave-keep.sql', 'check-on-ends.sql'].slice(-11))
+  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql', 'invite-friend.sql', 'leave-keep.sql', 'check-on-ends.sql', 'family-share.sql'].slice(-11))
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -13765,7 +13765,8 @@ test('check-ons stop after the question end date: the column, the server rule an
   assert.match(sql, /and \(k\.ends_on is null or k\.local::date <= k\.ends_on\)/)
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.equal(files[files.length - 1], 'check-on-ends.sql', 'it runs after every file that defines queue_check_ons')
+  const lastQueue = files.findLastIndex((file) => /function public\.queue_check_ons\(/.test(readFileSync(path.join(root, 'supabase', file), 'utf8')))
+  assert.equal(files[lastQueue], 'check-on-ends.sql', 'it runs after every file that defines queue_check_ons')
 })
 
 test('a question whose end date passed gets one finished popup: last 7 days, once, never for Done or old ones', async () => {
@@ -13934,6 +13935,45 @@ await testAsync('Remind me asks again after quiet hours, and a time inside them 
   } finally {
     writePrefs({ quietOn: false })
     localStorage.removeItem('did-i-remind')
+  }
+})
+
+await testAsync('family sharing: lapsed asks, who takes over, the shows-every-answer line, and the SQL that backs them', async () => {
+  const { weAskLapsed, weHeir, takeWeShowsNote } = await import('../src/lib/did-we.js')
+  assert.equal(weAskLapsed({ state: 'asked', expired: true }), true)
+  assert.equal(weAskLapsed({ state: 'asked', expired: false }), false)
+  assert.equal(weAskLapsed({ state: 'in', expired: true }), false, 'a member is never lapsed')
+  const heir = weHeir({
+    people: [
+      { id: 'me', me: true, state: 'in', joinedAt: '2026-01-01T00:00:00Z' },
+      { id: 'b', name: 'Bo', state: 'in', joinedAt: '2026-03-01T00:00:00Z' },
+      { id: 'a', name: 'Al', state: 'in', joinedAt: '2026-02-01T00:00:00Z' },
+      { id: 'c', name: 'Cy', state: 'asked', joinedAt: '2026-01-15T00:00:00Z' },
+    ],
+  })
+  assert.equal(heir.name, 'Al', 'the one who has been on it longest, not me, not a waiting ask')
+  assert.equal(weHeir({ people: [{ me: true, state: 'in' }] }), null, 'nobody to take over')
+  const now = Date.parse('2026-11-06T12:00:00Z')
+  const card = { id: 'k1', shows: 'all', myState: 'in', mine: false, showsAt: '2026-11-05T12:00:00Z', showsByName: 'Sam' }
+  localStorage.removeItem('did-i-we-shows-seen')
+  try {
+    assert.equal(takeWeShowsNote([{ ...card, mine: true }], now).length, 0, 'the maker is not told')
+    assert.equal(takeWeShowsNote([{ ...card, showsAt: '2026-10-01T00:00:00Z' }], now).length, 0, 'older than 7 days is not news')
+    assert.equal(takeWeShowsNote([{ ...card, shows: 'count' }], now).length, 0, 'a card back on count has nothing new to show')
+    assert.equal(takeWeShowsNote([{ ...card, id: 'k2', shows: 'waiting' }], now).length, 1, 'off count to waiting counts too')
+    assert.equal(takeWeShowsNote([card], now).length, 1)
+    assert.equal(takeWeShowsNote([card], now).length, 0, 'shown once')
+    assert.equal(takeWeShowsNote([{ ...card, showsAt: '2026-11-06T08:00:00Z' }], now).length, 1, 'a new change shows again')
+  } finally {
+    localStorage.removeItem('did-i-we-shows-seen')
+  }
+  const sql = readFileSync(new URL('../supabase/family-share.sql', import.meta.url), 'utf8')
+  assert.ok(/after delete on public\.family_members/.test(sql) && /we_kid_ok\(c, old\.user_id\)/.test(sql), 'leaving a family drops the kid cards')
+  assert.ok(/only the person who made it can change it/.test(sql) && /revoke all on function public\.we_take_off/.test(sql), 'only the maker drops, the helper is closed')
+  assert.ok(/kid card is family only/.test(sql), 'a late yes is checked against the kid rule')
+  assert.ok(/link_maker_hidden/.test(sql) && /look_up_did_you_link/.test(sql), 'kid links show no name to signed out viewers')
+  for (const lang of ['de', 'en', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
+    assert.ok(sql.includes(`"${lang}": {`) && sql.includes('we_shows_all'), `push words for ${lang}`)
   }
 })
 

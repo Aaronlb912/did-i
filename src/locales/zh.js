@@ -4244,4 +4244,13 @@ export const zh = {
   'lamp.unitWeeksNone': "你的连续记录现在按周计算。",
   'lamp.keepHistory': "历史记录和连续记录会留在这个问题上。",
   'hang.perWeekCounts': "从本周开始计算。",
+  'we.takeOff': '移出 {name}',
+  'we.takeOffTitle': '把 {name} 移出这个 Did we？',
+  'we.takeOffBody': '之前的回答会保留。以后还可以再邀请。',
+  'confirm.weTookOff': '{name} 已移出这个 Did we。',
+  'we.leaveHeir': '{name} 会在你之后接手。',
+  'we.showsAllNow': '{name} 设置为显示所有回答。',
+  'we.showsWaitingNow': '{name} 设置为显示谁完成了。',
+  'we.askRanOut': '邀请已过期',
+  'we.askAgain': '再次邀请 {name}',
 }

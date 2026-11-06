@@ -4286,4 +4286,13 @@ export const pt = {
   'lamp.unitWeeksNone': "Sua sequência agora conta semanas.",
   'lamp.keepHistory': "O histórico e a sequência ficam com esta pergunta.",
   'hang.perWeekCounts': "Conta a partir desta semana.",
+  'we.takeOff': 'Tirar {name}',
+  'we.takeOffTitle': 'Tirar {name} deste Did we?',
+  'we.takeOffBody': 'As respostas anteriores ficam. Você pode convidar de novo depois.',
+  'confirm.weTookOff': 'Você tirou {name} deste Did we.',
+  'we.leaveHeir': '{name} cuida dele depois de você.',
+  'we.showsAllNow': '{name} configurou para mostrar todas as respostas.',
+  'we.showsWaitingNow': '{name} configurou para mostrar quem fez.',
+  'we.askRanOut': 'convite vencido',
+  'we.askAgain': 'Convidar {name} de novo',
 }

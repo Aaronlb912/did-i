@@ -136,6 +136,7 @@ const files = [
   'supabase/invite-friend.sql',
   'supabase/leave-keep.sql',
   'supabase/check-on-ends.sql',
+  'supabase/family-share.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

@@ -4286,4 +4286,13 @@ export const it = {
   'lamp.unitWeeksNone': "La tua serie ora conta le settimane.",
   'lamp.keepHistory': "Cronologia e serie restano con questa domanda.",
   'hang.perWeekCounts': "Conta da questa settimana.",
+  'we.takeOff': 'Togli {name}',
+  'we.takeOffTitle': 'Togliere {name} da questo Did we?',
+  'we.takeOffBody': 'Le sue risposte passate restano. Puoi invitare di nuovo questa persona più tardi.',
+  'confirm.weTookOff': '{name} non è più in questo Did we.',
+  'we.leaveHeir': '{name} lo gestirà dopo di te.',
+  'we.showsAllNow': '{name} ha impostato la vista su tutte le risposte.',
+  'we.showsWaitingNow': '{name} ha impostato la vista su chi l’ha fatto.',
+  'we.askRanOut': 'invito scaduto',
+  'we.askAgain': 'Invita di nuovo {name}',
 }

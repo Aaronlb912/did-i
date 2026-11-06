@@ -4253,4 +4253,13 @@ export const ko = {
   'lamp.unitWeeksNone': "연속 기록을 이제 주 단위로 세어요.",
   'lamp.keepHistory': "기록과 연속 기록은 이 질문에 그대로 남아요.",
   'hang.perWeekCounts': "이번 주부터 세어요.",
+  'we.takeOff': '{name}님 내보내기',
+  'we.takeOffTitle': '이 Did we에서 {name}님을 내보낼까요?',
+  'we.takeOffBody': '지난 답은 남아요. 나중에 다시 초대할 수 있어요.',
+  'confirm.weTookOff': '{name}님을 이 Did we에서 내보냈어요.',
+  'we.leaveHeir': '{name}님이 이어서 맡아요.',
+  'we.showsAllNow': '{name}님이 모든 답을 보이게 설정했어요.',
+  'we.showsWaitingNow': '{name}님이 누가 했는지 보이게 설정했어요.',
+  'we.askRanOut': '초대 기간이 지났어요',
+  'we.askAgain': '{name}님 다시 초대',
 }

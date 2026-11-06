@@ -75,6 +75,11 @@ export async function weTonight(night = tonightIso()) {
     card.makerName = card.makerName ?? card.maker_name ?? ''
     card.changedByName = card.changedByName ?? card.changed_by_name ?? ''
     card.priorCadence = card.priorCadence ?? card.prior_cadence ?? ''
+    card.showsAt = card.showsAt ?? ''
+    card.showsByName = card.showsByName ?? ''
+    // An ask past its 14 days is not on the card: kept apart, to ask again.
+    card.lapsed = (card.people || []).filter(weAskLapsed)
+    if (card.lapsed.length) card.people = card.people.filter((p) => !weAskLapsed(p))
     // Older cards were saved without the "?"; show every one as a question.
     card.question = weQuestion(card.question)
     if (card.total == null) card.total = (card.people || []).filter((p) => p.state === 'in').length
@@ -280,27 +285,61 @@ export function saveWeReminders(cards) {
 
 // Cards someone else changed that this phone has not shown yet. Each shows once.
 const SCHEDULE_SEEN_KEY = 'did-i-we-schedule-seen'
+const SHOWS_SEEN_KEY = 'did-i-we-shows-seen'
 
-export function takeWeScheduleNote(cards, myId) {
+function takeFresh(storeKey, cards, stampOf, wanted) {
   let seen = []
   try {
-    const list = JSON.parse(localStorage.getItem(SCHEDULE_SEEN_KEY) || '[]')
+    const list = JSON.parse(localStorage.getItem(storeKey) || '[]')
     if (Array.isArray(list)) seen = list
   } catch {
     // Unreadable: treat as nothing seen.
   }
-  const fresh = (cards || []).filter(
-    (card) => card.changedAt && card.changedBy && card.changedBy !== myId && !seen.includes(`${card.id}:${card.changedAt}`),
-  )
+  const fresh = (cards || []).filter((card) => wanted(card) && !seen.includes(`${card.id}:${stampOf(card)}`))
   if (fresh.length) {
-    const next = [...seen, ...fresh.map((card) => `${card.id}:${card.changedAt}`)].slice(-50)
+    const next = [...seen, ...fresh.map((card) => `${card.id}:${stampOf(card)}`)].slice(-50)
     try {
-      localStorage.setItem(SCHEDULE_SEEN_KEY, JSON.stringify(next))
+      localStorage.setItem(storeKey, JSON.stringify(next))
     } catch {
       // A convenience only.
     }
   }
   return fresh
+}
+
+export function takeWeScheduleNote(cards, myId) {
+  return takeFresh(
+    SCHEDULE_SEEN_KEY,
+    cards,
+    (card) => card.changedAt,
+    (card) => card.changedAt && card.changedBy && card.changedBy !== myId,
+  )
+}
+
+// The maker widened what a card shows (every answer, or off count), in the
+// last 7 days. The maker does not need telling.
+export function takeWeShowsNote(cards, now = Date.now()) {
+  return takeFresh(
+    SHOWS_SEEN_KEY,
+    cards,
+    (card) => card.showsAt,
+    (card) =>
+      card.showsAt && card.showsByName && card.shows !== 'count' && card.myState === 'in' && !card.mine &&
+      now - Date.parse(card.showsAt) < 7 * 86400000,
+  )
+}
+
+// An ask the server marks as past its 14 days (people[].expired).
+export const weAskLapsed = (person) => person.state === 'asked' && person.expired === true
+
+// Who the card goes to if its maker leaves: the one who has been on it longest.
+export function weHeir(card) {
+  const at = (p) => (p.joinedAt ? Date.parse(p.joinedAt) : Infinity)
+  return (
+    (card.people || [])
+      .filter((p) => !p.me && p.state === 'in')
+      .sort((x, y) => (at(x) === at(y) ? 0 : at(x) < at(y) ? -1 : 1))[0] || null
+  )
 }
 
 async function call(name, args) {
@@ -375,6 +414,8 @@ export async function weKnownPeople() {
 
 export const weAsk = (card, other) => call('we_ask', { card, other })
 export const weReply = (card, yes) => call('we_reply', { card, yes })
+// Only the maker can take someone off; the server checks.
+export const weDrop = (card, other) => call('we_drop', { card, other }).then(dropLoaded)
 // Leaving or ending a card drops the last load, so Today reads again and
 // does not show it for a few more seconds.
 export const weLeave = (card) => call('we_leave', { card }).then(dropLoaded)

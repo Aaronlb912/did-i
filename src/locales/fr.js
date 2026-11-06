@@ -4293,4 +4293,13 @@ export const fr = {
   'lamp.unitWeeksNone': "Ta série compte maintenant les semaines.",
   'lamp.keepHistory': "L’historique et la série restent avec cette question.",
   'hang.perWeekCounts': "Compte à partir de cette semaine.",
+  'we.takeOff': 'Retirer {name}',
+  'we.takeOffTitle': 'Retirer {name} de ce Did we ?',
+  'we.takeOffBody': 'Ses réponses passées restent. Tu pourras l’inviter de nouveau plus tard.',
+  'confirm.weTookOff': '{name} n’est plus dans ce Did we.',
+  'we.leaveHeir': '{name} s’en occupera après toi.',
+  'we.showsAllNow': '{name} l’a réglé pour montrer toutes les réponses.',
+  'we.showsWaitingNow': '{name} l’a réglé pour montrer qui l’a fait.',
+  'we.askRanOut': 'invitation expirée',
+  'we.askAgain': 'Réinviter {name}',
 }
