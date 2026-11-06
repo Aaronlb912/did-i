@@ -7929,6 +7929,77 @@ test('a reminder tap at 23:59:58 handled after midnight files to its night, once
   assert.equal(firstResponse(seen, { ...response, actionIdentifier: 'nope' }), true)
 })
 
+await testAsync('a tap on the grace note puts yesterday first until it is done, grace ends or the app backgrounds', async () => {
+  const { askGraceFocus, clearGraceFocus, graceFirst, graceFocusLamp, graceFocused } = await import('../src/lib/recurrence.js')
+  const { opensGrace } = await import('../src/lib/notify-answer.js')
+  const at = (h, m = 0) => new Date(2026, 9, 3, h, m)
+  try {
+    assert.equal(graceFirst(at(7)), false, 'behind today from 5am until a note is tapped')
+    assert.equal(opensGrace({ go: '/tonight', streakRisk: true }, at(7)), true, 'the 7:00 streak note')
+    assert.equal(opensGrace({ lampId: 'a', night: '2026-10-02' }, at(7)), true, "yesterday's reminder")
+    assert.equal(opensGrace({ lampId: 'a', night: '2026-10-03' }, at(7)), false, "today's reminder")
+    assert.equal(opensGrace({ go: '/tonight', streakRisk: true }, at(10)), false, 'no grace after 9am')
+    askGraceFocus(at(7), 'b')
+    assert.equal(graceFocused(at(7, 30)), true, 'yesterday first on Today while the focus holds')
+    assert.equal(graceFocusLamp(at(7, 30)), 'b', 'the tapped question leads')
+    assert.equal(graceFirst(at(7, 30)), false, 'voice answers and the widget keep the clock rule')
+    assert.equal(graceFocused(at(8, 59)), true)
+    assert.equal(graceFocused(at(9)), false, 'grace ended')
+    assert.equal(graceFocusLamp(at(9)), '', 'no lamp after grace')
+    assert.equal(graceFocused(new Date(2026, 9, 4, 7)), false, "the next morning's grace is not this focus")
+    clearGraceFocus()
+    assert.equal(graceFocused(at(7)), false, 'cleared')
+  } finally {
+    clearGraceFocus()
+  }
+  const push = readFileSync(new URL('../native/shim/push.js', import.meta.url), 'utf8')
+  assert.ok(push.includes('opensGrace(data') && push.includes('askGraceFocus(new Date(), data.lampId)'), 'a plain note tap asks for the focus')
+  assert.ok(/state === 'background'\) clearGraceFocus\(\)/.test(push), 'the focus ends when the app backgrounds')
+  const tonight = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(tonight.includes('onGraceFocus(') && tonight.includes('clearGraceFocus()') && tonight.includes('graceFirst() || graceFocused()'), 'Today redraws on the focus and lets go when yesterday is done')
+})
+
+test('delivered notes that an answer made untrue are dismissed; cheers and social notes are not', async () => {
+  const { staleDelivered } = await import('../src/lib/notify-answer.js')
+  const note = (identifier, data, extra = {}) => ({ date: Date.now(), request: { identifier, content: { data }, trigger: { type: 'calendar' }, ...extra } })
+  const presented = [
+    note('ask-done', { lampId: 'a', night: '2026-11-04', go: '/tonight' }),
+    note('ask-open', { lampId: 'b', night: '2026-11-04', go: '/tonight' }),
+    note('ask-other-day', { lampId: 'a', night: '2026-11-05', go: '/tonight' }),
+    note('ask-month', { lampId: 'a', night: '2026-11', go: '/tonight' }),
+    note('we-done', { weId: 'w1', night: '2026-11-04', go: '/tonight' }),
+    note('we-open', { weId: 'w2', night: '2026-11-04', go: '/tonight' }),
+    note('left', { go: '/tonight', left: true }),
+    note('risk', { go: '/tonight', streakRisk: true }),
+    note('hit', { go: '/tonight', streakHit: true }),
+    note('plain', { go: '/tonight' }),
+    note('cheer', { go: '/tonight', left: true, streakRisk: true, lampId: 'a', night: '2026-11-04' }, { trigger: { type: 'push' } }),
+    note('didyou', { go: '/inbox', sendId: 's1' }, { trigger: { type: 'push' } }),
+  ]
+  const ctx = (over) => ({
+    answered: (id, night) => id === 'a' && night === '2026-11-04',
+    weDid: (id) => id === 'w1',
+    openToday: false,
+    atRisk: () => false,
+    ...over,
+  })
+  assert.deepEqual(staleDelivered(presented, ctx()), ['ask-done', 'we-done', 'left', 'risk'], 'only our own notes that are now untrue')
+  assert.deepEqual(staleDelivered(presented, ctx({ openToday: true, atRisk: () => true })), ['ask-done', 'we-done'], 'N left and the streak note stay while they are true')
+  assert.deepEqual(staleDelivered(null, ctx()), [])
+  const nat = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
+  const dismiss = nat.slice(nat.indexOf('async function dismissStale'), nat.indexOf('async function schedulePingsNow'))
+  assert.ok(dismiss.includes("typeof Notifications.getPresentedNotificationsAsync !== 'function'") && dismiss.includes("typeof Notifications.dismissNotificationAsync !== 'function'") && dismiss.includes('catch'), 'guarded for old builds and shims')
+  assert.ok(nat.includes('await dismissStale(Notifications, list, now, openRows)'), 'the schedule rebuild clears the tray')
+  assert.ok(!nat.includes('They answer without opening'), 'the buttons open the app; the comment says so')
+})
+
+test('a Did we button press updates the phone record and the widget', () => {
+  const app = readFileSync(new URL('../native/NativeApp.jsx', import.meta.url), 'utf8')
+  const we = app.slice(app.indexOf('onWeAnswer: async'), app.indexOf("text: t('people.reach')", app.indexOf('onWeAnswer: async')))
+  assert.ok(we.includes('markWeNight(cardId') && we.includes('syncTonightWidget(readShelf())'), 'marks the night and redraws the widget')
+  assert.ok(we.indexOf('markWeNight') > we.indexOf('if (!out.miss)'), 'only on a saved answer')
+})
+
 await testAsync('coins earned for the server survive a reload, for that account only', async () => {
   // Three loads of the module stand in for three app starts. Imported first:
   // other tests may touch storage while an import is awaited.

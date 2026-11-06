@@ -58,6 +58,35 @@ export function graceNightIso(now = new Date()) {
   return addDaysIso(boardDate(now), -1)
 }
 
+// A tap on the streak note (or on yesterday's reminder) during grace puts last
+// night's cards first on Today, the same as before 5am. It holds until yesterday
+// is answered, grace ends or the app goes to the background. Only Today reads it:
+// voice answers and the widget keep the clock rule.
+let graceFocusNight = ''
+let graceFocusLampId = ''
+const graceFocusWatchers = new Set()
+export function askGraceFocus(now = new Date(), lampId = '') {
+  graceFocusNight = graceNightIso(now)
+  graceFocusLampId = lampId ? String(lampId) : ''
+  graceFocusWatchers.forEach((fn) => fn())
+}
+export function clearGraceFocus() {
+  graceFocusNight = ''
+  graceFocusLampId = ''
+}
+// The question whose reminder was tapped, shown first among yesterday's.
+export function graceFocusLamp(now = new Date()) {
+  return graceFocused(now) ? graceFocusLampId : ''
+}
+export function graceFocused(now = new Date()) {
+  const night = graceNightIso(now)
+  return Boolean(night) && night === graceFocusNight
+}
+export function onGraceFocus(fn) {
+  graceFocusWatchers.add(fn)
+  return () => graceFocusWatchers.delete(fn)
+}
+
 // Before 5am last night's open questions come first.
 export function graceFirst(now = new Date()) {
   return Boolean(graceNightIso(now)) && wallClock(now).getHours() < GRACE_FIRST_UNTIL

@@ -8,20 +8,20 @@ import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
 import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
-import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions } from '../../src/lib/notify-answer.js'
+import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions, staleDelivered } from '../../src/lib/notify-answer.js'
 import { REMIND_TRIES, readReminds, remindNext } from '../../src/lib/remind-me.js'
 import { afterQuiet, awayOn, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
 import { capNotes, earlyCallAt, lastCallAt, leftNote } from '../../src/lib/quiet.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
-import { boardDate, dueTonight, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
+import { boardDate, dueTonight, graceNightIso, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
-import { graceRiskFire, lastNightGraceFire, streakRiskFire } from '../../src/lib/streak-risk.js'
+import { graceRiskFire, lastNightGraceFire, streakAtRisk, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { AFTERNOON_AT_DEFAULT, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges, pingAheads } from '../../src/lib/day-nudges.js'
 import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { readWePings, weMonthlyPingDay } from '../../src/lib/we-widget.js'
-import { weNightStatus } from '../../src/lib/we-nights.js'
+import { weNightStatus, weOpenOn } from '../../src/lib/we-nights.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
 import { makeFeelTap } from '../lib/feel-tap.js'
@@ -372,6 +372,40 @@ export async function cancelRemind(item) {
   }
 }
 
+// An answer (in the app, widget, watch or sync) cancels what is scheduled; this
+// clears our own notes already in the tray that it made untrue. Old builds and
+// shims without the calls do nothing.
+async function dismissStale(Notifications, list, now, openRows) {
+  try {
+    if (typeof Notifications.getPresentedNotificationsAsync !== 'function' || typeof Notifications.dismissNotificationAsync !== 'function') return
+    const presented = await Notifications.getPresentedNotificationsAsync()
+    if (!Array.isArray(presented) || !presented.length) return
+    const today = boardDate(now)
+    const grace = graceNightIso(now)
+    const heat = shelfStreak(list, now)
+    const noon = (iso) => {
+      const [y, m, d] = iso.split('-').map(Number)
+      return new Date(y, m - 1, d, 12)
+    }
+    const riskOn = (night) => {
+      if (night === today) return list.some((book) => streakAtRisk(book, now, heat))
+      return night === grace && list.some((book) => streakAtRisk(book, noon(night), heat))
+    }
+    const ids = staleDelivered(presented, {
+      answered: (lampId, night) => list.some((book) => (book.answers || []).some((a) => a.lampId === lampId && a.periodKey === night && (a.status === 'yes' || a.status === 'late'))),
+      weDid: (weId, night) => weNightStatus(night, weId) === 'did',
+      openToday: openRows.length > 0 || weOpenOn(today).size > 0,
+      atRisk: (at) => {
+        const when = new Date(at)
+        return riskOn(graceNightIso(when) || boardDate(when))
+      },
+    })
+    for (const id of ids) await Notifications.dismissNotificationAsync(id)?.catch?.(() => {})
+  } catch {
+    // The notes stay in the tray; nothing else depends on it.
+  }
+}
+
 // Takes one board or every board on the shelf; each tag's questions ping.
 async function schedulePingsNow(books, now = new Date()) {
   // An empty list still runs: it clears what an old account left scheduled.
@@ -388,8 +422,9 @@ async function schedulePingsNow(books, now = new Date()) {
         importance: Notifications.AndroidImportance.HIGH,
       }).catch(() => {})
     }
-    // Did and Nope buttons on a question reminder. They answer without opening
-    // the app (native/shim/push.js saves it like a widget tap).
+    // Did and Not yet buttons on a question reminder. They open the app for a
+    // moment (opensAppToForeground), and native/shim/push.js saves the answer
+    // like a widget tap.
     await Notifications.setNotificationCategoryAsync(ASK_CATEGORY, askActions(t)).catch(() => {})
     // Keep and Pass too, so a language change reaches them without a restart.
     await Notifications.setNotificationCategoryAsync(SEND_CATEGORY, sendActions(t)).catch(() => {})
@@ -497,7 +532,7 @@ async function schedulePingsNow(books, now = new Date()) {
       for (const note of group) notes.splice(notes.indexOf(note), 1)
       notes.push({
         identifier: String(notifyId('late', String(key))),
-        content: { title: 'Did I', body: leftBody(group.length, group[0].trigger.date), data: { go: '/tonight' } },
+        content: { title: 'Did I', body: leftBody(group.length, group[0].trigger.date), data: { go: '/tonight', left: true } },
         trigger: group[0].trigger,
         lateCall: true,
         wall: true,
@@ -515,7 +550,7 @@ async function schedulePingsNow(books, now = new Date()) {
       if (group.length < 2 || notes.some((n) => n.lateCall && n.trigger.date.getTime() === at.getTime())) continue
       notes.push({
         identifier: String(notifyId('early', String(at.getTime()))),
-        content: { title: 'Did I', body: leftBody(group.length, at), data: { go: '/tonight' } },
+        content: { title: 'Did I', body: leftBody(group.length, at), data: { go: '/tonight', left: true } },
         trigger: group[0].trigger,
         earlyCall: true,
         wall: true,
@@ -704,6 +739,7 @@ async function schedulePingsNow(books, now = new Date()) {
         failed += 1
       }
     }
+    await dismissStale(Notifications, list, now, openRows)
     // Saved only once all are set, so a run cut short or a failed note is tried again on the next open.
     try {
       if (failed) {
