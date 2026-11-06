@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
-import { View } from 'react-native'
+import { AppState, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { currentBook, readShelf } from '../src/lib/board-shelf.js'
@@ -19,8 +19,17 @@ import { installQuickActions } from './quick-actions.js'
 import { refreshTogether } from '../src/lib/people.js'
 import { t, tMiss } from '../src/lib/i18n.js'
 import { showToast } from './lib/toast-queue.js'
+import { confirmDone } from './lib/confirm.js'
 import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
 import { answerRemind } from './lib/remind-answer.js'
+
+// Every folder with questions today is done, and no Did we is still due.
+function dayClear(boards, now) {
+  const we = weNight(boardDate(now))
+  if (we.done + (we.hidden || 0) < we.due) return false
+  const live = (boards || []).filter((book) => countedTonightRows(dueTonight(book, now)).length)
+  return live.length > 0 && live.every((book) => allClearTonight(book, now))
+}
 
 // Did on a second reminder for a question already Did: nothing was lost.
 function alreadySaid(lampId, kind, night) {
@@ -29,7 +38,9 @@ function alreadySaid(lampId, kind, night) {
     (book.answers || []).some((answer) => answer.lampId === lampId && (!night || answer.periodKey === night) && want.includes(answer.status)),
   )
 }
-import { armNativePingsNow, dropSnoozed } from './shim/native.js'
+import { armNativePingsNow, dropSnoozed, feelTap } from './shim/native.js'
+import { allClearTonight, boardDate, countedTonightRows, dueTonight } from '../src/lib/recurrence.js'
+import { weNight } from '../src/lib/we-nights.js'
 import { onSocialLive } from '../src/lib/social-live.js'
 import { hallColors } from './palette.js'
 import { BootView } from './components/BootView.jsx'
@@ -122,7 +133,16 @@ export function NativeApp() {
         // without opening Tonight. A night that has turned or an answer that
         // is already set (the undo and lock rules) is not changed.
         onAnswer: (lampId, kind, night, at) => {
+          const open = AppState.currentState === 'active'
+          const wasClear = open && dayClear(readShelf().boards, new Date())
           const shelf = applyWidgetTapOnce(lampId, kind, night, new Date(), at || Date.now())
+          // With the app open, the answer says it landed, and that it finished the day.
+          if (shelf && open) {
+            const done = !wasClear && dayClear(shelf.boards, new Date())
+            if (done) window.__didIBigFelt = Date.now()
+            feelTap(done ? 'hall-on' : kind === 'nope' ? 'skip' : 'did')
+            confirmDone(t(done ? 'noteAnswer.dayDone' : 'noteAnswer.saved'))
+          }
           if (shelf) dropSnoozed({ lampId }).catch(() => {})
           if (shelf && nativeWidgetsEnabled()) syncTonightWidget(shelf).catch(() => {})
           // Now, not after the debounce: iOS may suspend a background wake first,

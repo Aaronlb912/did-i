@@ -80,6 +80,8 @@ export const pt = {
   'clock.24': '24 horas (20:30)',
   'settings.lessMotion': 'Menos movimento',
   'settings.lessMotionSub': "Menos animações e efeitos. Também segue a configuração do seu celular.",
+  'settings.vibrate': "Vibração",
+  'settings.vibrateSub': "Uma vibração rápida quando você responde e quando o dia termina.",
   'settings.gentle': 'Modo suave',
   'settings.gentleSub': "Oculta os números da sequência. Os dias continuam contando.",
   'settings.gentleHidden': "O modo suave está ativado, então os números da sequência estão ocultos. Seus dias continuam contando. Desative em Ajustes para vê-los.",
@@ -3235,6 +3237,8 @@ export const pt = {
   'freeze.how': "A cada 14 dias seguidos você ganha um congelamento. Ele mantém sua sequência se você perder um dia.",
   'why.freeze': "Um congelamento manteve sua sequência.",
   'noteAnswer.notSaved': "A resposta não foi salva. O dia pode ter acabado, ou já tinha resposta.",
+  'noteAnswer.saved': "Salvo.",
+  'noteAnswer.dayDone': "Salvo. Hoje está feito.",
   // r10-freeze-info
   'freeze.howTitle': "Como funcionam as proteções de sequência",
   'freeze.rule1': "Uma proteção mantém sua sequência se você perder um dia.",

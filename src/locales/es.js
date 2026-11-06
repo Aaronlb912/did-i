@@ -80,6 +80,8 @@ export const es = {
   'clock.24': '24 horas (20:30)',
   'settings.lessMotion': 'Menos movimiento',
   'settings.lessMotionSub': "Menos animaciones y efectos. También sigue el ajuste de tu teléfono.",
+  'settings.vibrate': "Vibración",
+  'settings.vibrateSub': "Una vibración breve al responder y al terminar el día.",
   'settings.gentle': 'Modo suave',
   'settings.gentleSub': "Oculta los números de racha. Los días siguen contando.",
   'settings.gentleHidden': "El modo suave está activado, así que los números de racha están ocultos. Tus días siguen contando. Desactívalo en Ajustes para verlos.",
@@ -3239,6 +3241,8 @@ export const es = {
   'freeze.how': "Cada 14 días seguidos ganas un congelador. Mantiene tu racha si te pierdes un día.",
   'why.freeze': "Un congelador mantuvo tu racha.",
   'noteAnswer.notSaved': "No se guardó la respuesta. Puede que el día haya terminado o ya tuviera respuesta.",
+  'noteAnswer.saved': "Guardado.",
+  'noteAnswer.dayDone': "Guardado. Hoy está listo.",
   // r10-freeze-info
   'freeze.howTitle': "Cómo funcionan los protectores de racha",
   'freeze.rule1': "Un protector mantiene tu racha si te pierdes un día.",

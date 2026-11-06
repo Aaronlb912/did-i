@@ -221,11 +221,20 @@ export function useTonightStack({
   const wasDone = useRef(nightDone)
   const cheerDays = useRef(new Set())
   useEffect(() => {
-    // Your own questions were already done; a Did we just finished the night.
-    if (!wasDone.current && nightDone && weTonight.due && weTonight.done >= weTonight.due) {
+    // Your own questions were already done; a Did we just finished the day
+    // (answered, or Not yet on a monthly card). The clear waited for this.
+    if (!wasDone.current && nightDone && weTonight.due) {
       const to = shelfStreak(shelf, clock, tagId)
       if (to > 0 && !cheerDays.current.has(dateIso)) {
         cheerDays.current.add(dateIso)
+        if (typeof window !== 'undefined') {
+          window.__didICheerFull = Date.now()
+          // The day's buzz, once: a frame or milestone right after stays quiet.
+          if (Date.now() - (window.__didIBigFelt || 0) > 1500) {
+            window.__didIBigFelt = Date.now()
+            feelTap('hall-on')
+          }
+        }
         setCheer({ dateIso, from: to - 1, to })
       }
     }
@@ -495,20 +504,26 @@ export function useTonightStack({
     if (!pillPick || rowKey(pillPick) !== rowKey(row)) setPillPick(null)
     armUndo({ book, after: next, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
     const clears = !wasClear && allClearTonight(next, clock)
-    // One success when the night clears, not a Did and then a second one.
+    // A Did we still due today holds the day: this is a Did like any other,
+    // and the day's moment plays once the Did we is done (the effect above).
+    const weOpen = weTonight.done + (weTonight.hidden || 0) < weTonight.due
+    const dayClears = clears && !weOpen
+    // One success when the day clears, not a Did and then a second one.
     if (finalStatus === 'skip') feelTap('skip')
-    else if (!clears) feelTap('did')
+    else if (!dayClears) feelTap('did')
     if (book.clickSound && finalStatus === 'yes') playClick()
     if (clears) {
-      // The night just cleared: no card follows, so its cheer plays in full.
-      if (typeof window !== 'undefined') window.__didICheerFull = Date.now()
-      feelTap('hall-on')
+      if (dayClears) {
+        // The day just cleared: no card follows, so its cheer plays in full.
+        if (typeof window !== 'undefined') window.__didICheerFull = window.__didIBigFelt = Date.now()
+        feelTap('hall-on')
+      }
       const afterBooks = shelf.map((item) => (item.id === next.id ? next : item))
       const afterStreak = shelfStreak(afterBooks, clock, tagId)
       const beforeStreak = shelfStreak(shelf, clock, tagId)
       // Once a day: clear, Undo, Did again does not roll the cheer twice.
       // A late Did that joins two runs rolls from the real count, not one less.
-      if (afterStreak > 0 && !cheerDays.current.has(dateIso)) {
+      if (dayClears && afterStreak > 0 && !cheerDays.current.has(dateIso)) {
         cheerDays.current.add(dateIso)
         setCheer({ dateIso, from: Math.min(beforeStreak, afterStreak - 1), to: afterStreak })
       }

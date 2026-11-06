@@ -363,6 +363,8 @@ export function useWeAnswer(reload, book) {
     const key = `${card.id}|${night || ''}`
     if (queued.current.has(key)) return
     queued.current.add(key)
+    // The tap is felt now; a miss still says so when the server answers.
+    if (status) feelTap(status === 'nope' ? 'skip' : 'did')
     const turn = queue.current
       .then(() => answerNow(card, status, night))
       .catch(() => false)
@@ -381,10 +383,7 @@ export function useWeAnswer(reload, book) {
       return false
     }
     if (!night && status === 'nope' && weOpenPastToday(card, boardDate())) hideWeFor(card.id, boardDate())
-    if (next) {
-      feelTap(next === 'nope' ? 'skip' : 'did')
-      confirmDone(t('tonight.weSaved'))
-    }
+    if (next) confirmDone(t('tonight.weSaved'))
     // Only the answer that finished it cheers; card.done may be stale.
     if (!out.finished) return
     const purse = normalizePurse(book)

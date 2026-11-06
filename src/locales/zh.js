@@ -80,6 +80,8 @@ export const zh = {
   'clock.24': '24 小时制 (20:30)',
   'settings.lessMotion': '减少动效',
   'settings.lessMotionSub': "减少动画和特效。也会跟随手机的设置。",
+  'settings.vibrate': "振动",
+  'settings.vibrateSub': "回答时和今天完成时轻轻振动。",
   'settings.gentle': '温和模式',
   'settings.gentleSub': "隐藏连续天数。每天仍会计入。",
   'settings.gentleHidden': "温和模式已开启，连续天数已隐藏。每天仍会计入。在设置中关闭即可查看。",
@@ -3193,6 +3195,8 @@ export const zh = {
   'freeze.how': "每连续 14 天可获得一次冻结。错过一天时，它会保住你的连续记录。",
   'why.freeze': "一次冻结保住了你的连续记录。",
   'noteAnswer.notSaved': "回答没有保存。这一天可能已结束，或已经回答过。",
+  'noteAnswer.saved': "已保存。",
+  'noteAnswer.dayDone': "已保存。今天完成了。",
   // r10-freeze-info
   'freeze.howTitle': "连续记录保护怎么用",
   'freeze.rule1': "有保护时，漏掉一天连续记录也不会断。",
