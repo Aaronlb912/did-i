@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { t, tMiss } from "../../src/lib/i18n.js";
 import { listFriends, personName, sendDidI, sendMiss } from "../../src/lib/people.js";
 import { repeatFrom, repeatLabel, senderLastDid } from "../../src/lib/send-repeat.js";
@@ -31,6 +32,7 @@ import { Avatar } from "./PersonCard.jsx";
  * person, it first asks who: a friend, or a link to text anyone.
  */
 export function SendSheet({ person: given, book = null, pick = false, family = false, initialQuestion = '', colors, onClose, onSent }) {
+  const insets = useSafeAreaInsets();
   const [person, setPerson] = useState(given || null);
   const [asLink, setAsLink] = useState(!pick);
   const [friends, setFriends] = useState(null);
@@ -161,10 +163,10 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={busy ? () => {} : onClose}>
-      <KeyboardLift>
+      <KeyboardLift style={{ paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: colors.veil }}>
         <Pressable
           accessible={false}
-          style={[styles.veil, { backgroundColor: colors.veil }]}
+          style={styles.veil}
           onPress={busy ? undefined : onClose}
         >
           <Pressable
@@ -175,6 +177,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
             ]}
             onPress={(event) => event.stopPropagation()}
           >
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.popScroll}>
             {picking ? (
               <Reveal style={styles.pickList}>
                 <Text accessibilityRole="header" style={[styles.popKicker, { color: colors.on }]}>{t("people.sendTitle")}</Text>
@@ -419,6 +422,7 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
             )}
             </Reveal>
             )}
+            </ScrollView>
           </Pressable>
         </Pressable>
       </KeyboardLift>
@@ -431,7 +435,8 @@ export function SendSheet({ person: given, book = null, pick = false, family = f
 const styles = StyleSheet.create({
   whenBody: { gap: 10 },
   veil: { flex: 1, justifyContent: "center", padding: 20 },
-  pop: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
+  pop: { borderWidth: 1, borderRadius: 16, maxHeight: "100%", flexShrink: 1, overflow: "hidden" },
+  popScroll: { padding: 18, gap: 10 },
   popKicker: {
     fontFamily: fonts.mono,
     fontSize: 11,

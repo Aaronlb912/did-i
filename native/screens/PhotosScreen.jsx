@@ -139,7 +139,7 @@ export function PhotosScreen({ openId = '' }) {
   const visible = shown.length > count ? shown.slice(0, count) : shown
   const hidden = shown.length - visible.length
   const groups = useMemo(() => groupRows(visible, by, nameOf), [visible, by, account.user?.id])
-  const size = Math.floor((win.width - 40 - GAP * (COLUMNS - 1)) / COLUMNS)
+  const size = Math.floor((Math.min(win.width, 640) - 40 - GAP * (COLUMNS - 1)) / COLUMNS)
 
   // The viewer swipes through every loaded photo, not only the ones drawn.
   function open(row) {

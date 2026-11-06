@@ -112,7 +112,7 @@ export function AddScreen({ book, boards, onChange, onSaveTo, route, mode: start
       )}
       {/* Add is a native sheet on iPhone and covers the app-wide SheetHost.
           Did I mounts its own; Did we and Did you need one too, or When opens behind. */}
-      {Platform.OS === 'ios' && mode !== 'i' ? <SheetHost /> : null}
+      {Platform.OS === 'ios' && mode !== 'i' ? <SheetHost inSheet /> : null}
       {/* The tour draws its Add steps here on iPhone, where the sheet covers the app shell. */}
       {Platform.OS === 'ios' ? <TourHost scope="add" /> : null}
       {picking ? (

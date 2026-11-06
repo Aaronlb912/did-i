@@ -109,7 +109,7 @@ export function askSignIn(colors) {
   })
 }
 
-export function SheetHost() {
+export function SheetHost({ inSheet = false }) {
   const [next, setSheet] = useState(current)
   const [live, setLive] = useState(false)
   const reduce = useReduceMotion()
@@ -206,7 +206,7 @@ export function SheetHost() {
   const lift = fade.interpolate({ inputRange: [0, 1], outputRange: [sheet.bottom ? 320 : 24, 0] })
 
   return (
-    <View style={[styles.host, sheet.bottom && styles.hostBottom]} pointerEvents={closing ? 'none' : 'box-none'}>
+    <View style={[styles.host, sheet.bottom ? styles.hostBottom : { paddingTop: 20 + (inSheet ? 0 : insets.top), paddingBottom: 20 + insets.bottom }]} pointerEvents={closing ? 'none' : 'box-none'}>
       {/* The veil always takes taps, so a quick tap as a sheet pops up never
           lands on Did or Nope behind it. It only closes the sheet once live. */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: fade }]}>
@@ -325,6 +325,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
     gap: 10,
+    maxHeight: '100%',
+    flexShrink: 1,
   },
   kicker: {
     fontFamily: fonts.mono,

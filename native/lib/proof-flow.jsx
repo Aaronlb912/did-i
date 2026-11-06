@@ -215,7 +215,7 @@ function ProofImage({ row, name, size, colors }) {
 // can remove it; anyone else can report it, which hides it for them at once.
 export function openProofView({ row, mine, name, colors, onGone }) {
   const win = Dimensions.get('window')
-  const size = { width: win.width - 76, height: Math.round(win.height * 0.55) }
+  const size = { width: Math.min(win.width, 640) - 76, height: Math.round(win.height * 0.55) }
   const preview = <ProofImage row={row} name={name} size={size} colors={colors} />
   const back = () => openProofView({ row, mine, name, colors, onGone })
   publishSheet({
