@@ -1,4 +1,4 @@
-import { quietEnd } from './quiet.js'
+import { laterHold } from './quiet.js'
 import { graceNightIso, nightOpen } from './recurrence.js'
 
 // Did, Not yet and Later buttons on a reminder. They open the app for a moment (a fully
@@ -49,8 +49,8 @@ export function snoozeFrom(response, now = Date.now(), prefs = null) {
   const c = request.content || {}
   if (!c.data?.lampId && !c.data?.weId) return null
   const wait = LATER_MINUTES.includes(prefs?.laterMin) ? prefs.laterMin * 60 * 1000 : SNOOZE_MS
-  // Quiet hours hold it until they end, like the asks.
-  const at = quietEnd(new Date(now + wait), prefs).getTime()
+  // Quiet hours hold it until they end, like the asks. Without them, never before 7:00.
+  const at = laterHold(new Date(now + wait), prefs).getTime()
   // A Later past the close time would ask for a day that no longer takes answers.
   // Only a single day: a monthly question's night is the month ('2026-11').
   if (c.data.lampId && !c.data.weId && /^\d{4}-\d{2}-\d{2}$/.test(c.data.night || '') && !nightOpen(c.data.night, new Date(at))) return null

@@ -1406,6 +1406,8 @@ export const ko = {
   'pings.kind.streakRiskSub': "오늘이 아직 남아 있으면 하루 끝 무렵에.",
   'pings.kind.streakHit': '연속 기록 달성',
   'pings.kind.streakHitSub': '연속 기록이 새 기록에 도달했을 때.',
+  'pings.kind.gentleOff': "부드러운 모드에서는 꺼져 있어요.",
+  'pings.kind.streakRiskGentle': "부드러운 모드: 어제가 아직 열려 있을 때만 {time}에 알려요.",
   'pings.kind.day': '낮 알림',
   'pings.kind.daySub': '답하지 않은 질문이 있으면 {morning}, {afternoon}에 알려 드려요.',
   'pings.day.1': 'Did I로 하루를 시작해요.',

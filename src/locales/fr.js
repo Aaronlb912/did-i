@@ -1423,6 +1423,8 @@ export const fr = {
   'pings.kind.streakRiskSub': "Tard dans la journée si aujourd’hui reste ouvert.",
   'pings.kind.streakHit': 'Paliers de série',
   'pings.kind.streakHitSub': 'Quand une série atteint un nouveau palier.',
+  'pings.kind.gentleOff': "Désactivé en mode doux.",
+  'pings.kind.streakRiskGentle': "Mode doux : seulement un rappel à {time} si hier est encore ouvert.",
   'pings.kind.day': 'Rappels de journée',
   'pings.kind.daySub': 'Un rappel à {morning} et à {afternoon} tant que des questions restent ouvertes.',
   'pings.day.1': 'Commence la journée avec Did I.',

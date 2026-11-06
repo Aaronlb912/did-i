@@ -11,7 +11,8 @@ import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions, staleDelivered } from '../../src/lib/notify-answer.js'
 import { REMIND_TRIES, readReminds, remindNext } from '../../src/lib/remind-me.js'
 import { afterQuiet, awayOn, gentleOn, pingOn, readPrefs } from '../../src/lib/prefs.js'
-import { capNotes, earlyCallAt, lastCallAt, leftNote } from '../../src/lib/quiet.js'
+import { askGroups, capNotes, earlyCallAt, lastCallAt, laterClash, leftNote } from '../../src/lib/quiet.js'
+import { backOffFrom } from '../../src/lib/come-back.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, dueTonight, graceNightIso, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
@@ -450,6 +451,13 @@ async function schedulePingsNow(books, now = new Date()) {
     const reminders = pingOn('reminders')
     // Away days do not use up the week, so reminders come back after they end.
     const aheads = pingAheads(now, PING_DAYS)
+    // Three due days with no answer: from then on one note per question, no
+    // second time, last call or day nudges. Any answer sets them again.
+    const today = boardDate(now)
+    const backOff = backOffFrom(list, today, (iso) => {
+      const [y, m, d] = iso.split('-').map(Number)
+      return !awayOn(iso) && list.some((book) => dueTonight(book, new Date(y, m - 1, d, 12)).some((row) => !row.answer || row.answer.status === 'skip'))
+    })
     for (const book of list) {
       for (const ahead of aheads) {
         // Midday of that calendar day sits inside the right board night.
@@ -493,7 +501,7 @@ async function schedulePingsNow(books, now = new Date()) {
           // same minute send one note.
           const moved2 = at2 && afterQuiet(at2).getTime() !== at2.getTime()
           const sameMinute = at && at2 && afterQuiet(at).getTime() === afterQuiet(at2).getTime()
-          if (at2 && !sameMinute && !row.answer && afterQuiet(at2).getTime() > now.getTime() && nightOpen(night, afterQuiet(at2)) && (!waiting || row.lamp.morning || moved2 || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
+          if (at2 && !sameMinute && ahead < backOff && !row.answer && afterQuiet(at2).getTime() > now.getTime() && nightOpen(night, afterQuiet(at2)) && (!waiting || row.lamp.morning || moved2 || waiting.has(`${row.lamp.id}:${row.periodKey}`))) {
             notes.push({
               identifier: String(notifyId(row.lamp.id, `${row.periodKey}:${row.dateIso}:2`)),
               content,
@@ -502,8 +510,8 @@ async function schedulePingsNow(books, now = new Date()) {
               second: true,
             })
           }
-          // A high one still open gets a last call.
-          if (!lampNudgesLate(row.lamp)) continue
+          // A high one still open gets a last call. Backed off, only when it has no time of its own.
+          if (!lampNudgesLate(row.lamp) || (ahead >= backOff && at)) continue
           // 21:00, or around quiet hours and the question's own time (lastCallAt).
           const late = lastCallAt(year, month, date, at2 && at2 > at ? at2 : at, readPrefs(), now)
           if (!late) continue
@@ -515,7 +523,7 @@ async function schedulePingsNow(books, now = new Date()) {
             lateCall: true,
           })
           // Same reminders switch as the last call. Grouped below.
-          const early = earlyCallAt(year, month, date, readPrefs(), now)
+          const early = ahead < backOff ? earlyCallAt(year, month, date, readPrefs(), now) : null
           if (early) notes.push({ identifier: '', content: { title: 'Did I', data: { go: '/tonight' } }, trigger: when(early), earlyCall: true, day: night })
         }
       }
@@ -554,6 +562,18 @@ async function schedulePingsNow(books, now = new Date()) {
         trigger: group[0].trigger,
         earlyCall: true,
         wall: true,
+      })
+    }
+    // 3 or more question reminders on one minute: one note, opening Today.
+    const isAsk = (note) => !note.lateCall && note.content.categoryIdentifier === ASK_CATEGORY && note.content.data?.lampId && !note.content.data?.weId
+    for (const group of askGroups(notes, isAsk)) {
+      for (const note of group) notes.splice(notes.indexOf(note), 1)
+      notes.push({
+        identifier: String(notifyId('asks', String(group[0].trigger.date.getTime()))),
+        content: { title: 'Did I', body: leftBody(group.length, group[0].trigger.date), data: { go: '/tonight', left: true } },
+        trigger: group[0].trigger,
+        wall: true,
+        group: true,
       })
     }
     // Did we questions with a time and the reminder on, from the last list
@@ -602,7 +622,10 @@ async function schedulePingsNow(books, now = new Date()) {
       // asks for today's questions and opens the morning sheet.
       const { morningAsk: morning, morningAt, afternoonAt } = readPrefs()
       const times = [morning ? morningAt || MORNING_AT_DEFAULT : DAY_NUDGE_TIMES[0], afternoonAt || AFTERNOON_AT_DEFAULT]
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
       for (const nudge of dayNudges(list, now, { days: (aheads[aheads.length - 1] ?? 0) + 1, reminders, shift: afterQuiet, times })) {
+        const dayAhead = Math.round((new Date(nudge.at.getFullYear(), nudge.at.getMonth(), nudge.at.getDate()).getTime() - midnight) / 86400000)
+        if (dayAhead >= backOff) continue
         const ask = morning && nudge.slot === 0
         notes.push({
           identifier: String(notifyId('day', nudge.at.toISOString())),
@@ -623,7 +646,7 @@ async function schedulePingsNow(books, now = new Date()) {
     const capped = capNotes(notes, PING_CAP - 1 - waitingReminds)
     notes.splice(0, notes.length, ...capped.kept)
     const over = capped.over
-    const regularCount = notes.length
+    let regularCount = notes.length
     // A week away: the last question reminder in the window becomes one gentle
     // push. It is never repeated, and the next open sets reminders fresh.
     const lastAhead = aheads[aheads.length - 1] ?? 0
@@ -633,7 +656,7 @@ async function schedulePingsNow(books, now = new Date()) {
         const d = note.trigger.date
         return d.getFullYear() === lastDay.getFullYear() && d.getMonth() === lastDay.getMonth() && d.getDate() === lastDay.getDate()
       }
-      const finals = notes.filter((note) => !note.lateCall && note.content.categoryIdentifier === ASK_CATEGORY && onLastDay(note))
+      const finals = notes.filter((note) => !note.lateCall && (note.group || note.content.categoryIdentifier === ASK_CATEGORY) && onLastDay(note))
       const final = finals.sort((a, b) => b.trigger.date - a.trigger.date)[0]
       if (final) final.content = { title: t('pings.comeBackTitle'), body: t('pings.comeBackBody'), data: { go: '/tonight' } }
     }
@@ -655,15 +678,19 @@ async function schedulePingsNow(books, now = new Date()) {
     }
     // Any folder's streak can be at risk, not only the first one's.
     const streakPings = pingOn('streakRisk') && !gentleOn()
-    const heat = streakPings ? shelfStreak(list, now) : null
-    for (const ahead of streakPings ? aheads : []) {
+    // Gentle mode keeps the 7:00 note: it has no number, and it can still save yesterday.
+    const gracePings = pingOn('streakRisk')
+    const heat = gracePings ? shelfStreak(list, now) : null
+    // Today and the next day only: with the app closed, the streak a day
+    // after that may already be gone, and the note would say it is not.
+    for (const ahead of streakPings ? aheads.slice(0, 2) : []) {
       const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
       const risk = list.map((item) => streakRiskFire(item, day, heat)).find(Boolean)
       if (!risk) continue
-      // Quiet hours would move it onto the grace ping. A 21:00 last call for an
-      // open question already says it: one buzz, not two.
+      // Quiet hours would move it onto the grace ping. Any note at 21:00 (a last
+      // call, a question's own time) already buzzes then: one buzz, not two.
       const riskAt = new Date(risk.at).getTime()
-      const lateThen = notes.some((note) => note.lateCall && note.trigger.date.getTime() === riskAt)
+      const lateThen = notes.some((note) => note.trigger.date.getTime() === riskAt)
       if (lateThen || afterQuiet(new Date(risk.at)).getTime() !== riskAt) continue
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
@@ -677,7 +704,12 @@ async function schedulePingsNow(books, now = new Date()) {
       })
     }
     // Before 7am both: this morning's for last night (any folder open then) and tomorrow's.
-    const graces = streakPings ? [lastNightGraceFire, graceRiskFire].map((fire) => list.map((item) => fire(item, now, heat)).find(Boolean)).filter(Boolean) : []
+    // Plus the morning after the next day, so a day the app stays closed still gets one.
+    const [ty, tm, td] = today.split('-').map(Number)
+    const nextDay = new Date(ty, tm - 1, td + 1, 12)
+    const graceFires = [(item) => lastNightGraceFire(item, now, heat), (item) => graceRiskFire(item, now, heat)]
+    if (!awayOn(boardDate(nextDay))) graceFires.push((item) => graceRiskFire(item, nextDay, heat))
+    const graces = gracePings ? graceFires.map((fire) => list.map(fire).find(Boolean)).filter(Boolean) : []
     for (const grace of graces) {
       // Quiet hours can push it past 9:00, when the streak can no longer be saved.
       const graceEnd = new Date(grace.at).setHours(9, 0, 0, 0)
@@ -713,6 +745,13 @@ async function schedulePingsNow(books, now = new Date()) {
       if (data.lampId && !data.weId && /^\d{4}-\d{2}-\d{2}$/.test(data.night || '') && !nightOpen(data.night, afterQuiet(new Date(snooze.at)))) continue
       if (data.weId && data.night && (weNightStatus(data.night, data.weId) === 'did' || pings.some((ping) => ping.id === data.weId && ping.skipNight === data.night))) continue
       keepSnoozes.push(snooze)
+      // Its own reminder or a streak note on the same minute goes: one buzz.
+      const snoozeAt = afterQuiet(new Date(snooze.at)).getTime()
+      for (let i = notes.length - 1; i >= 0; i -= 1) {
+        if (!laterClash(notes[i], data, snoozeAt)) continue
+        notes.splice(i, 1)
+        if (i < regularCount) regularCount -= 1
+      }
       notes.push({
         identifier: snooze.identifier,
         content: snooze.content,

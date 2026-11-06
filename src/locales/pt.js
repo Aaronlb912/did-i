@@ -1420,6 +1420,8 @@ export const pt = {
   'pings.kind.streakRiskSub': "No fim do dia se hoje ainda estiver aberto.",
   'pings.kind.streakHit': 'Marcos de sequência',
   'pings.kind.streakHitSub': 'Quando uma sequência atinge uma nova marca.',
+  'pings.kind.gentleOff': "Desligado no modo suave.",
+  'pings.kind.streakRiskGentle': "Modo suave: só um aviso às {time} se ontem ainda estiver aberto.",
   'pings.kind.day': 'Lembretes do dia',
   'pings.kind.daySub': 'Um aviso às {morning} e às {afternoon} enquanto houver perguntas abertas.',
   'pings.day.1': 'Comece o dia com Did I.',

@@ -1,5 +1,7 @@
 // Quiet hours with no imports, so the service worker (src/sw.js) can use it.
 
+const MIN = 60 * 1000
+
 function minutesOf(hhmm) {
   const [h, m] = String(hhmm || '').split(':').map(Number)
   return h * 60 + m
@@ -25,6 +27,41 @@ export function quietEnd(at, prefs) {
   return end
 }
 
+// Quiet hours off: a Later that lands between midnight and 7:00 waits until
+// 7:00, still inside yesterday's 9:00 close. Quiet hours on already move it.
+export const LATER_HOLD_HOUR = 7
+export function laterHold(at, prefs) {
+  if (prefs?.quietOn) return quietEnd(at, prefs)
+  if (at.getHours() >= LATER_HOLD_HOUR) return at
+  return new Date(at.getFullYear(), at.getMonth(), at.getDate(), LATER_HOLD_HOUR, 0, 0, 0)
+}
+
+// A Later on the same minute as that question's own note, or a streak note:
+// the Later is the one buzz. `data` is the Later's data, `at` its time in ms.
+// Same night only: yesterday's Later at 7:00 never takes today's 7:00 reminder.
+export function laterClash(note, data, at) {
+  const when = note?.trigger?.date
+  if (!(when instanceof Date) || Math.floor(when.getTime() / MIN) !== Math.floor(at / MIN)) return false
+  const d = note.content?.data || {}
+  if (d.streakRisk) return true
+  if (d.night !== data?.night) return false
+  if (data?.weId) return d.weId === data.weId
+  return Boolean(data?.lampId) && !d.weId && d.lampId === data.lampId
+}
+
+// Three or more question reminders on one minute become one note opening
+// Today. Their Did buttons go with them; one buzz beats a stack.
+export const ASK_GROUP_MIN = 3
+export function askGroups(notes, isAsk) {
+  const at = new Map()
+  for (const note of notes) {
+    if (!isAsk(note)) continue
+    const key = note.trigger.date.getTime()
+    at.set(key, [...(at.get(key) || []), note])
+  }
+  return [...at.values()].filter((group) => group.length >= ASK_GROUP_MIN)
+}
+
 // The worker's check before a reminder: off in settings, or quiet hours now,
 // means say nothing. No saved prefs (page never armed) keeps the old way.
 export function swMayPing(prefs, now = new Date()) {
@@ -34,7 +71,6 @@ export function swMayPing(prefs, now = new Date()) {
 }
 
 const LAST_CALL_HOUR = 21
-const MIN = 60 * 1000
 
 // When a high question still open gets its last call, or null for none.
 // Usually 21:00. If quiet hours cover 21:00, 30 minutes before they start,
