@@ -12,6 +12,7 @@ import {
 } from './board-json.js'
 import { findBookByTitle } from './board-shelf.js'
 import { applySchedulePick, pickDays } from './hang-schedule.js'
+import { orderedTimes } from './hang-time.js'
 import { pauseAfterEdit } from './board-ops.js'
 import { answerFor, boardDate, keepPastSchedule, periodKeyFor } from './recurrence.js'
 import { starterList } from './starters.js'
@@ -150,6 +151,11 @@ export function useHangDraft({
       if (unit) next.amountUnit = unit
     }
     if (!next.askAfter || !next.askAfter2 || next.askAfter2 === next.askAfter) delete next.askAfter2
+    else if (next.askAfter2 < next.askAfter) {
+      // The earlier time brings the card up; the later one rings again.
+      Object.assign(next, orderedTimes(next.askAfter, next.askAfter2))
+      next.slot = slotFromAskAfter(next.askAfter)
+    }
     // A one-time question has its own day; an end date would only hide it.
     if (!next.endsOn || next.cadence === 'once') delete next.endsOn
     // Stopped or asked again elsewhere while the form was open: that stays.

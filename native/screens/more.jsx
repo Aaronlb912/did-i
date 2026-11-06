@@ -2746,11 +2746,11 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange,
         <SetCard colors={colors}>
           {fires.map((fire, at) => (
             <SetSwitch
-              key={fire.id}
+              key={fire.tag}
               colors={colors}
               icon="bell"
               label={shortFromQuestion(fire.question) || t('lamp.unnamed')}
-              sub={foldClock(fire.at)}
+              sub={fire.lastCall ? t('pings.lastCallRow', { time: foldClock(fire.at) }) : foldClock(fire.at)}
               on={lampNotifyOn(bookOf(fire.id)?.lamps.find((lamp) => lamp.id === fire.id))}
               last={at === fires.length - 1}
               onPress={() => flipOne(fire)}

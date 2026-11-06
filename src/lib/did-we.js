@@ -4,8 +4,8 @@ import { onSocialLive } from './social-live.js'
 import { readShelf } from './board-shelf.js'
 import { mergePurses } from './purse.js'
 import { t } from './i18n.js'
-import { boardDate, isoDate } from './recurrence.js'
-import { readWeOpen, saveWeLine, saveWeOpen, saveWePings, weMonthlyPingDay } from './we-widget.js'
+import { boardDate, graceNightIso, isoDate } from './recurrence.js'
+import { readWeOpen, readWePings, saveWeLine, saveWeOpen, saveWePings, weMonthlyPingDay } from './we-widget.js'
 import { hideWeFor, markWeDone, markWeNight, refreshWeNights, weHiddenOn } from './we-nights.js'
 import { weekKind, weSlotDay } from './we-look.js'
 import { weDueOn, weNextDue, weNextLabel, wePrevDue, weSlotOf } from './we-next.js'
@@ -249,8 +249,14 @@ function weReminderNights(card, night) {
   const mine = weMine(card)?.status === 'did'
   const skipTo = open && (card.done || (mine && ['monthly', 'every', 'every_n', 'deadline'].includes(card.cadence))) ? end : ''
   const out = []
-  for (let ahead = 0; ahead < 7; ahead += 1) {
+  // Between midnight and 9:00 last night is still open: a note quiet hours moved to this morning needs it.
+  // Only if the list saved before midnight had it and it was not skipped (turns, a Did).
+  const last = night === boardDate(new Date()) && graceNightIso(new Date()) ? addDays(night, -1) : ''
+  const before = last ? readWePings().find((ping) => ping.id === card.id) : null
+  const lastOpen = !!before && (before.nights || []).includes(last) && before.skipNight !== last
+  for (let ahead = -1; ahead < 7; ahead += 1) {
     const day = addDays(night, ahead)
+    if (ahead < 0 && !lastOpen) continue
     if (day <= skipTo) continue
     const lateMonth = card.cadence === 'monthly' && day >= String(card.startsOn || '') && weMonthlyPingDay(day) && Number(day.slice(8)) >= Number(card.monthDay || 1)
     if (weCadenceDue(card, day) || lateMonth) out.push(day)

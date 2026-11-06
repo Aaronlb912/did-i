@@ -3,7 +3,7 @@ import { t } from '../../src/lib/i18n.js'
 import { publishShelf } from '../../src/lib/widget-tonight.js'
 import { addMorning } from '../../src/lib/morning-ask.js'
 import { commitBook } from '../../src/lib/achievements.js'
-import { REMIND_AGAIN_MIN, REMIND_TRIES, readReminds, remindNext, restoreRemind } from '../../src/lib/remind-me.js'
+import { REMIND_TRIES, readReminds, remindAgainAt, remindNext, restoreRemind } from '../../src/lib/remind-me.js'
 import { nativeWidgetsEnabled } from './widgets-enabled.js'
 import { syncTonightWidget } from '../widget-sync.js'
 import { showToast } from './toast-queue.js'
@@ -32,7 +32,7 @@ export async function answerRemind(id, action) {
   }
   if (added.error === 'full' || !book) {
     // Today is full, or the shelf has not loaded yet: keep it and ask once more rather than lose it.
-    const again = { ...item, tries: REMIND_TRIES - 1, at: Date.now() + REMIND_AGAIN_MIN * 60 * 1000 }
+    const again = { ...item, tries: REMIND_TRIES - 1, at: remindAgainAt() }
     restoreRemind(again)
     scheduleRemind(again).catch(() => {})
     showToast({ id: 'remind', kind: 'error', text: t('noteAnswer.notSaved'), ms: 5200 })

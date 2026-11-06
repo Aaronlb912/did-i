@@ -27,6 +27,16 @@ export function quietEnd(at, prefs) {
   return end
 }
 
+// The time of day (HH:MM) a question time rings at when quiet hours move it,
+// or '' when it rings as set.
+export function quietMovedTo(hhmm, prefs) {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(hhmm || ''))) return ''
+  const at = new Date(2001, 0, 1, Number(hhmm.slice(0, 2)), Number(hhmm.slice(3)), 0, 0)
+  const to = quietEnd(at, prefs)
+  if (to.getTime() === at.getTime()) return ''
+  return `${String(to.getHours()).padStart(2, '0')}:${String(to.getMinutes()).padStart(2, '0')}`
+}
+
 // Quiet hours off: a Later that lands between midnight and 7:00 waits until
 // 7:00, still inside yesterday's 9:00 close. Quiet hours on already move it.
 export const LATER_HOLD_HOUR = 7
