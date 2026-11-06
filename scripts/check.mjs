@@ -12509,6 +12509,17 @@ test('battery savers: re-arm keeps old reminders until new ones replace them; th
   assert.ok(readFileSync('native/AppShell.jsx', 'utf8').includes('if (booted && !gated && !locked && userId) finishCameraPhoto(userId)'), 'picked up once signed in and past the PIN, for the same account only')
 })
 
+test('small screens: centre sheets, the send popup and the menu fit between the notch and the nav bar and scroll; photos keep to the 640 column', () => {
+  const sheet = readFileSync('native/components/SheetHost.jsx', 'utf8')
+  assert.ok(sheet.includes('paddingTop: 20 + (inSheet ? 0 : insets.top), paddingBottom: 20 + insets.bottom') && sheet.includes("maxHeight: '100%',") && readFileSync('native/screens/AddScreen.jsx', 'utf8').includes('<SheetHost inSheet />'), 'a centre sheet shrinks its content to fit the safe area')
+  const send = readFileSync('native/components/SendDidYou.jsx', 'utf8')
+  assert.ok(send.includes('<ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.popScroll}>') && send.includes('<KeyboardLift style={{ paddingTop: insets.top, paddingBottom: insets.bottom'), 'the send popup scrolls inside the safe area')
+  const menu = readFileSync('native/components/MastMenu.jsx', 'utf8')
+  assert.ok(menu.includes('winH - anchor.y - insets.bottom - 12') && menu.includes('scrollEnabled={panelH > room}') && menu.includes('[bh, cardH || bh]'), 'the menu stops above the nav bar and scrolls')
+  assert.ok(readFileSync('native/screens/PhotosScreen.jsx', 'utf8').includes('Math.min(win.width, 640) - 40') && readFileSync('native/lib/proof-flow.jsx', 'utf8').includes('Math.min(win.width, 640) - 76'), 'photos size from the 640 column')
+  assert.ok(readFileSync('native/components/SwipeFace.jsx', 'utf8').includes('maxFontSizeMultiplier={short ? 1.4 : 2}'), 'a short phone keeps the question to the 1.4x cap')
+})
+
 test('long and odd text: 120 typed letters survive the save, short names keep whole emoji, pasted line breaks and long folder names stay on one line', async () => {
   const { QUESTION_MAX, didQuestion, normalizeLamp, shortFromQuestion } = await import('../src/lib/board-json.js')
   const typed = 'a'.repeat(QUESTION_MAX)

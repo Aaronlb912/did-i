@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { AppState, Modal, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import { AppState, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Animated, {
   Easing,
   cancelAnimation,
@@ -162,7 +162,7 @@ function MorphBlur({ BlurView, progress, tint }) {
 }
 
 function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onClosed }) {
-  const { width: winW } = useWindowDimensions()
+  const { width: winW, height: winH } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const fallback = useFallbackAnchor()
   // A cold launch can hand back a measurement from before layout has
@@ -212,6 +212,9 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
 
   const bw = anchor.w
   const bh = anchor.h
+  // Small phones, big text and split screen: the card ends above the nav bar.
+  const room = Math.max(bh * 4, winH - anchor.y - insets.bottom - 12)
+  const cardH = Math.min(panelH, room)
   const radiusFrom = bh / 2
   const radiusTo = 22
 
@@ -220,7 +223,7 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
     const p = progress.value
     return {
       width: Math.max(bw, interpolate(p, [0, 1], [bw, PANEL_W])),
-      height: Math.max(bh, interpolate(p, [0, 1], [bh, panelH || bh])),
+      height: Math.max(bh, interpolate(p, [0, 1], [bh, cardH || bh])),
       borderRadius: interpolate(clamp01(p), [0, 1], [radiusFrom, radiusTo]),
     }
   })
@@ -266,8 +269,10 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
           >
             <MenuIcon name="grid" color={colors.on} size={16} />
           </Animated.View>
-          <Animated.View
-            style={[styles.panel, rowsStyle]}
+          <Animated.View style={[styles.panel, { maxHeight: room }, rowsStyle]}>
+          <ScrollView bounces={false} scrollEnabled={panelH > room} showsVerticalScrollIndicator={panelH > room}>
+          <View
+            style={styles.rows}
             onLayout={(event) => {
               const next = Math.ceil(event.nativeEvent.layout.height)
               if (next && next !== panelH) setPanelH(next)
@@ -318,6 +323,8 @@ function MastMenuSheet({ colors, showAdd, anchor: measured, closing, close, onCl
                 </Pressable>
               ),
             )}
+          </View>
+          </ScrollView>
           </Animated.View>
           {BlurMorph && !reduce ? (
             <MorphBlur BlurView={BlurMorph} progress={progress} tint={theme === 'light' ? 'light' : 'dark'} />
@@ -424,9 +431,9 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     width: PANEL_W,
-    paddingVertical: 6,
     transformOrigin: 'top right',
   },
+  rows: { paddingVertical: 6 },
   divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14, marginVertical: 4 },
   section: {
     borderTopWidth: StyleSheet.hairlineWidth,

@@ -2637,7 +2637,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
       ) : null}
     </BoardShell>
     {/* On iPhone, Add is a native sheet that covers the app-wide sheet layer, so it hosts its own. */}
-    {Platform.OS === 'ios' && !hang.editing ? <SheetHost /> : null}
+    {Platform.OS === 'ios' && !hang.editing ? <SheetHost inSheet /> : null}
     </>
   )
 }

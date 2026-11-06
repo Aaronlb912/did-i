@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Animated, { useAnimatedStyle } from 'react-native-reanimated'
 import { t } from '../../src/lib/i18n.js'
 import { stampOpacity, swipePull } from '../../src/lib/swipe-face.js'
@@ -13,6 +13,7 @@ export function SwipeFace({ x, head, kicker, mark, title, stampDid, stampNope, b
   const didStyle = useAnimatedStyle(() => ({ opacity: stampOpacity(swipePull(x.value), 'did') }))
   const nopeStyle = useAnimatedStyle(() => ({ opacity: stampOpacity(swipePull(x.value), 'nope') }))
   const kickerStyle = useAnimatedStyle(() => ({ opacity: 1 - Math.abs(swipePull(x.value)) }))
+  const short = useWindowDimensions().height < 700
   return (
     <>
       <BuddyHang id={buddy} alive />
@@ -27,7 +28,7 @@ export function SwipeFace({ x, head, kicker, mark, title, stampDid, stampNope, b
       ) : kicker ? (
         <Animated.Text numberOfLines={1} style={[faceCardStyles.kicker, onEdit ? kickerRoom(buddy) : null, { color: colors.on }, kickerStyle]}>{kicker}</Animated.Text>
       ) : null}
-      <Text style={[faceCardStyles.title, { color: colors.ink }]} maxFontSizeMultiplier={2} numberOfLines={6}>{title}</Text>
+      <Text style={[faceCardStyles.title, { color: colors.ink }]} maxFontSizeMultiplier={short ? 1.4 : 2} numberOfLines={6}>{title}</Text>
       {children}
     </>
   )
