@@ -2399,6 +2399,17 @@ test('pause and Away: pause until a date, Away days in the day sheet, the paused
   assert.ok(readFileSync('native/screens/TonightScreen.jsx', 'utf8').includes("label={t('away.back')}"), 'Today has Back now while Away')
 })
 
+test('night owls: Wear drops yesterday after the grace hour, travel-proof reminders, grace copy, early reminder hint', async () => {
+  const kt = readFileSync('android/wear/src/main/java/com/aaronbryant/didi/wear/Cards.kt', 'utf8')
+  assert.ok(kt.includes('graceEndHour = if (o.has("graceEndHour"))') && kt.includes('LocalTime.now().hour >= grace'), 'Wear hides cards a tap would be refused for')
+  const pings = readFileSync('native/shim/native.js', 'utf8').replace(/\s+/g, ' ')
+  assert.ok(pings.includes('categoryIdentifier: ASK_CATEGORY, }, trigger: when(at), wall: true, })'), 'Did we reminders follow the wall clock')
+  assert.ok(pings.includes('trigger: when(nudge.at), wall: true,'), 'day nudges follow the wall clock')
+  const { en } = await import('../src/locales/en.js')
+  assert.ok(!en['grace.body'].includes('1 coin'), 'a first Did after midnight is a full Did')
+  assert.ok(readFileSync('native/screens/questions.jsx', 'utf8').includes("/^0[0-4]:/.test(draft.askAfter || '') ? <Text"), 'reminder just after midnight says which day')
+})
+
 test('two phones combine instead of overwriting', () => {
   const left = {
     currentId: 'b1',

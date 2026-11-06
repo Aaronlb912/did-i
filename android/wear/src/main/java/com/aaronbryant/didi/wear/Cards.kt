@@ -2,6 +2,7 @@ package com.aaronbryant.didi.wear
 
 import androidx.compose.ui.graphics.Color
 import java.time.LocalDate
+import java.time.LocalTime
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -63,6 +64,9 @@ data class WatchCards(
   // "{n} waiting on your phone". 0 and empty from an older phone build.
   val phoneWaiting: Int = 0,
   val phoneWaitingLabel: String = "",
+  // Cards from before today go stale once this hour has passed. null from an
+  // older phone build: only cards before yesterday go stale.
+  val graceEndHour: Int? = null,
 ) {
   val openCards: List<WatchCard> get() = items.filter { it.status == "open" }
   val answered: Int get() = items.count { it.status != "open" }
@@ -78,6 +82,8 @@ data class WatchCards(
   val stale: Boolean get() {
     val newest = items.maxOfOrNull { it.dateIso } ?: return false
     if (newest.length != 10) return false
+    val grace = graceEndHour
+    if (grace != null && LocalTime.now().hour >= grace && newest < LocalDate.now().toString()) return true
     return newest < LocalDate.now().minusDays(1).toString()
   }
 
@@ -120,6 +126,7 @@ data class WatchCards(
           offLater = o.optInt("later", 0).coerceAtLeast(0),
           phoneWaiting = o.optInt("phoneWaiting", 0).coerceAtLeast(0),
           phoneWaitingLabel = o.optString("phoneWaitingLabel"),
+          graceEndHour = if (o.has("graceEndHour")) o.optInt("graceEndHour") else null,
           streakLabel = o.optString("streakLabel"),
           streakOneLabel = o.optString("streakOneLabel"),
           cheer = o.optJSONArray("cheer")?.let { a -> (0 until a.length()).map { a.optString(it) } } ?: emptyList(),
