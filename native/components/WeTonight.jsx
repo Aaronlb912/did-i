@@ -21,7 +21,7 @@ import {
   weRestart,
 } from '../../src/lib/did-we.js'
 import { boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
-import { hideWeFor } from '../../src/lib/we-nights.js'
+import { hideWeFor, showWeFor } from '../../src/lib/we-nights.js'
 import { weFaceFor, weFaceRow, weMissKey, wePersonKey, weSlotDay, weStatus, weWeekKey } from '../../src/lib/we-look.js'
 import { refreshTogether } from '../../src/lib/people.js'
 import { onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
@@ -353,7 +353,16 @@ export function useWeAnswer(reload, book) {
   // `night` answers a later night early; tonight when left out.
   async function answer(card, status, night) {
     const mine = weMine(card)
-    // Not yet on a card open past today hides it until tomorrow.
+    // Not yet on a card open past today (a monthly card) hides it until
+    // tomorrow. Your Not yet from an earlier day is still on it: nothing new
+    // to save, it just leaves for today.
+    const today = boardDate()
+    const hide = !night && status === 'nope' && weOpenPastToday(card, today)
+    if (hide && mine?.status === 'nope') {
+      hideWeFor(card.id, today)
+      feelTap('skip')
+      return true
+    }
     // A repeat tap on tonight's lit answer does nothing: a Did we answer has
     // no undo, so it must not clear by accident. Taking back is explicit.
     if (!night && status && mine?.status === status) return
@@ -363,11 +372,17 @@ export function useWeAnswer(reload, book) {
     const key = `${card.id}|${night || ''}`
     if (queued.current.has(key)) return
     queued.current.add(key)
+    // It leaves with the swipe; a save that fails brings it back.
+    if (hide) hideWeFor(card.id, today)
     // The tap is felt now; a miss still says so when the server answers.
     if (status) feelTap(status === 'nope' ? 'skip' : 'did')
     const turn = queue.current
       .then(() => answerNow(card, status, night))
       .catch(() => false)
+      .then((saved) => {
+        if (hide && saved === false) showWeFor(card.id, today)
+        return saved
+      })
       .finally(() => queued.current.delete(key))
     queue.current = turn
     // false when it was not saved, so a caller that hid the card can show it again.
@@ -382,7 +397,6 @@ export function useWeAnswer(reload, book) {
       confirmMiss(tMiss(weMissKey(card, out.miss)))
       return false
     }
-    if (!night && status === 'nope' && weOpenPastToday(card, boardDate())) hideWeFor(card.id, boardDate())
     if (next) confirmDone(t('tonight.weSaved'))
     // Only the answer that finished it cheers; card.done may be stale.
     if (!out.finished) return

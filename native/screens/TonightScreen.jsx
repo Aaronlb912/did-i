@@ -101,13 +101,13 @@ import { WePausedRow, WeSwipeCard, useWeAnswer, weOpenForMe } from '../component
 import { FriendsRow } from '../components/FriendsRow.jsx'
 import { pickSocialLine } from '../../src/lib/social-line.js'
 import { buildTogetherWidgetProps, onTogetherSaved, readTogetherPeople } from '../../src/lib/together-widget.js'
-import { weOpenOn } from '../../src/lib/we-nights.js'
+import { onWeNights, weOpenOn } from '../../src/lib/we-nights.js'
 import { clearGraceFocus, didStatusForRow, graceFirst, graceFocusLamp, graceFocused, graceNightIso, onGraceFocus } from '../../src/lib/recurrence.js'
 import { notMyTurn, saveWeReminders, saveWeWidgetLine, takeWeBoth, takeWeFinishes, useWeTonight, weClaim, weInFilter, weMine, weShort, weStats } from '../../src/lib/did-we.js'
 import { shelfMarks, weMarksFor } from '../../src/lib/achievements.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
-import { syncTonightWidget } from '../widget-sync.js'
+import { syncTonightWidget, syncTonightWidgetIfChanged } from '../widget-sync.js'
 import { cloud, cloudSetUp } from '../../src/lib/cloud.js'
 import {
   countWidgetTipDay,
@@ -358,6 +358,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     })
     return () => sub.remove()
   }, [loadAsks])
+  // A Did we hidden for today (or shown again) changes the widget's count.
+  useEffect(() => onWeNights(() => syncTonightWidgetIfChanged(readShelf()).catch(() => {})), [])
   // Keep the widget's Did we line in step with what Tonight knows.
   useEffect(() => {
     // A failed load kept old cards: leave the widget line and reminders as they were.
