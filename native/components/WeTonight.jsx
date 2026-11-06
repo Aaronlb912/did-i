@@ -445,7 +445,8 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
   if (!open.length) return null
   const card = open[0]
   const mine = picked ? weMine(card)?.status || '' : ''
-  const locked = Boolean(mine) || Boolean(picked && (card.done || notMyTurn(card)))
+  // Not yet then Did is fine, like your own pills; a Did is final.
+  const locked = mine === 'did' || Boolean(picked && (card.done || notMyTurn(card)))
   // Did we wears its own accent, so a shared card reads apart from your own.
   const weColors = { ...colors, on: colors.we || colors.on, line: colors.we || colors.line, onDeep: colors.weDeep || colors.onDeep }
   return (
@@ -469,7 +470,7 @@ export function WeSwipeCard({ cards, colors, onAnswer, panelStyle, gemLook, budd
       onDid={() => onAnswer(card, 'did')}
       onNope={() => onAnswer(card, 'nope')}
       blockDid={locked}
-      blockNope={locked}
+      blockNope={locked || mine === 'nope'}
       onEdit={picked ? () => goHash('/we', { id: card.id }) : undefined}
       buddy={buddy}
       frame={frame}

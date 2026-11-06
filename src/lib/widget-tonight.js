@@ -1,5 +1,5 @@
 import { putAnswer } from './board-ops.js'
-import { markWeNight, refreshWeNights, weNight, weNightStatus, weOpenOn } from './we-nights.js'
+import { hideWeFor, markWeNight, refreshWeNights, showWeFor, weNight, weNightStatus, weOpenOn } from './we-nights.js'
 import { cloud } from './cloud.js'
 import { graceRowsFor } from './grace.js'
 import { shortLabel } from './board-json.js'
@@ -17,7 +17,7 @@ import { lastTimeLine, perWeekLine } from './every-copy.js'
 import { awayOn, gentleOn } from './prefs.js'
 import { shelfStreak } from './hall-feel.js'
 import { alignShelfPurse, normalizePurse, spreadPurseFrom } from './purse.js'
-import { weOpenPastList } from './did-we.js'
+import { weOpenPastList, weSavedOpenPast } from './did-we.js'
 import { readWeLine, readWeOpen, skipWePing } from './we-widget.js'
 import {
   answerFor,
@@ -263,7 +263,9 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   // A Did we due tonight counts too, until you said did on it in the app.
   const we = weNight(boardDate(now))
   // One hidden for today (Not yet on a monthly card) is off it, as on Today.
-  const weLeft = Math.max(0, we.due - we.done - we.hidden) + wePast.length
+  // A monthly card past its day shows to answer but is not "left": Today's
+  // meter does not count it either, and it never breaks the streak.
+  const weLeft = Math.max(0, we.due - we.done - we.hidden)
   const left = finishStackCount(countedTonightRows(rows)) + weLeft + graceOpen.length
   // Same test as Tonight's done card, across every tag, so the widget never
   // says "no questions" while the app says done (the open-only setting hides
@@ -499,7 +501,11 @@ function applyWeTap(card, status, clock, cardNight = '', tapAt = 0) {
   if (night !== boardDate(tappedAt)) return null
   // A Did already saved for that night is not turned into Not yet by an old card.
   if (status !== 'yes' && weNightStatus(night, card) === 'did') return null
-  markWeNight(card, night, status === 'yes' ? 'did' : 'nope')
+  // Not yet on a card open past today (a monthly card) hides it for today,
+  // as on Today, instead of adding a day the card does not have.
+  const hide = status !== 'yes' && weSavedOpenPast(card, night)
+  if (hide) hideWeFor(card, night)
+  else markWeNight(card, night, status === 'yes' ? 'did' : 'nope')
   if (status === 'yes') skipWePing(card, night)
   const shelf = readShelf()
   const previous = readWidgetTonightProps()
@@ -509,12 +515,13 @@ function applyWeTap(card, status, clock, cardNight = '', tapAt = 0) {
   const db = cloud()
   if (db) {
     // Not saved: put the real answers back so nothing shows as done that is not.
-    db.rpc('we_answer', { card, on_night: night, want_status: status === 'yes' ? 'did' : 'nope' }).then(
-      ({ error }) => {
-        if (error) refreshWeNights().catch(() => {})
-      },
-      () => refreshWeNights().catch(() => {}),
-    )
+    const undo = () => {
+      if (hide) showWeFor(card, night)
+      refreshWeNights().catch(() => {})
+    }
+    db.rpc('we_answer', { card, on_night: night, want_status: status === 'yes' ? 'did' : 'nope' }).then(({ error }) => {
+      if (error) undo()
+    }, undo)
   }
   return shelf
 }
