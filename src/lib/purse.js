@@ -804,7 +804,7 @@ function paidSet() {
   return paidOnAccount
 }
 
-function notePaid(key) {
+export function notePaid(key) {
   let set = paidSet()
   set.add(key)
   if (set.size > PAID_MAX) paidOnAccount = set = new Set([...set].slice(-PAID_MAX))

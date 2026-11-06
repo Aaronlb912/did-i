@@ -50,7 +50,7 @@ import { BAD_WEEK_DAYS, badWeekSeen, markBadWeekSeen, notYetRun } from '../../sr
 import { answerFor, dueTonight, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
 import { lastTimeLine, perWeekLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
-import { DidButton, KeyButton, LateMeta } from '../components/ui.jsx'
+import { DidButton, KeyButton, LateMeta, Row } from '../components/ui.jsx'
 import { daySection, dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { daysBetween, formatBoardDate, nextDueIsoAcross } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
@@ -73,6 +73,9 @@ import { useHoldMarks } from '../lib/mark-hold.js'
 import { useAnswerButtons } from '../lib/swipe-wheels.js'
 import { dropToast, showToast, useUndoToast } from '../lib/toast-queue.js'
 import { TOAST_ROOM } from '../components/ToastHost.jsx'
+import { holdWithUndo, useHeldSends } from '../hooks/useHeldSends.js'
+import { canChangeToday } from '../../src/lib/reopen-answer.js'
+import { UNDONE, weWithMyDid } from '../lib/held-sends.js'
 import { useOnline } from '../hooks/useOnline.js'
 import { HolePlate } from '../components/HolePlate.jsx'
 import { AppHeader, headerTitleStyle } from '../components/AppHeader.jsx'
@@ -129,6 +132,7 @@ import {
   readTour,
   readWidgetTip,
   shouldShowMorningAsk,
+  morningCardUp,
   showFirstMiss,
   shouldShowWidgetTip,
   showSignInNudge,
@@ -321,7 +325,20 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   useFreezeToasts(colors, stack.shelf, stack.clock, gentle)
   const freezesHeld = stack.shelf ? freezeState(stack.shelf, stack.clock).held : 0
   const we = useWeTonight(account.user)
-  const weAns = useWeAnswer(we.reload, book)
+  // A Did on a Did we card waits out the same undo as your own cards.
+  const held = useHeldSends()
+  // The card stays marked until the list has reloaded, so it does not flash back.
+  const holdWe = (card, night, send, day) =>
+    holdWithUndo(
+      { id: `we:${card.id}|${night || ''}`, kind: 'we', ref: card.id, user: account.user?.id, card: card.id, status: 'did', night: night || '', day, label: card.question },
+      () =>
+        send().then(async (out) => {
+          await Promise.resolve(we.reload()).catch(() => {})
+          return out
+        }),
+      markedToast('yes', { question: card.question }),
+    )
+  const weAns = useWeAnswer(we.reload, book, holdWe)
   // The day turned with Today open: load the new day's Did we cards, so a
   // tap never lands yesterday's card on today.
   const weDay = useRef(stack.dateIso)
@@ -603,6 +620,21 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     stack.mark(row, status)
     AccessibilityInfo.announceForAccessibility(t(left ? (status === 'skip' ? 'a11y.notYetNext' : 'a11y.didNext') : 'a11y.allDone'))
   }
+  // A Did can be set back to open until the day ends, whoever saved it (the
+  // widget, the watch and reminders have no undo). It asks first.
+  const changeToday = (row) =>
+    publishSheet({
+      title: t('pill.changeTitle'),
+      body: t('pill.changeBody'),
+      goLabel: t('pill.changeGo'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: () => {
+        publishSheet(null)
+        if (stack.reopenDid(row)) confirmDone(t('pill.changed'))
+      },
+    })
   // A Did on a waiting card opens the next one in the same spot: a double tap
   // must not mark that one too.
   const waitSince = useRef({ key: '', at: 0 })
@@ -723,12 +755,19 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       sub.remove()
     }
   }, [navigation])
+  // A returning streak is not saved by yesterday's card, so it does not hold the sheet.
+  const streakAlive = useMemo(() => Boolean(stack.shelf) && shelfStreak(stack.shelf, stack.clock) > 0, [stack.shelf, stack.clock])
+  const cardCameFor = morningCardUp({
+    focusLampId,
+    faceLampId: stack.bodyKind === 'face' ? stack.faceRow?.lamp?.id : '',
+    yesterdayUp: stack.graceOpen.length > 0 && (streakAlive || !graceLost(stack.shelf, stack.dateIso)) && (stack.graceFirst || graceFocused()),
+  })
   const showMorning = shouldShowMorningAsk({
     state: morningState,
     today: stack.dateIso,
     on: morningOn,
     open: morningOpen(now),
-    busy: nightOne || !hasQuestion || tourActive() || readTour().basics === 'new',
+    busy: cardCameFor || nightOne || !hasQuestion || tourActive() || readTour().basics === 'new',
     addedHere: morningHere,
   })
   const morningN = showMorning ? morningCount(stack.shelf || [book], stack.dateIso) : 0
@@ -985,7 +1024,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         .filter((item) => tagId.split(',').includes(item.id))
         .map((item) => item.title)
     : []
-  const weCards = we.cards.filter((card) => weInFilter(card, folderTitles, picks))
+  // Tonight's held Dids read as answered, so the card leaves the deck at once.
+  const heldWe = new Set(held.filter((item) => item.kind === 'we' && !item.night).map((item) => item.ref))
+  const weCards = we.cards.filter((card) => weInFilter(card, folderTitles, picks)).map((card) => (heldWe.has(card.id) ? weWithMyDid(card) : card))
   // At most one line about other people: a Did we waiting on you, or a
   // friend still going once you are done.
   const social = pickSocialLine({
@@ -1041,13 +1082,18 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     ) : null
   // After your own and Did we: family questions, then Did you asks. A swiped
   // card leaves at once; a failed save brings it back with a toast.
-  // People cards have no undo, so a family answer says it was saved instead.
+  // A family Did waits out the undo too; Not yet and Did you asks go at once.
   const peopleAnswer = async (key, save, reload, kind, refresh) => {
     setPeopleGone((keys) => [...keys, key])
     feelTap(kind === 'skip' ? 'skip' : 'did')
     let why = ''
     try {
-      why = (await save()).miss
+      const out = await save()
+      if (out?.undone) {
+        setPeopleGone((keys) => keys.filter((k) => k !== key))
+        return
+      }
+      why = out.miss
     } catch {
       why = 'off'
     }
@@ -1065,6 +1111,24 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     }
     reload()
   }
+  // The day at tap time: Today may have stayed open past midnight.
+  const familySend = (row, status) => {
+    const night = boardDate()
+    const send = () => answerFamilyLamp(row.family.id, row.lamp.id, night, status)
+    if (status !== 'yes') return send
+    const item = {
+      id: `family:${row.family.id}:${row.lamp.id}:${night}`,
+      kind: 'family',
+      ref: `${row.family.id}:${row.lamp.id}`,
+      user: account.user?.id,
+      familyId: row.family.id,
+      lampId: row.lamp.id,
+      night,
+      status,
+      label: row.lamp.question,
+    }
+    return () => holdWithUndo(item, send, markedToast('yes', { question: row.lamp.question })).then((out) => (out === UNDONE ? { undone: true } : out))
+  }
   const peopleItems = peopleTonightItems({
     familyRows: family.rows,
     asks,
@@ -1078,8 +1142,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         if (row.night && row.night !== boardDate()) return family.reload()
         return peopleAnswer(
           item.key,
-          // The day at tap time: Today may have stayed open past midnight.
-          () => answerFamilyLamp(row.family.id, row.lamp.id, boardDate(), status),
+          familySend(row, status),
           () => {
             confirmDone(t('tonight.familySaved', { name: row.family.name }))
             family.reload()
@@ -1168,7 +1231,6 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const graceWeOpen = graceNight ? weOpenOn(graceNight) : new Set()
   // Back after 3+ missed days: no grace card. Its words promise a streak that is gone.
   // A streak a freeze kept alive is not a gap: the grace card can still save it.
-  const streakAlive = useMemo(() => Boolean(stack.shelf) && shelfStreak(stack.shelf, stack.clock) > 0, [stack.shelf, stack.clock])
   const returning = useMemo(() => !streakAlive && cameBack(stack.shelf, stack.dateIso, isNewShelf(stack.shelf) ? 2 : COME_BACK_DAYS), [stack.shelf, stack.dateIso, streakAlive])
   // Week one, one missed day: one calm line that day (the welcome-back sheet covers longer gaps).
   const [missSeen, setMissSeen] = useState(firstMissDay)
@@ -1396,7 +1458,7 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
       famBusy.current.add(key)
       peopleAnswer(
         key,
-        () => answerFamilyLamp(row.family.id, row.lamp.id, boardDate(), 'yes'),
+        familySend(row, 'yes'),
         () => {
           confirmDone(t('tonight.familySaved', { name: row.family.name }))
           family.reload()
@@ -1753,6 +1815,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         <View style={styles.actions}>
           <TonightNote rows={[pillRow]} bookOf={stack.bookOf} colors={colors} onChange={onChange} />
         </View>
+        {(status === 'yes' || status === 'late') && canChangeToday(pillRow.lamp, pillRow.periodKey, stack.dateIso) ? (
+          <View style={styles.changeRow}>
+            <Row colors={colors} label={t('pill.change')} onPress={() => changeToday(pillRow)} />
+          </View>
+        ) : null}
       </GemFaceShell>
     )
   } else if (stack.bodyKind === 'pill' && stack.pillPick) {
@@ -2108,6 +2175,7 @@ const styles = StyleSheet.create({
   titleHit: { alignSelf: 'flex-start', maxWidth: '100%' },
   graceLate: { marginTop: 10 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
+  changeRow: { alignSelf: 'stretch', marginTop: 12 },
   tomorrow: { marginTop: 16 },
   tomorrowRow: { marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: 10, columnGap: 12 },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },

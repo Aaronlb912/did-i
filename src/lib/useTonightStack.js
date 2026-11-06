@@ -6,6 +6,7 @@ import { unlockAchievements } from './achievements.js'
 import { byAskTime, daySection, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
 import { putAnswer, setAnswerNote } from './board-ops.js'
 import { takeBackAnswer } from './answer-log.js'
+import { canChangeToday, reopenAnswer, settleReopen } from './reopen-answer.js'
 import { reportRejection } from './report.js'
 import { markedToast, toastName } from './pill-status.js'
 import { filamentLevel, hallHour, shelfHeat, shelfStreak } from './hall-feel.js'
@@ -67,6 +68,13 @@ export function undoneBook(live, undo) {
 export const UNDO_DEPTH = 3
 export function pushUndo(stack, entry) {
   return [entry, ...stack].slice(0, UNDO_DEPTH)
+}
+
+// The next open question after position `at`, wrapping past the end, so a routine
+// keeps its order instead of jumping back to the top. Null when none is open.
+export function nextOpenAfter(ready, at) {
+  if (at < 0) return null
+  return [...ready.slice(at + 1), ...ready.slice(0, at)].find((item) => !item.answer) || null
 }
 
 // A late Did on a Not yet goes to the next open question, else the next Not yet.
@@ -457,6 +465,30 @@ export function useTonightStack({
     feelTap('undo')
   }
 
+  // A Did set back to open from its pill, until the day ends (a widget, watch
+  // or reminder Did has no undo). The question goes back to the deck.
+  function reopenDid(row) {
+    if (!row || !canChangeToday(row.lamp, row.periodKey, dateIso)) return false
+    const book = bookOf(row)
+    const mine = answerFor(book, row.lamp.id, row.periodKey)
+    if (!mine || (mine.status !== 'yes' && mine.status !== 'late')) return false
+    const next = reopenAnswer(book, row.lamp.id, row.periodKey, clock, shelf.filter((item) => item.id !== book.id))
+    if (next === book) return false
+    // A toast still holding this answer must not put it back and pay it off twice.
+    undoStack
+      .filter((item) => item.lampId === row.lamp.id && item.periodKey === row.periodKey)
+      .forEach(dropUndo)
+    setOverlay(next)
+    change(next)
+    settleReopen(book, next, { lampId: row.lamp.id, periodKey: row.periodKey, dateIso, streak: overallStreak, clock })
+    setFaceId(row.lamp.id)
+    setSkipReview(false)
+    setRestNight(false)
+    setPillPick(null)
+    feelTap('undo')
+    return true
+  }
+
   // Two taps before a render both read the old book: the second would
   // save again and arm a second undo that takes coins off twice.
   const marking = useRef('')
@@ -489,16 +521,16 @@ export function useTonightStack({
       setFaceId(FINISH_FACE)
       setSkipReview(false)
     } else if (finalStatus === 'skip' && at >= 0 && ids.length > 1) {
-      setFaceId(ids[(at + 1) % ids.length])
+      // Same walk as a Did: the next open one, not the next one that may already be answered.
+      const after = nextOpenAfter(ready, at)
+      setFaceId(after ? after.lamp.id : ids[(at + 1) % ids.length])
       setSkipReview(false)
     } else if (finalStatus === 'late' && wasSkip) {
       const go = afterLateDid(ready, row)
       setSkipReview(go.skipReview)
       setFaceId(go.faceId)
     } else {
-      // On to the next open card after this one, wrapping like Not yet, so a
-      // routine keeps its order instead of jumping back to the top.
-      const after = at >= 0 ? [...ready.slice(at + 1), ...ready.slice(0, at)].find((item) => !item.answer) : null
+      const after = nextOpenAfter(ready, at)
       setFaceId(after ? after.lamp.id : '')
       setSkipReview(false)
     }
@@ -508,8 +540,9 @@ export function useTonightStack({
     change(next)
     setHolePick(null)
     setWaitPick(finalStatus !== 'skip' && waitPick && rowKey(waitPick) === rowKey(row) ? nextWaiting(row) : null)
-    // A picked card stays open in its answered state, with its note.
-    if (!pillPick || rowKey(pillPick) !== rowKey(row)) setPillPick(null)
+    // An answer from a pill goes back to the deck at once, no extra Back tap.
+    // The undo toast still has Add a note.
+    setPillPick(null)
     armUndo({ book, after: next, lampId: row.lamp.id, periodKey: row.periodKey, status: finalStatus, label: markedToast(finalStatus, row.lamp) })
     const clears = !wasClear && allClearTonight(next, clock)
     // A Did we still due today holds the day: this is a Did like any other,
@@ -768,6 +801,7 @@ export function useTonightStack({
     pickHole,
     saveTitle,
     applyUndo,
+    reopenDid,
     saveNote,
     closePlates,
     moveFace,

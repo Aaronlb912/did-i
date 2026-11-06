@@ -16,8 +16,10 @@ import { initWidgetsOnLaunch } from './widget-bridge.js'
 import { syncTonightWidget } from './widget-sync.js'
 import { listenForWatchTaps, resendWatchCards } from './watch-sync.js'
 import { installQuickActions } from './quick-actions.js'
-import { refreshTogether } from '../src/lib/people.js'
+import { useAccount } from '../src/lib/account.js'
+import { answerFamilyLamp, refreshTogether } from '../src/lib/people.js'
 import { t, tMiss } from '../src/lib/i18n.js'
+import { cancelHeldPrefix, flushOnBackground, resumeHeld, savedSender } from './lib/held-sends.js'
 import { showToast } from './lib/toast-queue.js'
 import { confirmDone } from './lib/confirm.js'
 import { applyWidgetTapOnce } from '../src/lib/widget-tonight.js'
@@ -66,6 +68,18 @@ export function NativeApp() {
   const theme = useTheme()
   const fontsLoaded = useAppFonts()
   const [launchReady, setLaunchReady] = useState(false)
+  const account = useAccount()
+  const userId = account.user?.id
+
+  // A Did we or family Did still inside its undo goes now when the app leaves
+  // the screen, and what an earlier run kept goes on the next start.
+  useEffect(() => flushOnBackground(AppState), [])
+  useEffect(() => {
+    if (!launchReady || !userId) return
+    import('../src/lib/did-we.js')
+      .then((we) => resumeHeld(userId, savedSender({ answerWe: we.weAnswer, answerFamily: answerFamilyLamp, claimWe: we.weClaim })))
+      .catch(() => {})
+  }, [launchReady, userId])
 
   useEffect(() => {
     if (!fontsLoaded) return undefined
@@ -156,6 +170,8 @@ export function NativeApp() {
           try {
             const { knownWeCard, weAnswer, weNoteAnswer } = await import('../src/lib/did-we.js')
             const { weMissKey } = await import('../src/lib/we-look.js')
+            // Answering now: a Did still held on Today for this card must not land after.
+            cancelHeldPrefix(`we:${cardId}|`)
             const out = await weAnswer(cardId, kind, night || undefined)
             // A weekly card's closed slot says week; unknown cards keep the day line.
             const miss = knownWeCard(cardId) ? weMissKey(knownWeCard(cardId), out.miss) : out.miss

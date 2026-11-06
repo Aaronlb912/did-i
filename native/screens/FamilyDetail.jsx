@@ -4,6 +4,7 @@ import { KEEP, useKept } from '../hooks/useKept.js'
 import { useNoted } from '../hooks/useNoted.js'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useAccount } from '../../src/lib/account.js'
+import { cancelHeldPrefix } from '../lib/held-sends.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { copyText, passAlong } from '../../src/lib/native.js'
 import {
@@ -234,6 +235,8 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   async function tap(lamp, status) {
     // The night at tap time: the page may have been open across the fold.
     const tapNight = boardDate(new Date(), fam.fold_hour)
+    // This answers at once: a Did still held on Today for it must not land after.
+    cancelHeldPrefix(`family:${fam.id}:${lamp.id}:`)
     const out = await once(`tap:${lamp.id}`, () => answerFamilyLamp(fam.id, lamp.id, tapNight, status))
     if (!out) return undefined
     if (out.miss) return confirmMiss(tMiss(out.miss))

@@ -50,7 +50,9 @@ import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
 import { clockWords, matchLamps, weekdayName } from '../../src/lib/hall-pages.js'
-import { addDaysIso, answerFor, boardDate, daysBetween, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek, nextDueIso, periodLabel } from '../../src/lib/recurrence.js'
+import { addDaysIso, answerFor, boardDate, daysBetween, everyDueOn, formatBoardDate, isDueOn, isEvery, isPerWeek, nextDueIso, periodKeyFor, periodLabel } from '../../src/lib/recurrence.js'
+import { canChangeToday, reopenAnswer, settleReopen } from '../../src/lib/reopen-answer.js'
+import { shelfStreak } from '../../src/lib/hall-feel.js'
 import { KitSegment } from '../components/KitSegment.jsx'
 import { gapLine, lastTimeLine, sinceBadge, staleDidLine } from '../../src/lib/every-copy.js'
 import { LampMonth } from '../components/LampMonth.jsx'
@@ -2868,6 +2870,9 @@ export function LampScreen({ book, boards = [], onChange, route }) {
             }
           />          ) : null}
 
+          {todayDid ? (
+            <SetRow colors={colors} icon="pen" label={t('pill.change')} plain onPress={() => menuGo(askReopen)} />
+          ) : null}
           <SetRow
             colors={colors}
             icon={lamp.archived ? 'play' : 'pause'}
@@ -2893,6 +2898,29 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 
   function change(next) {
     onChange(commitBook(next, clock))
+  }
+
+  // A Did saved today (here, by the widget, the watch or a reminder) can be set
+  // back to open until the day ends. It asks first.
+  const todayPeriod = lamp ? periodKeyFor(lamp, dateIso) : ''
+  const todayDid = Boolean(lamp && !lamp.archived && canChangeToday(lamp, todayPeriod, dateIso) && ['yes', 'late'].includes(answerFor(lampBook, lamp.id, todayPeriod)?.status))
+  function askReopen() {
+    publishSheet({
+      title: t('pill.changeTitle'),
+      body: t('pill.changeBody'),
+      goLabel: t('pill.changeGo'),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: () => {
+        publishSheet(null)
+        const next = reopenAnswer(lampBook, lamp.id, todayPeriod, clock, shelf.filter((item) => item.id !== lampBook.id))
+        if (next === lampBook) return
+        change(next)
+        settleReopen(lampBook, next, { lampId: lamp.id, periodKey: todayPeriod, dateIso, streak: shelfStreak(shelf, clock), clock })
+        confirmDone(t('pill.changed'))
+      },
+    })
   }
 
   if (!lamp) {
