@@ -22,7 +22,7 @@ const QUIET_TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 
 function blankPrefs() {
   return {
-    theme: 'dark',
+    theme: 'phone',
     locale: 'en',
     clock: 'phone',
     lessMotion: false,
@@ -167,7 +167,7 @@ export function awayNow(prefs, todayIso) {
   return cleanAway(prefs.away).find(([, until]) => until > todayIso) || null
 }
 
-export function deviceLocale() {
+function deviceLanguage() {
   try {
     const raw =
       typeof Intl !== 'undefined'
@@ -175,10 +175,29 @@ export function deviceLocale() {
         : typeof navigator !== 'undefined'
           ? navigator.language
           : 'en'
-    const code = String(raw || 'en').split('-')[0].toLowerCase()
-    return LOCALES.has(code) ? code : 'en'
+    return String(raw || 'en').split('-')[0].toLowerCase()
   } catch {
     return 'en'
+  }
+}
+
+export function deviceLocale() {
+  const code = deviceLanguage()
+  return LOCALES.has(code) ? code : 'en'
+}
+
+const DEVICE_LANG_KEY = 'did-i-device-lang'
+
+// On start: when the phone's language changed since the last start and the app
+// has it, the app follows. A language picked in the app stays until then.
+export function followDeviceLanguage(code = deviceLanguage()) {
+  try {
+    const last = localStorage.getItem(DEVICE_LANG_KEY)
+    if (last === code) return
+    localStorage.setItem(DEVICE_LANG_KEY, code)
+    if (last !== null && LOCALES.has(code) && readPrefs().locale !== code) writePrefs({ locale: code })
+  } catch {
+    // Storage is full or blocked: the language stays as it is.
   }
 }
 

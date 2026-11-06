@@ -697,3 +697,7 @@ cheer skip under reduce-motion.
 - No auto-expire. Photos stay until removed.
 - Photo files of other people are left behind when a question or card goes away (SQL cannot delete storage files; the phone removes only its own). A service-role sweep is needed: list the proofs bucket and remove files with no proofs row.
 - The question's calendar marks a day that has your photo. Tapping the day opens the day sheet, which has View photo.
+
+## Settings (UX loop 2026-11-06)
+
+- App icon choice: needs a new dependency (alternate icons) and a native build.

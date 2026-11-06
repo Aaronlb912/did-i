@@ -26,6 +26,7 @@ import { weNightStatus, weOpenOn } from '../../src/lib/we-nights.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
 import { goHash } from '../navigation/hash.js'
 import { makeFeelTap } from '../lib/feel-tap.js'
+import { shareTextFile } from '../lib/share-file.js'
 export function isNativeHall() {
   return true
 }
@@ -989,18 +990,36 @@ export function backupFileReady() {
   return typeof FileSystem.File === 'function' && Boolean(FileSystem.Paths) && typeof Sharing.shareAsync === 'function'
 }
 
-export async function shareBackupFile(shelf) {
-  if (!backupFileReady() || !(await Sharing.isAvailableAsync())) throw new Error('share-unavailable')
-  const file = new FileSystem.File(FileSystem.Paths.cache, `did-i-backup-${boardDate(new Date(), 4)}.json`)
-  if (file.exists) file.delete()
-  file.create()
-  file.write(JSON.stringify(shelf, null, 2))
-  await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: 'Did I', UTI: 'public.json' })
+function shareJsonFile(shelf) {
+  return shareTextFile({
+    fs: FileSystem,
+    sharing: Sharing,
+    name: `did-i-backup-${boardDate(new Date(), 4)}.json`,
+    text: JSON.stringify(shelf, null, 2),
+    mimeType: 'application/json',
+    UTI: 'public.json',
+  })
 }
 
-// Same share path as the text copy; paste into a .csv or a sheet.
+// The copy as a file when this binary can write one, the text otherwise.
+export async function shareCopy(shelf) {
+  if (backupFileReady() && (await shareJsonFile(shelf))) return { action: 'file' }
+  return shareShelf(shelf)
+}
+
+// A dated .csv file for Sheets or Excel when a file can be written, the text otherwise.
 export async function shareCsv(text) {
-  await Share.share({ title: 'Did I', message: text })
+  const sent =
+    backupFileReady() &&
+    (await shareTextFile({
+      fs: FileSystem,
+      sharing: Sharing,
+      name: `did-i-answers-${boardDate(new Date(), 4)}.csv`,
+      text,
+      mimeType: 'text/csv',
+      UTI: 'public.comma-separated-values-text',
+    }))
+  if (!sent) await Share.share({ title: 'Did I', message: text })
 }
 
 export async function shareBook(book) {

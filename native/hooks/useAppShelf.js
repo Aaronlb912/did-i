@@ -27,7 +27,7 @@ import {
   maybeStreakMiss,
   queueStreakMoment,
 } from '../../src/lib/streak-moments.js'
-import { scheduleNativePings, shareShelf } from '../../src/lib/native.js'
+import { scheduleNativePings, shareCopy } from '../../src/lib/native.js'
 import { armNativePingsNow, pingsStale } from '../shim/native.js'
 import { accountSessionOn, readAccountUserId } from '../../src/lib/session-id.js'
 import { reportRejection } from '../../src/lib/report.js'
@@ -422,14 +422,8 @@ export function useAppShelf() {
     change({ ...(cleared || now), answers: [] })
   }, [change, live])
 
-  const sendCopy = useCallback(async () => {
-    try {
-      await shareShelf(readShelf())
-    } catch {
-      // Closing the sheet resolves; a throw is a real failure.
-      confirmMiss(t('confirm.shareMiss'))
-    }
-  }, [])
+  // Settings > Your data owns the busy flag, the last-copy date and the miss line.
+  const sendCopy = useCallback(() => shareCopy(readShelf()), [])
 
   // A coin balance the server returned (tour coins): same steps as creditNightCoins.
   const applyCoinBalance = useCallback((bal, who) => {
