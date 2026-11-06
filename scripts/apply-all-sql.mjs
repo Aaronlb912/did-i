@@ -137,6 +137,7 @@ const files = [
   'supabase/leave-keep.sql',
   'supabase/check-on-ends.sql',
   'supabase/family-share.sql',
+  'supabase/unrefund.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

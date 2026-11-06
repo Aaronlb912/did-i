@@ -29,5 +29,6 @@ export async function startGemPurchase(packId) {
   const out = await buyGemPack(packId)
   if (out.miss === 'cancel') return { miss: '' }
   if (out.miss) return out
-  return { miss: '', pending: true }
+  // approval: an Ask to Buy or bank check, so the page says it is waiting for that.
+  return { miss: '', pending: true, approval: Boolean(out.approval) }
 }

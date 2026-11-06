@@ -461,7 +461,7 @@ real phone are still open on both stores.
 - [x] **IAP `gems_25`** — created (`6814694264`); $14.99, all countries, EN (U.S.).
 - [x] **IAP `gems_50`** — `6814694882`, $29.99, all countries, EN (U.S.).
 - [ ] **`gems_1` verify** — quick pass $0.99, countries, EN; IAP review screenshot (Shop → gems, e.g. `screen.png`) on one IAP.
-- [ ] **Reprice for bonus gems** (24 Sep 2026: $1 a gem, bonus on bigger packs, `docs/iap.md`) — `gems_3` $2.99, `gems_10` $9.99 (was $6.99), `gems_25` $24.99 (was $14.99), `gems_50` $49.99 (was $29.99). Display names: 6 / 14 / 40 / 80 gems for `gems_5` / `_10` / `_25` / `_50`. Same on Play. Then deploy `gem-iap` (the DB gem cap is already 100).
+- [ ] **Reprice for bonus gems** (24 Sep 2026: $1 a gem, bonus on bigger packs, `docs/iap.md`) — `gems_3` $2.99, `gems_10` $9.99 (was $6.99), `gems_25` $24.99 (was $14.99), `gems_50` $49.99 (was $29.99). Display names: 6 / 14 / 40 / 80 gems for `gems_5` / `_10` / `_25` / `_50`. Same on Play. Then deploy `gem-iap` (the DB gem cap is already 100). **These prices are old. Confirm what each pack costs now in App Store Connect and Play Console before ticking this or trusting the numbers above.** The phone shows only the price the store returns, so a pack left at its old price would sit under a bonus label it does not match.
 - [x] **Age ratings** — questionnaire saved; **9+** (172 regions), wellness topics yes, medical **None**.
 - [x] **App Information** — subtitle **One question at a time.**, category **Lifestyle**, saved.
 - [x] **App Privacy** — all six data types configured and **Published** (nutrition labels live).

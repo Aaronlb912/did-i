@@ -81,7 +81,7 @@ export function confirmFriendCheers(colors, onGo) {
 export function offerMoreGems(colors) {
   publishSheet({
     title: t('gems.shortTitle'),
-    body: t('gems.shortBody'),
+    body: t('gems.earn'),
     goLabel: t('gems.shortGo'),
     closeLabel: t('settings.neverMind'),
     colors,

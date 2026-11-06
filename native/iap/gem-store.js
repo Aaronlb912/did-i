@@ -13,10 +13,19 @@ import { showToast } from '../lib/toast-queue.js'
 
 let connected = false
 let linked = false
-// One store connection per app run. Everyone who asks shares it, and the
-// answer (even "no products yet") is kept so the gem page never waits twice.
+// One store connection per app run. Everyone who asks shares it. Only a good
+// answer is kept: an empty or failed one (offline at start) asks again.
 let pending = null
 let settled = ''
+// Apple's Ask to Buy or bank check: the buy waits on someone else. Apple lets
+// a request sit for a day, so the wait ends then. Not saved across runs.
+let approvalUntil = 0
+let toldOther = false
+// The last time the person tapped Buy or Restore. A pack from another account
+// is only worth a toast then, not on every cold start.
+let actedAt = 0
+const ACT_WINDOW = 2 * 60 * 1000
+const missListeners = new Set()
 const prices = new Map()
 const liveSku = new Map()
 let purchaseSub = null
@@ -54,6 +63,40 @@ export function iapPossible() {
 
 export function iapReady() {
   return linked
+}
+
+// Ask to Buy was declined or is over: the person can buy again.
+export function clearApproval() {
+  approvalUntil = 0
+}
+
+// A buy is waiting on an Ask to Buy or a bank check. No second buy meanwhile.
+export function gemApprovalWaiting() {
+  return Date.now() < approvalUntil
+}
+
+// The Get gems page listens, so a waiting banner ends when a credit misses.
+export function onGemMiss(fn) {
+  missListeners.add(fn)
+  return () => missListeners.delete(fn)
+}
+
+function tellMiss(miss) {
+  for (const fn of missListeners) {
+    try {
+      fn(miss)
+    } catch {
+      // A listener must not break the buy.
+    }
+  }
+}
+
+// A pack on this phone belongs to another account. Said once per run: the
+// store hands it over again on every connect.
+function otherAccountToast() {
+  if (toldOther || Date.now() - actedAt > ACT_WINDOW) return
+  toldOther = true
+  showToast({ id: 'gems-other', kind: 'error', text: t('gems.otherAccount'), ms: 8000 })
 }
 
 function priceOf(item) {
@@ -147,6 +190,13 @@ function gemsWaitToast() {
   showToast({ id: 'gems-waiting', kind: 'done', text: t('gems.waiting'), ms: 6000 })
 }
 
+// Ask to Buy or a bank check: not a failure. The pack is credited when the
+// store reports it done.
+function waitForApproval() {
+  approvalUntil = Date.now() + 24 * 60 * 60 * 1000
+  showToast({ id: 'gems-approval', kind: 'done', text: t('gems.approval'), ms: 6000 })
+}
+
 function creditMissToast() {
   showToast({
     id: 'gems-credit-miss',
@@ -156,7 +206,8 @@ function creditMissToast() {
     onPress: () => {
       restoreGemPurchases()
         .then((out) => {
-          if (out.miss) creditMissToast()
+          if (out.miss === 'other') showToast({ id: 'gems-other', kind: 'error', text: t('gems.otherAccount'), ms: 8000 })
+          else if (out.miss) creditMissToast()
           else if (out.gems > 0) showToast({ id: 'gems-credit-done', kind: 'done', text: t('gems.restored', { n: out.gems }), ms: 4200 })
           else showToast({ id: 'gems-credit-done', kind: 'done', text: t('gems.restoreNone'), ms: 4200 })
         })
@@ -190,6 +241,7 @@ async function claimAndCredit() {
 // the server has. Gem packs are used up when credited, so most restores find
 // nothing. Returns the gems added, or a miss.
 export async function restoreGemPurchases() {
+  actedAt = Date.now()
   if (!iapPossible()) return { gems: 0, miss: 'app' }
   if (!(await readUser())) return { gems: 0, miss: 'signin' }
   const mod = await loadIap()
@@ -200,6 +252,7 @@ export async function restoreGemPurchases() {
   let gems = 0
   let failed = 0
   let pending = 0
+  let other = 0
   try {
     const open = (await api.getAvailablePurchases?.()) || []
     for (const purchase of open) {
@@ -211,7 +264,8 @@ export async function restoreGemPurchases() {
         gems += out.gems || 0
         // Paid but not credited (receipt, pending, credit): not "nothing to restore".
         if (out.miss === 'pending') pending += 1
-        else if (out.miss && !['other', 'test', 'refunded'].includes(out.miss)) failed += 1
+        else if (out.miss === 'other') other += 1
+        else if (out.miss && !['test', 'refunded'].includes(out.miss)) failed += 1
       } catch {
         // The next restore or connect tries it again.
         failed += 1
@@ -225,6 +279,8 @@ export async function restoreGemPurchases() {
   if (failed && !gems && !claimed.gems) return { gems: 0, miss: 'store' }
   // A card still clearing is not a failed restore.
   if (pending && !gems && !claimed.gems) return { gems: 0, miss: 'pending' }
+  // A pack here was paid on another account: say so, not "nothing new".
+  if (other && !gems && !claimed.gems) return { gems: 0, miss: 'other' }
   return { gems: gems + claimed.gems, miss: '' }
 }
 
@@ -250,9 +306,11 @@ async function retryUnfinished(api) {
 
 export function initGemIap() {
   if (!iapPossible()) return Promise.resolve('skip')
-  if (settled && settled !== 'fail') return Promise.resolve(settled)
+  if (settled === 'ok') return Promise.resolve(settled)
   if (!pending) {
-    pending = connectStore().then((out) => {
+    // Already connected but no prices (offline at start): ask for prices
+    // again, do not connect twice.
+    pending = (linked ? refreshStore() : connectStore()).then((out) => {
       settled = out
       pending = null
       return out
@@ -268,6 +326,19 @@ async function loadProducts(fetchProducts) {
   prices.clear()
   liveSku.clear()
   for (const item of list) rememberProduct(item)
+}
+
+async function refreshStore() {
+  try {
+    const api = iapApi(await loadIap())
+    await loadProducts(api.fetchProducts)
+    if (!liveSku.size) return 'empty'
+    retryUnfinished(api)
+    return 'ok'
+  } catch (error) {
+    console.warn('gem iap refresh', error?.message || error)
+    return 'empty'
+  }
 }
 
 async function connectStore() {
@@ -298,14 +369,18 @@ async function connectStore() {
       }
       // Paid but not credited: say so, with a tap that tries again. The store
       // keeps the buy open, so the next connect retries too.
+      if (out?.miss !== 'pending') approvalUntil = 0
+      if (out?.miss) tellMiss(out.miss)
       if (out?.miss === 'test') testBuyToast()
       else if (out?.miss === 'pending') showToast({ id: 'gems-pending', kind: 'done', text: t('gems.pending'), ms: 4200 })
       else if (out?.miss === 'signin') showToast({ id: 'gems-signin', kind: 'done', text: t('gems.needSignIn'), ms: 4200 })
-      else if (out?.miss && out.miss !== 'other') creditMissToast()
+      else if (out?.miss === 'other') otherAccountToast()
+      else if (out?.miss) creditMissToast()
       else if (!out?.miss && !out?.gems && (readShelf()?.boards?.[0]?.gems || 0) > 999899) gemsWaitToast()
     })
     errorSub = purchaseErrorListener((error) => {
       if (error?.code === ErrorCode.UserCancelled) return
+      if (error?.code === ErrorCode.DeferredPayment) return waitForApproval()
       console.warn('gem iap', error?.message || error)
     })
     await loadProducts(fetchProducts)
@@ -318,6 +393,7 @@ async function connectStore() {
 }
 
 export async function buyGemPack(packId) {
+  actedAt = Date.now()
   const pack = gemPack(packId)
   if (!pack) return { miss: 'pack' }
   if (!iapPossible()) return { miss: 'app' }
@@ -389,6 +465,11 @@ export async function buyGemPack(packId) {
     return { miss: '' }
   } catch (error) {
     if (error?.code === api.ErrorCode?.UserCancelled) return { miss: 'cancel' }
+    // Not a failure: no Try again, the page says it is waiting.
+    if (error?.code === api.ErrorCode?.DeferredPayment) {
+      approvalUntil = Date.now() + 24 * 60 * 60 * 1000
+      return { miss: '', approval: true }
+    }
     console.warn('gem iap buy', error?.code, error?.message || error)
     // Play's reason rides in debugMessage and subResponseCodeAndroid, not in
     // the message, which is only "Failed to query product".

@@ -9709,7 +9709,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql', 'invite-friend.sql', 'leave-keep.sql', 'check-on-ends.sql', 'family-share.sql'].slice(-11))
+  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql', 'proof-ux.sql', 'invite-friend.sql', 'leave-keep.sql', 'check-on-ends.sql', 'family-share.sql', 'unrefund.sql'].slice(-11))
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -13975,6 +13975,67 @@ await testAsync('family sharing: lapsed asks, who takes over, the shows-every-an
   for (const lang of ['de', 'en', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
     assert.ok(sql.includes(`"${lang}": {`) && sql.includes('we_shows_all'), `push words for ${lang}`)
   }
+})
+
+test('gems: an offline start is not cached, the shop offers Try again, and a pending buy says so', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const store = readFileSync(path.join(root, 'native/iap/gem-store.js'), 'utf8')
+  const shop = readFileSync(path.join(root, 'native/screens/shop.jsx'), 'utf8')
+  assert.ok(store.includes("if (settled === 'ok') return Promise.resolve(settled)"), 'only a good store answer is cached')
+  assert.ok(/linked \? refreshStore\(\)/.test(store), 'a linked store loads products again')
+  assert.ok(shop.includes("t('gems.storeOffline')") && /storeOffline[\s\S]{0,300}boot\.retry/.test(shop), 'no prices shows Try again')
+  assert.ok(shop.includes("AppState.addEventListener('change'"), 'comes back to the store on focus')
+  assert.ok(/ErrorCode\.DeferredPayment/.test(store), 'Ask to Buy is read as pending')
+  assert.ok(/gemApprovalWaiting\(\)[\s\S]{0,120}gems\.approval[\s\S]{0,200}clearApproval\(\)/.test(shop), 'no second buy, with a way past a declined ask')
+  assert.ok(/out\?\.miss !== 'pending'\) approvalUntil = 0/.test(store), 'a credit miss ends the wait')
+  for (const lang of ['en', 'de', 'fr', 'it', 'es', 'pt', 'ja', 'ko', 'zh']) {
+    const pack = lang === 'en' ? en : { de, fr, it, es, pt, ja, ko, zh }[lang]
+    for (const key of ['gems.storeOffline', 'gems.approval', 'gems.otherAccount']) assert.ok(pack[key], `${lang} ${key}`)
+  }
+})
+
+test('gems: a pack from another account is named in Restore, the profile and the toast, only after a tap', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const store = readFileSync(path.join(root, 'native/iap/gem-store.js'), 'utf8')
+  const shop = readFileSync(path.join(root, 'native/screens/shop.jsx'), 'utf8')
+  const profile = readFileSync(path.join(root, 'native/screens/profile.jsx'), 'utf8')
+  assert.ok(/miss: 'other'/.test(store), 'restore returns other')
+  assert.ok(/out\?\.miss === 'other'\) otherAccountToast\(\)/.test(store), 'the silent path says it too')
+  assert.ok(/Date\.now\(\) - actedAt > ACT_WINDOW/.test(store), 'not on a cold start')
+  for (const file of [shop, profile]) assert.ok(file.includes("out.miss === 'other'") && file.includes("t('gems.otherAccount')"))
+})
+
+test('gems: short on gems shows the earn line, frames skip the second sheet, Terms and Privacy are full buttons', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const shop = readFileSync(path.join(root, 'native/screens/shop.jsx'), 'utf8')
+  const frames = readFileSync(path.join(root, 'native/screens/frames.jsx'), 'utf8')
+  assert.ok(/needMoreGems[\s\S]{0,200}gems\.earn/.test(shop), 'the need line says how to earn')
+  assert.ok(/publishSheet\(null\)\s*\n?\s*goHash\('\/gems'\)/.test(frames.replace(/\r/g, '')), 'frames go straight to the gem page')
+  assert.ok(shop.includes("label={t('legal.termsShort')}") && shop.includes("label={t('legal.privacyShort')}"), 'Terms and Privacy are rows')
+  assert.ok(shop.includes("t('gems.return')"), 'the banner while the store is open says finish in the store')
+})
+
+test('gems: de, fr and it use one word for gems', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  for (const [name, pack] of Object.entries({ de, fr, it })) {
+    const bad = Object.entries(pack).filter(([k, v]) => !/^frame\./.test(k) && typeof v === 'string' && /edelstein|gemm[ae]/i.test(v)).map(([k]) => k)
+    assert.deepEqual(bad, [], `${name} mixes words for gems`)
+  }
+  for (const lang of ['de', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
+    const text = { de, fr, it, ja, ko, pt, zh }[lang]['gems.return']
+    assert.ok(!/checkout|sync|Synchron|sincron|同期|동기화|同步/i.test(text), `${lang} gems.return is the store line`)
+  }
+})
+
+test('apple-notify gives gems back when Apple reverses a refund', () => {
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const fn = readFileSync(path.join(root, 'supabase/functions/apple-notify/index.ts'), 'utf8')
+  const sql = readFileSync(path.join(root, 'supabase/unrefund.sql'), 'utf8')
+  const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
+  assert.ok(fn.includes("'REFUND_REVERSED'") && fn.includes('unrefund_gem_purchase'))
+  assert.ok(/reversal \? info\.revocationDate/.test(fn), 'acts only when Apple shows no revocation')
+  assert.ok(/security definer/.test(sql) && /revoke all on function[\s\S]*unrefund_gem_purchase/i.test(sql) && /service_role/.test(sql), 'service role only')
+  assert.ok(order.includes("'supabase/unrefund.sql'"))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.
