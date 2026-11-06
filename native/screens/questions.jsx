@@ -80,7 +80,9 @@ import { forgetGoneSender } from '../components/removeFriend.js'
 import { takeSpoken } from '../../src/lib/voice-add.js'
 import { noteHitDay, rowId, searchRows, tonightStates } from '../../src/lib/question-list.js'
 import { faceCardStyle, faceCardStyles } from '../lib/face-card.js'
-import { amountAverageLine, amountWords, bestQuestionStreak, lampAmountSpans, lampAmountTotals, lampAmounts, lampDays, lampRecord, lampNights, lampRate, lampWeeks, lastDidTimes, topQuestionStreaks } from '../../src/lib/lamp-record.js'
+import { openEditAt, takeEditFold } from '../lib/edit-fold.js'
+import { countsFromThisWeek, unitChangeLine } from '../../src/lib/lamp-finish.js'
+import { amountAverageLine, amountWords, bestQuestionStreak, easeOffDue, lampAmountSpans, lampAmountTotals, lampAmounts, lampDays, lampDidSpan, lampRecord, lampNights, lampRate, lampWeeks, lastDidTimes, topQuestionStreaks } from '../../src/lib/lamp-record.js'
 import { pillStatusLabel } from '../../src/lib/pill-status.js'
 import { TagFilter } from '../components/TagFilter.jsx'
 import { BoardShell } from '../components/BoardShell.jsx'
@@ -1590,7 +1592,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const [open, setOpen] = useState(() => {
     const first = foldNext
     foldNext = ''
-    return first
+    // "Ask less often" on a question opens Edit with When already open.
+    return takeEditFold() || first
   })
   // "Already doing this?": how many days back a new question counts as done.
   const [back, setBack] = useState(0)
@@ -1618,6 +1621,8 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
   const inputRef = useRef(null)
   const leave = useRef(null)
   const fresh = !hang.editing && !copySource
+  // Edit says so when the question has answers: an edit keeps them.
+  const hasHistory = useMemo(() => Boolean(existing && (sourceBook?.answers || []).some((item) => item.lampId === existing.id)), [sourceBook?.answers, existing?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   const starters = fresh ? unusedStarters(book, clock) : []
   const picked = starters.find((starter) => starter.question === draft.question) || null
   // Packs sit behind Need an idea?, so they never get in the way; each one
@@ -2003,6 +2008,9 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
     }
     if (hang.editing) {
       playClick()
+      // Moving between days and times a week changes what the streak counts; say so.
+      const unitLine = existing ? unitChangeLine(sourceBook || target, existing, next, dateIso) : ''
+      const savedLine = unitLine ? `${doneMessage(target, next, 'confirm.questionSaved')}\n${unitLine}` : doneMessage(target, next, 'confirm.questionSaved')
       if (existing && onSaveTo) {
         // Undo puts the old version back, and the old folder if the folder changed.
         const wasIn = sourceBook && sourceBook.id !== target.id ? sourceBook : target
@@ -2012,7 +2020,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           id: 'undo:edit',
           kind: 'undo',
           rev: now,
-          label: doneMessage(target, next, 'confirm.questionSaved'),
+          label: savedLine,
           hint: t('tonight.undoTap'),
           until: now + total,
           total,
@@ -2021,7 +2029,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
             followCheckOn(next, existing).catch(() => confirmMiss(t('confirm.checkOnMiss')))
           },
         })
-      } else confirmDone(doneMessage(target, next, 'confirm.questionSaved'))
+      } else confirmDone(savedLine)
       swapHash('/lamp', { id: next.id })
       offerPingPrimer(newTime, colors)
       return
@@ -2151,6 +2159,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
         onLeadPress={fresh && lead ? onLeadPress : undefined}
         colors={colors}
       />
+      {hang.editing && hasHistory ? <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('lamp.keepHistory')}</Text> : null}
       {below}
 
       <PickSheet open={open === 'when'} scrollRef={whenScroll} title={t('hang.whenAsk')} onClose={() => open === 'when' && fold('when')} colors={colors}>
@@ -2213,7 +2222,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
                     <Pill key={n} label={String(n)} accessibilityLabel={t(n === 1 ? 'cadence.perWeekOne' : 'cadence.perWeek', { n })} radio on={Number(draft.perWeek) === n} onPress={() => hang.change('perWeek', n)} colors={colors} />
                   ))}
                 </View>
-                <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{t('hang.perWeekHint')}</Text>
+                <Text style={[styles.fieldHint, { color: colors.inkDim }]}>{hang.editing && countsFromThisWeek(existing, draft.perWeek, dateIso) ? `${t('hang.perWeekHint')} ${t('hang.perWeekCounts')}` : t('hang.perWeekHint')}</Text>
               </>
             ) : null}
 
@@ -2683,6 +2692,7 @@ export function HangScreen({ book, boards = [], onChange, onSaveTo, route, initi
           colors={colors}
           onChange={(next) => onChange(commitBook(next, clock))}
           onPaused={(paused) => hang.change('archived', paused)}
+          onLess={() => open !== 'when' && fold('when')}
         />
       ) : null}
     </BoardShell>
@@ -2738,6 +2748,9 @@ export function LampScreen({ book, boards = [], onChange, route }) {
   const best = useMemo(() => bestQuestionStreak(lampBook, lamp, dateIso), [lampBook, lamp, dateIso, awayKey()])
   const topRuns = useMemo(() => topQuestionStreaks(lampBook, lamp, dateIso), [lampBook, lamp, dateIso, awayKey()])
   const weeks = useMemo(() => lampWeeks(lampBook, lamp, dateIso, 8), [lampBook, lamp, dateIso, awayKey()])
+  const ended = questionEnded(lamp, dateIso)
+  const didSpan = useMemo(() => (ended ? lampDidSpan(lampBook, lamp) : null), [ended, lampBook, lamp])
+  const easeOff = useMemo(() => easeOffDue(lampBook, lamp, dateIso), [lampBook, lamp, dateIso, awayKey()])
   const lastFive = useMemo(() => lastDidTimes(lampBook, lamp, 5), [lampBook, lamp])
   const amounts = useMemo(() => lampAmounts(lampBook, lamp, dateIso, 14, 30), [lampBook, lamp, dateIso, awayKey()])
   const totals = useMemo(() => lampAmountTotals(lampBook, lamp, dateIso, firstWeekday(readPrefs().locale)), [lampBook, lamp, dateIso, awayKey()])
@@ -2795,8 +2808,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       what,
       n,
       cap: t(isPerWeek(lamp) ? 'lamp.streakCapWeeks' : 'lamp.streakCap'),
-      day: formatBoardDate(dateIso),
-      text: t(key, { n, what }),
+      day: formatBoardDate(ended ? lamp.endsOn : dateIso),
+      text: ended ? t('lamp.shareEnded', { n, what }) : t(key, { n, what }),
     })
   }
   const grid = useMemo(
@@ -2880,6 +2893,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
 
   const status = lamp.archived
     ? t('lamp.pausedLine')
+    : ended
+    ? t('lamp.endedOn', { date: formatBoardDate(lamp.endsOn) })
     : every
       ? every.due
         ? t('lamp.tonightIs', { status: pillStatusLabel(every.tonight) })
@@ -2977,13 +2992,25 @@ export function LampScreen({ book, boards = [], onChange, route }) {
             ) : null}
           </View>
         )}
+        {ended ? (
+          didSpan?.n ? (
+            <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
+              <Text style={[styles.tileCap, { color: colors.ink }]}>
+                {t(didSpan.n === 1 ? 'lamp.endedDid' : 'lamp.endedDids', { n: didSpan.n, from: formatBoardDate(didSpan.from), to: formatBoardDate(didSpan.to) })}
+              </Text>
+            </View>
+          ) : null
+        ) : (
         <View style={[styles.tile, { backgroundColor: colors.panel, borderColor: colors.lineSoft }]}>
-          <Text style={[styles.tileNum, { color: colors.ink }]}>{t('lamp.didOf', { did: record.did, n: record.asked })}</Text>
-          <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.didCap', { n: 30 })}</Text>
-          {lampRate(record) != null ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.rate', { pct: lampRate(record) })}</Text> : null}
+          <Text style={[styles.tileNum, { color: colors.ink }]}>{record.weekly && !record.asked ? '-' : t('lamp.didOf', { did: record.did, n: record.asked })}</Text>
+          <Text style={[styles.tileCap, { color: colors.inkDim }]}>{record.weekly ? t('lamp.didCapWeeks', { n: 4 }) : t('lamp.didCap', { n: 30 })}</Text>
+          {!record.weekly && lampRate(record) != null ? <Text style={[styles.tileCap, { color: colors.inkDim }]}>{t('lamp.rate', { pct: lampRate(record) })}</Text> : null}
         </View>
+        )}
       </View>
       )}
+
+      {easeOff ? <Row colors={colors} label={t('lamp.easeOff')} onPress={() => { openEditAt('when'); goHash('/hang', { id: lamp.id }) }} /> : null}
 
       <View style={styles.settings} />
       <SetCard colors={colors}>
@@ -2991,7 +3018,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
           colors={colors}
           icon="chart"
           label={t('settings.history')}
-          value={every ? '' : t('lamp.didOf', { did: record.did, n: record.asked })}
+          value={every || ended || (record.weekly && !record.asked) ? '' : t('lamp.didOf', { did: record.did, n: record.asked })}
           chevron={!historyOpen}
           plain
           onPress={() => flip(setHistoryOpen)}
@@ -3058,7 +3085,7 @@ export function LampScreen({ book, boards = [], onChange, route }) {
       {grid?.days.length ? (
         <View style={styles.trend}>
           <Text style={[styles.trendLabel, { color: colors.inkSoft }]}>{t('lamp.grid')}</Text>
-          <View style={styles.gridCols} accessible accessibilityLabel={t('lamp.gridA11y', { did: grid.byDay.reduce((n, d) => n + d.did, 0), due: grid.byDay.reduce((n, d) => n + d.due, 0) })}>
+          <View style={styles.gridCols} accessible accessibilityLabel={grid.weekly ? t('lamp.gridA11yDid', { n: grid.byDay.reduce((n, d) => n + d.did, 0) }) : t('lamp.gridA11y', { did: grid.byDay.reduce((n, d) => n + d.did, 0), due: grid.byDay.reduce((n, d) => n + d.due, 0) })}>
             {Array.from({ length: Math.ceil(grid.days.length / 7) }, (_, w) => (
               <View key={w} style={styles.gridCol}>
                 {grid.days.slice(w * 7, w * 7 + 7).map((day) => (
@@ -3076,6 +3103,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
               </View>
             ))}
           </View>
+          {grid.weekly ? null : (
+          <>
           <Text style={[styles.trendLabel, { color: colors.inkSoft, marginTop: 8 }]}>{t('lamp.weekdays')}</Text>
           <View style={styles.trendRow}>
             {weekdaysFor(readPrefs().locale).map((day) => {
@@ -3091,6 +3120,8 @@ export function LampScreen({ book, boards = [], onChange, route }) {
               )
             })}
           </View>
+          </>
+          )}
         </View>
       ) : null}
 

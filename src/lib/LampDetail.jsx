@@ -71,7 +71,7 @@ export function LampDetail({ book, lamp, dateIso, onClose, onEdit, onDuplicate, 
               {record.did}
               <em> / {record.asked}</em>
             </strong>
-            <span>{t('lamp.didCap', { n: 30 })}</span>
+            <span>{record.weekly ? t('lamp.didCapWeeks', { n: 4 }) : t('lamp.didCap', { n: 30 })}</span>
           </div>
         </div>
       )}

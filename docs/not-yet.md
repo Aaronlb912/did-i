@@ -5,6 +5,13 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Growing a habit (UX loop 2026-11-06)
+
+- No step-up nudge ("Ask more days?"): it is the goal nudge dropped earlier, and pressure to do more does not fit the ADHD audience. Only the ease-off row is built.
+- Finishing a question pays nothing: rewards are for showing up, and a gem for ending a question would reward quitting.
+- Past days show the question's current wording after a text change (calendar, CSV). Keeping old wording needs a new synced field and a version gate.
+- Needs device testing: Done popup with the record line and Ask less often, the unit-change save toast length, the times-a-week question page (weeks met tile, week bars), a finished question's page, Ask fewer days? opening Edit at When.
+
 ## Notes and looking back (UX loop 2026-11-06)
 
 - No mood or how-it-went row: a mood step would add a tap to every answer, and a note already says how it went. Idea only.
