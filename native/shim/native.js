@@ -6,7 +6,7 @@ import { requireOptionalNativeModule } from 'expo'
 import * as Linking from 'expo-linking'
 import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
-import { daySection, lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
+import { daySection, lampBuzzes, lampNudgesLate, resumeDuePauses } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions, staleDelivered } from '../../src/lib/notify-answer.js'
 import { REMIND_TRIES, readReminds, remindNext } from '../../src/lib/remind-me.js'
@@ -476,13 +476,15 @@ async function schedulePingsNow(books, now = new Date()) {
       const [y, m, d] = iso.split('-').map(Number)
       return !awayOn(iso) && list.some((book) => dueTonight(book, new Date(y, m - 1, d, 12)).some((row) => !row.answer || row.answer.status === 'skip'))
     })
-    for (const book of list) {
+    for (const listed of list) {
       for (const ahead of aheads) {
         // Midday of that calendar day sits inside the right board night.
         const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
         // Every open row, so a re-arm after the ask time still keeps the 21:00
         // late note. The ask note itself only goes to rows still waiting.
         // Not yet (status skip) is not done, so it keeps the late note too.
+        // A question paused until a day by then is asked that day.
+        const book = resumeDuePauses(listed, boardDate(day))
         const rows = dueTonight(book, day).filter((row) => !row.answer || row.answer.status === 'skip')
         const waiting = ahead === 0 ? new Set(pingWaitingTonight(book, now).map((row) => `${row.lamp.id}:${row.periodKey}`)) : null
         const night = boardDate(day)

@@ -1,4 +1,5 @@
 import { putAnswer } from './board-ops.js'
+import { resumeDuePauses } from './board-json.js'
 import {
   addDaysIso,
   answerFor,
@@ -109,7 +110,8 @@ function missedRows(book, now, skipped) {
 // one of them, not just last night. A night skipped by flying over the date
 // line is left alone.
 export function closePastNights(book, now = new Date(), skips = noteZone(now, undefined, undefined, book?.travelSkips)) {
-  let next = withTravelSkips(book, skips)
+  // A pause that ends today or earlier ends first, so its question is asked again.
+  let next = withTravelSkips(resumeDuePauses(book, boardDate(now, book?.dayFoldHour)), skips)
   let changed = next !== book
   const travelled = next
   for (const row of missedRows(travelled, now, (iso) => travelSkipped(travelled, iso))) {

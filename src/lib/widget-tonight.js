@@ -2,7 +2,7 @@ import { putAnswer } from './board-ops.js'
 import { hideWeFor, markWeNight, refreshWeNights, showWeFor, weNight, weNightStatus, weOpenOn } from './we-nights.js'
 import { cloud } from './cloud.js'
 import { graceRowsFor } from './grace.js'
-import { shortLabel } from './board-json.js'
+import { resumeDuePauses, shortLabel } from './board-json.js'
 import { findBookHoldingLamp, readShelf, writeShelf } from './board-shelf.js'
 import {
   rankWidgetOpen,
@@ -217,7 +217,8 @@ export function preferStoredTonightProps(built, stored) {
 
 export function buildTonightWidgetProps(shelf, now = new Date()) {
   const settings = readWidgetSettings()
-  const boards = (shelf?.boards || []).filter((b) => !b.archived)
+  // A question paused until today or earlier shows before the app has opened.
+  const boards = (shelf?.boards || []).filter((b) => !b.archived).map((b) => resumeDuePauses(b, boardDate(now, b.dayFoldHour)))
   const rows = tonightRowsForAllBoards(boards, now, settings.openOnly)
   const openRows = rows.filter((row) => !row.answer)
   const rankedOpen = rankWidgetOpen(openRows, now)
@@ -532,8 +533,10 @@ export function applyWidgetTapOnce(lampId, kind, night = '', clock = new Date(),
   if (id.startsWith(WE_ITEM)) return applyWeTap(id.slice(WE_ITEM.length), status, clock, night, tapAt)
   // Start from the shared purse, so a folder already out of step is not paid from.
   const shelf = alignShelfPurse(readShelf())
-  const book = findBookHoldingLamp(shelf.boards, id)
-  if (!book) return null
+  const held = findBookHoldingLamp(shelf.boards, id)
+  if (!held) return null
+  // A question whose pause ended today takes the tap before the app has opened.
+  const book = resumeDuePauses(held, boardDate(clock, held.dayFoldHour))
   const row = rowForStoredNight(book, id, night, clock)
   if (!row) return null
   // A nope can still turn into a did, same as the Tonight stack. Anything else is already set.
