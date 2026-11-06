@@ -402,7 +402,7 @@ export function AppShell() {
     }
   }, [app.book, app.shelf])
 
-  // Ping text follows gentle, language and the 12/24h clock: set them again.
+  // Ping, widget and watch text follow gentle, language and the 12/24h clock: set them again.
   const pingWords = `${prefs.gentle}|${prefs.locale}|${prefs.clock}`
   const [armedWords, setArmedWords] = useState(pingWords)
   // An open sheet hides the screens behind it from TalkBack (Android).
@@ -418,6 +418,7 @@ export function AppShell() {
     setArmedWords(pingWords)
     const shelf = readShelf()
     if (shelf?.boards?.length) armLampPings(shelf.boards).catch(reportRejection('arm-pings'))
+    syncTonightWidget(shelf).catch(() => {})
   }, [armedWords, pingWords])
 
   // Check-ons still waiting to stop when the app closed during an undo.

@@ -363,7 +363,7 @@ function ShopTile({ type, item, purse, colors, onTile, style, dim, note = '' }) 
         <TileArt type={type} id={item.id} colors={colors} buddy={purse.buddyOn} />
       </View>
       <View style={styles.tileLabel}>
-        <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={1}>
+        <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
           {name}
         </Text>
         <PriceTag tag={tag} colors={colors} coming={coming} />
@@ -2191,7 +2191,7 @@ export function CollectionScreen({ book, onChange, startTab }) {
             >
               <View style={styles.kindArt}>{kind.art}</View>
               <View style={styles.kindCopy}>
-                <Text style={[styles.kindName, { color: on ? colors.on : colors.ink }]} numberOfLines={1}>{t(item.key)}</Text>
+                <Text style={[styles.kindName, { color: on ? colors.on : colors.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t(item.key)}</Text>
                 <Text style={[styles.kindCount, { color: colors.inkDim }]} numberOfLines={1}>
                   {kind.count || t('kit.ownedOf', { n: kind.n, of: kind.of })}
                 </Text>

@@ -1,0 +1,7 @@
+{
+  "NSPhotoLibraryUsageDescription": "Did I utilise la photo que tu choisis comme photo de profil.",
+  "NSCameraUsageDescription": "Did I utilise l’appareil photo pour ta photo de profil et pour scanner les codes d’amis et de famille.",
+  "NSMicrophoneUsageDescription": "Did I écoute quand tu touches le micro pour dicter ton rappel.",
+  "NSPhotoLibraryAddUsageDescription": "Did I enregistre une photo dans ta photothèque quand tu touches Enregistrer dans Photos.",
+  "NSSpeechRecognitionUsageDescription": "Did I transforme tes mots en rappel sur ton téléphone."
+}

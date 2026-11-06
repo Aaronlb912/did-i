@@ -148,7 +148,7 @@ export function lastCopyLine() {
   try {
     const at = localStorage.getItem('did-i-last-copy')
     const d = at ? new Date(at) : null
-    return d && !Number.isNaN(d.getTime()) ? t('account.lastCopy', { date: d.toLocaleDateString() }) : ''
+    return d && !Number.isNaN(d.getTime()) ? t('account.lastCopy', { date: d.toLocaleDateString(dateTag()) }) : ''
   } catch {
     return ''
   }
@@ -2786,7 +2786,7 @@ function deviceSeen(iso) {
   if (!iso) return ''
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleString([], {
+  return date.toLocaleString(dateTag(), {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',

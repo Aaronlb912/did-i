@@ -1,0 +1,7 @@
+{
+  "NSPhotoLibraryUsageDescription": "고른 사진을 Did I 프로필 사진으로 써요.",
+  "NSCameraUsageDescription": "프로필 사진을 찍고 친구와 가족 코드를 스캔할 때 카메라를 써요.",
+  "NSMicrophoneUsageDescription": "마이크를 탭하면 리마인더로 할 말을 들어요.",
+  "NSPhotoLibraryAddUsageDescription": "사진에 저장을 탭하면 사진을 보관함에 저장해요.",
+  "NSSpeechRecognitionUsageDescription": "말한 내용을 휴대폰에서 리마인더로 바꿔요."
+}

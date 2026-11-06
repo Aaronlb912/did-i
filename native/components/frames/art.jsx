@@ -9,6 +9,7 @@ import { StyleSheet, View } from 'react-native'
 import * as Reanimated from 'react-native-reanimated'
 import { t } from '../../../src/lib/i18n.js'
 import { gentleOn } from '../../../src/lib/prefs.js'
+import { dateTag } from '../../../src/lib/recurrence.js'
 import {
   conicWedges,
   edgePoint,
@@ -360,7 +361,7 @@ function PolaroidUnder({ f }) {
   const day = f.p.date instanceof Date ? f.p.date : new Date()
   let label = ''
   try {
-    label = day.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+    label = day.toLocaleDateString(dateTag(), { weekday: 'short', month: 'short', day: 'numeric' })
   } catch {
     label = day.toDateString()
   }

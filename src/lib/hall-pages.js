@@ -1,5 +1,6 @@
 import { dueThatNight, freezeState, hallHeat, shelfStreak } from './hall-feel.js'
 import {
+  dateTag,
   addDaysIso,
   allClearTonight,
   answerFor,
@@ -777,7 +778,7 @@ export function tapWhen(answeredAt, now = new Date()) {
   if (datePart === yesterday) return clock ? t('time.yesterdayAt', { clock }) : t('time.yesterday')
   const date = parseIsoDate(datePart)
   if (!date) return raw
-  const day = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const day = date.toLocaleDateString(dateTag(), { month: 'short', day: 'numeric' })
   return clock ? `${day}, ${clock}` : day
 }
 

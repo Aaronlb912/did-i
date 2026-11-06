@@ -1,0 +1,7 @@
+{
+  "NSPhotoLibraryUsageDescription": "Did I 会把你选的照片用作头像。",
+  "NSCameraUsageDescription": "Did I 用相机拍摄头像并扫描好友和家人的二维码。",
+  "NSMicrophoneUsageDescription": "你点按麦克风时，Did I 会听你说的提醒。",
+  "NSPhotoLibraryAddUsageDescription": "你点按“保存到相册”时，Did I 会把照片存到你的图库。",
+  "NSSpeechRecognitionUsageDescription": "Did I 在你的手机上把你说的话变成提醒。"
+}

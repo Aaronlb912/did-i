@@ -1,0 +1,7 @@
+{
+  "NSPhotoLibraryUsageDescription": "Did I nutzt ein Foto, das du auswählst, als dein Profilbild.",
+  "NSCameraUsageDescription": "Did I nutzt die Kamera für dein Profilbild und zum Scannen von Freundes- und Familiencodes.",
+  "NSMicrophoneUsageDescription": "Did I hört zu, wenn du auf das Mikrofon tippst, um deine Erinnerung zu sprechen.",
+  "NSPhotoLibraryAddUsageDescription": "Did I speichert ein Foto in deiner Mediathek, wenn du auf In Fotos sichern tippst.",
+  "NSSpeechRecognitionUsageDescription": "Did I macht aus deinen Worten eine Erinnerung, auf deinem Telefon."
+}
