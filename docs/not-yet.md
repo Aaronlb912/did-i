@@ -5,6 +5,26 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Needs Aaron to deploy
+
+Sign in with Apple revoke on account delete (App Store rule 5.1.1(v), branch `ux/aaron-calls`). The phone asks Apple for a fresh code just before `delete_me`, and `apple-revoke` trades it for a token and revokes it. Nothing is stored, so accounts made before this work too. Until the function is deployed, a delete still goes through and the revoke is skipped (logged as `apple revoke`).
+
+1. Merge the branch.
+2. Set the secrets (names only; the key id and team id are already in `.env.local`, the key file is the Sign in with Apple `.p8` from `docs/apple-sign-in.md`):
+   - `APPLE_TEAM_ID`
+   - `APPLE_SIGNIN_KEY_ID`
+   - `APPLE_SIGNIN_P8` (the whole `.p8` text)
+   - `APPLE_SIGNIN_CLIENT_ID` is optional. It defaults to the bundle id `com.aaronbryant.didi`, which is what the iPhone sign-in sheet issues codes for. Do not set it to the Services ID.
+   ```powershell
+   supabase secrets set APPLE_TEAM_ID=<team id> APPLE_SIGNIN_KEY_ID=<key id>
+   supabase secrets set "APPLE_SIGNIN_P8=$(Get-Content <path to the .p8> -Raw)"
+   ```
+3. `supabase functions deploy apple-revoke` (verify_jwt stays on; it is pinned in `supabase/config.toml`).
+4. Try it with a test Apple account on TestFlight: Settings, Account, Delete account. The Apple sheet comes up, and Settings > Apple ID > Sign-In & Security > Sign in with Apple no longer lists Did I.
+5. OTA the phone change (`npm run update:prod` from merged master).
+
+Not covered: the website's Apple sign-in (web is frozen; its delete skips the revoke), and someone who cancels the Apple sheet at delete time (the account is deleted, the Apple ID keeps listing Did I).
+
 ## Family sharing (branch `ux/family-share`)
 
 - Count cards have no Take off row for the maker and no heir line when the maker leaves: the people list on a count card shows only you, so the maker cannot see who to take off.

@@ -286,17 +286,33 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
   function memberItems(row, name) {
     const items = [{ key: 'gift', label: t('gift.button'), onPress: () => goHash('/gift', { id: row.user_id }) }]
     if (!fam.parent) return items
+    const changeRole = () => once(`role:${row.user_id}`, async () => {
+      const { miss: why } = await setRole(fam.id, row.user_id, row.role === 'parent' ? 'kid' : 'parent')
+      if (why === 'lastparent') confirmMiss(t('family.lastParent'))
+      else if (why === 'unchanged') confirmMiss(t('confirm.miss'))
+      else if (why) confirmMiss(tMiss(why))
+      else confirmDone(t(row.role === 'parent' ? 'confirm.nowKid' : 'confirm.nowAdult', { name }))
+      load()
+    })
     items.push({
       key: 'role',
-      label: row.role === 'parent' ? t('family.makeKid') : t('family.makeParent'),
-      onPress: () => once(`role:${row.user_id}`, async () => {
-        const { miss: why } = await setRole(fam.id, row.user_id, row.role === 'parent' ? 'kid' : 'parent')
-        if (why === 'lastparent') confirmMiss(t('family.lastParent'))
-        else if (why === 'unchanged') confirmMiss(t('confirm.miss'))
-        else if (why) confirmMiss(tMiss(why))
-        else confirmDone(t(row.role === 'parent' ? 'confirm.nowKid' : 'confirm.nowParent', { name }))
-        load()
-      }),
+      label: row.role === 'parent' ? t('family.makeKid') : t('family.makeAdult'),
+      // Changing a kid to an adult lifts the kid rule on Did we, so it asks first.
+      onPress: () =>
+        row.role === 'parent'
+          ? changeRole()
+          : publishSheet({
+              title: t('family.makeAdultTitle', { name }),
+              body: t('family.makeAdultBody', { name }),
+              goLabel: t('family.makeAdult'),
+              closeLabel: t('settings.neverMind'),
+              colors,
+              onClose: () => publishSheet(null),
+              onGo: () => {
+                publishSheet(null)
+                changeRole()
+              },
+            }),
     })
     items.push({
       key: 'remove',
@@ -431,7 +447,7 @@ export function FamilyDetailScreen({ book, onChange, familyId, colors }) {
                     <KeyButton
                       colors={colors}
                       label={row.role === 'parent' ? t('people.parent') : t('people.kid')}
-                      accessibilityLabel={row.role === 'parent' ? t('family.makeKid') : t('family.makeParent')}
+                      accessibilityLabel={row.role === 'parent' ? t('family.makeKid') : t('family.makeAdult')}
                       onPress={() => memberItems(row, name).find((item) => item.key === 'role')?.onPress()}
                     />
                   ) : null}
