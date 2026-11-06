@@ -7,7 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { currentBook, readShelf } from '../src/lib/board-shelf.js'
 import { bootNative, listenNativeShell } from '../src/lib/native.js'
 import { preparePush } from '../src/lib/push.js'
-import { useTheme } from '../src/lib/prefs.js'
+import { followDeviceLanguage, useTheme } from '../src/lib/prefs.js'
 import { needsEnter } from '../src/lib/session.js'
 import { runAfterLaunchReady } from './lib/launch-ready.js'
 import { afterNativeBridgeReady } from './lib/defer-native.js'
@@ -95,6 +95,7 @@ export function NativeApp() {
   useEffect(() => {
     if (!launchReady) return undefined
     SplashScreen.hideAsync().catch(() => {})
+    followDeviceLanguage()
     bootNative()
     const stop = listenNativeShell({
       onBack() {

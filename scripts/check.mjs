@@ -13046,7 +13046,7 @@ test('leftovers: pause labels, no dollar line, last copy line', () => {
   assert.ok(!/'shop.gemsDoor': "[^"]*dollar/.test(en), 'store prices are local')
   assert.ok(/'lamp.stop': 'Pause'/.test(en) && /'lamp.askAgain': 'Resume'/.test(en))
   const more = readFileSync(new URL('../native/screens/more.jsx', import.meta.url), 'utf8')
-  assert.ok(more.indexOf("setItem('did-i-last-copy'") > more.indexOf('await shareShelf(all)'), 'date saved only after the share finishes')
+  assert.ok(more.indexOf("setItem('did-i-last-copy'") > more.indexOf('await shareCopy(all)'), 'date saved only after the share finishes')
 })
 
 test('widget: footer says questions waiting, empty list opens add, Not yet card hides Not yet, Did we taps are never kept', async () => {
@@ -13073,7 +13073,7 @@ test('bugs 1104b: leaving the account clears iOS widget taps; past pings skipped
   const loop = nat.slice(nat.indexOf('let failed = 0'))
   assert.ok(loop.indexOf('<= Date.now()') > 0 && loop.indexOf('<= Date.now()') < loop.indexOf('scheduleNotificationAsync('), 'a past trigger is skipped before scheduling')
   assert.ok(nat.includes("return Share.share({ title: 'Did I', message: text })"), 'shareShelf returns the share result')
-  assert.ok(more.includes('res?.action !== Share.dismissedAction'), 'a closed share sheet saves no copy date')
+  assert.ok(more.includes('copyWent(res)'), 'a closed share sheet saves no copy date')
   assert.ok(qs.includes('!hit.lamp.archived && sameWords(hit.lamp)'), 'an active twin wins over a paused one')
 })
 
@@ -14515,6 +14515,125 @@ await testAsync('Change today answer only for a Did on its own day, and a signed
   })
   assert.equal(run.status, 0, run.stderr)
   assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), {}, 'the second Did pays nothing')
+})
+
+test('share as a file: the file is written and shared, and any miss falls back to text', async () => {
+  const { shareTextFile } = await import('../native/lib/share-file.js')
+  function fakes({ available = true, writeFails = false, noFile = false, shareFails = false } = {}) {
+    const calls = { written: [], shared: [], deleted: [] }
+    class File {
+      constructor(dir, name) { this.name = name; this.uri = `${dir.uri}/${name}`; this.exists = false }
+      delete() { calls.deleted.push(this.name) }
+      create() {}
+      write(text) { if (writeFails) throw new Error('disk full'); calls.written.push([this.name, text]) }
+    }
+    return {
+      calls,
+      fs: noFile ? {} : { File, Paths: { cache: { uri: 'cache', list: () => ['did-i-backup-2026-11-05.json', 'did-i-answers-2026-11-05.csv', 'other.txt'].map((n) => Object.assign(new File({ uri: 'cache' }, n), { delete() { calls.deleted.push(n) } })) } } },
+      sharing: { isAvailableAsync: async () => available, shareAsync: async (uri, opts) => { if (shareFails) throw new Error('no app'); calls.shared.push([uri, opts]) } },
+    }
+  }
+  const job = { name: 'did-i-answers-2026-11-06.csv', text: 'a,b', mimeType: 'text/csv', UTI: 'public.comma-separated-values-text' }
+  const ok = fakes()
+  assert.equal(await shareTextFile({ ...ok, ...job }), true)
+  assert.deepEqual(ok.calls.written, [['did-i-answers-2026-11-06.csv', 'a,b']])
+  assert.equal(ok.calls.shared[0][0], 'cache/did-i-answers-2026-11-06.csv')
+  assert.equal(ok.calls.shared[0][1].mimeType, 'text/csv')
+  assert.deepEqual(ok.calls.deleted, ['did-i-backup-2026-11-05.json', 'did-i-answers-2026-11-05.csv'], 'old copies are cleared first, other files stay')
+  for (const [why, opts] of [['no file module', { noFile: true }], ['sharing off', { available: false }], ['write fails', { writeFails: true }]]) {
+    const miss = fakes(opts)
+    assert.equal(await shareTextFile({ ...miss, ...job }), false, why)
+    assert.equal(miss.calls.shared.length, 0, `${why}: no empty share sheet`)
+  }
+  const rejected = fakes({ shareFails: true })
+  assert.equal(await shareTextFile({ ...rejected, ...job }), false, 'a share that rejects falls back to text')
+  const { copyWent } = await import('../native/lib/share-file.js')
+  assert.equal(copyWent({ action: 'file' }), true)
+  assert.equal(copyWent({ action: 'sharedAction' }), true)
+  assert.equal(copyWent({ action: 'dismissedAction' }), false, 'a closed text share is not a copy')
+  assert.equal(copyWent(undefined), false)
+  const nat = readFileSync(new URL('../native/shim/native.js', import.meta.url), 'utf8')
+  const csv = nat.slice(nat.indexOf('export async function shareCsv'), nat.indexOf('export async function shareBook'))
+  assert.ok(csv.includes('did-i-answers-${boardDate(new Date(), 4)}.csv') && csv.includes("mimeType: 'text/csv'") && csv.includes('backupFileReady()'), 'the CSV is a dated file when files work')
+  assert.ok(csv.includes("Share.share({ title: 'Did I', message: text })"), 'the CSV keeps the text fallback')
+  const copy = nat.slice(nat.indexOf('export async function shareCopy'), nat.indexOf('export async function shareCsv'))
+  assert.ok(copy.includes('backupFileReady() && (await shareJsonFile(shelf))') && copy.includes('return shareShelf(shelf)'), 'a copy is a file when files work, text otherwise')
+  assert.ok(copy.includes("return { action: 'file' }"), 'a file share reports itself')
+})
+
+test('data copy: Account, the delete sheet and Your data share the file; one row on Your data', () => {
+  const more = readFileSync(new URL('../native/screens/more.jsx', import.meta.url), 'utf8')
+  const profile = readFileSync(new URL('../native/screens/profile.jsx', import.meta.url), 'utf8')
+  const shelf = readFileSync(new URL('../native/hooks/useAppShelf.js', import.meta.url), 'utf8')
+  assert.ok(more.includes('copyWent(res)') && profile.split('copyWent(res)').length === 3, 'both screens save the date and reopen delete only when the share went')
+  assert.ok(profile.includes('const res = await shareCopy(account.user ? await exportAll() : readShelf())') && !profile.includes('shareBackupFile'), 'the file row also falls back to text')
+  assert.ok(more.includes('await shareCopy(all)') && !more.includes('shareShelf'), 'Download my data and the delete sheet copy share the file')
+  assert.ok(profile.includes('shareCopy(account.user ? await exportAll() : readShelf())') && !profile.includes('shareShelf'), 'Save a copy shares the file')
+  assert.ok(profile.includes('{backupFileReady() ? null : ('), 'the text row hides when the file row shows')
+  assert.ok(/backupFileReady\(\) \? \(\r?\n\s+<SetRow/.test(profile), 'the file row stays')
+  const send = profile.slice(profile.indexOf('async function sendCopy'), profile.indexOf('async function saveFile'))
+  assert.ok(send.indexOf('setSharing(true)') > 0 && send.indexOf('setSharing(true)') < send.indexOf('onSendCopy()'), 'signed out Save a copy takes the sharing flag first')
+  assert.ok(!/return onSendCopy\(\)/.test(send) && send.includes('did-i-last-copy'), 'signed out Save a copy writes the last copy date too')
+  assert.ok(shelf.includes('shareCopy(readShelf())') && !shelf.includes('shareShelf'), 'the signed out path shares through the same helper')
+})
+
+test('settings: Clock sits on Appearance, subtitles name what is inside, account row lists its pages', () => {
+  const profile = readFileSync(new URL('../native/screens/profile.jsx', import.meta.url), 'utf8')
+  const look = profile.indexOf("if (page === 'look')")
+  const days = profile.indexOf("if (page === 'nights')")
+  const clock = profile.indexOf("label={t('settings.clock')}")
+  assert.ok(look > 0 && days > look, 'both pages exist')
+  assert.ok(clock > look && clock < days, 'the Clock picker is on Appearance')
+  assert.equal(profile.split("label={t('settings.clock')}").length, 2, 'and only there')
+  for (const lang of ['en', 'es', 'fr', 'de', 'pt', 'it', 'zh', 'ja', 'ko']) {
+    const src = readFileSync(new URL(`../src/locales/${lang}.js`, import.meta.url), 'utf8')
+    assert.ok(/'settings\.accountOnSub': '\{email\}[.。]/.test(src), `${lang} account subtitle starts with the email`)
+    assert.ok(!/'settings\.accountOnSub': '[^']*(Sign out|Abmelden|abmelden)/.test(src), `${lang} account subtitle no longer says sign out`)
+  }
+  const en = readFileSync(new URL('../src/locales/en.js', import.meta.url), 'utf8')
+  assert.ok(en.includes("'settings.lookRowSub': 'Theme, language, clock, motion, vibration, widget'"))
+  assert.ok(en.includes("'settings.accountOnSub': '{email}. Sync, phones, delete account.'"))
+  assert.ok(!/'settings\.nightsRowSub': '[^']*clock/i.test(en), 'Days does not name the clock')
+})
+
+test('prefs: new installs follow the phone theme, old prefs keep theirs', () => {
+  const was = globalThis.localStorage
+  const kv = new Map()
+  try {
+    globalThis.localStorage = { getItem: (k) => kv.get(k) ?? null, setItem: (k, v) => kv.set(k, String(v)), removeItem: (k) => kv.delete(k) }
+    assert.equal(readPrefs().theme, 'phone', 'a new install follows the phone')
+    kv.set('did-i-prefs', JSON.stringify({ theme: 'dark', locale: 'en' }))
+    assert.equal(readPrefs().theme, 'dark', 'a saved Dark stays')
+    kv.set('did-i-prefs', JSON.stringify({ theme: 'light', locale: 'en' }))
+    assert.equal(readPrefs().theme, 'light', 'a saved Light stays')
+  } finally {
+    globalThis.localStorage = was
+  }
+})
+
+test('prefs: the app language follows the phone when the phone changes, not before', async () => {
+  const { followDeviceLanguage } = await import('../src/lib/prefs.js')
+  const was = globalThis.localStorage
+  const kv = new Map()
+  try {
+    globalThis.localStorage = { getItem: (k) => kv.get(k) ?? null, setItem: (k, v) => kv.set(k, String(v)), removeItem: (k) => kv.delete(k) }
+    writePrefs({ locale: 'fr' })
+    followDeviceLanguage('en')
+    assert.equal(readPrefs().locale, 'fr', 'the first start only remembers the phone language')
+    followDeviceLanguage('en')
+    assert.equal(readPrefs().locale, 'fr', 'a phone that did not change leaves the picked language')
+    followDeviceLanguage('sv')
+    assert.equal(readPrefs().locale, 'fr', 'a language the app lacks changes nothing')
+    followDeviceLanguage('de')
+    assert.equal(readPrefs().locale, 'de', 'a new supported phone language is followed')
+    writePrefs({ locale: 'ja' })
+    followDeviceLanguage('de')
+    assert.equal(readPrefs().locale, 'ja', 'a language picked in the app holds while the phone stays the same')
+    followDeviceLanguage('es')
+    assert.equal(readPrefs().locale, 'es', 'the next phone change wins again')
+  } finally {
+    globalThis.localStorage = was
+  }
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

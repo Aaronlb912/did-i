@@ -24,7 +24,8 @@ import { readShelf } from '../../src/lib/board-shelf.js'
 import { armLampPings } from '../../src/lib/notify.js'
 import { sendFeedback } from '../lib/feedback-mail.js'
 import { legalEmail } from '../../src/lib/legal.js'
-import { backupFileReady, shareBackupFile, shareCsv, shareShelf } from '../../src/lib/native.js'
+import { backupFileReady, shareCopy, shareCsv } from '../../src/lib/native.js'
+import { copyWent } from '../lib/share-file.js'
 import { restoreGemPurchases } from '../../src/lib/gem-buy.js'
 import { answersCsv } from '../../src/lib/answers-csv.js'
 import { weCardTitle } from '../../src/lib/did-we.js'
@@ -120,12 +121,11 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
   // Signed in, the copy is the whole account, like Account > Download my data.
   async function sendCopy() {
     if (sharing) return
-    if (!account.user && onSendCopy) return onSendCopy()
     setSharing(true)
     try {
-      const res = await shareShelf(account.user ? await exportAll() : readShelf())
+      const res = await (!account.user && onSendCopy ? onSendCopy() : shareCopy(account.user ? await exportAll() : readShelf()))
       // Same line Account > Download my data keeps, so "last copy" stays true.
-      if (res?.action !== 'dismissedAction') {
+      if (copyWent(res)) {
         try { localStorage.setItem('did-i-last-copy', new Date().toISOString()) } catch {}
       }
     } catch (error) {
@@ -139,8 +139,10 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
     if (fileBusy) return
     setFileBusy(true)
     try {
-      await shareBackupFile(account.user ? await exportAll() : readShelf())
-      try { localStorage.setItem('did-i-last-copy', new Date().toISOString()) } catch {}
+      const res = await shareCopy(account.user ? await exportAll() : readShelf())
+      if (copyWent(res)) {
+        try { localStorage.setItem('did-i-last-copy', new Date().toISOString()) } catch {}
+      }
     } catch {
       confirmMiss(t('confirm.shareMiss'))
     } finally {
@@ -198,16 +200,18 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
     return (
       <BoardShell book={book} title={t('settings.yourData')} date={date} colors={colors}>
         <SetCard colors={colors}>
-          <SetRow
-            colors={colors}
-            icon="note"
-            tint={colors.inkSoft}
-            label={t('settings.sendCopy')}
-            sub={t('settings.sendCopySub')}
-            value={sharing ? t('app.loading') : undefined}
-            chevron
-            onPress={sendCopy}
-          />
+          {backupFileReady() ? null : (
+            <SetRow
+              colors={colors}
+              icon="note"
+              tint={colors.inkSoft}
+              label={t('settings.sendCopy')}
+              sub={t('settings.sendCopySub')}
+              value={sharing ? t('app.loading') : undefined}
+              chevron
+              onPress={sendCopy}
+            />
+          )}
           {backupFileReady() ? (
             <SetRow
               colors={colors}
@@ -309,6 +313,15 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
             armLampPings(readShelf().boards).catch(() => {})
           }}
         />
+        <SetChoice
+          colors={colors}
+          icon="clock"
+          tint={colors.on}
+          label={t('settings.clock')}
+          options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
+          selected={prefs.clock}
+          onSelect={(id) => writePrefs({ clock: id })}
+        />
         <SetSwitch
           colors={colors}
           icon="motion"
@@ -395,15 +408,6 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           tint={colors.on}
           label={t('settings.foldLine')}
           sub={t('settings.foldGraceSub', { zone: zoneWords(), time: clockWords('09:00') })}
-        />
-        <SetChoice
-          colors={colors}
-          icon="clock"
-          tint={colors.on}
-          label={t('settings.clock')}
-          options={CLOCK_IDS.map((id) => ({ id, label: t(`clock.${id}`) }))}
-          selected={prefs.clock}
-          onSelect={(id) => writePrefs({ clock: id })}
         />
         <SetSwitch
           colors={colors}

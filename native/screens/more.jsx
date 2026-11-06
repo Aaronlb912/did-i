@@ -9,7 +9,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -104,7 +103,8 @@ import { LATER_MINUTES } from '../../src/lib/notify-answer.js'
 import { lastCallAt as sharedLastCallAt, quietToFor } from '../../src/lib/quiet.js'
 import { PING_KINDS, afterQuiet, awayEnd, awayKey, awayLeft, awayNow, awayStart, readPrefs, usePrefs, uses24h, writePrefs } from '../../src/lib/prefs.js'
 import { CHEERS, LOOKS, cheerText, lookText, normalizePurse } from '../../src/lib/purse.js'
-import { backupFileReady, copyText, pingTest, playClick, shareShelf } from '../../src/lib/native.js'
+import { backupFileReady, copyText, pingTest, playClick, shareCopy } from '../../src/lib/native.js'
+import { copyWent } from '../lib/share-file.js'
 import { syncLine, syncMissAct, syncMissShown } from '../../src/lib/sync-line.js'
 import {
   checkPin,
@@ -3126,8 +3126,8 @@ function AccountSignedIn({ book, email, onChange, onImport, openData = false }) 
     let shared = false
     try {
       const all = await exportAll()
-      const res = await shareShelf(all)
-      if (res?.action !== Share.dismissedAction) {
+      const res = await shareCopy(all)
+      if (copyWent(res)) {
         try { localStorage.setItem('did-i-last-copy', new Date().toISOString()) } catch {}
         setCopied(Date.now())
         shared = true

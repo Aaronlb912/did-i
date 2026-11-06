@@ -152,7 +152,7 @@ export async function shareShelf(shelf) {
 }
 
 export const backupFileReady = () => false
-export const shareBackupFile = shareShelf
+export const shareCopy = shareShelf
 
 // Answers as a spreadsheet file. Falls back to a download when the browser cannot share files.
 export async function shareCsv(text) {
