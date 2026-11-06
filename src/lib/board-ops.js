@@ -42,6 +42,8 @@ export function putAnswer(book, row, status, clock = new Date(), past = false) {
     // Stamped now, so sync keeps it over an older Not yet; past keeps it out of today's paid taps.
     answeredAt: answeredAtIso(clock),
     ...(past ? { past: true } : {}),
+    // A Not yet on a phone with no answer yet: a Did from another phone beats it, whatever the stamps say.
+    ...(status === 'skip' && !past && !prev ? { first: true } : {}),
     // Changing the answer keeps the day's note and amount.
     note: prev?.note || '',
     ...(prev?.note && prev.noteAt ? { noteAt: prev.noteAt } : {}),
@@ -286,12 +288,24 @@ export function answerStamp(answer) {
   return stampMs(note) > stampMs(tap) ? note : tap
 }
 
+function firstNope(answer) {
+  return answer?.status === 'skip' && answer.first === true
+}
+
+function didAnswer(answer) {
+  return answer?.status === 'yes' || answer?.status === 'late'
+}
+
 // Two copies of one answer: the tap (status, answeredAt) and the note (note,
 // noteAt, amount) each come from the copy that changed them last, so an old
 // tap with a newer note never puts back an answer another phone replaced.
 // Ties keep a.
 export function mergeAnswer(a, b) {
-  const tapB = stampMs(b?.answeredAt) > stampMs(a?.answeredAt)
+  let tapB = stampMs(b?.answeredAt) > stampMs(a?.answeredAt)
+  // A Not yet made on a phone that had no answer (first) never replaces a Did
+  // from another phone that missed a sync. A later deliberate Not yet has no mark.
+  if (firstNope(a) && didAnswer(b)) tapB = true
+  else if (firstNope(b) && didAnswer(a)) tapB = false
   const noteB = stampMs(b?.noteAt) > stampMs(a?.noteAt)
   if (tapB === noteB) return tapB ? b : a
   const tap = tapB ? b : a

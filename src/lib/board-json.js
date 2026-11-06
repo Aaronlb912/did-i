@@ -365,6 +365,8 @@ export function normalizeAnswer(raw) {
     // This night was a Did once, so it counts toward the night's paid taps
     // even after it turns into a Not yet (purse.js payTap).
     ...(answer.paid === true ? { paid: true } : {}),
+    // A Not yet made with no answer on this phone; a Did elsewhere beats it (board-ops.js mergeAnswer).
+    ...(answer.first === true && status === 'skip' ? { first: true } : {}),
   }
 }
 

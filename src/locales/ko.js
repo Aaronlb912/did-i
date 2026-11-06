@@ -3047,7 +3047,7 @@ export const ko = {
   'gems.restore': '구매 복원',
   'gems.restoring': '복원 중...',
   'gems.restored': '구매를 복원했어요. 젬 {n}개 추가.',
-  'gems.restoreNone': '복원할 항목이 없어요.',
+  'gems.restoreNone': '젬은 계정에 있어요. 새로 추가할 항목이 없어요.',
   'gems.restoreMiss': '복원하지 못했어요. 다시 해 보세요.',
   'gems.creditMiss': "젬 결제는 됐지만 아직 들어오지 않았어요.",
   'gems.testMiss': "테스트 구매로는 젬이 늘지 않아요.",

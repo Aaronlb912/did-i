@@ -1409,6 +1409,77 @@ test('reminders never set count as stale, so turning notifications on later sets
   assert.ok(src.includes('return !(at > 0) || Date.now() - at > PING_REFRESH_MS'))
 })
 
+test('a first Not yet from a phone that missed the sync never replaces a Did', async () => {
+  const { mergeAnswer } = await import('../src/lib/board-ops.js')
+  const { normalizeAnswer } = await import('../src/lib/board-json.js')
+  const did = { id: 'a', lampId: 'x', periodKey: '2026-10-20', status: 'yes', answeredAt: '2026-10-20T19:00:00.000Z' }
+  const first = { id: 'b', lampId: 'x', periodKey: '2026-10-20', status: 'skip', answeredAt: '2026-10-20T20:00:00.000Z', first: true }
+  assert.equal(mergeAnswer(did, first).status, 'yes', 'the Did stays')
+  assert.equal(mergeAnswer(first, did).status, 'yes', 'the Did stays in the other order')
+  assert.equal(mergeAnswer(did, first).answeredAt, did.answeredAt)
+  const late = { ...did, status: 'late' }
+  assert.equal(mergeAnswer(first, late).status, 'late', 'a Late stays too')
+  // A later Not yet without the mark is a deliberate change and wins.
+  const deliberate = { ...first, first: undefined }
+  assert.equal(mergeAnswer(did, deliberate).status, 'skip')
+  assert.equal(mergeAnswer(deliberate, did).status, 'skip')
+  // Nothing to protect: two Not yets, and a later Did over a first Not yet.
+  assert.equal(mergeAnswer(did, { ...first, status: 'skip', first: true, answeredAt: '2026-10-20T17:00:00.000Z' }).status, 'yes')
+  assert.equal(mergeAnswer({ ...first, answeredAt: '2026-10-20T17:00:00.000Z' }, first).answeredAt, first.answeredAt)
+  // The note still merges on its own stamp.
+  const noted = mergeAnswer({ ...did, note: 'ran', noteAt: '2026-10-20T19:05:00.000Z' }, first)
+  assert.equal(noted.status, 'yes')
+  assert.equal(noted.note, 'ran')
+  // Through a shelf merge, both ways.
+  const shelf = (answer) => ({ currentId: 'b1', boards: [{ id: 'b1', title: 'Home', lamps: [{ id: 'x', label: 'X' }], answers: [answer] }] })
+  for (const merged of [mergeShelves(shelf(did), shelf(first), '2026-10-21', '2026-10-20'), mergeShelves(shelf(first), shelf(did), '2026-10-21', '2026-10-20')]) {
+    assert.equal(merged.boards[0].answers[0].status, 'yes')
+  }
+  // A pulled Not yet without the mark is a later deliberate change, so it wins.
+  const row = { lamp_id: 'x', period_key: '2026-10-20', board_id: 'b1', status: 'skip', answered_at: first.answeredAt, note: '', note_at: '' }
+  assert.equal(applyAnswers(shelf(did), [row]).shelf.boards[0].answers[0].status, 'skip')
+  // The mark survives a reload.
+  assert.equal(normalizeAnswer(first).first, true)
+  assert.ok(!('first' in normalizeAnswer({ ...first, status: 'yes' })), 'only a Not yet carries it')
+})
+
+test('putAnswer marks a Not yet only when this phone had no answer', async () => {
+  const { putPastAnswer } = await import('../src/lib/board-ops.js')
+  const lamp = { id: 'l1', question: 'One?', cadence: 'daily', archived: false }
+  const book = { id: 'tag-a', title: 'A', lamps: [lamp], answers: [] }
+  const today = new Date(2026, 8, 21, 20, 0)
+  const row = { lamp, periodKey: boardDate(today) }
+  const nope = putAnswer(book, row, 'skip', today)
+  assert.equal(answerFor(nope, 'l1', row.periodKey).first, true, 'a Not yet with no answer is marked')
+  const did = putAnswer(book, row, 'yes', today)
+  assert.ok(!('first' in answerFor(did, 'l1', row.periodKey)), 'a Did has no mark')
+  const flipped = putAnswer(did, row, 'skip', today)
+  assert.equal(answerFor(flipped, 'l1', row.periodKey).status, 'skip')
+  assert.ok(!('first' in answerFor(flipped, 'l1', row.periodKey)), 'a Not yet over this phone\'s own Did is deliberate')
+  const yesterday = new Date(2026, 8, 20, 20, 0)
+  const pastRow = { lamp, periodKey: boardDate(yesterday), dateIso: boardDate(yesterday) }
+  const past = putPastAnswer(book, pastRow, 'skip', today)
+  assert.equal(answerFor(past, 'l1', pastRow.periodKey).status, 'skip')
+  assert.ok(!('first' in answerFor(past, 'l1', pastRow.periodKey)), 'a calendar edit has no mark')
+  // Upload: f goes up for a first Not yet only.
+  const sent = answersToSend({ boards: [nope] }, true)
+  assert.equal(sent[0].f, true)
+  assert.ok(!('f' in answersToSend({ boards: [did] }, true)[0]))
+  assert.ok(!('f' in answersToSend({ boards: [flipped] }, true)[0]))
+})
+
+test('keep-did-app.sql skips a first Not yet over a Did and is applied last', () => {
+  const checkRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const sql = readFileSync(path.join(checkRoot, 'supabase/keep-did-app.sql'), 'utf8')
+  assert.ok(sql.includes("coalesce(r->'f' = 'true'::jsonb, false)") && sql.includes("o.status in ('yes', 'late')"), 'the f guard, null-safe so rows without f still save')
+  assert.match(sql, /revoke all on function public\.put_answers_as\(uuid, jsonb\) from public, anon, authenticated;/)
+  assert.ok(sql.includes("notify pgrst, 'reload schema'"))
+  const order = readFileSync(path.join(checkRoot, 'scripts/apply-all-sql.mjs'), 'utf8')
+  const files = [...order.matchAll(/'(supabase\/[a-z0-9-]+\.sql)'/g)].map((m) => m[1])
+  assert.equal(files.at(-1), 'supabase/keep-did-app.sql', 'last in the list')
+  assert.ok(files.indexOf('supabase/keep-did-app.sql') > files.indexOf('supabase/answer-split-merge.sql'))
+})
+
 test('an old answer with a newer note never puts the answer back over a newer one', () => {
   const did = { id: 'a', lampId: 'x', periodKey: '2026-10-20', status: 'yes', answeredAt: '2026-10-20T21:00:00.000Z' }
   const stale = { id: 'a', lampId: 'x', periodKey: '2026-10-20', status: 'skip', answeredAt: '2026-10-20T20:00:00.000Z', note: 'tired', noteAt: '2026-10-20T22:00:00.000Z', amount: 3 }
@@ -7965,8 +8036,12 @@ test('a reminder tap at 23:59:58 handled after midnight files to its night, once
   const notYet = applyWidgetTapOnce('door', 'nope', night, new Date(2026, 7, 10, 22, 5), new Date(2026, 7, 10, 22, 5).getTime())
   const replay = applyWidgetTapOnce('door', 'did', night, new Date(2026, 7, 10, 22, 6), new Date(2026, 7, 10, 22, 0).getTime())
   assert.equal(Date.parse(answerFor(replay.boards[0], 'door', night).answeredAt), new Date(2026, 7, 10, 22, 0).getTime())
+  // This Not yet came from a phone with no answer (first), so a Did beats it.
   const merged = mergeShelves(replay, notYet)
-  assert.equal(answerFor(merged.boards[0], 'door', night).status, 'skip', 'the newer Not yet wins')
+  assert.ok(['yes', 'late'].includes(answerFor(merged.boards[0], 'door', night).status), 'a first Not yet never beats a Did')
+  // A deliberate Not yet (no mark) with the newer stamp still wins.
+  const deliberate = { ...notYet, boards: notYet.boards.map((b) => ({ ...b, answers: b.answers.map(({ first: _f, ...rest }) => rest) })) }
+  assert.equal(answerFor(mergeShelves(replay, deliberate).boards[0], 'door', night).status, 'skip', 'the newer Not yet wins')
   // A night that has truly closed is dropped.
   const late = new Date(2026, 7, 12, 12, 0)
   assert.equal(applyWidgetTapOnce('door', 'did', night, late, notificationAnswer(response, late.getTime()).at), null)
@@ -8922,7 +8997,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-11), ['we-timing.sql', 'we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql'])
+  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql'])
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)

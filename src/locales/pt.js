@@ -3080,7 +3080,7 @@ export const pt = {
   'gems.restore': 'Restaurar compras',
   'gems.restoring': 'Restaurando...',
   'gems.restored': 'Compras restauradas. {n} gemas adicionadas.',
-  'gems.restoreNone': 'Nada para restaurar.',
+  'gems.restoreNone': 'Suas gemas já estão na sua conta. Nada novo para adicionar.',
   'gems.restoreMiss': 'Não foi possível restaurar. Tente de novo.',
   'gems.creditMiss': "As tuas gems estão pagas, mas ainda não chegaram.",
   'gems.testMiss': "Compras de teste não adicionam gems.",
