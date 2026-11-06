@@ -588,6 +588,8 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
   const tonightUri = p.openUri || 'didi://tonight'
   const { compact, tight, large } = widgetSize(widgetInfo)
   const gem = Boolean(C.gem)
+  const narrowW = widgetSize(widgetInfo).w
+  const longNope = String(p.nopeLabel || '').length > 8 && narrowW > 0 && narrowW < 220
   const lead = leadItem(p)
   const buddyId = String(p.buddyId || '')
   const showBuddy = Boolean(buddyId) && !tight
@@ -785,8 +787,8 @@ export function renderDidITonightAndroidWidget(props, widgetInfo) {
                     >
                       <TextWidget
                         text={p.nopeLabel || 'Not yet'}
-                        style={{ fontSize: compact ? 13 : 15, fontWeight: '700', color: C.ink, textAlign: 'center' }}
-                        maxLines={1}
+                        style={{ fontSize: longNope ? 12 : compact ? 13 : 15, fontWeight: '700', color: C.ink, textAlign: 'center' }}
+                        maxLines={longNope ? 2 : 1}
                       />
                     </FlexWidget>
                     )}

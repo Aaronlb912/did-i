@@ -91,7 +91,7 @@ import { KEEP, useKept } from '../hooks/useKept.js'
 import { useTourTarget } from '../lib/tour.js'
 import { currentBook, readShelf } from '../../src/lib/board-shelf.js'
 import { isNewShelf } from '../../src/lib/first-run.js'
-import { boardDate, formatBoardDate, isoDate } from '../../src/lib/recurrence.js'
+import { boardDate, dateTag, formatBoardDate, isoDate } from '../../src/lib/recurrence.js'
 import { sendLastLine } from '../../src/lib/every-copy.js'
 import { BoardShell } from '../components/BoardShell.jsx'
 import { confirmFriendCheers, offerMoreGems, publishSheet } from '../components/SheetHost.jsx'
@@ -1988,7 +1988,7 @@ function gotDay(iso) {
   const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) / 86400000)
   if (days <= 0) return t('time.today')
   if (days === 1) return t('time.yesterday')
-  return d.toLocaleDateString()
+  return d.toLocaleDateString(dateTag())
 }
 
 function FamilyListScreen({ colors }) {

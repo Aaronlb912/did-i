@@ -1,0 +1,7 @@
+{
+  "NSPhotoLibraryUsageDescription": "O Did I usa a foto que você escolher como sua foto de perfil.",
+  "NSCameraUsageDescription": "O Did I usa a câmera para sua foto de perfil e para ler códigos de amigos e da família.",
+  "NSMicrophoneUsageDescription": "O Did I escuta quando você toca no microfone para ditar seu lembrete.",
+  "NSPhotoLibraryAddUsageDescription": "O Did I salva uma foto na sua biblioteca quando você toca em Salvar em Fotos.",
+  "NSSpeechRecognitionUsageDescription": "O Did I transforma suas palavras em um lembrete no seu celular."
+}

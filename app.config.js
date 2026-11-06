@@ -208,6 +208,8 @@ export default ({ config }) => ({
     './plugins/with-ios-pod-bundles.cjs',
     './plugins/with-siri-add.cjs',
   ],
+  // Permission prompts in the app's languages (InfoPlist.strings per language). English stays in the plugins above.
+  locales: Object.fromEntries(['de', 'es', 'fr', 'it', 'ja', 'ko', 'pt-BR', 'zh-Hans'].map((code) => [code, `./native/ios-strings/${code}.json`])),
   ios: {
     ...config.ios,
     ...(devApp ? { bundleIdentifier: 'com.aaronbryant.didi.dev' } : {}),

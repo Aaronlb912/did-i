@@ -12709,6 +12709,31 @@ await testAsync('a day off: the widget says nothing is due and opens Today, with
   assert.ok(questions.includes('nextDueIso(lamp, dateIso)'), 'the question page and Today share one next-day walk')
 })
 
+test('a day in another language: Brazilian pt, days not nights in ja, Did in the legend, dates in the app language', () => {
+  const ptText = Object.values(pt).join('\n')
+  const euro = ptText.match(/(?<![\p{L}])(tu|teu|tua|teus|tuas|tens|podes|telemóvel|ficheiros?|ecrã|utilizador|comboio|partilhar)(?![\p{L}])/giu)
+  assert.ok(!euro, 'pt is Brazilian, with você: ' + (euro || []).slice(0, 5).join(', '))
+  assert.ok(!/\bquestions?\b/.test(ptText.replaceAll('Did I questions', '').replace(/\{[^}]*\}/g, '')), 'no English question left in pt text')
+  assert.ok(!Object.values(ja).some((s) => /\{[a-z]+\} ?夜中|1夜中/.test(s)), 'ja counts days with 日, not 夜中')
+  for (const k of ['en', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'zh']) {
+    const loc = readFileSync(`src/locales/${k}.js`, 'utf8')
+    assert.ok(/'jewelKey.did': ["']Did["'],/.test(loc) && /'jewelKey.late': ["'][^"']*Did/.test(loc), k + ' dot legend says Did, like the buttons')
+  }
+  assert.ok(!readFileSync('src/lib/hall-pages.js', 'utf8').includes("toLocaleDateString('en-US'"), 'history dates follow the app language')
+  for (const f of ['native/screens/social.jsx', 'native/screens/more.jsx', 'src/lib/gift-history.js', 'native/components/frames/art.jsx']) {
+    assert.ok(!/toLocale(Date)?String\((undefined|\[\])?[,)]/.test(readFileSync(f, 'utf8')), f + ' dates follow the app language')
+  }
+  const shell = readFileSync('native/AppShell.jsx', 'utf8')
+  assert.ok(/armLampPings\(shelf\.boards\)[^\n]*\n\s*syncTonightWidget\(shelf\)/.test(shell), 'a language change redraws the widget and watch')
+  const cfg = readFileSync('app.config.js', 'utf8')
+  for (const code of ['de', 'es', 'fr', 'it', 'ja', 'ko', 'pt-BR', 'zh-Hans']) {
+    assert.ok(cfg.includes(`'${code}'`), code + ' permission prompts are listed')
+    const strings = JSON.parse(readFileSync(`native/ios-strings/${code}.json`, 'utf8'))
+    assert.equal(Object.keys(strings).length, 5, code + ' has every permission prompt')
+    assert.ok(Object.values(strings).every((s) => s.length > 10 && !s.includes('—')), code + ' prompts are real text')
+  }
+})
+
 test('Away set after answering says it starts tomorrow', () => {
   const more = readFileSync(new URL('../native/screens/more.jsx', import.meta.url), 'utf8')
   assert.ok(more.includes("t('away.startsTomorrow')"))

@@ -2,6 +2,8 @@
 
 
 const PRODUCT_SAME = new Set([
+  // The dot legend says Did, like the answer buttons.
+  'jewelKey.did',
   'nav.everyone',
   // The name of the site the Rocket buddy came from.
   'hunt.src.hunt',
@@ -68,6 +70,8 @@ const PRODUCT_SAME = new Set([
 const TEMPLATE_SAME = new Set([
   'hang.am',
   'hang.pm',
+  'clock.am',
+  'clock.pm',
   'hang.timeDaypart',
   'hang.priority.normal',
   'pill.markedWhat',

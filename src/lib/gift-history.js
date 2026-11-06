@@ -1,5 +1,6 @@
 import { frameText } from './frames.js'
 import { t } from './i18n.js'
+import { dateTag } from './recurrence.js'
 import { buddyText, cheerText, lookText } from './purse.js'
 
 // The status line under a gift you sent.
@@ -26,7 +27,7 @@ export function giftTab(type) {
 
 export function sentGiftDate(row) {
   try {
-    return new Date(row.made_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    return new Date(row.made_at).toLocaleDateString(dateTag(), { month: 'short', day: 'numeric' })
   } catch {
     return ''
   }

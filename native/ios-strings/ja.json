@@ -1,0 +1,7 @@
+{
+  "NSPhotoLibraryUsageDescription": "選んだ写真をDid Iのプロフィール画像に使います。",
+  "NSCameraUsageDescription": "プロフィール写真の撮影と、友達や家族のコードの読み取りにカメラを使います。",
+  "NSMicrophoneUsageDescription": "マイクをタップしたときだけ、リマインダーの言葉を聞き取ります。",
+  "NSPhotoLibraryAddUsageDescription": "「写真に保存」をタップしたとき、写真をライブラリに保存します。",
+  "NSSpeechRecognitionUsageDescription": "話した言葉を、iPhoneの中でリマインダーに変えます。"
+}
