@@ -131,6 +131,7 @@ const files = [
   'supabase/keep-did-app.sql',
   'supabase/we-week-miss.sql',
   'supabase/push-private-edit.sql',
+  'supabase/social-noise.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')

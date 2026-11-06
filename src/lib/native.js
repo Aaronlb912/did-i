@@ -31,6 +31,8 @@ export async function requestNativePings() {
 
 export async function scheduleNativePings() {}
 
+export async function dismissReadPushes() {}
+
 // Web: a sample notification a few seconds out, while this tab stays open.
 export async function pingTest(seconds = 5) {
   if (typeof window === 'undefined' || !('Notification' in window)) return 'off'

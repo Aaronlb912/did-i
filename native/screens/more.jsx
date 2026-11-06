@@ -2193,11 +2193,11 @@ function nudgeTimes(prefs, list, picked) {
 
 const QUIET_HOURS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`)
 
-function PingKinds({ colors, on }) {
+function PingKinds({ colors, on, openFriends = false }) {
   const prefs = usePrefs()
   const account = useAccount()
   const [miss, setMiss] = useState('')
-  const [friendsOpen, setFriendsOpen] = useState(false)
+  const [friendsOpen, setFriendsOpen] = useState(openFriends)
 
   async function flip(kind) {
     const was = readPrefs().pingsOff
@@ -2575,7 +2575,7 @@ function movedLastCall(prefs) {
   return `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`
 }
 
-export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange }) {
+export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange, openFriends }) {
   const colors = useHallColors()
   const clock = now || new Date()
   const labelKey = pingLabel || 'pings.state.on'
@@ -2640,7 +2640,7 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
         </SetCard>
       ) : null}
       <AwayCard colors={colors} />
-      <PingKinds colors={colors} on={on && Boolean(onAskPings)} />
+      <PingKinds colors={colors} on={on && Boolean(onAskPings)} openFriends={openFriends} />
       <PingTest colors={colors} />
       {on ? <AndroidReminderFixes colors={colors} /> : null}
       <Meta colors={colors}>{t('pings.stopNote')}</Meta>

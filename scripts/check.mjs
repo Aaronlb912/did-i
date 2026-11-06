@@ -9269,7 +9269,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql'].slice(-11))
+  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql', 'push-private-edit.sql', 'social-noise.sql'].slice(-11))
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -12507,6 +12507,32 @@ test('battery savers: re-arm keeps old reminders until new ones replace them; th
   assert.ok(readFileSync('native/lib/proof-flow.jsx', 'utf8').includes('pickProofBytes(from, { target, night })'))
   assert.ok(readFileSync('native/lib/camera-pending.js', 'utf8').includes('getPendingResultAsync()'))
   assert.ok(readFileSync('native/AppShell.jsx', 'utf8').includes('if (booted && !gated && !locked && userId) finishCameraPhoto(userId)'), 'picked up once signed in and past the PIN, for the same account only')
+})
+
+test('social noise: read inbox pushes leave the tray, cheers play in turn, Thanks for all, quieting friends is one tap away', async () => {
+  const { staleInboxPushes } = await import('../src/lib/notify-answer.js')
+  const a = '11111111-1111-1111-1111-111111111111'
+  const b = '22222222-2222-2222-2222-222222222222'
+  const note = (identifier, data, type = 'push') => ({ request: { identifier, trigger: { type }, content: { data } } })
+  const tray = [
+    note('cheer-a', { go: `/inbox?id=cheer:${a}` }),
+    note('cheer-b', { go: `/inbox?id=cheer:${b}` }),
+    note('ask-a', { body: JSON.stringify({ go: '/inbox', sendId: a }) }),
+    note('old', { go: '/inbox' }),
+    note('we', { go: '/tonight' }),
+  ]
+  assert.deepEqual(staleInboxPushes(tray, new Set([b])), ['cheer-a', 'ask-a'], 'answered ones go; still waiting and other pages stay')
+  assert.deepEqual(staleInboxPushes(tray, new Set()), ['cheer-a', 'cheer-b', 'ask-a'], 'an empty inbox clears answered pushes; one with no id (a Did we invite) stays')
+  const social = readFileSync('native/screens/social.jsx', 'utf8')
+  assert.ok(social.includes('dismissReadPushes(inbox.map((row) => row.id))'), 'the inbox clears read pushes after it loads')
+  assert.ok(social.includes('wait += holdFor(kind, 1) + 260') && social.includes('if (cheerCount.current >= 3) continue') && social.includes('Math.max(0, cheerAt.current - Date.now())'), 'waiting cheers play one after another, at most three')
+  assert.ok(social.includes("t('inbox.thanksAll', { n: cheerRows.length })"), 'two or more cheers get Thanks for all')
+  assert.equal(social.split("goHash('/pings', { id: 'friends' })").length - 1, 2, 'Inbox and Friends and family open Notifications at From friends')
+  assert.ok(readFileSync('native/screens/more.jsx', 'utf8').includes('useState(openFriends)'), 'From friends opens when asked')
+  assert.ok(readFileSync('src/lib/native.js', 'utf8').includes('export async function dismissReadPushes'), 'the web stub has dismissReadPushes')
+  const sql = readFileSync('supabase/social-noise.sql', 'utf8')
+  assert.ok(sql.includes("split_part(new.go, '?', 1) = '/inbox'") && sql.includes("kind <> 'cheer'") && sql.includes("interval '12 hours'") && sql.includes('m.user_id is distinct from (select auth.uid())'), 'the server collapses cheer pushes, leaves cheers out of the waiting cap, drops stale Did we pushes, and skips the finisher')
+  assert.ok(readFileSync('scripts/apply-all-sql.mjs', 'utf8').includes("'supabase/social-noise.sql'"), 'social-noise.sql is in the apply order')
 })
 
 test('small screens: centre sheets, the send popup and the menu fit between the notch and the nav bar and scroll; photos keep to the 640 column', () => {

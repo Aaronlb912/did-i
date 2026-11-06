@@ -7,7 +7,8 @@ import { canEditSent, cleanSentEdit, endDidYouLink, myDidYouLinks } from '../../
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { repeatLabel } from '../../src/lib/send-repeat.js'
 import { sendAnswerLine } from '../../src/lib/send-answers.js'
-import { copyText, passAlong } from '../../src/lib/native.js'
+import { copyText, dismissReadPushes, passAlong } from '../../src/lib/native.js'
+import { holdFor } from '../../src/lib/cheer-pops.js'
 import {
   INVITE_CODE_LEN,
   INVITE_GEMS_CAP,
@@ -1194,6 +1195,12 @@ export function PeopleScreen({ book, onChange }) {
         note={t('invite.cardBody', { max: INVITE_GEMS_CAP })}
         bright
         onPress={() => goHash('/people/refer')}
+      />
+      <Row
+        colors={colors}
+        label={t('people.pingsGo')}
+        note={t('people.pingsGoSub')}
+        onPress={() => goHash('/pings', { id: 'friends' })}
       />
 
         </Reveal>
@@ -2713,6 +2720,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       if (inbox.miss) throw new Error(inbox.miss)
       setRows(inbox)
       setMiss('')
+      dismissReadPushes(inbox.map((row) => row.id))
     } catch {
       setMiss(t('people.reach'))
     }
@@ -2744,15 +2752,26 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     answer(row || { id: fromPush[2] }, fromPush[1] === 'keep')
   }, [rows, ready, loaded, route?.id, miss])
 
-  // A cheer plays once when its row shows up, not on Thanks.
+  // A cheer plays once when its row shows up, not on Thanks. Several play one
+  // after another (the burst shows one at a time), at most three.
   const played = useRef(new Set())
+  const cheerTimers = useRef([])
+  const cheerAt = useRef(0)
+  const cheerCount = useRef(0)
+  useEffect(() => () => cheerTimers.current.forEach(clearTimeout), [])
   useEffect(() => {
     if (!ready) return
+    let wait = Math.max(0, cheerAt.current - Date.now())
     for (const row of rows) {
       if (row.kind !== 'cheer' || !row.cheer_id || played.current.has(row.id)) continue
       played.current.add(row.id)
-      fireCheer(row.cheer_id, 1)
+      if (cheerCount.current >= 3) continue
+      cheerCount.current += 1
+      const kind = row.cheer_id
+      cheerTimers.current.push(setTimeout(() => fireCheer(kind, 1), wait))
+      wait += holdFor(kind, 1) + 260
     }
+    cheerAt.current = Date.now() + wait
   }, [rows, ready])
 
   // One answer at a time per row, so a double tap cannot keep it twice.
@@ -2785,6 +2804,31 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
     if (keep && row.kind === 'todo' && onKeep) onKeep(row)
     if (row.kind === 'todo') confirmDone(keep ? t('didYouLink.added') : t('confirm.passed'))
     return load()
+  }
+
+  const cheerRows = rows.filter((row) => row.kind === 'cheer')
+  const [thanking, setThanking] = useState(false)
+  async function thankAll() {
+    if (thanking) return
+    setThanking(true)
+    setMiss('')
+    let why = ''
+    try {
+      for (const row of cheerRows) {
+        if (answering.current.has(row.id)) continue
+        answering.current.add(row.id)
+        const res = await answerSend(row.id, true).catch(() => ({ miss: 'confirm.miss' }))
+        answering.current.delete(row.id)
+        if (res?.miss && res.miss !== 'sent.gone') {
+          why = res.miss
+          break
+        }
+      }
+    } finally {
+      setThanking(false)
+    }
+    await load()
+    if (why) setMiss(tMiss(why))
   }
 
   // Filed with the question and taken out of the inbox. Blocking stays on
@@ -2848,6 +2892,9 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
       {rows.some((row) => row.kind === 'todo') ? <Meta colors={colors}>{t('inbox.hintAll')}</Meta> : null}
       {/* Above the cards so a failed Keep is seen on a long inbox. */}
       <Miss colors={colors} onRetry={load}>{miss}</Miss>
+      {cheerRows.length > 1 ? (
+        <DidButton colors={colors} label={t('inbox.thanksAll', { n: cheerRows.length })} disabled={thanking} onPress={thankAll} />
+      ) : null}
       {rows.map((row) => (
         <Reveal key={row.id}>
         <View pointerEvents={sendingId === row.id ? 'none' : 'auto'} accessibilityState={{ busy: sendingId === row.id }} style={sendingId === row.id ? { opacity: 0.5 } : null}>
@@ -2882,6 +2929,7 @@ export function InboxScreen({ book, onChange, onKeep, route }) {
         </View>
         </Reveal>
       ))}
+      <KeyButton colors={colors} label={t('people.pingsGo')} onPress={() => goHash('/pings', { id: 'friends' })} />
       {menu ? (
         <FriendMenu
           name={menu.question}
