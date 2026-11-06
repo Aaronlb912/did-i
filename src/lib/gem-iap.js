@@ -8,6 +8,16 @@ export function iapReady() {
   return false
 }
 
+export function clearApproval() {}
+
+export function gemApprovalWaiting() {
+  return false
+}
+
+export function onGemMiss(_fn) {
+  return () => {}
+}
+
 export async function initGemIap() {
   return 'web'
 }

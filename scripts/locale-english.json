@@ -51,7 +51,11 @@
     "frame.solstice.name",
     "frame.origami.name",
     "frame.aquarium.name",
-    "mast.button"
+    "mast.button",
+    "shop.gemOne",
+    "purse.gemsCount",
+    "milestone.gemOne",
+    "milestone.gemMany"
   ],
   "de": [
     "shop.cog",
@@ -200,7 +204,11 @@
     "widget.tonight.did",
     "widget.settings.cap",
     "frame.origami.name",
-    "mast.button"
+    "mast.button",
+    "shop.gemOne",
+    "purse.gemsCount",
+    "milestone.gemOne",
+    "milestone.gemMany"
   ],
   "zh": [
     "title.shopBuddies",

@@ -2,11 +2,11 @@ import { holdFor } from '../../src/lib/cheer-pops.js'
 import Constants from 'expo-constants'
 import { FadeScroll } from '../components/FadeScroll.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Dimensions, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { AppState, Dimensions, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Reanimated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated'
 import { restoreGemPurchases, startGemPurchase } from '../../src/lib/gem-buy.js'
 import { isReactNative } from '../../src/lib/env.js'
-import { initGemIap, iapReady, storePrice } from '../../src/lib/gem-iap.js'
+import { clearApproval, gemApprovalWaiting, initGemIap, iapReady, onGemMiss, storePrice } from '../../src/lib/gem-iap.js'
 import { GEM_PACKS } from '../../src/lib/gem-packs.js'
 import { activeLook } from '../../src/lib/active-look.js'
 import { useReduceMotion } from '../../src/lib/useReduceMotion.js'
@@ -73,6 +73,7 @@ import { BoardShell } from '../components/BoardShell.jsx'
 import { AppTextInput, DidButton, KeyButton, LateMeta, Meta } from '../components/ui.jsx'
 import { useAccount } from '../../src/lib/account.js'
 import { KEEP, useKept } from '../hooks/useKept.js'
+import { useOnline } from '../hooks/useOnline.js'
 import { PersonAvatar } from '../components/PersonAvatar.jsx'
 import { listSentGifts, newRequestId, personName, readKnownPerson, reportGift, sendGift, thankGift } from '../../src/lib/people.js'
 import { giftTab, sentGiftDate, sentGiftStatus, sentGiftType } from '../../src/lib/gift-history.js'
@@ -756,6 +757,11 @@ function gemMiss(code) {
   return t('gems.setup')
 }
 
+// True once the store has handed back a price for any pack.
+function anyPriced() {
+  return GEM_PACKS.some((pack) => storePrice(pack.id))
+}
+
 function gemPackTitle(pack) {
   return pack.gems === 1 ? t('shop.gemOne') : t('shop.gems', { n: pack.gems })
 }
@@ -833,7 +839,7 @@ function previewBody(type, item, purse) {
     const short = tag.coins - purse.coins
     return `${base}\n${t('shop.needMoreCoins', { n: short })} ${t('shop.howEarn', { cap: NIGHT_COIN_CAP })}`
   }
-  if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })}`
+  if (tag.gems && purse.gems < tag.gems) return `${base}\n${t('shop.needMoreGems', { n: tag.gems - purse.gems })} ${t('gems.earn')}`
   return base
 }
 
@@ -1867,13 +1873,15 @@ export function GemShopScreen({ book }) {
   const reduce = useReduceMotion()
   const balanceRef = useRef(null)
   const stream = useGemStream(purse.gems, balanceRef)
-  const [banner, setBanner] = useState('')
+  const [banner, setBanner] = useState(() => (gemApprovalWaiting() ? t('gems.approval') : ''))
   const account = useAccount()
+  const online = useOnline()
+  const alive = useRef(true)
   // The packs and Buy buttons show at once with list prices. The store
   // connection (usually already warm from app start) fills in local prices;
   // a tap before it finishes just waits for it inside the purchase.
   const [storeReady, setStoreReady] = useState(() => iapReady())
-  const [storeChecked, setStoreChecked] = useState(() => iapReady())
+  const [storeChecked, setStoreChecked] = useState(() => iapReady() && anyPriced())
   const [, setPriced] = useState(0)
   const [restoring, setRestoring] = useState(false)
 
@@ -1890,6 +1898,7 @@ export function GemShopScreen({ book }) {
       if (out.miss === 'signin') confirmMiss(t('gems.restoreSignIn'))
       else if (out.miss === 'setup' || out.miss === 'app') confirmMiss(t('gems.restoreSetup'))
       else if (out.miss === 'pending') confirmDone(t('gems.pending'))
+      else if (out.miss === 'other') confirmMiss(t('gems.otherAccount'))
       else if (out.miss) confirmMiss(t('gems.restoreMiss'))
       else if (out.gems > 0) confirmDone(t('gems.restored', { n: out.gems }))
       else confirmDone(t('gems.restoreNone'))
@@ -1900,21 +1909,51 @@ export function GemShopScreen({ book }) {
     }
   }
 
-  useEffect(() => {
-    if (!isReactNative()) return undefined
-    let alive = true
+  // Asks the store again. A store that was out of reach at start (no signal)
+  // answers on a later ask, so this runs on Try again, when the phone is back
+  // online and when Did I comes back to the front.
+  function checkStore() {
+    if (!isReactNative()) return
+    setStoreChecked(false)
     initGemIap()
       .catch(() => {})
       .finally(() => {
-        if (!alive) return
+        if (!alive.current) return
         setStoreReady(iapReady())
         setStoreChecked(true)
         setPriced((n) => n + 1)
       })
+  }
+
+  useEffect(() => {
+    if (!isReactNative()) return undefined
+    alive.current = true
+    checkStore()
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && !anyPriced()) checkStore()
+    })
     return () => {
-      alive = false
+      alive.current = false
+      sub.remove()
     }
   }, [])
+
+  useEffect(() => {
+    if (online && storeChecked && !anyPriced()) checkStore()
+  }, [online])
+
+  // A paid pack that does not credit ends the waiting banner.
+  const streamRef = useRef(stream)
+  streamRef.current = stream
+  useEffect(
+    () =>
+      onGemMiss((miss) => {
+        if (miss === 'pending') return
+        streamRef.current.dropBuy()
+        setBanner('')
+      }),
+    [],
+  )
 
   // A store failure offers Try again; setup and sign-in misses do not.
   function gemNotice(body, retry) {
@@ -1939,6 +1978,15 @@ export function GemShopScreen({ book }) {
 
   // One store sheet at a time: a second tap while the first is open does nothing.
   async function buy(packId) {
+    // Waiting on an Ask to Buy or bank check: no second buy.
+    if (gemApprovalWaiting()) {
+      gemNotice(t('gems.approval'), () => {
+        clearApproval()
+        setBanner('')
+        buy(packId)
+      })
+      return
+    }
     if (buying.current) return
     buying.current = true
     try {
@@ -1950,7 +1998,7 @@ export function GemShopScreen({ book }) {
 
   async function buyPack(packId) {
     stream.noteBuy(packId)
-    setBanner(t('gems.loadingStore'))
+    setBanner(t('gems.return'))
     let out
     try {
       out = await startGemPurchase(packId)
@@ -1976,13 +2024,15 @@ export function GemShopScreen({ book }) {
     }
     // Cancelled or failed: no gems are coming, so a later rise is not this buy.
     if (!out.pending) stream.dropBuy()
-    setBanner(out.pending ? t('gems.pending') : '')
+    setBanner(out.approval ? t('gems.approval') : out.pending ? t('gems.pending') : '')
   }
 
   const signedIn = Boolean(account.email)
   const expoGo = Constants.appOwnership === 'expo'
-  const buyHandler = (id) => (!signedIn ? () => askSignIn(colors) : storeReady ? () => buy(id) : null)
-  const storeNote = expoGo ? t('gems.appOnly') : storeChecked && !storeReady ? t('gems.setup') : ''
+  // Checked and no pack has a price: say so, with Try again, not dead buttons.
+  const unreachable = !expoGo && storeChecked && !anyPriced()
+  const buyHandler = (id) => (!signedIn ? () => askSignIn(colors) : storeReady && !unreachable ? () => buy(id) : null)
+  const storeNote = expoGo ? t('gems.appOnly') : ''
 
   return (
     <BoardShell book={book} title={t('gems.title')} date={shellDate(book)} colors={colors}>
@@ -2001,6 +2051,12 @@ export function GemShopScreen({ book }) {
       </Meta>
       {signedIn ? null : <DidButton small label={t('gems.signIn')} onPress={() => goHash('/account')} colors={colors} />}
       {storeNote ? <Meta colors={colors}>{storeNote}</Meta> : null}
+      {unreachable ? (
+        <>
+          <Meta colors={colors}>{t('gems.storeOffline')}</Meta>
+          <KeyButton colors={colors} label={t('boot.retry')} onPress={checkStore} />
+        </>
+      ) : null}
       {banner ? (
         <View style={[styles.gemSheet, { borderColor: colors.on, backgroundColor: colors.panel }]}>
           <Text style={[styles.gemSheetText, { color: colors.ink }]}>{banner}</Text>
@@ -2037,17 +2093,6 @@ export function GemShopScreen({ book }) {
       {!signedIn ? <DidButton label={t('gems.signInBuy')} onPress={() => goHash('/account')} colors={colors} /> : null}
 
       <Meta colors={colors}>{t('gems.earn')}</Meta>
-      <Meta colors={colors}>
-        {t('legal.gemLead')}{' '}
-        <Text style={{ color: colors.on }} onPress={() => goHash('/terms')}>
-          {t('legal.termsShort')}
-        </Text>
-        {t('legal.linksAnd')}
-        <Text style={{ color: colors.on }} onPress={() => goHash('/privacy')}>
-          {t('legal.privacyShort')}
-        </Text>
-        .
-      </Meta>
       {isReactNative() ? (
         <KeyButton
           colors={colors}
@@ -2056,6 +2101,8 @@ export function GemShopScreen({ book }) {
           onPress={restore}
         />
       ) : null}
+      <KeyButton colors={colors} label={t('legal.termsShort')} onPress={() => goHash('/terms')} />
+      <KeyButton colors={colors} label={t('legal.privacyShort')} onPress={() => goHash('/privacy')} />
     </BoardShell>
   )
 }

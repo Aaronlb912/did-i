@@ -160,6 +160,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
       if (out.miss === 'signin') confirmMiss(t('gems.restoreSignIn'))
       else if (out.miss === 'setup' || out.miss === 'app') confirmMiss(t('gems.restoreSetup'))
       else if (out.miss === 'pending') confirmDone(t('gems.pending'))
+      else if (out.miss === 'other') confirmMiss(t('gems.otherAccount'))
       else if (out.miss) confirmMiss(t('gems.restoreMiss'))
       else if (out.gems > 0) confirmDone(t('gems.restored', { n: out.gems }))
       else confirmDone(t('gems.restoreNone'))

@@ -275,7 +275,7 @@ export function openFrameSheet({ id, book, colors, ctx, onChange }) {
         go: () => {
           if (short) {
             publishSheet(null)
-            offerMoreGems(colors)
+            goHash('/gems')
             return
           }
           if (frame.gems && !accountSessionOn()) {
