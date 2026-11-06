@@ -40,7 +40,7 @@ function copy(moment) {
   return {
     kicker: t('streak.missKicker'),
     title: t('streak.missTitle'),
-    body: t('streak.missBody', { was: moment.was || 0 }),
+    body: t(moment.was === 1 ? 'streak.missBodyOne' : 'streak.missBody', { was: moment.was || 0 }),
     yes: t('streak.missOk'),
   }
 }

@@ -44,7 +44,8 @@ import { CHEER_STAGE_MAX, LOOKS, NIGHT_COIN_CAP, coinsToday, fireCheer, takeFirs
 import { ACCESSORIES } from '../../src/lib/accessories.js'
 import { awayEnd, awayKey, awayNow, awayOn, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
 import { COME_BACK_DAYS, cameBack, daysSinceFirstAnswer, graceLost, newestAnswerIso } from '../../src/lib/come-back.js'
-import { answerFor, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
+import { BAD_WEEK_DAYS, badWeekSeen, markBadWeekSeen, notYetRun } from '../../src/lib/bad-week.js'
+import { answerFor, dueTonight, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
 import { lastTimeLine, perWeekLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
 import { DidButton, KeyButton, LateMeta } from '../components/ui.jsx'
@@ -1259,6 +1260,22 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [returning, graceShowing, Boolean(stack.cheer), stack.dateIso])
+  // Third day in a row of a tapped Not yet: one calm line and two ways forward, once a day.
+  const notYetDays = useMemo(
+    () =>
+      notYetRun(stack.shelf, stack.dateIso, (iso) => {
+        const [y, m, d] = iso.split('-').map(Number)
+        return !awayOn(iso) && (stack.shelf || []).some((book) => dueTonight(book, new Date(y, m - 1, d, 12)).length > 0)
+      }),
+    [stack.shelf, stack.dateIso],
+  )
+  const [badWeekDay, setBadWeekDay] = useState('')
+  const onNotYetCard = stack.bodyKind === 'rest' || stack.bodyKind === 'finish'
+  useEffect(() => {
+    if (!onNotYetCard || notYetDays < BAD_WEEK_DAYS || !stack.dateIso || badWeekSeen(stack.dateIso)) return
+    markBadWeekSeen(stack.dateIso)
+    setBadWeekDay(stack.dateIso)
+  }, [onNotYetCard, notYetDays, stack.dateIso])
   // Earliest reminder time on any open question, for the day-one line.
   const firstAsk = (stack.shelf || []).flatMap((item) => (item.lamps || []).filter((lamp) => !lamp.archived).map((lamp) => String(lamp.askAfter || ''))).filter((v) => /^\d{2}:\d{2}$/.test(v)).sort()[0] || ''
   const reminderRowUp = !stack.empty && Platform.OS !== 'web' && Boolean(onAskPings) && (pingLabel === 'pings.state.ask' || pingLabel === 'pings.state.blocked')
@@ -1593,6 +1610,23 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         ))}
         {stack.stillOpen.length > 10 ? (
           <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.restMore', { n: stack.stillOpen.length - 10 })}</Text>
+        ) : null}
+        {badWeekDay === stack.dateIso ? (
+          <View style={styles.badWeek}>
+            <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('badWeek.line')}</Text>
+            {gentle ? null : (
+              <KeyButton
+                label={t('comeBack.gentle')}
+                colors={colors}
+                onPress={() => {
+                  writePrefs({ gentle: true })
+                  armLampPings(readShelf().boards).catch(() => {})
+                  confirmDone(t('badWeek.gentleOn'))
+                }}
+              />
+            )}
+            <KeyButton label={t('badWeek.off')} colors={colors} onPress={() => goHash('/pings')} />
+          </View>
         ) : null}
         <View style={styles.actions}>
           <DidButton label={t('tonight.restChange')} colors={colors} small onPress={startLookAgain} />
@@ -2070,6 +2104,7 @@ const styles = StyleSheet.create({
   streakTap: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, minHeight: 44 },
   streakChevron: { fontSize: 22, marginTop: 10 },
   nudge: { marginTop: 16, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
+  badWeek: { alignSelf: 'stretch', gap: 8, marginTop: 8 },
   social: { marginTop: 14, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
   cheerKey: { alignSelf: 'flex-start', marginTop: 8 },
   answerBar: { paddingBottom: 12 },

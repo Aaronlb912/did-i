@@ -4,6 +4,12 @@ import { allClearTonight, askedBy, boardDate, countedTonightRows, dueTonight, gr
 
 export const STREAK_RISK_HOUR = 21
 
+// Each at-risk night a freeze covers uses one: with 1 held only the earliest
+// night is covered, with 2 the first two. Notes for those nights can go calm.
+export function freezeCalmNights(held, nights) {
+  return new Set([...new Set(nights)].sort().slice(0, Math.max(0, Number(held) || 0)))
+}
+
 // heat: the streak to protect. Callers pass shelfStreak, which carries a
 // streak across a frozen night; this one book's hallHeat (the fallback) stops there.
 // at: when the warning fires; questions still waiting then do not count.
@@ -46,6 +52,16 @@ export function lastNightGraceFire(book, now = new Date(), heat) {
   const [y, m, d] = graceIso.split('-').map(Number)
   if (!streakAtRisk(book, new Date(y, m - 1, d, 12), heat)) return null
   return { at: new Date(now.getFullYear(), now.getMonth(), now.getDate(), GRACE_RISK_HOUR, 0, 0, 0).getTime(), tag: `grace-risk:${graceIso}` }
+}
+
+// Yesterday, while its grace period runs (midnight to 9am), if it is still open
+// on a streak: its night, at any hour. lastNightGraceFire stops at 7am, but the
+// night still uses a freeze until 9.
+export function openGraceNight(books, now = new Date(), heat) {
+  const graceIso = graceNightIso(now)
+  if (!graceIso) return ''
+  const [y, m, d] = graceIso.split('-').map(Number)
+  return books.some((book) => streakAtRisk(book, new Date(y, m - 1, d, 12), heat)) ? graceIso : ''
 }
 
 export function graceRiskFire(book, now = new Date(), heat) {

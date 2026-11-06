@@ -107,13 +107,13 @@ export function friendStreak(person) {
   return Number.isFinite(n) && n > 0 ? n : 0
 }
 
-// The line under a friend's name. Gentle mode: done tonight, or not yet.
+// The line under a friend's name: what they answered, or nothing. No Not yet
+// or "no streak" for someone who has not answered today or lost a run.
 export function friendLine(person, dateIso = isoDate(new Date())) {
   if (!person?.share_streak) return t('people.quiet')
   if (person.done_on === dateIso) return person.gentle === true ? t('people.doneTonightCheck') : t('people.doneTonight')
-  if (person.gentle === true) return t('people.notYet')
   const n = friendStreak(person)
-  return n ? t('people.streakN', { n }) : t('people.noStreak')
+  return n ? t('people.streakN', { n }) : ''
 }
 
 // No name (asks sent before names were needed): their friend ID, so the
