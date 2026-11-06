@@ -64,7 +64,7 @@ import {
   togglePack,
   togglePick,
 } from '../src/lib/first-run.js'
-import { mergeBackup, mergeShelves, planBackupLoad } from '../src/lib/shelf-merge.js'
+import { foldPhoneQuestions, mergeBackup, mergeShelves, planBackupLoad } from '../src/lib/shelf-merge.js'
 import { devServerUrl, makeLocation } from '../native/location-shim.js'
 import { lintStore } from './lint-store.mjs'
 import { isDemoBoard, stripDemoShelf } from '../src/lib/demo-strip.js'
@@ -2662,6 +2662,54 @@ test('a never-answered starter the account already has does not merge in as a tw
   })
   const ids = shelf.boards.flatMap((book) => book.lamps.map((one) => one.id)).sort()
   assert.deepEqual(ids, ['s2', 't', 'w', 'x'], 'the twin goes; a different schedule or ask time stays')
+})
+
+test('first sign in folds a phone question into the account copy', () => {
+  const meds = (id, extra = {}) => ({ ...lamp(id), question: 'Did I take my meds?', ...extra })
+  const ans = (lampId, periodKey, status, answeredAt) => ({ id: 'a-' + lampId + periodKey, lampId, periodKey, status, answeredAt })
+  const join = (phone, cloud) => {
+    const local = { currentId: 'phone', boards: [{ id: 'phone', title: 'General', lamps: phone.lamps, answers: phone.answers || [] }] }
+    const remote = { currentId: 'cloud', boards: [{ id: 'cloud', title: cloud.title || 'General', lamps: cloud.lamps, answers: cloud.answers || [] }] }
+    return mergeShelves(foldPhoneQuestions(local, remote), remote, '2026-11-02', '2026-11-01')
+  }
+  const lampsOf = (shelf) => shelf.boards.flatMap((book) => book.lamps.map((one) => one.id)).sort()
+  const answersOf = (shelf) => shelf.boards.flatMap((book) => book.answers)
+
+  const one = join(
+    { lamps: [meds('p1', { idea: 'meds', cadence: 'weekly' })], answers: [ans('p1', '2026-11-02', 'yes', '2026-11-02T20:00:00.000Z')] },
+    { lamps: [meds('c1', { idea: 'meds' })] },
+  )
+  assert.deepEqual(lampsOf(one), ['c1'], 'the matching starter folds into the account question')
+  assert.deepEqual(answersOf(one).map((a) => a.lampId + ':' + a.periodKey), ['c1:2026-11-02'], 'its answer moves to the account question')
+
+  const words = join({ lamps: [meds('p1', { question: '  did I TAKE my   meds? ' })] }, { lamps: [meds('c1')] })
+  assert.deepEqual(lampsOf(words), ['c1'], 'the same words after trim, case and spaces fold')
+
+  const home = { currentId: 'phone', boards: [{ id: 'phone', title: 'Home', lamps: [meds('p1')], answers: [ans('p1', '2026-11-02', 'yes', '2026-11-02T20:00:00.000Z')] }] }
+  const work = { currentId: 'cloud', boards: [{ id: 'cloud', title: 'Work', lamps: [meds('c1')], answers: [] }] }
+  const other = mergeShelves(foldPhoneQuestions(home, work), work, '2026-11-02', '2026-11-01')
+  assert.deepEqual(lampsOf(other), ['c1', 'p1'], 'the same words in a different folder do not fold')
+  assert.deepEqual(answersOf(other).map((a) => a.lampId), ['p1'], 'the phone answer stays with its question')
+
+  const both = join(
+    { lamps: [meds('p1')], answers: [ans('p1', '2026-11-02', 'yes', '2026-11-02T21:00:00.000Z')] },
+    { lamps: [meds('c1')], answers: [ans('c1', '2026-11-02', 'nope', '2026-11-02T19:00:00.000Z')] },
+  )
+  const day = answersOf(both)
+  assert.equal(day.length, 1, 'two answers for one day become one')
+  assert.equal(day[0].lampId, 'c1')
+  assert.equal(day[0].status, 'yes', 'the later tap wins')
+
+  const kept = join({ lamps: [meds('p1', { question: 'Did I stretch?' }), meds('p2')] }, { lamps: [meds('c1')] })
+  assert.deepEqual(lampsOf(kept), ['c1', 'p1'], 'a question the account does not have stays')
+
+  const archived = join({ lamps: [meds('p1', { archived: true })] }, { lamps: [meds('c1')] })
+  assert.deepEqual(lampsOf(archived), ['c1', 'p1'], 'an archived phone question is not folded')
+  const archivedCloud = join({ lamps: [meds('p1')] }, { lamps: [meds('c1', { archived: true })], answers: [ans('c1', '2026-10-01', 'yes', '2026-10-01T20:00:00.000Z')] })
+  assert.deepEqual(lampsOf(archivedCloud), ['c1', 'p1'], 'an archived account question is not folded into')
+
+  const twoCloud = join({ lamps: [lamp('z')] }, { lamps: [meds('c1'), meds('c2')] })
+  assert.deepEqual(lampsOf(twoCloud), ['c1', 'c2', 'z'], 'two account questions are never folded together')
 })
 
 test('undo puts a removed folder back as itself, even when another took its name', () => {

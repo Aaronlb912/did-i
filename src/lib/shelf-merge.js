@@ -1,5 +1,5 @@
 import { PAUSES_MAX, normalizeBook, normalizeGone } from './board-json.js'
-import { normalizeShelf } from './board-shelf.js'
+import { folderNameKey, normalizeShelf } from './board-shelf.js'
 import { mergeAnswer } from './board-ops.js'
 import { capSkips } from './travel.js'
 import { CHEER_STAGE_MAX, mergeLater, normalizePurse } from './purse.js'
@@ -213,6 +213,69 @@ export function mergeShelves(local, remote, localSavedAt = '', remoteSavedAt = '
 
   // normalizeShelf folds tags that ended up with the same name on both phones.
   return normalizeShelf({ ...winner, currentId: winner.currentId, boards: followMovedAnswers(boards, [...winner.boards, ...loser.boards]), goneTags })
+}
+
+function questionKey(lamp) {
+  return String(lamp?.question || '').trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+// First sign in on a phone that already has questions: a starter picked here
+// before signing in is the account's question when the account has it. Run on
+// the phone's shelf before it merges with the account's. A phone question folds
+// into the account's copy when the folder names match and the question is the
+// same starter idea or the same words. The phone copy goes; its answers move
+// to the account question's id, and two answers for one day merge (mergeAnswer).
+// Archived questions never fold, and account questions are never folded together.
+export function foldPhoneQuestions(local, remote) {
+  const mine = local?.boards || []
+  if (!mine.length || !Array.isArray(remote?.boards)) return local
+  const dead = new Set(remote.boards.flatMap((book) => (book.gone || []).filter((item) => !item.back).map((item) => item.id)))
+  const theirIds = new Set(remote.boards.flatMap((book) => (book.lamps || []).map((lamp) => lamp.id)))
+  const homes = new Map()
+  const theirAnswers = new Map()
+  for (const book of remote.boards) {
+    const key = folderNameKey(book.title)
+    for (const answer of book.answers || []) theirAnswers.set(answerKey(answer), answer)
+    for (const lamp of book.lamps || []) {
+      if (!lamp?.id || lamp.archived || dead.has(lamp.id)) continue
+      if (!homes.has(key)) homes.set(key, { idea: new Map(), text: new Map() })
+      const home = homes.get(key)
+      const text = questionKey(lamp)
+      if (lamp.idea && !home.idea.has(lamp.idea)) home.idea.set(lamp.idea, lamp.id)
+      if (text && !home.text.has(text)) home.text.set(text, lamp.id)
+    }
+  }
+  const into = new Map()
+  for (const book of mine) {
+    const home = homes.get(folderNameKey(book.title))
+    if (!home) continue
+    for (const lamp of book.lamps || []) {
+      if (lamp.archived || theirIds.has(lamp.id)) continue
+      const text = questionKey(lamp)
+      const twin = (lamp.idea && home.idea.get(lamp.idea)) || (text && home.text.get(text))
+      if (twin) into.set(lamp.id, twin)
+    }
+  }
+  if (!into.size) return local
+
+  return {
+    ...local,
+    boards: mine.map((book) => {
+      if (!(book.lamps || []).some((lamp) => into.has(lamp.id)) && !(book.answers || []).some((answer) => into.has(answer.lampId))) return book
+      const answers = new Map()
+      const moved = []
+      for (const answer of book.answers || []) {
+        if (into.has(answer.lampId)) moved.push({ ...answer, lampId: into.get(answer.lampId) })
+        else answers.set(answerKey(answer), answer)
+      }
+      for (const answer of moved) {
+        const key = answerKey(answer)
+        const prev = answers.get(key) || theirAnswers.get(key)
+        answers.set(key, prev ? { ...laterAnswer(prev, answer), id: prev.id } : answer)
+      }
+      return { ...book, lamps: (book.lamps || []).filter((lamp) => !into.has(lamp.id)), answers: [...answers.values()] }
+    }),
+  }
 }
 
 // A question moved to another folder on one phone is gone from the old

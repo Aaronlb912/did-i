@@ -14,7 +14,7 @@ import { cloud, cloudSetUp } from './cloud.js'
 import { forgetAnswerKey, refreshAnswerKey } from './answer-key.js'
 import { mergePrefs, readPrefs, writePrefs } from './prefs.js'
 import { readSavedAt, stampSavedAt } from './saved-at.js'
-import { mergeShelves } from './shelf-merge.js'
+import { foldPhoneQuestions, mergeShelves } from './shelf-merge.js'
 import {
   applyAnswers,
   dropSentAnswers,
@@ -595,11 +595,14 @@ async function pullAndMergeOnce() {
     }
     const remote = shelfRow.data?.doc || null
     const remoteIds = new Set((remote?.boards || []).flatMap((item) => (item.lamps || []).map((lamp) => lamp.id)))
-    const hadOwnQuestions = (stripDemoShelf(local)?.boards || []).some((item) =>
+    // First sign in only: a question this phone made that the account already has is one question.
+    // Folded before the merge so the account's copy stays, and not counted as added below.
+    const own = !lastUser ? foldPhoneQuestions(local, remote) : local
+    const hadOwnQuestions = (stripDemoShelf(own)?.boards || []).some((item) =>
       (item.lamps || []).some((lamp) => !remoteIds.has(lamp.id)),
     )
     const remoteSavedAt = shelfRow.data?.saved_at || ''
-    const merged = mergeShelves(local, remote, localSavedAt, remoteSavedAt)
+    const merged = mergeShelves(own, remote, localSavedAt, remoteSavedAt)
     const metaAt = remoteSavedAt > localSavedAt ? remoteSavedAt : localSavedAt
     // A delete or a tap made on this phone while the pull was out would be
     // written over by the older shelf the pull started from. When the phone
