@@ -1,4 +1,5 @@
 import { laterHold } from './quiet.js'
+import { t } from './i18n.js'
 import { graceNightIso, nightOpen } from './recurrence.js'
 
 // Did, Not yet and Later buttons on a reminder. They open the app for a moment (a fully
@@ -56,7 +57,8 @@ export function snoozeFrom(response, now = Date.now(), prefs = null) {
   if (c.data.lampId && !c.data.weId && /^\d{4}-\d{2}-\d{2}$/.test(c.data.night || '') && !nightOpen(c.data.night, new Date(at))) return null
   return {
     identifier: 'snooze:' + String(request.identifier || c.data.lampId || c.data.weId),
-    content: { title: c.title, body: c.body, data: c.data, categoryIdentifier: c.categoryIdentifier || ASK_CATEGORY },
+    // Hidden since the first note rang: the Later copy hides it too.
+    content: { title: c.title, body: prefs?.pingsPrivate ? t('pings.privateBody') : c.body, data: c.data, categoryIdentifier: c.categoryIdentifier || ASK_CATEGORY },
     at,
   }
 }

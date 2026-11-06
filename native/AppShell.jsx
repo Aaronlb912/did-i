@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState, Linking, Platform, StyleSheet, View } from 'react-native'
 import { LayoutAnimationConfig } from 'react-native-reanimated'
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable'
-import { needsEnter } from '../src/lib/session.js'
+import { closeSession, hasPin, needsEnter } from '../src/lib/session.js'
 import { onWeRefused, weRefusedText } from '../src/lib/did-we.js'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAccount } from '../src/lib/account.js'
@@ -301,6 +301,31 @@ export function AppShell() {
     [],
   )
 
+  // With a PIN: a plain cover while away keeps the app switcher from showing
+  // questions, and 2 minutes away asks for the PIN again. Shorter trips (a photo
+  // picker, the phone's settings) come back to where they were.
+  const [awayCover, setAwayCover] = useState(false)
+  const [, setRelocked] = useState(0)
+  useEffect(() => {
+    let leftAt = 0
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') {
+        if (!hasPin()) return
+        if (!leftAt) leftAt = Date.now()
+        setAwayCover(true)
+        return
+      }
+      if (leftAt && hasPin() && Date.now() - leftAt >= RELOCK_MS) {
+        publishSheet(null)
+        closeSession()
+        setRelocked((n) => n + 1)
+      }
+      leftAt = 0
+      setAwayCover(false)
+    })
+    return () => sub.remove()
+  }, [])
+
   // A new over-the-air update loads on the next return to the app, not two cold starts later.
   useEffect(() => startOtaRefresh(), [])
 
@@ -403,7 +428,7 @@ export function AppShell() {
   }, [app.book, app.shelf])
 
   // Ping, widget and watch text follow gentle, language, the 12/24h clock and Away: set them again.
-  const pingWords = `${prefs.gentle}|${prefs.locale}|${prefs.clock}|${JSON.stringify(prefs.away || null)}`
+  const pingWords = `${prefs.gentle}|${prefs.locale}|${prefs.clock}|${prefs.pingsPrivate}|${JSON.stringify(prefs.away || null)}`
   const [armedWords, setArmedWords] = useState(pingWords)
   // An open sheet hides the screens behind it from TalkBack (Android).
   const [sheetUp, setSheetUp] = useState(false)
@@ -571,20 +596,23 @@ export function AppShell() {
       <View pointerEvents="box-none" style={styles.overlayLayer} collapsable={false}>
         <DidYouBanner path={route.path} colors={colors} />
         <UpdatePrompt path={route.path} colors={colors} />
-        {booted && app.book && !gated ? <GiftHost book={app.book} onChange={app.change} /> : null}
-        {app.book && !gated ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
-        {booted && app.book && !gated ? <InviteAskHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
-        {booted && app.book && !gated ? <HuntHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
-        {booted && app.book && !gated ? <TourHost path={route.path} hasQuestion={(app.book.lamps || []).some((lamp) => !lamp.archived)} /> : null}
+        {booted && app.book && !gated && !locked ? <GiftHost book={app.book} onChange={app.change} /> : null}
+        {app.book && !gated && !locked ? <DidYouLinkHost colors={colors} onKeep={app.keepSent} /> : null}
+        {booted && app.book && !gated && !locked ? <InviteAskHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
+        {booted && app.book && !gated && !locked ? <HuntHost colors={colors} book={app.book} onChange={app.change} path={route.path} /> : null}
+        {booted && app.book && !gated && !locked ? <TourHost path={route.path} hasQuestion={(app.book.lamps || []).some((lamp) => !lamp.archived)} /> : null}
         <SheetHost />
         <CheerBurstHost />
         <Slot>
           <FlyHost />
         </Slot>
       </View>
+      {awayCover ? <View style={[styles.awayCover, { backgroundColor: colors.bg }]} pointerEvents="none" /> : null}
     </View>
   )
 }
+
+const RELOCK_MS = 2 * 60 * 1000
 
 const styles = StyleSheet.create({
   screens: { flex: 1 },
@@ -592,5 +620,10 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     zIndex: 200,
     elevation: 40,
+  },
+  awayCover: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 300,
+    elevation: 50,
   },
 })

@@ -256,7 +256,7 @@ export function AboutScreen({ book }) {
 
 // What friends and family can see, in plain words. The streak line reads the
 // real share_streak on your profile; the rest follows from how people.js shares.
-const SEEN_ROWS = ['friends', 'we', 'family', 'asks', 'never']
+const SEEN_ROWS = ['friends', 'we', 'family', 'asks', 'checkOn', 'never']
 
 export function SeenScreen({ book }) {
   const colors = useHallColors()
@@ -1793,7 +1793,7 @@ export function BoardsScreen({ book, boards, onSelect, onAdd, onRemove, onReorde
   )
 }
 
-export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
+export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo, returnRoute }) {
   const colors = useHallColors()
   const named = keeperNamed(book)
   const locked = hasPin()
@@ -1861,7 +1861,7 @@ export function EnterScreen({ book, onSaveKeeper, onEraseHere, returnTo }) {
   function finish() {
     openSession()
     markWelcomeSeen()
-    goHash(returnTo ?? enterLand('/tonight'))
+    goHash(returnTo ?? enterLand('/tonight'), returnTo && returnRoute ? { ...returnRoute, keepFocus: true } : '')
   }
 
   function openNamed() {
@@ -2241,18 +2241,8 @@ function PingKinds({ colors, on }) {
   }
 
   async function flipPrivate() {
-    const was = readPrefs().pingsPrivate
-    writePrefs({ pingsPrivate: !was })
     setMiss('')
-    armLampPings(readShelf()?.boards || []).catch(() => {})
-    const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
-    if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
-      if (readPrefs().pingsPrivate === !was) {
-        writePrefs({ pingsPrivate: was })
-        armLampPings(readShelf()?.boards || []).catch(() => {})
-      }
-      setMiss(t('pings.kindsMiss'))
-    }
+    if (!(await flipPingsPrivate())) setMiss(t('pings.kindsMiss'))
   }
 
   // The shop drop push. Turning it on asks for notifications first.
@@ -2652,7 +2642,24 @@ export function PingScreen({ book, boards, now, onAskPings, pingLabel, onChange 
   )
 }
 
-function PhoneLockSection({ colors }) {
+// Hide questions on the lock screen. The server hides pushes too, so a save
+// that fails puts the switch back. False when it did not save.
+export async function flipPingsPrivate() {
+  const was = readPrefs().pingsPrivate
+  writePrefs({ pingsPrivate: !was })
+  armLampPings(readShelf()?.boards || []).catch(() => {})
+  const saved = await saveProfile({ prefs: readPrefs() }).catch(() => ({ miss: 'net' }))
+  if (saved.miss && saved.miss !== 'out' && saved.miss !== 'off') {
+    if (readPrefs().pingsPrivate === !was) {
+      writePrefs({ pingsPrivate: was })
+      armLampPings(readShelf()?.boards || []).catch(() => {})
+    }
+    return false
+  }
+  return true
+}
+
+export function PhoneLockSection({ colors }) {
   const [pinDraft, setPinDraft] = useState('')
   const [pinMiss, setPinMiss] = useState('')
   const [pinSaved, setPinSaved] = useState(false)

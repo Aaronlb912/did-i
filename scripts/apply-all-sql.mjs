@@ -130,6 +130,7 @@ const files = [
   'supabase/proof-files-api.sql',
   'supabase/keep-did-app.sql',
   'supabase/we-week-miss.sql',
+  'supabase/push-private-edit.sql',
 ]
 
 const apply = resolve('scripts/apply-sql.mjs')
