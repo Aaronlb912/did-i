@@ -367,7 +367,7 @@ None of these has run on a real phone yet. They need the 1.3.0 build.
 - **Keep and Pass on a friend's did you**: iPhone only; Android's system-drawn push has no buttons.
 - **Nightly family summary** (supabase/family-summary.sql, over the air): not applied yet. Apply it when the app with the 'family' notification switch ships, so people can turn it off. Counts only members who share their streak; English only, like the other server pushes.
 - **App icon shortcuts** (expo-quick-actions): Tonight, Add (iPhone only, since Android already has a fixed one), Friends and family, Scan. The labels are set when the app opens, so they follow a language change only on the next launch. Android shows no icons on these.
-- **Did and Nope on reminders**: over the air. The buttons no longer open the app (branch `feat/answer-freeze-r10`); JS saves the answer the way a widget tap does, clears the reminder and redraws the widget. Did we reminders carry the same buttons.
+- **Did and Nope on reminders**: over the air. JS saves the answer the way a widget tap does, clears the reminder and redraws the widget. Did we reminders carry the same buttons. Today the buttons still open the app on both phones (`src/lib/notify-answer.js` sets `opensAppToForeground: true`). Answering from the Android shade without opening the app needs a native build (send the tap through the same native store as the widget); not built.
 
 ## Did we (branch `did-we`, after launch)
 

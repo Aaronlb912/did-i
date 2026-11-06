@@ -273,6 +273,13 @@ export function shouldShowMorningAsk({ state, today, on, open, busy, addedHere }
   return day.addedDay !== today || Boolean(addedHere)
 }
 
+// A card someone came to answer is up: a reminder named it, or yesterday's open
+// questions lead (the 7:00 streak save). The morning sheet waits until that card
+// is answered or left, so it never covers it.
+export function morningCardUp({ focusLampId = '', faceLampId = '', yesterdayUp = false }) {
+  return Boolean(yesterdayUp) || Boolean(focusLampId && faceLampId && focusLampId === faceLampId)
+}
+
 export function readMorningAsk() {
   try {
     const raw = JSON.parse(localStorage.getItem(MORNING_KEY) || '{}')

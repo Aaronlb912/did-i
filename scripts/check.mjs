@@ -3844,7 +3844,7 @@ await testAsync('a routine set in Reorder keeps its order on Today, ahead of unt
 
 test('a Did goes on to the next card in order; a Did on a waiting card opens the next waiting one in that part of the day', () => {
   const stack = readFileSync('src/lib/useTonightStack.js', 'utf8')
-  assert.ok(stack.includes('const after = at >= 0 ? [...ready.slice(at + 1), ...ready.slice(0, at)].find((item) => !item.answer) : null'), 'Did opens the next open card after this one, wrapping')
+  assert.ok(stack.includes('export function nextOpenAfter(ready, at)') && stack.includes('const after = nextOpenAfter(ready, at)'), 'Did and Not yet open the next open card after this one, wrapping')
   assert.ok(stack.includes("setWaitPick(finalStatus !== 'skip' && waitPick && rowKey(waitPick) === rowKey(row) ? nextWaiting(row) : null)"), 'a Did on the waiting card moves to the next waiting one')
   assert.ok(/function nextWaiting\(row\)[\s\S]{0,400}daySection\(item\.lamp\.askAfter\) === section/.test(stack), 'only the same part of the day')
   const screen = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
@@ -6941,7 +6941,7 @@ test('every action that changes data on the server says so on the phone', () => 
     'answerFamilyLamp', 'weAnswer', 'editFamilyLamp', 'addFamilyLamp', 'dropFamilyLamp', 'renameFamily', 'saveFriendNote',
     'editSend', 'shareStreak', 'sendFriendCheer', 'sendFamilyCheer', 'reportDidYouLink',
   ]
-  const SEEN = /confirmDone|confirmMiss|setMiss[(]|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|publishSheet\(\{|guide\(/
+  const SEEN = /confirmDone|confirmMiss|setMiss[(]|setSaid\(|\bsay\(|showToast\(|feel\.land\(|onSent\(|onDone\b|onAsked\(|setLinkSaid\(|offerWeWith\(|setNote\(|holdWithUndo\(|publishSheet\(\{|guide\(/
   const files = []
   const walk = (dir) => {
     for (const name of readdirSync(dir)) {
@@ -12113,7 +12113,7 @@ test('still open: a skipped family row is listed in the finish list, never as a 
   const tonight = read('native/screens/TonightScreen.jsx')
   assert.ok(tonight.includes('skippedFamilyRows(family.rows, peopleGone)'))
   assert.ok(tonight.includes('const top = stillOpenRows[0]'), 'Look again deals the family rows too')
-  assert.ok(tonight.includes("answerFamilyLamp(row.family.id, row.lamp.id, boardDate(), 'yes')"))
+  assert.ok(tonight.includes("familySend(row, 'yes')"))
   const people = read('src/lib/people-tonight.js')
   assert.match(people, /for \(const row of familyRows\) \{\s*if \(row\.answer\) continue/, 'answered family rows stay off the cards')
 })
@@ -14163,6 +14163,266 @@ test('apple-notify gives gems back when Apple reverses a refund', () => {
   assert.ok(/reversal \? info\.revocationDate/.test(fn), 'acts only when Apple shows no revocation')
   assert.ok(/security definer/.test(sql) && /revoke all on function[\s\S]*unrefund_gem_purchase/i.test(sql) && /service_role/.test(sql), 'service role only')
   assert.ok(order.includes("'supabase/unrefund.sql'"))
+})
+
+await testAsync('answering fast: Not yet goes to the next open card, a pill answer returns to the deck, a Did can be changed back', async () => {
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const lamp = (id) => ({ id, question: `Did I ${id}?`, cadence: 'daily', archived: false, createdOn: '2026-01-01' })
+  let book = { id: 'b1', title: 'House', dayFoldHour: 0, coins: 0, lamps: [lamp('a'), lamp('b'), lamp('c'), lamp('d')], answers: [] }
+  let focus = ''
+  const hadWindow = { ...globalThis.window }
+  Object.assign(globalThis.window, { setTimeout: () => 0, clearTimeout() {}, addEventListener() {}, removeEventListener() {} })
+  try {
+    const host = hookHost(
+      (props) => useStackFast(props),
+      () => ({ value: book, boards: [book], now: clock, onChange: (next) => (book = next), focusLampId: focus, focusKey: focus ? 1 : 0 }),
+    )
+    globalThis.__didIHookHost = host
+    const { useTonightStack: useStackFast } = await import('../src/lib/useTonightStack.js?hook-host')
+    const rowOf = (stack, id) => stack.dueWithWait.find((row) => row.lamp.id === id)
+    const statusOf = (id) => book.answers.find((answer) => answer.lampId === id)?.status
+
+    // Finding 7: c was answered elsewhere, b is up (from a reminder), a is still open.
+    let stack = host.render()
+    stack.mark(rowOf(stack, 'c'), 'yes')
+    stack = host.render()
+    focus = 'b'
+    stack = host.render()
+    assert.equal(stack.faceRow.lamp.id, 'b')
+    stack.mark(stack.faceRow, 'skip')
+    stack = host.render()
+    assert.equal(stack.faceRow.lamp.id, 'd', 'Not yet goes on to the next open card, not back to the first')
+    focus = ''
+
+    // Finding 4: a Did on a picked pill returns to the deck at once.
+    stack.jewelClick(rowOf(stack, 'a'))
+    stack = host.render()
+    assert.equal(stack.pillPick?.lamp.id, 'a')
+    stack.mark(stack.pillPick, 'yes')
+    stack = host.render()
+    assert.equal(stack.pillPick, null, 'no Back tap needed')
+
+    // Finding 2: a Did changed back to open before the day ends.
+    assert.equal(statusOf('a'), 'yes')
+    assert.ok(stack.reopenDid(rowOf(stack, 'a')))
+    stack = host.render()
+    assert.equal(statusOf('a'), undefined, 'the Did is gone')
+    assert.equal(stack.faceRow.lamp.id, 'a', 'the question returns to the deck')
+    // A Not yet is never turned into anything by this.
+    stack.mark(rowOf(stack, 'a'), 'skip')
+    stack = host.render()
+    assert.equal(stack.reopenDid(rowOf(stack, 'a')), false)
+    assert.equal(statusOf('a'), 'skip')
+  } finally {
+    delete globalThis.__didIHookHost
+    for (const key of Object.keys(globalThis.window)) if (!(key in hadWindow)) delete globalThis.window[key]
+    Object.assign(globalThis.window, hadWindow)
+  }
+})
+
+await testAsync('changing a Did back takes off what it paid and plays the day clear again', async () => {
+  const { reopenAnswer } = await import('../src/lib/reopen-answer.js')
+  const clock = new Date(2026, 8, 28, 21, 0)
+  const book = {
+    id: 'b1',
+    dayFoldHour: 0,
+    coins: 0,
+    lamps: [{ id: 'a', question: 'Did I a?', cadence: 'daily', createdOn: '2026-01-01' }],
+    answers: [{ lampId: 'a', periodKey: '2026-09-28', status: 'yes', answeredAt: clock.toISOString() }],
+  }
+  const paidBook = { ...book, coins: 5 }
+  const back = reopenAnswer(paidBook, 'a', '2026-09-28', clock, [])
+  assert.deepEqual(back.answers, [])
+  assert.ok(back.coins < 5, 'the coins that Did paid come off')
+  assert.ok(back.coins >= 0, 'never below zero')
+  assert.equal(reopenAnswer({ ...book, answers: [{ ...book.answers[0], status: 'skip' }] }, 'a', '2026-09-28', clock, []).answers.length, 1, 'a Not yet is left alone')
+  const src = readFileSync('src/lib/reopen-answer.js', 'utf8')
+  assert.ok(src.includes("clearStreakSeen('hit'") && src.includes('takeBackAnswer('), 'the streak moment replays and the server drops the answer')
+  const screen = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
+  assert.ok(screen.includes("label={t('pill.change')}") && screen.includes('stack.reopenDid(row)'), 'the done pill offers Change today answer behind a confirm')
+  assert.ok(readFileSync('native/screens/questions.jsx', 'utf8').includes("t('pill.change')"), 'the question page has it too')
+})
+
+await testAsync('the morning sheet waits while a card someone came to answer is up', async () => {
+  const { morningCardUp } = await import('../src/lib/first-run.js')
+  assert.equal(morningCardUp({}), false)
+  assert.equal(morningCardUp({ yesterdayUp: true }), true, 'the 7:00 streak-save card')
+  assert.equal(morningCardUp({ focusLampId: 'a', faceLampId: 'a' }), true, 'a reminder opened this card')
+  assert.equal(morningCardUp({ focusLampId: 'a', faceLampId: 'b' }), false)
+  assert.equal(morningCardUp({ focusLampId: 'a', faceLampId: '' }), false)
+  const screen = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
+  assert.ok(/shouldShowMorningAsk\(\{[\s\S]{0,600}cardCameFor/.test(screen), 'the sheet reads it as busy')
+})
+
+await testAsync('a Did on a Did we or family card waits out the undo before it sends', async () => {
+  const held = await import('../native/lib/held-sends.js')
+  const { holdSend, cancelHeld, flushHeld, resumeHeld, heldNow, UNDONE, weWithMyDid, savedSender } = held
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  const item = (id, extra = {}) => ({ id, kind: 'we', ref: id, user: 'u1', card: id, status: 'did', night: '', label: 'x', ...extra })
+  const sent = []
+  const run = (id) => async () => {
+    sent.push(id)
+    return { miss: '' }
+  }
+  localStorage.setItem('did-i-last-user', 'u1')
+
+  const undone = holdSend(item('one'), run('one'), 40)
+  await wait(10)
+  assert.deepEqual(sent, [], 'nothing is sent while the undo is open')
+  assert.equal(heldNow().length, 1)
+  assert.ok(JSON.parse(localStorage.getItem('did-i-held-sends')).some((saved) => saved.id === 'one'), 'kept on the phone while it waits')
+  assert.equal(cancelHeld('one'), true)
+  assert.equal(await undone, UNDONE)
+  await wait(60)
+  assert.deepEqual(sent, [], 'Undo means it is never sent')
+  assert.equal(localStorage.getItem('did-i-held-sends'), null)
+
+  const sentLater = await holdSend(item('two'), run('two'), 20)
+  assert.deepEqual(sentLater, { miss: '' })
+  assert.deepEqual(sent, ['two'], 'it goes when the window is over')
+  assert.equal(cancelHeld('two'), false, 'too late to undo')
+
+  holdSend(item('three'), run('three'), 60000)
+  await flushHeld()
+  assert.deepEqual(sent, ['two', 'three'], 'leaving the app sends what is waiting')
+  assert.equal(heldNow().length, 0)
+  assert.equal(localStorage.getItem('did-i-held-sends'), null)
+
+  // The app was closed inside the window: the next start sends it, for this account only.
+  localStorage.setItem(
+    'did-i-held-sends',
+    JSON.stringify([
+      { ...item('left'), at: Date.now() },
+      { ...item('theirs', { user: 'u2' }), at: Date.now() },
+      { ...item('old'), at: Date.now() - 3 * 86400000 },
+    ]),
+  )
+  const resumed = []
+  await resumeHeld('u1', async (saved) => {
+    resumed.push(saved.id)
+    return true
+  })
+  assert.deepEqual(resumed, ['left'])
+  assert.deepEqual(JSON.parse(localStorage.getItem('did-i-held-sends')).map((saved) => saved.id), ['theirs'])
+  localStorage.removeItem('did-i-held-sends')
+
+  // Signed in as someone else now: it is not sent as them, it stays saved for its own account.
+  localStorage.setItem('did-i-last-user', 'u2')
+  const other = holdSend(item('mine'), run('mine'), 60000)
+  await flushHeld()
+  const otherOut = await other
+  assert.deepEqual(otherOut, { miss: 'out', unsent: true }, 'it says it was not sent, so a toast shows')
+  assert.ok(!sent.includes('mine'), 'never sent as another account')
+  assert.equal(heldNow().length, 0, 'no longer held on this screen')
+  assert.deepEqual(JSON.parse(localStorage.getItem('did-i-held-sends')).map((saved) => saved.id), ['mine'], 'kept for its own account')
+  localStorage.removeItem('did-i-held-sends')
+  localStorage.setItem('did-i-last-user', 'u1')
+
+  // Before the first sync saves the id, the live session's user is who is signed in.
+  const { noteSessionUser } = await import('../src/lib/session-id.js')
+  localStorage.removeItem('did-i-last-user')
+  noteSessionUser('u1')
+  const early = holdSend(item('early'), run('early'), 60000)
+  await flushHeld()
+  assert.deepEqual(await early, { miss: '' }, 'sent as the live session user')
+  assert.ok(sent.includes('early'))
+  noteSessionUser('')
+  localStorage.setItem('did-i-last-user', 'u1')
+
+  // A prefix cancels every held send for a family question, whatever night its key carries.
+  const { cancelHeldPrefix } = held
+  const fam1 = holdSend(item('family:f1:l1:2026-09-28', { kind: 'family' }), run('fam1'), 60000)
+  const fam2 = holdSend(item('family:f1:l1:2026-09-29', { kind: 'family' }), run('fam2'), 60000)
+  const famOther = holdSend(item('family:f1:l2:2026-09-28', { kind: 'family' }), run('fam3'), 60000)
+  assert.equal(cancelHeldPrefix('family:f1:l1:'), 2)
+  assert.equal(await fam1, UNDONE)
+  assert.equal(await fam2, UNDONE)
+  assert.equal(heldNow().length, 1, 'another question is left alone')
+  cancelHeld('family:f1:l2:2026-09-28')
+  assert.equal(await famOther, UNDONE)
+
+  // After a restart a Did goes to the day it was tapped on, and not to one older than yesterday.
+  const { boardDate } = await import('../src/lib/recurrence.js')
+  const today = boardDate()
+  const calls = []
+  const send = savedSender({
+    answerWe: async (card, status, day) => {
+      calls.push(['we', card, day])
+      return { miss: '', finished: false }
+    },
+    answerFamily: async () => ({ miss: '' }),
+    claimWe: async () => {},
+  })
+  assert.equal(await send({ ...item('late-day'), day: today }), true)
+  assert.deepEqual(calls, [['we', 'late-day', today]], 'sent for the day it was tapped, not the day it is sent')
+  assert.equal(await send({ ...item('ancient'), day: '2020-01-01' }), true)
+  assert.equal(calls.length, 1, 'a Did from long ago is dropped, not sent')
+  const refused = savedSender({ answerWe: async () => ({}), answerFamily: async () => ({ miss: 'people.reach' }), claimWe: async () => {} })
+  assert.equal(await refused({ id: 'f', kind: 'family', familyId: 'f1', lampId: 'l1', night: today, status: 'yes' }), false, 'no connection: it waits for the next start')
+  const fine = savedSender({ answerWe: async () => ({}), answerFamily: async () => ({ miss: '' }), claimWe: async () => {} })
+  assert.equal(await fine({ id: 'f', kind: 'family', familyId: 'f1', lampId: 'l1', night: today, status: 'yes' }), true)
+
+  const { weAskMe } = await import('../src/lib/did-we.js')
+  const card = { id: 'c1', myState: 'in', due: true, done: false, people: [{ me: true }, { me: false, status: 'did' }] }
+  assert.equal(weAskMe(card), true)
+  assert.equal(weAskMe(weWithMyDid(card)), false, 'a held Did leaves the deck at once')
+
+  const we = readFileSync('native/components/WeTonight.jsx', 'utf8')
+  assert.ok(/const held = status === 'did' && hold[\s\S]{0,900}if \(held\) \{\s*return hold\(card, night, send, when\)/.test(we), 'a Did goes through the hold; Not yet goes at once')
+  const screen = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
+  assert.ok(screen.includes('useWeAnswer(we.reload, book, holdWe)') && screen.includes("if (status !== 'yes') return send"), 'Did we and family Dids are held, Not yet is not')
+  assert.ok(we.includes("const held = status === 'did' && hold"), 'a Did is held')
+  assert.ok(we.includes('const when = held ? night || today : night') && we.includes('hold(card, night, send, when)'), 'the day is fixed at the tap')
+  assert.ok(screen.includes('await Promise.resolve(we.reload()).catch(() => {})'), 'the card stays marked until the list reloads, even if that fails')
+  assert.ok(readFileSync('native/NativeApp.jsx', 'utf8').includes('cancelHeldPrefix(`we:${cardId}|`)'), 'a reminder Did supersedes a held one')
+  assert.ok(we.includes('if (!held) cancelHeld(') && we.includes('we:${card.id}|'), 'an answer at once supersedes a held Did')
+  const detail = readFileSync('native/screens/FamilyDetail.jsx', 'utf8')
+  assert.ok(detail.includes('cancelHeldPrefix(`family:${fam.id}:${lamp.id}:`)') && screen.includes('family:${row.family.id}:${row.lamp.id}:${night}'), 'the family screen answers at once and cancels the held one by the same key')
+  assert.ok(readFileSync('native/hooks/useHeldSends.js', 'utf8').includes("if (!cancelHeld(item.id)) confirmDone(t('confirm.saved'))"), 'too late to undo says saved')
+  const app = readFileSync('native/NativeApp.jsx', 'utf8')
+  assert.ok(app.includes('flushOnBackground(AppState)') && app.includes('resumeHeld('), 'the app sends them on background and on the next start')
+})
+
+
+await testAsync('Change today answer only for a Did on its own day, and a signed-in change does not pay twice', async () => {
+  const { canChangeToday } = await import('../src/lib/reopen-answer.js')
+  const day = '2026-09-28'
+  const daily = { id: 'a', cadence: 'daily', createdOn: '2026-01-01' }
+  assert.equal(canChangeToday(daily, day, day), true)
+  assert.equal(canChangeToday(daily, '2026-09-27', day), false, 'not yesterday')
+  assert.equal(canChangeToday({ ...daily, cadence: 'weekly', weekdays: [1] }, day, day), true, 'a weekday question is still one day')
+  assert.equal(canChangeToday({ ...daily, cadence: 'monthly', monthDay: 28 }, '2026-09', day), false, 'not monthly')
+  assert.equal(canChangeToday({ ...daily, perWeek: 3 }, day, day), false, 'not times a week')
+  const hook = readFileSync('src/lib/useTonightStack.js', 'utf8')
+  assert.ok(hook.includes('!canChangeToday(row.lamp, row.periodKey, dateIso)'), 'the stack refuses it too')
+  assert.ok(readFileSync('native/screens/TonightScreen.jsx', 'utf8').includes('canChangeToday(pillRow.lamp, pillRow.periodKey, stack.dateIso)'))
+  assert.ok(readFileSync('native/screens/questions.jsx', 'utf8').includes('canChangeToday(lamp, todayPeriod, dateIso)'))
+
+  // Signed in, a Did the paid list never saw (widget, watch) is marked paid when it is changed back.
+  const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+  const url = (file) => pathToFileURL(path.join(root, file)).href
+  const script = `
+    const store = new Map([['did-i-last-user', 'user-a']])
+    globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) }
+    globalThis.window = { dispatchEvent() {} }
+    const { putAnswer } = await import(${JSON.stringify(url('src/lib/board-ops.js'))})
+    const { reopenAnswer } = await import(${JSON.stringify(url('src/lib/reopen-answer.js'))})
+    const { takeEarnedCoins } = await import(${JSON.stringify(url('src/lib/purse.js'))})
+    const clock = new Date(2026, 9, 2, 20)
+    const book = { id: 'b', lamps: [{ id: 'a', question: 'a', cadence: 'daily', archived: false, createdOn: '2024-01-01' }], coins: 0,
+      answers: [{ lampId: 'a', periodKey: '2026-10-02', status: 'yes', answeredAt: new Date(2026, 9, 2, 19).toISOString() }] }
+    const row = { lamp: book.lamps[0], periodKey: '2026-10-02' }
+    const open = reopenAnswer(book, 'a', '2026-10-02', clock, [])
+    putAnswer(open, row, 'yes', clock)
+    console.log(JSON.stringify(takeEarnedCoins()))
+  `
+  const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'test' },
+  })
+  assert.equal(run.status, 0, run.stderr)
+  assert.deepEqual(JSON.parse(run.stdout.trim().split('\n').pop()), {}, 'the second Did pays nothing')
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

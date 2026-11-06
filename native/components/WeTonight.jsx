@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { PersonAvatar } from './PersonAvatar.jsx'
+import { UNDONE, cancelHeld } from '../lib/held-sends.js'
 import { useAccount } from '../../src/lib/account.js'
 import { pullAndMerge } from '../../src/lib/cloud-sync.js'
 import {
@@ -331,7 +332,9 @@ export function WeAsks({ colors }) {
 
 // Answering a Did we, shared by the panel and the swipe card on Tonight.
 // Tapping the answer you already gave takes it back.
-export function useWeAnswer(reload, book) {
+// hold(card, night, send, day): a Did waits behind the undo toast before send runs.
+// It resolves with what send returned, or UNDONE when it was taken back.
+export function useWeAnswer(reload, book, hold) {
   const [busy, setBusy] = useState('')
   const [miss, setMiss] = useState('')
   const [note, setNote] = useState('')
@@ -366,8 +369,8 @@ export function useWeAnswer(reload, book) {
       feelTap('skip')
       return true
     }
-    // A repeat tap on tonight's lit answer does nothing: a Did we answer has
-    // no undo, so it must not clear by accident. Taking back is explicit.
+    // A repeat tap on tonight's lit answer does nothing, so it must not clear
+    // by accident. Taking back is explicit.
     if (!night && status && mine?.status === status) return
     // One answer at a time, in order: the next card is swiped away before
     // the last answer lands, so its answer waits its turn instead of being dropped.
@@ -379,23 +382,37 @@ export function useWeAnswer(reload, book) {
     if (hide) hideWeFor(card.id, today)
     // The tap is felt now; a miss still says so when the server answers.
     if (status) feelTap(status === 'nope' ? 'skip' : 'did')
-    const turn = queue.current
-      .then(() => answerNow(card, status, night))
-      .catch(() => false)
-      .then((saved) => {
-        if (hide && saved === false) showWeFor(card.id, today)
-        return saved
-      })
-      .finally(() => queued.current.delete(key))
-    queue.current = turn
+    // A held Did is sent later, so the day it is for is fixed now.
+    const held = status === 'did' && hold
+    const when = held ? night || today : night
+    // Answering at once supersedes a Did still held on Today for this card.
+    if (!held) cancelHeld(`we:${card.id}|${night || ''}`)
+    const send = () => {
+      const turn = queue.current
+        .then(() => answerNow(card, status, when))
+        .catch(() => false)
+        .then((saved) => {
+          if (hide && saved === false) showWeFor(card.id, today)
+          return saved
+        })
+        .finally(() => queued.current.delete(key))
+      queue.current = turn
+      return turn
+    }
+    // A Did waits out the same undo as your own cards. Other answers go at once.
     // false when it was not saved, so a caller that hid the card can show it again.
-    return turn
+    if (held) {
+      return hold(card, night, send, when)
+        .then((out) => (out === UNDONE ? false : out))
+        .finally(() => queued.current.delete(key))
+    }
+    return send()
   }
 
   async function answerNow(card, status, night) {
     const next = status
     const out = await run(card.id, () => weAnswer(card.id, next, night || undefined))
-    // A Did we answer has no undo: it says it was saved, or that it was not.
+    // It says it was saved, or that it was not.
     if (out?.miss) {
       confirmMiss(tMiss(weMissKey(card, out.miss)))
       return false

@@ -26,6 +26,11 @@ export function noteSessionUser(id) {
   sessionUser = id || ''
 }
 
+// Who is signed in now: the saved id, or the live session's before the first sync saves it.
+export function currentUserId() {
+  return readAccountUserId() || sessionUser
+}
+
 export function accountSessionOn() {
   return cloudSetUp() && Boolean(readAccountUserId() || sessionUser)
 }
