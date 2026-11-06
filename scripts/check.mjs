@@ -1506,7 +1506,7 @@ test('putAnswer marks a Not yet only when this phone had no answer', async () =>
   assert.ok(!('f' in answersToSend({ boards: [flipped] }, true)[0]))
 })
 
-test('keep-did-app.sql skips a first Not yet over a Did and is applied last', () => {
+test('keep-did-app.sql skips a first Not yet over a Did and no later file puts put_answers_as back', () => {
   const checkRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
   const sql = readFileSync(path.join(checkRoot, 'supabase/keep-did-app.sql'), 'utf8')
   assert.ok(sql.includes("coalesce(r->'f' = 'true'::jsonb, false)") && sql.includes("o.status in ('yes', 'late')"), 'the f guard, null-safe so rows without f still save')
@@ -1514,7 +1514,8 @@ test('keep-did-app.sql skips a first Not yet over a Did and is applied last', ()
   assert.ok(sql.includes("notify pgrst, 'reload schema'"))
   const order = readFileSync(path.join(checkRoot, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'(supabase\/[a-z0-9-]+\.sql)'/g)].map((m) => m[1])
-  assert.equal(files.at(-1), 'supabase/keep-did-app.sql', 'last in the list')
+  const later = files.slice(files.indexOf('supabase/keep-did-app.sql') + 1)
+  assert.ok(!later.some((f) => readFileSync(path.join(checkRoot, f), 'utf8').includes('function public.put_answers_as')), 'no later file redefines it')
   assert.ok(files.indexOf('supabase/keep-did-app.sql') > files.indexOf('supabase/answer-split-merge.sql'))
 })
 
@@ -9176,7 +9177,7 @@ test('drop-tonight.sql: old public tonight list is gone and delete_me still work
   // Did we cards) must keep the same shape.
   const order = readFileSync(path.join(root, 'scripts/apply-all-sql.mjs'), 'utf8')
   const files = [...order.matchAll(/'supabase\/([\w-]+\.sql)'/g)].map((m) => m[1])
-  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql'])
+  assert.deepEqual(files.slice(-11), ['we-week-anchor.sql', 'away-check-ons.sql', 'question-cap.sql', 'turns-and-code.sql', 'proof-photos.sql', 'family-code-prune.sql', 'proof-view-kid.sql', 'proof-push-after-upload.sql', 'auto-sends-photo.sql', 'proof-files-api.sql', 'keep-did-app.sql', 'we-week-miss.sql'].slice(-11))
   const safe = readFileSync(path.join(root, 'supabase/did-we-safety.sql'), 'utf8').replace(/\r\n/g, '\n')
   const del2 = safe.slice(safe.indexOf('create or replace function public.delete_me()'))
   assert.match(del2, /security definer\nset search_path = public, auth/)
@@ -12487,6 +12488,47 @@ await testAsync('mid-period days: a monthly question closes when its month ends,
   assert.equal(graceRowsFor([octOpen], '2026-10-31').find((row) => row.lamp.id === 'rent')?.periodKey, '2026-10', 'a month left open gets the morning of the 1st')
   const lastDay = { ...book, lamps: [{ ...rent, monthDay: 'last' }], answers: [{ id: 'o', lampId: 'rent', periodKey: '2026-10', status: 'skip', answeredAt: '2026-10-31T20:00:00' }] }
   assert.equal(graceRowsFor([lastDay], '2026-10-31').length, 1, 'a Not yet on the last day can still turn into a Did')
+})
+
+await testAsync('schedule changes mid-streak: each day is judged by the schedule it ran under', async () => {
+  const { countedTonightRows, dueTonight, faceReadyTonight } = await import('../src/lib/recurrence.js')
+  const { dueThatNight } = await import('../src/lib/hall-feel.js')
+  const { nightMarksMany } = await import('../src/lib/hall-pages.js')
+  const at = (y, m, d) => new Date(y, m, d, 12)
+  // Monthly on the 3rd, switched to weekly Mondays on the 10th with the 3rd still open.
+  const was = [{ until: '2026-11-10', cadence: 'monthly', weekdays: [], monthDay: 3, everyN: '', everyNAnchor: '' }]
+  const rent = lamp('rent', { cadence: 'weekly', weekdays: [1], createdOn: '2026-08-01', was })
+  const book = { id: 'b', dayFoldHour: 0, lamps: [rent], answers: [] }
+  const has = (rows) => rows.some((row) => row.lamp.id === 'rent')
+  assert.ok(!has(dueThatNight(book, '2026-11-03', at(2026, 10, 3), at(2026, 10, 12))), 'switched off monthly: the open month is still not a miss')
+  assert.equal(faceReadyTonight(book, at(2026, 10, 12)).find((row) => row.lamp.id === 'rent')?.periodKey, '2026-11', 'and its card stays to answer')
+  assert.equal(faceReadyTonight(book, at(2026, 10, 16)).filter((row) => row.lamp.id === 'rent').length, 1, 'on a Monday, one card, not two')
+  const toDaily = { ...book, lamps: [{ ...rent, cadence: 'daily', weekdays: [] }] }
+  const first = faceReadyTonight(toDaily, at(2026, 10, 12)).filter((row) => row.lamp.id === 'rent')
+  assert.ok(first.length === 1 && first[0].periodKey === '2026-11', 'switched to daily: the open month comes first, one card')
+  const settled = { ...toDaily, answers: [{ id: 'm', lampId: 'rent', periodKey: '2026-11', status: 'yes', answeredAt: '2026-11-12T09:00:00' }] }
+  assert.equal(faceReadyTonight(settled, at(2026, 10, 12)).find((row) => row.lamp.id === 'rent')?.periodKey, '2026-11-12', 'then the day card')
+  const { graceRowsFor } = await import('../src/lib/grace.js')
+  assert.equal(graceRowsFor([toDaily], '2026-11-30').filter((row) => row.lamp.id === 'rent').length, 1, 'one Last night card, not two')
+  assert.ok(has(dueThatNight(book, '2026-11-03', at(2026, 10, 3), at(2026, 11, 2))), 'a miss once the month ends')
+  // Paused on the 10th with the 3rd still open.
+  const paused = { ...book, lamps: [lamp('rent', { cadence: 'monthly', monthDay: 3, createdOn: '2026-08-01', archived: true, pausedOn: '2026-11-10' })] }
+  assert.ok(!has(dueThatNight(paused, '2026-11-03', at(2026, 10, 3), at(2026, 10, 12))), 'pausing a monthly before its Did is not a miss while the month runs')
+  // Times a week paused on the 16th: its Dids and the short week's last day stay.
+  const gym = { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', perWeek: 3, createdOn: '2026-08-01', archived: true, pausedOn: '2026-09-16' }
+  const gymBook = everyBook([['gym', evDay(7), 'yes'], ['gym', evDay(8), 'yes']], [gym])
+  const gymRows = (d) => countedTonightRows(dueThatNight(gymBook, evDay(d), evAt(d), evAt(20))).filter((row) => row.lamp.id === 'gym')
+  assert.equal(gymRows(8).length, 1, 'paused times a week keeps its Dids')
+  assert.equal(gymRows(13).length, 1, 'and the short week still costs its last day')
+  assert.equal(gymRows(10).length, 0, 'mid-week stays free')
+  // Daily switched to times a week on the 14th: an undone daily day is still a miss.
+  const swapped = { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', perWeek: 3, createdOn: '2026-08-01', was: [{ until: evDay(14), cadence: 'daily', perWeek: null, weekdays: [], monthDay: '', everyN: '', everyNAnchor: '' }] }
+  const swapBook = everyBook([['gym', evDay(8), 'yes']], [swapped])
+  assert.equal(countedTonightRows(dueTonight(swapBook, evAt(9))).filter((row) => row.lamp.id === 'gym').length, 1, 'a daily day before the switch still holds')
+  assert.ok(nightMarksMany([swapBook], [evDay(9)], evDay(20)).get(evDay(9)).miss, 'and the year view still shows it missed')
+  const after = everyBook([['gym', evDay(15), 'yes']], [swapped])
+  const weekMarks = nightMarksMany([after], [evDay(16), evDay(20)], evDay(21))
+  assert.ok(!weekMarks.get(evDay(16)).miss && weekMarks.get(evDay(20)).miss, 'after the switch the year view judges by the week, like the streak')
 })
 
 test('did we: every Did I timing maps to we_make2 and we_edit3 arguments', async () => {

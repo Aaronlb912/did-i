@@ -1,6 +1,6 @@
 import { t } from './i18n.js'
 import { readPrefs } from './prefs.js'
-import { addDaysIso, daysBetween, answerFor, graceNightIso, inPause, isDueOn, everyBest, everyStreak, isEvery, isPerWeek, perWeekBest, perWeekStreak, periodKeyFor, periodNight, periodPassed, previousDueDate, recentPeriodKeys } from './recurrence.js'
+import { addDaysIso, daysBetween, answerFor, graceNightIso, inPause, isDueOn, everyBest, everyStreak, isEvery, isPerWeek, monthKey, perWeekBest, perWeekStreak, periodKeyFor, periodNight, periodPassed, previousDueDate, recentPeriodKeys } from './recurrence.js'
 import { travelNightState, travelSkipped } from './travel.js'
 
 function didStatus(status) {
@@ -65,7 +65,7 @@ export function questionStreak(book, lamp, dateIso, cap = 1100, now = new Date()
 // Walks due nights back to the question's first; callers memoize it.
 // A monthly question with no Did yet this month neither counts nor breaks until the month ends.
 function monthOpen(lamp, key, answer, todayIso) {
-  return lamp.cadence === 'monthly' && (!answer || answer.status === 'skip') && !periodPassed(lamp, key, todayIso)
+  return monthKey(key) && (!answer || answer.status === 'skip') && !periodPassed(lamp, key, todayIso)
 }
 
 function openGrace(dateIso, now) {
