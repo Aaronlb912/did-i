@@ -9353,7 +9353,7 @@ await testAsync('readthrough 8: a missed one-time question still breaks its nigh
 })
 
 await testAsync('readthrough 8: the 9 PM warning fires when last night was frozen', async () => {
-  const { streakRiskFire, graceRiskFire } = await import('../src/lib/streak-risk.js')
+  const { streakRiskFire, graceRiskFire, lastNightGraceFire } = await import('../src/lib/streak-risk.js')
   const { shelfStreak: streakOf } = await import('../src/lib/hall-feel.js')
   const clock = new Date(2026, 8, 30, 16, 0)
   const answers = []
@@ -9371,9 +9371,26 @@ await testAsync('readthrough 8: the 9 PM warning fires when last night was froze
   const grace = graceRiskFire(lateBook, clock, heat)
   assert.ok(grace, 'the morning warning still comes for a 10 PM question')
   assert.equal(new Date(grace.at).getHours(), 7, 'the grace note fires at 7 AM, before the 9 AM cutoff')
+  // 00:30 with last night still open: a reschedule keeps the 7 AM note for last night.
+  const early = new Date(2026, 8, 29, 0, 30)
+  const short = { ...book, answers: answers.filter((a) => a.periodKey !== '2026-09-28') }
+  const graceAt = lastNightGraceFire(short, early, streakOf([short], early))
+  assert.ok(graceAt, 'after midnight the 7 AM note for last night is still built')
+  assert.equal(graceAt.tag, 'grace-risk:2026-09-28')
+  assert.equal(new Date(graceAt.at).getDate(), 29, 'it fires at 7 AM this morning, not tomorrow')
+  assert.equal(new Date(graceAt.at).getHours(), 7)
+  assert.equal(lastNightGraceFire(book, early, heat), null, 'last night done: no note for it')
+  assert.equal(graceRiskFire(short, early, heat)?.tag, 'grace-risk:2026-09-29', 'tomorrow morning is still built before 7 AM')
+  assert.equal(lastNightGraceFire(short, new Date(2026, 8, 29, 7, 30), heat), null, 'after 7 AM the note for last night has fired')
+  const { snoozeFrom } = await import('../src/lib/notify-answer.js')
+  const later = (night, at) => snoozeFrom({ actionIdentifier: 'later', notification: { request: { identifier: 'x', content: { title: 'Did I', body: 'Read?', data: { lampId: 'a', night } } } } }, at.getTime(), { laterMin: 60 })
+  assert.equal(later('2026-09-28', new Date(2026, 8, 29, 8, 30)), null, 'a Later past 9 AM for last night is dropped')
+  assert.ok(later('2026-09-29', new Date(2026, 8, 29, 8, 30)), 'a Later for today stays')
+  assert.ok(later('2026-09', new Date(2026, 8, 29, 20, 0)), 'a Later on a monthly question stays')
   const nextDay = streakRiskFire(book, new Date(2026, 9, 1, 12), heat)
   assert.equal(new Date(nextDay.at).getDate(), 1, 'the 9 PM warning can be built for a later day')
   const nativeShim = readFileSync(path.join(checkRoot, 'native/shim/native.js'), 'utf8')
+  assert.ok(/earlyCall: true,\r?\n\s+wall: true/.test(nativeShim) && /trigger: when\(new Date\(grace\.at\)\),\r?\n\s+wall: true/.test(nativeShim) && /lastNightGraceFire, graceRiskFire\]/.test(nativeShim), 'grouped and streak notes follow the wall clock')
   assert.ok(nativeShim.includes('leftBody(group.length') && nativeShim.includes('notif.stillOpen\''), 'last calls are merged and prefixed')
   const notify = readFileSync(path.join(checkRoot, 'src/lib/notify.js'), 'utf8')
   assert.ok(notify.includes('shelfStreak([book], now)'), 'web pings pass the real streak')
