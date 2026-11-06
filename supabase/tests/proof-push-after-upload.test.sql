@@ -23,13 +23,13 @@ begin
   pid := public.add_proof(sid, null, current_date);
   execute 'reset role';
 
-  select count(*) into n from public.push_queue q where q.to_id = b and q.go = '/sent';
+  select count(*) into n from public.push_queue q where q.to_id = b and q.go like '/photos?id=%';
   if n <> 0 then raise exception 'FAIL: a push went out before the upload'; end if;
 
   execute 'set local role authenticated';
   perform public.proof_uploaded(pid);
   execute 'reset role';
-  select count(*) into n from public.push_queue q where q.to_id = b and q.go = '/sent';
+  select count(*) into n from public.push_queue q where q.to_id = b and q.go like '/photos?id=%';
   if n <> 0 then raise exception 'FAIL: a push went out with no file'; end if;
 
   insert into storage.objects (bucket_id, name, owner_id)
@@ -39,7 +39,7 @@ begin
   execute 'set local role authenticated';
   perform public.proof_uploaded(pid);
   execute 'reset role';
-  select count(*) into n from public.push_queue q where q.to_id = b and q.go = '/sent';
+  select count(*) into n from public.push_queue q where q.to_id = b and q.go like '/photos?id=%';
   if n <> 0 then raise exception 'FAIL: someone else queued the push'; end if;
 
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
@@ -47,7 +47,7 @@ begin
   perform public.proof_uploaded(pid);
   perform public.proof_uploaded(pid);
   execute 'reset role';
-  select count(*) into n from public.push_queue q where q.to_id = b and q.go = '/sent';
+  select count(*) into n from public.push_queue q where q.to_id = b and q.go like '/photos?id=%';
   if n <> 1 then raise exception 'FAIL: expected one push, got %', n; end if;
 
   raise exception 'SQL TESTS PASSED';

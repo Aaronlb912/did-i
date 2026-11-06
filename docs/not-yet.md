@@ -634,7 +634,9 @@ cheer skip under reduce-motion.
 ## Proof photos (2026-11-05)
 
 - Phone only. The web app does not add or show photos.
-- Add photo sits in the done toast and on the Did we card. No row on the question page yet.
+- Add photo sits in the done toast, on the Did we card, and on the question page of a kept Did you (hidden once that Did has a photo).
+- A photo hides from others once its Did is undone or turns to Not yet; a Did you photo also hides when the keeper turns sharing off or the asker is no longer a friend or family (supabase/proof-ux.sql). A Did you photo on a day older than the week the phone shares is taken on the keeper's word, since that answer is not on the server.
+- Photo please is not offered on Did we cards.
 - Needs a device pass: picker, camera, signed images, full-screen view, push.
 - Save to Photos (expo-media-library) arrives with the next native build; older builds hide the button. Android 10 and below also hide it (saving there needs the storage permission the manifest removes).
 - No auto-expire. Photos stay until removed.

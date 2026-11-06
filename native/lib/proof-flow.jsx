@@ -33,15 +33,13 @@ export function addProofFlow({ target, night, colors, ready, onDone }) {
   function go(from) {
     publishSheet(null)
     return once('proof-add', async () => {
-      showToast({ id: 'proof-sending', kind: 'done', text: t('proof.sending'), ms: 60000 })
       try {
         const net = await NetInfo.fetch().catch(() => null)
-        if (net && (!net.isConnected || net.isInternetReachable === false)) {
-          dropToast('proof-sending')
-          return confirmMiss(t('proof.offline'))
-        }
+        if (net && (!net.isConnected || net.isInternetReachable === false)) return confirmMiss(t('proof.offline'))
         const bytes = await pickProofBytes(from, { target, night })
         if (!bytes) return
+        // Only once there is a photo: not while the camera or library is open.
+        showToast({ id: 'proof-sending', kind: 'done', text: t('proof.sending'), ms: 60000 })
         const out = await addProof(target, night, bytes, ready)
         dropToast('proof-sending')
         if (out.miss) return confirmMiss(t(out.miss))

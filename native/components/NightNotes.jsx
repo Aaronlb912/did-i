@@ -17,7 +17,7 @@ import { readShelf } from '../../src/lib/board-shelf.js'
 import { DELETE_UNDO_MS as UNDO_MS } from '../../src/lib/undo-times.js'
 import { showToast } from '../lib/toast-queue.js'
 import { cloud } from '../../src/lib/cloud.js'
-import { proofNight } from '../../src/lib/proofs.js'
+import { loadProofs, proofNight } from '../../src/lib/proofs.js'
 import { pushSendAnswers } from '../../src/lib/send-answers.js'
 import { addProofFlow, canAddProof } from '../lib/proof-flow.jsx'
 
@@ -271,6 +271,23 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
   const picks = nights.filter((row) => !kept(row.answer)).slice(0, PICKS)
   // A question someone sent you: the newest Did can carry a photo for them.
   const photoNight = lamp.sendId && !lamp.shareOff && nights[0] && (nights[0].answer.status === 'yes' || nights[0].answer.status === 'late') && canAddProof() ? nights[0].answer : null
+  const photoOn = photoNight ? proofNight(lamp, photoNight.periodKey, photoNight.answeredAt) : ''
+  // One photo per answer: no Add photo once that Did has one.
+  const [hasPhoto, setHasPhoto] = useState('')
+  const [photoCheck, setPhotoCheck] = useState(0)
+  useEffect(() => {
+    if (!photoOn) return undefined
+    let live = true
+    loadProofs({ sendIds: [lamp.sendId] })
+      .then((out) => {
+        if (live && !out.miss) setHasPhoto(out.rows.some((row) => row.night === photoOn) ? photoOn : '')
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [lamp.sendId, photoOn, photoCheck])
+  const canPhoto = Boolean(photoNight) && hasPhoto !== photoOn
 
   function edit(answer) {
     setPicking(false)
@@ -344,17 +361,18 @@ export function NightNotes({ book, lamp, colors, onChange, pickSignal = 0 }) {
         </View>
       ) : null}
       </Reveal>
-      {photoNight || lamp.sendId ? (
+      {canPhoto || lamp.sendId ? (
         <View style={styles.keys}>
           <KeyButton colors={colors} label={t('photos.title')} onPress={() => goHash('/photos')} />
-          {photoNight ? <KeyButton
+          {canPhoto ? <KeyButton
             colors={colors}
             label={t('proof.add')}
             onPress={() =>
               addProofFlow({
                 target: { sendId: lamp.sendId },
-                night: proofNight(lamp, photoNight.periodKey),
+                night: photoOn,
                 colors,
+                onDone: () => setPhotoCheck((n) => n + 1),
                 ready: async () => {
                   const db = cloud()
                   const { data } = (await db?.auth.getSession()) || {}

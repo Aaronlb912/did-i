@@ -4172,6 +4172,8 @@ export const pt = {
   'proof.offline': "Sem sinal. Adicione a foto quando estiver online de novo.",
   'proof.family': "Aqui as fotos ficam na família.",
   'proof.noDid': "Diga Did primeiro e depois adicione a foto.",
+  'proof.already': "Esta resposta já tem uma foto.",
+  'proof.old': "Esse dia é antigo demais para adicionar uma foto.",
   'proof.please': "Foto, por favor",
   'proof.pleaseSub': "Peça a {name} que adicione uma foto ao dizer Did.",
   'proof.pleaseMark': "Foto, por favor",

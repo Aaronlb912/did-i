@@ -3115,6 +3115,7 @@ export function SentScreen({ book, onChange }) {
                 key={proof.id}
                 row={proof}
                 name={personName(row.person) || t('people.someone')}
+                day={formatBoardDate(proof.night)}
                 colors={colors}
                 onOpen={() => openProofView({ row: proof, mine: false, name: personName(row.person) || t('people.someone'), colors, onGone: load })}
               />

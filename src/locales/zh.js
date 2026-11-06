@@ -4130,6 +4130,8 @@ export const zh = {
   'proof.offline': "没有信号。恢复联网后再添加照片。",
   'proof.family': "这里的照片只在家人之间可见。",
   'proof.noDid': "先点 Did，再添加照片。",
+  'proof.already': "这个回答已经有照片了。",
+  'proof.old': "那一天太久了，无法添加照片。",
   'proof.please': "请附上照片",
   'proof.pleaseSub': "请 {name} 在点 Did 时添加一张照片。",
   'proof.pleaseMark': "请附上照片",

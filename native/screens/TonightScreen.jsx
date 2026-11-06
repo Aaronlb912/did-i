@@ -170,10 +170,12 @@ function nextCoinItem(purse) {
 
 function cardKicker(row, fallback) {
   const from = row.lamp?.fromName ? t('inbox.from', { name: row.lamp.fromName }) : ''
+  // The ask shows on the card too, not only in the Inbox and the Did toast.
+  const photo = row.lamp?.sendId && row.lamp.wantsPhoto && !row.lamp.shareOff && canAddProof() ? t('proof.pleaseMark') : ''
   const today = isTodayOnce(row.lamp, row.dateIso) ? todayLabel(row.lamp) : ''
   const last = row.lamp?.endsOn && row.lamp.cadence !== 'once' && row.lamp.endsOn === row.dateIso ? t('lamp.lastDay') : ''
-  const tag = row.tag || (from || today || last ? '' : fallback)
-  return [today, last, tag, from].filter(Boolean).join(' · ')
+  const tag = row.tag || (from || today || last || photo ? '' : fallback)
+  return [today, last, tag, from, photo].filter(Boolean).join(' · ')
 }
 
 function useMinuteNow() {
