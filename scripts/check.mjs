@@ -12086,7 +12086,7 @@ test('widget: footer says questions waiting, empty list opens add, Not yet card 
   const ios = readFileSync('widgets/DidITonightWidget.tsx', 'utf8')
   const and = readFileSync('widgets/android/DidITonightAndroidWidget.jsx', 'utf8')
   assert.ok(!w.includes('widget.tonight.openApp') && w.includes("t('widget.tonight.waiting')"), 'footer uses the waiting key')
-  assert.ok(w.includes("emptyList ? 'didi://open/add'"), 'empty list taps open add')
+  assert.ok(w.includes("emptyList && !dayOff ? 'didi://open/add'"), 'empty list taps open add, a day off opens Today')
   assert.ok(ios.includes('minimumScaleFactor(0.6)') && !ios.includes('minimumScaleFactor(0.35)'), 'question scales to 0.6')
   assert.ok(ios.includes("lead.status === 'skip' ? null"), 'iOS hides Not yet on a Not yet card')
   assert.ok(and.includes("lead.status === 'skip' ? null"), 'Android hides Not yet on a Not yet card')
@@ -12589,6 +12589,64 @@ await testAsync('the android tonight widget has no bare text or number children 
     writePrefs({ gentle: false })
   }
   assert.equal(buildTonightWidgetProps(shelfOf([lamp('a'), lamp('b')], []), clock).streak, 0, 'no streak number until all clear')
+})
+
+await testAsync('Some days: the Weekdays and Weekends pills set exact days, and the line reads them', async () => {
+  const { WEEKDAYS_MON_FRI, WEEKEND_DAYS, dayPreset, pickDays } = await import('../src/lib/hang-schedule.js')
+  const { cadenceLine } = await import('../src/lib/board-json.js')
+  const draft = { cadence: 'weekly', weekdays: [6] }
+  assert.deepEqual(pickDays(draft, WEEKDAYS_MON_FRI).weekdays, [1, 2, 3, 4, 5], 'Weekdays replaces the Saturday that was preselected')
+  assert.deepEqual(pickDays(pickDays(draft, WEEKDAYS_MON_FRI), WEEKEND_DAYS).weekdays, [0, 6], 'Weekends replaces the pick')
+  assert.equal(dayPreset([5, 4, 3, 2, 1]), 'weekdays')
+  assert.equal(dayPreset([6, 0]), 'weekends')
+  assert.equal(dayPreset([1, 2, 3, 4]), '')
+  assert.equal(cadenceLine({ cadence: 'weekly', weekdays: [1, 2, 3, 4, 5] }), t('cadence.weekdays'))
+  assert.equal(cadenceLine({ cadence: 'weekly', weekdays: [0, 6] }), t('cadence.weekends'))
+  assert.equal(cadenceLine({ cadence: 'weekly', weekdays: [1, 3] }), `${t('hang.day.1')}, ${t('hang.day.3')}`)
+  const screen = readFileSync(new URL('../native/screens/questions.jsx', import.meta.url), 'utf8')
+  assert.ok(screen.includes('hang.setDays(WEEKDAYS_MON_FRI)') && screen.includes('hang.setDays(WEEKEND_DAYS)'), 'the pills are on the day chips')
+})
+
+await testAsync('a day off: the widget says nothing is due and opens Today, with the streak; an empty shelf still says add', async () => {
+  const { readPrefs, writePrefs } = await import('../src/lib/prefs.js')
+  const { nextDueIso, nextDueIsoAcross } = await import('../src/lib/recurrence.js')
+  const before = readPrefs()
+  const lamp = { id: 'w', question: 'Stretch?', cadence: 'weekly', weekdays: [1, 2, 3, 4, 5], archived: false, createdOn: '2020-01-01' }
+  const yes = (night) => ({ lampId: 'w', periodKey: night, status: 'yes', answeredAt: `${night}T12:00:00` })
+  const book = { id: 't1', title: 'Home', dayFoldHour: 0, lamps: [lamp], answers: [yes('2026-09-24'), yes('2026-09-25')] }
+  const saturday = new Date('2026-09-26T12:00:00')
+  try {
+    writePrefs({ ...before, gentle: false })
+    const off = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), saturday)
+    assert.notEqual(off.openUri, 'didi://open/add')
+    assert.equal(off.openUri, 'didi://tonight')
+    assert.equal(off.footer, t('tonight.offTitle'))
+    assert.equal(off.emptyLabel, t('tonight.offTitle'))
+    assert.equal(off.streak, 2, 'the streak shows on a day off')
+    writePrefs({ ...before, gentle: true })
+    assert.equal(buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [book] }), saturday).streak, 0, 'gentle mode builds no streak')
+  } finally {
+    writePrefs(before)
+  }
+  const bare = { ...book, lamps: [], answers: [] }
+  const empty = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [bare] }), saturday)
+  assert.equal(empty.openUri, 'didi://open/add')
+  assert.equal(empty.footer, t('widget.tonight.empty'))
+  const parked = buildTonightWidgetProps(writeShelf({ currentId: 't1', boards: [{ ...book, lamps: [{ ...lamp, archived: true }] }] }), saturday)
+  assert.equal(parked.openUri, 'didi://open/add', 'only archived questions is an empty shelf')
+  assert.equal(nextDueIso(lamp, '2026-09-26'), '2026-09-28', 'Saturday to Monday')
+  assert.equal(nextDueIsoAcross([book], '2026-09-26'), '2026-09-28')
+  assert.equal(nextDueIsoAcross([{ ...book, lamps: [] }], '2026-09-26'), '')
+  const today = readFileSync(new URL('../native/screens/TonightScreen.jsx', import.meta.url), 'utf8')
+  assert.ok(today.includes("t('tonight.offNext'") && today.includes("t('tonight.offStreak')"), 'the off card names the next day and the streak')
+  assert.ok(today.includes('gentle ? 0 : shelfStreak'), 'the off card streak is hidden in gentle mode')
+  const questions = readFileSync(new URL('../native/screens/questions.jsx', import.meta.url), 'utf8')
+  assert.ok(questions.includes('nextDueIso(lamp, dateIso)'), 'the question page and Today share one next-day walk')
+})
+
+test('Away set after answering says it starts tomorrow', () => {
+  const more = readFileSync(new URL('../native/screens/more.jsx', import.meta.url), 'utf8')
+  assert.ok(more.includes("t('away.startsTomorrow')"))
 })
 
 // Keep this last: every test above counts, and any failure exits non-zero.

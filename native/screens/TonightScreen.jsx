@@ -27,6 +27,7 @@ import {
   recapLine,
   recapShareText,
   tomorrowPreview,
+  weekdayName,
   weekRecap,
   weekRecapDue,
   weekStripNights,
@@ -47,14 +48,15 @@ import { lastTimeLine, perWeekLine, sendLastLine, sharedLastLine } from '../../s
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
 import { DidButton, KeyButton, LateMeta } from '../components/ui.jsx'
 import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
-import { formatBoardDate } from '../../src/lib/recurrence.js'
+import { daysBetween, formatBoardDate, nextDueIsoAcross } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
 import { markSwipeIntroSeen, SwipeIntro, swipeIntroSeen } from '../components/SwipeIntro.jsx'
 import { CELEBRATE_MS, CardSettle, NightWeek, StreakCount, doneTitleKey, tomorrowLine } from '../components/DoneCard.jsx'
 import { openNightWhy } from '../components/NightSheets.jsx'
 import { FreezeChip, openFreezeHow, useFreezeToasts } from '../components/FreezeBits.jsx'
-import { bestShelfStreak, freezeState } from '../../src/lib/hall-feel.js'
+import { bestShelfStreak, freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
+import { scopedBooks } from '../../src/lib/tags.js'
 import { MILESTONE_LATE_DAYS, STREAK_BONUS, milestoneGemLine, milestoneLine, takeStreakMilestone } from '../../src/lib/streak-milestones.js'
 import { payStreakBonus, retryStreakBonus } from '../lib/streak-bonus.js'
 import { TonightNote, openAnswerNote } from '../components/NightNotes.jsx'
@@ -575,6 +577,18 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [stack.shelf, stack.dateIso, tagId, stack.nightDone],
   )
+  // Nothing due today: the next day something is, and the streak the day off keeps.
+  const locale = usePrefs().locale
+  const off = useMemo(() => {
+    if (stack.bodyKind !== 'off') return null
+    const iso = nextDueIsoAcross(scopedBooks(stack.shelf, tagId), stack.dateIso)
+    const day = iso && daysBetween(stack.dateIso, iso) > 6 ? formatBoardDate(iso) : iso ? weekdayName(iso, 'long', locale) : ''
+    return {
+      next: day ? t('tonight.offNext', { day }) : '',
+      streak: gentle ? 0 : shelfStreak(stack.shelf, stack.clock, tagId),
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stack.bodyKind, stack.shelf, stack.dateIso, tagId, gentle, locale])
   // New people see the swipe hint until they have answered on 3 different
   // nights. Did and Not yet buttons show only with a screen reader or Switch
   // Control. Read from the shelf, nothing stored.
@@ -1662,6 +1676,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
         <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.offKicker')}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.offTitle')}</Text>
+        {off?.next ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{off.next}</Text> : null}
+        {off?.streak > 0 ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.offStreak')}</Text> : null}
         <View style={styles.actions}>
           <DidButton label={t('home.add')} colors={colors} small onPress={() => goHash('/add')} />
           <KeyButton label={t('tonight.seeAll')} colors={colors} onPress={() => goHash('/lamps')} />

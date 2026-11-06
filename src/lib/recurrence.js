@@ -255,6 +255,27 @@ export function isDueOn(lamp, dateIso) {
   }
 }
 
+// The next day after dateIso (within 62 days) this question comes up, or ''.
+// An archived one is read as live, so a paused question still names its day.
+export function nextDueIso(lamp, dateIso, days = 62) {
+  const shown = { ...lamp, archived: false }
+  for (let day = 1; day <= days; day += 1) {
+    const iso = addDaysIso(dateIso, day)
+    if (isDueOn(shown, iso)) return iso
+  }
+  return ''
+}
+
+// The first day after dateIso any live question in these books comes up, or ''.
+export function nextDueIsoAcross(books, dateIso, days = 62) {
+  const lamps = (books || []).filter((book) => !book.archived).flatMap((book) => (book.lamps || []).filter((lamp) => !lamp.archived))
+  for (let day = 1; day <= days; day += 1) {
+    const iso = addDaysIso(dateIso, day)
+    if (lamps.some((lamp) => isDueOn(lamp, iso))) return iso
+  }
+  return ''
+}
+
 function isOnceClosed(book, lampId) {
   return (book.answers || []).some(
     (answer) =>

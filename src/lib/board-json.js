@@ -4,6 +4,7 @@ import { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
 import { trimWas, addDaysIso, boardDate, formatBoardDate, isoDate } from './recurrence.js'
 import { normalizePurse } from './purse.js'
 import { capSkips } from './travel.js'
+import { dayPreset } from './hang-schedule.js'
 
 export { activeDeadline, isOnceBy, mustSwipeDeadline } from './lamp-deadline.js'
 
@@ -641,6 +642,8 @@ export function cadenceLine(lamp) {
   if (lamp.cadence === 'weekly') {
     const days = (lamp.weekdays || []).map((day) => t(`hang.day.${day}`)).filter(Boolean)
     if (!days.length) return t('cadence.weekly')
+    const preset = dayPreset(lamp.weekdays)
+    if (preset) return t(`cadence.${preset}`)
     return days.join(', ')
   }
   if (lamp.cadence === 'monthly') {

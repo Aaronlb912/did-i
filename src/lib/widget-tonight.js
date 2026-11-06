@@ -294,9 +294,13 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
   if (gentle && left > 0 && !away && !nextLine) footer = t('widget.tonight.waiting')
   // Nothing on the list at all: a tap goes to add a question, not to Today.
   const emptyList = !items.length && !nextLine && !away
+  // A day off: questions exist but none are due today. Not an empty shelf, so no "Add a question".
+  const hasLive = boards.some((book) => (book.lamps || []).some((lamp) => !lamp.archived))
+  const dayOff = emptyList && hasLive && !boards.some((book) => dueTonight(book, now).length)
+  if (dayOff) footer = t('tonight.offTitle')
   const colorBook = widgetColorBook(shelf)
   // The all-clear card shows the streak. Only walked then, and never in gentle mode.
-  const streak = allClear && !gentle ? shelfStreak(shelf?.boards || [], now) : 0
+  const streak = (allClear || dayOff) && !gentle ? shelfStreak(shelf?.boards || [], now) : 0
   return {
     tagTitle: weCard && !lead ? t('we.title') : String(lead?.book?.title || '').trim() || t('widget.tonight.tagFallback'),
     question,
@@ -312,12 +316,12 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     nextLabel: t('widget.tonight.next'),
     openLabel: t('widget.tonight.waiting'),
     remindLabel: t('remind.mic'),
-    emptyLabel: away ? footer : nextLine || t('widget.tonight.empty'),
+    emptyLabel: away || dayOff ? footer : nextLine || t('widget.tonight.empty'),
     clearLabel: away ? footer : nextLine || t('widget.tonight.clear'),
     countFooter: footer === t('widget.tonight.oneLeft') || (left > 1 && footer === t('widget.tonight.left', { n: left })),
     oneLeftLabel: t('widget.tonight.oneLeft'),
     leftLabel: t('widget.tonight.left', { n: '{n}' }),
-    openUri: emptyList ? 'didi://open/add' : widgetTonightUri(null, lead?.lamp.id || ''),
+    openUri: emptyList && !dayOff ? 'didi://open/add' : widgetTonightUri(null, lead?.lamp.id || ''),
     buddyId: colorBook ? normalizePurse(colorBook).buddyOn || '' : '',
     buddyWorn: colorBook ? normalizePurse(colorBook).worn : {},
     weLine: readWeLine(boardDate(now)),

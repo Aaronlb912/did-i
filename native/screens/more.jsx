@@ -2518,6 +2518,7 @@ function AwayCard({ colors }) {
           />
         )}
       </SetCard>
+      {answered && (range ? range[0] > today : left >= 1) ? <Meta colors={colors}>{t('away.startsTomorrow')}</Meta> : null}
     </>
   )
 }
