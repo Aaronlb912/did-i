@@ -22,7 +22,7 @@ import { leaveAccount } from '../lib/leave-account.js'
 import { PhoneLockSection, SureModal, flipPingsPrivate } from './more.jsx'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { armLampPings } from '../../src/lib/notify.js'
-import { feedbackMailto } from '../../src/lib/feedback.js'
+import { sendFeedback } from '../lib/feedback-mail.js'
 import { legalEmail } from '../../src/lib/legal.js'
 import { backupFileReady, shareBackupFile, shareCsv, shareShelf } from '../../src/lib/native.js'
 import { restoreGemPurchases } from '../../src/lib/gem-buy.js'
@@ -576,12 +576,7 @@ export function ProfileScreen({ book, onChange, onImport, onStartEmpty, onSendCo
           label={t('feedback.send')}
           sub={t('feedback.sub')}
           chevron
-          onPress={() => {
-            const url = feedbackMailto()
-            // No mail app (or no address): say so instead of a dead tap.
-            if (!url) return confirmMiss(t('confirm.miss'))
-            return Linking.openURL(url).catch(() => confirmMiss(t('confirm.miss')))
-          }}
+          onPress={sendFeedback}
         />
         <SetRow
           colors={colors}

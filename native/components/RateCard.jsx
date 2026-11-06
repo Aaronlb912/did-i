@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
-import * as StoreReview from 'expo-store-review'
 import { t } from '../../src/lib/i18n.js'
 import { markRateAsked, noteClearedNight, rateAskDue } from '../../src/lib/rate-ask.js'
 import { APP_STORE_REVIEW_URL, PLAY_STORE_URL } from '../../src/lib/store-skus.js'
 import { confirmMiss } from '../lib/confirm.js'
 import { fonts } from '../theme.js'
+import { DidButton } from './ui.jsx'
 
-// A small card on Home after the 7th cleared night: the in-app review sheet,
-// or the store page when the sheet is not there.
-// It stays until Open or close is tapped, so a card seen for a blink comes back.
-export function RateCard({ colors, nightDone, dateIso }) {
+// A small card on Today after the 7th cleared day: opens the store's review page.
+// It stays until the page opens or close is tapped, so a card seen for a blink comes back.
+// ready: false keeps it hidden (the day-7 milestone is up, or the streak is under 7)
+// while cleared days are still counted.
+export function RateCard({ colors, nightDone, dateIso, ready = true }) {
   const [show, setShow] = useState(rateAskDue)
 
   useEffect(() => {
@@ -19,41 +20,34 @@ export function RateCard({ colors, nightDone, dateIso }) {
   }, [nightDone, dateIso, show])
 
   // The review sheet may have been asked since (native/streak-review.js).
-  if (!show || !rateAskDue()) return null
+  if (!ready || !show || !rateAskDue()) return null
   const url = Platform.OS === 'ios' ? APP_STORE_REVIEW_URL : PLAY_STORE_URL
   const hide = () => {
     markRateAsked()
     setShow(false)
   }
-  // The in-app review sheet when the phone has it, else the store page.
+  // The card is spent only once the store page opened.
   const open = async () => {
-    hide()
     try {
-      if ((await StoreReview.isAvailableAsync()) && (await StoreReview.hasAction())) {
-        await StoreReview.requestReview()
-        return
-      }
+      await Linking.openURL(url)
+      hide()
     } catch {
-      // Fall through to the store link.
+      confirmMiss(t('rate.miss'))
     }
-    Linking.openURL(url).catch(() => confirmMiss(t('rate.miss')))
   }
   return (
     <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel2 }]}>
       <View style={styles.copy}>
         <Text style={[styles.title, { color: colors.ink }]}>{t('rate.title')}</Text>
         <Text style={[styles.body, { color: colors.inkSoft }]}>{t('rate.body')}</Text>
-        <Pressable accessibilityRole="link" onPress={open} hitSlop={8} style={styles.go}>
-          <Text style={[styles.goText, { color: colors.on }]}>
-            {t(Platform.OS === 'ios' ? 'rate.goIos' : 'rate.goAndroid')}
-          </Text>
-        </Pressable>
+        <View style={styles.go}>
+          <DidButton small colors={colors} label={t(Platform.OS === 'ios' ? 'rate.goIos' : 'rate.goAndroid')} onPress={open} />
+        </View>
       </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('rate.hide')}
         onPress={hide}
-        hitSlop={10}
         style={styles.x}
       >
         <Text style={[styles.xText, { color: colors.inkSoft }]}>×</Text>
@@ -67,8 +61,7 @@ const styles = StyleSheet.create({
   copy: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontFamily: fonts.uiBold, fontSize: 15 },
   body: { fontFamily: fonts.ui, fontSize: 14 },
-  go: { alignSelf: 'flex-start', paddingVertical: 4 },
-  goText: { fontFamily: fonts.uiSemi, fontSize: 14 },
-  x: { paddingHorizontal: 4 },
+  go: { alignSelf: 'flex-start', marginTop: 4 },
+  x: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: -10, marginRight: -10 },
   xText: { fontFamily: fonts.uiSemi, fontSize: 18 },
 })
