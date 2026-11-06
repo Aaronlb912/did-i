@@ -1,4 +1,7 @@
 import { daysAway, lastBrokenNight, shelfHeat } from './hall-feel.js'
+import { cameBack, newestAnswerIso } from './come-back.js'
+import { freezeCardDay } from './freeze-card.js'
+import { boardDate } from './recurrence.js'
 import { isAppForeground } from './app-foreground.js'
 import { reportRejection } from './report.js'
 
@@ -129,9 +132,19 @@ export function maybeStreakHit({ beforeHeat, afterHeat, clearedTonight, dateIso 
 // done back to open (a new question, an undo) is not a break.
 export function maybeStreakMiss(boards, now = new Date()) {
   const away = daysAway(boards || [], now)
-  if (away) return streakSeen('back', away.night) ? null : { kind: 'back', days: away.days, dateIso: away.night }
+  // Tapped Not yet days are answers, not a gap. Only days with no real answer
+  // are a welcome back, told once per gap (the newest real answer day).
+  if (away) {
+    const today = boardDate(now)
+    if (cameBack(boards || [], today, 2)) {
+      const gap = newestAnswerIso(boards || [], today)
+      return streakSeen('back', gap) ? null : { kind: 'back', days: away.days, dateIso: gap }
+    }
+  }
   const broken = lastBrokenNight(boards || [], now)
   if (!broken || streakSeen('miss', broken.night)) return null
+  // The day after, Today's freeze card tells this break. Not twice.
+  if (freezeCardDay(boards || [], now) === broken.night) return null
   return { kind: 'miss', was: broken.was, dateIso: broken.night }
 }
 

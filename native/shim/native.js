@@ -17,10 +17,10 @@ import { streakHitCopy } from '../../src/lib/streak-copy.js'
 import { boardDate, countedTonightRows, dueTonight, graceNightIso, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
-import { graceRiskFire, lastNightGraceFire, streakAtRisk, streakRiskFire } from '../../src/lib/streak-risk.js'
+import { freezeCalmNights, graceRiskFire, openGraceNight, lastNightGraceFire, streakAtRisk, streakRiskFire } from '../../src/lib/streak-risk.js'
 import { clockWords } from '../../src/lib/hall-pages.js'
 import { AFTERNOON_AT_DEFAULT, DAY_NUDGE_TIMES, MORNING_AT_DEFAULT, dayNudges, pingAheads } from '../../src/lib/day-nudges.js'
-import { shelfStreak } from '../../src/lib/hall-feel.js'
+import { freezeState, shelfStreak } from '../../src/lib/hall-feel.js'
 import { readWePings, weMonthlyPingDay } from '../../src/lib/we-widget.js'
 import { weNightStatus, weOpenOn } from '../../src/lib/we-nights.js'
 import { goFromDeepLink, routeFromDeepLink } from '../deep-link.js'
@@ -769,24 +769,33 @@ async function schedulePingsNow(books, now = new Date()) {
     // Gentle mode keeps the 7:00 note: it has no number, and it can still save yesterday.
     const gracePings = pingOn('streakRisk')
     const heat = gracePings ? shelfStreak(list, now) : null
+    // A held freeze keeps the streak through a missed day, so the note stays calm.
+    // Each at-risk night uses one: the earliest needs 1 held, the next 2, and so on.
+    // Gentle mode keeps graceBody, which has no streak talk.
+    const freezesHeld = streakPings ? freezeState(list, now).held : 0
+    const riskNights = new Set()
+    const calmable = []
     // Today and the next day only: with the app closed, the streak a day
     // after that may already be gone, and the note would say it is not.
     for (const ahead of streakPings ? aheads.slice(0, 2) : []) {
       const day = ahead === 0 ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() + ahead, 12)
       const risk = list.map((item) => streakRiskFire(item, day, heat)).find(Boolean)
       if (!risk) continue
+      riskNights.add(risk.tag.split(':')[1])
       // Quiet hours would move it onto the grace ping. Any note at 21:00 (a last
       // call, a question's own time) already buzzes then: one buzz, not two.
       const riskAt = new Date(risk.at).getTime()
       const lateThen = notes.some((note) => note.trigger.date.getTime() === riskAt)
       if (lateThen || afterQuiet(new Date(risk.at)).getTime() !== riskAt) continue
+      const content = {
+        title: t('streak.riskTitle'),
+        body: t('streak.riskBody', { time: clockWords('09:00') }),
+        data: { go: '/tonight', streakRisk: true },
+      }
+      calmable.push({ night: risk.tag.split(':')[1], content, key: 'streak.heldBody' })
       notes.push({
         identifier: String(notifyId('streak', risk.tag)),
-        content: {
-          title: t('streak.riskTitle'),
-          body: t('streak.riskBody', { time: clockWords('09:00') }),
-          data: { go: '/tonight', streakRisk: true },
-        },
+        content,
         trigger: when(new Date(risk.at)),
         wall: true,
       })
@@ -799,19 +808,28 @@ async function schedulePingsNow(books, now = new Date()) {
     if (!awayOn(boardDate(nextDay))) graceFires.push((item) => graceRiskFire(item, nextDay, heat))
     const graces = gracePings ? graceFires.map((fire) => list.map(fire).find(Boolean)).filter(Boolean) : []
     for (const grace of graces) {
+      riskNights.add(grace.tag.split(':')[1])
       // Quiet hours can push it past 9:00, when the streak can no longer be saved.
       const graceEnd = new Date(grace.at).setHours(9, 0, 0, 0)
       if (afterQuiet(new Date(grace.at)).getTime() >= graceEnd) continue
+      const content = {
+        title: t('streak.riskTitle'),
+        body: t('streak.graceBody', { time: clockWords('09:00') }),
+        data: { go: '/tonight', streakRisk: true },
+      }
+      calmable.push({ night: grace.tag.split(':')[1], content, key: 'streak.heldGraceBody' })
       notes.push({
         identifier: String(notifyId('streak', grace.tag)),
-        content: {
-          title: t('streak.riskTitle'),
-          body: t('streak.graceBody', { time: clockWords('09:00') }),
-          data: { go: '/tonight', streakRisk: true },
-        },
+        content,
         trigger: when(new Date(grace.at)),
         wall: true,
       })
+    }
+    const openGrace = streakPings ? openGraceNight(list, now, heat) : ''
+    if (openGrace) riskNights.add(openGrace)
+    const calmNights = freezeCalmNights(freezesHeld, riskNights)
+    for (const { night, content, key } of calmable) {
+      if (calmNights.has(night)) content.body = t(key)
     }
     // A snoozed question answered since then stays quiet.
     const openRows = list.flatMap((book) => dueTonight(book, now).filter((row) => !row.answer || row.answer.status === 'skip'))

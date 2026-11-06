@@ -1067,7 +1067,7 @@ export function PeopleScreen({ book, onChange }) {
                 <Pressable
                   key={row.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`${personName(row.person) || t('people.noName')}, ${friendLine(row.person)}`}
+                  accessibilityLabel={[personName(row.person) || t('people.noName'), friendLine(row.person)].filter(Boolean).join(', ')}
                   onPress={() => goHash('/friend', { id: row.person.user_id })}
                   style={styles.stripItem}
                 >
@@ -2407,7 +2407,7 @@ export function FriendScreen({ book, onChange, route }) {
           <Avatar person={person} done={doneTonight(person)} colors={colors} size={52} />
         </Pressable>
         <View style={styles.confirmCopy}>
-          <Text style={[styles.tileNote, { color: colors.inkDim }]}>{friendLine(person)}</Text>
+          {friendLine(person) ? <Text style={[styles.tileNote, { color: colors.inkDim }]}>{friendLine(person)}</Text> : null}
           {week.length === 7 && week.some((night) => night.cleared) ? (
             <View
               style={styles.friendWeek}

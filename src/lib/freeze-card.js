@@ -21,11 +21,17 @@ export function markFreezeCardSeen(night) {
   }
 }
 
-// The night the streak ended, or '' when there is no card to show.
+// The night the streak ended when it was yesterday, dismissed or not, else ''.
 // Only yesterday: an older break is not news, and the card says "yesterday".
-export function freezeCardNight(boards, now = new Date(), seen = freezeCardSeen()) {
+export function freezeCardDay(boards, now = new Date()) {
   const broken = lastBrokenNight(boards || [], now)
-  if (!broken || broken.night === seen) return ''
+  if (!broken) return ''
   const fold = boards?.[0]?.dayFoldHour
   return broken.night === addDaysIso(boardDate(now, fold), -1) ? broken.night : ''
+}
+
+// The night the streak ended, or '' when there is no card to show.
+export function freezeCardNight(boards, now = new Date(), seen = freezeCardSeen()) {
+  const night = freezeCardDay(boards, now)
+  return night && night !== seen ? night : ''
 }

@@ -327,7 +327,7 @@ export function People({ book, onChange, now }) {
                   key={row.id}
                   type="button"
                   className="di-people-strip-one"
-                  aria-label={`${name}, ${friendLine(row.person)}`}
+                  aria-label={[name, friendLine(row.person)].filter(Boolean).join(', ')}
                   onClick={() => setSheet({ kind: 'send', person: row.person })}
                 >
                   <Avatar person={row.person} done={done} big />

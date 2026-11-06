@@ -6442,10 +6442,17 @@ await testAsync('"Streak broke" shows only for a missed past night, never for to
   const undone = { ...done, answers: done.answers.slice(0, -1) }
   assert.equal(maybeStreakMiss([undone], clock), null, 'undoing tonight is not a break')
   const missed = { ...done, answers: done.answers.filter((a) => a.periodKey !== '2026-09-29') }
-  const miss = maybeStreakMiss([missed], clock)
-  assert.deepEqual(miss, { kind: 'miss', was: 1, dateIso: '2026-09-29' }, 'a missed night after a streak is a break')
+  // The day after, Today's freeze card tells the break: the Modal stays away so it is not told twice.
+  const { freezeCardNight } = await import('../src/lib/freeze-card.js')
+  assert.equal(freezeCardNight([missed], clock, ''), '2026-09-29', 'the freeze card shows for yesterday')
+  assert.equal(maybeStreakMiss([missed], clock), null, 'no Modal on the day the freeze card shows')
+  // A break older than yesterday (yesterday had nothing due) has no card, so the Modal tells it once.
+  const weekly = { id: 'w1', dayFoldHour: 0, lamps: [{ ...lamp('w'), cadence: 'weekly', weekdays: [1, 3, 5], createdOn: '2026-09-20' }], answers: ['2026-09-23', '2026-09-25'].map((n) => yes('w', n)) }
+  assert.equal(freezeCardNight([weekly], clock, ''), '', 'an older break has no card')
+  const miss = maybeStreakMiss([weekly], clock)
+  assert.deepEqual(miss, { kind: 'miss', was: 2, dateIso: '2026-09-28' }, 'a missed night after a streak is a break')
   markStreakSeen('miss', miss.dateIso)
-  assert.equal(maybeStreakMiss([missed], clock), null, 'told once per missed night')
+  assert.equal(maybeStreakMiss([weekly], clock), null, 'told once per missed night')
   localStorage.removeItem('did-i-streak-seen')
 })
 
@@ -6493,9 +6500,14 @@ await testAsync('two or more days away gets a Welcome back card, one missed day 
   const done = ['2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27'].map((n) => yes('a', n))
   const book = { id: 'b1', dayFoldHour: 0, lamps: [lamp('a')], answers: done }
   const oneDay = maybeStreakMiss([{ ...book, answers: [...done, yes('a', '2026-09-28')] }], new Date(2026, 8, 30, 16, 0))
-  assert.equal(oneDay.kind, 'miss', 'one missed day is still the calm streak card')
+  assert.equal(oneDay, null, 'one missed day is the freeze card, not a Modal')
   const away = maybeStreakMiss([book], new Date(2026, 8, 30, 16, 0))
-  assert.deepEqual(away, { kind: 'back', days: 2, dateIso: '2026-09-29' }, 'two days away is a welcome back')
+  assert.deepEqual(away, { kind: 'back', days: 2, dateIso: '2026-09-27' }, 'two days away is a welcome back, kept once per gap')
+  // Days of tapped Not yet are answers, not a gap: no Welcome back every day for someone who never left.
+  const tapped = (night) => ({ lampId: 'a', periodKey: night, status: 'skip', answeredAt: `${night}T21:07:00` })
+  const notYets = { ...book, answers: [...done, tapped('2026-09-28'), tapped('2026-09-29')] }
+  assert.equal(maybeStreakMiss([notYets], new Date(2026, 8, 30, 16, 0)), null, 'tapped Not yet days give no Welcome back')
+  assert.equal(maybeStreakMiss([{ ...notYets, answers: [...done, ...['2026-09-26', '2026-09-27'].map(tapped), tapped('2026-09-28'), tapped('2026-09-29')] }], new Date(2026, 8, 30, 16, 0)), null, 'nor on a longer run of them')
   const longer = maybeStreakMiss([book], new Date(2026, 9, 3, 16, 0))
   assert.equal(longer.kind, 'back')
   assert.equal(longer.days, 5)
@@ -8963,6 +8975,56 @@ await testAsync('gentle mode hides a friend streak number, done tonight still sh
     assert.ok(!/person\.streak\s*>|person\?\.streak\s*>|person\.streak\b(?!_)/.test(src.replace(/share_streak/g, '')), `${file} reads friend streaks only through friendStreak`)
     assert.ok(!/function friendLine\(/.test(src) && !/function line\(/.test(src), `${file} uses the shared friendLine`)
   }
+})
+
+await testAsync('a bad week: calm streak copy, a friend who lost a run shows no line, the third Not yet day offers a way through, a held freeze quiets the notes', async () => {
+  const { friendLine } = await import('../src/lib/people.js')
+  const { notYetRun, BAD_WEEK_DAYS } = await import('../src/lib/bad-week.js')
+  const { en } = await import('../src/locales/en.js')
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const read = (p) => readFileSync(path.join(root, p), 'utf8')
+  assert.equal(friendLine({ share_streak: true, streak: 0, done_on: '2026-10-08' }, '2026-10-09'), '', 'a friend who lost a run shows only what they answered')
+  assert.equal(friendLine({ share_streak: true, streak: 0, gentle: true, done_on: '2026-10-08' }, '2026-10-09'), '', 'gentle too: no Not yet about someone else')
+  const social = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'native/screens/social.jsx'), 'utf8')
+  assert.ok(social.includes('.filter(Boolean).join(', ')') && social.includes('friendLine(person) ? <Text'), 'an empty line leaves no trailing comma and no empty Text')
+  assert.ok(!('people.noStreak' in en), 'the old key is gone')
+  assert.ok(!/one did today starts/i.test(en['streak.missBody'] + en['streak.backBody']), 'a streak needs every due question, not one Did')
+  assert.ok(!/{was}/.test(en['streak.missBodyOne']), 'one day does not say "1 days"')
+  assert.ok(read('native/components/StreakMoment.jsx').includes("moment.was === 1 ? 'streak.missBodyOne' : 'streak.missBody'"))
+  const tapped = (night) => ({ lampId: 'a', periodKey: night, status: 'skip', answeredAt: night + 'T21:07:00' })
+  const closed = (night) => ({ lampId: 'a', periodKey: night, status: 'skip', answeredAt: night + 'T00:00:00' })
+  const book = (answers) => [{ id: 'b', lamps: [], answers }]
+  assert.equal(BAD_WEEK_DAYS, 3)
+  assert.equal(notYetRun(book(['2026-10-07', '2026-10-08', '2026-10-09'].map(tapped)), '2026-10-09'), 3, 'three tapped days in a row')
+  assert.equal(notYetRun(book(['2026-10-07', '2026-10-09'].map(tapped)), '2026-10-09'), 1, 'a gap ends the run')
+  const did = (night) => ({ lampId: 'b', periodKey: night, status: 'yes', answeredAt: night + 'T20:00:00' })
+  assert.equal(notYetRun(book([...['2026-10-07', '2026-10-08', '2026-10-09'].map(tapped), did('2026-10-08')]), '2026-10-09'), 1, 'a day with a Did among the Not yets ends the run')
+  assert.equal(notYetRun(book([...['2026-10-07', '2026-10-08', '2026-10-09'].map(tapped), did('2026-10-09')]), '2026-10-09'), 0, 'today with a Did is not a Not yet day')
+  const offDay = (iso) => iso !== '2026-10-08'
+  assert.equal(notYetRun(book(['2026-10-07', '2026-10-09'].map(tapped)), '2026-10-09', offDay), 2, 'a day with nothing due is walked over')
+  assert.equal(notYetRun(book(['2026-10-07', '2026-10-09'].map(tapped)), '2026-10-09', () => true), 1, 'a due day with no answer ends it')
+  assert.equal(notYetRun(book([tapped('2026-10-07'), tapped('2026-10-08'), closed('2026-10-09')]), '2026-10-09'), 0, 'a day the app closed is not a tap')
+  const today = read('native/screens/TonightScreen.jsx')
+  assert.ok(today.includes("notYetDays < BAD_WEEK_DAYS") && today.includes('badWeekSeen(stack.dateIso)') && today.includes("goHash('/pings')") && today.includes('gentle ? null : ('), 'the Not yet card offers gentle mode (when off) and time off, once a day')
+  assert.ok(today.includes("writePrefs({ gentle: true })") && today.includes("confirmDone(t('badWeek.gentleOn'))"), 'turning gentle mode on says so')
+  const notes = read('native/shim/native.js')
+  assert.ok(notes.includes('streakPings ? freezeState(list, now).held : 0'), 'only the notes that talk about a streak can go calm')
+  assert.ok(notes.includes('calmNights.has(night)'), 'the notes read the per-night rule')
+  const { freezeCalmNights } = await import('../src/lib/streak-risk.js')
+  const risk = ['2026-10-10', '2026-10-09', '2026-10-10']
+  assert.deepEqual([...freezeCalmNights(1, risk)], ['2026-10-09'], 'one held freeze calms only the earliest at-risk night')
+  assert.deepEqual([...freezeCalmNights(2, risk)].sort(), ['2026-10-09', '2026-10-10'], 'two calm the next')
+  assert.equal(freezeCalmNights(0, risk).size, 0, 'none held, no calm note')
+  const { openGraceNight } = await import('../src/lib/streak-risk.js')
+  const lampQ = { id: 'a', question: 'Did I a?', cadence: 'daily', archived: false, createdOn: '2026-09-20' }
+  const answered = ['2026-09-26', '2026-09-27', '2026-09-28'].map((n) => ({ lampId: 'a', periodKey: n, status: 'yes', answeredAt: n + 'T15:00:00' }))
+  const open = [{ id: 'b1', dayFoldHour: 0, lamps: [lampQ], answers: answered }]
+  const at730 = new Date(2026, 8, 30, 7, 30)
+  assert.equal(openGraceNight(open, at730, 3), '2026-09-29', 'yesterday still open at 7:30 is an at-risk night')
+  assert.ok(!freezeCalmNights(1, ['2026-09-30', openGraceNight(open, at730, 3)]).has('2026-09-30'), 'one held freeze goes to yesterday, so tonight 21:00 stays the plain note')
+  assert.equal(openGraceNight(open, new Date(2026, 8, 30, 10, 0), 3), '', 'after 9 the night is settled')
+  assert.ok(notes.includes('openGraceNight(list, now, heat)'), 'the notes count yesterday after 7:00')
+  assert.ok(notes.includes("key: 'streak.heldBody'") && notes.includes("key: 'streak.heldGraceBody'"), 'the 7:00 note is about yesterday and has its own words')
 })
 
 await testAsync('check on me: due only past the time, on an asked night, unanswered, once', async () => {
