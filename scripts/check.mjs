@@ -2340,6 +2340,65 @@ test('Seven nights counts a night like Home: a missed Did we leaves it red', () 
   setWeNightRows([])
 })
 
+test('pause and Away: pause until a date, Away days in the day sheet, the paused day streak', async () => {
+  const { resumeDuePauses, normalizeLamp } = await import('../src/lib/board-json.js')
+  const { setPauseUntil } = await import('../src/lib/board-ops.js')
+  const { streakBreak } = await import('../src/lib/hall-pages.js')
+  // Paused until a date: asked again from that day, the pause kept as a span.
+  const q = lamp('q', { createdOn: '2026-10-01', archived: true, pausedOn: '2026-11-01' })
+  const book = setPauseUntil({ id: 'b', lamps: [q], answers: [] }, q, '2026-11-05')
+  assert.equal(book.lamps[0].pausedUntil, '2026-11-05')
+  assert.equal(normalizeLamp(book.lamps[0]).pausedUntil, '2026-11-05', 'kept on save')
+  assert.equal(resumeDuePauses(book, '2026-11-04'), book, 'not yet its day')
+  const back = resumeDuePauses(book, '2026-11-05').lamps[0]
+  assert.equal(back.archived, false)
+  assert.deepEqual(back.pauses, [['2026-11-01', '2026-11-05']])
+  assert.equal(back.pausedUntil, undefined)
+  const closed = closePastNights(book, new Date(2026, 10, 7, 12), [])
+  assert.equal(closed.lamps[0].archived, false, 'the day turn resumes it')
+  assert.deepEqual(closed.lamps[0].pauses, [['2026-11-01', '2026-11-05']], 'from the picked day, not the day the app opened')
+  assert.equal(setPauseUntil(book, q, '').lamps[0].pausedUntil, undefined, 'No date clears it')
+  const nov5 = new Date(2026, 10, 5, 21)
+  writeShelf({ currentId: 'b', boards: [{ ...book, title: 'b', coins: 0 }] })
+  const tapped = applyWidgetTapOnce('q', 'did', '2026-11-05', nov5, nov5.getTime())
+  assert.ok(tapped, 'a reminder Did on the first day back lands before the app opens')
+  assert.equal(tapped.boards[0].lamps[0].archived, false)
+  writeShelf({ currentId: 'b', boards: [{ ...book, title: 'b', coins: 0 }] })
+  assert.ok(buildTonightWidgetProps(readShelf(), nov5).items.some((item) => item.lampId === 'q'), 'the widget and watch show it on its first day back, app closed')
+  assert.ok(!buildTonightWidgetProps(readShelf(), new Date(2026, 10, 4, 21)).items.some((item) => item.lampId === 'q'), 'not the day before')
+  assert.equal(resumeDuePauses(book, '2026-11-05').lamps[0].at, resumeDuePauses(book, '2026-11-07').lamps[0].at, 'every phone stamps the same resume')
+  const { mergeShelves } = await import('../src/lib/shelf-merge.js')
+  const oldBuild = { ...book.lamps[0] }
+  delete oldBuild.pausedUntil
+  const merged = mergeShelves({ currentId: 'b', boards: [book] }, { currentId: 'b', boards: [{ ...book, lamps: [oldBuild] }] })
+  assert.equal(merged.boards[0].lamps[0].pausedUntil, '2026-11-05', 'an old build copy with the same stamp keeps the date')
+  assert.ok(!readFileSync('native/shim/native.js', 'utf8').includes('ahead === 0 ? listed'), 'today too: a re-arm before the app opens keeps the reminder')
+  assert.ok(readFileSync('native/shim/native.js', 'utf8').includes('resumeDuePauses(listed, boardDate(day))'), 'reminders ahead include it from that day')
+
+  // A Not yet tapped on the day it was paused: the question streak holds while paused.
+  const did = (key) => ({ id: key, lampId: 'r', periodKey: key, status: 'yes', answeredAt: key + 'T20:00:00' })
+  const r = lamp('r', { createdOn: '2026-10-01', archived: true, pausedOn: '2026-10-05' })
+  const said = { id: 'b', lamps: [r], answers: [did('2026-10-02'), did('2026-10-03'), did('2026-10-04'), { id: 'n', lampId: 'r', periodKey: '2026-10-05', status: 'skip', answeredAt: '2026-10-05T20:00:00' }] }
+  assert.equal(questionStreak(said, r, '2026-10-08', 400, new Date(2026, 9, 8, 12)), 3, 'paused: the run stays')
+
+  // An Away day with a Did we left open is not missed and not the streak break.
+  const w = lamp('w2', { createdOn: '2026-10-02' })
+  const shelf = [{ id: 'b', dayFoldHour: 0, lamps: [w], answers: ['2026-10-02', '2026-10-03', '2026-10-04'].map((night) => ({ id: night, lampId: 'w2', periodKey: night, status: 'yes', answeredAt: night + 'T20:00:00' })) }]
+  setWeNightRows([{ card: 'w', folder: '', night: '2026-10-03', status: '' }])
+  writePrefs({ away: [['2026-10-03', '2026-10-04']] })
+  try {
+    const why = nightWhy(shelf, '2026-10-03', new Date('2026-10-04T21:00:00'))
+    assert.notEqual(why.state, 'missed')
+    assert.deepEqual(why.weOpen, [])
+    assert.equal(streakBreak(shelf, new Date('2026-10-04T21:00:00'), '', 5), null)
+  } finally {
+    writePrefs({ away: [] })
+    setWeNightRows([])
+  }
+  assert.ok(readFileSync('native/AppShell.jsx', 'utf8').includes('JSON.stringify(prefs.away || null)'), 'Away on or off redraws the widget and the watch')
+  assert.ok(readFileSync('native/screens/TonightScreen.jsx', 'utf8').includes("label={t('away.back')}"), 'Today has Back now while Away')
+})
+
 test('two phones combine instead of overwriting', () => {
   const left = {
     currentId: 'b1',

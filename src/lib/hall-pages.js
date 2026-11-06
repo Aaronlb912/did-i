@@ -179,7 +179,7 @@ export function nightWhy(boards, iso, now = new Date(), tagId = '') {
       else out.unanswered.push(row)
     }
   }
-  const we = weNight(iso, tagId)
+  const we = travelWe(awayOn(iso) || books.some((book) => travelSkipped(book, iso)), weNight(iso, tagId))
   due += we.due
   if (we.due && !we.clear) out.weOpen = weOpenIds(iso, tagId)
   if (!due) return iso < today && awayOn(iso) ? { ...out, state: 'away' } : out

@@ -13,12 +13,24 @@ export function stampEdit(item, clock = new Date()) {
 
 function withPause(lamp, archived, clock = new Date()) {
   if (Boolean(lamp.archived) === archived) return lamp
-  const { pausedOn, ...rest } = lamp
+  const { pausedOn, pausedUntil, ...rest } = lamp
   if (archived) return stampEdit({ ...rest, archived, pausedOn: boardDate(clock) }, clock)
   // Resumed: the paused days stay out of the streak, [from, until).
   const until = boardDate(clock)
   const pauses = pausedOn && pausedOn < until ? [...(lamp.pauses || []), [pausedOn, until]].slice(-PAUSES_MAX) : lamp.pauses
   return stampEdit({ ...rest, archived, ...(pauses?.length ? { pauses } : {}) }, clock)
+}
+
+// The day a paused question is asked again by itself, '' for no date.
+export function setPauseUntil(book, lamp, iso, clock = new Date()) {
+  return {
+    ...book,
+    lamps: (book.lamps || []).map((item) => {
+      if (item.id !== lamp.id || !item.archived) return item
+      const { pausedUntil, ...rest } = item
+      return stampEdit(iso ? { ...rest, pausedUntil: iso } : rest, clock)
+    }),
+  }
 }
 
 // Set on every saved answer so a reload never lands mid-answer (native/lib/ota-refresh.js).

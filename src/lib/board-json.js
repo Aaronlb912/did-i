@@ -290,6 +290,8 @@ export function normalizeLamp(raw) {
     archived: asBool(lamp.archived),
     // The day it was paused, so its record stops counting from there.
     ...(asBool(lamp.archived) && /^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.pausedOn).trim()) ? { pausedOn: asString(lamp.pausedOn).trim() } : {}),
+    // Paused until a date: asked again from that day (resumeDuePauses). Builds without it drop it on save.
+    ...(asBool(lamp.archived) && /^\d{4}-\d{2}-\d{2}$/.test(asString(lamp.pausedUntil).trim()) ? { pausedUntil: asString(lamp.pausedUntil).trim() } : {}),
     ...(asPauses(lamp.pauses).length ? { pauses: asPauses(lamp.pauses) } : {}),
     ...(Number.isInteger(Number(lamp.order)) && lamp.order !== '' && lamp.order != null && Number(lamp.order) >= 0
       ? { order: Math.min(Number(lamp.order), 9999) }
@@ -627,12 +629,31 @@ function asPauses(list) {
   return list.filter((pair) => Array.isArray(pair) && day(pair[0]) && day(pair[1]) && pair[0] < pair[1]).map(([from, until]) => [from, until]).slice(-PAUSES_MAX)
 }
 
+// A question paused until a date is asked again from that day, as if Ask
+// again was tapped then: the pause becomes the span [pausedOn, pausedUntil).
+export function resumeDuePauses(book, dateIso) {
+  const due = (lamp) => lamp.archived && lamp.pausedUntil && lamp.pausedUntil <= dateIso
+  if (!(book?.lamps || []).some(due)) return book
+  return {
+    ...book,
+    lamps: book.lamps.map((lamp) => {
+      if (!due(lamp)) return lamp
+      const { pausedOn, pausedUntil, ...rest } = lamp
+      const pauses = pausedOn && pausedOn < pausedUntil ? [...(lamp.pauses || []), [pausedOn, pausedUntil]].slice(-PAUSES_MAX) : lamp.pauses
+      // Stamped at the start of that day: every phone writes the same resume.
+      const at = new Date(`${pausedUntil}T00:00:00`).toISOString()
+      return { ...rest, archived: false, ...(pauses?.length ? { pauses } : {}), at: Date.parse(lamp.at) >= Date.parse(at) ? new Date(Date.parse(lamp.at) + 1).toISOString() : at }
+    }),
+  }
+}
+
 export function duplicateLamp(lamp, now = new Date()) {
   const copy = normalizeLamp(lamp)
   copy.id = newLampId()
   copy.createdOn = isoDate(now)
   copy.archived = false
   delete copy.pausedOn
+  delete copy.pausedUntil
   delete copy.pauses
   // Trim the name first so " copy" always fits inside the limit.
   const suffix = ` ${t('lamp.copySuffix')}`

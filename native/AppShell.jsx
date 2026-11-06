@@ -402,8 +402,8 @@ export function AppShell() {
     }
   }, [app.book, app.shelf])
 
-  // Ping, widget and watch text follow gentle, language and the 12/24h clock: set them again.
-  const pingWords = `${prefs.gentle}|${prefs.locale}|${prefs.clock}`
+  // Ping, widget and watch text follow gentle, language, the 12/24h clock and Away: set them again.
+  const pingWords = `${prefs.gentle}|${prefs.locale}|${prefs.clock}|${JSON.stringify(prefs.away || null)}`
   const [armedWords, setArmedWords] = useState(pingWords)
   // An open sheet hides the screens behind it from TalkBack (Android).
   const [sheetUp, setSheetUp] = useState(false)

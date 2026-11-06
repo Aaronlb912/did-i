@@ -9,6 +9,7 @@ import { wornShapes } from '../src/lib/accessory-shapes.js'
 import { BUDDY_PARTS } from '../src/lib/buddy-parts.js'
 import { readShelf } from '../src/lib/board-shelf.js'
 import { addDaysIso, boardDate } from '../src/lib/recurrence.js'
+import { resumeDuePauses } from '../src/lib/board-json.js'
 import { recordAppError } from '../src/lib/app-errors.js'
 import { buildTogetherWidgetProps, readTogetherPeople, TOGETHER_WIDGET_NAME } from '../src/lib/together-widget.js'
 import { buildGridWidgetProps, GRID_WIDGET_NAME } from '../src/lib/widget-grid.js'
@@ -175,7 +176,8 @@ export async function syncTonightWidget(shelf) {
       if (!api || gen !== syncGen) return
       // One entry per ask time, midnight and grace end, for the next few
       // nights, so a widget-only night still shows its own card.
-      const boards = (shelf?.boards || []).filter((b) => !b.archived)
+      // A question back from a pause in these days gets its ask times too.
+      const boards = (shelf?.boards || []).filter((b) => !b.archived).map((b) => resumeDuePauses(b, addDaysIso(boardDate(), 3)))
       const times = widgetTimelineTimes(boards, new Date())
       const later = times.map((date) => ({
         date,

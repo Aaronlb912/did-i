@@ -1,11 +1,12 @@
-import { endQuestion, endQuestionDate, questionEnded, reopenQuestion, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
-import { boardDate } from '../../src/lib/recurrence.js'
+import { endQuestion, endQuestionDate, questionEnded, reopenQuestion, setPauseUntil, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { addDaysIso, boardDate, formatBoardDate } from '../../src/lib/recurrence.js'
 import { readShelf } from '../../src/lib/board-shelf.js'
 import { t, tMiss } from '../../src/lib/i18n.js'
 import { dropCheckOn } from '../../src/lib/check-on.js'
 import { DELETE_UNDO_MS } from '../../src/lib/undo-times.js'
 import { goHash } from '../navigation/hash.js'
 import { SetCap, SetCard, SetRow } from './SetBits.jsx'
+import { SetChoice } from './SetChoice.jsx'
 import { publishSheet } from './SheetHost.jsx'
 import { confirmDone, confirmMiss } from '../lib/confirm.js'
 import { showToast } from '../lib/toast-queue.js'
@@ -213,6 +214,15 @@ export function lampActions({ book, lamp, colors, onChange, onPaused }) {
   return { togglePause, askDelete, askDone, askAgain }
 }
 
+const PAUSE_DAYS = [1, 2, 3, 7, 14, 30]
+
+// No date, or a day from tomorrow on; a day picked earlier stays in the list.
+function pauseUntilOptions(lamp, today) {
+  const days = PAUSE_DAYS.map((n) => addDaysIso(today, n))
+  if (lamp.pausedUntil && !days.includes(lamp.pausedUntil)) days.push(lamp.pausedUntil)
+  return [{ id: '', label: t('lamp.pauseNoDate') }, ...days.sort().map((id) => ({ id, label: formatBoardDate(id) }))]
+}
+
 export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate }) {
   if (!lamp) return null
   const { togglePause, askDelete, askDone, askAgain } = lampActions({ book, lamp, colors, onChange, onPaused })
@@ -233,6 +243,21 @@ export function LampManage({ book, lamp, colors, onChange, onPaused, onDuplicate
           onPress={togglePause}
           plain
         />
+        {lamp.archived && !ended ? (
+          <SetChoice
+            colors={colors}
+            icon="clock"
+            label={t('lamp.pauseUntil')}
+            sub={t('lamp.pauseUntilSub')}
+            options={pauseUntilOptions(lamp, boardDate(new Date(), book.dayFoldHour))}
+            selected={lamp.pausedUntil || ''}
+            onSelect={(id) => {
+              const live = liveBook(book) || book
+              onChange(setPauseUntil(live, (live.lamps || []).find((item) => item.id === lamp.id) || lamp, id))
+              confirmDone(id ? t('confirm.pauseUntil', { date: formatBoardDate(id) }) : t('confirm.questionPaused'))
+            }}
+          />
+        ) : null}
         {canFinish ? <SetRow colors={colors} icon="folder" label={t('lamp.doneRow')} sub={t('lamp.doneSub')} plain onPress={askDone} /> : null}
         {ended ? <SetRow colors={colors} icon="play" label={t('lamp.askAgain')} sub={t('lamp.askAgainSub')} plain onPress={askAgain} /> : null}
         <SetRow

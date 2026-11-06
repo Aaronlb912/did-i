@@ -80,7 +80,7 @@ function atMs(item) {
 // Same stamp: the same edit, saved by two builds. An older build drops the
 // fields it doesn't know, so they come from the other copy. Only these: other
 // fields can be taken off without a new stamp (a removed friend's link).
-const NEWER_FIELDS = ['askFrom', 'askAfter2', 'endsOn']
+const NEWER_FIELDS = ['askFrom', 'askAfter2', 'endsOn', 'pausedUntil']
 
 function fillNewer(lamp, other) {
   const out = { ...lamp }

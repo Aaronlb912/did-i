@@ -1,5 +1,6 @@
 import { ANSWER_UNDO_MS } from './undo-times.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { awayKey } from './prefs.js'
 import { goHash } from '../site/hash.js'
 import { unlockAchievements } from './achievements.js'
 import { byAskTime, daySection, mustSwipeDeadline, shortLabel, hasAnyTopic } from './board-json.js'
@@ -158,7 +159,7 @@ export function useTonightStack({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shelf, liveValue, tagId, topicKey, dateIso, minute],
+    [shelf, liveValue, tagId, topicKey, dateIso, minute, awayKey()],
   )
   const { due, unanswered, ready, waiting, catchUp, heat } = night
 

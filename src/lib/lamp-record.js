@@ -15,7 +15,7 @@ export function pausedOpen(lamp, key, answer) {
   const paused = lamp.archived && lamp.pausedOn
   if (!paused && !lamp.pauses?.length) return false
   const month = /^\d{4}-\d{2}$/.test(key)
-  if (paused && !answer && (month ? `${key}-31` : periodNight(lamp, key)) >= lamp.pausedOn) return true
+  if (paused && (month ? `${key}-31` : periodNight(lamp, key)) >= lamp.pausedOn) return true
   // An earlier pause, since resumed: those days were never asked either. A
   // Not yet there was closed by an older build on resume, not tapped.
   // A month counts as paused the same way: the pause reached into it and ran past its due day.

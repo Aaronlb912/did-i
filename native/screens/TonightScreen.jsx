@@ -41,7 +41,7 @@ import { t, tMiss } from '../../src/lib/i18n.js'
 import { markedToast, pillStatusLabel } from '../../src/lib/pill-status.js'
 import { CHEER_STAGE_MAX, LOOKS, NIGHT_COIN_CAP, coinsToday, fireCheer, takeFirstCoin, isGemLook, mergePurses, shopRow, wishGoal, wishLine } from '../../src/lib/purse.js'
 import { ACCESSORIES } from '../../src/lib/accessories.js'
-import { awayKey, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
+import { awayEnd, awayKey, awayNow, awayOn, usePrefs, useTheme, writePrefs } from '../../src/lib/prefs.js'
 import { COME_BACK_DAYS, cameBack, daysSinceFirstAnswer, graceLost, newestAnswerIso } from '../../src/lib/come-back.js'
 import { answerFor, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
 import { lastTimeLine, perWeekLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
@@ -621,6 +621,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   )
   // Nothing due today: the next day something is, and the streak the day off keeps.
   const locale = usePrefs().locale
+  // Away today: the day-off card says so and takes you back.
+  const prefsNow = usePrefs()
+  const awayRange = awayOn(stack.dateIso) ? awayNow(prefsNow, stack.dateIso) : null
   const off = useMemo(() => {
     if (stack.bodyKind !== 'off') return null
     const iso = nextDueIsoAcross(scopedBooks(stack.shelf, tagId), stack.dateIso)
@@ -1728,14 +1731,27 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
-        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.offKicker')}</Text>
-        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.offTitle')}</Text>
-        {off?.next ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{off.next}</Text> : null}
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{awayRange ? t('away.cap') : t('tonight.offKicker')}</Text>
+        <Text style={[faceCardStyles.title, { color: colors.ink }]}>{awayRange ? t('away.until', { date: formatBoardDate(awayRange[1]) }) : t('tonight.offTitle')}</Text>
+        {!awayRange && off?.next ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{off.next}</Text> : null}
         {off?.streak > 0 ? <Text style={[faceCardStyles.meta, { color: colors.inkSoft }]}>{t('tonight.offStreak')}</Text> : null}
-        <View style={styles.actions}>
-          <DidButton label={t('home.add')} colors={colors} small onPress={() => goHash('/add')} />
-          <KeyButton label={t('tonight.seeAll')} colors={colors} onPress={() => goHash('/lamps')} />
-        </View>
+        {awayRange ? (
+          <View style={styles.actions}>
+            <DidButton
+              label={t('away.back')}
+              colors={colors}
+              onPress={() => {
+                writePrefs(awayEnd(prefsNow, stack.dateIso))
+                confirmDone(t('away.backSub'))
+              }}
+            />
+          </View>
+        ) : (
+          <View style={styles.actions}>
+            <DidButton label={t('home.add')} colors={colors} small onPress={() => goHash('/add')} />
+            <KeyButton label={t('tonight.seeAll')} colors={colors} onPress={() => goHash('/lamps')} />
+          </View>
+        )}
       </GemFaceShell>
     )
   } else if (stack.bodyKind === 'idle') {
