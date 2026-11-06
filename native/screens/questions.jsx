@@ -22,6 +22,7 @@ import {
   blankLamp,
   cadenceLine,
   dueByUrgency,
+  daySection,
   didQuestion,
   duplicateLamp,
   lampBuzzes,
@@ -30,6 +31,7 @@ import {
   setLampOrder,
   joinTopics,
   lampNotifyOn,
+  normalizeLamp,
   prepQuestionRows,
   shelfTopics,
   topicLabel,
@@ -42,7 +44,7 @@ import {
 import { commitBook } from '../../src/lib/achievements.js'
 import { QUESTION_CAP, questionCount } from '../../src/lib/question-cap.js'
 import { savePastAnswer } from '../lib/past-answer.js'
-import { bulkLamps, hangInto, questionEnded, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
+import { bulkLamps, hangInto, stampEdit, questionEnded, moveLamps, putAnswer, takeDown, toggleArchive, undoBulkLamps } from '../../src/lib/board-ops.js'
 import { isTodayOnce } from '../../src/lib/morning-ask.js'
 import { findBookByTitle, findBookHoldingLamp, readShelf } from '../../src/lib/board-shelf.js'
 import { firstWeekday, t } from '../../src/lib/i18n.js'
@@ -271,7 +273,17 @@ function earlierStates(rows, gentle = false) {
   return states
 }
 
-function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick, onMove, open = true, onToggle, headText, query = '' }) {
+const DAY_SECTIONS = ['morning', 'afternoon', 'evening', 'any']
+
+// Morning, afternoon, evening, then no set time. Each keeps the list's own order.
+// Fewer than two parts of the day, or a hand-ordered list: one list, no headers.
+function daySections(items, sectioned) {
+  if (!sectioned) return [{ key: '', rows: items }]
+  const groups = DAY_SECTIONS.map((key) => ({ key, rows: items.filter((row) => daySection(row.lamp.askAfter) === key) })).filter((group) => group.rows.length)
+  return groups.length > 1 ? groups : [{ key: '', rows: items }]
+}
+
+function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picking, picked, onPick, onMove, open = true, onToggle, headText, query = '', sectioned = false }) {
   if (!items.length) return null
   const head = (
     <Text style={[styles.blockLabel, { color: colors.inkDim }]}>
@@ -297,8 +309,15 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
       )}
       {open ? (
       <Reveal key="list" layout={false}>
+      {daySections(items, sectioned && !onMove).map((group) => (
+      <View key={group.key || 'all'} style={group.key ? styles.daySection : null}>
+      {group.key ? (
+        <Text accessibilityRole="header" style={[styles.blockLabel, { color: colors.inkDim }]}>
+          {t(`questions.section.${group.key}`)}
+        </Text>
+      ) : null}
       <View style={[styles.lampList, { borderColor: colors.lineSoft, backgroundColor: colors.panel }]}>
-        {items.map((row, index) => {
+        {group.rows.map((row, index) => {
           const urgency = dueByUrgency(row.lamp, dateIso)
           const on = Boolean(picking && picked?.has(rowKey(row)))
           const noteDay = query.trim() ? noteHitDay(row, query) : ''
@@ -387,6 +406,8 @@ function LampBlock({ label, items, shelf, states, dateIso, colors, onOpen, picki
           )
         })}
       </View>
+      </View>
+      ))}
       </Reveal>
       ) : null}
     </View>
@@ -511,6 +532,20 @@ const SEARCH_FROM = 6
 // Chinese and Japanese labels take a full-width colon.
 function labelColon() {
   return /[぀-ヿ一-鿿]/.test(t('hang.tag')) ? '：' : ': '
+}
+
+function TimeSheetPick({ start, onValue, colors }) {
+  const [value, setValue] = useState(start)
+  return (
+    <HangTimePick
+      value={value}
+      onChange={(next) => {
+        setValue(next)
+        onValue(next)
+      }}
+      colors={colors}
+    />
+  )
 }
 
 export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange, onChangeBooks, onOpen }) {
@@ -765,6 +800,47 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
     })
   }
 
+  // One time for every picked question, across folders. The shelf change re-arms
+  // reminders, the same way saving one question's time does. Undo is the bulk one.
+  function setTimes(value) {
+    if (!chosen.length || !onChangeBooks) return
+    const lampPicks = chosen.map((row) => ({ boardId: row.boardId || row.book?.id, lampId: row.lamp.id }))
+    const books = readShelf().boards || shelf
+    const ids = new Map()
+    for (const one of lampPicks) ids.set(one.boardId, (ids.get(one.boardId) || new Set()).add(one.lampId))
+    const before = books.filter((item) => ids.has(item.id))
+    const now = new Date()
+    const changed = before.map((item) => ({
+      ...item,
+      lamps: (item.lamps || []).map((lamp) => (ids.get(item.id).has(lamp.id) ? stampEdit(normalizeLamp({ ...lamp, askAfter: value })) : lamp)),
+    }))
+    onChangeBooks(changed.map((item) => commitBook(item, clock)))
+    flushCheckOnStops(undo?.stops)
+    const n = lampPicks.length
+    setUndo({ id: now.getTime(), label: t(n === 1 ? 'questions.timeSetOne' : 'questions.timeSet', { n }), before, picks: lampPicks, stops: null })
+    stopPicking()
+  }
+
+  function askTime() {
+    if (!chosen.length) return
+    const times = new Set(chosen.map((row) => row.lamp.askAfter || ''))
+    const start = times.size === 1 ? [...times][0] : chosen.map((row) => row.lamp.askAfter).find(Boolean) || ''
+    const value = { current: start }
+    publishSheet({
+      bottom: true,
+      title: t('questions.setTime'),
+      colors,
+      closeLabel: t('settings.neverMind'),
+      onClose: () => publishSheet(null),
+      goLabel: t('questions.setTime'),
+      onGo: () => {
+        publishSheet(null)
+        setTimes(value.current)
+      },
+      content: <TimeSheetPick start={start} onValue={(next) => (value.current = next)} colors={colors} />,
+    })
+  }
+
   function askDelete() {
     if (!chosen.length) return
     const canPause = chosen.some((row) => !row.lamp.archived)
@@ -907,6 +983,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
             query={query}
             onMove={ordering ? move : undefined}
             label={didYouOnly ? t('questions.didYouKeptList') : t('questions.list')}
+            sectioned={!ordering && !hung.some((row) => Number.isFinite(row.lamp.order))}
             items={hung}
             shelf={shelf}
             states={states}
@@ -1067,6 +1144,7 @@ export function QuestionsScreen({ book, boards = [], tagId = '', onTag, onChange
                 {folders.length > 1 ? (
                   <KeyButton colors={colors} disabled={!chosen.length} label={t('questions.move')} onPress={askMove} />
                 ) : null}
+                <KeyButton colors={colors} disabled={!chosen.length} label={t('questions.setTime')} onPress={askTime} />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('lamp.delete')}
@@ -3155,6 +3233,7 @@ const styles = StyleSheet.create({
   pickTick: { fontFamily: fonts.uiBold, fontSize: 14, lineHeight: 16 },
   dropBtn: { borderWidth: 1, borderRadius: 999, minHeight: 44, paddingHorizontal: 16, justifyContent: 'center' },
   dropText: { fontFamily: fonts.uiSemi, fontSize: 14 },
+  daySection: { gap: 8, marginTop: 6 },
   blockLabel: {
     fontFamily: fonts.mono,
     fontSize: 11,

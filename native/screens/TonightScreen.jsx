@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { CardFrame } from '../components/frames/CardFrame.jsx'
 import { useFrameActive } from '../components/frames/index.js'
@@ -47,7 +47,7 @@ import { answerFor, isEvery, isPerWeek } from '../../src/lib/recurrence.js'
 import { lastTimeLine, perWeekLine, sendLastLine, sharedLastLine } from '../../src/lib/every-copy.js'
 import { UNDO_MS, useTonightStack } from '../../src/lib/useTonightStack.js'
 import { DidButton, KeyButton, LateMeta } from '../components/ui.jsx'
-import { dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
+import { daySection, dueByUrgency, mustSwipeDeadline, shelfTopics } from '../../src/lib/board-json.js'
 import { daysBetween, formatBoardDate, nextDueIsoAcross } from '../../src/lib/recurrence.js'
 import { Jewel } from '../components/Jewel.jsx'
 import { JewelKey, jewelKeyNight, jewelKeySeen } from '../components/JewelKey.jsx'
@@ -267,6 +267,29 @@ function feelBig() {
   if (Date.now() - (window.__didIBigFelt || 0) < 1500) return
   window.__didIBigFelt = Date.now()
   feelTap('did')
+}
+
+const SECTION_DONE = { morning: 'tonight.doneMorning', afternoon: 'tonight.doneAfternoon', evening: 'tonight.doneEvening' }
+
+// The part of the day of the newest Did, when every question due in it is Did.
+function sectionDone(rows) {
+  const did = (row) => row.answer?.status === 'yes' || row.answer?.status === 'late'
+  const last = rows.filter(did).sort((a, b) => String(b.answer.answeredAt || '').localeCompare(String(a.answer.answeredAt || '')))[0]
+  const section = last ? daySection(last.lamp.askAfter) : 'any'
+  if (!SECTION_DONE[section]) return ''
+  return rows.every((row) => row.optionalDeadline || daySection(row.lamp.askAfter) !== section || did(row)) ? section : ''
+}
+
+// True when the rows have 2 or more parts of the day and each is one run.
+function partsInRuns(rows) {
+  const seen = []
+  for (const row of rows) {
+    const part = daySection(row.lamp.askAfter)
+    if (seen[seen.length - 1] === part) continue
+    if (seen.includes(part)) return false
+    seen.push(part)
+  }
+  return seen.length > 1
 }
 
 export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, focusLampId, focusKey, firstAdd = false, onAskPings, pingLabel }) {
@@ -553,6 +576,8 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   const showChips = (stack.dueWithWait.length > 0 || we.cards.some((card) => card.myState === 'in' && card.due)) && !stack.holePick && !stack.waitPick
   // The folder name under each chip only helps when the chips come from more than one folder.
   const tagsMixed = new Set(stack.dueWithWait.map((row) => row.tag || '')).size > 1
+  // A thin line between parts of the day, only when each part sits in one run.
+  const pillParts = partsInRuns(stack.dueWithWait)
   // The dot legend waits for a later night, and never shows over the payoff.
   const keyNight = jewelKeyNight(stack.dateIso, stack.dueWithWait.some((row) => row.answer))
   // How to swipe, once, the first time a card is up. The dots key waits until after it.
@@ -568,6 +593,11 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     stack.mark(row, status)
     AccessibilityInfo.announceForAccessibility(t(left ? (status === 'skip' ? 'a11y.notYetNext' : 'a11y.didNext') : 'a11y.allDone'))
   }
+  // A Did on a waiting card opens the next one in the same spot: a double tap
+  // must not mark that one too.
+  const waitSince = useRef({ key: '', at: 0 })
+  const waitKey = stack.waitPick ? stack.rowKey(stack.waitPick) : ''
+  if (waitSince.current.key !== waitKey) waitSince.current = { key: waitKey, at: Date.now() }
   const answeredAtStart = useRef(answeredNow)
   useEffect(() => {
     if (!introSeen && answeredNow > answeredAtStart.current) markSwipeIntroSeen()
@@ -1527,12 +1557,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
     )
   } else if (stack.bodyKind === 'waiting') {
     const next = stack.nextOpenTime(stack.waiting)
+    const partDone = sectionDone(stack.dueWithWait)
     // While new, a question that waits for its time can be answered now.
     const firstWaiting = stack.dueWithWait.find((row) => row.waiting && !row.answer)
     face = (
       <GemFaceShell look={premium ? look : ''}
         theme={theme} style={staticCardStyle} buddy={activeBuddy(book)}>
-        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{t('tonight.waitKicker')}</Text>
+        <Text style={[faceCardStyles.kicker, { color: colors.on }]}>{partDone ? t(SECTION_DONE[partDone]) : t('tonight.waitKicker')}</Text>
         <Text style={[faceCardStyles.title, { color: colors.ink }]}>{t('tonight.waitTitle')}</Text>
         {firstWaiting ? (
           <View style={styles.actions}>
@@ -1594,9 +1625,13 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
   } else if (stack.bodyKind === 'wait' && stack.waitPick) {
     face = (
       <WaitPlate
+        key={waitKey}
         row={stack.waitPick}
         colors={colors}
-        onDid={() => markSpoken(stack.waitPick, 'yes')}
+        onDid={() => {
+          if (Date.now() - waitSince.current.at < 500) return
+          markSpoken(stack.waitPick, 'yes')
+        }}
         wrap={staticWrap}
         penBeside={Boolean(activeBuddy(book))}
       />
@@ -1768,8 +1803,9 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
           {(stack.shelf || []).filter((item) => !item.archived).length >= 2 || topics.length > 0 ? (
             <View style={[styles.jewelsRule, { backgroundColor: colors.line }]} />
           ) : null}
-          {stack.dueWithWait.map((row) => {
+          {stack.dueWithWait.map((row, index) => {
             const on = row.answer && (row.answer.status === 'yes' || row.answer.status === 'late')
+            const partLine = pillParts && index > 0 && daySection(row.lamp.askAfter) !== daySection(stack.dueWithWait[index - 1].lamp.askAfter)
             const skip = row.answer?.status === 'skip'
             const late = row.answer?.status === 'late'
             const isFace = wePick
@@ -1780,26 +1816,28 @@ export function TonightScreen({ book, boards, tagId, onTag, onChange, onKeep, fo
             const bookOf = stack.bookOf(row)
             const dueUrgency = !on && !skip ? dueByUrgency(row.lamp, stack.dateIso) : ''
             return (
-              <Jewel
-                key={stack.rowKey(row)}
-                label={stack.shortLabel(row.lamp)}
-                tag={isTodayOnce(row.lamp, row.dateIso) ? todayLabel(row.lamp) : row.tag && tagsMixed ? row.tag : ''}
-                on={on}
-                skip={skip}
-                late={late}
-                waiting={row.waiting}
-                optional={row.optionalDeadline}
-                dueToday={dueUrgency === 'today'}
-                dueSoon={dueUrgency === 'soon'}
-                face={isFace}
-                sit={stack.nightDone && on}
-                filament={on ? stack.filamentLevel(bookOf, row.lamp.id) : 0}
-                colors={colors}
-                onPress={() => {
-                  setWePick('')
-                  stack.jewelClick(row)
-                }}
-              />
+              <Fragment key={stack.rowKey(row)}>
+                {partLine ? <View style={[styles.jewelsRule, { backgroundColor: colors.line }]} /> : null}
+                <Jewel
+                  label={stack.shortLabel(row.lamp)}
+                  tag={isTodayOnce(row.lamp, row.dateIso) ? todayLabel(row.lamp) : row.tag && tagsMixed ? row.tag : ''}
+                  on={on}
+                  skip={skip}
+                  late={late}
+                  waiting={row.waiting}
+                  optional={row.optionalDeadline}
+                  dueToday={dueUrgency === 'today'}
+                  dueSoon={dueUrgency === 'soon'}
+                  face={isFace}
+                  sit={stack.nightDone && on}
+                  filament={on ? stack.filamentLevel(bookOf, row.lamp.id) : 0}
+                  colors={colors}
+                  onPress={() => {
+                    setWePick('')
+                    stack.jewelClick(row)
+                  }}
+                />
+              </Fragment>
             )
           })}
           {wePills.map((card) => {

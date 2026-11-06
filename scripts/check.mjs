@@ -3448,6 +3448,36 @@ await testAsync('tonight orders questions by ask time, untimed ones first, prior
   assert.deepEqual(order, ['anyHigh', 'anyLow', 'eight', 'nine'])
 })
 
+await testAsync('a routine set in Reorder keeps its order on Today, ahead of untimed adds', async () => {
+  const { byAskTime, daySection } = await import('../src/lib/board-json.js')
+  const row = (id, askAfter, order) => ({ lamp: { id, askAfter, ...(order == null ? {} : { order }) } })
+  const order = byAskTime([
+    row('newAdd', ''),
+    row('teeth', '07:30', 1),
+    row('meds', '07:00', 0),
+    row('water', '07:00', 2),
+  ]).map((r) => r.lamp.id)
+  assert.deepEqual(order, ['meds', 'teeth', 'water', 'newAdd'])
+  assert.deepEqual(['', '06:00', '11:59', '12:00', '16:59', '17:00', 'x'].map(daySection), ['any', 'morning', 'morning', 'afternoon', 'afternoon', 'evening', 'any'])
+})
+
+test('a Did goes on to the next card in order; a Did on a waiting card opens the next waiting one in that part of the day', () => {
+  const stack = readFileSync('src/lib/useTonightStack.js', 'utf8')
+  assert.ok(stack.includes('const after = at >= 0 ? [...ready.slice(at + 1), ...ready.slice(0, at)].find((item) => !item.answer) : null'), 'Did opens the next open card after this one, wrapping')
+  assert.ok(stack.includes("setWaitPick(finalStatus !== 'skip' && waitPick && rowKey(waitPick) === rowKey(row) ? nextWaiting(row) : null)"), 'a Did on the waiting card moves to the next waiting one')
+  assert.ok(/function nextWaiting\(row\)[\s\S]{0,400}daySection\(item\.lamp\.askAfter\) === section/.test(stack), 'only the same part of the day')
+  const screen = readFileSync('native/screens/TonightScreen.jsx', 'utf8')
+  assert.ok(screen.includes('partDone ? t(SECTION_DONE[partDone]) : t(\'tonight.waitKicker\')'), 'Morning done kicker when a part of the day is all Did')
+  assert.ok(screen.includes('const pillParts = partsInRuns(stack.dueWithWait)') && screen.includes('{partLine ? <View style={[styles.jewelsRule'), 'a line between parts of the day, only when each is one run')
+  const qs = readFileSync('native/screens/questions.jsx', 'utf8')
+  assert.ok(qs.includes('daySection(row.lamp.askAfter) === key') && qs.includes('sectioned && !onMove'), 'Questions has part-of-day headers, never in Reorder')
+  assert.ok(qs.includes('questions.setTime') && qs.includes('onPress={askTime}'), 'Select can set one time on many questions')
+  const shim = readFileSync('native/shim/native.js', 'utf8')
+  assert.ok(shim.includes("notifyId('noon'") && shim.includes("daySection(row.lamp.askAfter) === 'morning'"), 'one noon note for open morning questions')
+  assert.ok(screen.includes('if (Date.now() - waitSince.current.at < 500) return'), 'a double tap on a waiting card does not also mark the next one')
+  assert.ok(shim.includes("countedTonightRows(dueTonight(book, now)).filter((row) => (!row.answer || row.answer.status === 'skip') && !row.lamp.optional"), 'the noon note counts only questions Today needs')
+})
+
 await testAsync('a hand-set question order beats priority, survives normalize, and spans folders', async () => {
   const { byAskTime, normalizeLamp, setLampOrder } = await import('../src/lib/board-json.js')
   const row = (id, askAfter, priority, order) => ({ lamp: { id, askAfter, priority, ...(order == null ? {} : { order }) } })
@@ -3457,7 +3487,7 @@ await testAsync('a hand-set question order beats priority, survives normalize, a
     row('first', '', 'normal', 0),
     row('late', '21:00', 'normal', 0),
   ]).map((r) => r.lamp.id)
-  assert.deepEqual(order, ['first', 'second', 'high', 'late'], 'ordered ones first, unmoved after, ask time still wins')
+  assert.deepEqual(order, ['first', 'late', 'second', 'high'], 'hand order wins, ask time breaks ties, unmoved ones after')
   assert.equal(normalizeLamp({ id: 'a', question: 'Did I?', order: 3 }).order, 3)
   assert.equal(normalizeLamp({ id: 'a', question: 'x'.repeat(300) }).question.length, 120)
   assert.equal('order' in normalizeLamp({ id: 'a', question: 'Did I?' }), false)

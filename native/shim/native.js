@@ -6,7 +6,7 @@ import { requireOptionalNativeModule } from 'expo'
 import * as Linking from 'expo-linking'
 import * as SplashScreen from 'expo-splash-screen'
 import { AppState, BackHandler, Platform, Share } from 'react-native'
-import { lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
+import { daySection, lampBuzzes, lampNudgesLate } from '../../src/lib/board-json.js'
 import { t } from '../../src/lib/i18n.js'
 import { ASK_CATEGORY, REMIND_CATEGORY, SEND_CATEGORY, SNOOZE_KEY, askActions, askNoteData, remindActions, sendActions, staleDelivered } from '../../src/lib/notify-answer.js'
 import { REMIND_TRIES, readReminds, remindNext } from '../../src/lib/remind-me.js'
@@ -14,7 +14,7 @@ import { afterQuiet, awayOn, gentleOn, pingOn, readPrefs } from '../../src/lib/p
 import { askGroups, capNotes, earlyCallAt, lastCallAt, laterClash, leftNote } from '../../src/lib/quiet.js'
 import { backOffFrom, newestAnswerIso } from '../../src/lib/come-back.js'
 import { streakHitCopy } from '../../src/lib/streak-copy.js'
-import { boardDate, dueTonight, graceNightIso, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
+import { boardDate, countedTonightRows, dueTonight, graceNightIso, nightOpen, pingWaitingTonight } from '../../src/lib/recurrence.js'
 import { setAppForeground } from '../../src/lib/app-foreground.js'
 import { setErrorAppVersion } from '../../src/lib/app-errors.js'
 import { graceRiskFire, lastNightGraceFire, streakAtRisk, streakRiskFire } from '../../src/lib/streak-risk.js'
@@ -581,6 +581,25 @@ async function schedulePingsNow(books, now = new Date()) {
         earlyCall: true,
         wall: true,
       })
+    }
+    // Half-done morning: 2 or more morning questions with a reminder still open
+    // at 12:00 today make one note. Built from the open set now; every answer re-arms.
+    if (reminders && aheads.includes(0) && backOff > 0) {
+      const [ny, nm, nd] = today.split('-').map(Number)
+      const noon = new Date(ny, nm - 1, nd, 12, 0, 0, 0)
+      const openMorning = list.flatMap((book) =>
+        countedTonightRows(dueTonight(book, now)).filter((row) => (!row.answer || row.answer.status === 'skip') && !row.lamp.optional && lampBuzzes(row.lamp) && daySection(row.lamp.askAfter) === 'morning'),
+      )
+      // Quiet hours over noon drop it: pushed to a later hour it would be stale.
+      if (openMorning.length >= 2 && noon.getTime() > now.getTime() && afterQuiet(noon).getTime() === noon.getTime()) {
+        notes.push({
+          identifier: String(notifyId('noon', String(noon.getTime()))),
+          content: { title: 'Did I', body: leftBody(openMorning.length, noon), data: { go: '/tonight', left: true } },
+          trigger: when(noon),
+          wall: true,
+          nudge: true,
+        })
+      }
     }
     // 3 or more question reminders on one minute: one note, opening Today.
     const isAsk = (note) => !note.lateCall && note.content.categoryIdentifier === ASK_CATEGORY && note.content.data?.lampId && !note.content.data?.weId
