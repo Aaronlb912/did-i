@@ -206,7 +206,7 @@ export function useAppShelf() {
   )
 
   const saveLamp = useCallback(
-    (staleTarget, lamp, fromBook, clock = new Date()) => {
+    (staleTarget, lamp, fromBook, clock = new Date(), settle = null) => {
       let next = shelfRef.current
       // The screen's copies can miss a widget tap or sync since its last render.
       const fresh = (book) => (book && (next.boards || []).find((item) => item.id === book.id)) || book
@@ -225,6 +225,8 @@ export function useAppShelf() {
       } else {
         dest = { ...hangInto(target, lamp, Boolean(source && source.id === target.id)), archived: false }
       }
+      // A new question that was already being done: its past days are answered with it.
+      if (settle) dest = settle(dest)
       persist(putBook(next, commitBook(dest, clock)))
     },
     [persist, shelf],

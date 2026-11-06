@@ -91,6 +91,7 @@ import '../src/lib/locales-all.js'
 import { t } from '../src/lib/i18n.js'
 import { forgetAccountCaches, forgetPendingLinks } from '../src/lib/account-cache.js'
 import { answersCsv, csvCell } from '../src/lib/answers-csv.js'
+import { csvShelf } from '../src/lib/csv-import.js'
 import { isDayCadence, lampRate, shelfRate30 } from '../src/lib/lamp-record.js'
 import { GEM_PACKS, GEM_UNIT_CENTS } from '../src/lib/gem-packs.js'
 import { cheerKinds, holdFor, popsFor, sunRayLayout } from '../src/lib/cheer-pops.js'
@@ -2853,6 +2854,135 @@ test('planning a backup load counts what is new, never deletes, and stops at the
   const many = { currentId: 'b', boards: [{ id: 'b', title: 'General', lamps: Array.from({ length: 301 }, (_, i) => ({ ...lamp('m' + i), question: 'Did I ' + i + '?' })), answers: [] }] }
   assert.equal(planBackupLoad(here, many).miss, 'cap')
   assert.equal(planBackupLoad(plan.merged, { boards: [] }).q, 0)
+})
+
+test('Load a copy takes a CSV: round trip, other apps, the 7 day window, a Did is Late and unpaid, size, unknown files', () => {
+  const today = boardDate(new Date())
+  const day = (n) => addDaysIso(today, -n)
+  const read = { ...lamp('q'), question: 'Did I read, a lot?', short: 'Read', cadence: 'weekly', weekdays: [1, 3, 5], createdOn: day(30) }
+  const stretch = { ...lamp('s'), question: 'Did I stretch?', createdOn: day(30), trackAmount: true, amountUnit: 'min' }
+  const ans = (lampId, n, status, extra = {}) => ({ id: `a${lampId}${n}`, lampId, periodKey: day(n), status, answeredAt: `${day(n)}T20:00:00`, note: '', ...extra })
+  const source = {
+    currentId: 'b',
+    boards: [
+      { id: 'b', title: 'General', lamps: [read, stretch], answers: [ans('q', 1, 'yes', { note: 'he said "ok"' }), ans('s', 2, 'skip'), ans('s', 0, 'yes', { amount: 20 })] },
+      { id: 'w', title: 'Work', lamps: [{ ...lamp('p'), question: 'Did I plan the week?', cadence: 'monthly', monthDay: 1, createdOn: day(30) }], answers: [ans('p', 3, 'late')] },
+    ],
+  }
+  const csv = answersCsv(source)
+  assert.match(csv.split('\r\n')[0], /,folder,repeats,started$/, 'the new columns come last')
+  assert.match(csv, /weekly:mon,wed,fri/)
+
+  // Into an empty shelf: folders, questions and schedules come back once each.
+  const empty = { currentId: 'e', boards: [{ id: 'e', title: 'General', lamps: [], answers: [] }] }
+  const into = planBackupLoad(empty, csv)
+  assert.equal(into.miss, undefined)
+  assert.equal(into.old, 0)
+  assert.equal(into.q, 3)
+  assert.equal(into.a, 4)
+  const books = Object.fromEntries(into.merged.boards.map((book) => [book.title, book]))
+  assert.equal(books.General.lamps.length, 2)
+  assert.equal(books.Work.lamps[0].question, 'Did I plan the week?', 'a monthly question keeps its schedule')
+  assert.equal(books.Work.lamps[0].cadence, 'monthly')
+  const reads = books.General.lamps.find((item) => item.short === 'Read')
+  assert.deepEqual([reads.cadence, reads.weekdays], ['weekly', [1, 3, 5]])
+  assert.equal(books.General.lamps.find((item) => item.question === 'Did I stretch?').trackAmount, true)
+  const readNote = books.General.answers.find((item) => item.lampId === reads.id)
+  assert.equal(readNote.note, 'he said "ok"', 'quoted cells keep commas and doubled quotes')
+  assert.equal(readNote.status, 'late', 'a Did on a past day is saved as Late')
+  assert.equal(readNote.paid, undefined, 'a loaded Did pays nothing')
+  const todays = books.General.answers.find((item) => item.periodKey === day(0))
+  assert.equal(todays.status, 'yes', 'today keeps its Did')
+  assert.equal(todays.amount, 20)
+  assert.equal(todays.paid, undefined)
+  assert.equal(books.General.answers.find((item) => item.periodKey === day(2)).status, 'skip')
+
+  // Into a shelf that has them: questions match by text, nothing doubles.
+  const again = planBackupLoad(into.merged, csv)
+  assert.equal(again.q, 0)
+  assert.equal(again.a, 0)
+  assert.equal(again.merged.boards.reduce((n, book) => n + book.lamps.length, 0), 3)
+  const mine = { currentId: 'b', boards: [{ id: 'b', title: 'general', lamps: [{ ...lamp('mine'), question: 'Did I stretch?' }], answers: [ans('mine', 1, 'yes')] }] }
+  const joined = planBackupLoad(mine, csv)
+  assert.equal(joined.merged.boards.find((book) => book.id === 'b').lamps.filter((item) => item.question === 'Did I stretch?').length, 1, 'same text, same folder: this phone question is reused')
+  assert.equal(joined.merged.boards.find((book) => book.id === 'b').answers.filter((item) => item.lampId === 'mine').length, 3, 'its answers land on this phone question')
+  assert.equal(joined.merged.boards.length, 2, 'a General folder with another case reuses this phone folder')
+
+  // Another app: Habit, Date, Value; no folder column means the current folder.
+  const loop = `﻿Habit,Date,Value\n"Meditate",${day(1)},1\nMeditate,${day(2)},0\nMeditate,${day(40)},1\nMeditate,${day(-3)},1\nRun,${day(0)},yes\nRun,${day(3)},maybe\n`
+  const from = csvShelf(loop, mine)
+  assert.equal(from.old, 1, 'a day older than 7 is counted')
+  assert.equal(from.shelf.boards.length, 1)
+  assert.equal(from.shelf.boards[0].id, 'b')
+  assert.deepEqual(from.shelf.boards[0].lamps.map((item) => item.question), ['Did I meditate?', 'Did I run?'])
+  assert.equal(from.shelf.boards[0].answers.length, 3, 'the old, future and unknown rows are not saved')
+  const edge = csvShelf(`question,date,answer\nA,${day(7)},did\nA,${day(8)},did\n`, mine)
+  assert.equal(edge.old, 1, 'seven days back is kept, eight is not')
+  assert.equal(edge.shelf.boards[0].answers.length, 1)
+  assert.equal(edge.shelf.boards[0].lamps[0].createdOn, today, 'a lone old Did does not move the start: the days between would be misses')
+  const run = csvShelf(`question,date,answer\nA,${day(1)},did\nA,${day(2)},late\nA,${day(4)},did\n`, mine)
+  assert.equal(run.shelf.boards[0].lamps[0].createdOn, day(2), 'a new question starts at the run of Dids before today')
+  const doneDays = csvShelf(`Habit,Date\nRun,${day(1)}\nRun,${day(2)}\n`, mine)
+  assert.equal(doneDays.shelf.boards[0].answers.length, 2, 'no answer column: each row is a Did')
+  const planOld = planBackupLoad(mine, `question,date,answer\r\nA,${day(30)},did\r\n`)
+  assert.equal(planOld.old, 1)
+  assert.equal(planOld.a, 0)
+  assert.equal(planOld.q, 1)
+
+  const guard = csvShelf(`question,date,answer\n'=SUM(A1),${day(0)},did\n`, mine)
+  assert.equal(guard.shelf.boards[0].lamps[0].question, 'Did I =SUM(A1)?', 'the formula guard apostrophe is taken off')
+
+  // A Did here is never turned into a Not yet.
+  const keep = csvShelf(`question,date,answer\nStretch,${day(1)},not yet\n`, mine)
+  assert.equal(keep.shelf.boards[0].answers.length, 0)
+  // A file's Not yet never beats a Did from another phone.
+  const nope = csvShelf(`question,date,answer\nNew one,${day(1)},not yet\n`, mine)
+  assert.equal(nope.shelf.boards[0].answers[0].first, true)
+
+  // A question made here today starts on the file's first day, so those days count.
+  const fresh = { currentId: 'b', boards: [{ id: 'b', title: 'General', lamps: [{ ...lamp('f'), question: 'Did I walk?', createdOn: today, at: '2026-01-01T00:00:00.000Z' }], answers: [] }] }
+  const moved = planBackupLoad(fresh, `question,date,answer\nWalk,${day(3)},did\nWalk,${day(2)},did\nWalk,${day(1)},did\nWalk,${day(5)},did\n`)
+  assert.equal(moved.q, 0)
+  assert.equal(moved.merged.boards[0].lamps[0].createdOn, day(3), 'the question here starts at the run of loaded Dids')
+  assert.equal(planBackupLoad(fresh, `question,date,answer\nWalk,${day(5)},did\n`).merged.boards[0].lamps[0].createdOn, today, 'a gap keeps the start, so no day turns into a miss')
+  const monthly = { currentId: 'b', boards: [{ id: 'b', title: 'General', lamps: [{ ...lamp('m'), question: 'Did I pay rent?', cadence: 'monthly', monthDay: 1, createdOn: today }], answers: [] }] }
+  assert.equal(planBackupLoad(monthly, `question,date,answer\nPay rent,${day(3)},did\n`).merged.boards[0].lamps[0].createdOn, today, 'other schedules keep their start')
+
+  // Dates: day first with dots, a slash part over 12, a zoned time; 05/06 could be either.
+  const [y, mo, d] = day(2).split('-')
+  const dates = csvShelf(`question,date,answer\nA,${d}.${mo}.${y},did\nC,${day(1)}T12:00:00Z,did\nD,05/06/${y},did\nE,someday,did\n`, mine)
+  const lampsByQ = Object.fromEntries(dates.shelf.boards[0].lamps.map((item) => [item.question, item.id]))
+  assert.equal(dates.shelf.boards[0].answers.find((item) => item.lampId === lampsByQ['Did I A?'])?.periodKey, day(2), 'day.month.year reads')
+  assert.ok(dates.shelf.boards[0].answers.some((item) => item.lampId === lampsByQ['Did I C?']), 'a zoned time reads')
+  assert.equal(dates.bad, 2, 'unread dates are counted, not dropped quietly')
+  const us = csvShelf(`question,date,answer\nA,11/13/2026,did\nB,13/11/2026,did\n`, mine, new Date(2026, 10, 14, 12))
+  assert.deepEqual(us.shelf.boards[0].answers.map((item) => item.periodKey), ['2026-11-13', '2026-11-13'], 'a slash part over 12 is the day')
+
+  // Size, unknown files, not a Did I file.
+  const fat = { currentId: 'b', boards: [{ id: 'b', title: 'General', lamps: [lamp('q')], answers: Array.from({ length: 12000 }, (_, i) => ({ id: `x${i}`, lampId: 'q', periodKey: `p${i}`, status: 'yes', answeredAt: '2026-10-01T10:00:00Z', note: 'n'.repeat(120) })) }] }
+  assert.equal(planBackupLoad(fat, { boards: [] }).miss, 'big')
+  assert.equal(planBackupLoad(empty, 'hello there').miss, 'file')
+  assert.equal(planBackupLoad(empty, 'date,answer\n2026-10-01,did\n').miss, 'file', 'no question column')
+  assert.equal(planBackupLoad(empty, 'question,date\n').miss, 'file', 'no rows')
+  assert.equal(planBackupLoad(empty, { hello: 1 }).miss, 'file')
+  const loader = readFileSync('native/lib/backup-load.js', 'utf8')
+  for (const word of ['text/csv', 'text/comma-separated-values', 'application/vnd.ms-excel', 'settings.loadBig', 'account.loadSureOld', 'account.loadSureBad', 'markAddedStreak(now.merged.boards)', 'FILE_MAX']) assert.match(loader, new RegExp(word.replace(/[.()]/g, '\\$&')), word)
+  assert.doesNotMatch(loader, /\*\/\*/)
+  assert.doesNotMatch(loader, /'settings\.loadMiss'/, 'the web keeps its own miss line')
+})
+
+test('days added after the fact mark the streak milestones they reach as seen; first run lists get a reminder time', async () => {
+  const { markAddedStreak } = await import('../native/lib/back-fill.js')
+  const { streakSeen } = await import('../src/lib/streak-moments.js')
+  const clock = new Date(2026, 9, 20, 21, 0)
+  const item = lamp('walk', { createdOn: '2026-10-01' })
+  const answers = Array.from({ length: 10 }, (_, i) => ({ lampId: 'walk', periodKey: addDaysIso('2026-10-20', -i), status: 'late', answeredAt: '2026-10-20T20:00:00.000Z', past: true }))
+  markAddedStreak([{ id: 'b', dayFoldHour: 0, lamps: [item], answers }], clock)
+  assert.equal(streakSeen('milestone', '7'), true, 'a 10 day streak marks 7 seen')
+  assert.equal(streakSeen('milestone', '30'), false)
+  const more = readFileSync('native/screens/more.jsx', 'utf8')
+  assert.match(more, /every: true,[\s\S]{0,120}lamp: \{ askAfter, askFrom/, 'Add a list on first run keeps the reminder time')
+  assert.match(readFileSync('native/screens/questions.jsx', 'utf8'), /markBookStreak\(filled\)/)
 })
 
 test('leaving and deleting: a backup file brings back deleted questions and folders, and both Load a copy rows ask first', () => {
@@ -7062,7 +7192,7 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
     boards: [
       {
         title: 'Home',
-        lamps: [{ id: 'l1', question: 'drink water, lots', short: 'Water' }, { id: 'o1', question: 'Call mom', onceOn: '2026-10-04' }],
+        lamps: [{ id: 'l1', question: 'drink water, lots', short: 'Water', cadence: 'daily', createdOn: '2026-09-30' }, { id: 'o1', question: 'Call mom', cadence: 'once', onceOn: '2026-10-04', createdOn: '2026-10-01' }],
         answers: [
           { lampId: 'l1', periodKey: '2026-10-02', status: 'skip', note: 'he said "no"' },
           { lampId: 'l1', periodKey: '2026-10-01', status: 'yes', note: '', amount: 5 },
@@ -7075,13 +7205,13 @@ test('answers CSV escapes quotes, commas, newlines and formulas', () => {
   }
   assert.equal(
     answersCsv(shelf),
-    'date,question,short name,answer,note,amount,unit,folder\r\n' +
-      '2026-10-01,"drink water, lots",Water,did,,5,,Home\r\n' +
-      '2026-10-02,"drink water, lots",Water,not yet,"he said ""no""",,,Home\r\n' +
-      '2026-10-03,,,late,,,,Home\r\n' +
-      '2026-10-04,Call mom,,did,,,,Home\r\n',
+    'date,question,short name,answer,note,amount,unit,folder,repeats,started\r\n' +
+      '2026-10-01,"drink water, lots",Water,did,,5,,Home,daily,2026-09-30\r\n' +
+      '2026-10-02,"drink water, lots",Water,not yet,"he said ""no""",,,Home,daily,2026-09-30\r\n' +
+      '2026-10-03,,,late,,,,Home,,\r\n' +
+      '2026-10-04,Call mom,,did,,,,Home,once:2026-10-04,2026-10-01\r\n',
   )
-  assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount,unit,folder\r\n')
+  assert.equal(answersCsv({}), 'date,question,short name,answer,note,amount,unit,folder,repeats,started\r\n')
 })
 
 test('lampRate is a percent of due days, hidden under 3', () => {
