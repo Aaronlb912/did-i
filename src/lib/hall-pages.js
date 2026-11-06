@@ -12,6 +12,10 @@ import {
   inPause,
   isDueOn,
   isEvery,
+  isPerWeek,
+  perWeekLastDay,
+  perWeekNotMiss,
+  periodPassed,
   countsOnlyOnDid,
   isoDate,
   onceDoneNight,
@@ -392,7 +396,7 @@ export function nightMarksMany(books, isos, today, tagId = '') {
     let noDate = 0
     for (const lamp of lamps) {
       const simple =
-        lamp.cadence === 'daily' && !lamp.was && !lamp.pauses && !lamp.fromDidI && !lamp.keptDids && !countsOnlyOnDid(lamp)
+        lamp.cadence === 'daily' && !lamp.was && !lamp.pauses && !lamp.fromDidI && !lamp.keptDids && !countsOnlyOnDid(lamp) && !isPerWeek(lamp)
       if (!simple) {
         rest.push(lamp)
         continue
@@ -447,6 +451,8 @@ export function nightMarksMany(books, isos, today, tagId = '') {
         const doneOn = done ? book.doneOn.get(lamp.id) : ''
         if (doneOn && doneOn !== iso) continue
         if (!done && (countsOnlyOnDid(lamp) || isEvery(lamp) || !mustSwipeDeadline(lamp, iso))) continue
+        if (!done && isPerWeek(lamp) && !perWeekLastDay(book.book, lamp, iso)) continue
+        if (!done && key.length === 7 && !periodPassed(lamp, key, today)) continue
         dueCount += 1
         if (!done) clear = false
       }
@@ -564,9 +570,11 @@ export function shelfNoteRows(boards, tagId = '') {
   return shelfFeedRows(boards, tagId).filter((row) => row.lamp && String(row.answer.note || '').trim())
 }
 
-function countsAsMiss(lamp, answer, floor) {
-  if (lamp && (isEvery(lamp) || lamp.optional)) return false
+function countsAsMiss(book, lamp, answer, floor) {
   const key = String(answer.periodKey || '')
+  if (lamp && (isEvery(lamp) || lamp.optional || perWeekNotMiss(book, lamp, key))) return false
+  // A monthly Not yet is open till its month ends.
+  if (key.length === 7 && key >= String(floor).slice(0, 7)) return false
   return !(key.length === 10 && key >= floor)
 }
 
@@ -585,7 +593,7 @@ export function shelfStatsCounts(boards, now = new Date(), tagId = '') {
     sum.late += counted.filter((answer) => answer.status === 'late').length
     // Missed, same as This week: a Not yet that can still turn into a Did, or
     // on a question that is never a miss (every so often, optional), is not one.
-    sum.skip += counted.filter((answer) => answer.status === 'skip' && countsAsMiss(lamps.get(answer.lampId), answer, floor)).length
+    sum.skip += counted.filter((answer) => answer.status === 'skip' && countsAsMiss(book, lamps.get(answer.lampId), answer, floor)).length
   }
   return { ...sum, heat: books.length ? shelfStreak(boards, now, tagId) : 0 }
 }
@@ -624,12 +632,14 @@ export function weekRecap(boards, week, tagId = '', now) {
           key = onceDoneNight(lamp, answer) || periodNight(lamp, key)
         }
         // A monthly key is the month: count it on the day it was answered.
+        // A Not yet on one is not a miss while its month is open.
+        if (key.length === 7 && status === 'skip' && floor && key >= floor.slice(0, 7)) continue
         if (key.length === 7) key = stampDay(answer.answeredAt)
         if (key.length !== 10 || key < from || key > to) continue
         if (status === 'skip') {
           lamps = lamps || new Map((book.lamps || []).map((lamp) => [lamp.id, lamp]))
           const lamp = lamps.get(answer.lampId)
-          if (lamp && (isEvery(lamp) || lamp.optional)) continue
+          if (lamp && (isEvery(lamp) || lamp.optional || perWeekNotMiss(book, lamp, key))) continue
           if (!floor || key < floor) nopes += 1
         } else {
           dids += 1

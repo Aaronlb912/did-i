@@ -12424,6 +12424,71 @@ test('a monthly question still open this month does not break the streaks', () =
   assert.equal(questionStreak(nope, rent, '2026-11-20', 400, nov20), 4, 'answered counts')
 })
 
+await testAsync('mid-period days: a monthly question closes when its month ends, a times a week Not yet holds only the last short day', async () => {
+  const { countedTonightRows, dueTonight } = await import('../src/lib/recurrence.js')
+  const { nightMarksMany, shelfStatsCounts } = await import('../src/lib/hall-pages.js')
+  const rent = lamp('rent', { cadence: 'monthly', monthDay: 15, createdOn: '2026-08-01' })
+  const answers = ['2026-08', '2026-09', '2026-10'].map((key) => ({ id: key, lampId: 'rent', periodKey: key, status: 'yes', answeredAt: key + '-15T20:00:00' }))
+  const book = { id: 'b', dayFoldHour: 0, lamps: [rent], answers }
+  const nov17 = new Date(2026, 10, 17, 12)
+  const open = closePastNights(book, nov17)
+  assert.ok(!open.answers.some((answer) => answer.periodKey === '2026-11'), 'the day after its date: no Not yet saved, the month is still open')
+  assert.equal(questionStreak(open, rent, '2026-11-17', 400, nov17), 3, 'and the streak holds')
+  const closed = closePastNights(book, new Date(2026, 11, 2, 12))
+  assert.equal(closed.answers.find((answer) => answer.periodKey === '2026-11')?.status, 'skip', 'closed once the month ended')
+  const said = { ...book, answers: [...answers, { id: 'n', lampId: 'rent', periodKey: '2026-11', status: 'skip', answeredAt: '2026-11-15T20:00:00' }] }
+  assert.equal(questionStreak(said, rent, '2026-11-20', 400, new Date(2026, 10, 20, 12)), 3, 'a Not yet on its day is open till the month ends too')
+  assert.equal(questionStreak(said, rent, '2026-12-01', 400, new Date(2026, 11, 1, 12)), 0)
+
+  // 2026-09-07 is a Monday, 09-13 the Sunday.
+  const per = { id: 'gym', question: 'Did I go to the gym?', cadence: 'daily', perWeek: 3, archived: false, createdOn: '2026-08-01' }
+  const mk = (rows) => everyBook(rows.map(([d, st]) => ['gym', evDay(d), st]), [per])
+  const counted = (b, d) => countedTonightRows(dueTonight(b, evAt(d))).filter((row) => row.lamp.id === 'gym')
+  const tue = mk([[7, 'yes'], [8, 'skip']])
+  assert.equal(counted(tue, 8).length, 0, 'a Not yet on Tuesday does not hold the day')
+  assert.ok(dueTonight(tue, evAt(8)).some((row) => row.lamp.id === 'gym'), 'the card is still there to answer')
+  assert.equal(counted(mk([[7, 'yes'], [9, 'yes']]), 13).length, 1, 'the last day of a short week holds the day')
+  assert.equal(counted(mk([[7, 'yes'], [9, 'yes'], [13, 'yes']]), 13).length, 1, 'a Did on it counts')
+  const met = mk([[7, 'yes'], [8, 'yes'], [9, 'yes']])
+  const marks = nightMarksMany([met], [evDay(8), evDay(10), evDay(13)], evDay(14))
+  assert.ok(!marks.get(evDay(10)).miss && !marks.get(evDay(13)).miss, 'year view: days after a met goal are not missed')
+  const short = nightMarksMany([mk([[7, 'yes']])], [evDay(8), evDay(13)], evDay(14))
+  assert.ok(!short.get(evDay(8)).miss && short.get(evDay(13)).miss, 'a short week is one missed day, its last')
+  const paused = { ...per, pauses: [['2026-09-07', '2026-09-10']] }
+  const pausedBook = everyBook([['gym', evDay(10), 'yes'], ['gym', evDay(11), 'yes']], [paused])
+  assert.equal(countedTonightRows(dueTonight(pausedBook, evAt(13))).filter((row) => row.lamp.id === 'gym').length, 0, 'a part-paused week needs fewer Dids on its last day too')
+
+  // After its day the open month stays on Today to answer, without holding the day.
+  const { faceReadyTonight, pingWaitingTonight } = await import('../src/lib/recurrence.js')
+  const { graceRowsFor } = await import('../src/lib/grace.js')
+  const nov16 = new Date(2026, 10, 16, 12)
+  const carry = faceReadyTonight(book, nov16).find((row) => row.lamp.id === 'rent')
+  assert.equal(carry?.periodKey, '2026-11', 'Nov 16: rent is on Today, keyed to the month')
+  assert.equal(countedTonightRows([carry]).length, 0, 'and does not hold the day')
+  assert.ok(!dueTonight(book, nov16).some((row) => row.lamp.id === 'rent'), 'not a due row: reminders, past days and grace never see it')
+  assert.equal(graceRowsFor([book], '2026-11-15').length, 0, 'no second Last night card for the same month')
+  assert.ok(!faceReadyTonight({ ...book, lamps: [{ ...rent, pauses: [['2026-11-16', '2026-11-20']] }] }, nov16).length, 'paused today: not shown')
+  assert.ok(!pingWaitingTonight(book, new Date(2026, 10, 16, 23)).some((row) => row.lamp.id === 'rent'), 'no reminder for it after its day')
+  const paid = { ...book, answers: [...answers, { id: 'p', lampId: 'rent', periodKey: '2026-11', status: 'yes', answeredAt: '2026-11-16T20:00:00' }] }
+  assert.ok(!faceReadyTonight(paid, new Date(2026, 10, 17, 12)).some((row) => row.lamp.id === 'rent'), 'once Did it leaves Today')
+  assert.ok(readFileSync('src/lib/useTonightStack.js', 'utf8').includes('row.monthCarry || (isPerWeek(row.lamp) && !row.weekLast)'), 'still dealt after the day is clear')
+  assert.equal(questionStreak(paid, rent, '2026-11-17', 400, new Date(2026, 10, 17, 12)), 4, 'a Did after its day counts')
+  assert.equal(countedTonightRows(dueTonight(said, new Date(2026, 10, 15, 21))).length, 0, 'a Not yet on its day does not hold Today while the month is open')
+  assert.ok(shelfStreak([said], new Date(2026, 11, 2, 12)) < shelfStreak([paid], new Date(2026, 11, 2, 12)), 'once the month ends, that Not yet is a miss')
+  assert.equal(shelfStatsCounts([said], new Date(2026, 10, 20, 12)).skip, 0, 'Stats: not missed while its month is open')
+  assert.equal(shelfStatsCounts([said], new Date(2026, 11, 2, 12)).skip, 1, 'missed once it ends')
+  assert.equal(shelfStatsCounts([tue], evAt(20)).skip, 0, 'Stats: a mid-week Not yet is not missed')
+  const metPaused = everyBook([['gym', evDay(10), 'yes'], ['gym', evDay(11), 'yes'], ['gym', evDay(13), 'skip']], [paused])
+  assert.equal(shelfStatsCounts([metPaused], evAt(20)).skip, 0, 'a Sunday Not yet after a met part-paused week is not missed')
+
+  // The morning after: times a week and a month's last chance still get Last night.
+  assert.ok(graceRowsFor([mk([[7, 'yes']])], evDay(9)).some((row) => row.lamp.id === 'gym'), 'a Wednesday left open can be a Did before 9am')
+  const octOpen = { ...book, answers: answers.filter((answer) => answer.periodKey !== '2026-10') }
+  assert.equal(graceRowsFor([octOpen], '2026-10-31').find((row) => row.lamp.id === 'rent')?.periodKey, '2026-10', 'a month left open gets the morning of the 1st')
+  const lastDay = { ...book, lamps: [{ ...rent, monthDay: 'last' }], answers: [{ id: 'o', lampId: 'rent', periodKey: '2026-10', status: 'skip', answeredAt: '2026-10-31T20:00:00' }] }
+  assert.equal(graceRowsFor([lastDay], '2026-10-31').length, 1, 'a Not yet on the last day can still turn into a Did')
+})
+
 test('did we: every Did I timing maps to we_make2 and we_edit3 arguments', async () => {
   const { weTiming } = await import('../src/lib/did-we.js')
   const today = '2026-11-04'

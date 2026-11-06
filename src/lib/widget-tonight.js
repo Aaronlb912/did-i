@@ -281,9 +281,8 @@ export function buildTonightWidgetProps(shelf, now = new Date()) {
     footer = t('widget.tonight.oneLeft')
   } else if (left > 1) {
     footer = t('widget.tonight.left', { n: left })
-  } else {
-    footer = t('widget.tonight.empty')
   }
+  // Cards that do not hold the day (times a week mid-week, every so often): no "add a question".
   // Nothing to answer yet, but a question comes up later tonight.
   const next = waitingRowsForAllBoards(boards, now)[0]
   const nextLine = next ? t('widget.tonight.nextAt', { time: clockWords(next.lamp.askAfter) }) : ''

@@ -180,8 +180,9 @@ function cameBackAfterHole(book, now = new Date()) {
   const at = parseIsoDate(yesterday)
   if (!at) return false
   at.setHours(12, 0, 0, 0)
+  // A monthly question whose month goes on today is still open, not a hole.
   const due = travelRows(book, yesterday, dueTonight(book, at)).filter(
-    (row) => !row.lamp.createdOn || row.lamp.createdOn <= yesterday,
+    (row) => (!row.lamp.createdOn || row.lamp.createdOn <= yesterday) && row.periodKey !== today.slice(0, 7),
   )
   if (!due.length) return false
   if (due.every((row) => row.answer)) return false

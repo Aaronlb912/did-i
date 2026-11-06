@@ -25,6 +25,7 @@ import {
   recentPeriodKeys,
   shouldFinishAfterNope,
   isEvery,
+  isPerWeek,
   unansweredTonight,
   waitingTonight,
 } from './recurrence.js'
@@ -258,7 +259,8 @@ export function useTonightStack({
   const openReady = ready.filter((row) => !row.answer)
   // An every so often question never holds the night open, but while it is
   // due and unanswered it is still dealt as a card, after the night is clear.
-  const deckClear = hallOn && !openReady.some((row) => isEvery(row.lamp))
+  // Same for times a week mid-week and a monthly question past its day.
+  const deckClear = hallOn && !openReady.some((row) => isEvery(row.lamp) || row.monthCarry || (isPerWeek(row.lamp) && !row.weekLast))
   const finishCount = useMemo(() => {
     const books = boards.length ? boards : [value]
     const persistedReady = scopedBooks(books, tagId)
