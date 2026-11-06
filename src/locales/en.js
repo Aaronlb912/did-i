@@ -4281,4 +4281,13 @@ export const en = {
   'lamp.unitWeeksNone': "Your streak now counts weeks.",
   'lamp.keepHistory': "History and streak stay with this question.",
   'hang.perWeekCounts': "Counts from this week.",
+  'we.takeOff': 'Take {name} off',
+  'we.takeOffTitle': 'Take {name} off this Did we?',
+  'we.takeOffBody': 'Their past answers stay. You can ask them again later.',
+  'confirm.weTookOff': '{name} is off this Did we.',
+  'we.leaveHeir': '{name} will run it after you.',
+  'we.showsAllNow': '{name} set it to show every answer.',
+  'we.showsWaitingNow': '{name} set it to show who did it.',
+  'we.askRanOut': 'ask ran out',
+  'we.askAgain': 'Ask {name} again',
 }

@@ -5,6 +5,12 @@ delete it from here.
 
 Last worked through 2026-10-09 (branch `gaps-2`).
 
+## Family sharing (branch `ux/family-share`)
+
+- Count cards have no Take off row for the maker and no heir line when the maker leaves: the people list on a count card shows only you, so the maker cannot see who to take off.
+- A change to the question or the mode (together or each) is still silent: no push, no line on the card. Only widening what a card shows (to every answer, or off count) is told.
+- Needs the SQL (`supabase/family-share.sql`) applied and a device pass: Take off, Ask again on an expired ask, the leave popup naming who takes over, the shows line.
+
 ## Growing a habit (UX loop 2026-11-06)
 
 - No step-up nudge ("Ask more days?"): it is the goal nudge dropped earlier, and pressure to do more does not fit the ADHD audience. Only the ease-off row is built.

@@ -19,6 +19,7 @@ import {
   WE_GOALS,
   weAsk,
   weBest,
+  weDrop,
   weEdit,
   weFile,
   weGoal,
@@ -38,6 +39,8 @@ import {
   weQuestion,
   weStreak,
   takeWeScheduleNote,
+  takeWeShowsNote,
+  weHeir,
   weCardKept,
   weTiming,
   weTonight,
@@ -1007,6 +1010,13 @@ function WeCardPage({ book, cardId, onChange }) {
     )
   }, [card?.id, card?.changedAt])
 
+  // The maker widened what the card shows: say so once.
+  useEffect(() => {
+    if (!card?.showsAt) return
+    const [fresh] = takeWeShowsNote([card])
+    if (fresh) confirmDone(t(fresh.shows === 'all' ? 'we.showsAllNow' : 'we.showsWaitingNow', { name: fresh.showsByName }), 5200)
+  }, [card?.id, card?.showsAt])
+
   // Your folder and topics for it, saved when you tap Save.
   const [filing, setFiling] = useState({ folder: '', topics: '' })
   const [fileOpen, setFileOpen] = useState('')
@@ -1135,9 +1145,11 @@ function WeCardPage({ book, cardId, onChange }) {
   }
 
   function leave() {
+    // The maker leaving hands the card on: say to whom.
+    const heir = card.mine ? weHeir(card) : null
     publishSheet({
       title: t('we.leaveTitle'),
-      body: t('we.leaveBody'),
+      body: heir ? `${t('we.leaveBody')} ${t('we.leaveHeir', { name: heir.name })}` : t('we.leaveBody'),
       goLabel: t('we.leave'),
       closeLabel: t('settings.neverMind'),
       colors,
@@ -1150,6 +1162,34 @@ function WeCardPage({ book, cardId, onChange }) {
         goHash('/we')
       },
     })
+  }
+
+  // The maker takes a quiet member off. Their past answers stay.
+  function takeOff(p) {
+    publishSheet({
+      title: t('we.takeOffTitle', { name: p.name }),
+      body: t('we.takeOffBody'),
+      goLabel: t('we.takeOff', { name: p.name }),
+      closeLabel: t('settings.neverMind'),
+      colors,
+      onClose: () => publishSheet(null),
+      onGo: async () => {
+        publishSheet(null)
+        const out = await weDrop(card.id, p.id)
+        if (out.miss) return confirmMiss(tMiss(out.miss))
+        confirmDone(t('confirm.weTookOff', { name: p.name }))
+        load()
+      },
+    })
+  }
+
+  // An ask that ran out can be sent again.
+  async function askAgain(p) {
+    publishSheet(null)
+    const out = await weAsk(card.id, p.id).catch(() => ({ miss: 'people.reach' }))
+    if (out.miss) return confirmMiss(tMiss(out.miss))
+    confirmDone(t('confirm.askedOne', { name: p.name }))
+    load()
   }
 
   // The maker ends it for everyone. Past answers stay.
@@ -1245,40 +1285,51 @@ function WeCardPage({ book, cardId, onChange }) {
               const canNudge = open && !card.done && weWaiting(card).some((w) => w.id === p.id && !w.nudged)
               const canCheer = open && cheer.can && !p.me && p.state === 'in' && p.status === 'did'
               return (
-                <View key={p.id} style={styles.personRow}>
-                  <View style={styles.personCopy}>
-                    <Meta colors={colors}>
-                      {p.me ? t('we.you') : p.name}
-                      {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
-                      {card.mode === 'turns' && card.turn === p.id ? ` · ${t(weWeekKey(card, 'we.tonightsTurn'), { day: weSlotDay(card, readPrefs().locale) })}` : ''}
-                    </Meta>
+                <View key={p.id} style={styles.personBlock}>
+                  <View style={styles.personRow}>
+                    <View style={styles.personCopy}>
+                      <Meta colors={colors}>
+                        {p.me ? t('we.you') : p.name}
+                        {p.state === 'asked' ? ` · ${t('we.invited')}` : ''}
+                        {card.mode === 'turns' && card.turn === p.id ? ` · ${t(weWeekKey(card, 'we.tonightsTurn'), { day: weSlotDay(card, readPrefs().locale) })}` : ''}
+                      </Meta>
+                    </View>
+                    {canNudge ? (
+                      <KeyButton
+                        colors={colors}
+                        label={t('we.nudge', { name: p.name })}
+                        disabled={ans.busy === card.id}
+                        onPress={async () => {
+                          publishSheet(null)
+                          const out = await ans.run(card.id, () => weNudge(card.id, p.id))
+                          if (!out?.miss) confirmDone(t('confirm.nudged', { name: p.name }))
+                        }}
+                      />
+                    ) : null}
+                    {canCheer ? (
+                      <KeyButton
+                        colors={colors}
+                        label={t('we.cheerName', { name: p.name })}
+                        disabled={Boolean(cheer.busy)}
+                        onPress={() => {
+                          publishSheet(null)
+                          cheer.cheer(p)
+                        }}
+                      />
+                    ) : null}
                   </View>
-                  {canNudge ? (
-                    <KeyButton
-                      colors={colors}
-                      label={t('we.nudge', { name: p.name })}
-                      disabled={ans.busy === card.id}
-                      onPress={async () => {
-                        publishSheet(null)
-                        const out = await ans.run(card.id, () => weNudge(card.id, p.id))
-                        if (!out?.miss) confirmDone(t('confirm.nudged', { name: p.name }))
-                      }}
-                    />
-                  ) : null}
-                  {canCheer ? (
-                    <KeyButton
-                      colors={colors}
-                      label={t('we.cheerName', { name: p.name })}
-                      disabled={Boolean(cheer.busy)}
-                      onPress={() => {
-                        publishSheet(null)
-                        cheer.cheer(p)
-                      }}
-                    />
+                  {card.mine && !p.me && (p.state === 'in' || p.state === 'asked') ? (
+                    <KeyButton colors={colors} label={t('we.takeOff', { name: p.name })} onPress={() => takeOff(p)} danger />
                   ) : null}
                 </View>
               )
             })}
+            {(card.lapsed || []).map((p) => (
+              <View key={p.id} style={styles.personBlock}>
+                <Meta colors={colors}>{`${p.name} · ${t('we.askRanOut')}`}</Meta>
+                <KeyButton colors={colors} label={t('we.askAgain', { name: p.name })} onPress={() => askAgain(p)} />
+              </View>
+            ))}
           </View>
         </View>
       ),
@@ -1729,6 +1780,7 @@ const styles = StyleSheet.create({
   headNames: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 19 },
   moreBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.uiSemi, fontSize: 20, lineHeight: 22 },
+  personBlock: { gap: 6 },
   personRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   personCopy: { flex: 1, minWidth: 100 },
   factLine: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 6, gap: 4 },

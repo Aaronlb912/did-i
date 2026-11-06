@@ -4290,4 +4290,13 @@ export const es = {
   'lamp.unitWeeksNone': "Tu racha ahora cuenta semanas.",
   'lamp.keepHistory': "El historial y la racha se quedan con esta pregunta.",
   'hang.perWeekCounts': "Cuenta desde esta semana.",
+  'we.takeOff': 'Sacar a {name}',
+  'we.takeOffTitle': '¿Sacar a {name} de este Did we?',
+  'we.takeOffBody': 'Sus respuestas anteriores se quedan. Puedes volver a invitar a esa persona más tarde.',
+  'confirm.weTookOff': '{name} ya no está en este Did we.',
+  'we.leaveHeir': '{name} se encargará después de ti.',
+  'we.showsAllNow': '{name} lo configuró para mostrar todas las respuestas.',
+  'we.showsWaitingNow': '{name} lo configuró para mostrar quién lo hizo.',
+  'we.askRanOut': 'invitación vencida',
+  'we.askAgain': 'Invitar a {name} otra vez',
 }

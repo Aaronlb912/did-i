@@ -4251,4 +4251,13 @@ export const ja = {
   'lamp.unitWeeksNone': "連続記録は週数で数えるようになりました。",
   'lamp.keepHistory': "履歴と連続記録はこの質問に残ります。",
   'hang.perWeekCounts': "今週から数えます。",
+  'we.takeOff': '{name}さんを外す',
+  'we.takeOffTitle': 'この Did we から{name}さんを外しますか？',
+  'we.takeOffBody': 'これまでの答えは残ります。あとでまた招待できます。',
+  'confirm.weTookOff': '{name}さんをこの Did we から外しました。',
+  'we.leaveHeir': '{name}さんがあとを引き継ぎます。',
+  'we.showsAllNow': '{name}さんが全員の答えを表示する設定にしました。',
+  'we.showsWaitingNow': '{name}さんが誰がやったかを表示する設定にしました。',
+  'we.askRanOut': '招待の期限切れ',
+  'we.askAgain': '{name}さんをもう一度招待',
 }

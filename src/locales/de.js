@@ -4298,4 +4298,13 @@ export const de = {
   'lamp.unitWeeksNone': "Deine Serie zählt jetzt Wochen.",
   'lamp.keepHistory': "Verlauf und Serie bleiben bei dieser Frage.",
   'hang.perWeekCounts': "Zählt ab dieser Woche.",
+  'we.takeOff': '{name} entfernen',
+  'we.takeOffTitle': '{name} aus diesem Did we entfernen?',
+  'we.takeOffBody': 'Frühere Antworten bleiben. Du kannst später wieder fragen.',
+  'confirm.weTookOff': '{name} ist nicht mehr bei diesem Did we dabei.',
+  'we.leaveHeir': '{name} übernimmt es nach dir.',
+  'we.showsAllNow': '{name} hat eingestellt, dass jede Antwort sichtbar ist.',
+  'we.showsWaitingNow': '{name} hat eingestellt, dass man sieht, wer es geschafft hat.',
+  'we.askRanOut': 'Einladung abgelaufen',
+  'we.askAgain': '{name} noch einmal fragen',
 }
